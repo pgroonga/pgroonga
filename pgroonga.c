@@ -58,6 +58,7 @@ static grn_ctx *ctx = &grnContext;
 static grn_obj buffer;
 static grn_obj inspectBuffer;
 
+#ifdef PGROONGA_DEBUG
 static const char *
 GrnInspect(grn_obj *object)
 {
@@ -66,6 +67,7 @@ GrnInspect(grn_obj *object)
 	GRN_TEXT_PUTC(ctx, &inspectBuffer, '\0');
 	return GRN_TEXT_VALUE(&inspectBuffer);
 }
+#endif
 
 static grn_encoding
 GrnGetEncoding(void)
