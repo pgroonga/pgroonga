@@ -10,9 +10,3 @@ REGRESS = pgroonga update bench
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
-
-.PHONY: subclean
-clean: subclean
-
-subclean:
-	rm -f pgroonga.sql.in
