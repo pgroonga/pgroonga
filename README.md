@@ -1,0 +1,140 @@
+# PGroonga（ぴーじーるんが）
+
+## 概要
+
+PGroongaはPostgreSQLからインデックスとして
+[Groonga](http://groonga.org/ja/)を使うための拡張機能です。
+
+PostgreSQLは標準では日本語で全文検索できませんが、PGroongaを使うと日本
+語で高速に全文検索できるようになります。日本語で全文検索機能を実現する
+ための類似の拡張機能は次のものがあります。
+
+  * [pg_trgm](https://www.postgresql.jp/document/9.3/html/pgtrgm.html)
+    * PostgreSQLに付属しているがデフォルトではインストールされない。
+    * 日本語に対応させるにはソースコードを変更する必要がある。
+  * [pg_bigm](http://pgbigm.sourceforge.jp/)
+    * ソースコードを変更しなくても日本語に対応している。
+    * 正確な全文検索機能を使うには
+      [Recheck機能](http://pgbigm.sourceforge.jp/pg_bigm-1-1.html#enable_recheck)
+      を有効にする必要がある。
+    * Recheck機能を有効にするとインデックスを使った検索をしてから、イ
+      ンデックスを使って見つかったレコードに対してシーケンシャルに検索
+      をするのでインデックスを使った検索でのヒット件数が多くなると遅く
+      なりやすい。
+    * Recheck機能を無効にするとキーワードが含まれていないレコードもヒッ
+      トする可能性がある。
+
+PGroongaはpg\_trgmのようにソースコードを変更しなくても日本語に対応して
+います。
+
+PGroongaはpg\_bigmのようにRecheck機能を使わなくてもインデックスを使っ
+た検索だけで正確な検索結果を返せます。そのため、インデックスを使った検
+索でヒット件数が多くてもpg\_bigmほど遅くなりません。（仕組みの上は。要
+ベンチマーク。協力者募集。）
+
+ただし、PGroongaは現時点ではWALに対応していないためクラッシュリカバリー
+機能やレプリケーションに対応していません。（pg\_trgmとpg\_bigmは対応し
+ています。正確に言うとpg\_trgmとpg\_bigmが対応しているわけではなく、
+pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
+
+## インストール
+
+PostgreSQLをインストールします。
+
+[Groongaをインストール](http://groonga.org/ja/docs/install.html)します。
+パッケージでのインストールがオススメです。
+
+パッケージでインストールするときは次のパッケージをインストールしてください。
+
+  * `groonga-devel`: CentOSの場合
+  * `libgroonga-dev`: Debian GNU/Linux, Ubuntuの場合
+
+PGroongaをインストールします。
+
+    % git clone https://github.com/pgroonga/pgroonga.git
+    % cd pgroonga
+    % make
+    % sudo make install
+
+データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
+
+    % psql -d db
+    ...
+    db=# CREATE EXTENSION pgroonga;
+    CREATE EXTNESION
+
+## 使い方
+
+`text`型のカラムを作って`pgroonga`インデックスを張ります。
+
+```sql
+CREATE TABLE memos (
+  id integer,
+  content text
+);
+
+CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
+```
+
+データを投入します。
+
+```sql
+INSERT INTO memos VALUES (1, 'PostgreSQLはリレーショナル・データベース管理システムです。');
+INSERT INTO memos VALUES (2, 'Groongaは日本語対応の高速な全文検索エンジンです。');
+INSERT INTO memos VALUES (3, 'PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。');
+```
+
+検索します。現時点ではシーケンシャルスキャンでの全文検索（インデックス
+を使わない全文検索）には対応していないので、シーケンシャルスキャン機能
+を無効にします。（あるいはもっとたくさんのデータを投入します。）
+
+```sql
+SET enable_seqscan = off;
+```
+
+全文検索をするときは`%%`演算子を使います。
+
+```sql
+SELECT * FROM memos WHERE content %% '全文検索';
+--  id |                      content
+-- ----+---------------------------------------------------
+--   2 | Groongaは日本語対応の高速な全文検索エンジンです。
+-- (1 行)
+```
+
+## アンインストール
+
+次のSQLでアンインストールできます。
+
+```sql
+DROP EXTENSION pgroonga CASCADE;
+DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
+```
+
+`pg_catalog.pg_am`から手動でレコードを消さないといけないのはおかしい気
+がするので、何がおかしいか知っている人は教えてくれるとうれしいです。
+
+## ライセンス
+
+ライセンスはBSDライセンスやMITライセンスと類似の
+[PostgreSQLライセンス](http://opensource.org/licenses/postgresql)です。
+
+著作権保持者などの詳細は[COPYING](COPYING)ファイルを参照してください。
+
+## TODO
+
+  * 実装
+    * WAL対応
+    * スコアー対応
+    * クエリー構文対応（`キーワード1 OR キーワード2`のようなやつ）
+    * シーケンシャルスキャン対応（grn式を作って検索する？）
+    * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
+    * トークナイザーのカスタマイズ対応（今は必ずTokenBigramを使っている）
+  * ドキュメント
+    * 英語で書く
+    * サイトを用意する
+
+## 感謝
+
+  * 板垣さん
+    * PGroongaは板垣さんが開発した[textsearch_groonga](http://textsearch-ja.projects.pgfoundry.org/textsearch_groonga.html)をベースにしています。
