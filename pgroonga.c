@@ -10,7 +10,9 @@
 #include <catalog/pg_tablespace.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
+#include <storage/ipc.h>
 #include <storage/lmgr.h>
+#include <utils/selfuncs.h>
 
 #include <groonga.h>
 
