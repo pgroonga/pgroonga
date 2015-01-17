@@ -70,7 +70,7 @@ INSERT INTO pg_catalog.pg_am VALUES(
 	true,		-- amcanunique
 	true,		-- amcanmulticol
 	true,		-- amoptionalkey
-	true,		-- amindexnulls
+	true,		-- amsearcharray
 	false,		-- amsearchnulls
 	false,		-- amstorage
 	true,		-- amclusterable
