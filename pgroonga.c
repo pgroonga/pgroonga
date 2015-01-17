@@ -436,7 +436,8 @@ pgroonga_contains_raw(const char *text, unsigned int text_size,
 	{
 		grn_obj *result;
 		result = grn_expr_exec(ctx, expression, 0);
-		if (ctx->rc) {
+		if (ctx->rc)
+		{
 			goto exit;
 		}
 		contained = GRN_INT32_VALUE(result) != 0;
