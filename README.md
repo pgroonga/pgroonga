@@ -88,9 +88,9 @@ INSERT INTO memos VALUES (2, 'Groongaは日本語対応の高速な全文検索�
 INSERT INTO memos VALUES (3, 'PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。');
 ```
 
-検索します。現時点ではシーケンシャルスキャンでの全文検索（インデックス
-を使わない全文検索）には対応していないので、シーケンシャルスキャン機能
-を無効にします。（あるいはもっとたくさんのデータを投入します。）
+検索します。ここではシーケンシャルスキャンではなくインデックスを使った
+全文検索を使いたいので、シーケンシャルスキャン機能を無効にします。（あ
+るいはもっとたくさんのデータを投入します。）
 
 ```sql
 SET enable_seqscan = off;
@@ -131,7 +131,6 @@ DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
     * WAL対応
     * スコアー対応
     * クエリー構文対応（`キーワード1 OR キーワード2`のようなやつ）
-    * シーケンシャルスキャン対応（grn式を作って検索する？）
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
     * トークナイザーのカスタマイズ対応（今は必ずTokenBigramを使っている）
   * ドキュメント
