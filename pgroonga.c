@@ -413,15 +413,55 @@ GrnUnlock(Relation index, LOCKMODE mode)
 						 mode);
 }
 
+static grn_bool
+pgroonga_contains_raw(const char *text, unsigned int text_size,
+					  const char *key, unsigned int key_size)
+{
+	grn_bool contained = GRN_FALSE;
+	grn_obj buffer;
+	grn_obj *expression, *expressionVariable;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, NULL, expression, expressionVariable);
+
+	GRN_TEXT_INIT(&buffer, 0);
+
+	GRN_TEXT_SET(ctx, &buffer, text, text_size);
+	grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
+
+	GRN_TEXT_SET(ctx, &buffer, key, key_size);
+	grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
+
+	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+
+	{
+		grn_obj *result;
+		result = grn_expr_exec(ctx, expression, 0);
+		if (ctx->rc) {
+			goto exit;
+		}
+		contained = GRN_INT32_VALUE(result) != 0;
+	}
+
+exit:
+	grn_obj_unlink(ctx, expression);
+	GRN_OBJ_FIN(ctx, &buffer);
+
+	return contained;
+}
+
 /**
  * pgroonga.contains(doc text, key text) : bool
  */
 Datum
 pgroonga_contains_text(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errmsg("groonga: 'text %%%% text' requires index.")));
-	PG_RETURN_BOOL(false);
+	text *doc = PG_GETARG_TEXT_PP(0);
+	text *key = PG_GETARG_TEXT_PP(1);
+	grn_bool contained;
+
+	contained = pgroonga_contains_raw(VARDATA_ANY(doc), VARSIZE_ANY_EXHDR(doc),
+									  VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
+	PG_RETURN_BOOL(contained);
 }
 
 /**
@@ -430,9 +470,14 @@ pgroonga_contains_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_contains_bpchar(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errmsg("groonga: 'bpchar %%%% bpchar' requires index.")));
-	PG_RETURN_BOOL(false);
+	BpChar *doc = PG_GETARG_BPCHAR_PP(0);
+	BpChar *key = PG_GETARG_BPCHAR_PP(1);
+	grn_bool contained;
+
+	contained =
+		pgroonga_contains_raw(VARDATA_ANY(doc), pgroonga_bpchar_size(doc),
+							  VARDATA_ANY(key), pgroonga_bpchar_size(key));
+	PG_RETURN_BOOL(contained);
 }
 
 static void

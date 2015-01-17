@@ -10,8 +10,8 @@
 
 #include <groonga.h>
 
-static int
-bpchar_size(const BpChar *arg)
+int
+pgroonga_bpchar_size(const BpChar *arg)
 {
 	char	   *s = VARDATA_ANY(arg);
 	int			i;
@@ -126,7 +126,7 @@ pgroonga_get_bpchar(PG_FUNCTION_ARGS)
 	grn_ctx	*ctx = (grn_ctx *)PG_GETARG_POINTER(1);
 	grn_obj *buffer = (grn_obj *)PG_GETARG_POINTER(2);
 
-	GRN_TEXT_PUT(ctx, buffer, VARDATA_ANY(var), bpchar_size(var));
+	GRN_TEXT_PUT(ctx, buffer, VARDATA_ANY(var), pgroonga_bpchar_size(var));
 
 	PG_RETURN_VOID();
 }
@@ -237,7 +237,7 @@ pgroonga_set_bpchar(PG_FUNCTION_ARGS)
 	grn_obj	   *obj = (grn_obj *) PG_GETARG_POINTER(1);
 	BpChar	   *var = PG_GETARG_BPCHAR_PP(2);
 
-	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), bpchar_size(var));
+	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), pgroonga_bpchar_size(var));
 	PG_RETURN_VOID();
 }
 
