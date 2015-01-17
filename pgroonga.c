@@ -907,7 +907,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 		GrnCreate(index, &(bs.idsTable), &lexicon, &indexColumn);
 		{
 			unsigned long long int updateBufferSize = 10;
-			bs.buffer = grn_ii_buffer_open(ctx, (grn_ii *)indexColumn,
+			bs.buffer = grn_ii_buffer_open(ctx, (grn_ii *) indexColumn,
 											  updateBufferSize);
 		}
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
@@ -993,7 +993,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 
 			CHECK_FOR_INTERRUPTS();
 
-			grn_table_cursor_get_key(ctx, cursor, (void **)&key);
+			grn_table_cursor_get_key(ctx, cursor, (void **) &key);
 			ctid = UInt64ToCtid(key);
 			if (callback(&ctid, callback_state))
 			{
