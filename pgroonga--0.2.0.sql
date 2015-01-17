@@ -32,6 +32,7 @@ CREATE FUNCTION pgroonga.getbitmap(internal) RETURNS bigint AS 'MODULE_PATHNAME'
 CREATE FUNCTION pgroonga.rescan(internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_rescan' LANGUAGE C;
 CREATE FUNCTION pgroonga.endscan(internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_endscan' LANGUAGE C;
 CREATE FUNCTION pgroonga.build(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_build' LANGUAGE C;
+CREATE FUNCTION pgroonga.buildempty(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_buildempty' LANGUAGE C;
 CREATE FUNCTION pgroonga.bulkdelete(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_bulkdelete' LANGUAGE C;
 CREATE FUNCTION pgroonga.vacuumcleanup(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_vacuumcleanup' LANGUAGE C;
 CREATE FUNCTION pgroonga.costestimate(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_costestimate' LANGUAGE C;
@@ -84,7 +85,7 @@ INSERT INTO pg_catalog.pg_am VALUES(
 	0,		-- ammarkpos,
 	0,		-- amrestrpos,
 	'pgroonga.build',	-- ambuild
-	0,		-- ambuildempty
+	'pgroonga.buildempty',	-- ambuildempty
 	'pgroonga.bulkdelete',	-- ambulkdelete
 	'pgroonga.vacuumcleanup',	-- amvacuumcleanup
 	0,		-- amcanreturn

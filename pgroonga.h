@@ -47,6 +47,7 @@ extern Datum PGDLLEXPORT pgroonga_getbitmap(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_rescan(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_endscan(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_build(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_buildempty(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_bulkdelete(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_vacuumcleanup(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_costestimate(PG_FUNCTION_ARGS);

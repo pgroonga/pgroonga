@@ -50,6 +50,7 @@ PG_FUNCTION_INFO_V1(pgroonga_getbitmap);
 PG_FUNCTION_INFO_V1(pgroonga_rescan);
 PG_FUNCTION_INFO_V1(pgroonga_endscan);
 PG_FUNCTION_INFO_V1(pgroonga_build);
+PG_FUNCTION_INFO_V1(pgroonga_buildempty);
 PG_FUNCTION_INFO_V1(pgroonga_bulkdelete);
 PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
@@ -936,6 +937,36 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(result);
 }
 
+/**
+ * pgroonga.buildempty() -- ambuildempty
+ */
+Datum
+pgroonga_buildempty(PG_FUNCTION_ARGS)
+{
+	Relation index = (Relation) PG_GETARG_POINTER(0);
+	grn_obj *idsTable = NULL;
+	grn_obj *lexicon = NULL;
+	grn_obj *indexColumn = NULL;
+
+	PG_TRY();
+	{
+		GrnCreate(index, &idsTable, &lexicon, &indexColumn);
+	}
+	PG_CATCH();
+	{
+		if (indexColumn)
+			grn_obj_remove(ctx, indexColumn);
+		if (lexicon)
+			grn_obj_remove(ctx, lexicon);
+		if (idsTable)
+			grn_obj_remove(ctx, idsTable);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+
+	PG_RETURN_VOID();
+}
+
 static IndexBulkDeleteResult *
 GrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *idsTable)
 {
@@ -989,12 +1020,12 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 		while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
 		{
 			ItemPointerData	ctid;
-			uint64 key;
+			uint64 *key;
 
 			CHECK_FOR_INTERRUPTS();
 
 			grn_table_cursor_get_key(ctx, cursor, (void **) &key);
-			ctid = UInt64ToCtid(key);
+			ctid = UInt64ToCtid(*key);
 			if (callback(&ctid, callback_state))
 			{
 				GrnLock(index, ExclusiveLock);
