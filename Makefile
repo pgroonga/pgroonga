@@ -8,7 +8,7 @@ SHLIB_LINK = $(shell pkg-config --libs groonga)
 REGRESS = pgroonga update bench
 
 ifdef DEBUG
-CFLAGS += -O0 -g3 -DPGROONGA_DEBUG=1
+COPT += -O0 -g3 -DPGROONGA_DEBUG=1
 SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L groonga | sed -e 's/^-L//')
 endif
 
