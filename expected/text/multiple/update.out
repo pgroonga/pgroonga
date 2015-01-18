@@ -19,16 +19,23 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 SELECT id, title, content
   FROM memos
- WHERE title %% 'Groonga' OR content %% 'Groonga';
+ WHERE content %% 'Groonga';
  id |  title  |               content                
 ----+---------+--------------------------------------
-  2 | Groonga | is fast full text search engine.
   3 | Mroonga | is a MySQL plugin that uses Groonga.
-(2 rows)
+(1 row)
 
 SELECT id, title, content
   FROM memos
- WHERE title %% 'Mroonga' AND content %% 'MySQL';
+ WHERE title %% 'Mroonga';
+ id |  title  |               content                
+----+---------+--------------------------------------
+  3 | Mroonga | is a MySQL plugin that uses Groonga.
+(1 row)
+
+SELECT id, title, content
+  FROM memos
+ WHERE content %% 'MySQL';
  id |  title  |               content                
 ----+---------+--------------------------------------
   3 | Mroonga | is a MySQL plugin that uses Groonga.
