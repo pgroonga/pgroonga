@@ -21,7 +21,6 @@ PG_MODULE_MAGIC;
 typedef struct GrnBuildStateData
 {
 	grn_obj	*idsTable;
-	grn_ii_buffer *buffer;
 	double nIndexedTuples;
 } GrnBuildStateData;
 
@@ -340,6 +339,11 @@ GrnCreate(Relation index, grn_obj **idsTable,
 					 errmsg("groonga: must be the same type columns "
 							"for multiple column index")));
 		}
+
+		GrnCreateColumn(*idsTable,
+						desc->attrs[i]->attname.data,
+						GRN_OBJ_COLUMN_SCALAR,
+						grn_ctx_at(ctx, attributeTypeID));
 	}
 
 	switch (typeID)
@@ -373,6 +377,31 @@ GrnCreate(Relation index, grn_obj **idsTable,
 									   flags,
 									   *idsTable);
 	}
+}
+
+static void
+GrnSetSources(Relation index, grn_obj *idsTable, grn_obj *indexColumn)
+{
+	TupleDesc desc;
+	grn_obj source_ids;
+	int i;
+
+	desc = RelationGetDescr(index);
+	GRN_RECORD_INIT(&source_ids, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	for (i = 0; i < desc->natts; i++)
+	{
+		NameData *name = &(desc->attrs[i]->attname);
+		grn_obj *source;
+		grn_id source_id;
+
+		source = grn_obj_column(ctx, idsTable,
+								name->data, strlen(name->data));
+		source_id = grn_obj_id(ctx, source);
+		grn_obj_unlink(ctx, source);
+		GRN_RECORD_PUT(ctx, &source_ids, source_id);
+	}
+	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &source_ids);
+	GRN_OBJ_FIN(ctx, &source_ids);
 }
 
 static grn_id
@@ -486,7 +515,6 @@ static void
 GrnInsert(grn_ctx *ctx,
 		  Relation index,
 		  grn_obj *idsTable,
-		  grn_obj *indexColumn,
 		  Datum *values,
 		  bool *isnull,
 		  ItemPointer ht_ctid)
@@ -500,15 +528,19 @@ GrnInsert(grn_ctx *ctx,
 
 	for (i = 0; i < desc->natts; i++)
 	{
-		unsigned int sectionID = i + 1;
+		grn_obj *dataColumn;
+		NameData *name = &(desc->attrs[i]->attname);
 
 		if (isnull[i])
 			continue;
 
+		dataColumn = grn_obj_column(ctx, idsTable,
+									name->data, strlen(name->data));
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
 		GrnSetValue(index, i, &buffer, values[i]);
-		grn_column_index_update(ctx, indexColumn, id, sectionID, NULL, &buffer);
-		if (!GrnCheck("groonga: failed to update index")) {
+		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
+		grn_obj_unlink(ctx, dataColumn);
+		if (!GrnCheck("groonga: failed to set column value")) {
 			continue;
 		}
 	}
@@ -529,10 +561,9 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	IndexUniqueCheck checkUnique = PG_GETARG_INT32(5);
 #endif
 	grn_obj *idsTable = GrnLookupIDsTable(index, ERROR);
-	grn_obj *indexColumn = GrnLookupIndexColumn(index, ERROR);
 
 	GrnLock(index, ExclusiveLock);
-	GrnInsert(ctx, index, idsTable, indexColumn, values, isnull, ht_ctid);
+	GrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
 	GrnUnlock(index, ExclusiveLock);
 
 	PG_RETURN_BOOL(true);
@@ -853,28 +884,11 @@ GrnBuildCallback(Relation index,
 				 void *state)
 {
 	GrnBuildState bs = (GrnBuildState) state;
-	TupleDesc desc = RelationGetDescr(index);
-	uint64 key = CtidToUInt64(&htup->t_self);
-	grn_id id;
-	int i;
 
-	id = grn_table_add(ctx, bs->idsTable, &key, sizeof(uint64), NULL);
-	for (i = 0; i < desc->natts; i++)
-	{
-		unsigned int sectionID = i + 1;
-
-		if (isnull[i])
-			continue;
-
-		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
-		GrnSetValue(index, i, &buffer, values[i]);
-		grn_ii_buffer_append(ctx, bs->buffer, id, sectionID, &buffer);
-		if (!GrnCheck("groonga: failed to append data to index")) {
-			continue;
-		}
+	if (tupleIsAlive) {
+		GrnInsert(ctx, index, bs->idsTable, values, isnull, &(htup->t_self));
+		bs->nIndexedTuples++;
 	}
-
-	bs->nIndexedTuples++;
 }
 
 /**
@@ -898,28 +912,17 @@ pgroonga_build(PG_FUNCTION_ARGS)
 				 errmsg("groonga: unique index isn't supported")));
 
 	bs.idsTable = NULL;
-	bs.buffer = NULL;
 	bs.nIndexedTuples = 0.0;
 
 	PG_TRY();
 	{
 		GrnCreate(index, &(bs.idsTable), &lexicon, &indexColumn);
-		{
-			unsigned long long int updateBufferSize = 10;
-			bs.buffer = grn_ii_buffer_open(ctx, (grn_ii *) indexColumn,
-											  updateBufferSize);
-		}
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 GrnBuildCallback, &bs);
-		grn_ii_buffer_commit(ctx, bs.buffer);
-		grn_ii_buffer_close(ctx, bs.buffer);
+		GrnSetSources(index, bs.idsTable, indexColumn);
 	}
 	PG_CATCH();
 	{
-		if (bs.buffer)
-			grn_ii_buffer_close(ctx, bs.buffer);
-		if (indexColumn)
-			grn_obj_remove(ctx, indexColumn);
 		if (lexicon)
 			grn_obj_remove(ctx, lexicon);
 		if (bs.idsTable)
@@ -949,11 +952,10 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 	PG_TRY();
 	{
 		GrnCreate(index, &idsTable, &lexicon, &indexColumn);
+		GrnSetSources(index, idsTable, indexColumn);
 	}
 	PG_CATCH();
 	{
-		if (indexColumn)
-			grn_obj_remove(ctx, indexColumn);
 		if (lexicon)
 			grn_obj_remove(ctx, lexicon);
 		if (idsTable)
