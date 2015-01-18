@@ -6,7 +6,7 @@ compiler:
   - gcc
   - clang
 addons:
-  postgresql: "9.4"
+  postgresql: "9.3"
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get install -qq -y postgresql-server-dev-all
