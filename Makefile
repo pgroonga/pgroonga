@@ -18,7 +18,7 @@ PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
-installcheck: results/text
+installcheck: results/text/single/contain
 
-results/text:
-	@mkdir -p results/text
+results/text/single/contain:
+	@mkdir -p results/text/single/contain
