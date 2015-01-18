@@ -867,7 +867,6 @@ GrnBuildCallback(Relation index,
 		if (isnull[i])
 			continue;
 
-		index_getprocinfo(index, i, GrnGetValueProc);
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
 		GrnSetValue(index, i, &buffer, values[i]);
 		grn_ii_buffer_append(ctx, bs->buffer, id, sectionID, &buffer);
