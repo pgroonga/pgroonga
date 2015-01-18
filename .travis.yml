@@ -9,7 +9,7 @@ addons:
   postgresql: "9.3"
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
-  - sudo apt-get install -qq -y postgresql-server-dev-all
+  - sudo apt-get install -qq -y postgresql-server-dev-9.3
 before_script:
   - make DEBUG=1
   - sudo make install
