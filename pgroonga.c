@@ -505,7 +505,6 @@ GrnInsert(grn_ctx *ctx,
 		if (isnull[i])
 			continue;
 
-		index_getprocinfo(index, i, GrnGetValueProc);
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
 		GrnSetValue(index, i, &buffer, values[i]);
 		grn_column_index_update(ctx, indexColumn, id, sectionID, NULL, &buffer);
