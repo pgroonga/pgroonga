@@ -9,7 +9,7 @@ env:
   - PG_VERSION=9.4
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
-  - sudo apt-get purge -qq -y postgresql-server
+  - sudo apt-get purge -qq -y postgresql-server-9.1
   - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} postgresql-client-${PG_VERSION}
   - sudo -u postgres -H createuser --superuser $USER
 before_script:
