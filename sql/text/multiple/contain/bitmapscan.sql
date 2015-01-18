@@ -19,6 +19,10 @@ SET enable_bitmapscan = on;
 
 SELECT id, title, content
   FROM memos
- WHERE title %% 'Groonga' OR content %% 'Groonga';
+ WHERE title %% 'Groonga';
+
+SELECT id, title, content
+  FROM memos
+ WHERE content %% 'Groonga';
 
 DROP TABLE memos;

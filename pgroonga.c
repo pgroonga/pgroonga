@@ -635,17 +635,18 @@ GrnSearch(IndexScanDesc scan)
 	Relation index = scan->indexRelation;
 	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
 	grn_obj *indexColumn;
-	grn_obj *matchColumns, *matchColumnsVariable;
+	grn_obj matchTargets;
+	grn_obj sectionID;
 	grn_obj *expression, *expressionVariable;
 	int i, nExpressions = 0;
 
 	if (scan->numberOfKeys == 0)
 		return;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
-							  matchColumns, matchColumnsVariable);
+	GRN_PTR_INIT(&matchTargets, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_UINT32_INIT(&sectionID, 0);
+
 	indexColumn = GrnLookupIndexColumn(index, ERROR);
-	grn_expr_append_obj(ctx, matchColumns, indexColumn, GRN_OP_PUSH, 1);
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
 							  expression, expressionVariable);
@@ -654,15 +655,27 @@ GrnSearch(IndexScanDesc scan)
 	{
 		ScanKey key = &(scan->keyData[i]);
 		grn_bool isValidStrategy = GRN_TRUE;
+		grn_obj *matchTarget, *matchTargetVariable;
 
 		/* NULL key is not supported */
 		if (key->sk_flags & SK_ISNULL)
 			continue;
 
+		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
+								  matchTarget, matchTargetVariable);
+		GRN_PTR_PUT(ctx, &matchTargets, matchTarget);
+
+		grn_expr_append_obj(ctx, matchTarget, indexColumn, GRN_OP_PUSH, 1);
+
+		GRN_UINT32_SET(ctx, &sectionID, key->sk_attno - 1);
+		grn_expr_append_const(ctx, matchTarget, &sectionID, GRN_OP_PUSH, 1);
+
+		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
+
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, key->sk_attno - 1), 0);
 		GrnGetValue(index, key->sk_attno - 1, key->sk_argument, &buffer);
 
-		grn_expr_append_obj(ctx, expression, matchColumns, GRN_OP_PUSH, 1);
+		grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
 		grn_expr_append_obj(ctx, expression, &buffer, GRN_OP_PUSH, 1);
 
 		switch (key->sk_strategy)
@@ -709,7 +722,17 @@ GrnSearch(IndexScanDesc scan)
 									so->idsTable, 0);
     grn_table_select(ctx, so->idsTable, expression, so->searched, GRN_OP_OR);
 	grn_obj_unlink(ctx, expression);
-	grn_obj_unlink(ctx, matchColumns);
+	{
+		unsigned int i, nMatchTargets;
+		nMatchTargets = GRN_BULK_VSIZE(&matchTargets) / sizeof(grn_obj *);
+		for (i = 0; i < nMatchTargets; i++)
+		{
+			grn_obj *matchTarget = GRN_PTR_VALUE_AT(&matchTargets, i);
+			grn_obj_unlink(ctx, matchTarget);
+		}
+	}
+	GRN_OBJ_FIN(ctx, &matchTargets);
+	GRN_OBJ_FIN(ctx, &sectionID);
 }
 
 static void
