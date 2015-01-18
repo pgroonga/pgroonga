@@ -5,11 +5,11 @@ language: c
 compiler:
   - gcc
   - clang
-# env:
-#   - GROONGA_MASTER=yes
+env:
+  - PG_VERSION=9.4
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
-  - sudo apt-get install -qq -y postgresql-server-dev-all
+  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} postgresql-client-${PG_VERSION}
 before_script:
   - make DEBUG=1
   - sudo make install
