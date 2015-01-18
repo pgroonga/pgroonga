@@ -1,4 +1,3 @@
-CREATE EXTENSION pgroonga;
 CREATE TABLE memos (
   id integer,
   content text
@@ -19,3 +18,4 @@ SELECT id, content
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
 (2 rows)
 
+DROP TABLE memos;

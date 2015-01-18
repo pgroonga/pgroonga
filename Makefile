@@ -7,6 +7,7 @@ PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
 SHLIB_LINK = $(shell pkg-config --libs groonga)
 # REGRESS = pgroonga update bench
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
+REGRESS_OPTS = --load-extension=pgroonga
 
 ifdef DEBUG
 COPT += -O0 -g3 -DPGROONGA_DEBUG=1
