@@ -201,12 +201,12 @@ GrnCheck(const char *message)
 static grn_builtin_type
 GrnGetType(Relation index, AttrNumber n)
 {
-	FmgrInfo	*function;
-	TupleDesc	 desc = RelationGetDescr(index);
-	Datum		 type;
+	FmgrInfo *function;
+	TupleDesc desc = RelationGetDescr(index);
+	Datum type;
 
 	function = index_getprocinfo(index, n + 1, GrnTypeOfProc);
-	type	 = FunctionCall2(function,
+	type = FunctionCall2(function,
 						 ObjectIdGetDatum(desc->attrs[n]->atttypid),
 						 Int32GetDatum(desc->attrs[n]->atttypmod));
 	return (grn_builtin_type) DatumGetInt32(type);
@@ -215,7 +215,7 @@ GrnGetType(Relation index, AttrNumber n)
 static void
 GrnSetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
 {
-	FmgrInfo	*function;
+	FmgrInfo *function;
 
 	function = index_getprocinfo(index, n + 1, GrnSetValueProc);
 	FunctionCall3(function,
@@ -226,7 +226,7 @@ GrnSetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
 static void
 GrnGetValue(Relation index, AttrNumber n, Datum value, grn_obj *buffer)
 {
-	FmgrInfo	*function;
+	FmgrInfo *function;
 
 	function = index_getprocinfo(index, n + 1, GrnGetValueProc);
 	FunctionCall3(function,
