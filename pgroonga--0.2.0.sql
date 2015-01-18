@@ -39,26 +39,16 @@ CREATE FUNCTION pgroonga.costestimate(internal) RETURNS internal AS 'MODULE_PATH
 CREATE FUNCTION pgroonga.options(internal) RETURNS internal AS 'MODULE_PATHNAME','pgroonga_options' LANGUAGE C;
 
 CREATE FUNCTION pgroonga.typeof(oid, integer) RETURNS integer AS 'MODULE_PATHNAME','pgroonga_typeof' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_text(text, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_text' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_bpchar(bpchar, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_bpchar' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_bool(bool, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_bool' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int2(int2, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int2' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int4(int4, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int4' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int8(int8, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int8' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_float4(float4, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_float4' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_float8(float8, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_float8' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_timestamp(timestamp, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_timestamp' LANGUAGE C;
-CREATE FUNCTION pgroonga.get_timestamptz(timestamptz, internal, internal) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_timestamptz' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_text(internal, internal, text) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_text' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_bpchar(internal, internal, bpchar) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_bpchar' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_bool(internal, internal, bool) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_bool' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_int2(internal, internal, int2) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_int2' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_int4(internal, internal, int4) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_int4' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_int8(internal, internal, int8) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_int8' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_float4(internal, internal, float4) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_float4' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_float8(internal, internal, float8) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_float8' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_timestamp(internal, internal, timestamp) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_timestamp' LANGUAGE C;
-CREATE FUNCTION pgroonga.set_timestamptz(internal, internal, timestamptz) RETURNS void AS 'MODULE_PATHNAME','pgroonga_set_timestamptz' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_text(internal, internal, text) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_text' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_bpchar(internal, internal, bpchar) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_bpchar' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_bool(internal, internal, bool) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_bool' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_int2(internal, internal, int2) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int2' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_int4(internal, internal, int4) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int4' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_int8(internal, internal, int8) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_int8' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_float4(internal, internal, float4) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_float4' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_float8(internal, internal, float8) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_float8' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_timestamp(internal, internal, timestamp) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_timestamp' LANGUAGE C;
+CREATE FUNCTION pgroonga.get_timestamptz(internal, internal, timestamptz) RETURNS void AS 'MODULE_PATHNAME','pgroonga_get_timestamptz' LANGUAGE C;
 
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
@@ -103,8 +93,7 @@ CREATE OPERATOR CLASS pgroonga.text_ops DEFAULT FOR TYPE text
 		OPERATOR 6 <>,
 		OPERATOR 7 %%,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_text(text, internal, internal),
-		FUNCTION 3 pgroonga.set_text(internal, internal, text);
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
 CREATE OPERATOR CLASS pgroonga.bpchar_ops DEFAULT FOR TYPE bpchar
 	USING pgroonga AS
@@ -116,8 +105,7 @@ CREATE OPERATOR CLASS pgroonga.bpchar_ops DEFAULT FOR TYPE bpchar
 		OPERATOR 6 <>,
 		OPERATOR 7 %%,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_bpchar(bpchar, internal, internal),
-		FUNCTION 3 pgroonga.set_bpchar(internal, internal, bpchar);
+		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS
@@ -128,8 +116,7 @@ CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_bool(bool, internal, internal),
-		FUNCTION 3 pgroonga.set_bool(internal, internal, bool);
+		FUNCTION 2 pgroonga.get_bool(internal, internal, bool);
 
 CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 	USING pgroonga AS
@@ -140,8 +127,7 @@ CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_int2(int2, internal, internal),
-		FUNCTION 3 pgroonga.set_int2(internal, internal, int2);
+		FUNCTION 2 pgroonga.get_int2(internal, internal, int2);
 
 CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 	USING pgroonga AS
@@ -152,8 +138,7 @@ CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_int4(int4, internal, internal),
-		FUNCTION 3 pgroonga.set_int4(internal, internal, int4);
+		FUNCTION 2 pgroonga.get_int4(internal, internal, int4);
 
 CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 	USING pgroonga AS
@@ -164,8 +149,7 @@ CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_int8(int8, internal, internal),
-		FUNCTION 3 pgroonga.set_int8(internal, internal, int8);
+		FUNCTION 2 pgroonga.get_int8(internal, internal, int8);
 
 CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 	USING pgroonga AS
@@ -176,8 +160,7 @@ CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_float4(float4, internal, internal),
-		FUNCTION 3 pgroonga.set_float4(internal, internal, float4);
+		FUNCTION 2 pgroonga.get_float4(internal, internal, float4);
 
 CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 	USING pgroonga AS
@@ -188,8 +171,7 @@ CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_float8(float8, internal, internal),
-		FUNCTION 3 pgroonga.set_float8(internal, internal, float8);
+		FUNCTION 2 pgroonga.get_float8(internal, internal, float8);
 
 CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 	USING pgroonga AS
@@ -200,8 +182,7 @@ CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_timestamp(timestamp, internal, internal),
-		FUNCTION 3 pgroonga.set_timestamp(internal, internal, timestamp);
+		FUNCTION 2 pgroonga.get_timestamp(internal, internal, timestamp);
 
 CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 	USING pgroonga AS
@@ -212,5 +193,4 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
-		FUNCTION 2 pgroonga.get_timestamptz(timestamptz, internal, internal),
-		FUNCTION 3 pgroonga.set_timestamptz(internal, internal, timestamptz);
+		FUNCTION 2 pgroonga.get_timestamptz(internal, internal, timestamptz);

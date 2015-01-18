@@ -212,25 +212,14 @@ GrnGetType(Relation index, AttrNumber n)
 }
 
 static void
-GrnSetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
-{
-	FmgrInfo *function;
-
-	function = index_getprocinfo(index, n + 1, GrnSetValueProc);
-	FunctionCall3(function,
-				  PointerGetDatum(ctx), PointerGetDatum(buffer),
-				  value);
-}
-
-static void
-GrnGetValue(Relation index, AttrNumber n, Datum value, grn_obj *buffer)
+GrnGetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
 {
 	FmgrInfo *function;
 
 	function = index_getprocinfo(index, n + 1, GrnGetValueProc);
 	FunctionCall3(function,
-				  value,
-				  PointerGetDatum(ctx), PointerGetDatum(buffer));
+				  PointerGetDatum(ctx), PointerGetDatum(buffer),
+				  value);
 }
 
 static grn_obj *
@@ -537,7 +526,7 @@ GrnInsert(grn_ctx *ctx,
 		dataColumn = grn_obj_column(ctx, idsTable,
 									name->data, strlen(name->data));
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
-		GrnSetValue(index, i, &buffer, values[i]);
+		GrnGetValue(index, i, &buffer, values[i]);
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!GrnCheck("groonga: failed to set column value")) {
@@ -673,7 +662,7 @@ GrnSearch(IndexScanDesc scan)
 		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
 
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, key->sk_attno - 1), 0);
-		GrnGetValue(index, key->sk_attno - 1, key->sk_argument, &buffer);
+		GrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
 
 		grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
 		grn_expr_append_obj(ctx, expression, &buffer, GRN_OP_PUSH, 1);

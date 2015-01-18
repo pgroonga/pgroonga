@@ -26,7 +26,6 @@
 /* Groonga support functions */
 #define GrnTypeOfProc					1
 #define GrnGetValueProc					2
-#define GrnSetValueProc					3
 
 /* file and table names */
 #define GrnDatabaseBasename				"grn"
@@ -67,16 +66,5 @@ extern Datum PGDLLEXPORT pgroonga_get_float4(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_float8(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_timestamp(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_timestamptz(PG_FUNCTION_ARGS);
-
-extern Datum PGDLLEXPORT pgroonga_set_text(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_bpchar(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_bool(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_int2(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_int4(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_int8(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_float4(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_float8(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_timestamp(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_set_timestamptz(PG_FUNCTION_ARGS);
 
 #endif	/* PPGROONGA_H */
