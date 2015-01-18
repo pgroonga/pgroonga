@@ -5,7 +5,8 @@ EXTENSION = pgroonga
 DATA = pgroonga--0.2.0.sql
 PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
 SHLIB_LINK = $(shell pkg-config --libs groonga)
-REGRESS = pgroonga update bench
+# REGRESS = pgroonga update bench
+REGRESS = install
 
 ifdef DEBUG
 COPT += -O0 -g3 -DPGROONGA_DEBUG=1
