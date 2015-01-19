@@ -14,4 +14,4 @@ before_script:
   - make DEBUG=1
   - sudo make install
 script:
-  - make installcheck
+  - make installcheck || (cat regression.diffs; false)
