@@ -1,16 +1,13 @@
 notifications:
   recipients:
     - groonga-commit@lists.sourceforge.jp
-# Need C++ for building Groonga
-# language: c
-language: cpp
+language: c
 compiler:
   - gcc
-  - clang
 addons:
   postgresql: "9.3"
-env:
-  - GROONGA_MASTER=yes
+# env:
+#   - GROONGA_MASTER=yes
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get install -qq -y postgresql-server-dev-9.3
