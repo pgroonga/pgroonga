@@ -1,7 +1,9 @@
 notifications:
   recipients:
     - groonga-commit@lists.sourceforge.jp
-language: c
+# Need C++ for building Groonga
+# language: c
+language: cpp
 compiler:
   - gcc
   - clang
