@@ -6,6 +6,7 @@
 #include "pgroonga.h"
 
 #include <access/relscan.h>
+#include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_tablespace.h>
 #include <mb/pg_wchar.h>
