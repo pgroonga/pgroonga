@@ -106,6 +106,22 @@ SELECT * FROM memos WHERE content %% '全文検索';
 -- (1 行)
 ```
 
+`キーワード1 OR キーワード2`のようにクエリー構文を使って全文検索をする
+ときは`@@`演算子を使います。
+
+```sql
+SELECT * FROM memos WHERE content @@ 'PGroonga OR PostgreSQL';
+--  id |                                  content
+-- ----+---------------------------------------------------------------------------
+--   3 | PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。
+--   1 | PostgreSQLはリレーショナル・データベース管理システムです。
+-- (2 行)
+```
+
+クエリー構文の詳細は
+[Groognaのドキュメント](http://groonga.org/ja/docs/reference/grn_expr/query_syntax.html)
+を参照してください。
+
 ## アンインストール
 
 次のSQLでアンインストールできます。
@@ -130,7 +146,6 @@ DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
   * 実装
     * WAL対応
     * スコアー対応
-    * クエリー構文対応（`キーワード1 OR キーワード2`のようなやつ）
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
     * トークナイザーのカスタマイズ対応（今は必ずTokenBigramを使っている）
   * ドキュメント
