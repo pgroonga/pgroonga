@@ -40,8 +40,8 @@ typedef struct GrnScanOpaqueData
 
 typedef GrnScanOpaqueData *GrnScanOpaque;
 
-PG_FUNCTION_INFO_V1(pgroonga_contains_text);
-PG_FUNCTION_INFO_V1(pgroonga_contains_bpchar);
+PG_FUNCTION_INFO_V1(pgroonga_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -434,8 +434,8 @@ GrnUnlock(Relation index, LOCKMODE mode)
 }
 
 static grn_bool
-pgroonga_contains_raw(const char *text, unsigned int text_size,
-					  const char *key, unsigned int key_size)
+pgroonga_contain_raw(const char *text, unsigned int text_size,
+					 const char *key, unsigned int key_size)
 {
 	grn_bool contained = GRN_FALSE;
 	grn_obj buffer;
@@ -471,33 +471,33 @@ exit:
 }
 
 /**
- * pgroonga.contains(doc text, key text) : bool
+ * pgroonga.contain(doc text, key text) : bool
  */
 Datum
-pgroonga_contains_text(PG_FUNCTION_ARGS)
+pgroonga_contain_text(PG_FUNCTION_ARGS)
 {
 	text *doc = PG_GETARG_TEXT_PP(0);
 	text *key = PG_GETARG_TEXT_PP(1);
 	grn_bool contained;
 
-	contained = pgroonga_contains_raw(VARDATA_ANY(doc), VARSIZE_ANY_EXHDR(doc),
-									  VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
+	contained = pgroonga_contain_raw(VARDATA_ANY(doc), VARSIZE_ANY_EXHDR(doc),
+									 VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
 	PG_RETURN_BOOL(contained);
 }
 
 /**
- * pgroonga.contains(doc bpchar, key bpchar) : bool
+ * pgroonga.contain(doc bpchar, key bpchar) : bool
  */
 Datum
-pgroonga_contains_bpchar(PG_FUNCTION_ARGS)
+pgroonga_contain_bpchar(PG_FUNCTION_ARGS)
 {
 	BpChar *doc = PG_GETARG_BPCHAR_PP(0);
 	BpChar *key = PG_GETARG_BPCHAR_PP(1);
 	grn_bool contained;
 
 	contained =
-		pgroonga_contains_raw(VARDATA_ANY(doc), pgroonga_bpchar_size(doc),
-							  VARDATA_ANY(key), pgroonga_bpchar_size(key));
+		pgroonga_contain_raw(VARDATA_ANY(doc), pgroonga_bpchar_size(doc),
+							 VARDATA_ANY(key), pgroonga_bpchar_size(key));
 	PG_RETURN_BOOL(contained);
 }
 

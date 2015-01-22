@@ -2,28 +2,28 @@ SET search_path = public;
 
 CREATE SCHEMA pgroonga;
 
-CREATE FUNCTION pgroonga.contains(text, text)
+CREATE FUNCTION pgroonga.contain(text, text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contains_text'
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contains(bpchar, bpchar)
+CREATE FUNCTION pgroonga.contain(bpchar, bpchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contains_bpchar'
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_bpchar'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contains,
+	PROCEDURE = pgroonga.contain,
 	LEFTARG = text,
 	RIGHTARG = text
 );
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contains,
+	PROCEDURE = pgroonga.contain,
 	LEFTARG = bpchar,
 	RIGHTARG = bpchar
 );
