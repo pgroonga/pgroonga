@@ -40,6 +40,16 @@ typedef struct GrnScanOpaqueData
 
 typedef GrnScanOpaqueData *GrnScanOpaque;
 
+typedef struct GrnSearchData
+{
+	grn_obj	*indexColumn;
+	grn_obj matchTargets;
+	grn_obj sectionID;
+	grn_obj *expression;
+	grn_obj *expressionVariable;
+} GrnSearchData;
+
+
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
 PG_FUNCTION_INFO_V1(pgroonga_match);
@@ -639,26 +649,12 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 }
 
 static void
-GrnSearch(IndexScanDesc scan)
+GrnSearchBuildConditions(IndexScanDesc scan,
+						 GrnScanOpaque so,
+						 GrnSearchData *data)
 {
 	Relation index = scan->indexRelation;
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
-	grn_obj *indexColumn;
-	grn_obj matchTargets;
-	grn_obj sectionID;
-	grn_obj *expression, *expressionVariable;
 	int i, nExpressions = 0;
-
-	if (scan->numberOfKeys == 0)
-		return;
-
-	GRN_PTR_INIT(&matchTargets, GRN_OBJ_VECTOR, GRN_ID_NIL);
-	GRN_UINT32_INIT(&sectionID, 0);
-
-	indexColumn = GrnLookupIndexColumn(index, ERROR);
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
-							  expression, expressionVariable);
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
@@ -673,12 +669,14 @@ GrnSearch(IndexScanDesc scan)
 
 		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
 								  matchTarget, matchTargetVariable);
-		GRN_PTR_PUT(ctx, &matchTargets, matchTarget);
+		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 
-		grn_expr_append_obj(ctx, matchTarget, indexColumn, GRN_OP_PUSH, 1);
+		grn_expr_append_obj(ctx, matchTarget,
+							data->indexColumn, GRN_OP_PUSH, 1);
 
-		GRN_UINT32_SET(ctx, &sectionID, key->sk_attno - 1);
-		grn_expr_append_const(ctx, matchTarget, &sectionID, GRN_OP_PUSH, 1);
+		GRN_UINT32_SET(ctx, &(data->sectionID), key->sk_attno - 1);
+		grn_expr_append_const(ctx, matchTarget,
+							  &(data->sectionID), GRN_OP_PUSH, 1);
 
 		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
 
@@ -713,7 +711,8 @@ GrnSearch(IndexScanDesc scan)
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("unexpected strategy number: %d", key->sk_strategy)));
+					 errmsg("unexpected strategy number: %d",
+							key->sk_strategy)));
 			isValidStrategy = GRN_FALSE;
 			break;
 		}
@@ -726,13 +725,12 @@ GrnSearch(IndexScanDesc scan)
 			grn_rc rc;
 			grn_expr_flags flags =
 				GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
-			rc = grn_expr_parse(ctx, expression,
+			rc = grn_expr_parse(ctx, data->expression,
 								GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
 								matchTarget, GRN_OP_MATCH, GRN_OP_AND,
 								flags);
 			if (rc != GRN_SUCCESS)
 			{
-				/* TODO: free expression, matchTargets and so on. */
 				ereport(ERROR,
 						(errcode(GrnRCToPgErrorCode(rc)),
 						 errmsg("pgroonga: failed to parse expression: %s",
@@ -741,32 +739,74 @@ GrnSearch(IndexScanDesc scan)
 		}
 		else
 		{
-			grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
-			grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
-			grn_expr_append_op(ctx, expression, operator, 2);
+			grn_expr_append_obj(ctx, data->expression,
+								matchTarget, GRN_OP_PUSH, 1);
+			grn_expr_append_const(ctx, data->expression,
+								  &buffer, GRN_OP_PUSH, 1);
+			grn_expr_append_op(ctx, data->expression, operator, 2);
 		}
 
 		if (nExpressions > 0)
-			grn_expr_append_op(ctx, expression, GRN_OP_AND, 2);
+			grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
 		nExpressions++;
 	}
+}
 
+static void
+GrnSearchDataFree(GrnSearchData *data)
+{
+	unsigned int i, nMatchTargets;
+
+	grn_obj_unlink(ctx, data->expression);
+	nMatchTargets = GRN_BULK_VSIZE(&(data->matchTargets)) / sizeof(grn_obj *);
+	for (i = 0; i < nMatchTargets; i++)
+	{
+		grn_obj *matchTarget = GRN_PTR_VALUE_AT(&(data->matchTargets), i);
+		grn_obj_unlink(ctx, matchTarget);
+	}
+	GRN_OBJ_FIN(ctx, &(data->matchTargets));
+	GRN_OBJ_FIN(ctx, &(data->sectionID));
+}
+
+static void
+GrnSearch(IndexScanDesc scan)
+{
+	Relation index = scan->indexRelation;
+	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	GrnSearchData data;
+
+	if (scan->numberOfKeys == 0)
+		return;
+
+	GRN_PTR_INIT(&(data.matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_UINT32_INIT(&(data.sectionID), 0);
+
+	data.indexColumn = GrnLookupIndexColumn(index, ERROR);
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
+							  data.expression, data.expressionVariable);
+
+	PG_TRY();
+	{
+		GrnSearchBuildConditions(scan, so, &data);
+	}
+	PG_CATCH();
+	{
+		GrnSearchDataFree(&data);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+
+	/* TODO: Add NULL check for so->searched. */
 	so->searched = grn_table_create(ctx, NULL, 0, NULL,
 									GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
 									so->idsTable, 0);
-    grn_table_select(ctx, so->idsTable, expression, so->searched, GRN_OP_OR);
-	grn_obj_unlink(ctx, expression);
-	{
-		unsigned int i, nMatchTargets;
-		nMatchTargets = GRN_BULK_VSIZE(&matchTargets) / sizeof(grn_obj *);
-		for (i = 0; i < nMatchTargets; i++)
-		{
-			grn_obj *matchTarget = GRN_PTR_VALUE_AT(&matchTargets, i);
-			grn_obj_unlink(ctx, matchTarget);
-		}
-	}
-	GRN_OBJ_FIN(ctx, &matchTargets);
-	GRN_OBJ_FIN(ctx, &sectionID);
+    grn_table_select(ctx,
+					 so->idsTable,
+					 data.expression,
+					 so->searched,
+					 GRN_OP_OR);
+	GrnSearchDataFree(&data);
 }
 
 static void
