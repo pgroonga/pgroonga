@@ -666,7 +666,7 @@ GrnSearch(IndexScanDesc scan)
 		GrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
 
 		grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
-		grn_expr_append_obj(ctx, expression, &buffer, GRN_OP_PUSH, 1);
+		grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
 
 		switch (key->sk_strategy)
 		{
