@@ -5,12 +5,16 @@ CREATE SCHEMA pgroonga;
 CREATE FUNCTION pgroonga.contains(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contains_text'
-	LANGUAGE C IMMUTABLE STRICT;
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 CREATE FUNCTION pgroonga.contains(bpchar, bpchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contains_bpchar'
-	LANGUAGE C IMMUTABLE STRICT;
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga.contains,
@@ -26,75 +30,98 @@ CREATE OPERATOR %% (
 
 
 CREATE FUNCTION pgroonga.insert(internal)
-	RETURNS bool AS 'MODULE_PATHNAME',
-	'pgroonga_insert' LANGUAGE C;
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_insert'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.beginscan(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_beginscan' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_beginscan'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.gettuple(internal)
-	RETURNS bool AS 'MODULE_PATHNAME',
-	'pgroonga_gettuple' LANGUAGE C;
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_gettuple'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.getbitmap(internal)
-	RETURNS bigint AS 'MODULE_PATHNAME',
-	'pgroonga_getbitmap' LANGUAGE C;
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_getbitmap'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.rescan(internal)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_rescan' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_rescan'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.endscan(internal)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_endscan' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_endscan'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.build(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_build' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_build'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.buildempty(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_buildempty' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_buildempty'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.bulkdelete(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_bulkdelete' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_bulkdelete'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.vacuumcleanup(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_vacuumcleanup' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_vacuumcleanup'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.costestimate(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_costestimate' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_costestimate'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.options(internal)
-	RETURNS internal AS 'MODULE_PATHNAME',
-	'pgroonga_options' LANGUAGE C;
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_options'
+	LANGUAGE C;
 
 CREATE FUNCTION pgroonga.typeof(oid, integer)
-	RETURNS integer AS 'MODULE_PATHNAME',
-	'pgroonga_typeof' LANGUAGE C;
+	RETURNS integer
+	AS 'MODULE_PATHNAME', 'pgroonga_typeof'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_text(internal, internal, text)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_text' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_text'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_bpchar(internal, internal, bpchar)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_bpchar' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_bpchar'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_bool(internal, internal, bool)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_bool' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_bool'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_int2(internal, internal, int2)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_int2' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_int2'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_int4(internal, internal, int4)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_int4' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_int4'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_int8(internal, internal, int8)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_int8' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_int8'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_float4(internal, internal, float4)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_float4' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_float4'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_float8(internal, internal, float8)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_float8' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_float8'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_timestamp(internal, internal, timestamp)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_timestamp' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_timestamp'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_timestamptz(internal, internal, timestamptz)
-	RETURNS void AS 'MODULE_PATHNAME',
-	'pgroonga_get_timestamptz' LANGUAGE C;
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_timestamptz'
+	LANGUAGE C;
 
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
