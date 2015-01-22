@@ -42,6 +42,7 @@ typedef GrnScanOpaqueData *GrnScanOpaque;
 
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
+PG_FUNCTION_INFO_V1(pgroonga_match);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
