@@ -104,8 +104,8 @@ GrnGetEncoding(void)
 		return GRN_ENC_KOI8R;
 	default:
 		elog(WARNING,
-			"groonga: use default encoding instead of '%s'",
-			GetDatabaseEncodingName());
+			 "pgroonga: use default encoding instead of '%s'",
+			 GetDatabaseEncodingName());
 		return GRN_ENC_DEFAULT;
 	}
 }
@@ -129,7 +129,7 @@ GrnEnsureDatabase(void)
 	if (!db)
 		ereport(ERROR,
 				(errcode(ERRCODE_IO_ERROR),
-				 errmsg("groonga: failed to create database: <%s>: %s",
+				 errmsg("pgroonga: failed to create database: <%s>: %s",
 						path, ctx->errbuf)));
 }
 
@@ -155,11 +155,11 @@ _PG_init(void)
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("groonga: failed to initialize Groonga")));
+				 errmsg("pgroonga: failed to initialize Groonga")));
 	if (grn_ctx_init(ctx, 0))
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("groonga: failed to initialize Groonga context")));
+				 errmsg("pgroonga: failed to initialize Groonga context")));
 
 	on_proc_exit(GrnOnProcExit, 0);
 
@@ -201,7 +201,7 @@ GrnCheck(const char *message)
 
 	ereport(ERROR,
 			(errcode(GrnRCToPgErrorCode(ctx->rc)),
-			 errmsg("groonga: %s: %s", message, ctx->errbuf)));
+			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
 	return GRN_FALSE;
 }
 
@@ -241,7 +241,7 @@ GrnLookup(const char *name, int errorLevel)
 	if (!object)
 		ereport(errorLevel,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("groonga: object isn't found: <%s>", name)));
+				 errmsg("pgroonga: object isn't found: <%s>", name)));
 	return object;
 }
 
@@ -277,7 +277,7 @@ GrnCreateTable(const char *name,
 							 GRN_OBJ_PERSISTENT | flags,
 							 type,
 							 NULL);
-	GrnCheck("groonga: failed to create table");
+	GrnCheck("pgroonga: failed to create table");
 
 	return table;
 }
@@ -294,7 +294,7 @@ GrnCreateColumn(grn_obj	*table,
 							   name, strlen(name), NULL,
 							   GRN_OBJ_PERSISTENT | flags,
 							   type);
-	GrnCheck("groonga: failed to create column");
+	GrnCheck("pgroonga: failed to create column");
 
 	return column;
 }
@@ -337,7 +337,7 @@ GrnCreate(Relation index, grn_obj **idsTable,
 			/* TODO: Show details */
 			ereport(ERROR,
 					(errcode(ERRCODE_INTERNAL_ERROR),
-					 errmsg("groonga: must be the same type columns "
+					 errmsg("pgroonga: must be the same type columns "
 							"for multiple column index")));
 		}
 
@@ -525,7 +525,7 @@ pgroonga_match(PG_FUNCTION_ARGS)
 
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("groonga: operator @@ is available only in index scans")));
+			 errmsg("pgroonga: operator @@ is available only in index scans")));
 
 	PG_RETURN_BOOL(false);
 }
@@ -559,7 +559,7 @@ GrnInsert(grn_ctx *ctx,
 		GrnGetValue(index, i, &buffer, values[i]);
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
-		if (!GrnCheck("groonga: failed to set column value")) {
+		if (!GrnCheck("pgroonga: failed to set column value")) {
 			continue;
 		}
 	}
@@ -1006,7 +1006,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	if (indexInfo->ii_Unique)
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("groonga: unique index isn't supported")));
+				 errmsg("pgroonga: unique index isn't supported")));
 
 	bs.idsTable = NULL;
 	bs.nIndexedTuples = 0.0;
@@ -1110,7 +1110,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	if (!cursor)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("groonga: failed to open cursor: %s", ctx->errbuf)));
+				 errmsg("pgroonga: failed to open cursor: %s", ctx->errbuf)));
 
 	PG_TRY();
 	{
