@@ -501,6 +501,24 @@ pgroonga_contains_bpchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(contained);
 }
 
+/**
+ * pgroonga.match(text, query) : bool
+ */
+Datum
+pgroonga_match(PG_FUNCTION_ARGS)
+{
+#ifdef NOT_USED
+	text *text = PG_GETARG_TEXT_PP(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+#endif
+
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("groonga: operator @@ is available only in index scans")));
+
+	PG_RETURN_BOOL(false);
+}
+
 static void
 GrnInsert(grn_ctx *ctx,
 		  Relation index,
@@ -646,6 +664,7 @@ GrnSearch(IndexScanDesc scan)
 		ScanKey key = &(scan->keyData[i]);
 		grn_bool isValidStrategy = GRN_TRUE;
 		grn_obj *matchTarget, *matchTargetVariable;
+		grn_operator operator = GRN_OP_NOP;
 
 		/* NULL key is not supported */
 		if (key->sk_flags & SK_ISNULL)
@@ -665,31 +684,30 @@ GrnSearch(IndexScanDesc scan)
 		grn_obj_reinit(ctx, &buffer, GrnGetType(index, key->sk_attno - 1), 0);
 		GrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
 
-		grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
-		grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
-
 		switch (key->sk_strategy)
 		{
 		case GrnLessStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_LESS, 2);
+			operator = GRN_OP_LESS;
 			break;
 		case GrnLessEqualStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_LESS_EQUAL, 2);
+			operator = GRN_OP_LESS_EQUAL;
 			break;
 		case GrnEqualStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_EQUAL, 2);
+			operator = GRN_OP_EQUAL;
 			break;
 		case GrnGreaterEqualStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_GREATER_EQUAL, 2);
+			operator = GRN_OP_GREATER_EQUAL;
 			break;
 		case GrnGreaterStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_GREATER, 2);
+			operator = GRN_OP_GREATER;
 			break;
 		case GrnNotEqualStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_NOT_EQUAL, 2);
+			operator = GRN_OP_NOT_EQUAL;
 			break;
 		case GrnContainStrategyNumber:
-			grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+			operator = GRN_OP_MATCH;
+			break;
+		case GrnQueryStrategyNumber:
 			break;
 		default:
 			ereport(ERROR,
@@ -701,6 +719,31 @@ GrnSearch(IndexScanDesc scan)
 
 		if (!isValidStrategy)
 			continue;
+
+		if (key->sk_strategy == GrnQueryStrategyNumber)
+		{
+			grn_rc rc;
+			grn_expr_flags flags =
+				GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+			rc = grn_expr_parse(ctx, expression,
+								GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
+								matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+								flags);
+			if (rc != GRN_SUCCESS)
+			{
+				/* TODO: free expression, matchTargets and so on. */
+				ereport(ERROR,
+						(errcode(GrnRCToPgErrorCode(rc)),
+						 errmsg("pgroonga: failed to parse expression: %s",
+								ctx->errbuf)));
+			}
+		}
+		else
+		{
+			grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+			grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
+			grn_expr_append_op(ctx, expression, operator, 2);
+		}
 
 		if (nExpressions > 0)
 			grn_expr_append_op(ctx, expression, GRN_OP_AND, 2);

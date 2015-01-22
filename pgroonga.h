@@ -38,6 +38,7 @@ extern void PGDLLEXPORT _PG_init(void);
 
 extern Datum PGDLLEXPORT pgroonga_contains_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contains_bpchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_insert(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_beginscan(PG_FUNCTION_ARGS);

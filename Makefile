@@ -19,11 +19,14 @@ PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
 installcheck: results/text/single/contain
+installcheck: results/text/single/match
 installcheck: results/text/single/and
 installcheck: results/text/multiple/contain
 
 results/text/single/contain:
 	@mkdir -p results/text/single/contain
+results/text/single/match:
+	@mkdir -p results/text/single/match
 results/text/single/and:
 	@mkdir -p results/text/single/and
 results/text/multiple/contain:

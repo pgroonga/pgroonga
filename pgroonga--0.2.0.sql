@@ -29,6 +29,33 @@ CREATE OPERATOR %% (
 );
 
 
+CREATE FUNCTION pgroonga.match(text, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga.match(bpchar, bpchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR @@ (
+	PROCEDURE = pgroonga.match,
+	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE OPERATOR @@ (
+	PROCEDURE = pgroonga.match,
+	LEFTARG = bpchar,
+	RIGHTARG = bpchar
+);
+
+
 CREATE FUNCTION pgroonga.insert(internal)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_insert'
@@ -125,7 +152,7 @@ CREATE FUNCTION pgroonga.get_timestamptz(internal, internal, timestamptz)
 
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
-	7,		-- amstrategies
+	8,		-- amstrategies
 	3,		-- amsupport
 	true,		-- amcanorder
 	true,		-- amcanorderbyop
@@ -165,6 +192,7 @@ CREATE OPERATOR CLASS pgroonga.text_ops DEFAULT FOR TYPE text
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		OPERATOR 7 %%,
+		OPERATOR 8 @@,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
@@ -177,6 +205,7 @@ CREATE OPERATOR CLASS pgroonga.bpchar_ops DEFAULT FOR TYPE bpchar
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
 		OPERATOR 7 %%,
+		OPERATOR 8 @@,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
