@@ -122,6 +122,12 @@ SELECT * FROM memos WHERE content @@ 'PGroonga OR PostgreSQL';
 [Groognaのドキュメント](http://groonga.org/ja/docs/reference/grn_expr/query_syntax.html)
 を参照してください。
 
+ただし、`カラム名:@キーワード`というように「`カラム名:`」から始まる構
+文は無効にしてあります。そのため、前方一致検索をしたい場合は「`カラム
+名:^値`」という構文は使えず、「`値*`」という構文だけが使えます。
+
+注意してください。
+
 ## アンインストール
 
 次のSQLでアンインストールできます。
