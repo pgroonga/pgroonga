@@ -17,6 +17,8 @@
 
 #include <groonga.h>
 
+#include <stdlib.h>
+
 PG_MODULE_MAGIC;
 
 typedef struct GrnBuildStateData
@@ -1146,6 +1148,58 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
+static void
+GrnRemoveUnusedTables(void)
+{
+	grn_table_cursor *cursor;
+	const char *min = GrnIDsTableNamePrefix;
+
+	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
+								   min, strlen(min),
+								   NULL, 0,
+								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
+	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL) {
+		char *name;
+		char *nameEnd;
+		int nameSize;
+		Oid relationID;
+		Relation relation;
+
+		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
+		nameEnd = name + nameSize;
+		relationID = strtol(name + strlen(min), &nameEnd, 10);
+		relation = RelationIdGetRelation(relationID);
+		if (relation)
+		{
+			RelationClose(relation);
+			continue;
+		}
+
+		{
+			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			grn_obj *table;
+
+			snprintf(tableName, sizeof(tableName),
+					 GrnLexiconNameFormat, relationID);
+			table = grn_ctx_get(ctx, tableName, strlen(tableName));
+			if (table)
+			{
+				grn_obj_remove(ctx, table);
+			}
+
+			snprintf(tableName, sizeof(tableName),
+					 GrnIDsTableNameFormat, relationID);
+			table = grn_ctx_get(ctx, tableName, strlen(tableName));
+			if (table)
+			{
+				grn_obj_remove(ctx, table);
+			}
+		}
+	}
+	grn_table_cursor_close(ctx, cursor);
+}
+
+
 /**
  * pgroonga.vacuumcleanup() -- amvacuumcleanup
  */
@@ -1158,6 +1212,8 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 	if (!stats)
 		stats = GrnBulkDeleteResult(info,
 									GrnLookupIDsTable(info->index, WARNING));
+
+	GrnRemoveUnusedTables();
 
 	PG_RETURN_POINTER(stats);
 }

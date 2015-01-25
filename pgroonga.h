@@ -29,7 +29,8 @@
 
 /* file and table names */
 #define GrnDatabaseBasename				"grn"
-#define GrnIDsTableNameFormat			"IDs%u"
+#define GrnIDsTableNamePrefix			"IDs"
+#define GrnIDsTableNameFormat			GrnIDsTableNamePrefix "%u"
 #define GrnLexiconNameFormat			"Lexicon%u"
 #define GrnIndexColumnName				"index"
 
