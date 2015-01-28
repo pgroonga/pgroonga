@@ -3,3 +3,4 @@
 *.tar.gz
 /regression.*
 /results/
+/pakcages/source/

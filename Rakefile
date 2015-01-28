@@ -1,6 +1,7 @@
 # -*- ruby -*-
 
 package = "pgroonga"
+rsync_base_path = "packages@packages.groonga.org:public"
 
 def find_version(package)
   control_content = File.read("#{package}.control")
@@ -32,4 +33,24 @@ task :tag do
      "-a", version,
      "-m", "#{package} #{version} has been released!!!")
   sh("git", "push", "--tags")
+end
+
+packages_dir = "packages"
+
+namespace :source do
+  rsync_path = "#{rsync_base_path}/source/#{package}"
+  source_dir = "#{packages_dir}/source"
+
+  directory source_dir
+
+  desc "Download sources"
+  task :download => source_dir do
+    sh("rsync", "-avz", "--progress", "#{rsync_path}/", source_dir)
+  end
+
+  desc "Upload sources"
+  task :upload => [archive_name, source_dir] do
+    cp(archive_name, source_dir)
+    sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
+  end
 end
