@@ -13,12 +13,14 @@ end
 
 version = find_version(package)
 
-archive_name = "#{package}-#{version}.tar.gz"
+archive_base_name = "#{package}-#{version}"
+archive_name = "#{archive_base_name}.tar.gz"
 
 dist_files = `git ls-files`.split("\n")
 
 file archive_name => dist_files do
-  sh("git archive --format=tar HEAD | gzip > #{archive_name}")
+  sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
+     "gzip > #{archive_name}")
 end
 
 desc "Create release package"
