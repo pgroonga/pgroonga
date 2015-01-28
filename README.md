@@ -47,16 +47,41 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 
 ## インストール
 
-次の環境用にはパッケージを用意しています。
+次の環境用のパッケージを用意しています。
 
-  * Ubuntu 14.10
+<!--  * Ubuntu 14.10 -->
   * CentOS 7
 
 その他の環境ではソースからインストールしてください。
 
 それぞれの環境でのインストール方法の詳細は以降のセクションで説明します。
 
+<!--
+
 ### Ubuntu 14.10にインストール
+
+`postgresql-server-9.4-pgroonga`パッケージをインストールします。
+
+    % sudo apt-get -y install software-properties-common
+    % sudo add-apt-repository -y universe
+    % sudo add-apt-repository -y ppa:groonga/ppa
+    % sudo apt-get update
+    % sudo apt-get -y install postgresql-server-9.4-pgroonga
+
+データベースを作成します。
+
+    % sudo -u postgres -H psql --command 'CREATE DATABASE pgroonga_test'
+
+（ここで`pgroonga_test`用のユーザーを作成して、そのユーザーで接続する
+べき。）
+
+データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
+
+    % sudo -u postgres -H psql -d pgroonga_test --command 'CREATE EXTENSION pgroonga'
+
+これでインストールは完了です。
+
+-->
 
 ### CentOS 7にインストール
 
@@ -75,7 +100,8 @@ PostgreSQLを起動します。
 
     % sudo -u postgres -H psql --command 'CREATE DATABASE pgroonga_test'
 
-（ここで`pgroonga_test`ユーザーを作成して、そのユーザーで接続するべき。）
+（ここで`pgroonga_test`用のユーザーを作成して、そのユーザーで接続する
+べき。）
 
 データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
 
