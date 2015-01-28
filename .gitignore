@@ -1,4 +1,5 @@
 *.o
 *.so
+*.tar.gz
 /regression.*
 /results/
