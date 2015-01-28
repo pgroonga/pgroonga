@@ -33,7 +33,9 @@ version = find_version(package)
 archive_base_name = "#{package}-#{version}"
 archive_name = "#{archive_base_name}.tar.gz"
 
-dist_files = `git ls-files`.split("\n")
+dist_files = `git ls-files`.split("\n").reject do |file|
+  file.start_with?("packages/")
+end
 
 file archive_name => dist_files do
   sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
