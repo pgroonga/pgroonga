@@ -37,6 +37,7 @@ end
 
 packages_dir = "packages"
 
+namespace :package do
 namespace :source do
   rsync_path = "#{rsync_base_path}/source/#{package}"
   source_dir = "#{packages_dir}/source"
@@ -53,4 +54,5 @@ namespace :source do
     cp(archive_name, source_dir)
     sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
   end
+end
 end
