@@ -140,8 +140,20 @@ postgresql-devel
       end
     end
 
+    desc "Sign packages"
+    task :sign do
+      sh("#{groonga_source_dir}/packages/yum/sign-rpm.sh",
+         gpg_uid,
+         "#{repositories_dir}/",
+         distribution)
+    end
+
     desc "Update repositories"
     task :update do
+      sh("#{groonga_source_dir}/packages/yum/update-repository.sh",
+         "groonga",
+         "#{repositories_dir}/",
+         distribution)
     end
 
     desc "Download repositories"
