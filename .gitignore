@@ -3,4 +3,8 @@
 *.tar.gz
 /regression.*
 /results/
-/pakcages/source/
+/packages/source/
+/packages/yum/.vagrant/
+/packages/yum/env.sh
+/packages/yum/*.spec
+/packages/yum/repositories/

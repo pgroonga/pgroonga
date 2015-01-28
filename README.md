@@ -47,6 +47,44 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 
 ## インストール
 
+次の環境用にはパッケージを用意しています。
+
+  * Ubuntu 14.10
+  * CentOS 7
+
+その他の環境ではソースからインストールしてください。
+
+それぞれの環境でのインストール方法の詳細は以降のセクションで説明します。
+
+### Ubuntu 14.10にインストール
+
+### CentOS 7にインストール
+
+`postgresql-pgroonga`パッケージをインストールします。
+
+    % sudo rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
+    % sudo yum makecache
+    % sudo yum install -y postgresql-pgroonga
+
+PostgreSQLを起動します。
+
+    % sudo -H postgresql-setup initdb
+    % sudo -H systemctl start postgresql
+
+データベースを作成します。
+
+    % sudo -u postgres -H psql --command 'CREATE DATABASE pgroonga_test'
+
+（ここで`pgroonga_test`ユーザーを作成して、そのユーザーで接続するべき。）
+
+データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
+
+    % sudo -u postgres -H psql -d pgroonga_test --command 'CREATE EXTENSION pgroonga'
+
+これでインストールは完了です。
+
+### ソースからインストール
+
 PostgreSQLをインストールします。
 
 [Groongaをインストール](http://groonga.org/ja/docs/install.html)します。
@@ -77,10 +115,7 @@ PGroongaをビルドしてインストールします。
 
 データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
 
-    % psql -d db
-    ...
-    db=# CREATE EXTENSION pgroonga;
-    CREATE EXTNESION
+    % psql -d db --command 'CREATE EXTENSION pgroonga;'
 
 ## 使い方
 

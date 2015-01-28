@@ -2,6 +2,7 @@
 
 package = "pgroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
+gpg_uid = "45499429"
 
 def find_version(package)
   control_content = File.read("#{package}.control")
@@ -53,6 +54,92 @@ namespace :package do
     task :upload => [archive_name, source_dir] do
       cp(archive_name, source_dir)
       sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
+    end
+  end
+
+  namespace :yum do
+    distribution = "centos"
+    rpm_package = "postgresql-#{package}"
+    rsync_path = rsync_base_path
+    yum_dir = "#{packages_dir}/yum"
+    repositories_dir = "#{yum_dir}/repositories"
+
+    directory repositories_dir
+
+    env_sh = "#{yum_dir}/env.sh"
+    file env_sh => __FILE__ do
+      File.open(env_sh, "w") do |file|
+        file.puts(<<-ENV)
+SOURCE_ARCHIVE=#{archive_name}
+PACKAGE=#{rpm_package}
+VERSION=#{version}
+DEPENDED_PACKAGES="
+gcc
+make
+pkg-config
+groonga-devel
+postgresql-devel
+"
+        ENV
+      end
+    end
+
+    spec = "#{yum_dir}/#{rpm_package}.spec"
+    spec_in = "#{spec}.in"
+    file spec => spec_in do
+      spec_in_data = File.read(spec_in)
+      spec_data = spec_in_data.gsub(/@(.+)@/) do |matched|
+        case $1
+        when "PACKAGE"
+          rpm_package
+        when "VERSION"
+          version
+        else
+          matched
+        end
+      end
+      File.open(spec, "w") do |spec_file|
+        spec_file.print(spec_data)
+      end
+    end
+
+    desc "Build RPM packages"
+    task :build => [archive_name, env_sh, spec, repositories_dir] do
+      tmp_dir = "#{yum_dir}/tmp"
+      rm_rf(tmp_dir)
+      mkdir_p(tmp_dir)
+      cp(archive_name, tmp_dir)
+      tmp_distribution_dir = "#{tmp_dir}/#{distribution}"
+      mkdir_p(tmp_distribution_dir)
+      cp(spec, tmp_distribution_dir)
+
+      cd(yum_dir) do
+        sh("vagrant", "destroy", "--force")
+        distribution_version = "7"
+        distribution_architecture = "x86_64"
+        id = "#{distribution}-#{distribution_version}-#{distribution_architecture}"
+        sh("vagrant", "up", id)
+        sh("vagrant", "destroy", "--force", id)
+      end
+    end
+
+    desc "Update repositories"
+    task :update do
+    end
+
+    desc "Download repositories"
+    task :download => repositories_dir do
+      sh("rsync", "-avz", "--progress",
+         "#{rsync_path}/#{distribution}/",
+         "#{repositories_dir}/#{distribution}")
+    end
+
+    desc "Upload repositories"
+    task :upload => repositories_dir do
+      sh("rsync", "-avz", "--progress",
+         # "--delete",
+         "#{source_dir}/#{distribution}/",
+         "#{rsync_path}/#{distribution}")
     end
   end
 end
