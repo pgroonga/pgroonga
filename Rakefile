@@ -167,7 +167,7 @@ postgresql-devel
     task :upload => repositories_dir do
       sh("rsync", "-avz", "--progress",
          # "--delete",
-         "#{source_dir}/#{distribution}/",
+         "#{repositories_dir}/#{distribution}/",
          "#{rsync_path}/#{distribution}")
     end
   end
