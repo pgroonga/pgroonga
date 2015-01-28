@@ -38,21 +38,21 @@ end
 packages_dir = "packages"
 
 namespace :package do
-namespace :source do
-  rsync_path = "#{rsync_base_path}/source/#{package}"
-  source_dir = "#{packages_dir}/source"
+  namespace :source do
+    rsync_path = "#{rsync_base_path}/source/#{package}"
+    source_dir = "#{packages_dir}/source"
 
-  directory source_dir
+    directory source_dir
 
-  desc "Download sources"
-  task :download => source_dir do
-    sh("rsync", "-avz", "--progress", "#{rsync_path}/", source_dir)
+    desc "Download sources"
+    task :download => source_dir do
+      sh("rsync", "-avz", "--progress", "#{rsync_path}/", source_dir)
+    end
+
+    desc "Upload sources"
+    task :upload => [archive_name, source_dir] do
+      cp(archive_name, source_dir)
+      sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
+    end
   end
-
-  desc "Upload sources"
-  task :upload => [archive_name, source_dir] do
-    cp(archive_name, source_dir)
-    sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
-  end
-end
 end
