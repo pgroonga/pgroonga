@@ -9,3 +9,4 @@
 /packages/yum/repositories/
 /packages/yum/*.spec
 /packages/yum/tmp/
+/tmp/
