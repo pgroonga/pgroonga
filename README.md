@@ -57,10 +57,21 @@ PostgreSQLをインストールします。
   * `groonga-devel`: CentOSの場合
   * `libgroonga-dev`: Debian GNU/Linux, Ubuntuの場合
 
-PGroongaをインストールします。
+PGroongaのソースを展開します。
+
+リリース版の場合:
+
+    % wget http://packages.groonga.org/source/pgroonga/pgroonga-0.2.0.tar.gz
+    % tar xvf pgroonga-0.2.0.tar.gz
+    % cd pgroonga-0.2.0
+
+未リリースの最新版の場合:
 
     % git clone https://github.com/pgroonga/pgroonga.git
     % cd pgroonga
+
+PGroongaをビルドしてインストールします。
+
     % make
     % sudo make install
 
