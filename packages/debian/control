@@ -1,0 +1,22 @@
+Source: pgroonga
+Section: libs
+Priority: optional
+Maintainer: PGroonga Project <packages@groonga.org>
+Build-Depends:
+  debhelper (>= 9),
+  pkg-config,
+  libgroonga-dev,
+  postgresql-server-dev-9.4
+Standards-Version: 3.9.3
+Homepage: https://github.com/pgroonga/pgroonga
+
+Package: postgresql-9.4-pgroonga
+Architecture: any
+Depends:
+  ${misc:Depends},
+  ${shlibs:Depends},
+  libgroonga0,
+  postgresql-server-9.4
+Description: Fast full-text search plugin for PostgreSQL based on Groonga
+ PGroonga is a PostgreSQL plugin. It provides fast full-text search feature.
+ It is based on Groonga full-text search engine.

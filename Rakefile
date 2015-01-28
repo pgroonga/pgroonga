@@ -3,6 +3,14 @@
 package = "pgroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
 gpg_uid = "45499429"
+groonga_source_dir_candidates = [
+  "../groonga.clean",
+  "../groonga",
+]
+groonga_source_dir = groonga_source_dir_candidates.find do |candidate|
+  File.exist?(candidate)
+end
+groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
 
 def find_version(package)
   control_content = File.read("#{package}.control")
@@ -11,6 +19,13 @@ def find_version(package)
   else
     nil
   end
+end
+
+def launchpad_uploader_pgp_key
+  env = "LAUNCHPAD_UPLOADER_PGP_KEY"
+  key = ENV[env]
+  raise "Specify #{env} environment variable" if key.nil?
+  key
 end
 
 version = find_version(package)
@@ -140,6 +155,19 @@ postgresql-devel
          # "--delete",
          "#{source_dir}/#{distribution}/",
          "#{rsync_path}/#{distribution}")
+    end
+  end
+
+  namespace :ubuntu do
+    desc "Upload package"
+    task :upload do
+      ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
+           "--package", package,
+           "--version", version,
+           "--source-archive", archive_name,
+           "--code-names", "utopic",
+           "--debian-directory", "packages/debian",
+           "--pgp-sign-key", launchpad_uploader_pgp_key)
     end
   end
 end
