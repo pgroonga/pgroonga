@@ -6,5 +6,6 @@
 /packages/source/
 /packages/yum/.vagrant/
 /packages/yum/env.sh
-/packages/yum/*.spec
 /packages/yum/repositories/
+/packages/yum/*.spec
+/packages/yum/tmp/
