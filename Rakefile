@@ -25,3 +25,11 @@ end
 
 desc "Create release package"
 task :dist => archive_name
+
+desc "Tag #{version}"
+task :tag do
+  sh("git", "tag",
+     "-a", version,
+     "-m", "#{package} #{version} has been released!!!")
+  sh("git", "push", "--tags")
+end
