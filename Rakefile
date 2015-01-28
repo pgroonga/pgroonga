@@ -166,7 +166,7 @@ postgresql-devel
     desc "Upload repositories"
     task :upload => repositories_dir do
       sh("rsync", "-avz", "--progress",
-         # "--delete",
+         "--delete",
          "#{repositories_dir}/#{distribution}/",
          "#{rsync_path}/#{distribution}")
     end
