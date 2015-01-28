@@ -1,5 +1,9 @@
 # PGroonga（ぴーじーるんが）
 
+## リリース情報
+
+[news.md]を参照してください。
+
 ## 概要
 
 PGroongaはPostgreSQLからインデックスとして
