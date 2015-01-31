@@ -1,6 +1,7 @@
 *.o
 *.so
 *.tar.gz
+*--*.sql
 /regression.*
 /results/
 /packages/source/

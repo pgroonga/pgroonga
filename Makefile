@@ -21,6 +21,10 @@ PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
+all: pgroonga--$(EXTENSION_VERSION).sql
+pgroonga--$(EXTENSION_VERSION).sql: pgroonga.sql
+	@cp $< $@
+
 installcheck: results/text/single/contain
 installcheck: results/text/single/match
 installcheck: results/text/single/and
