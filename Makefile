@@ -2,7 +2,10 @@ MODULE_big = pgroonga
 SRCS = pgroonga.c pgroonga_types.c
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
-DATA = pgroonga--0.2.0.sql
+EXTENSION_VERSION =						\
+	$(shell grep default_version $(EXTENSION).control |	\
+		sed -e "s/^.*'\([0-9.]*\)'$$/\1/")
+DATA = pgroonga--$(EXTENSION_VERSION).sql
 PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
 SHLIB_LINK = $(shell pkg-config --libs groonga)
 # REGRESS = pgroonga update bench
