@@ -475,11 +475,11 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 
-		options = (PGrnOptions *)(index->rd_options);
+		options = (PGrnOptions *) (index->rd_options);
 		if (options)
 		{
-			tokenizerName = (const char *)(options) + options->tokenizerOffset;
-			normalizerName = (const char *)(options) + options->normalizerOffset;
+			tokenizerName = (const char *) (options) + options->tokenizerOffset;
+			normalizerName = (const char *) (options) + options->normalizerOffset;
 		}
 		if (tokenizerName && tokenizerName[0])
 		{
