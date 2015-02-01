@@ -550,26 +550,6 @@ UInt64ToCtid(uint64 key)
 	return ctid;
 }
 
-static void
-PGrnLock(Relation index, LOCKMODE mode)
-{
-	const RelFileNode *rnode = &index->rd_node;
-	LockDatabaseObject(rnode->spcNode,
-					   rnode->dbNode,
-					   rnode->relNode,
-					   mode);
-}
-
-static void
-PGrnUnlock(Relation index, LOCKMODE mode)
-{
-	const RelFileNode *rnode = &index->rd_node;
-	UnlockDatabaseObject(rnode->spcNode,
-						 rnode->dbNode,
-						 rnode->relNode,
-						 mode);
-}
-
 static grn_bool
 pgroonga_contain_raw(const char *text, unsigned int text_size,
 					 const char *key, unsigned int key_size)
@@ -707,9 +687,7 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 #endif
 	grn_obj *idsTable = PGrnLookupIDsTable(index, ERROR);
 
-	PGrnLock(index, ExclusiveLock);
 	PGrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
-	PGrnUnlock(index, ExclusiveLock);
 
 	PG_RETURN_BOOL(true);
 }
@@ -1001,11 +979,9 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 	{
 		grn_obj key;
 		GRN_UINT64_INIT(&key, 0);
-		PGrnLock(scan->indexRelation, ExclusiveLock);
 		grn_obj_get_value(ctx, so->keyAccessor, so->currentID, &key);
 		grn_table_delete(ctx, so->idsTable,
 						 GRN_BULK_HEAD(&key), GRN_BULK_VSIZE(&key));
-		PGrnUnlock(scan->indexRelation, ExclusiveLock);
 		GRN_OBJ_FIN(ctx, &key);
 	}
 
@@ -1251,9 +1227,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			ctid = UInt64ToCtid(*key);
 			if (callback(&ctid, callback_state))
 			{
-				PGrnLock(index, ExclusiveLock);
 				grn_table_cursor_delete(ctx, cursor);
-				PGrnUnlock(index, ExclusiveLock);
 
 				nRemovedTuples += 1;
 			}
