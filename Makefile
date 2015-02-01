@@ -29,6 +29,8 @@ installcheck: results/text/single/contain
 installcheck: results/text/single/match
 installcheck: results/text/single/and
 installcheck: results/text/multiple/contain
+installcheck: results/text/options/tokenizer
+installcheck: results/text/options/normalizer
 
 results/text/single/contain:
 	@mkdir -p results/text/single/contain
@@ -38,3 +40,7 @@ results/text/single/and:
 	@mkdir -p results/text/single/and
 results/text/multiple/contain:
 	@mkdir -p results/text/multiple/contain
+results/text/options/tokenizer:
+	@mkdir -p results/text/options/tokenizer
+results/text/options/normalizer:
+	@mkdir -p results/text/options/normalizer

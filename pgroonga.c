@@ -5,6 +5,7 @@
 
 #include "pgroonga.h"
 
+#include <access/reloptions.h>
 #include <access/relscan.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
@@ -20,6 +21,15 @@
 #include <stdlib.h>
 
 PG_MODULE_MAGIC;
+
+static relopt_kind GrnReloptionKind;
+
+typedef struct GrnOptions
+{
+	int32 vl_len_;
+	int tokenizerOffset;
+	int normalizerOffset;
+} GrnOptions;
 
 typedef struct GrnBuildStateData
 {
@@ -74,7 +84,6 @@ static grn_ctx *ctx = &grnContext;
 static grn_obj buffer;
 static grn_obj inspectBuffer;
 
-#ifdef PGROONGA_DEBUG
 static const char *
 GrnInspect(grn_obj *object)
 {
@@ -83,7 +92,6 @@ GrnInspect(grn_obj *object)
 	GRN_TEXT_PUTC(ctx, &inspectBuffer, '\0');
 	return GRN_TEXT_VALUE(&inspectBuffer);
 }
-#endif
 
 static grn_encoding
 GrnGetEncoding(void)
@@ -152,6 +160,103 @@ GrnOnProcExit(int code, Datum arg)
 	grn_fin();
 }
 
+static bool
+GrnIsTokenizer(grn_obj *object)
+{
+	if (object->header.type != GRN_PROC)
+		return false;
+
+  if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKENIZER)
+	  return false;
+
+  return true;
+}
+
+static void
+GrnOptionValidateTokenizer(char *name)
+{
+	grn_obj *tokenizer;
+	size_t name_length;
+
+	name_length = strlen(name);
+	if (name_length == 0)
+		return;
+
+	tokenizer = grn_ctx_get(ctx, name, name_length);
+	if (!tokenizer)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: nonexistent tokenizer: <%s>",
+						name)));
+	}
+
+	if (!GrnIsTokenizer(tokenizer))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: not tokenizer: <%s>: %s",
+						name, GrnInspect(tokenizer))));
+	}
+}
+
+static bool
+GrnIsNormalizer(grn_obj *object)
+{
+	if (object->header.type != GRN_PROC)
+		return false;
+
+  if (grn_proc_get_type(ctx, object) != GRN_PROC_NORMALIZER)
+	  return false;
+
+  return true;
+}
+
+static void
+GrnOptionValidateNormalizer(char *name)
+{
+	grn_obj *normalizer;
+	size_t name_length;
+
+	name_length = strlen(name);
+	if (name_length == 0)
+		return;
+
+	normalizer = grn_ctx_get(ctx, name, name_length);
+	if (!normalizer)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: nonexistent normalizer: <%s>",
+						name)));
+	}
+
+	if (!GrnIsNormalizer(normalizer))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: not normalizer: <%s>: %s",
+						name, GrnInspect(normalizer))));
+	}
+}
+
+static void
+GrnInitializeOptions(void)
+{
+	GrnReloptionKind = add_reloption_kind();
+
+	add_string_reloption(GrnReloptionKind,
+						 "tokenizer",
+						 "Tokenizer name to be used for full-text search",
+						 PGRN_DEFAULT_TOKENIZER,
+						 GrnOptionValidateTokenizer);
+	add_string_reloption(GrnReloptionKind,
+						 "normalizer",
+						 "Normalizer name to be used for full-text search",
+						 PGRN_DEFAULT_NORMALIZER,
+						 GrnOptionValidateNormalizer);
+}
+
 void
 _PG_init(void)
 {
@@ -170,6 +275,8 @@ _PG_init(void)
 	GRN_TEXT_INIT(&inspectBuffer, 0);
 
 	GrnEnsureDatabase();
+
+	GrnInitializeOptions();
 }
 
 static int
@@ -364,10 +471,26 @@ GrnCreate(Relation index, grn_obj **idsTable,
 							  grn_ctx_at(ctx, typeID));
 	if (typeID == GRN_DB_SHORT_TEXT)
 	{
-		grn_obj_set_info(ctx, *lexicon, GRN_INFO_NORMALIZER,
-						 GrnLookup("NormalizerAuto", WARNING));
-		grn_obj_set_info(ctx, *lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-						 grn_ctx_at(ctx, GRN_DB_BIGRAM));
+		GrnOptions *options;
+		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
+		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
+
+		options = (GrnOptions *)(index->rd_options);
+		if (options)
+		{
+			tokenizerName = (const char *)(options) + options->tokenizerOffset;
+			normalizerName = (const char *)(options) + options->normalizerOffset;
+		}
+		if (tokenizerName && tokenizerName[0])
+		{
+			grn_obj_set_info(ctx, *lexicon, GRN_INFO_DEFAULT_TOKENIZER,
+							 GrnLookup(tokenizerName, ERROR));
+		}
+		if (normalizerName && normalizerName[0])
+		{
+			grn_obj_set_info(ctx, *lexicon, GRN_INFO_NORMALIZER,
+							 GrnLookup(normalizerName, ERROR));
+		}
 	}
 
 	{
@@ -1238,5 +1361,22 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 Datum
 pgroonga_options(PG_FUNCTION_ARGS)
 {
-	return (Datum) 0;
+	Datum reloptions = PG_GETARG_DATUM(0);
+	bool validate = PG_GETARG_BOOL(1);
+	relopt_value *options;
+	GrnOptions *grnOptions;
+	int nOptions;
+	const relopt_parse_elt optionsMap[] = {
+		{"tokenizer", RELOPT_TYPE_STRING, offsetof(GrnOptions, tokenizerOffset)},
+		{"normalizer", RELOPT_TYPE_STRING, offsetof(GrnOptions, normalizerOffset)}
+	};
+
+	options = parseRelOptions(reloptions, validate, GrnReloptionKind,
+							  &nOptions);
+	grnOptions = allocateReloptStruct(sizeof(GrnOptions), options, nOptions);
+	fillRelOptions(grnOptions, sizeof(GrnOptions), options, nOptions,
+				   validate, optionsMap, lengthof(optionsMap));
+	pfree(options);
+
+	PG_RETURN_BYTEA_P(grnOptions);
 }
