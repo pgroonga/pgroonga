@@ -36,7 +36,7 @@
 #define PGrnGetValueProc					2
 
 /* file and table names */
-#define PGrnDatabaseBasename			"grn"
+#define PGrnDatabaseBasename			"pgrn"
 #define PGrnIDsTableNamePrefix			"IDs"
 #define PGrnIDsTableNameFormat			PGrnIDsTableNamePrefix "%u"
 #define PGrnLexiconNameFormat			"Lexicon%u"
