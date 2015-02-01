@@ -90,20 +90,21 @@ GrnGetEncoding(void)
 {
 	int	enc = GetDatabaseEncoding();
 
-	if (pg_encoding_max_length(enc) > 1)
-		return GRN_ENC_NONE;
-
 	switch (enc)
 	{
+	case PG_SQL_ASCII:
+	case PG_UTF8:
+		return GRN_ENC_UTF8;
 	case PG_EUC_JP:
 	case PG_EUC_JIS_2004:
 		return GRN_ENC_EUC_JP;
-	case PG_UTF8:
-		return GRN_ENC_UTF8;
 	case PG_LATIN1:
 		return GRN_ENC_LATIN1;
 	case PG_KOI8R:
 		return GRN_ENC_KOI8R;
+	case PG_SJIS:
+	case PG_SHIFT_JIS_2004:
+		return GRN_ENC_SJIS;
 	default:
 		elog(WARNING,
 			 "pgroonga: use default encoding instead of '%s'",
