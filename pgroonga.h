@@ -22,25 +22,25 @@
 #endif
 
 /* Groonga strategy types */
-#define GrnLessStrategyNumber			1	/* operator < */
-#define GrnLessEqualStrategyNumber		2	/* operator <= */
-#define GrnEqualStrategyNumber			3	/* operator = */
-#define GrnGreaterEqualStrategyNumber	4	/* operator >= */
-#define GrnGreaterStrategyNumber		5	/* operator > */
-#define GrnNotEqualStrategyNumber		6	/* operator <> (! in Groonga) */
-#define GrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
-#define GrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
+#define PGrnLessStrategyNumber			1	/* operator < */
+#define PGrnLessEqualStrategyNumber		2	/* operator <= */
+#define PGrnEqualStrategyNumber			3	/* operator = */
+#define PGrnGreaterEqualStrategyNumber	4	/* operator >= */
+#define PGrnGreaterStrategyNumber		5	/* operator > */
+#define PGrnNotEqualStrategyNumber		6	/* operator <> (! in Groonga) */
+#define PGrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
+#define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 
 /* Groonga support functions */
-#define GrnTypeOfProc					1
-#define GrnGetValueProc					2
+#define PGrnTypeOfProc					1
+#define PGrnGetValueProc					2
 
 /* file and table names */
-#define GrnDatabaseBasename				"grn"
-#define GrnIDsTableNamePrefix			"IDs"
-#define GrnIDsTableNameFormat			GrnIDsTableNamePrefix "%u"
-#define GrnLexiconNameFormat			"Lexicon%u"
-#define GrnIndexColumnName				"index"
+#define PGrnDatabaseBasename			"grn"
+#define PGrnIDsTableNamePrefix			"IDs"
+#define PGrnIDsTableNameFormat			PGrnIDsTableNamePrefix "%u"
+#define PGrnLexiconNameFormat			"Lexicon%u"
+#define PGrnIndexColumnName				"index"
 
 /* in pgroonga.c */
 extern void PGDLLEXPORT _PG_init(void);

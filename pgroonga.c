@@ -22,24 +22,24 @@
 
 PG_MODULE_MAGIC;
 
-static relopt_kind GrnReloptionKind;
+static relopt_kind PGrnReloptionKind;
 
-typedef struct GrnOptions
+typedef struct PGrnOptions
 {
 	int32 vl_len_;
 	int tokenizerOffset;
 	int normalizerOffset;
-} GrnOptions;
+} PGrnOptions;
 
-typedef struct GrnBuildStateData
+typedef struct PGrnBuildStateData
 {
 	grn_obj	*idsTable;
 	double nIndexedTuples;
-} GrnBuildStateData;
+} PGrnBuildStateData;
 
-typedef GrnBuildStateData *GrnBuildState;
+typedef PGrnBuildStateData *PGrnBuildState;
 
-typedef struct GrnScanOpaqueData
+typedef struct PGrnScanOpaqueData
 {
 	grn_obj *idsTable;
 	grn_obj *searched;
@@ -48,18 +48,18 @@ typedef struct GrnScanOpaqueData
 	grn_table_cursor *cursor;
 	grn_obj *keyAccessor;
 	grn_id currentID;
-} GrnScanOpaqueData;
+} PGrnScanOpaqueData;
 
-typedef GrnScanOpaqueData *GrnScanOpaque;
+typedef PGrnScanOpaqueData *PGrnScanOpaque;
 
-typedef struct GrnSearchData
+typedef struct PGrnSearchData
 {
 	grn_obj	*indexColumn;
 	grn_obj matchTargets;
 	grn_obj sectionID;
 	grn_obj *expression;
 	grn_obj *expressionVariable;
-} GrnSearchData;
+} PGrnSearchData;
 
 
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
@@ -85,7 +85,7 @@ static grn_obj buffer;
 static grn_obj inspectBuffer;
 
 static const char *
-GrnInspect(grn_obj *object)
+PGrnInspect(grn_obj *object)
 {
 	GRN_BULK_REWIND(&inspectBuffer);
 	grn_inspect(ctx, &inspectBuffer, object);
@@ -94,7 +94,7 @@ GrnInspect(grn_obj *object)
 }
 
 static grn_encoding
-GrnGetEncoding(void)
+PGrnGetEncoding(void)
 {
 	int	enc = GetDatabaseEncoding();
 
@@ -122,15 +122,15 @@ GrnGetEncoding(void)
 }
 
 static void
-GrnEnsureDatabase(void)
+PGrnEnsureDatabase(void)
 {
 	char path[MAXPGPATH];
 	grn_obj	*db;
 
-	GRN_CTX_SET_ENCODING(ctx, GrnGetEncoding());
+	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
 	join_path_components(path,
 						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
-						 GrnDatabaseBasename);
+						 PGrnDatabaseBasename);
 
 	db = grn_db_open(ctx, path);
 	if (db)
@@ -145,7 +145,7 @@ GrnEnsureDatabase(void)
 }
 
 static void
-GrnOnProcExit(int code, Datum arg)
+PGrnOnProcExit(int code, Datum arg)
 {
 	grn_obj *db;
 
@@ -161,7 +161,7 @@ GrnOnProcExit(int code, Datum arg)
 }
 
 static bool
-GrnIsTokenizer(grn_obj *object)
+PGrnIsTokenizer(grn_obj *object)
 {
 	if (object->header.type != GRN_PROC)
 		return false;
@@ -173,7 +173,7 @@ GrnIsTokenizer(grn_obj *object)
 }
 
 static void
-GrnOptionValidateTokenizer(char *name)
+PGrnOptionValidateTokenizer(char *name)
 {
 	grn_obj *tokenizer;
 	size_t name_length;
@@ -191,17 +191,17 @@ GrnOptionValidateTokenizer(char *name)
 						name)));
 	}
 
-	if (!GrnIsTokenizer(tokenizer))
+	if (!PGrnIsTokenizer(tokenizer))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: not tokenizer: <%s>: %s",
-						name, GrnInspect(tokenizer))));
+						name, PGrnInspect(tokenizer))));
 	}
 }
 
 static bool
-GrnIsNormalizer(grn_obj *object)
+PGrnIsNormalizer(grn_obj *object)
 {
 	if (object->header.type != GRN_PROC)
 		return false;
@@ -213,7 +213,7 @@ GrnIsNormalizer(grn_obj *object)
 }
 
 static void
-GrnOptionValidateNormalizer(char *name)
+PGrnOptionValidateNormalizer(char *name)
 {
 	grn_obj *normalizer;
 	size_t name_length;
@@ -231,30 +231,30 @@ GrnOptionValidateNormalizer(char *name)
 						name)));
 	}
 
-	if (!GrnIsNormalizer(normalizer))
+	if (!PGrnIsNormalizer(normalizer))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: not normalizer: <%s>: %s",
-						name, GrnInspect(normalizer))));
+						name, PGrnInspect(normalizer))));
 	}
 }
 
 static void
-GrnInitializeOptions(void)
+PGrnInitializeOptions(void)
 {
-	GrnReloptionKind = add_reloption_kind();
+	PGrnReloptionKind = add_reloption_kind();
 
-	add_string_reloption(GrnReloptionKind,
+	add_string_reloption(PGrnReloptionKind,
 						 "tokenizer",
 						 "Tokenizer name to be used for full-text search",
 						 PGRN_DEFAULT_TOKENIZER,
-						 GrnOptionValidateTokenizer);
-	add_string_reloption(GrnReloptionKind,
+						 PGrnOptionValidateTokenizer);
+	add_string_reloption(PGrnReloptionKind,
 						 "normalizer",
 						 "Normalizer name to be used for full-text search",
 						 PGRN_DEFAULT_NORMALIZER,
-						 GrnOptionValidateNormalizer);
+						 PGrnOptionValidateNormalizer);
 }
 
 void
@@ -269,18 +269,18 @@ _PG_init(void)
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
 
-	on_proc_exit(GrnOnProcExit, 0);
+	on_proc_exit(PGrnOnProcExit, 0);
 
 	GRN_VOID_INIT(&buffer);
 	GRN_TEXT_INIT(&inspectBuffer, 0);
 
-	GrnEnsureDatabase();
+	PGrnEnsureDatabase();
 
-	GrnInitializeOptions();
+	PGrnInitializeOptions();
 }
 
 static int
-GrnRCToPgErrorCode(grn_rc rc)
+PGrnRCToPgErrorCode(grn_rc rc)
 {
 	int errorCode = ERRCODE_SYSTEM_ERROR;
 
@@ -304,13 +304,13 @@ GrnRCToPgErrorCode(grn_rc rc)
 }
 
 static grn_bool
-GrnCheck(const char *message)
+PGrnCheck(const char *message)
 {
 	if (ctx->rc == GRN_SUCCESS)
 		return GRN_TRUE;
 
 	ereport(ERROR,
-			(errcode(GrnRCToPgErrorCode(ctx->rc)),
+			(errcode(PGrnRCToPgErrorCode(ctx->rc)),
 			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
 	return GRN_FALSE;
 }
@@ -320,13 +320,13 @@ GrnCheck(const char *message)
  */
 
 static grn_builtin_type
-GrnGetType(Relation index, AttrNumber n)
+PGrnGetType(Relation index, AttrNumber n)
 {
 	FmgrInfo *function;
 	TupleDesc desc = RelationGetDescr(index);
 	Datum type;
 
-	function = index_getprocinfo(index, n + 1, GrnTypeOfProc);
+	function = index_getprocinfo(index, n + 1, PGrnTypeOfProc);
 	type = FunctionCall2(function,
 						 ObjectIdGetDatum(desc->attrs[n]->atttypid),
 						 Int32GetDatum(desc->attrs[n]->atttypmod));
@@ -334,18 +334,18 @@ GrnGetType(Relation index, AttrNumber n)
 }
 
 static void
-GrnGetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
+PGrnGetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
 {
 	FmgrInfo *function;
 
-	function = index_getprocinfo(index, n + 1, GrnGetValueProc);
+	function = index_getprocinfo(index, n + 1, PGrnGetValueProc);
 	FunctionCall3(function,
 				  PointerGetDatum(ctx), PointerGetDatum(buffer),
 				  value);
 }
 
 static grn_obj *
-GrnLookup(const char *name, int errorLevel)
+PGrnLookup(const char *name, int errorLevel)
 {
 	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
 	if (!object)
@@ -356,27 +356,27 @@ GrnLookup(const char *name, int errorLevel)
 }
 
 static grn_obj *
-GrnLookupIDsTable(Relation index, int errorLevel)
+PGrnLookupIDsTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name), GrnIDsTableNameFormat, index->rd_node.relNode);
-	return GrnLookup(name, errorLevel);
+	snprintf(name, sizeof(name), PGrnIDsTableNameFormat, index->rd_node.relNode);
+	return PGrnLookup(name, errorLevel);
 }
 
 static grn_obj *
-GrnLookupIndexColumn(Relation index, int errorLevel)
+PGrnLookupIndexColumn(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
 	snprintf(name, sizeof(name),
-			 GrnLexiconNameFormat ".%s",
-			 index->rd_node.relNode, GrnIndexColumnName);
-	return GrnLookup(name, errorLevel);
+			 PGrnLexiconNameFormat ".%s",
+			 index->rd_node.relNode, PGrnIndexColumnName);
+	return PGrnLookup(name, errorLevel);
 }
 
 static grn_obj *
-GrnCreateTable(const char *name,
+PGrnCreateTable(const char *name,
 			   grn_obj_flags flags,
 			   grn_obj *type)
 {
@@ -387,13 +387,13 @@ GrnCreateTable(const char *name,
 							 GRN_OBJ_PERSISTENT | flags,
 							 type,
 							 NULL);
-	GrnCheck("pgroonga: failed to create table");
+	PGrnCheck("pgroonga: failed to create table");
 
 	return table;
 }
 
 static grn_obj *
-GrnCreateColumn(grn_obj	*table,
+PGrnCreateColumn(grn_obj	*table,
 				const char *name,
 				grn_obj_flags flags,
 				grn_obj	*type)
@@ -404,20 +404,20 @@ GrnCreateColumn(grn_obj	*table,
 							   name, strlen(name), NULL,
 							   GRN_OBJ_PERSISTENT | flags,
 							   type);
-	GrnCheck("pgroonga: failed to create column");
+	PGrnCheck("pgroonga: failed to create column");
 
 	return column;
 }
 
 /**
- * GrnCreate
+ * PGrnCreate
  *
  * @param	ctx
  * @param	index
  */
 static void
-GrnCreate(Relation index, grn_obj **idsTable,
-		  grn_obj **lexicon, grn_obj **indexColumn)
+PGrnCreate(Relation index, grn_obj **idsTable,
+		   grn_obj **lexicon, grn_obj **indexColumn)
 {
 	char idsTableName[GRN_TABLE_MAX_KEY_SIZE];
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
@@ -429,16 +429,16 @@ GrnCreate(Relation index, grn_obj **idsTable,
 	desc = RelationGetDescr(index);
 
 	snprintf(idsTableName, sizeof(idsTableName),
-			 GrnIDsTableNameFormat, relNode);
-	*idsTable = GrnCreateTable(idsTableName,
-							   GRN_OBJ_TABLE_PAT_KEY,
-							   grn_ctx_at(ctx, GRN_DB_UINT64));
+			 PGrnIDsTableNameFormat, relNode);
+	*idsTable = PGrnCreateTable(idsTableName,
+								GRN_OBJ_TABLE_PAT_KEY,
+								grn_ctx_at(ctx, GRN_DB_UINT64));
 
 	for (i = 0; i < desc->natts; i++)
 	{
 		grn_id attributeTypeID;
 
-		attributeTypeID = GrnGetType(index, i);
+		attributeTypeID = PGrnGetType(index, i);
 		if (typeID == GRN_ID_NIL)
 			typeID = attributeTypeID;
 
@@ -451,10 +451,10 @@ GrnCreate(Relation index, grn_obj **idsTable,
 							"for multiple column index")));
 		}
 
-		GrnCreateColumn(*idsTable,
-						desc->attrs[i]->attname.data,
-						GRN_OBJ_COLUMN_SCALAR,
-						grn_ctx_at(ctx, attributeTypeID));
+		PGrnCreateColumn(*idsTable,
+						 desc->attrs[i]->attname.data,
+						 GRN_OBJ_COLUMN_SCALAR,
+						 grn_ctx_at(ctx, attributeTypeID));
 	}
 
 	switch (typeID)
@@ -465,17 +465,17 @@ GrnCreate(Relation index, grn_obj **idsTable,
 		break;
 	}
 
-	snprintf(lexiconName, sizeof(lexiconName), GrnLexiconNameFormat, relNode);
-	*lexicon = GrnCreateTable(lexiconName,
-							  GRN_OBJ_TABLE_PAT_KEY,
-							  grn_ctx_at(ctx, typeID));
+	snprintf(lexiconName, sizeof(lexiconName), PGrnLexiconNameFormat, relNode);
+	*lexicon = PGrnCreateTable(lexiconName,
+							   GRN_OBJ_TABLE_PAT_KEY,
+							   grn_ctx_at(ctx, typeID));
 	if (typeID == GRN_DB_SHORT_TEXT)
 	{
-		GrnOptions *options;
+		PGrnOptions *options;
 		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 
-		options = (GrnOptions *)(index->rd_options);
+		options = (PGrnOptions *)(index->rd_options);
 		if (options)
 		{
 			tokenizerName = (const char *)(options) + options->tokenizerOffset;
@@ -484,12 +484,12 @@ GrnCreate(Relation index, grn_obj **idsTable,
 		if (tokenizerName && tokenizerName[0])
 		{
 			grn_obj_set_info(ctx, *lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-							 GrnLookup(tokenizerName, ERROR));
+							 PGrnLookup(tokenizerName, ERROR));
 		}
 		if (normalizerName && normalizerName[0])
 		{
 			grn_obj_set_info(ctx, *lexicon, GRN_INFO_NORMALIZER,
-							 GrnLookup(normalizerName, ERROR));
+							 PGrnLookup(normalizerName, ERROR));
 		}
 	}
 
@@ -499,15 +499,15 @@ GrnCreate(Relation index, grn_obj **idsTable,
 			flags |= GRN_OBJ_WITH_POSITION;
 		if (desc->natts > 1)
 			flags |= GRN_OBJ_WITH_SECTION;
-		*indexColumn = GrnCreateColumn(*lexicon,
-									   GrnIndexColumnName,
-									   flags,
-									   *idsTable);
+		*indexColumn = PGrnCreateColumn(*lexicon,
+										PGrnIndexColumnName,
+										flags,
+										*idsTable);
 	}
 }
 
 static void
-GrnSetSources(Relation index, grn_obj *idsTable, grn_obj *indexColumn)
+PGrnSetSources(Relation index, grn_obj *idsTable, grn_obj *indexColumn)
 {
 	TupleDesc desc;
 	grn_obj source_ids;
@@ -551,7 +551,7 @@ UInt64ToCtid(uint64 key)
 }
 
 static void
-GrnLock(Relation index, LOCKMODE mode)
+PGrnLock(Relation index, LOCKMODE mode)
 {
 	const RelFileNode *rnode = &index->rd_node;
 	LockDatabaseObject(rnode->spcNode,
@@ -561,7 +561,7 @@ GrnLock(Relation index, LOCKMODE mode)
 }
 
 static void
-GrnUnlock(Relation index, LOCKMODE mode)
+PGrnUnlock(Relation index, LOCKMODE mode)
 {
 	const RelFileNode *rnode = &index->rd_node;
 	UnlockDatabaseObject(rnode->spcNode,
@@ -657,7 +657,7 @@ pgroonga_match(PG_FUNCTION_ARGS)
 }
 
 static void
-GrnInsert(grn_ctx *ctx,
+PGrnInsert(grn_ctx *ctx,
 		  Relation index,
 		  grn_obj *idsTable,
 		  Datum *values,
@@ -681,11 +681,11 @@ GrnInsert(grn_ctx *ctx,
 
 		dataColumn = grn_obj_column(ctx, idsTable,
 									name->data, strlen(name->data));
-		grn_obj_reinit(ctx, &buffer, GrnGetType(index, i), 0);
-		GrnGetValue(index, i, &buffer, values[i]);
+		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, i), 0);
+		PGrnGetValue(index, i, &buffer, values[i]);
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
-		if (!GrnCheck("pgroonga: failed to set column value")) {
+		if (!PGrnCheck("pgroonga: failed to set column value")) {
 			continue;
 		}
 	}
@@ -705,19 +705,19 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	Relation heap = (Relation) PG_GETARG_POINTER(4);
 	IndexUniqueCheck checkUnique = PG_GETARG_INT32(5);
 #endif
-	grn_obj *idsTable = GrnLookupIDsTable(index, ERROR);
+	grn_obj *idsTable = PGrnLookupIDsTable(index, ERROR);
 
-	GrnLock(index, ExclusiveLock);
-	GrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
-	GrnUnlock(index, ExclusiveLock);
+	PGrnLock(index, ExclusiveLock);
+	PGrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
+	PGrnUnlock(index, ExclusiveLock);
 
 	PG_RETURN_BOOL(true);
 }
 
 static void
-GrnScanOpaqueInit(GrnScanOpaque so, Relation index)
+PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
-	so->idsTable = GrnLookupIDsTable(index, ERROR);
+	so->idsTable = PGrnLookupIDsTable(index, ERROR);
 	so->searched = NULL;
 	so->sorted = NULL;
 	so->targetTable = NULL;
@@ -727,7 +727,7 @@ GrnScanOpaqueInit(GrnScanOpaque so, Relation index)
 }
 
 static void
-GrnScanOpaqueReinit(GrnScanOpaque so)
+PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
 	so->currentID = GRN_ID_NIL;
 	if (so->keyAccessor)
@@ -762,12 +762,12 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 	int nkeys = PG_GETARG_INT32(1);
 	int norderbys = PG_GETARG_INT32(2);
 	IndexScanDesc scan;
-	GrnScanOpaque so;
+	PGrnScanOpaque so;
 
 	scan = RelationGetIndexScan(index, nkeys, norderbys);
 
-	so = (GrnScanOpaque) palloc(sizeof(GrnScanOpaqueData));
-	GrnScanOpaqueInit(so, index);
+	so = (PGrnScanOpaque) palloc(sizeof(PGrnScanOpaqueData));
+	PGrnScanOpaqueInit(so, index);
 
 	scan->opaque = so;
 
@@ -775,9 +775,9 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 }
 
 static void
-GrnSearchBuildConditions(IndexScanDesc scan,
-						 GrnScanOpaque so,
-						 GrnSearchData *data)
+PGrnSearchBuildConditions(IndexScanDesc scan,
+						 PGrnScanOpaque so,
+						 PGrnSearchData *data)
 {
 	Relation index = scan->indexRelation;
 	int i, nExpressions = 0;
@@ -806,33 +806,33 @@ GrnSearchBuildConditions(IndexScanDesc scan,
 
 		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
 
-		grn_obj_reinit(ctx, &buffer, GrnGetType(index, key->sk_attno - 1), 0);
-		GrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
+		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, key->sk_attno - 1), 0);
+		PGrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
 
 		switch (key->sk_strategy)
 		{
-		case GrnLessStrategyNumber:
+		case PGrnLessStrategyNumber:
 			operator = GRN_OP_LESS;
 			break;
-		case GrnLessEqualStrategyNumber:
+		case PGrnLessEqualStrategyNumber:
 			operator = GRN_OP_LESS_EQUAL;
 			break;
-		case GrnEqualStrategyNumber:
+		case PGrnEqualStrategyNumber:
 			operator = GRN_OP_EQUAL;
 			break;
-		case GrnGreaterEqualStrategyNumber:
+		case PGrnGreaterEqualStrategyNumber:
 			operator = GRN_OP_GREATER_EQUAL;
 			break;
-		case GrnGreaterStrategyNumber:
+		case PGrnGreaterStrategyNumber:
 			operator = GRN_OP_GREATER;
 			break;
-		case GrnNotEqualStrategyNumber:
+		case PGrnNotEqualStrategyNumber:
 			operator = GRN_OP_NOT_EQUAL;
 			break;
-		case GrnContainStrategyNumber:
+		case PGrnContainStrategyNumber:
 			operator = GRN_OP_MATCH;
 			break;
-		case GrnQueryStrategyNumber:
+		case PGrnQueryStrategyNumber:
 			break;
 		default:
 			ereport(ERROR,
@@ -846,7 +846,7 @@ GrnSearchBuildConditions(IndexScanDesc scan,
 		if (!isValidStrategy)
 			continue;
 
-		if (key->sk_strategy == GrnQueryStrategyNumber)
+		if (key->sk_strategy == PGrnQueryStrategyNumber)
 		{
 			grn_rc rc;
 			grn_expr_flags flags =
@@ -858,7 +858,7 @@ GrnSearchBuildConditions(IndexScanDesc scan,
 			if (rc != GRN_SUCCESS)
 			{
 				ereport(ERROR,
-						(errcode(GrnRCToPgErrorCode(rc)),
+						(errcode(PGrnRCToPgErrorCode(rc)),
 						 errmsg("pgroonga: failed to parse expression: %s",
 								ctx->errbuf)));
 			}
@@ -879,7 +879,7 @@ GrnSearchBuildConditions(IndexScanDesc scan,
 }
 
 static void
-GrnSearchDataFree(GrnSearchData *data)
+PGrnSearchDataFree(PGrnSearchData *data)
 {
 	unsigned int i, nMatchTargets;
 
@@ -895,11 +895,11 @@ GrnSearchDataFree(GrnSearchData *data)
 }
 
 static void
-GrnSearch(IndexScanDesc scan)
+PGrnSearch(IndexScanDesc scan)
 {
 	Relation index = scan->indexRelation;
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
-	GrnSearchData data;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	PGrnSearchData data;
 
 	if (scan->numberOfKeys == 0)
 		return;
@@ -907,18 +907,18 @@ GrnSearch(IndexScanDesc scan)
 	GRN_PTR_INIT(&(data.matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT32_INIT(&(data.sectionID), 0);
 
-	data.indexColumn = GrnLookupIndexColumn(index, ERROR);
+	data.indexColumn = PGrnLookupIndexColumn(index, ERROR);
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
 							  data.expression, data.expressionVariable);
 
 	PG_TRY();
 	{
-		GrnSearchBuildConditions(scan, so, &data);
+		PGrnSearchBuildConditions(scan, so, &data);
 	}
 	PG_CATCH();
 	{
-		GrnSearchDataFree(&data);
+		PGrnSearchDataFree(&data);
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
@@ -932,19 +932,19 @@ GrnSearch(IndexScanDesc scan)
 					 data.expression,
 					 so->searched,
 					 GRN_OP_OR);
-	GrnSearchDataFree(&data);
+	PGrnSearchDataFree(&data);
 }
 
 static void
-GrnSort(IndexScanDesc scan)
+PGrnSort(IndexScanDesc scan)
 {
 	/* TODO */
 }
 
 static void
-GrnOpenCursor(IndexScanDesc scan, ScanDirection dir)
+PGrnOpenCursor(IndexScanDesc scan, ScanDirection dir)
 {
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	grn_obj *table;
 	int offset = 0;
 	int limit = -1;
@@ -970,16 +970,16 @@ GrnOpenCursor(IndexScanDesc scan, ScanDirection dir)
 }
 
 static void
-GrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
+PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 {
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
 	if (so->cursor)
 		return;
 
-	GrnSearch(scan);
-	GrnSort(scan);
-	GrnOpenCursor(scan, dir);
+	PGrnSearch(scan);
+	PGrnSort(scan);
+	PGrnOpenCursor(scan, dir);
 }
 
 
@@ -991,21 +991,21 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
 	ScanDirection dir = (ScanDirection) PG_GETARG_INT32(1);
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
 	scan->xs_recheck = false;
 
-	GrnEnsureCursorOpened(scan, dir);
+	PGrnEnsureCursorOpened(scan, dir);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL)
 	{
 		grn_obj key;
 		GRN_UINT64_INIT(&key, 0);
-		GrnLock(scan->indexRelation, ExclusiveLock);
+		PGrnLock(scan->indexRelation, ExclusiveLock);
 		grn_obj_get_value(ctx, so->keyAccessor, so->currentID, &key);
 		grn_table_delete(ctx, so->idsTable,
 						 GRN_BULK_HEAD(&key), GRN_BULK_VSIZE(&key));
-		GrnUnlock(scan->indexRelation, ExclusiveLock);
+		PGrnUnlock(scan->indexRelation, ExclusiveLock);
 		GRN_OBJ_FIN(ctx, &key);
 	}
 
@@ -1036,12 +1036,12 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
 	TIDBitmap *tbm = (TIDBitmap *) PG_GETARG_POINTER(1);
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 	grn_id id;
 	grn_obj key;
 
-	GrnEnsureCursorOpened(scan, ForwardScanDirection);
+	PGrnEnsureCursorOpened(scan, ForwardScanDirection);
 
 	GRN_UINT64_INIT(&key, 0);
 	while ((id = grn_table_cursor_next(ctx, so->cursor)) != GRN_ID_NIL) {
@@ -1073,9 +1073,9 @@ pgroonga_rescan(PG_FUNCTION_ARGS)
 	ScanKey	orderbys = (ScanKey) PG_GETARG_POINTER(3);
 	int norderbys = PG_GETARG_INT32(4);
 #endif
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	GrnScanOpaqueReinit(so);
+	PGrnScanOpaqueReinit(so);
 
 	if (keys && scan->numberOfKeys > 0)
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
@@ -1090,26 +1090,26 @@ Datum
 pgroonga_endscan(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
-	GrnScanOpaque so = (GrnScanOpaque) scan->opaque;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	GrnScanOpaqueReinit(so);
+	PGrnScanOpaqueReinit(so);
 	pfree(so);
 
 	PG_RETURN_VOID();
 }
 
 static void
-GrnBuildCallback(Relation index,
-				 HeapTuple htup,
-				 Datum *values,
-				 bool *isnull,
-				 bool tupleIsAlive,
-				 void *state)
+PGrnBuildCallback(Relation index,
+				  HeapTuple htup,
+				  Datum *values,
+				  bool *isnull,
+				  bool tupleIsAlive,
+				  void *state)
 {
-	GrnBuildState bs = (GrnBuildState) state;
+	PGrnBuildState bs = (PGrnBuildState) state;
 
 	if (tupleIsAlive) {
-		GrnInsert(ctx, index, bs->idsTable, values, isnull, &(htup->t_self));
+		PGrnInsert(ctx, index, bs->idsTable, values, isnull, &(htup->t_self));
 		bs->nIndexedTuples++;
 	}
 }
@@ -1125,7 +1125,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	IndexInfo *indexInfo = (IndexInfo *) PG_GETARG_POINTER(2);
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
-	GrnBuildStateData bs;
+	PGrnBuildStateData bs;
 	grn_obj *lexicon = NULL;
 	grn_obj *indexColumn = NULL;
 
@@ -1139,10 +1139,10 @@ pgroonga_build(PG_FUNCTION_ARGS)
 
 	PG_TRY();
 	{
-		GrnCreate(index, &(bs.idsTable), &lexicon, &indexColumn);
+		PGrnCreate(index, &(bs.idsTable), &lexicon, &indexColumn);
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
-										 GrnBuildCallback, &bs);
-		GrnSetSources(index, bs.idsTable, indexColumn);
+										 PGrnBuildCallback, &bs);
+		PGrnSetSources(index, bs.idsTable, indexColumn);
 	}
 	PG_CATCH();
 	{
@@ -1174,8 +1174,8 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 
 	PG_TRY();
 	{
-		GrnCreate(index, &idsTable, &lexicon, &indexColumn);
-		GrnSetSources(index, idsTable, indexColumn);
+		PGrnCreate(index, &idsTable, &lexicon, &indexColumn);
+		PGrnSetSources(index, idsTable, indexColumn);
 	}
 	PG_CATCH();
 	{
@@ -1191,7 +1191,7 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 }
 
 static IndexBulkDeleteResult *
-GrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *idsTable)
+PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *idsTable)
 {
 	IndexBulkDeleteResult *stats;
 
@@ -1222,10 +1222,10 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
 
-	idsTable = GrnLookupIDsTable(index, WARNING);
+	idsTable = PGrnLookupIDsTable(index, WARNING);
 
 	if (!stats)
-		stats = GrnBulkDeleteResult(info, idsTable);
+		stats = PGrnBulkDeleteResult(info, idsTable);
 
 	if (!idsTable || !callback)
 		PG_RETURN_POINTER(stats);
@@ -1251,9 +1251,9 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			ctid = UInt64ToCtid(*key);
 			if (callback(&ctid, callback_state))
 			{
-				GrnLock(index, ExclusiveLock);
+				PGrnLock(index, ExclusiveLock);
 				grn_table_cursor_delete(ctx, cursor);
-				GrnUnlock(index, ExclusiveLock);
+				PGrnUnlock(index, ExclusiveLock);
 
 				nRemovedTuples += 1;
 			}
@@ -1273,10 +1273,10 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 }
 
 static void
-GrnRemoveUnusedTables(void)
+PGrnRemoveUnusedTables(void)
 {
 	grn_table_cursor *cursor;
-	const char *min = GrnIDsTableNamePrefix;
+	const char *min = PGrnIDsTableNamePrefix;
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
@@ -1304,7 +1304,7 @@ GrnRemoveUnusedTables(void)
 			grn_obj *table;
 
 			snprintf(tableName, sizeof(tableName),
-					 GrnLexiconNameFormat, relationID);
+					 PGrnLexiconNameFormat, relationID);
 			table = grn_ctx_get(ctx, tableName, strlen(tableName));
 			if (table)
 			{
@@ -1312,7 +1312,7 @@ GrnRemoveUnusedTables(void)
 			}
 
 			snprintf(tableName, sizeof(tableName),
-					 GrnIDsTableNameFormat, relationID);
+					 PGrnIDsTableNameFormat, relationID);
 			table = grn_ctx_get(ctx, tableName, strlen(tableName));
 			if (table)
 			{
@@ -1334,10 +1334,10 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 	IndexBulkDeleteResult *stats = (IndexBulkDeleteResult *) PG_GETARG_POINTER(1);
 
 	if (!stats)
-		stats = GrnBulkDeleteResult(info,
-									GrnLookupIDsTable(info->index, WARNING));
+		stats = PGrnBulkDeleteResult(info,
+									 PGrnLookupIDsTable(info->index, WARNING));
 
-	GrnRemoveUnusedTables();
+	PGrnRemoveUnusedTables();
 
 	PG_RETURN_POINTER(stats);
 }
@@ -1364,17 +1364,19 @@ pgroonga_options(PG_FUNCTION_ARGS)
 	Datum reloptions = PG_GETARG_DATUM(0);
 	bool validate = PG_GETARG_BOOL(1);
 	relopt_value *options;
-	GrnOptions *grnOptions;
+	PGrnOptions *grnOptions;
 	int nOptions;
 	const relopt_parse_elt optionsMap[] = {
-		{"tokenizer", RELOPT_TYPE_STRING, offsetof(GrnOptions, tokenizerOffset)},
-		{"normalizer", RELOPT_TYPE_STRING, offsetof(GrnOptions, normalizerOffset)}
+		{"tokenizer", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, tokenizerOffset)},
+		{"normalizer", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, normalizerOffset)}
 	};
 
-	options = parseRelOptions(reloptions, validate, GrnReloptionKind,
+	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,
 							  &nOptions);
-	grnOptions = allocateReloptStruct(sizeof(GrnOptions), options, nOptions);
-	fillRelOptions(grnOptions, sizeof(GrnOptions), options, nOptions,
+	grnOptions = allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
+	fillRelOptions(grnOptions, sizeof(PGrnOptions), options, nOptions,
 				   validate, optionsMap, lengthof(optionsMap));
 	pfree(options);
 
