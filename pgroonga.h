@@ -33,7 +33,7 @@
 
 /* Groonga support functions */
 #define PGrnTypeOfProc					1
-#define PGrnGetValueProc					2
+#define PGrnGetValueProc				2
 
 /* file and table names */
 #define PGrnDatabaseBasename			"pgrn"
