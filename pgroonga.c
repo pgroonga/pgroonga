@@ -22,6 +22,7 @@
 
 PG_MODULE_MAGIC;
 
+static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
 
 typedef struct PGrnOptions
@@ -160,6 +161,17 @@ PGrnOnProcExit(int code, Datum arg)
 	grn_fin();
 }
 
+static void
+PGrnInitializeGroongaInformation(void)
+{
+	grn_obj grnIsSupported;
+
+	GRN_BOOL_INIT(&grnIsSupported, 0);
+	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_LZ4, &grnIsSupported);
+	PGrnIsLZ4Available = (GRN_BOOL_VALUE(&grnIsSupported));
+	GRN_OBJ_FIN(ctx, &grnIsSupported);
+}
+
 static bool
 PGrnIsTokenizer(grn_obj *object)
 {
@@ -275,6 +287,8 @@ _PG_init(void)
 	GRN_TEXT_INIT(&inspectBuffer, 0);
 
 	PGrnEnsureDatabase();
+
+	PGrnInitializeGroongaInformation();
 
 	PGrnInitializeOptions();
 }
@@ -437,6 +451,7 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 	for (i = 0; i < desc->natts; i++)
 	{
 		grn_id attributeTypeID;
+		grn_obj_flags flags = GRN_OBJ_COLUMN_SCALAR;
 
 		attributeTypeID = PGrnGetType(index, i);
 		if (typeID == GRN_ID_NIL)
@@ -451,9 +466,21 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 							"for multiple column index")));
 		}
 
+		if (PGrnIsLZ4Available)
+		{
+			switch (typeID)
+			{
+			case GRN_DB_SHORT_TEXT:
+			case GRN_DB_TEXT:
+			case GRN_DB_LONG_TEXT:
+				flags |= GRN_OBJ_COMPRESS_LZ4;
+				break;
+			}
+		}
+
 		PGrnCreateColumn(*idsTable,
 						 desc->attrs[i]->attname.data,
-						 GRN_OBJ_COLUMN_SCALAR,
+						 flags,
 						 grn_ctx_at(ctx, attributeTypeID));
 	}
 
