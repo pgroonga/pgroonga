@@ -34,16 +34,16 @@ installcheck: results/full-text-search/text/options/normalizer
 installcheck: results/compare/text/single/equal
 
 results/full-text-search/text/single/contain:
-	@mkdir -p results/full-text-search/text/single/contain
+	@mkdir -p $@
 results/full-text-search/text/single/match:
-	@mkdir -p results/full-text-search/text/single/match
+	@mkdir -p $@
 results/full-text-search/text/single/and:
-	@mkdir -p results/full-text-search/text/single/and
+	@mkdir -p $@
 results/full-text-search/text/multiple/contain:
-	@mkdir -p results/full-text-search/text/multiple/contain
+	@mkdir -p $@
 results/full-text-search/text/options/tokenizer:
-	@mkdir -p results/full-text-search/text/options/tokenizer
+	@mkdir -p $@
 results/full-text-search/text/options/normalizer:
-	@mkdir -p results/full-text-search/text/options/normalizer
+	@mkdir -p $@
 results/compare/text/single/equal:
 	@mkdir -p $@
