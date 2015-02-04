@@ -14,6 +14,7 @@
 #include <miscadmin.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
+#include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
 
 #include <groonga.h>
@@ -439,6 +440,7 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 	int i;
 	TupleDesc desc;
 	Oid relNode = index->rd_node.relNode;
+	bool forFullTextSearch = false;
 
 	desc = RelationGetDescr(index);
 
@@ -484,6 +486,15 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 						 grn_ctx_at(ctx, attributeTypeID));
 	}
 
+	{
+		Oid containStrategyOID;
+		containStrategyOID = get_opfamily_member(index->rd_opfamily[0],
+												 index->rd_opcintype[0],
+												 index->rd_opcintype[0],
+												 PGrnContainStrategyNumber);
+		forFullTextSearch = (containStrategyOID != InvalidOid);
+	}
+
 	switch (typeID)
 	{
 	case GRN_DB_TEXT:
@@ -496,7 +507,7 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 	*lexicon = PGrnCreateTable(lexiconName,
 							   GRN_OBJ_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, typeID));
-	if (typeID == GRN_DB_SHORT_TEXT)
+	if (forFullTextSearch)
 	{
 		PGrnOptions *options;
 		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
@@ -522,7 +533,7 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 
 	{
 		grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
-		if (typeID == GRN_DB_SHORT_TEXT)
+		if (forFullTextSearch)
 			flags |= GRN_OBJ_WITH_POSITION;
 		if (desc->natts > 1)
 			flags |= GRN_OBJ_WITH_SECTION;

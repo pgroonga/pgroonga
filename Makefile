@@ -31,6 +31,7 @@ installcheck: results/full-text-search/text/single/and
 installcheck: results/full-text-search/text/multiple/contain
 installcheck: results/full-text-search/text/options/tokenizer
 installcheck: results/full-text-search/text/options/normalizer
+installcheck: results/compare/text/single/equal
 
 results/full-text-search/text/single/contain:
 	@mkdir -p results/full-text-search/text/single/contain
@@ -44,3 +45,5 @@ results/full-text-search/text/options/tokenizer:
 	@mkdir -p results/full-text-search/text/options/tokenizer
 results/full-text-search/text/options/normalizer:
 	@mkdir -p results/full-text-search/text/options/normalizer
+results/compare/text/single/equal:
+	@mkdir -p $@
