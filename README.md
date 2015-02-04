@@ -225,7 +225,7 @@ TODO:
 
 等価・比較条件のためにPGroongaを使う方法は文字列型とそれ以外の型でイン
 デックスの作成方法が少し違います。なお、検索条件（`WHERE`）の書き方は
-BTreeを使ったインデックスなどのときと同じです。
+B-treeを使ったインデックスなどのときと同じです。
 
 文字列型以外での方の使い方が簡単なのでそちらから説明します。その後、文
 字列型での使い方を説明します。
@@ -242,7 +242,7 @@ CREATE TABLE ids (
 CREATE INDEX pgroonga_id_index ON ids USING pgroonga (id);
 ```
 
-あとはBtreeを使ったインデックスなどのときと同じです。
+あとはB-treeを使ったインデックスなどのときと同じです。
 
 データを投入します。
 
@@ -283,7 +283,7 @@ CREATE TABLE tags (
 CREATE INDEX pgroonga_tag_index ON tags USING pgroonga (tag pgroonga.text_ops);
 ```
 
-あとはBtreeを使ったインデックスなどのときと同じです。
+あとはB-treeを使ったインデックスなどのときと同じです。
 
 データを投入します。
 
