@@ -145,6 +145,16 @@ PGroongaをビルドしてインストールします。
 
 ## 使い方
 
+PGroongaは全文検索はもちろん、数値や文字列の等価条件（`=`）や比較条件
+（`<`や`>=`など）にも使えます。
+
+まずは全文検索の使い方について説明し、次に等価条件や比較条件で使う方法
+を説明します。
+
+### 全文検索
+
+#### 基本的な使い方
+
 `text`型のカラムを作って`pgroonga`インデックスを張ります。
 
 ```sql
@@ -153,7 +163,7 @@ CREATE TABLE memos (
   content text
 );
 
-CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
+CREATE INDEX pgroonga_content_index ON memos USING pgroonga (content);
 ```
 
 データを投入します。
@@ -204,6 +214,103 @@ SELECT * FROM memos WHERE content @@ 'PGroonga OR PostgreSQL';
 
 注意してください。
 
+#### カスタマイズ
+
+TODO:
+
+  * トークナイザーのカスタマイズ方法を書く
+  * ノーマライザーのカスタマイズ方法を書く
+
+### 等価・比較
+
+等価・比較条件のためにPGroongaを使う方法は文字列型とそれ以外の型でイン
+デックスの作成方法が少し違います。なお、検索条件（`WHERE`）の書き方は
+BTreeを使ったインデックスなどのときと同じです。
+
+文字列型以外での方の使い方が簡単なのでそちらから説明します。その後、文
+字列型での使い方を説明します。
+
+#### 数値など文字列型以外の型
+
+文字列型以外の型を使うときは`USING`に`pgroonga`を指定してください。
+
+```sql
+CREATE TABLE ids (
+  id integer
+);
+
+CREATE INDEX pgroonga_id_index ON ids USING pgroonga (id);
+```
+
+あとはBtreeを使ったインデックスなどのときと同じです。
+
+データを投入します。
+
+```sql
+INSERT INTO ids VALUES (1);
+INSERT INTO ids VALUES (2);
+INSERT INTO ids VALUES (3);
+```
+
+シーケンシャルスキャンを無効にします。
+
+```sql
+SET enable_seqscan = off;
+```
+
+検索します。
+
+```sql
+SELECT * FROM ids WHERE id <= 2;
+--  id
+-- ----
+--   1
+--   2
+-- (2 行)
+```
+
+#### 文字列型
+
+文字列型のときは`USING`に`pgroonga`を指定するだけでなく、演算子クラス
+として`pgroonga.text_ops`を指定してください。
+
+```sql
+CREATE TABLE tags (
+  id integer,
+  tag text
+);
+
+CREATE INDEX pgroonga_tag_index ON tags USING pgroonga (tag pgroonga.text_ops);
+```
+
+あとはBtreeを使ったインデックスなどのときと同じです。
+
+データを投入します。
+
+```sql
+INSERT INTO tags VALUES (1, 'PostgreSQL');
+INSERT INTO tags VALUES (2, 'Groonga');
+INSERT INTO tags VALUES (3, 'Groonga');
+```
+
+シーケンシャルスキャンを無効にします。
+
+```sql
+SET enable_seqscan = off;
+```
+
+検索します。
+
+```sql
+SELECT * FROM tags WHERE tag = 'Groonga';
+--  id |   tag
+-- ----+---------
+--   2 | Groonga
+--   3 | Groonga
+-- (2 行)
+--
+```
+
 ## アンインストール
 
 次のSQLでアンインストールできます。
@@ -229,7 +336,6 @@ DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
     * WAL対応
     * スコアー対応
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
-    * トークナイザーのカスタマイズ対応（今は必ずTokenBigramを使っている）
   * ドキュメント
     * 英語で書く
     * サイトを用意する
