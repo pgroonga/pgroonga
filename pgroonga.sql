@@ -183,20 +183,14 @@ INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga.options'	-- amoptions
 );
 
-CREATE OPERATOR CLASS pgroonga.text_ops DEFAULT FOR TYPE text
+CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
-		OPERATOR 1 <,
-		OPERATOR 2 <=,
-		OPERATOR 3 =,
-		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
-CREATE OPERATOR CLASS pgroonga.bpchar_ops DEFAULT FOR TYPE bpchar
+CREATE OPERATOR CLASS pgroonga.text_ops FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 1 <,
 		OPERATOR 2 <=,
@@ -204,8 +198,24 @@ CREATE OPERATOR CLASS pgroonga.bpchar_ops DEFAULT FOR TYPE bpchar
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
 		OPERATOR 6 <>,
+		FUNCTION 1 pgroonga.typeof(oid, integer),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+
+CREATE OPERATOR CLASS pgroonga.full_text_search_bpchar_ops DEFAULT FOR TYPE bpchar
+	USING pgroonga AS
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
+		FUNCTION 1 pgroonga.typeof(oid, integer),
+		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
+
+CREATE OPERATOR CLASS pgroonga.bpchar_ops FOR TYPE bpchar
+	USING pgroonga AS
+		OPERATOR 1 <,
+		OPERATOR 2 <=,
+		OPERATOR 3 =,
+		OPERATOR 4 >=,
+		OPERATOR 5 >,
+		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
