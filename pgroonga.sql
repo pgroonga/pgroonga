@@ -150,6 +150,7 @@ CREATE FUNCTION pgroonga.get_timestamptz(internal, internal, timestamptz)
 	AS 'MODULE_PATHNAME', 'pgroonga_get_timestamptz'
 	LANGUAGE C;
 
+DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
 	8,		-- amstrategies
