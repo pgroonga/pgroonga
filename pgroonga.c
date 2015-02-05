@@ -792,8 +792,8 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 
 static void
 PGrnSearchBuildConditions(IndexScanDesc scan,
-						 PGrnScanOpaque so,
-						 PGrnSearchData *data)
+						  PGrnScanOpaque so,
+						  PGrnSearchData *data)
 {
 	Relation index = scan->indexRelation;
 	int i, nExpressions = 0;
