@@ -44,10 +44,13 @@ typedef PGrnBuildStateData *PGrnBuildState;
 typedef struct PGrnScanOpaqueData
 {
 	grn_obj *idsTable;
+	grn_obj *lexicon;
+	grn_obj *indexColumn;
 	grn_obj *searched;
 	grn_obj *sorted;
 	grn_obj *targetTable;
-	grn_table_cursor *cursor;
+	grn_obj *indexCursor;
+	grn_table_cursor *tableCursor;
 	grn_obj *keyAccessor;
 	grn_id currentID;
 } PGrnScanOpaqueData;
@@ -424,6 +427,17 @@ PGrnCreateColumn(grn_obj	*table,
 	return column;
 }
 
+static bool
+PGrnIsForFullTextSearchIndex(Relation index)
+{
+	Oid containStrategyOID;
+	containStrategyOID = get_opfamily_member(index->rd_opfamily[0],
+											 index->rd_opcintype[0],
+											 index->rd_opcintype[0],
+											 PGrnContainStrategyNumber);
+	return (containStrategyOID != InvalidOid);
+}
+
 /**
  * PGrnCreate
  *
@@ -486,14 +500,7 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 						 grn_ctx_at(ctx, attributeTypeID));
 	}
 
-	{
-		Oid containStrategyOID;
-		containStrategyOID = get_opfamily_member(index->rd_opfamily[0],
-												 index->rd_opcintype[0],
-												 index->rd_opcintype[0],
-												 PGrnContainStrategyNumber);
-		forFullTextSearch = (containStrategyOID != InvalidOid);
-	}
+	forFullTextSearch = PGrnIsForFullTextSearchIndex(index);
 
 	switch (typeID)
 	{
@@ -734,10 +741,13 @@ static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
 	so->idsTable = PGrnLookupIDsTable(index, ERROR);
+	so->indexColumn = PGrnLookupIndexColumn(index, ERROR);
+	so->lexicon = grn_column_table(ctx, so->indexColumn);
 	so->searched = NULL;
 	so->sorted = NULL;
 	so->targetTable = NULL;
-	so->cursor = NULL;
+	so->indexCursor = NULL;
+	so->tableCursor = NULL;
 	so->keyAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 }
@@ -751,10 +761,15 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		grn_obj_unlink(ctx, so->keyAccessor);
 		so->keyAccessor = NULL;
 	}
-	if (so->cursor)
+	if (so->indexCursor)
 	{
-		grn_table_cursor_close(ctx, so->cursor);
-		so->cursor = NULL;
+		grn_obj_close(ctx, so->indexCursor);
+		so->indexCursor = NULL;
+	}
+	if (so->tableCursor)
+	{
+		grn_table_cursor_close(ctx, so->tableCursor);
+		so->tableCursor = NULL;
 	}
 	if (so->sorted)
 	{
@@ -958,7 +973,7 @@ PGrnSort(IndexScanDesc scan)
 }
 
 static void
-PGrnOpenCursor(IndexScanDesc scan, ScanDirection dir)
+PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	grn_obj *table;
@@ -977,10 +992,99 @@ PGrnOpenCursor(IndexScanDesc scan, ScanDirection dir)
 	else
 		flags |= GRN_CURSOR_ASCENDING;
 
-	so->cursor = grn_table_cursor_open(ctx, table,
-									   NULL, 0, NULL, 0,
-									   offset, limit, flags);
+	so->tableCursor = grn_table_cursor_open(ctx, table,
+											NULL, 0, NULL, 0,
+											offset, limit, flags);
 	so->keyAccessor = grn_obj_column(ctx, table,
+									 GRN_COLUMN_NAME_KEY,
+									 GRN_COLUMN_NAME_KEY_LEN);
+}
+
+static void
+PGrnFillBorder(IndexScanDesc scan,
+			   void **min, unsigned int *minSize,
+			   void **max, unsigned int *maxSize,
+			   int *flags)
+{
+	Relation index = scan->indexRelation;
+	int i;
+
+	for (i = 0; i < scan->numberOfKeys; i++)
+	{
+		ScanKey key = &(scan->keyData[i]);
+
+		/* TODO: Use buffer for min and max */
+		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, key->sk_attno - 1), 0);
+		PGrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
+
+		switch (key->sk_strategy)
+		{
+		case PGrnLessStrategyNumber:
+			*max = GRN_BULK_HEAD(&buffer);
+			*maxSize = GRN_BULK_VSIZE(&buffer);
+			*flags |= GRN_CURSOR_LT;
+			break;
+		case PGrnLessEqualStrategyNumber:
+			*max = GRN_BULK_HEAD(&buffer);
+			*maxSize = GRN_BULK_VSIZE(&buffer);
+			*flags |= GRN_CURSOR_LE;
+			break;
+		case PGrnEqualStrategyNumber:
+			*min = GRN_BULK_HEAD(&buffer);
+			*minSize = GRN_BULK_VSIZE(&buffer);
+			*max = GRN_BULK_HEAD(&buffer);
+			*maxSize = GRN_BULK_VSIZE(&buffer);
+			*flags |= GRN_CURSOR_LE | GRN_CURSOR_GE;
+			break;
+		case PGrnGreaterEqualStrategyNumber:
+			*min = GRN_BULK_HEAD(&buffer);
+			*minSize = GRN_BULK_VSIZE(&buffer);
+			*flags |= GRN_CURSOR_GE;
+			break;
+		case PGrnGreaterStrategyNumber:
+			*min = GRN_BULK_HEAD(&buffer);
+			*minSize = GRN_BULK_VSIZE(&buffer);
+			*flags |= GRN_CURSOR_GT;
+			break;
+		case PGrnNotEqualStrategyNumber:
+			/* TODO */
+			break;
+		}
+	}
+}
+
+static void
+PGrnOpenIndexCursor(IndexScanDesc scan, ScanDirection dir)
+{
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	void *min = NULL;
+	unsigned int minSize = 0;
+	void *max = NULL;
+	unsigned int maxSize = 0;
+	int offset = 0;
+	int limit = -1;
+	int flags = 0;
+	grn_id indexCursorMin = GRN_ID_NIL;
+	grn_id indexCursorMax = GRN_ID_MAX;
+	int indexCursorFlags = 0;
+
+	PGrnFillBorder(scan, &min, &minSize, &max, &maxSize, &flags);
+
+	if (dir == BackwardScanDirection)
+		flags |= GRN_CURSOR_DESCENDING;
+	else
+		flags |= GRN_CURSOR_ASCENDING;
+
+	so->tableCursor = grn_table_cursor_open(ctx, so->lexicon,
+											min, minSize,
+											max, maxSize,
+											offset, limit, flags);
+	so->indexCursor = grn_index_cursor_open(ctx,
+											so->tableCursor, so->indexColumn,
+											indexCursorMin,
+											indexCursorMax,
+											indexCursorFlags);
+	so->keyAccessor = grn_obj_column(ctx, so->idsTable,
 									 GRN_COLUMN_NAME_KEY,
 									 GRN_COLUMN_NAME_KEY_LEN);
 }
@@ -989,13 +1093,24 @@ static void
 PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	bool forFullTextSearch = false;
 
-	if (so->cursor)
+	if (so->indexCursor)
+		return;
+	if (so->tableCursor)
 		return;
 
-	PGrnSearch(scan);
-	PGrnSort(scan);
-	PGrnOpenCursor(scan, dir);
+	forFullTextSearch = PGrnIsForFullTextSearchIndex(scan->indexRelation);
+	if (forFullTextSearch)
+	{
+		PGrnSearch(scan);
+		PGrnSort(scan);
+		PGrnOpenTableCursor(scan, dir);
+	}
+	else
+	{
+		PGrnOpenIndexCursor(scan, dir);
+	}
 }
 
 
@@ -1023,7 +1138,21 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 		GRN_OBJ_FIN(ctx, &key);
 	}
 
-	so->currentID = grn_table_cursor_next(ctx, so->cursor);
+	if (so->indexCursor)
+	{
+		grn_posting *posting;
+		grn_id termID;
+		grn_id id = GRN_ID_NIL;
+		posting = grn_index_cursor_next(ctx, so->indexCursor, &termID);
+		if (posting)
+			id = posting->rid;
+		so->currentID = id;
+	}
+	else
+	{
+		so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
+	}
+
 	if (so->currentID == GRN_ID_NIL)
 	{
 		PG_RETURN_BOOL(false);
@@ -1052,19 +1181,37 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 	TIDBitmap *tbm = (TIDBitmap *) PG_GETARG_POINTER(1);
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
-	grn_id id;
 	grn_obj key;
 
 	PGrnEnsureCursorOpened(scan, ForwardScanDirection);
 
 	GRN_UINT64_INIT(&key, 0);
-	while ((id = grn_table_cursor_next(ctx, so->cursor)) != GRN_ID_NIL) {
-		ItemPointerData ctid;
-		GRN_BULK_REWIND(&key);
-		grn_obj_get_value(ctx, so->keyAccessor, id, &key);
-		ctid = UInt64ToCtid(GRN_UINT64_VALUE(&key));
-		tbm_add_tuples(tbm, &ctid, 1, false);
-		nRecords++;
+	if (so->indexCursor)
+	{
+		grn_posting *posting;
+		grn_id termID;
+		while ((posting = grn_index_cursor_next(ctx, so->indexCursor, &termID)))
+		{
+			ItemPointerData ctid;
+			GRN_BULK_REWIND(&key);
+			grn_obj_get_value(ctx, so->keyAccessor, posting->rid, &key);
+			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&key));
+			tbm_add_tuples(tbm, &ctid, 1, false);
+			nRecords++;
+		}
+	}
+	else
+	{
+		grn_id id;
+		while ((id = grn_table_cursor_next(ctx, so->tableCursor)) != GRN_ID_NIL)
+		{
+			ItemPointerData ctid;
+			GRN_BULK_REWIND(&key);
+			grn_obj_get_value(ctx, so->keyAccessor, id, &key);
+			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&key));
+			tbm_add_tuples(tbm, &ctid, 1, false);
+			nRecords++;
+		}
 	}
 	GRN_OBJ_FIN(ctx, &key);
 

@@ -4,19 +4,19 @@ CREATE TABLE memos (
   title text
 );
 
-INSERT INTO memos VALUES (1, 'PostgreSQL');
 INSERT INTO memos VALUES (2, 'Groonga');
 INSERT INTO memos VALUES (3, 'PGroonga');
+INSERT INTO memos VALUES (1, 'PostgreSQL');
 
-CREATE INDEX grnindex ON memos USING pgroonga (title pgroonga.text_ops);
+CREATE INDEX grnindex ON memos USING pgroonga (id);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;
-SET enable_bitmapscan = off;
+SET enable_bitmapscan = on;
 
 SELECT id, title
   FROM memos
- WHERE title = 'Groonga';
+ ORDER BY id DESC LIMIT 2;
 
 DROP TABLE memos;
 
