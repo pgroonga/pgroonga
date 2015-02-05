@@ -27,7 +27,6 @@
 #define PGrnEqualStrategyNumber			3	/* operator = */
 #define PGrnGreaterEqualStrategyNumber	4	/* operator >= */
 #define PGrnGreaterStrategyNumber		5	/* operator > */
-#define PGrnNotEqualStrategyNumber		6	/* operator <> (! in Groonga) */
 #define PGrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 

@@ -198,7 +198,6 @@ CREATE OPERATOR CLASS pgroonga.text_ops FOR TYPE text
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
@@ -216,7 +215,6 @@ CREATE OPERATOR CLASS pgroonga.bpchar_ops FOR TYPE bpchar
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
@@ -227,7 +225,6 @@ CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_bool(internal, internal, bool);
 
@@ -238,7 +235,6 @@ CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_int2(internal, internal, int2);
 
@@ -249,7 +245,6 @@ CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_int4(internal, internal, int4);
 
@@ -260,7 +255,6 @@ CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_int8(internal, internal, int8);
 
@@ -271,7 +265,6 @@ CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_float4(internal, internal, float4);
 
@@ -282,7 +275,6 @@ CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_float8(internal, internal, float8);
 
@@ -293,7 +285,6 @@ CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_timestamp(internal, internal, timestamp);
 
@@ -304,6 +295,5 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		OPERATOR 6 <>,
 		FUNCTION 1 pgroonga.typeof(oid, integer),
 		FUNCTION 2 pgroonga.get_timestamptz(internal, internal, timestamptz);

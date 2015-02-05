@@ -857,9 +857,6 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		case PGrnGreaterStrategyNumber:
 			operator = GRN_OP_GREATER;
 			break;
-		case PGrnNotEqualStrategyNumber:
-			operator = GRN_OP_NOT_EQUAL;
-			break;
 		case PGrnContainStrategyNumber:
 			operator = GRN_OP_MATCH;
 			break;
@@ -1045,9 +1042,6 @@ PGrnFillBorder(IndexScanDesc scan,
 			*min = GRN_BULK_HEAD(&buffer);
 			*minSize = GRN_BULK_VSIZE(&buffer);
 			*flags |= GRN_CURSOR_GT;
-			break;
-		case PGrnNotEqualStrategyNumber:
-			/* TODO */
 			break;
 		}
 	}
