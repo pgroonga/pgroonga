@@ -1090,6 +1090,14 @@ PGrnFillBorder(IndexScanDesc scan,
 			}
 			break;
 		case PGrnEqualStrategyNumber:
+			/* TODO: Support the following:
+			 *   WHERE id  = 5 AND id <= 4 (Empty result)
+			 *   WHERE id  = 2 AND id >= 4 (Empty result)
+			 *   WHERE id <= 4 AND id  = 5 (Empty result)
+			 *   WHERE id >= 4 AND id  = 2 (Empty result)
+			 *   WHERE id  = 2 AND id <= 4 (Ignore id = 2)
+			 *   WHERE id  = 4 AND id >= 2 (Ignore id = 4)
+			 */
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
 			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
