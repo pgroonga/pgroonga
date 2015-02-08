@@ -33,6 +33,7 @@ installcheck: results/full-text-search/text/options/tokenizer
 installcheck: results/full-text-search/text/options/normalizer
 installcheck: results/compare/text/single/equal
 installcheck: results/compare/integer/single/less-than-equal
+installcheck: results/compare/integer/single/greater-than-equal
 installcheck: results/compare/integer/single/between
 installcheck: results/compare/integer/order_by_limit
 
@@ -51,6 +52,8 @@ results/full-text-search/text/options/normalizer:
 results/compare/text/single/equal:
 	@mkdir -p $@
 results/compare/integer/single/less-than-equal:
+	@mkdir -p $@
+results/compare/integer/single/greater-than-equal:
 	@mkdir -p $@
 results/compare/integer/single/between:
 	@mkdir -p $@

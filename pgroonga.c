@@ -1003,6 +1003,40 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 									 GRN_COLUMN_NAME_KEY_LEN);
 }
 
+static bool
+PGrnIsMeaningfullMaxBorderValue(grn_obj *currentValue,
+								grn_obj *newValue,
+								int flags,
+								StrategyNumber strategy)
+{
+	if (((flags & GRN_CURSOR_LT) == GRN_CURSOR_LT) &&
+		strategy == PGrnLessEqualStrategyNumber)
+	{
+		return grn_operator_exec_greater_equal(ctx, currentValue, newValue);
+	}
+	else
+	{
+		return grn_operator_exec_greater(ctx, currentValue, newValue);
+	}
+}
+
+static bool
+PGrnIsMeaningfullMinBorderValue(grn_obj *currentValue,
+								grn_obj *newValue,
+								int flags,
+								StrategyNumber strategy)
+{
+	if (((flags & GRN_CURSOR_GT) == GRN_CURSOR_GT) &&
+		strategy == PGrnGreaterEqualStrategyNumber)
+	{
+		return grn_operator_exec_less_equal(ctx, currentValue, newValue);
+	}
+	else
+	{
+		return grn_operator_exec_less(ctx, currentValue, newValue);
+	}
+}
+
 static void
 PGrnFillBorder(IndexScanDesc scan,
 			   void **min, unsigned int *minSize,
@@ -1029,10 +1063,23 @@ PGrnFillBorder(IndexScanDesc scan,
 		{
 		case PGrnLessStrategyNumber:
 		case PGrnLessEqualStrategyNumber:
+			if (maxBorderValue->header.type != GRN_DB_VOID)
+			{
+				grn_obj_reinit(ctx, &buffer, domain, 0);
+				PGrnGetValue(index, attrNumber, &buffer, key->sk_argument);
+				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
+													 &buffer,
+													 *flags,
+													 key->sk_strategy))
+				{
+					continue;
+				}
+			}
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
 			PGrnGetValue(index, attrNumber, maxBorderValue, key->sk_argument);
 			*max = GRN_BULK_HEAD(maxBorderValue);
 			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
+			*flags &= ~(GRN_CURSOR_LT | GRN_CURSOR_LE);
 			if (key->sk_strategy == PGrnLessStrategyNumber)
 			{
 				*flags |= GRN_CURSOR_LT;
@@ -1051,10 +1098,24 @@ PGrnFillBorder(IndexScanDesc scan,
 			break;
 		case PGrnGreaterEqualStrategyNumber:
 		case PGrnGreaterStrategyNumber:
+			if (minBorderValue->header.type != GRN_DB_VOID)
+			{
+				grn_obj_reinit(ctx, &buffer, domain, 0);
+				PGrnGetValue(index, attrNumber, &buffer,
+							 key->sk_argument);
+				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
+													 &buffer,
+													 *flags,
+													 key->sk_strategy))
+				{
+					continue;
+				}
+			}
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
 			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
 			*min = GRN_BULK_HEAD(minBorderValue);
 			*minSize = GRN_BULK_VSIZE(minBorderValue);
+			*flags &= ~(GRN_CURSOR_GT | GRN_CURSOR_GE);
 			if (key->sk_strategy == PGrnGreaterEqualStrategyNumber)
 			{
 				*flags |= GRN_CURSOR_GE;
