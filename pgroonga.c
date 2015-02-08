@@ -46,6 +46,8 @@ typedef struct PGrnScanOpaqueData
 	grn_obj *idsTable;
 	grn_obj *lexicon;
 	grn_obj *indexColumn;
+	grn_obj minBorderValue;
+	grn_obj maxBorderValue;
 	grn_obj *searched;
 	grn_obj *sorted;
 	grn_obj *targetTable;
@@ -337,7 +339,7 @@ PGrnCheck(const char *message)
  * Support functions and type-specific routines
  */
 
-static grn_builtin_type
+static grn_id
 PGrnGetType(Relation index, AttrNumber n)
 {
 	FmgrInfo *function;
@@ -348,7 +350,7 @@ PGrnGetType(Relation index, AttrNumber n)
 	type = FunctionCall2(function,
 						 ObjectIdGetDatum(desc->attrs[n]->atttypid),
 						 Int32GetDatum(desc->attrs[n]->atttypmod));
-	return (grn_builtin_type) DatumGetInt32(type);
+	return DatumGetInt32(type);
 }
 
 static void
@@ -743,6 +745,8 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->idsTable = PGrnLookupIDsTable(index, ERROR);
 	so->indexColumn = PGrnLookupIndexColumn(index, ERROR);
 	so->lexicon = grn_column_table(ctx, so->indexColumn);
+	GRN_VOID_INIT(&(so->minBorderValue));
+	GRN_VOID_INIT(&(so->maxBorderValue));
 	so->searched = NULL;
 	so->sorted = NULL;
 	so->targetTable = NULL;
@@ -771,6 +775,8 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		grn_table_cursor_close(ctx, so->tableCursor);
 		so->tableCursor = NULL;
 	}
+	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
+	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
 	if (so->sorted)
 	{
 		grn_obj_unlink(ctx, so->sorted);
@@ -1004,44 +1010,59 @@ PGrnFillBorder(IndexScanDesc scan,
 			   int *flags)
 {
 	Relation index = scan->indexRelation;
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	grn_obj *minBorderValue;
+	grn_obj *maxBorderValue;
 	int i;
 
+	minBorderValue = &(so->minBorderValue);
+	maxBorderValue = &(so->maxBorderValue);
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
 		ScanKey key = &(scan->keyData[i]);
+		AttrNumber attrNumber;
+		grn_id domain;
 
-		/* TODO: Use buffer for min and max */
-		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, key->sk_attno - 1), 0);
-		PGrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
-
+		attrNumber = key->sk_attno - 1;
+		domain = PGrnGetType(index, attrNumber);
 		switch (key->sk_strategy)
 		{
 		case PGrnLessStrategyNumber:
-			*max = GRN_BULK_HEAD(&buffer);
-			*maxSize = GRN_BULK_VSIZE(&buffer);
-			*flags |= GRN_CURSOR_LT;
-			break;
 		case PGrnLessEqualStrategyNumber:
-			*max = GRN_BULK_HEAD(&buffer);
-			*maxSize = GRN_BULK_VSIZE(&buffer);
-			*flags |= GRN_CURSOR_LE;
+			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
+			PGrnGetValue(index, attrNumber, maxBorderValue, key->sk_argument);
+			*max = GRN_BULK_HEAD(maxBorderValue);
+			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
+			if (key->sk_strategy == PGrnLessStrategyNumber)
+			{
+				*flags |= GRN_CURSOR_LT;
+			}
+			else
+			{
+				*flags |= GRN_CURSOR_LE;
+			}
 			break;
 		case PGrnEqualStrategyNumber:
-			*min = GRN_BULK_HEAD(&buffer);
-			*minSize = GRN_BULK_VSIZE(&buffer);
-			*max = GRN_BULK_HEAD(&buffer);
-			*maxSize = GRN_BULK_VSIZE(&buffer);
+			grn_obj_reinit(ctx, minBorderValue, domain, 0);
+			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
+			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
+			PGrnGetValue(index, attrNumber, maxBorderValue, key->sk_argument);
 			*flags |= GRN_CURSOR_LE | GRN_CURSOR_GE;
 			break;
 		case PGrnGreaterEqualStrategyNumber:
-			*min = GRN_BULK_HEAD(&buffer);
-			*minSize = GRN_BULK_VSIZE(&buffer);
-			*flags |= GRN_CURSOR_GE;
-			break;
 		case PGrnGreaterStrategyNumber:
-			*min = GRN_BULK_HEAD(&buffer);
-			*minSize = GRN_BULK_VSIZE(&buffer);
-			*flags |= GRN_CURSOR_GT;
+			grn_obj_reinit(ctx, minBorderValue, domain, 0);
+			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
+			*min = GRN_BULK_HEAD(minBorderValue);
+			*minSize = GRN_BULK_VSIZE(minBorderValue);
+			if (key->sk_strategy == PGrnGreaterEqualStrategyNumber)
+			{
+				*flags |= GRN_CURSOR_GE;
+			}
+			else
+			{
+				*flags |= GRN_CURSOR_GT;
+			}
 			break;
 		}
 	}
