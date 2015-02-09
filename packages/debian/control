@@ -1,5 +1,5 @@
 Source: pgroonga
-Section: libs
+Section: database
 Priority: optional
 Maintainer: PGroonga Project <packages@groonga.org>
 Build-Depends:
