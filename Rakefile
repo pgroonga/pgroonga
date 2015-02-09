@@ -193,6 +193,7 @@ postgresql-devel
            env_value("OLD_RELEASE_DATE"),
            version,
            env_value("NEW_RELEASE_DATE"),
+           "README.md",
            "packages/debian/changelog",
            "packages/yum/postgresql-pgroonga.spec.in")
     end
