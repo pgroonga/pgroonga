@@ -49,14 +49,12 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 
 次の環境用のパッケージを用意しています。
 
-<!--  * Ubuntu 14.10 -->
+  * Ubuntu 14.10
   * CentOS 7
 
 その他の環境ではソースからインストールしてください。
 
 それぞれの環境でのインストール方法の詳細は以降のセクションで説明します。
-
-<!--
 
 ### Ubuntu 14.10にインストール
 
@@ -80,8 +78,6 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
     % sudo -u postgres -H psql -d pgroonga_test --command 'CREATE EXTENSION pgroonga'
 
 これでインストールは完了です。
-
--->
 
 ### CentOS 7にインストール
 
