@@ -37,5 +37,8 @@ make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 %{_datadir}/pgsql/extension/*.sql
 
 %changelog
+* Mon Feb 09 2015 Kouhei Sutou <kou@clear-code.com> - 0.3.0-1
+- New upstream release.
+
 * Thu Jan 29 2015 Kouhei Sutou <kou@clear-code.com> - 0.2.0-1
 - initial packaging for CentOS.

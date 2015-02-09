@@ -1,3 +1,9 @@
+pgroonga (0.3.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Kouhei Sutou <kou@clear-code.com>  Mon, 09 Feb 2015 11:48:41 +0900
+
 pgroonga (0.2.0-1) unstable; urgency=low
 
   * Initial release
