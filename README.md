@@ -216,10 +216,69 @@ SELECT * FROM memos WHERE content @@ 'PGroonga OR PostgreSQL';
 
 #### カスタマイズ
 
-TODO:
+`CREATE INDEX`の`WITH`でトークナイザーとノーマライザーをカスタマイズす
+ることができます。デフォルトで適切なトークナイザーとノーマライザーが設
+定されているので、通常はカスタマイズする必要はありません。上級者向けの
+機能です。
 
-  * トークナイザーのカスタマイズ方法を書く
-  * ノーマライザーのカスタマイズ方法を書く
+なお、デフォルトのトークナイザーとノーマライザーは次の通りです。
+
+  * トークナイザー: `TokenBigram`: Bigramベースのトークナイザーです。
+  * ノーマライザー: [NormalizerAuto](http://groonga.org/ja/docs/reference/normalizers.html#normalizer-auto): エンコーディングに合わせて適切な正規化を行います。たとえば、UTF-8の場合はUnicodeのNFKCベースの正規化を行います。
+
+トークナイザーをカスタマイズするときは`tokenizer='トークナイザー名'`を
+指定します。例えば、
+[MeCab](http://mecab.googlecode.com/svn/trunk/mecab/doc/index.html)ベー
+スのトークナイザーを指定する場合は次のように`tokenizer='TokenMecab'`を
+指定します。
+
+```sql
+CREATE TABLE memos (
+  id integer,
+  content text
+);
+
+CREATE INDEX pgroonga_content_index
+          ON memos
+       USING pgroonga (content)
+        WITH (tokenizer='TokenMecab');
+```
+
+次のように`tokenizer=''`を指定することでトークナイザーを無効にできます。
+トークナイザーを無効にするとカラムの値そのもの、あるいは値の前方一致検
+索でのみヒットするようになります。これは、タグ検索や名前検索などに有用
+です。（タグ検索には`tokenizer='TokenDelimit'`も有用です。）
+
+```sql
+CREATE TABLE memos (
+  id integer,
+  tag text
+);
+
+CREATE INDEX pgroonga_tag_index
+          ON memos
+       USING pgroonga (tag)
+        WITH (tokenizer='');
+```
+
+ノーマライザーをカスタマイズするときは`normalizer='ノーマライザー名'`を
+指定します。通常は指定する必要はありません。
+
+次のように`normalizer=''`を指定することでノーマライザーを無効にできま
+す。ノーマライザーを無効にするとカラムの値そのものでのみヒットするよう
+になります。正規化によりノイズが増える場合は有用な機能です。
+
+```sql
+CREATE TABLE memos (
+  id integer,
+  tag text
+);
+
+CREATE INDEX pgroonga_tag_index
+          ON memos
+       USING pgroonga (tag)
+        WITH (normalizer='');
+```
 
 ### 等価・比較
 
