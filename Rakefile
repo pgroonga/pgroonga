@@ -21,11 +21,10 @@ def find_version(package)
   end
 end
 
-def launchpad_uploader_pgp_key
-  env = "LAUNCHPAD_UPLOADER_PGP_KEY"
-  key = ENV[env]
-  raise "Specify #{env} environment variable" if key.nil?
-  key
+def env_value(name)
+  value = ENV[name]
+  raise "Specify #{name} environment variable" if value.nil?
+  value
 end
 
 version = find_version(package)
@@ -181,7 +180,21 @@ postgresql-devel
            "--source-archive", archive_name,
            "--code-names", "utopic",
            "--debian-directory", "packages/debian",
-           "--pgp-sign-key", launchpad_uploader_pgp_key)
+           "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+    end
+  end
+
+  namespace :version do
+    desc "Update versions"
+    task :update do
+      ruby("#{groonga_source_dir}/misc/update-latest-release.rb",
+           package,
+           env_value("OLD_RELEASE"),
+           env_value("OLD_RELEASE_DATE"),
+           version,
+           env_value("NEW_RELEASE_DATE"),
+           "packages/debian/changelog",
+           "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
 end
