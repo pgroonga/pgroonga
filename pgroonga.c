@@ -1136,21 +1136,6 @@ PGrnFillBorder(IndexScanDesc scan,
 				*flags |= GRN_CURSOR_LE;
 			}
 			break;
-		case PGrnEqualStrategyNumber:
-			/* TODO: Support the following:
-			 *   WHERE id  = 5 AND id <= 4 (Empty result)
-			 *   WHERE id  = 2 AND id >= 4 (Empty result)
-			 *   WHERE id <= 4 AND id  = 5 (Empty result)
-			 *   WHERE id >= 4 AND id  = 2 (Empty result)
-			 *   WHERE id  = 2 AND id <= 4 (Ignore id = 2)
-			 *   WHERE id  = 4 AND id >= 2 (Ignore id = 4)
-			 */
-			grn_obj_reinit(ctx, minBorderValue, domain, 0);
-			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
-			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
-			PGrnGetValue(index, attrNumber, maxBorderValue, key->sk_argument);
-			*flags |= GRN_CURSOR_LE | GRN_CURSOR_GE;
-			break;
 		case PGrnGreaterEqualStrategyNumber:
 		case PGrnGreaterStrategyNumber:
 			if (minBorderValue->header.type != GRN_DB_VOID)
@@ -1180,12 +1165,18 @@ PGrnFillBorder(IndexScanDesc scan,
 				*flags |= GRN_CURSOR_GT;
 			}
 			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("unexpected strategy number for range search: %d",
+							key->sk_strategy)));
+			break;
 		}
 	}
 }
 
 static void
-PGrnOpenIndexCursor(IndexScanDesc scan, ScanDirection dir)
+PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	void *min = NULL;
@@ -1220,27 +1211,50 @@ PGrnOpenIndexCursor(IndexScanDesc scan, ScanDirection dir)
 									 GRN_COLUMN_NAME_KEY_LEN);
 }
 
+static bool
+PGrnIsRangeSearchable(IndexScanDesc scan)
+{
+	int i;
+
+	for (i = 0; i < scan->numberOfKeys; i++)
+	{
+		ScanKey key = &(scan->keyData[i]);
+
+		switch (key->sk_strategy)
+		{
+		case PGrnLessStrategyNumber:
+		case PGrnLessEqualStrategyNumber:
+		case PGrnGreaterStrategyNumber:
+		case PGrnGreaterEqualStrategyNumber:
+			break;
+		default:
+			return false;
+			break;
+		}
+	}
+
+	return true;
+}
+
 static void
 PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
-	bool forFullTextSearch = false;
 
 	if (so->indexCursor)
 		return;
 	if (so->tableCursor)
 		return;
 
-	forFullTextSearch = PGrnIsForFullTextSearchIndex(scan->indexRelation);
-	if (forFullTextSearch)
+	if (PGrnIsRangeSearchable(scan))
+	{
+		PGrnRangeSearch(scan, dir);
+	}
+	else
 	{
 		PGrnSearch(scan);
 		PGrnSort(scan);
 		PGrnOpenTableCursor(scan, dir);
-	}
-	else
-	{
-		PGrnOpenIndexCursor(scan, dir);
 	}
 }
 
