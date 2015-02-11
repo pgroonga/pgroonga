@@ -636,7 +636,7 @@ pgroonga_command(PG_FUNCTION_ARGS)
 {
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
 	int flags;
-	char *copiedResult;
+	text *result;
 
 	grn_ctx_send(ctx,
 				 VARDATA_ANY(groongaCommand),
@@ -649,8 +649,9 @@ pgroonga_command(PG_FUNCTION_ARGS)
 		GRN_TEXT_PUT(ctx, &buffer, chunk, chunkSize);
 	} while ((flags & GRN_CTX_MORE));
 
-	copiedResult = pnstrdup(GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer));
-	PG_RETURN_CSTRING(copiedResult);
+	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&buffer),
+									  GRN_TEXT_LEN(&buffer));
+	PG_RETURN_TEXT_P(result);
 }
 
 static grn_bool

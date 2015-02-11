@@ -10,7 +10,7 @@ CREATE FUNCTION pgroonga.table_name(indexName cstring)
 	STRICT;
 
 CREATE FUNCTION pgroonga.command(groongaCommand text)
-	RETURNS cstring
+	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command'
 	LANGUAGE C
 	VOLATILE
