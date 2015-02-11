@@ -2,6 +2,20 @@ SET search_path = public;
 
 CREATE SCHEMA pgroonga;
 
+CREATE FUNCTION pgroonga.table_name(indexName cstring)
+	RETURNS cstring
+	AS 'MODULE_PATHNAME', 'pgroonga_table_name'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
+CREATE FUNCTION pgroonga.command(groongaCommand text)
+	RETURNS cstring
+	AS 'MODULE_PATHNAME', 'pgroonga_command'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.contain(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_text'

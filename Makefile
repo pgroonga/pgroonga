@@ -38,6 +38,7 @@ installcheck: results/compare/integer/single/greater-than-equal
 installcheck: results/compare/integer/single/between
 installcheck: results/compare/integer/multiple/greater-than-equal
 installcheck: results/compare/integer/order_by_limit
+installcheck: results/groonga
 
 results/full-text-search/text/single/contain:
 	@mkdir -p $@
@@ -64,4 +65,6 @@ results/compare/integer/single/between:
 results/compare/integer/multiple/greater-than-equal:
 	@mkdir -p $@
 results/compare/integer/order_by_limit:
+	@mkdir -p $@
+results/groonga:
 	@mkdir -p $@

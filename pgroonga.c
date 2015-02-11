@@ -14,6 +14,7 @@
 #include <miscadmin.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
+#include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
 
@@ -68,6 +69,9 @@ typedef struct PGrnSearchData
 	bool    isEmptyCondition;
 } PGrnSearchData;
 
+
+PG_FUNCTION_INFO_V1(pgroonga_table_name);
+PG_FUNCTION_INFO_V1(pgroonga_command);
 
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
@@ -595,6 +599,58 @@ UInt64ToCtid(uint64 key)
 	ItemPointerData	ctid;
 	ItemPointerSet(&ctid, (key >> 16) & 0xFFFFFFFF, key & 0xFFFF);
 	return ctid;
+}
+
+/**
+ * pgroonga.table_name(indexName cstring) : cstring
+ */
+Datum
+pgroonga_table_name(PG_FUNCTION_ARGS)
+{
+	Datum indexNameDatum = PG_GETARG_DATUM(0);
+	Datum indexOidDatum;
+	Oid indexOid;
+	char tableName[GRN_TABLE_MAX_KEY_SIZE];
+	char *copiedTableName;
+
+	indexOidDatum = DirectFunctionCall1(to_regclass, indexNameDatum);
+	if (!indexOidDatum)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("unknown index name: <%s>",
+						DatumGetCString(indexNameDatum))));
+	}
+	indexOid = DatumGetObjectId(indexOidDatum);
+
+	snprintf(tableName, sizeof(tableName), PGrnIDsTableNameFormat, indexOid);
+	copiedTableName = pstrdup(tableName);
+	PG_RETURN_CSTRING(copiedTableName);
+}
+
+/**
+ * pgroonga.command(groongaCommand text) : text
+ */
+Datum
+pgroonga_command(PG_FUNCTION_ARGS)
+{
+	text *groongaCommand = PG_GETARG_TEXT_PP(0);
+	int flags;
+	char *copiedResult;
+
+	grn_ctx_send(ctx,
+				 VARDATA_ANY(groongaCommand),
+				 VARSIZE_ANY_EXHDR(groongaCommand), 0);
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	do {
+		char *chunk;
+		unsigned int chunkSize;
+		grn_ctx_recv(ctx, &chunk, &chunkSize, &flags);
+		GRN_TEXT_PUT(ctx, &buffer, chunk, chunkSize);
+	} while ((flags & GRN_CTX_MORE));
+
+	copiedResult = pnstrdup(GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer));
+	PG_RETURN_CSTRING(copiedResult);
 }
 
 static grn_bool
