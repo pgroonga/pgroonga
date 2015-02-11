@@ -186,6 +186,7 @@ INSERT INTO pg_catalog.pg_am VALUES(
 
 CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
+		OPERATOR 6 pg_catalog.~~,
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
 		FUNCTION 1 pgroonga.typeof(oid, integer),

@@ -66,6 +66,7 @@ typedef struct PGrnSearchData
 	grn_obj sectionID;
 	grn_obj *expression;
 	grn_obj *expressionVariable;
+	bool    isEmptyCondition;
 } PGrnSearchData;
 
 
@@ -812,6 +813,38 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnSearchBuildConditionLike(PGrnSearchData *data,
+							 grn_obj *matchTarget,
+							 grn_obj *query)
+{
+	grn_obj *expression;
+	const char *queryRaw;
+	size_t querySize;
+
+	expression = data->expression;
+	queryRaw = GRN_TEXT_VALUE(query);
+	querySize = GRN_TEXT_LEN(query);
+
+	if (querySize == 0)
+	{
+		data->isEmptyCondition = true;
+		return;
+	}
+
+	if (!(queryRaw[0] == '%' && queryRaw[querySize - 1] == '%'))
+	{
+		data->isEmptyCondition = true;
+		return;
+	}
+
+	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+	grn_expr_append_const_str(ctx, expression,
+							  queryRaw + 1, querySize - 2,
+							  GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+}
+
+static void
 PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnScanOpaque so,
 						  PGrnSearchData *data)
@@ -863,6 +896,8 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		case PGrnGreaterStrategyNumber:
 			operator = GRN_OP_GREATER;
 			break;
+		case PGrnLikeStrategyNumber:
+			break;
 		case PGrnContainStrategyNumber:
 			operator = GRN_OP_MATCH;
 			break;
@@ -880,7 +915,14 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		if (!isValidStrategy)
 			continue;
 
-		if (key->sk_strategy == PGrnQueryStrategyNumber)
+		switch (key->sk_strategy)
+		{
+		case PGrnLikeStrategyNumber:
+			PGrnSearchBuildConditionLike(data, matchTarget, &buffer);
+			if (data->isEmptyCondition)
+				return;
+			break;
+		case PGrnQueryStrategyNumber:
 		{
 			grn_rc rc;
 			grn_expr_flags flags =
@@ -896,14 +938,15 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 						 errmsg("pgroonga: failed to parse expression: %s",
 								ctx->errbuf)));
 			}
+			break;
 		}
-		else
-		{
+		default:
 			grn_expr_append_obj(ctx, data->expression,
 								matchTarget, GRN_OP_PUSH, 1);
 			grn_expr_append_const(ctx, data->expression,
 								  &buffer, GRN_OP_PUSH, 1);
 			grn_expr_append_op(ctx, data->expression, operator, 2);
+			break;
 		}
 
 		if (nExpressions > 0)
@@ -945,6 +988,7 @@ PGrnSearch(IndexScanDesc scan)
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
 							  data.expression, data.expressionVariable);
+	data.isEmptyCondition = false;
 
 	PG_TRY();
 	{
@@ -961,11 +1005,14 @@ PGrnSearch(IndexScanDesc scan)
 	so->searched = grn_table_create(ctx, NULL, 0, NULL,
 									GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
 									so->idsTable, 0);
-    grn_table_select(ctx,
-					 so->idsTable,
-					 data.expression,
-					 so->searched,
-					 GRN_OP_OR);
+	if (!data.isEmptyCondition)
+	{
+		grn_table_select(ctx,
+						 so->idsTable,
+						 data.expression,
+						 so->searched,
+						 GRN_OP_OR);
+	}
 	PGrnSearchDataFree(&data);
 }
 
