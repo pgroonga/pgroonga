@@ -69,6 +69,9 @@ namespace :package do
     desc "Upload sources"
     task :upload => [archive_name, source_dir] do
       cp(archive_name, source_dir)
+      cd(source_dir) do
+        ln_sf(archive_name, "#{package}-latest.tar.gz")
+      end
       sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
     end
   end
