@@ -3,7 +3,7 @@
 # set -x
 set -e
 
-curl --silent --location \
+curl --silent --location --fail \
   https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | \
   sh
 
