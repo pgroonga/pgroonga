@@ -44,8 +44,6 @@ typedef PGrnBuildStateData *PGrnBuildState;
 typedef struct PGrnScanOpaqueData
 {
 	grn_obj *idsTable;
-	grn_obj *lexicon;
-	grn_obj *indexColumn;
 	grn_obj minBorderValue;
 	grn_obj maxBorderValue;
 	grn_obj *searched;
@@ -745,8 +743,6 @@ static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
 	so->idsTable = PGrnLookupIDsTable(index, ERROR);
-	so->indexColumn = PGrnLookupIndexColumn(index, ERROR);
-	so->lexicon = grn_column_table(ctx, so->indexColumn);
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
 	so->searched = NULL;
@@ -1211,6 +1207,8 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 	grn_id indexCursorMin = GRN_ID_NIL;
 	grn_id indexCursorMax = GRN_ID_MAX;
 	int indexCursorFlags = 0;
+	grn_obj *indexColumn;
+	grn_obj *lexicon;
 
 	PGrnFillBorder(scan, &min, &minSize, &max, &maxSize, &flags);
 
@@ -1219,12 +1217,15 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 	else
 		flags |= GRN_CURSOR_ASCENDING;
 
-	so->tableCursor = grn_table_cursor_open(ctx, so->lexicon,
+	indexColumn = PGrnLookupIndexColumn(scan->indexRelation, ERROR);
+	lexicon = grn_column_table(ctx, indexColumn);
+
+	so->tableCursor = grn_table_cursor_open(ctx, lexicon,
 											min, minSize,
 											max, maxSize,
 											offset, limit, flags);
 	so->indexCursor = grn_index_cursor_open(ctx,
-											so->tableCursor, so->indexColumn,
+											so->tableCursor, indexColumn,
 											indexCursorMin,
 											indexCursorMax,
 											indexCursorFlags);
