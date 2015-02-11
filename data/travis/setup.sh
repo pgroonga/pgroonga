@@ -29,5 +29,5 @@ if [ -n "${pg_version}" ]; then
   sudo make install > /dev/null
   cd ..
 
-  postgresql -U postgres -d template1 -c 'CREATE EXTENSION pgroonga;'
+  psql -U postgres -d template1 -c 'CREATE EXTENSION pgroonga;'
 fi
