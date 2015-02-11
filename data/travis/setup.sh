@@ -13,7 +13,7 @@ pg_version=$(ruby -r yaml \
 
 if [ -n "${pg_version}" ]; then
   sudo apt-get install -qq -y postgresql-server-dev-${pg_version}
-  git clone --recursive --depth 1 https://github.com/pgroonga/pgroonga.git
+  git clone --quiet --recursive --depth 1 https://github.com/pgroonga/pgroonga.git
   cd pgroonga
   make > /dev/null
   sudo make install > /dev/null
