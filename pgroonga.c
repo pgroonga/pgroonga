@@ -1238,10 +1238,20 @@ static bool
 PGrnIsRangeSearchable(IndexScanDesc scan)
 {
 	int i;
+	AttrNumber previousAttrNumber = InvalidAttrNumber;
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
 		ScanKey key = &(scan->keyData[i]);
+
+		if (previousAttrNumber == InvalidAttrNumber)
+		{
+			previousAttrNumber = key->sk_attno;
+		}
+		if (key->sk_attno != previousAttrNumber)
+		{
+			return false;
+		}
 
 		switch (key->sk_strategy)
 		{
