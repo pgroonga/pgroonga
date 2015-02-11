@@ -12,8 +12,6 @@ install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get install -qq -y postgresql-server-dev-9.3
 before_script:
-  - env
-  - dpkg -l | grep postgres
   - make DEBUG=1
   - sudo make install
 script:
