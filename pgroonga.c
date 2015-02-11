@@ -62,6 +62,7 @@ typedef PGrnScanOpaqueData *PGrnScanOpaque;
 typedef struct PGrnSearchData
 {
 	grn_obj	*indexColumn;
+	grn_obj targetColumns;
 	grn_obj matchTargets;
 	grn_obj sectionID;
 	grn_obj *expression;
@@ -850,12 +851,16 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnSearchData *data)
 {
 	Relation index = scan->indexRelation;
+	TupleDesc desc;
 	int i, nExpressions = 0;
 
+	desc = RelationGetDescr(index);
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
 		ScanKey key = &(scan->keyData[i]);
 		grn_bool isValidStrategy = GRN_TRUE;
+		const char *targetColumnName;
+		grn_obj *targetColumn;
 		grn_obj *matchTarget, *matchTargetVariable;
 		grn_operator operator = GRN_OP_NOP;
 
@@ -867,8 +872,12 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 								  matchTarget, matchTargetVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 
-		grn_expr_append_obj(ctx, matchTarget,
-							data->indexColumn, GRN_OP_PUSH, 1);
+		targetColumnName = desc->attrs[key->sk_attno - 1]->attname.data;
+		targetColumn = grn_obj_column(ctx, so->idsTable,
+									  targetColumnName,
+									  strlen(targetColumnName));
+		GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
+		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
 		GRN_UINT32_SET(ctx, &(data->sectionID), key->sk_attno - 1);
 		grn_expr_append_const(ctx, matchTarget,
@@ -958,9 +967,12 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 static void
 PGrnSearchDataFree(PGrnSearchData *data)
 {
-	unsigned int i, nMatchTargets;
+	unsigned int i;
+	unsigned int nMatchTargets;
+	unsigned int nTargetColumns;
 
 	grn_obj_unlink(ctx, data->expression);
+
 	nMatchTargets = GRN_BULK_VSIZE(&(data->matchTargets)) / sizeof(grn_obj *);
 	for (i = 0; i < nMatchTargets; i++)
 	{
@@ -968,6 +980,15 @@ PGrnSearchDataFree(PGrnSearchData *data)
 		grn_obj_unlink(ctx, matchTarget);
 	}
 	GRN_OBJ_FIN(ctx, &(data->matchTargets));
+
+	nTargetColumns = GRN_BULK_VSIZE(&(data->targetColumns)) / sizeof(grn_obj *);
+	for (i = 0; i < nTargetColumns; i++)
+	{
+		grn_obj *targetColumn = GRN_PTR_VALUE_AT(&(data->targetColumns), i);
+		grn_obj_unlink(ctx, targetColumn);
+	}
+	GRN_OBJ_FIN(ctx, &(data->targetColumns));
+
 	GRN_OBJ_FIN(ctx, &(data->sectionID));
 }
 
@@ -982,6 +1003,7 @@ PGrnSearch(IndexScanDesc scan)
 		return;
 
 	GRN_PTR_INIT(&(data.matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_PTR_INIT(&(data.targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT32_INIT(&(data.sectionID), 0);
 
 	data.indexColumn = PGrnLookupIndexColumn(index, ERROR);
