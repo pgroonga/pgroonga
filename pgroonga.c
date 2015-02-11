@@ -1387,9 +1387,6 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 
 /**
  * pgroonga.rescan() -- amrescan
- *
- * この段階ではスキャンキーがまだ与えられていない場合がある。
- * まだ検索を行わなず、後から gettuple または getbitmap で検索する。
  */
 Datum
 pgroonga_rescan(PG_FUNCTION_ARGS)
