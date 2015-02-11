@@ -464,6 +464,20 @@ DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 `pg_catalog.pg_am`から手動でレコードを消さないといけないのはおかしい気
 がするので、何がおかしいか知っている人は教えてくれるとうれしいです。
 
+## Travis CIで使う
+
+Travis CIでのPGroongaのセットアップをするシェルスクリプトを提供してい
+ます。次のように`.travis.yml`の`install`で使うようにしてください。
+
+```yaml
+install:
+  - curl --silent --location https://github.com/pgroonga/pgroonga/raw/master/data/travis/setup.sh | sh
+```
+
+このシェルスクリプトの中では`template1`データベースに対して`CREATE
+EXTENSION pgroonga`をしているので、新しくデータベースを作ればすぐに
+PGroongaが使える状態になっています。
+
 ## ライセンス
 
 ライセンスはBSDライセンスやMITライセンスと類似の
