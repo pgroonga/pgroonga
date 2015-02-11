@@ -398,8 +398,8 @@ PGrnLookupIndexColumn(Relation index, int errorLevel)
 
 static grn_obj *
 PGrnCreateTable(const char *name,
-			   grn_obj_flags flags,
-			   grn_obj *type)
+				grn_obj_flags flags,
+				grn_obj *type)
 {
 	grn_obj	*table;
 
@@ -415,9 +415,9 @@ PGrnCreateTable(const char *name,
 
 static grn_obj *
 PGrnCreateColumn(grn_obj	*table,
-				const char *name,
-				grn_obj_flags flags,
-				grn_obj	*type)
+				 const char *name,
+				 grn_obj_flags flags,
+				 grn_obj	*type)
 {
 	grn_obj *column;
 
