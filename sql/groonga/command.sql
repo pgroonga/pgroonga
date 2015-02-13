@@ -10,6 +10,7 @@ CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
 
 SELECT pgroonga.command('select ' ||
                         pgroonga.table_name('pgroonga_index') ||
-                        ' --output_columns content');
+                        ' --output_columns content')::json->>1
+    AS body;
 
 DROP TABLE memos;

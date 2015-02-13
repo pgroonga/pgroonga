@@ -93,6 +93,9 @@ PG_FUNCTION_INFO_V1(pgroonga_options);
 static grn_ctx grnContext;
 static grn_ctx *ctx = &grnContext;
 static grn_obj buffer;
+static grn_obj headBuffer;
+static grn_obj bodyBuffer;
+static grn_obj footBuffer;
 static grn_obj inspectBuffer;
 
 static const char *
@@ -161,6 +164,9 @@ PGrnOnProcExit(int code, Datum arg)
 	grn_obj *db;
 
 	GRN_OBJ_FIN(ctx, &inspectBuffer);
+	GRN_OBJ_FIN(ctx, &footBuffer);
+	GRN_OBJ_FIN(ctx, &bodyBuffer);
+	GRN_OBJ_FIN(ctx, &headBuffer);
 	GRN_OBJ_FIN(ctx, &buffer);
 
 	db = grn_ctx_db(ctx);
@@ -294,6 +300,9 @@ _PG_init(void)
 	on_proc_exit(PGrnOnProcExit, 0);
 
 	GRN_VOID_INIT(&buffer);
+	GRN_TEXT_INIT(&headBuffer, 0);
+	GRN_TEXT_INIT(&bodyBuffer, 0);
+	GRN_TEXT_INIT(&footBuffer, 0);
 	GRN_TEXT_INIT(&inspectBuffer, 0);
 
 	PGrnEnsureDatabase();
@@ -641,14 +650,31 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	grn_ctx_send(ctx,
 				 VARDATA_ANY(groongaCommand),
 				 VARSIZE_ANY_EXHDR(groongaCommand), 0);
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	GRN_BULK_REWIND(&bodyBuffer);
 	do {
 		char *chunk;
 		unsigned int chunkSize;
 		grn_ctx_recv(ctx, &chunk, &chunkSize, &flags);
-		GRN_TEXT_PUT(ctx, &buffer, chunk, chunkSize);
+		GRN_TEXT_PUT(ctx, &bodyBuffer, chunk, chunkSize);
 	} while ((flags & GRN_CTX_MORE));
 
+	GRN_BULK_REWIND(&headBuffer);
+	GRN_BULK_REWIND(&footBuffer);
+	grn_output_envelope(ctx,
+						ctx->rc,
+						&headBuffer,
+						&bodyBuffer,
+						&footBuffer,
+						NULL,
+						0);
+
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	GRN_TEXT_PUT(ctx, &buffer,
+				 GRN_TEXT_VALUE(&headBuffer), GRN_TEXT_LEN(&headBuffer));
+	GRN_TEXT_PUT(ctx, &buffer,
+				 GRN_TEXT_VALUE(&bodyBuffer), GRN_TEXT_LEN(&bodyBuffer));
+	GRN_TEXT_PUT(ctx, &buffer,
+				 GRN_TEXT_VALUE(&footBuffer), GRN_TEXT_LEN(&footBuffer));
 	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&buffer),
 									  GRN_TEXT_LEN(&buffer));
 	PG_RETURN_TEXT_P(result);
