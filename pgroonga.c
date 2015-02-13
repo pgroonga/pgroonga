@@ -34,6 +34,18 @@ typedef struct PGrnOptions
 	int normalizerOffset;
 } PGrnOptions;
 
+typedef struct PGrnCreateData
+{
+	Relation index;
+	grn_obj *idsTable;
+	grn_obj *lexicons;
+	unsigned int i;
+	TupleDesc desc;
+	Oid relNode;
+	bool forFullTextSearch;
+	grn_id attributeTypeID;
+} PGrnCreateData;
+
 typedef struct PGrnBuildStateData
 {
 	grn_obj	*idsTable;
@@ -60,7 +72,6 @@ typedef PGrnScanOpaqueData *PGrnScanOpaque;
 
 typedef struct PGrnSearchData
 {
-	grn_obj	*indexColumn;
 	grn_obj targetColumns;
 	grn_obj matchTargets;
 	grn_obj sectionID;
@@ -398,13 +409,15 @@ PGrnLookupIDsTable(Relation index, int errorLevel)
 }
 
 static grn_obj *
-PGrnLookupIndexColumn(Relation index, int errorLevel)
+PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
 	snprintf(name, sizeof(name),
 			 PGrnLexiconNameFormat ".%s",
-			 index->rd_node.relNode, PGrnIndexColumnName);
+			 index->rd_node.relNode,
+			 nthAttribute,
+			 PGrnIndexColumnName);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -453,89 +466,61 @@ PGrnIsForFullTextSearchIndex(Relation index)
 	return (containStrategyOID != InvalidOid);
 }
 
-/**
- * PGrnCreate
- *
- * @param	ctx
- * @param	index
- */
 static void
-PGrnCreate(Relation index, grn_obj **idsTable,
-		   grn_obj **lexicon, grn_obj **indexColumn)
+PGrnCreateDataColumn(PGrnCreateData *data)
 {
-	char idsTableName[GRN_TABLE_MAX_KEY_SIZE];
-	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_id typeID = GRN_ID_NIL;
-	int i;
-	TupleDesc desc;
-	Oid relNode = index->rd_node.relNode;
-	bool forFullTextSearch = false;
+	grn_obj_flags flags = GRN_OBJ_COLUMN_SCALAR;
 
-	desc = RelationGetDescr(index);
-
-	snprintf(idsTableName, sizeof(idsTableName),
-			 PGrnIDsTableNameFormat, relNode);
-	*idsTable = PGrnCreateTable(idsTableName,
-								GRN_OBJ_TABLE_PAT_KEY,
-								grn_ctx_at(ctx, GRN_DB_UINT64));
-
-	for (i = 0; i < desc->natts; i++)
+	if (PGrnIsLZ4Available)
 	{
-		grn_id attributeTypeID;
-		grn_obj_flags flags = GRN_OBJ_COLUMN_SCALAR;
-
-		attributeTypeID = PGrnGetType(index, i);
-		if (typeID == GRN_ID_NIL)
-			typeID = attributeTypeID;
-
-		if (attributeTypeID != typeID)
+		switch (data->attributeTypeID)
 		{
-			/* TODO: Show details */
-			ereport(ERROR,
-					(errcode(ERRCODE_INTERNAL_ERROR),
-					 errmsg("pgroonga: must be the same type columns "
-							"for multiple column index")));
+		case GRN_DB_SHORT_TEXT:
+		case GRN_DB_TEXT:
+		case GRN_DB_LONG_TEXT:
+			flags |= GRN_OBJ_COMPRESS_LZ4;
+			break;
 		}
-
-		if (PGrnIsLZ4Available)
-		{
-			switch (typeID)
-			{
-			case GRN_DB_SHORT_TEXT:
-			case GRN_DB_TEXT:
-			case GRN_DB_LONG_TEXT:
-				flags |= GRN_OBJ_COMPRESS_LZ4;
-				break;
-			}
-		}
-
-		PGrnCreateColumn(*idsTable,
-						 desc->attrs[i]->attname.data,
-						 flags,
-						 grn_ctx_at(ctx, attributeTypeID));
 	}
 
-	forFullTextSearch = PGrnIsForFullTextSearchIndex(index);
+	PGrnCreateColumn(data->idsTable,
+					 data->desc->attrs[data->i]->attname.data,
+					 flags,
+					 grn_ctx_at(ctx, data->attributeTypeID));
+}
 
-	switch (typeID)
+static void
+PGrnCreateIndexColumn(PGrnCreateData *data)
+{
+	grn_id typeID = GRN_ID_NIL;
+	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
+	grn_obj *lexicon;
+
+	switch (data->attributeTypeID)
 	{
 	case GRN_DB_TEXT:
 	case GRN_DB_LONG_TEXT:
 		typeID = GRN_DB_SHORT_TEXT;
 		break;
+	default:
+		typeID = data->attributeTypeID;
+		break;
 	}
 
-	snprintf(lexiconName, sizeof(lexiconName), PGrnLexiconNameFormat, relNode);
-	*lexicon = PGrnCreateTable(lexiconName,
-							   GRN_OBJ_TABLE_PAT_KEY,
-							   grn_ctx_at(ctx, typeID));
-	if (forFullTextSearch)
+	snprintf(lexiconName, sizeof(lexiconName),
+			 PGrnLexiconNameFormat, data->relNode, data->i);
+	lexicon = PGrnCreateTable(lexiconName,
+							  GRN_OBJ_TABLE_PAT_KEY,
+							  grn_ctx_at(ctx, typeID));
+	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
+
+	if (data->forFullTextSearch)
 	{
 		PGrnOptions *options;
 		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 
-		options = (PGrnOptions *) (index->rd_options);
+		options = (PGrnOptions *) (data->index->rd_options);
 		if (options)
 		{
 			tokenizerName = (const char *) (options) + options->tokenizerOffset;
@@ -543,52 +528,87 @@ PGrnCreate(Relation index, grn_obj **idsTable,
 		}
 		if (tokenizerName && tokenizerName[0])
 		{
-			grn_obj_set_info(ctx, *lexicon, GRN_INFO_DEFAULT_TOKENIZER,
+			grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
 							 PGrnLookup(tokenizerName, ERROR));
 		}
 		if (normalizerName && normalizerName[0])
 		{
-			grn_obj_set_info(ctx, *lexicon, GRN_INFO_NORMALIZER,
+			grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
 							 PGrnLookup(normalizerName, ERROR));
 		}
 	}
 
 	{
 		grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
-		if (forFullTextSearch)
+		if (data->forFullTextSearch)
 			flags |= GRN_OBJ_WITH_POSITION;
-		if (desc->natts > 1)
-			flags |= GRN_OBJ_WITH_SECTION;
-		*indexColumn = PGrnCreateColumn(*lexicon,
-										PGrnIndexColumnName,
-										flags,
-										*idsTable);
+		PGrnCreateColumn(lexicon,
+						 PGrnIndexColumnName,
+						 flags,
+						 data->idsTable);
+	}
+}
+
+/**
+ * PGrnCreate
+ *
+ * @param	ctx
+ * @param	index
+ */
+static void
+PGrnCreate(Relation index, grn_obj **idsTable, grn_obj *lexicons)
+{
+	char idsTableName[GRN_TABLE_MAX_KEY_SIZE];
+	PGrnCreateData data;
+
+	data.index = index;
+	data.desc = RelationGetDescr(index);
+	data.relNode = index->rd_node.relNode;
+
+	snprintf(idsTableName, sizeof(idsTableName),
+			 PGrnIDsTableNameFormat, data.relNode);
+	*idsTable = PGrnCreateTable(idsTableName,
+								GRN_OBJ_TABLE_PAT_KEY,
+								grn_ctx_at(ctx, GRN_DB_UINT64));
+	data.idsTable = *idsTable;
+	data.lexicons = lexicons;
+	data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index);
+
+	for (data.i = 0; data.i < data.desc->natts; data.i++)
+	{
+		data.attributeTypeID = PGrnGetType(index, data.i);
+		PGrnCreateDataColumn(&data);
+		PGrnCreateIndexColumn(&data);
 	}
 }
 
 static void
-PGrnSetSources(Relation index, grn_obj *idsTable, grn_obj *indexColumn)
+PGrnSetSources(Relation index, grn_obj *idsTable)
 {
 	TupleDesc desc;
-	grn_obj source_ids;
+	grn_obj sourceIDs;
 	int i;
 
 	desc = RelationGetDescr(index);
-	GRN_RECORD_INIT(&source_ids, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_RECORD_INIT(&sourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	for (i = 0; i < desc->natts; i++)
 	{
 		NameData *name = &(desc->attrs[i]->attname);
 		grn_obj *source;
-		grn_id source_id;
+		grn_id sourceID;
+		grn_obj *indexColumn;
 
-		source = grn_obj_column(ctx, idsTable,
-								name->data, strlen(name->data));
-		source_id = grn_obj_id(ctx, source);
+		GRN_BULK_REWIND(&sourceIDs);
+
+		source = grn_obj_column(ctx, idsTable, name->data, strlen(name->data));
+		sourceID = grn_obj_id(ctx, source);
 		grn_obj_unlink(ctx, source);
-		GRN_RECORD_PUT(ctx, &source_ids, source_id);
+		GRN_RECORD_PUT(ctx, &sourceIDs, sourceID);
+
+		indexColumn = PGrnLookupIndexColumn(index, i, ERROR);
+		grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &sourceIDs);
 	}
-	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &source_ids);
-	GRN_OBJ_FIN(ctx, &source_ids);
+	GRN_OBJ_FIN(ctx, &sourceIDs);
 }
 
 static grn_id
@@ -1077,7 +1097,6 @@ PGrnSearchDataFree(PGrnSearchData *data)
 static void
 PGrnSearch(IndexScanDesc scan)
 {
-	Relation index = scan->indexRelation;
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	PGrnSearchData data;
 
@@ -1087,8 +1106,6 @@ PGrnSearch(IndexScanDesc scan)
 	GRN_PTR_INIT(&(data.matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&(data.targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT32_INIT(&(data.sectionID), 0);
-
-	data.indexColumn = PGrnLookupIndexColumn(index, ERROR);
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
 							  data.expression, data.expressionVariable);
@@ -1295,6 +1312,8 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 	int indexCursorFlags = 0;
 	grn_obj *indexColumn;
 	grn_obj *lexicon;
+	int i;
+	unsigned int nthAttribute = 0;
 
 	PGrnFillBorder(scan, &min, &minSize, &max, &maxSize, &flags);
 
@@ -1303,7 +1322,14 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 	else
 		flags |= GRN_CURSOR_ASCENDING;
 
-	indexColumn = PGrnLookupIndexColumn(scan->indexRelation, ERROR);
+	for (i = 0; i < scan->numberOfKeys; i++)
+	{
+		ScanKey key = &(scan->keyData[i]);
+		nthAttribute = key->sk_attno - 1;
+		break;
+	}
+	indexColumn = PGrnLookupIndexColumn(scan->indexRelation, nthAttribute,
+										ERROR);
 	lexicon = grn_column_table(ctx, indexColumn);
 
 	so->tableCursor = grn_table_cursor_open(ctx, lexicon,
@@ -1548,8 +1574,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
 	PGrnBuildStateData bs;
-	grn_obj *lexicon = NULL;
-	grn_obj *indexColumn = NULL;
+	grn_obj lexicons;
 
 	if (indexInfo->ii_Unique)
 		ereport(ERROR,
@@ -1559,22 +1584,33 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	bs.idsTable = NULL;
 	bs.nIndexedTuples = 0.0;
 
+	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index, &(bs.idsTable), &lexicon, &indexColumn);
+		PGrnCreate(index, &(bs.idsTable), &lexicons);
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
-		PGrnSetSources(index, bs.idsTable, indexColumn);
+		PGrnSetSources(index, bs.idsTable);
 	}
 	PG_CATCH();
 	{
-		if (lexicon)
+		size_t i, nLexicons;
+
+		nLexicons = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
+		for (i = 0; i < nLexicons; i++)
+		{
+			grn_obj *lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
 			grn_obj_remove(ctx, lexicon);
+		}
+		GRN_OBJ_FIN(ctx, &lexicons);
+
 		if (bs.idsTable)
 			grn_obj_remove(ctx, bs.idsTable);
+
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
+	GRN_OBJ_FIN(ctx, &lexicons);
 
 	result = (IndexBuildResult *) palloc(sizeof(IndexBuildResult));
 	result->heap_tuples = nHeapTuples;
@@ -1591,23 +1627,33 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 {
 	Relation index = (Relation) PG_GETARG_POINTER(0);
 	grn_obj *idsTable = NULL;
-	grn_obj *lexicon = NULL;
-	grn_obj *indexColumn = NULL;
+	grn_obj lexicons;
 
+	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index, &idsTable, &lexicon, &indexColumn);
-		PGrnSetSources(index, idsTable, indexColumn);
+		PGrnCreate(index, &idsTable, &lexicons);
+		PGrnSetSources(index, idsTable);
 	}
 	PG_CATCH();
 	{
-		if (lexicon)
+		size_t i, nLexicons;
+
+		nLexicons = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
+		for (i = 0; i < nLexicons; i++)
+		{
+			grn_obj *lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
 			grn_obj_remove(ctx, lexicon);
+		}
+		GRN_OBJ_FIN(ctx, &lexicons);
+
 		if (idsTable)
 			grn_obj_remove(ctx, idsTable);
+
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
+	GRN_OBJ_FIN(ctx, &lexicons);
 
 	PG_RETURN_VOID();
 }
@@ -1708,6 +1754,7 @@ PGrnRemoveUnusedTables(void)
 		int nameSize;
 		Oid relationID;
 		Relation relation;
+		unsigned int i;
 
 		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
 		nameEnd = name + nameSize;
@@ -1719,17 +1766,22 @@ PGrnRemoveUnusedTables(void)
 			continue;
 		}
 
+		for (i = 0; true; i++)
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
 			grn_obj *table;
 
 			snprintf(tableName, sizeof(tableName),
-					 PGrnLexiconNameFormat, relationID);
+					 PGrnLexiconNameFormat, i, relationID);
 			table = grn_ctx_get(ctx, tableName, strlen(tableName));
-			if (table)
-			{
-				grn_obj_remove(ctx, table);
-			}
+			if (!table)
+				break;
+			grn_obj_remove(ctx, table);
+		}
+
+		{
+			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			grn_obj *table;
 
 			snprintf(tableName, sizeof(tableName),
 					 PGrnIDsTableNameFormat, relationID);

@@ -39,7 +39,7 @@
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnIDsTableNamePrefix			"IDs"
 #define PGrnIDsTableNameFormat			PGrnIDsTableNamePrefix "%u"
-#define PGrnLexiconNameFormat			"Lexicon%u"
+#define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 
 /* in pgroonga.c */
