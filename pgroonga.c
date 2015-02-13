@@ -644,12 +644,15 @@ Datum
 pgroonga_command(PG_FUNCTION_ARGS)
 {
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
+	grn_rc rc;
 	int flags;
 	text *result;
 
 	grn_ctx_send(ctx,
 				 VARDATA_ANY(groongaCommand),
 				 VARSIZE_ANY_EXHDR(groongaCommand), 0);
+	rc = ctx->rc;
+
 	GRN_BULK_REWIND(&bodyBuffer);
 	do {
 		char *chunk;
@@ -661,7 +664,7 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	GRN_BULK_REWIND(&headBuffer);
 	GRN_BULK_REWIND(&footBuffer);
 	grn_output_envelope(ctx,
-						ctx->rc,
+						rc,
 						&headBuffer,
 						&bodyBuffer,
 						&footBuffer,
