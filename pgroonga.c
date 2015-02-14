@@ -693,14 +693,12 @@ PGrnCollectScore(Oid tableID, ItemPointer ctid)
 Datum
 pgroonga_score(PG_FUNCTION_ARGS)
 {
-	Datum row = PG_GETARG_DATUM(0);
-	HeapTupleHeader header;
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(0);
 	Oid	type;
 	int32 recordType;
 	TupleDesc desc;
 	double score = 0.0;
 
-	header = DatumGetHeapTupleHeader(row);
 	type = HeapTupleHeaderGetTypeId(header);
 	recordType = HeapTupleHeaderGetTypMod(header);
 	desc = lookup_rowtype_tupdesc(type, recordType);
