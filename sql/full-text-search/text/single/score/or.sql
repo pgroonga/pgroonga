@@ -10,11 +10,11 @@ INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groon
 CREATE INDEX grnindex ON memos USING pgroonga (content);
 
 SET enable_seqscan = off;
-SET enable_indexscan = on;
-SET enable_bitmapscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
 
 SELECT id, content, pgroonga.score(memos)
   FROM memos
- WHERE content @@ 'PGroonga OR Groonga';
+ WHERE content %% 'PGroonga' OR content %% 'Groonga';
 
 DROP TABLE memos;
