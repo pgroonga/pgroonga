@@ -749,7 +749,7 @@ pgroonga_command(PG_FUNCTION_ARGS)
 {
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
 	grn_rc rc;
-	int flags;
+	int flags = 0;
 	text *result;
 
 	grn_ctx_send(ctx,
