@@ -32,8 +32,7 @@
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 
 /* Groonga support functions */
-#define PGrnTypeOfProc					1
-#define PGrnGetValueProc				2
+#define PGrnGetValueProc				1
 
 /* file and table names */
 #define PGrnDatabaseBasename			"pgrn"
@@ -69,7 +68,6 @@ extern Datum PGDLLEXPORT pgroonga_options(PG_FUNCTION_ARGS);
 /* in groonga_types.c */
 int pgroonga_bpchar_size(const BpChar *bpchar);
 
-extern Datum PGDLLEXPORT pgroonga_typeof(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_bpchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_bool(PG_FUNCTION_ARGS);

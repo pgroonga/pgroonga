@@ -10,6 +10,7 @@
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_tablespace.h>
+#include <catalog/pg_type.h>
 #include <lib/ilist.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
@@ -366,22 +367,75 @@ PGrnCheck(const char *message)
 	return GRN_FALSE;
 }
 
-/*
- * Support functions and type-specific routines
- */
-
 static grn_id
 PGrnGetType(Relation index, AttrNumber n)
 {
-	FmgrInfo *function;
 	TupleDesc desc = RelationGetDescr(index);
-	Datum type;
+	Form_pg_attribute attr;
+	grn_id typeID = GRN_ID_NIL;
+	int32 maxlen;
 
-	function = index_getprocinfo(index, n + 1, PGrnTypeOfProc);
-	type = FunctionCall2(function,
-						 ObjectIdGetDatum(desc->attrs[n]->atttypid),
-						 Int32GetDatum(desc->attrs[n]->atttypmod));
-	return DatumGetInt32(type);
+	attr = desc->attrs[n];
+
+	/* TODO: support array and record types. */
+	switch (attr->atttypid)
+	{
+	case BOOLOID:
+		typeID = GRN_DB_BOOL;
+		break;
+	case INT2OID:
+		typeID = GRN_DB_INT16;
+		break;
+	case INT4OID:
+		typeID = GRN_DB_INT32;
+		break;
+	case INT8OID:
+		typeID = GRN_DB_INT64;
+		break;
+	case FLOAT4OID:
+	case FLOAT8OID:
+		typeID = GRN_DB_FLOAT;
+		break;
+	case TIMESTAMPOID:
+	case TIMESTAMPTZOID:
+#ifdef HAVE_INT64_TIMESTAMP
+		typeID = GRN_DB_INT64;	/* FIXME: use GRN_DB_TIME instead */
+#else
+		typeID = GRN_DB_FLOAT;
+#endif
+		break;
+	case TEXTOID:
+	case XMLOID:
+		typeID = GRN_DB_LONG_TEXT;
+		break;
+	case BPCHAROID:
+	case VARCHAROID:
+		maxlen = type_maximum_size(attr->atttypid, attr->atttypmod);
+		if (maxlen >= 0)
+		{
+			if (maxlen < 4096)
+				typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
+			if (maxlen < 64 * 1024)
+				typeID = GRN_DB_TEXT;			/* 64KB */
+		}
+		else
+		{
+			typeID = GRN_DB_LONG_TEXT;
+		}
+		break;
+#ifdef NOT_USED
+	case POINTOID:
+		typeID = GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
+		break;
+#endif
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: unsupported type: %u", attr->atttypid)));
+		break;
+	}
+
+	return typeID;
 }
 
 static void

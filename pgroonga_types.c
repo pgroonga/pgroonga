@@ -26,7 +26,6 @@ pgroonga_bpchar_size(const BpChar *arg)
 	return i + 1;
 }
 
-PG_FUNCTION_INFO_V1(pgroonga_typeof);
 PG_FUNCTION_INFO_V1(pgroonga_get_text);
 PG_FUNCTION_INFO_V1(pgroonga_get_bpchar);
 PG_FUNCTION_INFO_V1(pgroonga_get_bool);
@@ -47,65 +46,6 @@ PG_FUNCTION_INFO_V1(pgroonga_set_float4);
 PG_FUNCTION_INFO_V1(pgroonga_set_float8);
 PG_FUNCTION_INFO_V1(pgroonga_set_timestamp);
 PG_FUNCTION_INFO_V1(pgroonga_set_timestamptz);
-
-/**
- * pgroonga_typeof -- map a postgres' built-in type to a Groonga's type
- *
- * Raises ERROR if no corresponding types found.
- */
-Datum
-pgroonga_typeof(PG_FUNCTION_ARGS)
-{
-	Oid		typid = PG_GETARG_OID(0);
-	int		typmod = PG_GETARG_INT32(1);
-	int32	maxlen;
-
-	/* TODO: support array and record types. */
-	switch (typid)
-	{
-		case BOOLOID:
-			return GRN_DB_BOOL;
-		case INT2OID:
-			return GRN_DB_INT16;
-		case INT4OID:
-			return GRN_DB_INT32;
-		case INT8OID:
-			return GRN_DB_INT64;
-		case FLOAT4OID:
-		case FLOAT8OID:
-			return GRN_DB_FLOAT;
-		case TIMESTAMPOID:
-		case TIMESTAMPTZOID:
-#ifdef HAVE_INT64_TIMESTAMP
-			return GRN_DB_INT64;	/* FIXME: use GRN_DB_TIME instead */
-#else
-			return GRN_DB_FLOAT;
-#endif
-		case TEXTOID:
-		case XMLOID:
-			return GRN_DB_LONG_TEXT;
-		case BPCHAROID:
-		case VARCHAROID:
-			maxlen = type_maximum_size(typid, typmod);
-			if (maxlen >= 0)
-			{
-				if (maxlen < 4096)
-					return GRN_DB_SHORT_TEXT;	/* 4KB */
-				if (maxlen < 64 * 1024)
-					return GRN_DB_TEXT;			/* 64KB */
-			}
-			return GRN_DB_LONG_TEXT;
-#ifdef NOT_USED
-		case POINTOID:
-			return GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
-#endif
-		default:
-			ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					errmsg("Groonga: unsupported type: %u", typid)));
-			return GRN_DB_VOID;	/* keep compiler quiet */
-	}
-}
 
 Datum
 pgroonga_get_text(PG_FUNCTION_ARGS)
