@@ -686,7 +686,6 @@ PGroongaが使える状態になっています。
 
   * 実装
     * WAL対応
-    * スコアー対応
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
   * ドキュメント
     * 英語で書く
