@@ -30,6 +30,13 @@ CREATE FUNCTION pgroonga.contain(text, text)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga.contain(target text[], query text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga.contain(bpchar, bpchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_bpchar'
@@ -40,6 +47,12 @@ CREATE FUNCTION pgroonga.contain(bpchar, bpchar)
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga.contain,
 	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE OPERATOR %% (
+	PROCEDURE = pgroonga.contain,
+	LEFTARG = text[],
 	RIGHTARG = text
 );
 
@@ -57,6 +70,13 @@ CREATE FUNCTION pgroonga.match(text, text)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga.match(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga.match(bpchar, bpchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match'
@@ -67,6 +87,12 @@ CREATE FUNCTION pgroonga.match(bpchar, bpchar)
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga.match,
 	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE OPERATOR @@ (
+	PROCEDURE = pgroonga.match,
+	LEFTARG = text[],
 	RIGHTARG = text
 );
 
@@ -129,6 +155,10 @@ CREATE FUNCTION pgroonga.options(internal)
 CREATE FUNCTION pgroonga.get_text(internal, internal, text)
 	RETURNS void
 	AS 'MODULE_PATHNAME', 'pgroonga_get_text'
+	LANGUAGE C;
+CREATE FUNCTION pgroonga.get_text_array(internal, internal, text[])
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_text_array'
 	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_bpchar(internal, internal, bpchar)
 	RETURNS void
@@ -206,7 +236,8 @@ CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
 		OPERATOR 6 pg_catalog.~~,
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
-		FUNCTION 1 pgroonga.get_text(internal, internal, text);
+		FUNCTION 1 pgroonga.get_text(internal, internal, text),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
 CREATE OPERATOR CLASS pgroonga.text_ops FOR TYPE text
 	USING pgroonga AS
@@ -215,13 +246,28 @@ CREATE OPERATOR CLASS pgroonga.text_ops FOR TYPE text
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_text(internal, internal, text);
+		FUNCTION 1 pgroonga.get_text(internal, internal, text),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+
+CREATE OPERATOR CLASS pgroonga.full_text_search_text_array_ops FOR TYPE text[]
+	USING pgroonga AS
+		OPERATOR 7 %% (text[], text),
+		OPERATOR 8 @@ (text[], text),
+		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+
+CREATE OPERATOR CLASS pgroonga.text_array_ops DEFAULT FOR TYPE text[]
+	USING pgroonga AS
+		OPERATOR 7 %% (text[], text),
+		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
 CREATE OPERATOR CLASS pgroonga.full_text_search_bpchar_ops DEFAULT FOR TYPE bpchar
 	USING pgroonga AS
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
-		FUNCTION 1 pgroonga.get_bpchar(internal, internal, bpchar);
+		FUNCTION 1 pgroonga.get_bpchar(internal, internal, bpchar),
+		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
 CREATE OPERATOR CLASS pgroonga.bpchar_ops FOR TYPE bpchar
 	USING pgroonga AS
@@ -230,7 +276,8 @@ CREATE OPERATOR CLASS pgroonga.bpchar_ops FOR TYPE bpchar
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_bpchar(internal, internal, bpchar);
+		FUNCTION 1 pgroonga.get_bpchar(internal, internal, bpchar),
+		FUNCTION 2 pgroonga.get_bpchar(internal, internal, bpchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS
@@ -239,7 +286,8 @@ CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_bool(internal, internal, bool);
+		FUNCTION 1 pgroonga.get_bool(internal, internal, bool),
+		FUNCTION 2 pgroonga.get_bool(internal, internal, bool);
 
 CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 	USING pgroonga AS
@@ -248,7 +296,8 @@ CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int2(internal, internal, int2);
+		FUNCTION 1 pgroonga.get_int2(internal, internal, int2),
+		FUNCTION 2 pgroonga.get_int2(internal, internal, int2);
 
 CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 	USING pgroonga AS
@@ -257,7 +306,8 @@ CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int4(internal, internal, int4);
+		FUNCTION 1 pgroonga.get_int4(internal, internal, int4),
+		FUNCTION 2 pgroonga.get_int4(internal, internal, int4);
 
 CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 	USING pgroonga AS
@@ -266,7 +316,8 @@ CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int8(internal, internal, int8);
+		FUNCTION 1 pgroonga.get_int8(internal, internal, int8),
+		FUNCTION 2 pgroonga.get_int8(internal, internal, int8);
 
 CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 	USING pgroonga AS
@@ -275,7 +326,8 @@ CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_float4(internal, internal, float4);
+		FUNCTION 1 pgroonga.get_float4(internal, internal, float4),
+		FUNCTION 2 pgroonga.get_float4(internal, internal, float4);
 
 CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 	USING pgroonga AS
@@ -284,7 +336,8 @@ CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_float8(internal, internal, float8);
+		FUNCTION 1 pgroonga.get_float8(internal, internal, float8),
+		FUNCTION 2 pgroonga.get_float8(internal, internal, float8);
 
 CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 	USING pgroonga AS
@@ -293,7 +346,8 @@ CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_timestamp(internal, internal, timestamp);
+		FUNCTION 1 pgroonga.get_timestamp(internal, internal, timestamp),
+		FUNCTION 2 pgroonga.get_timestamp(internal, internal, timestamp);
 
 CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 	USING pgroonga AS
@@ -302,4 +356,5 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_timestamptz(internal, internal, timestamptz);
+		FUNCTION 1 pgroonga.get_timestamptz(internal, internal, timestamptz),
+		FUNCTION 2 pgroonga.get_timestamptz(internal, internal, timestamptz);

@@ -16,6 +16,7 @@
 #include <miscadmin.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
+#include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
@@ -47,6 +48,7 @@ typedef struct PGrnCreateData
 	Oid relNode;
 	bool forFullTextSearch;
 	grn_id attributeTypeID;
+	unsigned char attributeFlags;
 } PGrnCreateData;
 
 typedef struct PGrnBuildStateData
@@ -93,6 +95,7 @@ PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
 
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
 PG_FUNCTION_INFO_V1(pgroonga_match);
 
@@ -368,16 +371,16 @@ PGrnCheck(const char *message)
 }
 
 static grn_id
-PGrnGetType(Relation index, AttrNumber n)
+PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 {
 	TupleDesc desc = RelationGetDescr(index);
 	Form_pg_attribute attr;
 	grn_id typeID = GRN_ID_NIL;
+	unsigned char typeFlags = 0;
 	int32 maxlen;
 
 	attr = desc->attrs[n];
 
-	/* TODO: support array and record types. */
 	switch (attr->atttypid)
 	{
 	case BOOLOID:
@@ -425,11 +428,20 @@ PGrnGetType(Relation index, AttrNumber n)
 		typeID = GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
 		break;
 #endif
+	case TEXTARRAYOID:
+		typeID = GRN_DB_SHORT_TEXT;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("pgroonga: unsupported type: %u", attr->atttypid)));
 		break;
+	}
+
+	if (flags)
+	{
+		*flags = typeFlags;
 	}
 
 	return typeID;
@@ -441,6 +453,17 @@ PGrnGetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
 	FmgrInfo *function;
 
 	function = index_getprocinfo(index, n + 1, PGrnGetValueProc);
+	FunctionCall3(function,
+				  PointerGetDatum(ctx), PointerGetDatum(buffer),
+				  value);
+}
+
+static void
+PGrnGetQuery(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
+{
+	FmgrInfo *function;
+
+	function = index_getprocinfo(index, n + 1, PGrnGetQueryProc);
 	FunctionCall3(function,
 				  PointerGetDatum(ctx), PointerGetDatum(buffer),
 				  value);
@@ -516,28 +539,37 @@ PGrnCreateColumn(grn_obj	*table,
 static bool
 PGrnIsForFullTextSearchIndex(Relation index)
 {
-	Oid containStrategyOID;
-	containStrategyOID = get_opfamily_member(index->rd_opfamily[0],
-											 index->rd_opcintype[0],
-											 index->rd_opcintype[0],
-											 PGrnContainStrategyNumber);
-	return (containStrategyOID != InvalidOid);
+	Oid queryStrategyOID;
+	queryStrategyOID = get_opfamily_member(index->rd_opfamily[0],
+										   index->rd_opcintype[0],
+										   index->rd_opcintype[0],
+										   PGrnQueryStrategyNumber);
+	return (queryStrategyOID != InvalidOid);
 }
 
 static void
 PGrnCreateDataColumn(PGrnCreateData *data)
 {
-	grn_obj_flags flags = GRN_OBJ_COLUMN_SCALAR;
+	grn_obj_flags flags = 0;
 
-	if (PGrnIsLZ4Available)
+	if (data->attributeFlags & GRN_OBJ_VECTOR)
 	{
-		switch (data->attributeTypeID)
+		flags |= GRN_OBJ_COLUMN_VECTOR;
+	}
+	else
+	{
+		flags |= GRN_OBJ_COLUMN_SCALAR;
+
+		if (PGrnIsLZ4Available)
 		{
-		case GRN_DB_SHORT_TEXT:
-		case GRN_DB_TEXT:
-		case GRN_DB_LONG_TEXT:
-			flags |= GRN_OBJ_COMPRESS_LZ4;
-			break;
+			switch (data->attributeTypeID)
+			{
+			case GRN_DB_SHORT_TEXT:
+			case GRN_DB_TEXT:
+			case GRN_DB_LONG_TEXT:
+				flags |= GRN_OBJ_COMPRESS_LZ4;
+				break;
+			}
 		}
 	}
 
@@ -634,7 +666,8 @@ PGrnCreate(Relation index, grn_obj **idsTable, grn_obj *lexicons)
 
 	for (data.i = 0; data.i < data.desc->natts; data.i++)
 	{
-		data.attributeTypeID = PGrnGetType(index, data.i);
+		data.attributeTypeID = PGrnGetType(index, data.i,
+										   &(data.attributeFlags));
 		PGrnCreateDataColumn(&data);
 		PGrnCreateIndexColumn(&data);
 	}
@@ -891,6 +924,49 @@ pgroonga_contain_text(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.contain(target text[], query text) : bool
+ */
+Datum
+pgroonga_contain_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *target = PG_GETARG_ARRAYTYPE_P(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool contained = false;
+	grn_obj elementBuffer;
+	int i, n;
+
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
+
+	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+
+	n = ARR_DIMS(target)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum elementDatum;
+		text *element;
+		bool isNULL;
+
+		elementDatum = array_ref(target, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		element = DatumGetTextPP(elementDatum);
+		GRN_TEXT_SET(ctx, &elementBuffer,
+					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
+		if (grn_operator_exec_equal(ctx, &buffer, &elementBuffer))
+		{
+			contained = true;
+			break;
+		}
+	}
+
+	GRN_OBJ_FIN(ctx, &elementBuffer);
+
+	PG_RETURN_BOOL(contained);
+}
+
+/**
  * pgroonga.contain(doc bpchar, key bpchar) : bool
  */
 Datum
@@ -943,13 +1019,16 @@ PGrnInsert(grn_ctx *ctx,
 	{
 		grn_obj *dataColumn;
 		NameData *name = &(desc->attrs[i]->attname);
+		grn_id domain;
+		unsigned char flags;
 
 		if (isnull[i])
 			continue;
 
 		dataColumn = grn_obj_column(ctx, idsTable,
 									name->data, strlen(name->data));
-		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, i), 0);
+		domain = PGrnGetType(index, i, &flags);
+		grn_obj_reinit(ctx, &buffer, domain, flags);
 		PGrnGetValue(index, i, &buffer, values[i]);
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
@@ -1151,8 +1230,13 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 
 		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
 
-		grn_obj_reinit(ctx, &buffer, PGrnGetType(index, key->sk_attno - 1), 0);
-		PGrnGetValue(index, key->sk_attno - 1, &buffer, key->sk_argument);
+		{
+			grn_id domain;
+			unsigned char flags = 0;
+			domain = PGrnGetType(index, key->sk_attno - 1, NULL);
+			grn_obj_reinit(ctx, &buffer, domain, flags);
+		}
+		PGrnGetQuery(index, key->sk_attno - 1, &buffer, key->sk_argument);
 
 		switch (key->sk_strategy)
 		{
@@ -1396,7 +1480,7 @@ PGrnFillBorder(IndexScanDesc scan,
 		grn_id domain;
 
 		attrNumber = key->sk_attno - 1;
-		domain = PGrnGetType(index, attrNumber);
+		domain = PGrnGetType(index, attrNumber, NULL);
 		switch (key->sk_strategy)
 		{
 		case PGrnLessStrategyNumber:
@@ -1404,7 +1488,7 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (maxBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnGetValue(index, attrNumber, &buffer, key->sk_argument);
+				PGrnGetQuery(index, attrNumber, &buffer, key->sk_argument);
 				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
 													 &buffer,
 													 *flags,
@@ -1414,7 +1498,7 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
-			PGrnGetValue(index, attrNumber, maxBorderValue, key->sk_argument);
+			PGrnGetQuery(index, attrNumber, maxBorderValue, key->sk_argument);
 			*max = GRN_BULK_HEAD(maxBorderValue);
 			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
 			*flags &= ~(GRN_CURSOR_LT | GRN_CURSOR_LE);
@@ -1432,7 +1516,7 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (minBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnGetValue(index, attrNumber, &buffer,
+				PGrnGetQuery(index, attrNumber, &buffer,
 							 key->sk_argument);
 				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
 													 &buffer,
@@ -1443,7 +1527,7 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
-			PGrnGetValue(index, attrNumber, minBorderValue, key->sk_argument);
+			PGrnGetQuery(index, attrNumber, minBorderValue, key->sk_argument);
 			*min = GRN_BULK_HEAD(minBorderValue);
 			*minSize = GRN_BULK_VSIZE(minBorderValue);
 			*flags &= ~(GRN_CURSOR_GT | GRN_CURSOR_GE);
