@@ -10,6 +10,7 @@
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_tablespace.h>
+#include <lib/ilist.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
 #include <storage/ipc.h>
@@ -17,6 +18,7 @@
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
+#include <utils/typcache.h>
 
 #include <groonga.h>
 
@@ -56,6 +58,8 @@ typedef PGrnBuildStateData *PGrnBuildState;
 
 typedef struct PGrnScanOpaqueData
 {
+	slist_node node;
+	Oid dataTableID;
 	grn_obj *idsTable;
 	grn_obj minBorderValue;
 	grn_obj maxBorderValue;
@@ -65,6 +69,7 @@ typedef struct PGrnScanOpaqueData
 	grn_obj *indexCursor;
 	grn_table_cursor *tableCursor;
 	grn_obj *keyAccessor;
+	grn_obj *scoreAccessor;
 	grn_id currentID;
 } PGrnScanOpaqueData;
 
@@ -80,7 +85,9 @@ typedef struct PGrnSearchData
 	bool    isEmptyCondition;
 } PGrnSearchData;
 
+static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
 
+PG_FUNCTION_INFO_V1(pgroonga_score);
 PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
 
@@ -630,6 +637,85 @@ UInt64ToCtid(uint64 key)
 	return ctid;
 }
 
+static double
+PGrnCollectScore(Oid tableID, ItemPointer ctid)
+{
+	double score = 0.0;
+	uint64_t key;
+	grn_id recordID = GRN_ID_NIL;
+	slist_iter iter;
+	grn_obj scoreBuffer;
+
+	key = CtidToUInt64(ctid);
+	GRN_FLOAT_INIT(&scoreBuffer, 0);
+
+	slist_foreach(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque so;
+		grn_id id;
+
+		so = slist_container(PGrnScanOpaqueData, node, iter.cur);
+		if (so->dataTableID != tableID)
+			continue;
+
+		if (!so->scoreAccessor)
+			continue;
+
+		if (recordID == GRN_ID_NIL)
+		{
+			recordID = grn_table_get(ctx, so->idsTable, &key, sizeof(uint64_t));
+		}
+
+		id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
+		if (id == GRN_ID_NIL)
+			continue;
+
+		GRN_BULK_REWIND(&scoreBuffer);
+		grn_obj_get_value(ctx, so->scoreAccessor, id, &scoreBuffer);
+		if (scoreBuffer.header.domain == GRN_DB_FLOAT)
+		{
+			score += GRN_FLOAT_VALUE(&scoreBuffer);
+		}
+		else
+		{
+			score += GRN_INT32_VALUE(&scoreBuffer);
+		}
+	}
+
+	GRN_OBJ_FIN(ctx, &scoreBuffer);
+
+	return score;
+}
+
+/**
+ * pgroonga.score(row record) : float8
+ */
+Datum
+pgroonga_score(PG_FUNCTION_ARGS)
+{
+	Datum row = PG_GETARG_DATUM(0);
+	HeapTupleHeader header;
+	Oid	type;
+	int32 recordType;
+	TupleDesc desc;
+	double score = 0.0;
+
+	header = DatumGetHeapTupleHeader(row);
+	type = HeapTupleHeaderGetTypeId(header);
+	recordType = HeapTupleHeaderGetTypMod(header);
+	desc = lookup_rowtype_tupdesc(type, recordType);
+
+	if (desc->natts > 0)
+	{
+		Oid tableID = desc->attrs[0]->attrelid;
+		score = PGrnCollectScore(tableID, &(header->t_ctid));
+	}
+
+	ReleaseTupleDesc(desc);
+
+	PG_RETURN_FLOAT8(score);
+}
+
 /**
  * pgroonga.table_name(indexName cstring) : cstring
  */
@@ -848,6 +934,7 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
+	so->dataTableID = index->rd_index->indrelid;
 	so->idsTable = PGrnLookupIDsTable(index, ERROR);
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
@@ -857,13 +944,21 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->indexCursor = NULL;
 	so->tableCursor = NULL;
 	so->keyAccessor = NULL;
+	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
+
+	slist_push_head(&PGrnScanOpaques, &(so->node));
 }
 
 static void
 PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
 	so->currentID = GRN_ID_NIL;
+	if (so->scoreAccessor)
+	{
+		grn_obj_unlink(ctx, so->scoreAccessor);
+		so->scoreAccessor = NULL;
+	}
 	if (so->keyAccessor)
 	{
 		grn_obj_unlink(ctx, so->keyAccessor);
@@ -891,6 +986,26 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		grn_obj_unlink(ctx, so->searched);
 		so->searched = NULL;
 	}
+}
+
+static void
+PGrnScanOpaqueFin(PGrnScanOpaque so)
+{
+	slist_mutable_iter iter;
+
+	slist_foreach_modify(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque currentSo;
+
+		currentSo = slist_container(PGrnScanOpaqueData, node, iter.cur);
+		if (currentSo == so)
+		{
+			slist_delete_current(&iter);
+			break;
+		}
+	}
+
+	PGrnScanOpaqueReinit(so);
 }
 
 /**
@@ -1169,6 +1284,12 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	so->keyAccessor = grn_obj_column(ctx, table,
 									 GRN_COLUMN_NAME_KEY,
 									 GRN_COLUMN_NAME_KEY_LEN);
+	if (so->searched)
+	{
+		so->scoreAccessor = grn_obj_column(ctx, so->searched,
+										   GRN_COLUMN_NAME_SCORE,
+										   GRN_COLUMN_NAME_SCORE_LEN);
+	}
 }
 
 static bool
@@ -1540,7 +1661,7 @@ pgroonga_endscan(PG_FUNCTION_ARGS)
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	PGrnScanOpaqueReinit(so);
+	PGrnScanOpaqueFin(so);
 	pfree(so);
 
 	PG_RETURN_VOID();

@@ -2,6 +2,13 @@ SET search_path = public;
 
 CREATE SCHEMA pgroonga;
 
+CREATE FUNCTION pgroonga.score("row" record)
+	RETURNS float8
+	AS 'MODULE_PATHNAME', 'pgroonga_score'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.table_name(indexName cstring)
 	RETURNS cstring
 	AS 'MODULE_PATHNAME', 'pgroonga_table_name'

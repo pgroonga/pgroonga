@@ -45,6 +45,7 @@
 /* in pgroonga.c */
 extern void PGDLLEXPORT _PG_init(void);
 
+extern Datum PGDLLEXPORT pgroonga_score(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_table_name(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_command(PG_FUNCTION_ARGS);
 
