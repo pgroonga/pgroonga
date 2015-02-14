@@ -7,7 +7,7 @@ EXTENSION_VERSION =						\
 		sed -e "s/^.*'\([0-9.]*\)'$$/\1/")
 DATA = pgroonga--$(EXTENSION_VERSION).sql
 PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
-SHLIB_LINK = $(shell pkg-config --libs groonga)
+SHLIB_LINK = $(shell pkg-config --libs groonga) -lm
 # REGRESS = pgroonga update bench
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
@@ -39,6 +39,7 @@ installcheck: results/compare/integer/single/greater-than-equal
 installcheck: results/compare/integer/single/between
 installcheck: results/compare/integer/multiple/greater-than-equal
 installcheck: results/compare/integer/order_by_limit
+installcheck: results/compare/timestamp/single/between
 installcheck: results/groonga
 
 results/full-text-search/text/single/contain:
@@ -68,6 +69,8 @@ results/compare/integer/single/between:
 results/compare/integer/multiple/greater-than-equal:
 	@mkdir -p $@
 results/compare/integer/order_by_limit:
+	@mkdir -p $@
+results/compare/timestamp/single/between:
 	@mkdir -p $@
 results/groonga:
 	@mkdir -p $@

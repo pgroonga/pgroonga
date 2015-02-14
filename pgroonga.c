@@ -398,11 +398,7 @@ PGrnGetType(Relation index, AttrNumber n)
 		break;
 	case TIMESTAMPOID:
 	case TIMESTAMPTZOID:
-#ifdef HAVE_INT64_TIMESTAMP
-		typeID = GRN_DB_INT64;	/* FIXME: use GRN_DB_TIME instead */
-#else
-		typeID = GRN_DB_FLOAT;
-#endif
+		typeID = GRN_DB_TIME;
 		break;
 	case TEXTOID:
 	case XMLOID:

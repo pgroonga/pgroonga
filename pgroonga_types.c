@@ -7,8 +7,11 @@
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
+#include <utils/timestamp.h>
 
 #include <groonga.h>
+
+#include <math.h>
 
 int
 pgroonga_bpchar_size(const BpChar *arg)
@@ -138,11 +141,29 @@ pgroonga_get_float8(PG_FUNCTION_ARGS)
 Datum
 pgroonga_get_timestamp(PG_FUNCTION_ARGS)
 {
+	grn_ctx	*ctx = (grn_ctx *) PG_GETARG_POINTER(0);
+	grn_obj	*obj = (grn_obj *) PG_GETARG_POINTER(1);
+	Timestamp value = PG_GETARG_TIMESTAMP(2);
+	pg_time_t unixTime;
+	int32 usec;
+
+	unixTime = timestamptz_to_time_t(value);
 #ifdef HAVE_INT64_TIMESTAMP
-	return pgroonga_get_int8(fcinfo);
+	usec = value % USECS_PER_SEC;
 #else
-	return pgroonga_get_float8(fcinfo);
+	{
+		double rawUsec;
+		modf(value, &rawUsec);
+		usec = rawUsec * USECS_PER_SEC;
+		if (usec < 0.0)
+		{
+			usec = -usec;
+		}
+	}
 #endif
+	GRN_TIME_SET(ctx, obj, GRN_TIME_PACK(unixTime, usec));
+
+	PG_RETURN_VOID();
 }
 
 Datum
