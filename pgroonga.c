@@ -406,17 +406,18 @@ PGrnGetType(Relation index, AttrNumber n)
 		break;
 	case BPCHAROID:
 	case VARCHAROID:
+		typeID = GRN_DB_LONG_TEXT;
 		maxlen = type_maximum_size(attr->atttypid, attr->atttypmod);
 		if (maxlen >= 0)
 		{
 			if (maxlen < 4096)
+			{
 				typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
-			if (maxlen < 64 * 1024)
-				typeID = GRN_DB_TEXT;			/* 64KB */
-		}
-		else
-		{
-			typeID = GRN_DB_LONG_TEXT;
+			}
+			else if (maxlen < 64 * 1024)
+			{
+				typeID = GRN_DB_TEXT;		/* 64KB */
+			}
 		}
 		break;
 #ifdef NOT_USED
