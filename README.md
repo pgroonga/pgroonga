@@ -296,6 +296,42 @@ SELECT * FROM memos WHERE content LIKE '%groonga%';
 の検索結果よりもユーザーが求めている結果に近くなります。本当に本来の
 `LIKE`演算子の挙動の方が適切か検討した上で使ってください。
 
+##### `pgroonga.score`関数
+
+`pgroonga.score`関数を使うと該当レコードがどの程度クエリーに適合してい
+るかを数値で取得することができます。
+
+```sql
+SELECT *, pgroonga.score(memos)
+  FROM memos
+ WHERE content %% 'PGroonga' OR content %% 'PostgreSQL';
+--  id |                                  content                                  | score 
+-- ----+---------------------------------------------------------------------------+-------
+--   1 | PostgreSQLはリレーショナル・データベース管理システムです。                |     1
+--   3 | PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。 |     2
+-- (2 行)
+```
+
+`ORDER BY`句で`pgroonga.score`関数を使うことにより、適合度が高い順に並
+び替えることができます。
+
+```sql
+SELECT *, pgroonga.score(memos)
+  FROM memos
+ WHERE content %% 'PGroonga' OR content %% 'PostgreSQL'
+ ORDER BY pgroonga.score(memos) DESC;
+--  id |                                  content                                  | score 
+-- ----+---------------------------------------------------------------------------+-------
+--   3 | PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。 |     2
+--   1 | PostgreSQLはリレーショナル・データベース管理システムです。                |     1
+-- (2 行)
+```
+
+現時点では適合度は「キーワードを含んでいる数」になります。Groongaには
+キーワードや検索対象カラム毎に重みをつける機能や適合度の計算方法をカス
+タマイズする機能があります。しかし、PostgreSQLらしく指定するAPIを思い
+ついていないためPGroongaから使うことはできません。
+
 #### カスタマイズ
 
 `CREATE INDEX`の`WITH`でトークナイザーとノーマライザーをカスタマイズす
