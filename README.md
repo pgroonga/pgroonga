@@ -488,6 +488,167 @@ SELECT * FROM tags WHERE tag = 'Groonga';
 --
 ```
 
+### Groongaの機能を使う
+
+多くの場合、PostgreSQLよりGroongaの方が高速に処理できます。たとえば、
+ドリルダウン機能を使うことにより検索結果の取得と複数の`GROUP BY`結果の
+取得を1つのクエリーで実行することができるため、複数の`SELECT`文を実行
+するよりも高速です。他にも、Groongaは列指向のデータストアを使っている
+ため、一部のカラムだけを検索・取得する場合は行指向のデータストアの
+PostgreSQLよりも高速です。
+
+しかし、直接Groongaで検索するとSQLとは違うAPIになり、使い勝手がよくあ
+りません。それでもGroongaを使いたい場合のためにSQL経由でGroongaを使う
+機能を用意しています。
+
+#### `pgroonga.command`関数
+
+`pgroonga.command`関数を使うと
+[Groongaのコマンド](http://groonga.org/ja/docs/reference/command.html)
+を実行してその結果を文字列で取得できます。
+
+次は
+[statusコマンド](http://groonga.org/ja/docs/reference/commands/status.html)
+を実行する例です。
+
+```sql
+SELECT pgroonga.command('status');
+--                                   command                                                                                                                  
+-- -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--  [[0,1423911561.69344,6.15119934082031e-05],{"alloc_count":164,"starttime":1423911561,"uptime":0,"version":"5.0.0-6-g17847c9","n_queries":0,"cache_hit_rate":0.0,"command_version":1,"default_command_version":1,"max_command_version":2}]
+-- (1 行)
+```
+
+Groongaのコマンドの実行結果はJSONなのでPostgreSQLのJSON関数を使って扱
+いやすくすることができます。
+
+たとえば、`status`コマンドの結果は次のようにするとそれぞれの値を1行と
+して扱うことができます。
+
+```sql
+SELECT * FROM json_each(pgroonga.command('status')::json->1);
+--            key           |       value        
+-- -------------------------+--------------------
+--  alloc_count             | 168
+--  starttime               | 1423911561
+--  uptime                  | 221
+--  version                 | "5.0.0-6-g17847c9"
+--  n_queries               | 0
+--  cache_hit_rate          | 0.0
+--  command_version         | 1
+--  default_command_version | 1
+--  max_command_version     | 2
+-- (9 行)
+```
+
+#### `pgroonga.table_name`関数
+
+PGroongaのインデックス対象のカラムの値はGroongaのデータベースにも保存
+されています。そのため、Groongaの
+[selectコマンド](http://groonga.org/ja/docs/reference/commands/select.html)
+を使って検索し、値を出力することができます。
+
+`select`コマンドを使うにはGroongaでのテーブル名が必要です。インデック
+ス名をGroongaでのテーブル名に変換するには`pgroonga.table_name`関数を使
+います。
+
+`pgroonga.table_name`関数を使うと次のように`select`コマンドを使うこと
+ができます。
+
+```sql
+SELECT *
+  FROM json_array_elements(pgroonga.command('select ' || pgroonga.table_name('pgroonga_content_index'))::json->1->0);
+--                                        value                                       
+-- -----------------------------------------------------------------------------------
+--  [4]
+--  [["_id","UInt32"],["_key","UInt64"],["content","LongText"]]
+--  [1,1,"PostgreSQLはリレーショナル・データベース管理システムです。"]
+--  [2,2,"Groongaは日本語対応の高速な全文検索エンジンです。"]
+--  [3,3,"PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。"]
+--  [4,4,"groongaコマンドがあります。"]
+-- (6 行)
+```
+
+`select`コマンドを使うとカラムに重みをつけることもできます。
+
+例として次のようなスキーマとデータを使います。検索したいデータと出力し
+たいデータを両方インデックス対象にしています。
+
+```sql
+CREATE TABLE terms (
+  id integer,
+  title text,
+  content text,
+  tag varchar(256)
+);
+
+CREATE INDEX pgroonga_terms_index
+          ON terms
+       USING pgroonga (title, content, tag);
+
+INSERT INTO terms
+     VALUES (1,
+             'PostgreSQL',
+             'PostgreSQLはリレーショナル・データベース管理システムです。',
+             'PostgreSQL');
+INSERT INTO terms
+     VALUES (2,
+             'Groonga',
+             'Groongaは日本語対応の高速な全文検索エンジンです。',
+             'Groonga');
+INSERT INTO terms
+     VALUES (3,
+             'PGroonga',
+             'PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。',
+             'PostgreSQL');
+```
+
+[match_columnsオプション](http://groonga.org/ja/docs/reference/commands/select.html#select-match-columns)で重みを指定できます。
+
+```sql
+SELECT *
+  FROM json_array_elements(
+         pgroonga.command('select ' ||
+                          pgroonga.table_name('pgroonga_terms_index') || ' ' ||
+                          '--match_columns "title * 10 || content" ' ||
+                          '--query "Groonga OR PostgreSQL OR 全文検索" ' ||
+                          '--output_columns "_score, title, content" ' ||
+                          '--sortby "-_score"'
+                         )::json->1->0);
+--                                            value                                            
+-- --------------------------------------------------------------------------------------------
+--  [3]
+--  [["_score","Int32"],["title","LongText"],["content","LongText"]]
+--  [12,"Groonga","Groongaは日本語対応の高速な全文検索エンジンです。"]
+--  [11,"PostgreSQL","PostgreSQLはリレーショナル・データベース管理システムです。"]
+--  [2,"PGroonga","PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。"]
+-- (5 行)
+```
+
+[drilldownオプション](http://groonga.org/ja/docs/reference/commands/select.html#select-drilldown)
+を加えるとドリルダウン結果も取得できます。
+
+```sql
+SELECT *
+  FROM json_array_elements(
+         pgroonga.command('select ' ||
+                          pgroonga.table_name('pgroonga_terms_index') || ' ' ||
+                          '--match_columns "title * 10 || content" ' ||
+                          '--query "Groonga OR PostgreSQL OR 全文検索" ' ||
+                          '--output_columns "_score, title" ' ||
+                          '--sortby "-_score" ' ||
+                          '--drilldown "tag"'
+                         )::json->1);
+--                                               value                                              
+-- -------------------------------------------------------------------------------------------------
+--  [[3],[["_score","Int32"],["title","LongText"]],[12,"Groonga"],[11,"PostgreSQL"],[2,"PGroonga"]]
+--  [[2],[["_key","ShortText"],["_nsubrecs","Int32"]],["Groonga",1],["PostgreSQL",2]]
+-- (2 行)
+```
+
+SQLの`SELECT`文でどうにもならなくなったときに、もしかしたらGroongaの
+`select`コマンドを使えるかもしれません。
+
 ## アンインストール
 
 次のSQLでアンインストールできます。
