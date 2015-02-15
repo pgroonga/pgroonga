@@ -248,7 +248,7 @@ INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga.options'	-- amoptions
 );
 
-CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
+CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 pg_catalog.~~,
 		OPERATOR 7 %%,
@@ -256,7 +256,7 @@ CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
 		FUNCTION 1 pgroonga.get_text(internal, internal, text),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
-CREATE OPERATOR CLASS pgroonga.full_text_search_text_array_ops
+CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 	DEFAULT
 	FOR TYPE text[]
 	USING pgroonga AS
@@ -265,7 +265,7 @@ CREATE OPERATOR CLASS pgroonga.full_text_search_text_array_ops
 		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
-CREATE OPERATOR CLASS pgroonga.full_text_search_varchar_ops FOR TYPE varchar
+CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
