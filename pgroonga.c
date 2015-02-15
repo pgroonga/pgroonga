@@ -380,7 +380,7 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	Form_pg_attribute attr;
 	grn_id typeID = GRN_ID_NIL;
 	unsigned char typeFlags = 0;
-	int32 maxlen;
+	int32 maxLength;
 
 	attr = desc->attrs[n];
 
@@ -411,21 +411,21 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		typeID = GRN_DB_LONG_TEXT;
 		break;
 	case VARCHAROID:
-		maxlen = type_maximum_size(attr->atttypid, attr->atttypmod);
-		if (maxlen < 0)
+		maxLength = type_maximum_size(attr->atttypid, attr->atttypmod);
+		if (maxLength < 0)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 					 errmsg("pgroonga: "
 							"use text instead of unlimited size varchar")));
 		}
-		if (maxlen > 4096)
+		if (maxLength > 4096)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 					 errmsg("pgroonga: "
 							"4097bytes over size varchar isn't supported: %d",
-							maxlen)));
+							maxLength)));
 		}
 		typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
 		break;
@@ -435,22 +435,22 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		break;
 #endif
 	case VARCHARARRAYOID:
-		maxlen = type_maximum_size(VARCHAROID, attr->atttypmod);
-		if (maxlen < 0)
+		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
+		if (maxLength < 0)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 					 errmsg("pgroonga: "
 							"array of unlimited size varchar isn't supported")));
 		}
-		if (maxlen > 4096)
+		if (maxLength > 4096)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 					 errmsg("pgroonga: "
 							"array of 4097bytes over size varchar "
 							"isn't supported: %d",
-							maxlen)));
+							maxLength)));
 		}
 		typeID = GRN_DB_SHORT_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
