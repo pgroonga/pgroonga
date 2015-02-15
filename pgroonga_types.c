@@ -32,9 +32,9 @@ pgroonga_get_text(PG_FUNCTION_ARGS)
 {
 	grn_ctx	*ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj	*obj = (grn_obj *) PG_GETARG_POINTER(1);
-	text *var = PG_GETARG_TEXT_PP(2);
+	text *value = PG_GETARG_TEXT_PP(2);
 
-	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), VARSIZE_ANY_EXHDR(var));
+	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
 	PG_RETURN_VOID();
 }
 
@@ -74,9 +74,9 @@ pgroonga_get_varchar(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	VarChar *var = PG_GETARG_VARCHAR_PP(2);
+	VarChar *value = PG_GETARG_VARCHAR_PP(2);
 
-	GRN_TEXT_SET(ctx, buffer, VARDATA_ANY(var), VARSIZE_ANY_EXHDR(var));
+	GRN_TEXT_SET(ctx, buffer, VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
 	PG_RETURN_VOID();
 }
 
@@ -116,9 +116,9 @@ pgroonga_get_bool(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	bool var = PG_GETARG_BOOL(2);
+	bool value = PG_GETARG_BOOL(2);
 
-	GRN_BOOL_SET(ctx, buffer, var);
+	GRN_BOOL_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
@@ -127,9 +127,9 @@ pgroonga_get_int2(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	int16 var = PG_GETARG_INT16(2);
+	int16 value = PG_GETARG_INT16(2);
 
-	GRN_INT16_SET(ctx, buffer, var);
+	GRN_INT16_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
@@ -138,9 +138,9 @@ pgroonga_get_int4(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	int32 var = PG_GETARG_INT32(2);
+	int32 value = PG_GETARG_INT32(2);
 
-	GRN_INT32_SET(ctx, buffer, var);
+	GRN_INT32_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
@@ -149,9 +149,9 @@ pgroonga_get_int8(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	int64 var = PG_GETARG_INT64(2);
+	int64 value = PG_GETARG_INT64(2);
 
-	GRN_INT64_SET(ctx, buffer, var);
+	GRN_INT64_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
@@ -160,9 +160,9 @@ pgroonga_get_float4(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	float8 var = (float8) PG_GETARG_FLOAT4(2);
+	float8 value = (float8) PG_GETARG_FLOAT4(2);
 
-	GRN_FLOAT_SET(ctx, buffer, var);
+	GRN_FLOAT_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
@@ -171,9 +171,9 @@ pgroonga_get_float8(PG_FUNCTION_ARGS)
 {
 	grn_ctx *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj *buffer = (grn_obj *) PG_GETARG_POINTER(1);
-	float8 var = PG_GETARG_FLOAT8(2);
+	float8 value = PG_GETARG_FLOAT8(2);
 
-	GRN_FLOAT_SET(ctx, buffer, var);
+	GRN_FLOAT_SET(ctx, buffer, value);
 	PG_RETURN_VOID();
 }
 
