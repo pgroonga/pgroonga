@@ -23,7 +23,7 @@ CREATE FUNCTION pgroonga.command(groongaCommand text)
 	VOLATILE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(text, text)
+CREATE FUNCTION pgroonga.contain(target text, query text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_text'
 	LANGUAGE C
@@ -37,7 +37,7 @@ CREATE FUNCTION pgroonga.contain(target text[], query text)
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(varchar, varchar)
+CREATE FUNCTION pgroonga.contain(target varchar, query varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar'
 	LANGUAGE C
