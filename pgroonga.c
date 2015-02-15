@@ -550,13 +550,13 @@ PGrnCreateColumn(grn_obj	*table,
 }
 
 static bool
-PGrnIsForFullTextSearchIndex(Relation index)
+PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 {
 	Oid queryStrategyOID;
 	Oid leftType;
 	Oid rightType;
 
-	leftType = index->rd_opcintype[0];
+	leftType = index->rd_opcintype[nthAttribute];
 	switch (leftType)
 	{
 	case VARCHARARRAYOID:
@@ -569,7 +569,7 @@ PGrnIsForFullTextSearchIndex(Relation index)
 		rightType = leftType;
 		break;
 	}
-	queryStrategyOID = get_opfamily_member(index->rd_opfamily[0],
+	queryStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
 										   leftType,
 										   rightType,
 										   PGrnQueryStrategyNumber);
@@ -691,10 +691,10 @@ PGrnCreate(Relation index, grn_obj **idsTable, grn_obj *lexicons)
 								grn_ctx_at(ctx, GRN_DB_UINT64));
 	data.idsTable = *idsTable;
 	data.lexicons = lexicons;
-	data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index);
 
 	for (data.i = 0; data.i < data.desc->natts; data.i++)
 	{
+		data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
 		data.attributeTypeID = PGrnGetType(index, data.i,
 										   &(data.attributeFlags));
 		PGrnCreateDataColumn(&data);
