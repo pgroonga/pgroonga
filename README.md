@@ -655,6 +655,81 @@ SELECT *
 SQLの`SELECT`文でどうにもならなくなったときに、もしかしたらGroongaの
 `select`コマンドを使えるかもしれません。
 
+#### 注意
+
+レコードを削除・更新している場合は、Groongaのデータベースには削除済み・
+更新前のデータが残っています。
+
+まず、更新前の状態を確認します。レコードは3つです。
+
+```sql
+SELECT *
+  FROM json_array_elements(
+         pgroonga.command('select ' ||
+                          pgroonga.table_name('pgroonga_terms_index')
+                         )::json->1->0);
+--                                                    value                                                   
+-- -----------------------------------------------------------------------------------------------------------
+--  [3]
+--  [["_id","UInt32"],["_key","UInt64"],["content","LongText"],["tag","ShortText"],["title","LongText"]]
+--  [1,1,"PostgreSQLはリレーショナル・データベース管理システムです。","PostgreSQL","PostgreSQL"]
+--  [2,2,"Groongaは日本語対応の高速な全文検索エンジンです。","Groonga","Groonga"]
+--  [3,3,"PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。","PostgreSQL","PGroonga"]
+-- (5 行)
+```
+
+更新します。
+
+```sql
+UPDATE terms
+   SET title = 'Mroonga',
+       content = 'MroongaはGroongaをバックエンドにしたMySQLのストレージエンジンです。',
+       tag = 'MySQL'
+ WHERE id = 3;
+```
+
+再度`select`コマンドを実行するとレコードが1つ増えて4つになっています。
+これは更新前のレコードも残っているからです。
+
+```sql
+SELECT *
+  FROM json_array_elements(
+         pgroonga.command('select ' ||
+                          pgroonga.table_name('pgroonga_terms_index')
+                         )::json->1->0);
+--                                                    value                                                   
+-- -----------------------------------------------------------------------------------------------------------
+--  [4]
+--  [["_id","UInt32"],["_key","UInt64"],["content","LongText"],["tag","ShortText"],["title","LongText"]]
+--  [1,1,"PostgreSQLはリレーショナル・データベース管理システムです。","PostgreSQL","PostgreSQL"]
+--  [2,2,"Groongaは日本語対応の高速な全文検索エンジンです。","Groonga","Groonga"]
+--  [3,3,"PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。","PostgreSQL","PGroonga"]
+--  [4,4,"MroongaはGroongaをバックエンドにしたMySQLのストレージエンジンです。","MySQL","Mroonga"]
+-- (6 行)
+```
+
+削除されたレコードは`VACUUM`時に削除されます。明示的に`VACUUM`を実行す
+ると更新前のレコードがなくなって、レコード数は3つになります。
+
+```sql
+VACUUM
+SELECT *
+  FROM json_array_elements(
+         pgroonga.command('select ' ||
+                          pgroonga.table_name('pgroonga_terms_index')
+                         )::json->1->0);
+--                                                 value                                                 
+-- ------------------------------------------------------------------------------------------------------
+--  [3]
+--  [["_id","UInt32"],["_key","UInt64"],["content","LongText"],["tag","ShortText"],["title","LongText"]]
+--  [1,1,"PostgreSQLはリレーショナル・データベース管理システムです。","PostgreSQL","PostgreSQL"]
+--  [2,2,"Groongaは日本語対応の高速な全文検索エンジンです。","Groonga","Groonga"]
+--  [4,4,"MroongaはGroongaをバックエンドにしたMySQLのストレージエンジンです。","MySQL","Mroonga"]
+-- (5 行)
+```
+
+Groongaのデータを直接使うときは気をつけてください。
+
 ## アンインストール
 
 次のSQLでアンインストールできます。
