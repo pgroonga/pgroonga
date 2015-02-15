@@ -1313,12 +1313,6 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
-		GRN_UINT32_SET(ctx, &(data->sectionID), key->sk_attno - 1);
-		grn_expr_append_const(ctx, matchTarget,
-							  &(data->sectionID), GRN_OP_PUSH, 1);
-
-		grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
-
 		{
 			grn_id domain;
 			unsigned char flags = 0;
