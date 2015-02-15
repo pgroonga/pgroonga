@@ -1144,6 +1144,7 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	grn_obj *idsTable = PGrnLookupIDsTable(index, ERROR);
 
 	PGrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
+	grn_db_touch(ctx, grn_ctx_db(ctx));
 
 	PG_RETURN_BOOL(true);
 }
