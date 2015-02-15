@@ -587,7 +587,7 @@ PGrnIsForFullTextSearchIndex(Relation index)
 										   leftType,
 										   rightType,
 										   PGrnQueryStrategyNumber);
-	return (queryStrategyOID != InvalidOid);
+	return OidIsValid(queryStrategyOID);
 }
 
 static void
