@@ -152,6 +152,9 @@ PGroongaは全文検索はもちろん、数値や文字列の等価条件（`=`
 #### 基本的な使い方
 
 `text`型のカラムを作って`pgroonga`インデックスを張ります。
+（`varchar`型に対して全文検索をする場合は追加で
+`pgroonga.varchar_fulltext_search_ops`演算子クラスを指定する必要があり
+ます。）
 
 ```sql
 CREATE TABLE memos (
@@ -448,16 +451,19 @@ SELECT * FROM ids WHERE id <= 2;
 
 #### 文字列型
 
-文字列型のときは`USING`に`pgroonga`を指定するだけでなく、演算子クラス
-として`pgroonga.text_ops`を指定してください。
+文字列型に対して等価・比較条件を使う場合は`varchar`型に対してインデッ
+クスを作成してください。最大バイト数が4096バイト以下になるように
+`varchar`に最大文字数を指定してください。エンコーディングによって文字
+数とバイト数の関係が変わることに注意してください。UTF-8を使っている場
+合は最大文字数は1023になります。
 
 ```sql
 CREATE TABLE tags (
   id integer,
-  tag text
+  tag varchar(1023)
 );
 
-CREATE INDEX pgroonga_tag_index ON tags USING pgroonga (tag pgroonga.text_ops);
+CREATE INDEX pgroonga_tag_index ON tags USING pgroonga (tag);
 ```
 
 あとはB-treeを使ったインデックスなどのときと同じです。
