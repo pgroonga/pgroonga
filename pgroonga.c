@@ -407,7 +407,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	case XMLOID:
 		typeID = GRN_DB_LONG_TEXT;
 		break;
-	case BPCHAROID:
 	case VARCHAROID:
 		typeID = GRN_DB_LONG_TEXT;
 		maxlen = type_maximum_size(attr->atttypid, attr->atttypmod);
