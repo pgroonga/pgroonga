@@ -96,7 +96,7 @@ PG_FUNCTION_INFO_V1(pgroonga_command);
 
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
-PG_FUNCTION_INFO_V1(pgroonga_contain_bpchar);
+PG_FUNCTION_INFO_V1(pgroonga_contain_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
@@ -967,18 +967,18 @@ pgroonga_contain_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.contain(doc bpchar, key bpchar) : bool
+ * pgroonga.contain(doc varchar, key varchar) : bool
  */
 Datum
-pgroonga_contain_bpchar(PG_FUNCTION_ARGS)
+pgroonga_contain_varchar(PG_FUNCTION_ARGS)
 {
-	BpChar *doc = PG_GETARG_BPCHAR_PP(0);
-	BpChar *key = PG_GETARG_BPCHAR_PP(1);
+	VarChar *doc = PG_GETARG_VARCHAR_PP(0);
+	VarChar *key = PG_GETARG_VARCHAR_PP(1);
 	grn_bool contained;
 
 	contained =
-		pgroonga_contain_raw(VARDATA_ANY(doc), pgroonga_bpchar_size(doc),
-							 VARDATA_ANY(key), pgroonga_bpchar_size(key));
+		pgroonga_contain_raw(VARDATA_ANY(doc), VARSIZE_ANY_EXHDR(doc),
+							 VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
 	PG_RETURN_BOOL(contained);
 }
 

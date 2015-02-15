@@ -1,17 +1,17 @@
 CREATE TABLE memos (
   id integer,
-  title text
+  title varchar(4096)
 );
 
 INSERT INTO memos VALUES (1, 'PostgreSQL');
 INSERT INTO memos VALUES (2, 'Groonga');
 INSERT INTO memos VALUES (3, 'PGroonga');
 
-CREATE INDEX grnindex ON memos USING pgroonga (content pgroonga.text_ops);
+CREATE INDEX grnindex ON memos USING pgroonga (title pgroonga.varchar_ops);
 
-SET enable_seqscan = on;
+SET enable_seqscan = off;
 SET enable_indexscan = off;
-SET enable_bitmapscan = off;
+SET enable_bitmapscan = on;
 
 SELECT id, title
   FROM memos

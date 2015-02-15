@@ -14,25 +14,9 @@
 
 #include <math.h>
 
-int
-pgroonga_bpchar_size(const BpChar *arg)
-{
-	char	   *s = VARDATA_ANY(arg);
-	int			i;
-	int			len;
-
-	len = VARSIZE_ANY_EXHDR(arg);
-	for (i = len - 1; i >= 0; i--)
-	{
-		if (s[i] != ' ')
-			break;
-	}
-	return i + 1;
-}
-
 PG_FUNCTION_INFO_V1(pgroonga_get_text);
 PG_FUNCTION_INFO_V1(pgroonga_get_text_array);
-PG_FUNCTION_INFO_V1(pgroonga_get_bpchar);
+PG_FUNCTION_INFO_V1(pgroonga_get_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_get_bool);
 PG_FUNCTION_INFO_V1(pgroonga_get_int2);
 PG_FUNCTION_INFO_V1(pgroonga_get_int4);
@@ -41,16 +25,6 @@ PG_FUNCTION_INFO_V1(pgroonga_get_float4);
 PG_FUNCTION_INFO_V1(pgroonga_get_float8);
 PG_FUNCTION_INFO_V1(pgroonga_get_timestamp);
 PG_FUNCTION_INFO_V1(pgroonga_get_timestamptz);
-PG_FUNCTION_INFO_V1(pgroonga_set_text);
-PG_FUNCTION_INFO_V1(pgroonga_set_bpchar);
-PG_FUNCTION_INFO_V1(pgroonga_set_bool);
-PG_FUNCTION_INFO_V1(pgroonga_set_int2);
-PG_FUNCTION_INFO_V1(pgroonga_set_int4);
-PG_FUNCTION_INFO_V1(pgroonga_set_int8);
-PG_FUNCTION_INFO_V1(pgroonga_set_float4);
-PG_FUNCTION_INFO_V1(pgroonga_set_float8);
-PG_FUNCTION_INFO_V1(pgroonga_set_timestamp);
-PG_FUNCTION_INFO_V1(pgroonga_set_timestamptz);
 
 Datum
 pgroonga_get_text(PG_FUNCTION_ARGS)
@@ -95,13 +69,13 @@ pgroonga_get_text_array(PG_FUNCTION_ARGS)
 }
 
 Datum
-pgroonga_get_bpchar(PG_FUNCTION_ARGS)
+pgroonga_get_varchar(PG_FUNCTION_ARGS)
 {
 	grn_ctx	   *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj	   *obj = (grn_obj *) PG_GETARG_POINTER(1);
-	BpChar	   *var = PG_GETARG_BPCHAR_PP(2);
+	VarChar	   *var = PG_GETARG_VARCHAR_PP(2);
 
-	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), pgroonga_bpchar_size(var));
+	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), VARSIZE_ANY_EXHDR(var));
 	PG_RETURN_VOID();
 }
 
