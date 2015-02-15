@@ -810,8 +810,8 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	char tableName[GRN_TABLE_MAX_KEY_SIZE];
 	char *copiedTableName;
 
-	indexOidDatum = DirectFunctionCall1(to_regclass, indexNameDatum);
-	if (!indexOidDatum)
+	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
+	if (!OidIsValid(indexOidDatum))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_NAME),
