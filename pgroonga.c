@@ -938,19 +938,19 @@ exit:
 }
 
 /**
- * pgroonga.contain(target text, key text) : bool
+ * pgroonga.contain(target text, query text) : bool
  */
 Datum
 pgroonga_contain_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	text *key = PG_GETARG_TEXT_PP(1);
+	text *query = PG_GETARG_TEXT_PP(1);
 	grn_bool contained;
 
 	contained = pgroonga_contain_raw(VARDATA_ANY(target),
 									 VARSIZE_ANY_EXHDR(target),
-									 VARDATA_ANY(key),
-									 VARSIZE_ANY_EXHDR(key));
+									 VARDATA_ANY(query),
+									 VARSIZE_ANY_EXHDR(query));
 	PG_RETURN_BOOL(contained);
 }
 
@@ -1001,18 +1001,18 @@ pgroonga_contain_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.contain(target varchar, key varchar) : bool
+ * pgroonga.contain(target varchar, query varchar) : bool
  */
 Datum
 pgroonga_contain_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	VarChar *key = PG_GETARG_VARCHAR_PP(1);
+	VarChar *query = PG_GETARG_VARCHAR_PP(1);
 	grn_bool contained;
 
 	contained =
 		pgroonga_contain_raw(VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target),
-							 VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
+							 VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
 	PG_RETURN_BOOL(contained);
 }
 
