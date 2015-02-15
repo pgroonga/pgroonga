@@ -412,13 +412,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		break;
 	case VARCHAROID:
 		maxLength = type_maximum_size(attr->atttypid, attr->atttypmod);
-		if (maxLength < 0)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"use text instead of unlimited size varchar")));
-		}
 		if (maxLength > 4096)
 		{
 			ereport(ERROR,
@@ -436,13 +429,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 #endif
 	case VARCHARARRAYOID:
 		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
-		if (maxLength < 0)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"array of unlimited size varchar isn't supported")));
-		}
 		if (maxLength > 4096)
 		{
 			ereport(ERROR,
