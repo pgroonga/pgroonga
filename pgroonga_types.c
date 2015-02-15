@@ -15,8 +15,8 @@
 #include <math.h>
 
 PG_FUNCTION_INFO_V1(pgroonga_get_text);
-PG_FUNCTION_INFO_V1(pgroonga_get_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_get_varchar);
+PG_FUNCTION_INFO_V1(pgroonga_get_varchar_array);
 PG_FUNCTION_INFO_V1(pgroonga_get_bool);
 PG_FUNCTION_INFO_V1(pgroonga_get_int2);
 PG_FUNCTION_INFO_V1(pgroonga_get_int4);
@@ -38,7 +38,18 @@ pgroonga_get_text(PG_FUNCTION_ARGS)
 }
 
 Datum
-pgroonga_get_text_array(PG_FUNCTION_ARGS)
+pgroonga_get_varchar(PG_FUNCTION_ARGS)
+{
+	grn_ctx	   *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
+	grn_obj	   *obj = (grn_obj *) PG_GETARG_POINTER(1);
+	VarChar	   *var = PG_GETARG_VARCHAR_PP(2);
+
+	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), VARSIZE_ANY_EXHDR(var));
+	PG_RETURN_VOID();
+}
+
+Datum
+pgroonga_get_varchar_array(PG_FUNCTION_ARGS)
 {
 	grn_ctx	*ctx = (grn_ctx *) PG_GETARG_POINTER(0);
 	grn_obj	*obj = (grn_obj *) PG_GETARG_POINTER(1);
@@ -50,14 +61,14 @@ pgroonga_get_text_array(PG_FUNCTION_ARGS)
 	{
 		int weight = 0;
 		Datum elementDatum;
-		text *element;
+		VarChar *element;
 		bool isNULL;
 
 		elementDatum = array_ref(value, 1, &i, -1, -1, false, 'i', &isNULL);
 		if (isNULL)
 			continue;
 
-		element = DatumGetTextPP(elementDatum);
+		element = DatumGetVarCharPP(elementDatum);
 		grn_vector_add_element(ctx, obj,
 							   VARDATA_ANY(element),
 							   VARSIZE_ANY_EXHDR(element),
@@ -65,17 +76,6 @@ pgroonga_get_text_array(PG_FUNCTION_ARGS)
 							   obj->header.domain);
 	}
 
-	PG_RETURN_VOID();
-}
-
-Datum
-pgroonga_get_varchar(PG_FUNCTION_ARGS)
-{
-	grn_ctx	   *ctx = (grn_ctx *) PG_GETARG_POINTER(0);
-	grn_obj	   *obj = (grn_obj *) PG_GETARG_POINTER(1);
-	VarChar	   *var = PG_GETARG_VARCHAR_PP(2);
-
-	GRN_TEXT_SET(ctx, obj, VARDATA_ANY(var), VARSIZE_ANY_EXHDR(var));
 	PG_RETURN_VOID();
 }
 

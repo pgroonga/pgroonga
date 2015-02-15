@@ -40,7 +40,7 @@ installcheck: results/compare/integer/single/between
 installcheck: results/compare/integer/multiple/greater-than-equal
 installcheck: results/compare/integer/order_by_limit
 installcheck: results/compare/timestamp/single/between
-installcheck: results/array/text/single/contain
+installcheck: results/array/varchar/single/contain
 installcheck: results/groonga
 
 results/full-text-search/text/single/contain:
@@ -73,7 +73,7 @@ results/compare/integer/order_by_limit:
 	@mkdir -p $@
 results/compare/timestamp/single/between:
 	@mkdir -p $@
-results/array/text/single/contain:
+results/array/varchar/single/contain:
 	@mkdir -p $@
 results/groonga:
 	@mkdir -p $@

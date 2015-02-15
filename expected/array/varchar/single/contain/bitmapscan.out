@@ -1,6 +1,6 @@
 CREATE TABLE memos (
   title text,
-  tags text[]
+  tags varchar(1023)[]
 );
 INSERT INTO memos VALUES ('PostgreSQL', ARRAY['PostgreSQL']);
 INSERT INTO memos VALUES ('Groonga', ARRAY['Groonga']);

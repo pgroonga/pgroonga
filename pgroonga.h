@@ -69,8 +69,8 @@ extern Datum PGDLLEXPORT pgroonga_options(PG_FUNCTION_ARGS);
 
 /* in groonga_types.c */
 extern Datum PGDLLEXPORT pgroonga_get_text(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_varchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_get_varchar_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_bool(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_int2(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_int4(PG_FUNCTION_ARGS);

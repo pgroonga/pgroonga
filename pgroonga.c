@@ -26,6 +26,8 @@
 
 #include <stdlib.h>
 
+#define VARCHARARRAYOID 1015
+
 PG_MODULE_MAGIC;
 
 static bool PGrnIsLZ4Available;
@@ -431,7 +433,24 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		typeID = GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
 		break;
 #endif
-	case TEXTARRAYOID:
+	case VARCHARARRAYOID:
+		maxlen = type_maximum_size(VARCHAROID, attr->atttypmod);
+		if (maxlen < 0)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("pgroonga: "
+							"array of unlimited size varchar isn't supported")));
+		}
+		if (maxlen > 4096)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("pgroonga: "
+							"array of 4097bytes over size varchar "
+							"isn't supported: %d",
+							maxlen)));
+		}
 		typeID = GRN_DB_SHORT_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
 		break;
