@@ -99,6 +99,7 @@ PG_FUNCTION_INFO_V1(pgroonga_command);
 PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_contain_varchar);
+PG_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PG_FUNCTION_INFO_V1(pgroonga_match);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
@@ -454,6 +455,10 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		typeID = GRN_DB_SHORT_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
 		break;
+	case TEXTARRAYOID:
+		typeID = GRN_DB_LONG_TEXT;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -562,9 +567,25 @@ static bool
 PGrnIsForFullTextSearchIndex(Relation index)
 {
 	Oid queryStrategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[0];
+	switch (leftType)
+	{
+	case VARCHARARRAYOID:
+		rightType = VARCHAROID;
+		break;
+	case TEXTARRAYOID:
+		rightType = TEXTOID;
+		break;
+	default:
+		rightType = leftType;
+		break;
+	}
 	queryStrategyOID = get_opfamily_member(index->rd_opfamily[0],
-										   index->rd_opcintype[0],
-										   index->rd_opcintype[0],
+										   leftType,
+										   rightType,
 										   PGrnQueryStrategyNumber);
 	return (queryStrategyOID != InvalidOid);
 }
@@ -976,7 +997,10 @@ pgroonga_contain_text_array(PG_FUNCTION_ARGS)
 		element = DatumGetTextPP(elementDatum);
 		GRN_TEXT_SET(ctx, &elementBuffer,
 					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
-		if (grn_operator_exec_equal(ctx, &buffer, &elementBuffer))
+		if (pgroonga_contain_raw(GRN_TEXT_VALUE(&elementBuffer),
+								 GRN_TEXT_LEN(&elementBuffer),
+								 GRN_TEXT_VALUE(&buffer),
+								 GRN_TEXT_LEN(&buffer)))
 		{
 			contained = true;
 			break;
@@ -1001,6 +1025,49 @@ pgroonga_contain_varchar(PG_FUNCTION_ARGS)
 	contained =
 		pgroonga_contain_raw(VARDATA_ANY(doc), VARSIZE_ANY_EXHDR(doc),
 							 VARDATA_ANY(key), VARSIZE_ANY_EXHDR(key));
+	PG_RETURN_BOOL(contained);
+}
+
+/**
+ * pgroonga.contain(target varchar[], query varchar) : bool
+ */
+Datum
+pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *target = PG_GETARG_ARRAYTYPE_P(0);
+	VarChar *query = PG_GETARG_VARCHAR_PP(1);
+	bool contained = false;
+	grn_obj elementBuffer;
+	int i, n;
+
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
+
+	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+
+	n = ARR_DIMS(target)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum elementDatum;
+		VarChar *element;
+		bool isNULL;
+
+		elementDatum = array_ref(target, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		element = DatumGetVarCharPP(elementDatum);
+		GRN_TEXT_SET(ctx, &elementBuffer,
+					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
+		if (grn_operator_exec_equal(ctx, &buffer, &elementBuffer))
+		{
+			contained = true;
+			break;
+		}
+	}
+
+	GRN_OBJ_FIN(ctx, &elementBuffer);
+
 	PG_RETURN_BOOL(contained);
 }
 

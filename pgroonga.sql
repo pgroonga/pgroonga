@@ -44,6 +44,13 @@ CREATE FUNCTION pgroonga.contain(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga.contain(target varchar[], query varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga.contain,
 	LEFTARG = text,
@@ -62,6 +69,12 @@ CREATE OPERATOR %% (
 	RIGHTARG = varchar
 );
 
+CREATE OPERATOR %% (
+	PROCEDURE = pgroonga.contain,
+	LEFTARG = varchar[],
+	RIGHTARG = varchar
+);
+
 
 CREATE FUNCTION pgroonga.match(text, text)
 	RETURNS bool
@@ -70,14 +83,14 @@ CREATE FUNCTION pgroonga.match(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.match(varchar, varchar)
+CREATE FUNCTION pgroonga.match(text[], text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.match(varchar[], varchar)
+CREATE FUNCTION pgroonga.match(varchar, varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match'
 	LANGUAGE C
@@ -92,13 +105,13 @@ CREATE OPERATOR @@ (
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga.match,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
+	LEFTARG = text[],
+	RIGHTARG = text
 );
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga.match,
-	LEFTARG = varchar[],
+	LEFTARG = varchar,
 	RIGHTARG = varchar
 );
 
@@ -155,6 +168,10 @@ CREATE FUNCTION pgroonga.options(internal)
 CREATE FUNCTION pgroonga.get_text(internal, internal, text)
 	RETURNS void
 	AS 'MODULE_PATHNAME', 'pgroonga_get_text'
+	LANGUAGE C;
+CREATE FUNCTION pgroonga.get_text_array(internal, internal, text[])
+	RETURNS void
+	AS 'MODULE_PATHNAME', 'pgroonga_get_text_array'
 	LANGUAGE C;
 CREATE FUNCTION pgroonga.get_varchar(internal, internal, varchar)
 	RETURNS void
@@ -239,6 +256,15 @@ CREATE OPERATOR CLASS pgroonga.full_text_search_text_ops DEFAULT FOR TYPE text
 		FUNCTION 1 pgroonga.get_text(internal, internal, text),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
+CREATE OPERATOR CLASS pgroonga.full_text_search_text_array_ops
+	DEFAULT
+	FOR TYPE text[]
+	USING pgroonga AS
+		OPERATOR 7 %% (text[], text),
+		OPERATOR 8 @@ (text[], text),
+		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
+		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+
 CREATE OPERATOR CLASS pgroonga.full_text_search_varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 7 %%,
@@ -256,19 +282,11 @@ CREATE OPERATOR CLASS pgroonga.varchar_ops FOR TYPE varchar
 		FUNCTION 1 pgroonga.get_varchar(internal, internal, varchar),
 		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
 
-CREATE OPERATOR CLASS pgroonga.full_text_search_varchar_array_ops
-	FOR TYPE varchar[]
-	USING pgroonga AS
-		OPERATOR 7 %% (text[], text),
-		OPERATOR 8 @@ (varchar[], varchar),
-		FUNCTION 1 pgroonga.get_varchar_array(internal, internal, varchar[]),
-		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
-
 CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 	DEFAULT
 	FOR TYPE varchar[]
 	USING pgroonga AS
-		OPERATOR 7 %% (text[], text),
+		OPERATOR 7 %% (varchar[], varchar),
 		FUNCTION 1 pgroonga.get_varchar_array(internal, internal, varchar[]),
 		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
 

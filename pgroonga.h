@@ -52,6 +52,7 @@ extern Datum PGDLLEXPORT pgroonga_command(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contain_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contain_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contain_varchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_contain_varchar_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_insert(PG_FUNCTION_ARGS);
@@ -69,6 +70,7 @@ extern Datum PGDLLEXPORT pgroonga_options(PG_FUNCTION_ARGS);
 
 /* in groonga_types.c */
 extern Datum PGDLLEXPORT pgroonga_get_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_get_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_varchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_varchar_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_get_bool(PG_FUNCTION_ARGS);
