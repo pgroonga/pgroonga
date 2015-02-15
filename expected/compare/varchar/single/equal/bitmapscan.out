@@ -1,6 +1,6 @@
 CREATE TABLE memos (
   id integer,
-  title varchar(4096)
+  title varchar(1023)
 );
 INSERT INTO memos VALUES (1, 'PostgreSQL');
 INSERT INTO memos VALUES (2, 'Groonga');
