@@ -151,7 +151,7 @@ PGroongaは全文検索はもちろん、数値や文字列の等価条件（`=`
 
 #### 基本的な使い方
 
-`text`型のカラムを作って`pgroonga`インデックスを張ります。
+`text`型のカラムを作って`pgroonga`インデックスを作成します。
 （`varchar`型に対して全文検索をする場合は追加で
 `pgroonga.varchar_fulltext_search_ops`演算子クラスを指定する必要があり
 ます。）
