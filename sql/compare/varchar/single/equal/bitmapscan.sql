@@ -7,7 +7,7 @@ INSERT INTO memos VALUES (1, 'PostgreSQL');
 INSERT INTO memos VALUES (2, 'Groonga');
 INSERT INTO memos VALUES (3, 'PGroonga');
 
-CREATE INDEX grnindex ON memos USING pgroonga (title pgroonga.varchar_ops);
+CREATE INDEX grnindex ON memos USING pgroonga (title);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

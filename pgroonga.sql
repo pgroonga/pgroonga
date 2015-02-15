@@ -265,14 +265,14 @@ CREATE OPERATOR CLASS pgroonga.full_text_search_text_array_ops
 		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
 		FUNCTION 2 pgroonga.get_text(internal, internal, text);
 
-CREATE OPERATOR CLASS pgroonga.full_text_search_varchar_ops DEFAULT FOR TYPE varchar
+CREATE OPERATOR CLASS pgroonga.full_text_search_varchar_ops FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 7 %%,
 		OPERATOR 8 @@,
 		FUNCTION 1 pgroonga.get_varchar(internal, internal, varchar),
 		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
 
-CREATE OPERATOR CLASS pgroonga.varchar_ops FOR TYPE varchar
+CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 1 < (text, text),
 		OPERATOR 2 <= (text, text),
