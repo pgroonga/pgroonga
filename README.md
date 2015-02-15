@@ -494,6 +494,101 @@ SELECT * FROM tags WHERE tag = 'Groonga';
 --
 ```
 
+### 配列を使う
+
+PGroongaでは`text`型または`varchar`型の配列に対するインデックスを作成
+することもできます。
+
+`text`型の配列の場合はそれぞれの要素に対して全文検索できます。
+
+`varchar`型の配列の場合はそれぞれの要素に対して完全一致検索できます。
+タグ検索などで有用です。
+
+#### `text`型の配列
+
+インデックスを作成するときに`USING pgroonga`を指定します。
+
+```sql
+CREATE TABLE docs (
+  id integer,
+  sections text[]
+);
+
+CREATE INDEX pgroonga_sections_index ON docs USING pgroonga (sections);
+```
+
+データを投入します。
+
+```sql
+INSERT INTO docs
+     VALUES (1,
+             ARRAY['PostgreSQLはリレーショナル・データベース管理システムです。',
+                   'PostgreSQLは部分的に全文検索をサポートしています。']);
+INSERT INTO docs
+     VALUES (2,
+             ARRAY['Groongaは日本語対応の高速な全文検索エンジンです。',
+                   'Groongaは他のシステムに組み込むことができます。']);
+INSERT INTO docs
+     VALUES (3,
+             ARRAY['PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。',
+                   'PostgreSQLに高機能な全文検索機能を追加します。']);
+```
+
+`%%`演算子または`@@`演算子を使って全文検索できます。キーワードが何番目
+の要素にあっても全文検索できます。
+
+```sql
+SELECT * FROM docs WHERE sections %% '全文検索';
+--  id |                                                          sections                                                          
+-- ----+----------------------------------------------------------------------------------------------------------------------------
+--   1 | {PostgreSQLはリレーショナル・データベース管理システムです。,PostgreSQLは部分的に全文検索をサポートしています。}
+--   2 | {Groongaは日本語対応の高速な全文検索エンジンです。,Groongaは他のシステムに組み込むことができます。}
+--   3 | {PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。,PostgreSQLに高機能な全文検索機能を追加します。}
+-- (3 行)
+```
+
+#### `varchar`型の配列
+
+インデックスを作成するときに`USING pgroonga`を指定します。
+
+```sql
+CREATE TABLE products (
+  id integer,
+  name text,
+  tags varchar(1023)[]
+);
+
+CREATE INDEX pgroonga_tags_index ON products USING pgroonga (tags);
+```
+
+データを投入します。
+
+```sql
+INSERT INTO products
+     VALUES (1,
+             'PostgreSQL',
+             ARRAY['PostgreSQL', 'RDBMS']);
+INSERT INTO products
+     VALUES (2,
+             'Groonga',
+             ARRAY['Groonga', 'full-text search']);
+INSERT INTO products
+     VALUES (3,
+             'PGroonga',
+             ARRAY['PostgreSQL', 'Groonga', 'full-text search']);
+```
+
+`%%`演算子を使うと、配列の中に完全一致した要素があるかを検索できます。
+
+```sql
+SELECT * FROM products WHERE tags %% 'PostgreSQL';
+--  id |    name    |                  tags                   
+-- ----+------------+-----------------------------------------
+--   1 | PostgreSQL | {PostgreSQL,RDBMS}
+--   3 | PGroonga   | {PostgreSQL,Groonga,"full-text search"}
+-- (2 行)
+```
+
 ### Groongaの機能を使う
 
 多くの場合、PostgreSQLよりGroongaの方が高速に処理できます。たとえば、
