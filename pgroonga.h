@@ -37,8 +37,8 @@
 
 /* file and table names */
 #define PGrnDatabaseBasename			"pgrn"
-#define PGrnIDsTableNamePrefix			"IDs"
-#define PGrnIDsTableNameFormat			PGrnIDsTableNamePrefix "%u"
+#define PGrnSourcesTableNamePrefix		"Sources"
+#define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 

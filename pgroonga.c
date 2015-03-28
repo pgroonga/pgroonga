@@ -43,7 +43,7 @@ typedef struct PGrnOptions
 typedef struct PGrnCreateData
 {
 	Relation index;
-	grn_obj *idsTable;
+	grn_obj *sourcesTable;
 	grn_obj *lexicons;
 	unsigned int i;
 	TupleDesc desc;
@@ -55,7 +55,7 @@ typedef struct PGrnCreateData
 
 typedef struct PGrnBuildStateData
 {
-	grn_obj	*idsTable;
+	grn_obj	*sourcesTable;
 	double nIndexedTuples;
 } PGrnBuildStateData;
 
@@ -65,7 +65,7 @@ typedef struct PGrnScanOpaqueData
 {
 	slist_node node;
 	Oid dataTableID;
-	grn_obj *idsTable;
+	grn_obj *sourcesTable;
 	grn_obj minBorderValue;
 	grn_obj maxBorderValue;
 	grn_obj *searched;
@@ -494,11 +494,13 @@ PGrnLookup(const char *name, int errorLevel)
 }
 
 static grn_obj *
-PGrnLookupIDsTable(Relation index, int errorLevel)
+PGrnLookupSourcesTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name), PGrnIDsTableNameFormat, index->rd_node.relNode);
+	snprintf(name, sizeof(name)
+			 , PGrnSourcesTableNameFormat,
+			 index->rd_node.relNode);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -602,7 +604,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		}
 	}
 
-	PGrnCreateColumn(data->idsTable,
+	PGrnCreateColumn(data->sourcesTable,
 					 data->desc->attrs[data->i]->attname.data,
 					 flags,
 					 grn_ctx_at(ctx, data->attributeTypeID));
@@ -664,7 +666,7 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 		PGrnCreateColumn(lexicon,
 						 PGrnIndexColumnName,
 						 flags,
-						 data->idsTable);
+						 data->sourcesTable);
 	}
 }
 
@@ -675,21 +677,21 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
  * @param	index
  */
 static void
-PGrnCreate(Relation index, grn_obj **idsTable, grn_obj *lexicons)
+PGrnCreate(Relation index, grn_obj **sourcesTable, grn_obj *lexicons)
 {
-	char idsTableName[GRN_TABLE_MAX_KEY_SIZE];
+	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
 	PGrnCreateData data;
 
 	data.index = index;
 	data.desc = RelationGetDescr(index);
 	data.relNode = index->rd_node.relNode;
 
-	snprintf(idsTableName, sizeof(idsTableName),
-			 PGrnIDsTableNameFormat, data.relNode);
-	*idsTable = PGrnCreateTable(idsTableName,
-								GRN_OBJ_TABLE_PAT_KEY,
-								grn_ctx_at(ctx, GRN_DB_UINT64));
-	data.idsTable = *idsTable;
+	snprintf(sourcesTableName, sizeof(sourcesTableName),
+			 PGrnSourcesTableNameFormat, data.relNode);
+	*sourcesTable = PGrnCreateTable(sourcesTableName,
+									GRN_OBJ_TABLE_PAT_KEY,
+									grn_ctx_at(ctx, GRN_DB_UINT64));
+	data.sourcesTable = *sourcesTable;
 	data.lexicons = lexicons;
 
 	for (data.i = 0; data.i < data.desc->natts; data.i++)
@@ -703,7 +705,7 @@ PGrnCreate(Relation index, grn_obj **idsTable, grn_obj *lexicons)
 }
 
 static void
-PGrnSetSources(Relation index, grn_obj *idsTable)
+PGrnSetSources(Relation index, grn_obj *sourcesTable)
 {
 	TupleDesc desc;
 	grn_obj sourceIDs;
@@ -720,7 +722,8 @@ PGrnSetSources(Relation index, grn_obj *idsTable)
 
 		GRN_BULK_REWIND(&sourceIDs);
 
-		source = grn_obj_column(ctx, idsTable, name->data, strlen(name->data));
+		source = grn_obj_column(ctx, sourcesTable,
+								name->data, strlen(name->data));
 		sourceID = grn_obj_id(ctx, source);
 		grn_obj_unlink(ctx, source);
 		GRN_RECORD_PUT(ctx, &sourceIDs, sourceID);
@@ -776,7 +779,8 @@ PGrnCollectScore(Oid tableID, ItemPointer ctid)
 
 		if (recordID == GRN_ID_NIL)
 		{
-			recordID = grn_table_get(ctx, so->idsTable, &key, sizeof(uint64_t));
+			recordID = grn_table_get(ctx, so->sourcesTable,
+									 &key, sizeof(uint64_t));
 		}
 
 		id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
@@ -849,7 +853,9 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	}
 	indexOid = DatumGetObjectId(indexOidDatum);
 
-	snprintf(tableName, sizeof(tableName), PGrnIDsTableNameFormat, indexOid);
+	snprintf(tableName, sizeof(tableName),
+			 PGrnSourcesTableNameFormat,
+			 indexOid);
 	copiedTableName = pstrdup(tableName);
 	PG_RETURN_CSTRING(copiedTableName);
 }
@@ -1080,7 +1086,7 @@ pgroonga_match(PG_FUNCTION_ARGS)
 static void
 PGrnInsert(grn_ctx *ctx,
 		  Relation index,
-		  grn_obj *idsTable,
+		  grn_obj *sourcesTable,
 		  Datum *values,
 		  bool *isnull,
 		  ItemPointer ht_ctid)
@@ -1090,7 +1096,7 @@ PGrnInsert(grn_ctx *ctx,
 	grn_id id;
 	int i;
 
-	id = grn_table_add(ctx, idsTable, &key, sizeof(uint64), NULL);
+	id = grn_table_add(ctx, sourcesTable, &key, sizeof(uint64), NULL);
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -1102,7 +1108,7 @@ PGrnInsert(grn_ctx *ctx,
 		if (isnull[i])
 			continue;
 
-		dataColumn = grn_obj_column(ctx, idsTable,
+		dataColumn = grn_obj_column(ctx, sourcesTable,
 									name->data, strlen(name->data));
 		domain = PGrnGetType(index, i, &flags);
 		grn_obj_reinit(ctx, &buffer, domain, flags);
@@ -1129,9 +1135,10 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	Relation heap = (Relation) PG_GETARG_POINTER(4);
 	IndexUniqueCheck checkUnique = PG_GETARG_INT32(5);
 #endif
-	grn_obj *idsTable = PGrnLookupIDsTable(index, ERROR);
+	grn_obj *sourcesTable;
 
-	PGrnInsert(ctx, index, idsTable, values, isnull, ht_ctid);
+	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+	PGrnInsert(ctx, index, sourcesTable, values, isnull, ht_ctid);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
 
 	PG_RETURN_BOOL(true);
@@ -1141,7 +1148,7 @@ static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
 	so->dataTableID = index->rd_index->indrelid;
-	so->idsTable = PGrnLookupIDsTable(index, ERROR);
+	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
 	so->searched = NULL;
@@ -1291,12 +1298,12 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		if (key->sk_flags & SK_ISNULL)
 			continue;
 
-		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
+		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
 								  matchTarget, matchTargetVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 
 		targetColumnName = desc->attrs[key->sk_attno - 1]->attname.data;
-		targetColumn = grn_obj_column(ctx, so->idsTable,
+		targetColumn = grn_obj_column(ctx, so->sourcesTable,
 									  targetColumnName,
 									  strlen(targetColumnName));
 		GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
@@ -1427,7 +1434,7 @@ PGrnSearch(IndexScanDesc scan)
 	GRN_PTR_INIT(&(data.targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT32_INIT(&(data.sectionID), 0);
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->idsTable,
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
 							  data.expression, data.expressionVariable);
 	data.isEmptyCondition = false;
 
@@ -1445,11 +1452,11 @@ PGrnSearch(IndexScanDesc scan)
 	/* TODO: Add NULL check for so->searched. */
 	so->searched = grn_table_create(ctx, NULL, 0, NULL,
 									GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-									so->idsTable, 0);
+									so->sourcesTable, 0);
 	if (!data.isEmptyCondition)
 	{
 		grn_table_select(ctx,
-						 so->idsTable,
+						 so->sourcesTable,
 						 data.expression,
 						 so->searched,
 						 GRN_OP_OR);
@@ -1476,7 +1483,7 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	if (!table)
 		table = so->searched;
 	if (!table)
-		table = so->idsTable;
+		table = so->sourcesTable;
 
 	if (dir == BackwardScanDirection)
 		flags |= GRN_CURSOR_DESCENDING;
@@ -1667,7 +1674,7 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 											indexCursorMin,
 											indexCursorMax,
 											indexCursorFlags);
-	so->keyAccessor = grn_obj_column(ctx, so->idsTable,
+	so->keyAccessor = grn_obj_column(ctx, so->sourcesTable,
 									 GRN_COLUMN_NAME_KEY,
 									 GRN_COLUMN_NAME_KEY_LEN);
 }
@@ -1749,7 +1756,7 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 		grn_obj key;
 		GRN_UINT64_INIT(&key, 0);
 		grn_obj_get_value(ctx, so->keyAccessor, so->currentID, &key);
-		grn_table_delete(ctx, so->idsTable,
+		grn_table_delete(ctx, so->sourcesTable,
 						 GRN_BULK_HEAD(&key), GRN_BULK_VSIZE(&key));
 		GRN_OBJ_FIN(ctx, &key);
 	}
@@ -1883,7 +1890,8 @@ PGrnBuildCallback(Relation index,
 	PGrnBuildState bs = (PGrnBuildState) state;
 
 	if (tupleIsAlive) {
-		PGrnInsert(ctx, index, bs->idsTable, values, isnull, &(htup->t_self));
+		PGrnInsert(ctx, index, bs->sourcesTable, values,
+				   isnull, &(htup->t_self));
 		bs->nIndexedTuples++;
 	}
 }
@@ -1907,16 +1915,16 @@ pgroonga_build(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("pgroonga: unique index isn't supported")));
 
-	bs.idsTable = NULL;
+	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
 
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index, &(bs.idsTable), &lexicons);
+		PGrnCreate(index, &(bs.sourcesTable), &lexicons);
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
-		PGrnSetSources(index, bs.idsTable);
+		PGrnSetSources(index, bs.sourcesTable);
 	}
 	PG_CATCH();
 	{
@@ -1930,8 +1938,8 @@ pgroonga_build(PG_FUNCTION_ARGS)
 		}
 		GRN_OBJ_FIN(ctx, &lexicons);
 
-		if (bs.idsTable)
-			grn_obj_remove(ctx, bs.idsTable);
+		if (bs.sourcesTable)
+			grn_obj_remove(ctx, bs.sourcesTable);
 
 		PG_RE_THROW();
 	}
@@ -1952,14 +1960,14 @@ Datum
 pgroonga_buildempty(PG_FUNCTION_ARGS)
 {
 	Relation index = (Relation) PG_GETARG_POINTER(0);
-	grn_obj *idsTable = NULL;
+	grn_obj *sourcesTable = NULL;
 	grn_obj lexicons;
 
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index, &idsTable, &lexicons);
-		PGrnSetSources(index, idsTable);
+		PGrnCreate(index, &sourcesTable, &lexicons);
+		PGrnSetSources(index, sourcesTable);
 	}
 	PG_CATCH();
 	{
@@ -1973,8 +1981,8 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 		}
 		GRN_OBJ_FIN(ctx, &lexicons);
 
-		if (idsTable)
-			grn_obj_remove(ctx, idsTable);
+		if (sourcesTable)
+			grn_obj_remove(ctx, sourcesTable);
 
 		PG_RE_THROW();
 	}
@@ -1985,7 +1993,7 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 }
 
 static IndexBulkDeleteResult *
-PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *idsTable)
+PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *sourcesTable)
 {
 	IndexBulkDeleteResult *stats;
 
@@ -1993,8 +2001,8 @@ PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *idsTable)
 	stats->num_pages = (BlockNumber) 1;	/* TODO: sizeof index / BLCKSZ */
 
 	/* table might be NULL if index is corrupted */
-	if (idsTable)
-		stats->num_index_tuples = grn_table_size(ctx, idsTable);
+	if (sourcesTable)
+		stats->num_index_tuples = grn_table_size(ctx, sourcesTable);
 	else
 		stats->num_index_tuples = 0;
 
@@ -2012,21 +2020,23 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	IndexBulkDeleteCallback	callback = (IndexBulkDeleteCallback) PG_GETARG_POINTER(2);
 	void *callback_state = (void *) PG_GETARG_POINTER(3);
 	Relation index = info->index;
-	grn_obj	*idsTable;
+	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
 
-	idsTable = PGrnLookupIDsTable(index, WARNING);
+	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
 
 	if (!stats)
-		stats = PGrnBulkDeleteResult(info, idsTable);
+		stats = PGrnBulkDeleteResult(info, sourcesTable);
 
-	if (!idsTable || !callback)
+	if (!sourcesTable || !callback)
 		PG_RETURN_POINTER(stats);
 
 	nRemovedTuples = 0;
 
-	cursor = grn_table_cursor_open(ctx, idsTable, NULL, 0, NULL, 0, 0, -1, 0);
+	cursor = grn_table_cursor_open(ctx, sourcesTable,
+								   NULL, 0, NULL, 0,
+								   0, -1, 0);
 	if (!cursor)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
@@ -2068,7 +2078,7 @@ static void
 PGrnRemoveUnusedTables(void)
 {
 	grn_table_cursor *cursor;
-	const char *min = PGrnIDsTableNamePrefix;
+	const char *min = PGrnSourcesTableNamePrefix;
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
@@ -2110,7 +2120,7 @@ PGrnRemoveUnusedTables(void)
 			grn_obj *table;
 
 			snprintf(tableName, sizeof(tableName),
-					 PGrnIDsTableNameFormat, relationID);
+					 PGrnSourcesTableNameFormat, relationID);
 			table = grn_ctx_get(ctx, tableName, strlen(tableName));
 			if (table)
 			{
@@ -2132,8 +2142,11 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 	IndexBulkDeleteResult *stats = (IndexBulkDeleteResult *) PG_GETARG_POINTER(1);
 
 	if (!stats)
-		stats = PGrnBulkDeleteResult(info,
-									 PGrnLookupIDsTable(info->index, WARNING));
+	{
+		grn_obj *sourcesTable;
+		sourcesTable = PGrnLookupSourcesTable(info->index, WARNING);
+		stats = PGrnBulkDeleteResult(info, sourcesTable);
+	}
 
 	PGrnRemoveUnusedTables();
 
