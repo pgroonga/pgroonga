@@ -182,6 +182,16 @@ postgresql94-devel
     end
   end
 
+  desc "Release Yum packages"
+  yum_tasks = [
+    "package:yum:download",
+    "package:yum:build",
+    "package:yum:sign",
+    "package:yum:update",
+    "package:yum:upload",
+  ]
+  task :yum => yum_tasks
+
   namespace :ubuntu do
     desc "Upload package"
     task :upload do
