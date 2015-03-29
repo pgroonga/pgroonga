@@ -168,6 +168,7 @@ postgresql94-devel
     desc "Download repositories"
     task :download => repositories_dir do
       sh("rsync", "-avz", "--progress",
+         "--delete",
          "#{rsync_path}/#{distribution}/",
          "#{repositories_dir}/#{distribution}")
     end
