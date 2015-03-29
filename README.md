@@ -67,11 +67,16 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 
 `postgresql-server-9.4-pgroonga`パッケージをインストールします。
 
-    % sudo apt-get -y install software-properties-common
+    % sudo apt-get install -y software-properties-common
     % sudo add-apt-repository -y universe
     % sudo add-apt-repository -y ppa:groonga/ppa
     % sudo apt-get update
-    % sudo apt-get -y install postgresql-server-9.4-pgroonga
+    % sudo apt-get install -y postgresql-server-9.4-pgroonga
+
+[MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
+い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
+
+    % sudo apt-get install -y groonga-tokenizer-mecab
 
 データベースを作成します。
 
@@ -94,6 +99,11 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
     % sudo rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
     % sudo yum makecache
     % sudo yum install -y postgresql94-pgroonga
+
+[MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
+い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
+
+    % sudo yum install -y groonga-tokenizer-mecab
 
 PostgreSQLを起動します。
 
@@ -122,6 +132,11 @@ PostgreSQLを起動します。
     % sudo rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
     % sudo yum makecache
     % sudo yum install -y postgresql94-pgroonga
+
+[MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
+い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
+
+    % sudo yum install -y groonga-tokenizer-mecab
 
 PostgreSQLを起動します。
 
@@ -225,6 +240,7 @@ SET enable_seqscan = off;
 
 ```sql
 SELECT * FROM memos WHERE content %% '全文検索';
+
 --  id |                      content
 -- ----+---------------------------------------------------
 --   2 | Groongaは日本語対応の高速な全文検索エンジンです。
@@ -385,10 +401,10 @@ SELECT *, pgroonga.score(memos)
   * ノーマライザー: [NormalizerAuto](http://groonga.org/ja/docs/reference/normalizers.html#normalizer-auto): エンコーディングに合わせて適切な正規化を行います。たとえば、UTF-8の場合はUnicodeのNFKCベースの正規化を行います。
 
 トークナイザーをカスタマイズするときは`tokenizer='トークナイザー名'`を
-指定します。例えば、
-[MeCab](http://mecab.googlecode.com/svn/trunk/mecab/doc/index.html)ベー
-スのトークナイザーを指定する場合は次のように`tokenizer='TokenMecab'`を
-指定します。
+指定します。例えば、[MeCab](http://taku910.github.io/mecab/)ベースのトー
+クナイザーを指定する場合は次のように`tokenizer='TokenMecab'`を指定しま
+す。（`TokenMecab`を使う場合は`groonga-tokenizer-mecab`パッケージをイ
+ンストールしておく必要があります。）
 
 ```sql
 CREATE TABLE memos (
