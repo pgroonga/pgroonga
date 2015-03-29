@@ -1,5 +1,12 @@
 # -*- rpm -*-
 
+%define pg_version         9.4
+%define pg_package_version 94
+%define pg_prefix          /usr/pgsql-%{pg_version}
+%define pg_bindir          %{pg_prefix}/bin
+%define pg_libdir          %{pg_prefix}/lib
+%define pg_datadir         %{pg_prefix}/share
+
 Name:		@PACKAGE@
 Version:	@VERSION@
 Release:	1%{?dist}
@@ -12,9 +19,9 @@ Source0:	http://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
-BuildRequires:	postgresql-devel
+BuildRequires:	postgresql%{pg_package_version}-devel
 Requires:	groonga-libs
-Requires:	postgresql-server
+Requires:	postgresql%{pg_package_version}-server
 
 %description
 This package provides a fast full-text search plugin for PostgreSQL.
@@ -25,16 +32,17 @@ It is based on Groonga.
 
 
 %build
-make %{?_smp_mflags}
+PATH="%{pg_bindir}:$PATH" \
+  make %{?_smp_mflags}
 
 %install
 make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 
 %files
 %doc README.md news.md COPYING
-%{_libdir}/pgsql/*.so
-%{_datadir}/pgsql/extension/*.control
-%{_datadir}/pgsql/extension/*.sql
+%{pg_libdir}/*.so
+%{pg_datadir}/extension/*.control
+%{pg_datadir}/extension/*.sql
 
 %changelog
 * Sun Mar 29 2015 Kouhei Sutou <kou@clear-code.com> - 0.4.0-1

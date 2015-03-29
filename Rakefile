@@ -78,7 +78,7 @@ namespace :package do
 
   namespace :yum do
     distribution = "centos"
-    rpm_package = "postgresql-#{package}"
+    rpm_package = "postgresql94-#{package}"
     rsync_path = rsync_base_path
     yum_dir = "#{packages_dir}/yum"
     repositories_dir = "#{yum_dir}/repositories"
@@ -97,7 +97,7 @@ gcc
 make
 pkg-config
 groonga-devel
-postgresql-devel
+postgresql94-devel
 "
         ENV
       end
@@ -134,11 +134,18 @@ postgresql-devel
 
       cd(yum_dir) do
         sh("vagrant", "destroy", "--force")
-        distribution_version = "7"
-        distribution_architecture = "x86_64"
-        id = "#{distribution}-#{distribution_version}-#{distribution_architecture}"
-        sh("vagrant", "up", id)
-        sh("vagrant", "destroy", "--force", id)
+        distribution_versions = {
+          "5" => ["i386", "x86_64"],
+          "6" => ["i386", "x86_64"],
+          "7" => ["x86_64"],
+        }
+        distribution_versions.each do |ver, archs|
+          archs.each do |arch|
+            id = "#{distribution}-#{ver}-#{arch}"
+            sh("vagrant", "up", id)
+            sh("vagrant", "destroy", "--force", id)
+          end
+        end
       end
     end
 
@@ -198,7 +205,7 @@ postgresql-devel
            env_value("NEW_RELEASE_DATE"),
            "README.md",
            "packages/debian/changelog",
-           "packages/yum/postgresql-pgroonga.spec.in")
+           "packages/yum/postgresql94-pgroonga.spec.in")
     end
   end
 end
