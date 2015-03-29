@@ -28,7 +28,7 @@ index. You need to re-install PGroonga:
   * Supported full-text search for `text[]` type.
   * Supported full-text search by index and other search by index in
     one `SELECT`.
-  * Added yum packages for CentOS 5 and 6.
+  * Added Yum repositories for CentOS 5 and 6.
 
 ### Changes
 
