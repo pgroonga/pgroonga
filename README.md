@@ -45,11 +45,18 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 のAPIを提供していません。PostgreSQL本体がそんなAPIを提供したらWALに対
 応する予定です。
 
+## サポートしているPostgreSQLのバージョン
+
+  * PostgreSQL 9.3
+  * PostgreSQL 9.4
+
 ## インストール
 
 次の環境用のパッケージを用意しています。
 
   * Ubuntu 14.10
+  * CentOS 5
+  * CentOS 6
   * CentOS 7
 
 その他の環境ではソースからインストールしてください。
@@ -79,18 +86,48 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 
 これでインストールは完了です。
 
+### CentOS 5または6にインストール
+
+`postgresql-pgroonga`パッケージをインストールします。
+
+    % sudo rpm -ivh http://yum.postgresql.org/9.4/redhat/rhel-$(rpm -qf --queryformat="%{VERSION}" /etc/redhat-release)-$(rpm -qf --queryformat="%{ARCH}" /etc/redhat-release)/pgdg-centos94-9.4-1.noarch.rpm
+    % sudo rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
+    % sudo yum makecache
+    % sudo yum install -y postgresql94-pgroonga
+
+PostgreSQLを起動します。
+
+    % sudo -H /sbin/service postgresql-9.4 initdb
+    % sudo -H /sbin/chkconfig postgresql-9.4 on
+    % sudo -H /sbin/service postgresql-9.4 start
+
+データベースを作成します。
+
+    % sudo -u postgres -H psql --command 'CREATE DATABASE pgroonga_test'
+
+（ここで`pgroonga_test`用のユーザーを作成して、そのユーザーで接続する
+べき。）
+
+データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
+
+    % sudo -u postgres -H psql -d pgroonga_test --command 'CREATE EXTENSION pgroonga'
+
+これでインストールは完了です。
+
 ### CentOS 7にインストール
 
 `postgresql-pgroonga`パッケージをインストールします。
 
+    % sudo rpm -ivh http://yum.postgresql.org/9.4/redhat/rhel-$(rpm -qf --queryformat="%{VERSION}" /etc/redhat-release)-$(rpm -qf --queryformat="%{ARCH}" /etc/redhat-release)/pgdg-centos94-9.4-1.noarch.rpm
     % sudo rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
     % sudo yum makecache
-    % sudo yum install -y postgresql-pgroonga
+    % sudo yum install -y postgresql94-pgroonga
 
 PostgreSQLを起動します。
 
-    % sudo -H postgresql-setup initdb
-    % sudo -H systemctl start postgresql
+    % sudo -H /usr/pgsql-9.4/bin/postgresql94-setup initdb
+    % sudo -H systemctl enable postgresql-9.4
+    % sudo -H systemctl start postgresql-9.4
 
 データベースを作成します。
 

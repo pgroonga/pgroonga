@@ -28,11 +28,13 @@ index. You need to re-install PGroonga:
   * Supported full-text search for `text[]` type.
   * Supported full-text search by index and other search by index in
     one `SELECT`.
+  * Added yum packages for CentOS 5 and 6.
 
 ### Changes
 
   * Dropped `text == text` search by index. Use 4096 bytes or smaller
     `varchar` instead.
+  * Dropped PostgreSQL 9.2 support.
 
 ## 0.3.0: 2015-02-09
 
