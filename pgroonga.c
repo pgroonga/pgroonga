@@ -498,7 +498,8 @@ PGrnLookupSourcesTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name), PGrnSourcesTableNameFormat,
+	snprintf(name, sizeof(name),
+			 PGrnSourcesTableNameFormat,
 			 index->rd_node.relNode);
 	return PGrnLookup(name, errorLevel);
 }
