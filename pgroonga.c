@@ -946,38 +946,23 @@ pgroonga_command(PG_FUNCTION_ARGS)
 }
 
 static grn_bool
-pgroonga_contain_raw(const char *text, unsigned int text_size,
-					 const char *key, unsigned int key_size)
+pgroonga_contain_raw(const char *text, unsigned int textSize,
+					 const char *subText, unsigned int subTextSize)
 {
-	grn_bool contained = GRN_FALSE;
-	grn_obj buffer;
-	grn_obj *expression, *expressionVariable;
+	grn_bool contained;
+	grn_obj targetBuffer;
+	grn_obj subTextBuffer;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, NULL, expression, expressionVariable);
+	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
 
-	GRN_TEXT_INIT(&buffer, 0);
+	GRN_TEXT_INIT(&subTextBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &subTextBuffer, subText, subTextSize);
 
-	GRN_TEXT_SET(ctx, &buffer, text, text_size);
-	grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
+	contained = grn_operator_exec_match(ctx, &targetBuffer, &subTextBuffer);
 
-	GRN_TEXT_SET(ctx, &buffer, key, key_size);
-	grn_expr_append_const(ctx, expression, &buffer, GRN_OP_PUSH, 1);
-
-	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
-
-	{
-		grn_obj *result;
-		result = grn_expr_exec(ctx, expression, 0);
-		if (ctx->rc)
-		{
-			goto exit;
-		}
-		contained = GRN_INT32_VALUE(result) != 0;
-	}
-
-exit:
-	grn_obj_unlink(ctx, expression);
-	GRN_OBJ_FIN(ctx, &buffer);
+	GRN_OBJ_FIN(ctx, &targetBuffer);
+	GRN_OBJ_FIN(ctx, &subTextBuffer);
 
 	return contained;
 }
