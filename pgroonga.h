@@ -39,6 +39,8 @@
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"
 #define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"
+#define PGrnSourcesCtidColumnName		"ctid"
+#define PGrnSourcesCtidColumnNameLength	(sizeof(PGrnSourcesCtidColumnName) - 1)
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 
