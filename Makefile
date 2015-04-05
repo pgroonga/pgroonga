@@ -1,5 +1,5 @@
 MODULE_big = pgroonga
-SRCS = pgroonga.c pgroonga_types.c
+SRCS = pgroonga.c
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
 EXTENSION_VERSION =						\

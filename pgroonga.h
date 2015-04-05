@@ -31,10 +31,6 @@
 #define PGrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 
-/* Groonga support functions */
-#define PGrnGetValueProc				1
-#define PGrnGetQueryProc				2
-
 /* file and table names */
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"
@@ -44,7 +40,6 @@
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 
-/* in pgroonga.c */
 extern void PGDLLEXPORT _PG_init(void);
 
 extern Datum PGDLLEXPORT pgroonga_score(PG_FUNCTION_ARGS);
@@ -69,19 +64,5 @@ extern Datum PGDLLEXPORT pgroonga_bulkdelete(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_vacuumcleanup(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_costestimate(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_options(PG_FUNCTION_ARGS);
-
-/* in groonga_types.c */
-extern Datum PGDLLEXPORT pgroonga_get_text(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_text_array(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_varchar(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_varchar_array(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_bool(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_int2(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_int4(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_int8(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_float4(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_float8(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_timestamp(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_get_timestamptz(PG_FUNCTION_ARGS);
 
 #endif	/* PPGROONGA_H */

@@ -165,60 +165,11 @@ CREATE FUNCTION pgroonga.options(internal)
 	AS 'MODULE_PATHNAME', 'pgroonga_options'
 	LANGUAGE C;
 
-CREATE FUNCTION pgroonga.get_text(internal, internal, text)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_text'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_text_array(internal, internal, text[])
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_text_array'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_varchar(internal, internal, varchar)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_varchar'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_varchar_array(internal, internal, varchar[])
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_varchar_array'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_bool(internal, internal, bool)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_bool'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int2(internal, internal, int2)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_int2'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int4(internal, internal, int4)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_int4'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_int8(internal, internal, int8)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_int8'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_float4(internal, internal, float4)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_float4'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_float8(internal, internal, float8)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_float8'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_timestamp(internal, internal, timestamp)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_timestamp'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.get_timestamptz(internal, internal, timestamptz)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_get_timestamptz'
-	LANGUAGE C;
-
 DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
 	8,		-- amstrategies
-	3,		-- amsupport
+	0,		-- amsupport
 	true,		-- amcanorder
 	true,		-- amcanorderbyop
 	true,		-- amcanbackward
@@ -252,25 +203,19 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 pg_catalog.~~,
 		OPERATOR 7 %%,
-		OPERATOR 8 @@,
-		FUNCTION 1 pgroonga.get_text(internal, internal, text),
-		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+		OPERATOR 8 @@;
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 	DEFAULT
 	FOR TYPE text[]
 	USING pgroonga AS
 		OPERATOR 7 %% (text[], text),
-		OPERATOR 8 @@ (text[], text),
-		FUNCTION 1 pgroonga.get_text_array(internal, internal, text[]),
-		FUNCTION 2 pgroonga.get_text(internal, internal, text);
+		OPERATOR 8 @@ (text[], text);
 
 CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 7 %%,
-		OPERATOR 8 @@,
-		FUNCTION 1 pgroonga.get_varchar(internal, internal, varchar),
-		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
+		OPERATOR 8 @@;
 
 CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
@@ -278,17 +223,13 @@ CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 		OPERATOR 2 <= (text, text),
 		OPERATOR 3 = (text, text),
 		OPERATOR 4 >= (text, text),
-		OPERATOR 5 > (text, text),
-		FUNCTION 1 pgroonga.get_varchar(internal, internal, varchar),
-		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
+		OPERATOR 5 > (text, text);
 
 CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 	DEFAULT
 	FOR TYPE varchar[]
 	USING pgroonga AS
-		OPERATOR 7 %% (varchar[], varchar),
-		FUNCTION 1 pgroonga.get_varchar_array(internal, internal, varchar[]),
-		FUNCTION 2 pgroonga.get_varchar(internal, internal, varchar);
+		OPERATOR 7 %% (varchar[], varchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS
@@ -296,9 +237,7 @@ CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_bool(internal, internal, bool),
-		FUNCTION 2 pgroonga.get_bool(internal, internal, bool);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 	USING pgroonga AS
@@ -306,9 +245,7 @@ CREATE OPERATOR CLASS pgroonga.int2_ops DEFAULT FOR TYPE int2
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int2(internal, internal, int2),
-		FUNCTION 2 pgroonga.get_int2(internal, internal, int2);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 	USING pgroonga AS
@@ -316,9 +253,7 @@ CREATE OPERATOR CLASS pgroonga.int4_ops DEFAULT FOR TYPE int4
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int4(internal, internal, int4),
-		FUNCTION 2 pgroonga.get_int4(internal, internal, int4);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 	USING pgroonga AS
@@ -326,9 +261,7 @@ CREATE OPERATOR CLASS pgroonga.int8_ops DEFAULT FOR TYPE int8
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_int8(internal, internal, int8),
-		FUNCTION 2 pgroonga.get_int8(internal, internal, int8);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 	USING pgroonga AS
@@ -336,9 +269,7 @@ CREATE OPERATOR CLASS pgroonga.float4_ops DEFAULT FOR TYPE float4
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_float4(internal, internal, float4),
-		FUNCTION 2 pgroonga.get_float4(internal, internal, float4);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 	USING pgroonga AS
@@ -346,9 +277,7 @@ CREATE OPERATOR CLASS pgroonga.float8_ops DEFAULT FOR TYPE float8
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_float8(internal, internal, float8),
-		FUNCTION 2 pgroonga.get_float8(internal, internal, float8);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 	USING pgroonga AS
@@ -356,9 +285,7 @@ CREATE OPERATOR CLASS pgroonga.timestamp_ops DEFAULT FOR TYPE timestamp
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_timestamp(internal, internal, timestamp),
-		FUNCTION 2 pgroonga.get_timestamp(internal, internal, timestamp);
+		OPERATOR 5 >;
 
 CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 	USING pgroonga AS
@@ -366,6 +293,4 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 2 <=,
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
-		OPERATOR 5 >,
-		FUNCTION 1 pgroonga.get_timestamptz(internal, internal, timestamptz),
-		FUNCTION 2 pgroonga.get_timestamptz(internal, internal, timestamptz);
+		OPERATOR 5 >;

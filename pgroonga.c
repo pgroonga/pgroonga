@@ -20,11 +20,13 @@
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
+#include <utils/timestamp.h>
 #include <utils/typcache.h>
 
 #include <groonga.h>
 
 #include <stdlib.h>
+#include <math.h>
 
 #define VARCHARARRAYOID 1015
 
@@ -467,25 +469,123 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 }
 
 static void
-PGrnGetValue(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
+PGrnConvertDatumArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 {
-	FmgrInfo *function;
+	ArrayType *value = DatumGetArrayTypeP(datum);
+	int i, n;
 
-	function = index_getprocinfo(index, n + 1, PGrnGetValueProc);
-	FunctionCall3(function,
-				  PointerGetDatum(ctx), PointerGetDatum(buffer),
-				  value);
+	n = ARR_DIMS(value)[0];
+	for (i = 1; i <= n; i++)
+	{
+		int weight = 0;
+		Datum elementDatum;
+		VarChar *element;
+		bool isNULL;
+
+		elementDatum = array_ref(value, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		switch (typeID)
+		{
+		case VARCHARARRAYOID:
+			element = DatumGetVarCharPP(elementDatum);
+			grn_vector_add_element(ctx, buffer,
+								   VARDATA_ANY(element),
+								   VARSIZE_ANY_EXHDR(element),
+								   weight,
+								   buffer->header.domain);
+			break;
+		case TEXTARRAYOID:
+			element = DatumGetTextPP(elementDatum);
+			grn_vector_add_element(ctx, buffer,
+								   VARDATA_ANY(element),
+								   VARSIZE_ANY_EXHDR(element),
+								   weight,
+								   buffer->header.domain);
+			break;
+		}
+	}
 }
 
 static void
-PGrnGetQuery(Relation index, AttrNumber n, grn_obj *buffer, Datum value)
+PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
 {
-	FmgrInfo *function;
+	switch (typeID)
+	{
+	case BOOLOID:
+		GRN_BOOL_SET(ctx, buffer, DatumGetBool(datum));
+		break;
+	case INT2OID:
+		GRN_INT16_SET(ctx, buffer, DatumGetInt16(datum));
+		break;
+	case INT4OID:
+		GRN_INT32_SET(ctx, buffer, DatumGetInt32(datum));
+		break;
+	case INT8OID:
+		GRN_INT64_SET(ctx, buffer, DatumGetInt64(datum));
+		break;
+	case FLOAT4OID:
+		GRN_FLOAT_SET(ctx, buffer, DatumGetFloat4(datum));
+		break;
+	case FLOAT8OID:
+		GRN_FLOAT_SET(ctx, buffer, DatumGetFloat8(datum));
+		break;
+	case TIMESTAMPOID:
+	case TIMESTAMPTZOID:
+	{
+		Timestamp value = DatumGetTimestamp(datum);
+		pg_time_t unixTime;
+		int32 usec;
 
-	function = index_getprocinfo(index, n + 1, PGrnGetQueryProc);
-	FunctionCall3(function,
-				  PointerGetDatum(ctx), PointerGetDatum(buffer),
-				  value);
+		unixTime = timestamptz_to_time_t(value);
+#ifdef HAVE_INT64_TIMESTAMP
+		usec = value % USECS_PER_SEC;
+#else
+		{
+			double rawUsec;
+			modf(value, &rawUsec);
+			usec = rawUsec * USECS_PER_SEC;
+			if (usec < 0.0)
+			{
+				usec = -usec;
+			}
+		}
+#endif
+		GRN_TIME_SET(ctx, buffer, GRN_TIME_PACK(unixTime, usec));
+		break;
+	}
+	case TEXTOID:
+	case XMLOID:
+	{
+		text *value = DatumGetTextPP(datum);
+		GRN_TEXT_SET(ctx, buffer,
+					 VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
+		break;
+	}
+	case VARCHAROID:
+	{
+		VarChar *value = DatumGetVarCharPP(datum);
+		GRN_TEXT_SET(ctx, buffer,
+					 VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
+		break;
+	}
+#ifdef NOT_USED
+	case POINTOID:
+		/* GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT; */
+		break;
+#endif
+	case VARCHARARRAYOID:
+	case TEXTARRAYOID:
+		PGrnConvertDatumArrayType(datum, typeID, buffer);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: unsupported datum type: %u",
+						typeID)));
+		break;
+	}
 }
 
 static grn_obj *
@@ -1127,10 +1227,12 @@ PGrnInsert(grn_ctx *ctx,
 	for (i = 0; i < desc->natts; i++)
 	{
 		grn_obj *dataColumn;
-		NameData *name = &(desc->attrs[i]->attname);
+		Form_pg_attribute attribute = desc->attrs[i];
+		NameData *name;
 		grn_id domain;
 		unsigned char flags;
 
+		name = &(attribute->attname);
 		if (isnull[i])
 			continue;
 
@@ -1138,7 +1240,7 @@ PGrnInsert(grn_ctx *ctx,
 									name->data, strlen(name->data));
 		domain = PGrnGetType(index, i, &flags);
 		grn_obj_reinit(ctx, &buffer, domain, flags);
-		PGrnGetValue(index, i, &buffer, values[i]);
+		PGrnConvertDatum(values[i], attribute->atttypid, &buffer);
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("pgroonga: failed to set column value")) {
@@ -1318,6 +1420,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
 		ScanKey key = &(scan->keyData[i]);
+		Form_pg_attribute attribute;
 		grn_bool isValidStrategy = GRN_TRUE;
 		const char *targetColumnName;
 		grn_obj *targetColumn;
@@ -1328,11 +1431,13 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		if (key->sk_flags & SK_ISNULL)
 			continue;
 
+		attribute = desc->attrs[key->sk_attno - 1];
+
 		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
 								  matchTarget, matchTargetVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 
-		targetColumnName = desc->attrs[key->sk_attno - 1]->attname.data;
+		targetColumnName = attribute->attname.data;
 		targetColumn = grn_obj_column(ctx, so->sourcesTable,
 									  targetColumnName,
 									  strlen(targetColumnName));
@@ -1345,7 +1450,19 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 			domain = PGrnGetType(index, key->sk_attno - 1, NULL);
 			grn_obj_reinit(ctx, &buffer, domain, flags);
 		}
-		PGrnGetQuery(index, key->sk_attno - 1, &buffer, key->sk_argument);
+		{
+			Oid valueTypeID = attribute->atttypid;
+			switch (valueTypeID)
+			{
+			case VARCHARARRAYOID:
+				valueTypeID = VARCHAROID;
+				break;
+			case TEXTARRAYOID:
+				valueTypeID = TEXTOID;
+				break;
+			}
+			PGrnConvertDatum(key->sk_argument, valueTypeID, &buffer);
+		}
 
 		switch (key->sk_strategy)
 		{
@@ -1575,10 +1692,13 @@ PGrnFillBorder(IndexScanDesc scan,
 			   int *flags)
 {
 	Relation index = scan->indexRelation;
+	TupleDesc desc;
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	grn_obj *minBorderValue;
 	grn_obj *maxBorderValue;
 	int i;
+
+	desc = RelationGetDescr(index);
 
 	minBorderValue = &(so->minBorderValue);
 	maxBorderValue = &(so->maxBorderValue);
@@ -1586,9 +1706,12 @@ PGrnFillBorder(IndexScanDesc scan,
 	{
 		ScanKey key = &(scan->keyData[i]);
 		AttrNumber attrNumber;
+		Form_pg_attribute attribute;
 		grn_id domain;
 
 		attrNumber = key->sk_attno - 1;
+		attribute = desc->attrs[attrNumber];
+
 		domain = PGrnGetType(index, attrNumber, NULL);
 		switch (key->sk_strategy)
 		{
@@ -1597,7 +1720,9 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (maxBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnGetQuery(index, attrNumber, &buffer, key->sk_argument);
+				PGrnConvertDatum(key->sk_argument,
+								 attribute->atttypid,
+								 &buffer);
 				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
 													 &buffer,
 													 *flags,
@@ -1607,7 +1732,9 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
-			PGrnGetQuery(index, attrNumber, maxBorderValue, key->sk_argument);
+			PGrnConvertDatum(key->sk_argument,
+							 attribute->atttypid,
+							 maxBorderValue);
 			*max = GRN_BULK_HEAD(maxBorderValue);
 			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
 			*flags &= ~(GRN_CURSOR_LT | GRN_CURSOR_LE);
@@ -1625,8 +1752,9 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (minBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnGetQuery(index, attrNumber, &buffer,
-							 key->sk_argument);
+				PGrnConvertDatum(key->sk_argument,
+								 attribute->atttypid,
+								 &buffer);
 				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
 													 &buffer,
 													 *flags,
@@ -1636,7 +1764,9 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
-			PGrnGetQuery(index, attrNumber, minBorderValue, key->sk_argument);
+			PGrnConvertDatum(key->sk_argument,
+							 attribute->atttypid,
+							 minBorderValue);
 			*min = GRN_BULK_HEAD(minBorderValue);
 			*minSize = GRN_BULK_VSIZE(minBorderValue);
 			*flags &= ~(GRN_CURSOR_GT | GRN_CURSOR_GE);
