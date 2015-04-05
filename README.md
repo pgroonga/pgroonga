@@ -357,9 +357,52 @@ SELECT * FROM memos WHERE content LIKE '%groonga%';
 `pgroonga.score`関数を使うと該当レコードがどの程度クエリーに適合してい
 るかを数値で取得することができます。
 
+`pgroonga.score`関数を使うためにはインデックス対象にプライマリーキーの
+カラムも含めなければいけません。プライマリーキーのカラムが含まれていな
+い場合は常に`0`を返します。
+
+また、全文検索をシーケンシャルスキャンで実行しているときも`0`になりま
+す。
+
+スコアーが返るはずなのに`0`が返るときは次の2点を確認してください。
+
+  * プライマリーキーのカラムがインデックス対象に含まれているか
+  * インデックスを使って全文検索を実行しているか
+
+以下はインデックス対象にプライマリーキーを含めているスキーマの例です。
+
 ```sql
-SELECT *, pgroonga.score(memos)
-  FROM memos
+CREATE TABLE score_memos (
+  id integer PRIMARY KEY,
+  content text
+);
+
+CREATE INDEX pgroonga_score_memos_content_index
+          ON score_memos
+       USING pgroonga (id, content);
+```
+
+データを投入します。
+
+```sql
+INSERT INTO score_memos VALUES (1, 'PostgreSQLはリレーショナル・データベース管理システムです。');
+INSERT INTO score_memos VALUES (2, 'Groongaは日本語対応の高速な全文検索エンジンです。');
+INSERT INTO score_memos VALUES (3, 'PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。');
+INSERT INTO score_memos VALUES (4, 'groongaコマンドがあります。');
+```
+
+必ずインデックスを使って全文検索をするためにシーケンシャルスキャン機能
+を無効にします。（あるいはもっとたくさんのデータを投入します。）
+
+```sql
+SET enable_seqscan = off;
+```
+
+全文検索し、スコアーも表示します。
+
+```sql
+SELECT *, pgroonga.score(score_memos)
+  FROM score_memos
  WHERE content %% 'PGroonga' OR content %% 'PostgreSQL';
 --  id |                                  content                                  | score 
 -- ----+---------------------------------------------------------------------------+-------
@@ -372,10 +415,10 @@ SELECT *, pgroonga.score(memos)
 び替えることができます。
 
 ```sql
-SELECT *, pgroonga.score(memos)
-  FROM memos
+SELECT *, pgroonga.score(score_memos)
+  FROM score_memos
  WHERE content %% 'PGroonga' OR content %% 'PostgreSQL'
- ORDER BY pgroonga.score(memos) DESC;
+ ORDER BY pgroonga.score(score_memos) DESC;
 --  id |                                  content                                  | score 
 -- ----+---------------------------------------------------------------------------+-------
 --   3 | PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。 |     2
@@ -916,17 +959,6 @@ PGroongaが使える状態になっています。
   * 実装
     * WAL対応
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
-    * HOT更新のときでも`pgroonga.score`を動くようにする。
-      * HOT更新ではインデックス対象じゃないカラムを更新した時はインデッ
-        クスを更新しないがctidは変わる。古いctidでも新しいctidへ参照で
-        きるようになるが、新しいctidから古いctidを参照できない。
-        `pgroonga.score`は新しいctidから古いctidを参照しようとするので
-        参照できずにスコアが0になってしまう。`idsTable`の`_key`をctid
-        にしないでプライマリーキーがあったらそれを`_key`にして、ctidは
-        なにかカラムに保存しておくようにすればいいんだけど、速度をでき
-        るだけ落とさずに実装するのが面倒。インデックス更新時に毎回を
-        `_key`をつくらないといけないので、`_key`にctidを使っているかプ
-        ライマリーキーを使っているかの判断を重くしたくない。
   * ドキュメント
     * 英語で書く
     * サイトを用意する
