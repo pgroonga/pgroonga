@@ -14,13 +14,16 @@
 #include <lib/ilist.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
+#include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
+#include <utils/snapmgr.h>
 #include <utils/timestamp.h>
+#include <utils/tqual.h>
 #include <utils/typcache.h>
 
 #include <groonga.h>
@@ -69,6 +72,15 @@ typedef struct PGrnScanOpaqueData
 {
 	slist_node node;
 	Oid dataTableID;
+	struct
+	{
+		AttrNumber number;
+		Oid type;
+		grn_id domain;
+		unsigned char flags;
+		grn_obj *lexicon;
+		grn_obj *indexColumn;
+	} primaryKey;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
 	grn_obj minBorderValue;
@@ -124,6 +136,7 @@ static grn_ctx grnContext;
 static grn_ctx *ctx = &grnContext;
 static grn_obj buffer;
 static grn_obj ctidBuffer;
+static grn_obj scoreBuffer;
 static grn_obj headBuffer;
 static grn_obj bodyBuffer;
 static grn_obj footBuffer;
@@ -199,6 +212,7 @@ PGrnOnProcExit(int code, Datum arg)
 	GRN_OBJ_FIN(ctx, &bodyBuffer);
 	GRN_OBJ_FIN(ctx, &headBuffer);
 	GRN_OBJ_FIN(ctx, &ctidBuffer);
+	GRN_OBJ_FIN(ctx, &scoreBuffer);
 	GRN_OBJ_FIN(ctx, &buffer);
 
 	db = grn_ctx_db(ctx);
@@ -332,6 +346,7 @@ _PG_init(void)
 	on_proc_exit(PGrnOnProcExit, 0);
 
 	GRN_VOID_INIT(&buffer);
+	GRN_FLOAT_INIT(&scoreBuffer, 0);
 	GRN_UINT64_INIT(&ctidBuffer, 0);
 	GRN_TEXT_INIT(&headBuffer, 0);
 	GRN_TEXT_INIT(&bodyBuffer, 0);
@@ -892,38 +907,87 @@ UInt64ToCtid(uint64 key)
 	return ctid;
 }
 
+static bool
+PGrnIsAliveCtid(Relation table, ItemPointer ctid)
+{
+	Buffer buffer;
+	HeapTupleData tuple;
+	Snapshot snapshot;
+	bool allDead;
+	bool found;
+	bool isAlive;
+
+	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
+	snapshot = RegisterSnapshot(GetLatestSnapshot());
+	found = heap_hot_search_buffer(ctid, table, buffer, snapshot, &tuple,
+								   &allDead, true);
+	isAlive = (found && CtidToUInt64(&(tuple.t_self)) == CtidToUInt64(ctid));
+	UnregisterSnapshot(snapshot);
+	ReleaseBuffer(buffer);
+
+	return isAlive;
+}
+
 static double
-PGrnCollectScore(Oid tableID, ItemPointer ctid)
+PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 {
 	double score = 0.0;
-	uint64_t key;
-	grn_id recordID = GRN_ID_NIL;
-	slist_iter iter;
-	grn_obj scoreBuffer;
+	TupleDesc desc;
+	bool isNULL;
+	Datum primaryKeyValue;
+	grn_table_cursor *tableCursor;
+	grn_obj *indexCursor;
+	grn_id recordID;
 
-	key = CtidToUInt64(ctid);
-	GRN_FLOAT_INIT(&scoreBuffer, 0);
+	if (so->dataTableID != tuple->t_tableOid)
+		return 0.0;
 
-	slist_foreach(iter, &PGrnScanOpaques)
+	if (!so->scoreAccessor)
+		return 0.0;
+
+	if (!OidIsValid(so->primaryKey.type))
+		return 0.0;
+
+	grn_obj_reinit(ctx, &buffer, so->primaryKey.domain, so->primaryKey.flags);
+
+	desc = RelationGetDescr(table);
+	primaryKeyValue = heap_getattr(tuple, so->primaryKey.number, desc, &isNULL);
+	PGrnConvertDatum(primaryKeyValue, so->primaryKey.type, &buffer);
+
+	tableCursor = grn_table_cursor_open(ctx, so->primaryKey.lexicon,
+										GRN_BULK_HEAD(&buffer),
+										GRN_BULK_VSIZE(&buffer),
+										GRN_BULK_HEAD(&buffer),
+										GRN_BULK_VSIZE(&buffer),
+										0, -1, GRN_CURSOR_ASCENDING);
+	if (!tableCursor)
+		return 0.0;
+
+
+	indexCursor = grn_index_cursor_open(ctx,
+										tableCursor,
+										so->primaryKey.indexColumn,
+										GRN_ID_NIL, GRN_ID_MAX, 0);
+	if (!indexCursor)
 	{
-		PGrnScanOpaque so;
+		grn_table_cursor_close(ctx, tableCursor);
+		return 0.0;
+	}
+
+	while ((recordID = grn_table_cursor_next(ctx, indexCursor)) != GRN_ID_NIL)
+	{
 		grn_id id;
-
-		so = slist_container(PGrnScanOpaqueData, node, iter.cur);
-		if (so->dataTableID != tableID)
-			continue;
-
-		if (!so->scoreAccessor)
-			continue;
-
-		if (recordID == GRN_ID_NIL)
-		{
-			recordID = grn_table_get(ctx, so->sourcesTable,
-									 &key, sizeof(uint64_t));
-		}
+		ItemPointerData ctid;
 
 		id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
 		if (id == GRN_ID_NIL)
+			continue;
+
+		GRN_BULK_REWIND(&ctidBuffer);
+		grn_obj_get_value(ctx, so->ctidAccessor, id, &ctidBuffer);
+		ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+
+		if (!PGrnIsAliveCtid(table, &ctid))
 			continue;
 
 		GRN_BULK_REWIND(&scoreBuffer);
@@ -938,7 +1002,25 @@ PGrnCollectScore(Oid tableID, ItemPointer ctid)
 		}
 	}
 
-	GRN_OBJ_FIN(ctx, &scoreBuffer);
+	grn_obj_unlink(ctx, indexCursor);
+	grn_obj_unlink(ctx, tableCursor);
+
+	return score;
+}
+
+static double
+PGrnCollectScore(Relation table, HeapTuple tuple)
+{
+	double score = 0.0;
+	slist_iter iter;
+
+	slist_foreach(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque so;
+
+		so = slist_container(PGrnScanOpaqueData, node, iter.cur);
+		score += PGrnCollectScoreScanOpaque(table, tuple, so);
+	}
 
 	return score;
 }
@@ -959,10 +1041,22 @@ pgroonga_score(PG_FUNCTION_ARGS)
 	recordType = HeapTupleHeaderGetTypMod(header);
 	desc = lookup_rowtype_tupdesc(type, recordType);
 
-	if (desc->natts > 0)
+	if (desc->natts > 0 && !slist_is_empty(&PGrnScanOpaques))
 	{
-		Oid tableID = desc->attrs[0]->attrelid;
-		score = PGrnCollectScore(tableID, &(header->t_ctid));
+		HeapTupleData tupleData;
+		HeapTuple tuple;
+		Relation table;
+
+		tupleData.t_len = HeapTupleHeaderGetDatumLength(header);
+		tupleData.t_tableOid = desc->attrs[0]->attrelid;
+		tupleData.t_data = header;
+		tuple = &tupleData;
+
+		table = RelationIdGetRelation(tuple->t_tableOid);
+
+		score = PGrnCollectScore(table, tuple);
+
+		RelationClose(table);
 	}
 
 	ReleaseTupleDesc(desc);
@@ -1276,9 +1370,76 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnScanOpaqueInitPrimaryKey(PGrnScanOpaque so, Relation index)
+{
+	Relation table;
+	AttrNumber primaryKeyNumber = InvalidAttrNumber;
+	Oid primaryKeyTypeID = InvalidOid;
+	bool havePrimaryKeyInIndex = false;
+
+	table = RelationIdGetRelation(so->dataTableID);
+	if (OidIsValid(table->rd_replidindex))
+	{
+		Relation primaryKeyIndex = NULL;
+		primaryKeyIndex = index_open(table->rd_replidindex, NoLock);
+		if (primaryKeyIndex->rd_index->indnatts == 1)
+		{
+			TupleDesc desc;
+
+			primaryKeyNumber = primaryKeyIndex->rd_index->indkey.values[0];
+
+			desc = RelationGetDescr(table);
+			primaryKeyTypeID = desc->attrs[primaryKeyNumber - 1]->atttypid;
+		}
+		index_close(primaryKeyIndex, NoLock);
+	}
+
+	if (AttributeNumberIsValid(primaryKeyNumber))
+	{
+		int i, nColumns;
+
+		nColumns = index->rd_index->indkey.ndim;
+		for (i = 0; i < nColumns; i++)
+		{
+			if (index->rd_index->indkey.values[i] == primaryKeyNumber)
+			{
+				havePrimaryKeyInIndex = true;
+				break;
+			}
+		}
+	}
+
+	if (havePrimaryKeyInIndex)
+	{
+		so->primaryKey.number = primaryKeyNumber;
+		so->primaryKey.type = primaryKeyTypeID;
+		so->primaryKey.domain = PGrnGetType(index,
+											primaryKeyNumber,
+											&(so->primaryKey.flags));
+		so->primaryKey.indexColumn = PGrnLookupIndexColumn(index,
+														   primaryKeyNumber - 1,
+														   ERROR);
+		so->primaryKey.lexicon =
+			grn_ctx_at(ctx, so->primaryKey.indexColumn->header.domain);
+	}
+	else
+	{
+		so->primaryKey.number = InvalidAttrNumber;
+		so->primaryKey.type = InvalidOid;
+		so->primaryKey.domain = GRN_ID_NIL;
+		so->primaryKey.flags = 0;
+		so->primaryKey.lexicon = NULL;
+		so->primaryKey.indexColumn = NULL;
+	}
+
+	RelationClose(table);
+}
+
+static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
 	so->dataTableID = index->rd_index->indrelid;
+	PGrnScanOpaqueInitPrimaryKey(so, index);
 	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	so->sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 	GRN_VOID_INIT(&(so->minBorderValue));
