@@ -30,6 +30,7 @@ installcheck: results/full-text-search/text/single/match
 installcheck: results/full-text-search/text/single/and
 installcheck: results/full-text-search/text/single/like
 installcheck: results/full-text-search/text/single/score
+installcheck: results/full-text-search/text/single/update
 installcheck: results/full-text-search/text/multiple/contain
 installcheck: results/full-text-search/text/options/tokenizer
 installcheck: results/full-text-search/text/options/normalizer
@@ -54,6 +55,8 @@ results/full-text-search/text/single/and:
 results/full-text-search/text/single/like:
 	@mkdir -p $@
 results/full-text-search/text/single/score:
+	@mkdir -p $@
+results/full-text-search/text/single/update:
 	@mkdir -p $@
 results/full-text-search/text/multiple/contain:
 	@mkdir -p $@
