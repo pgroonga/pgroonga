@@ -1,5 +1,22 @@
 # News
 
+## 0.5.0: 2015-04-29
+
+You can't upgrade to 0.5.0 from 0.4.0 without re-creating `pgroonga`
+index. You need to re-install PGroonga:
+
+    DROP EXTENSION pgroonga CASCADE;
+    CREATE EXTENSION pgroonga;
+    -- Create your pgroonga indexes again.
+
+### Improvements
+
+  * `pgroonga.score()`: Supported HOT update.
+
+### Changes
+
+  * `pgroonga.score()`: Required primary key.
+
 ## 0.4.0: 2015-03-29
 
 You can't upgrade to 0.4.0 from 0.3.0 without re-creating `pgroonga`
