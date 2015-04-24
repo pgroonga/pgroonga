@@ -1372,6 +1372,51 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnFindPrimaryKey(Relation table,
+				   AttrNumber *primaryKeyNumber,
+				   Oid *primaryKeyTypeID)
+{
+	List *indexOIDList;
+	ListCell *cell;
+
+	*primaryKeyNumber = InvalidAttrNumber;
+	*primaryKeyTypeID = InvalidOid;
+
+	indexOIDList = RelationGetIndexList(table);
+	if (indexOIDList == NIL)
+	{
+		return;
+	}
+
+	foreach(cell, indexOIDList)
+	{
+		Oid indexOID = lfirst_oid(cell);
+		Relation index;
+
+		index = index_open(indexOID, NoLock);
+		if (!index->rd_index->indisprimary) {
+			index_close(index, NoLock);
+			continue;
+		}
+
+		if (index->rd_index->indnatts == 1)
+		{
+			TupleDesc desc;
+
+			*primaryKeyNumber = index->rd_index->indkey.values[0];
+
+			desc = RelationGetDescr(table);
+			*primaryKeyTypeID = desc->attrs[*primaryKeyNumber - 1]->atttypid;
+		}
+		index_close(index, NoLock);
+
+		break;
+	}
+
+	list_free(indexOIDList);
+}
+
+static void
 PGrnScanOpaqueInitPrimaryKey(PGrnScanOpaque so, Relation index)
 {
 	Relation table;
@@ -1380,21 +1425,7 @@ PGrnScanOpaqueInitPrimaryKey(PGrnScanOpaque so, Relation index)
 	bool havePrimaryKeyInIndex = false;
 
 	table = RelationIdGetRelation(so->dataTableID);
-	if (OidIsValid(table->rd_replidindex))
-	{
-		Relation primaryKeyIndex = NULL;
-		primaryKeyIndex = index_open(table->rd_replidindex, NoLock);
-		if (primaryKeyIndex->rd_index->indnatts == 1)
-		{
-			TupleDesc desc;
-
-			primaryKeyNumber = primaryKeyIndex->rd_index->indkey.values[0];
-
-			desc = RelationGetDescr(table);
-			primaryKeyTypeID = desc->attrs[primaryKeyNumber - 1]->atttypid;
-		}
-		index_close(primaryKeyIndex, NoLock);
-	}
+	PGrnFindPrimaryKey(table, &primaryKeyNumber, &primaryKeyTypeID);
 
 	if (AttributeNumberIsValid(primaryKeyNumber))
 	{
