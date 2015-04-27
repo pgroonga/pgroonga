@@ -29,7 +29,8 @@ include_directories(
   "${POSTGRESQL_BINARY_DIR}/include/server/port/win32_msvc"
   "${POSTGRESQL_BINARY_DIR}/include/server/port/win32"
   "${POSTGRESQL_BINARY_DIR}/include/server"
-  "${POSTGRESQL_BINARY_DIR}/include")
+  "${POSTGRESQL_BINARY_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/include")
 link_directories(
   "${POSTGRESQL_BINARY_DIR}/lib")
 
