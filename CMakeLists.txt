@@ -1,0 +1,56 @@
+# CMake support is only for Windows
+
+# cmake_minimum_required(VERSION 2.6.4)
+
+set(PGRN_PROJECT_NAME "PGroonga")
+set(PGRN_PROJECT_ID "pgroonga")
+
+project("${PGRN_PROJECT_ID}")
+
+if(MSVC_VERSION LESS 1800)
+  message(FATAL_ERROR "PGroonga supports only MSVC 2013 or later")
+endif()
+
+add_subdirectory(vendor/groonga)
+
+set(POSTGRESQL_BINARY_DIR "/PATH/TO/POSTGRESQL/BINARY/DIRECTORY"
+  CACHE PATH "PostgreSQL binary directory")
+
+set(PGRN_LIB_DIR "lib")
+set(PGRN_DATA_DIR "share")
+
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${PGRN_PROJECT_ID}.control"
+  PGRN_CONTROL)
+string(REGEX REPLACE "^default_version = '([0-9.]+)'.*" "\\1"
+  PGRN_VERSION "${PGRN_CONTROL}")
+
+include_directories(
+  "${POSTGRESQL_BINARY_DIR}/include/server/port/win32_msvc"
+  "${POSTGRESQL_BINARY_DIR}/include/server/port/win32"
+  "${POSTGRESQL_BINARY_DIR}/include/server"
+  "${POSTGRESQL_BINARY_DIR}/include")
+link_directories(
+  "${POSTGRESQL_BINARY_DIR}/lib")
+
+set(PGRN_SOURCES
+  "pgroonga.c")
+set_source_files_properties(${PGRN_SOURCES}
+  PROPERTIES
+  COMPILE_FLAGS "/EHsc")
+add_library(libpgroonga SHARED ${PGRN_SOURCES})
+set_target_properties(libpgroonga PROPERTIES OUTPUT_NAME "${PGRN_PROJECT_ID}")
+target_link_libraries(libpgroonga
+  libgroonga
+  "-lpostgres")
+install(TARGETS libpgroonga
+  DESTINATION "${PGRN_LIB_DIR}")
+
+install(FILES
+  "${PROJECT_SOURCE_DIR}/${PGRN_PROJECT_ID}.control"
+  "${PROJECT_SOURCE_DIR}/${PGRN_PROJECT_ID}--${PGRN_VERSION}.sql"
+  DESTINATION "${PGRN_DATA_DIR}")
+
+install(FILES
+  "${PROJECT_SOURCE_DIR}/COPYING"
+  "${PROJECT_SOURCE_DIR}/README.md"
+  DESTINATION "${PGRN_DATA_DIR}/${PGRN_PROJECT_ID}")

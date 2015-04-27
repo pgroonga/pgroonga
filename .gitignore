@@ -11,3 +11,6 @@
 /packages/yum/*.spec
 /packages/yum/tmp/
 /tmp/
+/CMakeCache.txt
+/cmake_install.cmake
+/CMakeFiles/
