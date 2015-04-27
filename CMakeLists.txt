@@ -16,8 +16,9 @@ add_subdirectory(vendor/groonga)
 set(POSTGRESQL_BINARY_DIR "/PATH/TO/POSTGRESQL/BINARY/DIRECTORY"
   CACHE PATH "PostgreSQL binary directory")
 
-set(PGRN_LIB_DIR "lib")
-set(PGRN_DATA_DIR "share")
+set(PGRN_EXTENSION_DIR "lib")
+set(PGRN_EXTENSION_DATA_DIR "share/extension")
+set(PGRN_DOCUMENT_DIR "share/${PGRN_PROJECT_ID}")
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${PGRN_PROJECT_ID}.control"
   PGRN_CONTROL)
@@ -43,14 +44,14 @@ target_link_libraries(libpgroonga
   libgroonga
   "-lpostgres")
 install(TARGETS libpgroonga
-  DESTINATION "${PGRN_LIB_DIR}")
+  DESTINATION "${PGRN_EXTENSION_DIR}")
 
 install(FILES
   "${PROJECT_SOURCE_DIR}/${PGRN_PROJECT_ID}.control"
   "${PROJECT_SOURCE_DIR}/${PGRN_PROJECT_ID}--${PGRN_VERSION}.sql"
-  DESTINATION "${PGRN_DATA_DIR}")
+  DESTINATION "${PGRN_EXTENSION_DATA_DIR}")
 
 install(FILES
   "${PROJECT_SOURCE_DIR}/COPYING"
   "${PROJECT_SOURCE_DIR}/README.md"
-  DESTINATION "${PGRN_DATA_DIR}/${PGRN_PROJECT_ID}")
+  DESTINATION "${PGRN_DOCUMENT_DIR}")
