@@ -1,0 +1,29 @@
+version: "{build}"
+clone_depth: 10
+build_script:
+  - cd ..
+  - choco install -y curl 7zip.commandline
+  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.4.1-3-windows-x64-binaries.zip
+  - 7z x postgresql-9.4.1-3-windows-x64-binaries.zip > nul
+  - cd pgroonga
+  - mkdir vendor
+  - git clone --quiet --depth 1 https://github.com/groonga/groonga.git vendor\groonga
+  - cd vendor\groonga
+  - git submodule update --init
+  - cd ..\..
+  - cmake . -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX="..\\pgsql"
+  - cmake --build . --config Debug
+  - cmake --build . --config Debug --target Install
+
+notifications:
+  - provider: Email
+    to:
+      - kou@clear-code.com
+      - groonga-commit@lists.sourceforge.jp
+    on_build_status_changed: true
+
+test: off
+# before_test:
+#   - gem install grntest
+# test_script:
+#   - grntest --groonga src\groonga.exe --base-directory test\command test\command\suite
