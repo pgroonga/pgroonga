@@ -43,7 +43,7 @@ add_library(libpgroonga SHARED ${PGRN_SOURCES})
 set_target_properties(libpgroonga PROPERTIES OUTPUT_NAME "${PGRN_PROJECT_ID}")
 target_link_libraries(libpgroonga
   libgroonga
-  "-lpostgres")
+  "postgres.lib")
 install(TARGETS libpgroonga
   DESTINATION "${PGRN_EXTENSION_DIR}")
 
