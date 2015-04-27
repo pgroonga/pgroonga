@@ -1,6 +1,6 @@
 # CMake support is only for Windows
 
-# cmake_minimum_required(VERSION 2.6.4)
+cmake_minimum_required(VERSION 3.0.0)
 
 set(PGRN_PROJECT_NAME "PGroonga")
 set(PGRN_PROJECT_ID "pgroonga")
