@@ -13,8 +13,7 @@ endif()
 
 add_subdirectory(vendor/groonga)
 
-set(POSTGRESQL_BINARY_DIR "/PATH/TO/POSTGRESQL/BINARY/DIRECTORY"
-  CACHE PATH "PostgreSQL binary directory")
+set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}")
 
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
@@ -26,13 +25,13 @@ string(REGEX REPLACE "^default_version = '([0-9.]+)'.*" "\\1"
   PGRN_VERSION "${PGRN_CONTROL}")
 
 include_directories(
-  "${POSTGRESQL_BINARY_DIR}/include/server/port/win32_msvc"
-  "${POSTGRESQL_BINARY_DIR}/include/server/port/win32"
-  "${POSTGRESQL_BINARY_DIR}/include/server"
-  "${POSTGRESQL_BINARY_DIR}/include"
+  "${PGRN_POSTGRESQL_DIR}/include/server/port/win32_msvc"
+  "${PGRN_POSTGRESQL_DIR}/include/server/port/win32"
+  "${PGRN_POSTGRESQL_DIR}/include/server"
+  "${PGRN_POSTGRESQL_DIR}/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/include")
 link_directories(
-  "${POSTGRESQL_BINARY_DIR}/lib")
+  "${PGRN_POSTGRESQL_DIR}/lib")
 
 set(PGRN_SOURCES
   "pgroonga.c")
