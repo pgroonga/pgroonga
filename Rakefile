@@ -238,7 +238,7 @@ postgresql94-devel
     windows_architectures = ["x86", "x64"]
     windows_packages = []
     windows_architectures.each do |arch|
-      windows_pacakge = "pgroonga-#{version}-#{arch}.zip"
+      windows_package = "pgroonga-#{version}-#{arch}.zip"
       windows_packages << windows_package
       file windows_pacakge => windows_packages_dir do
         rm_rf("tmp")
