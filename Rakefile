@@ -1,5 +1,7 @@
 # -*- ruby -*-
 
+latest_groonga_version = "5.0.3"
+
 package = "pgroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
 gpg_uid = "45499429"
@@ -31,6 +33,7 @@ version = find_version(package)
 
 archive_base_name = "#{package}-#{version}"
 archive_name = "#{archive_base_name}.tar.gz"
+windows_archive_name = "#{archive_base_name}.zip"
 
 dist_files = `git ls-files`.split("\n").reject do |file|
   file.start_with?("packages/")
@@ -41,8 +44,25 @@ file archive_name => dist_files do
      "gzip > #{archive_name}")
 end
 
+file windows_archive_name => dist_files do
+  sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
+     "tar xf -")
+  groonga_base_name = "groonga-#{latest_groonga_version}"
+  groonga_archive_name = "#{groonga_base_name}.zip"
+  sh("curl",
+     "-O",
+     "http://packages.groonga.org/source/groonga/#{groonga_archive_name}")
+  sh("unzip", groonga_archive_name)
+  rm(groonga_archive_name)
+  mkdir_p("#{archive_base_name}/vendor")
+  mv(groonga_base_name, "#{archive_base_name}/vendor/groonga")
+  rm_f(windows_archive_name)
+  sh("zip", "-r", windows_archive_name, archive_base_name)
+  rm_r(archive_base_name)
+end
+
 desc "Create release package"
-task :dist => archive_name
+task :dist => [archive_name, windows_archive_name]
 
 desc "Tag #{version}"
 task :tag do
