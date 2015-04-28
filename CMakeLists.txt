@@ -13,7 +13,8 @@ endif()
 
 add_subdirectory(vendor/groonga)
 
-set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}")
+set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
+  CACHE PATH "PostgreSQL binary directory")
 
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
