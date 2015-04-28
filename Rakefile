@@ -229,6 +229,59 @@ postgresql94-devel
     end
   end
 
+  namespace :windows do
+    windows_packages_dir = "#{packages_dir}/windows"
+    rsync_path = "#{rsync_base_path}/windows/pgroonga"
+
+    directory windows_packages_dir
+
+    windows_architectures = ["x86", "x64"]
+    windows_packages = []
+    windows_architectures.each do |arch|
+      windows_pacakge = "pgroonga-#{version}-#{arch}.zip"
+      windows_packages << windows_package
+      file windows_pacakge => windows_packages_dir do
+        rm_rf("tmp")
+        mkdir_p("tmp")
+        cd("tmp") do
+          cmake_generator = "Visual Studio 12 2013"
+          cmake_generator << " Win64" if arch == "x64"
+          sh("cmake",
+             "..",
+             "-G", cmake_generator,
+             "-DCMAKE_INSTALL_PREFIX=..\\pgsql")
+          sh("cmake",
+             "--build", "."
+             "--config", "Release")
+          sh("cmake",
+             "--build", "."
+             "--config", "Release",
+             "--target", "package")
+          mv(windows_package, "..")
+        end
+      end
+    end
+
+    desc "Build packages"
+    task :build => windows_packages
+
+    desc "Download packages"
+    task :download => windows_packages_dir do
+      sh("rsync", "-avz", "--progress",
+         "--delete",
+         "#{rsync_path}/",
+         "#{windows_packages_dir}/pgroonga")
+    end
+
+    desc "Upload packages"
+    task :upload => windows_packages do
+      sh("rsync", "-avz", "--progress",
+         "--delete",
+         "#{windows_packages_dir}/pgroonga/",
+         "#{rsync_path}")
+    end
+  end
+
   namespace :version do
     desc "Update versions"
     task :update do
