@@ -1,6 +1,7 @@
 # -*- ruby -*-
 
 latest_groonga_version = "5.0.3"
+windows_postgresql_version = "9.4.1-3"
 
 package = "pgroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
@@ -232,24 +233,37 @@ postgresql94-devel
   namespace :windows do
     windows_packages_dir = "#{packages_dir}/windows"
     rsync_path = "#{rsync_base_path}/windows/pgroonga"
+    windows_postgresql_download_base = "http://get.enterprisedb.com/postgresql"
 
     directory windows_packages_dir
 
     windows_architectures = ["x86", "x64"]
     windows_packages = []
     windows_architectures.each do |arch|
-      windows_package = "pgroonga-#{version}-#{arch}.zip"
+      windows_package =
+        "pgroonga-#{version}-postgresql-#{windows_postgresql_version}-#{arch}.zip"
       windows_packages << windows_package
       file windows_package => windows_packages_dir do
         rm_rf("tmp")
         mkdir_p("tmp")
         cd("tmp") do
           cmake_generator = "Visual Studio 12 2013"
-          cmake_generator << " Win64" if arch == "x64"
+          if arch == "x64"
+            cmake_generator << " Win64"
+            windows_postgresql_archive_name =
+              "postgresql-#{windows_postgresql_version}-windows-x64-binaries.zip"
+          else
+            windows_postgresql_archive_name =
+              "postgresql-#{windows_postgresql_version}-windows-binaries.zip"
+          end
+          windows_postgresql_url =
+            "#{windows_postgresql_download_base}/#{windows_postgresql_archive_name}"
+          sh("curl", "-O", windows_postgresql_url)
+          sh("unzip", windows_postgresql_archive_name)
           sh("cmake",
              "..",
              "-G", cmake_generator,
-             "-DCMAKE_INSTALL_PREFIX=..\\pgsql")
+             "-DCMAKE_INSTALL_PREFIX=pgsql")
           sh("cmake",
              "--build", ".",
              "--config", "Release")
