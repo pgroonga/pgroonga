@@ -240,7 +240,7 @@ postgresql94-devel
     windows_architectures.each do |arch|
       windows_package = "pgroonga-#{version}-#{arch}.zip"
       windows_packages << windows_package
-      file windows_pacakge => windows_packages_dir do
+      file windows_package => windows_packages_dir do
         rm_rf("tmp")
         mkdir_p("tmp")
         cd("tmp") do
