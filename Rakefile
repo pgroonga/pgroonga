@@ -251,10 +251,10 @@ postgresql94-devel
              "-G", cmake_generator,
              "-DCMAKE_INSTALL_PREFIX=..\\pgsql")
           sh("cmake",
-             "--build", "."
+             "--build", ".",
              "--config", "Release")
           sh("cmake",
-             "--build", "."
+             "--build", ".",
              "--config", "Release",
              "--target", "package")
           mv(windows_package, "..")
