@@ -288,7 +288,8 @@ postgresql94-devel
           sh("cmake",
              "..",
              "-G", cmake_generator,
-             "-DCMAKE_INSTALL_PREFIX=pgsql")
+             "-DCMAKE_INSTALL_PREFIX=pgsql",
+             "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}")
           sh("cmake",
              "--build", ".",
              "--config", "Release")
