@@ -15,8 +15,8 @@ add_subdirectory(vendor/groonga)
 
 set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
   CACHE PATH "PostgreSQL binary directory")
-set(PGRN_POSTGRESQL_VERSION ""
-  CACHE PATH "PostgreSQL version")
+set(PGRN_POSTGRESQL_VERSION "unknown"
+  CACHE STRING "PostgreSQL version")
 
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
