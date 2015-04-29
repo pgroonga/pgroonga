@@ -249,7 +249,7 @@ postgresql94-devel
            "--package", package,
            "--version", version,
            "--source-archive", archive_name,
-           "--code-names", "utopic",
+           "--code-names", "utopic,vivid",
            "--debian-directory", "packages/debian",
            "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
     end
