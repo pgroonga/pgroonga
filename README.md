@@ -161,7 +161,7 @@ PostgreSQLを起動します。
 
 ### Windowsにインストール
 
-PostgreSQLをインストールします。
+PostgreSQLをインストールします。PostgreSQL 9.4.1-3のものであれば
 [インストーラーバージョン](http://www.enterprisedb.com/products-services-training/pgdownload)
 でも
 [zipバージョン](http://www.enterprisedb.com/products-services-training/pgbindownload)
@@ -169,8 +169,8 @@ PostgreSQLをインストールします。
 
 PGroongaのパッケージをダウンロードします。
 
-  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.5.0-x86.zip)
-  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.5.0-x64.zip)
+  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.5.0-postgresql-9.4.1-3-x86.zip)
+  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.5.0-postgresql-9.4.1-3-x64.zip)
 
 PGroongaのパッケージを展開します。展開先としてPostgreSQLのフォルダーを
 指定します。PostgreSQLのフォルダーはインストーラーを使ってPostgreSQLを
