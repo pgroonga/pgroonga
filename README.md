@@ -210,9 +210,9 @@ PGroongaのソースを展開します。
 
 リリース版の場合:
 
-    % wget http://packages.groonga.org/source/pgroonga/pgroonga-0.4.0.tar.gz
-    % tar xvf pgroonga-0.4.0.tar.gz
-    % cd pgroonga-0.4.0
+    % wget http://packages.groonga.org/source/pgroonga/pgroonga-0.5.0.tar.gz
+    % tar xvf pgroonga-0.5.0.tar.gz
+    % cd pgroonga-0.5.0
 
 未リリースの最新版の場合:
 
