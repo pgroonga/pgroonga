@@ -30,6 +30,29 @@ def env_value(name)
   value
 end
 
+def download(url, download_dir)
+  base_name = url.split("/").last
+  absolute_output_path = download_dir + base_name
+
+  unless absolute_output_path.exist?
+    mkdir_p(download_dir)
+    rake_output_message "Downloading... #{url}"
+    open(url) do |downloaded_file|
+      absolute_output_path.open("wb") do |output_file|
+        output_file.print(downloaded_file.read)
+      end
+    end
+  end
+
+  absolute_output_path
+end
+
+def extract_zip(filename, destrination_dir)
+  require "archive/zip"
+
+  Archive::Zip.extract(filename, destrination_dir)
+end
+
 version = find_version(package)
 
 archive_base_name = "#{package}-#{version}"
@@ -258,8 +281,8 @@ postgresql94-devel
           end
           windows_postgresql_url =
             "#{windows_postgresql_download_base}/#{windows_postgresql_archive_name}"
-          sh("curl", "-O", windows_postgresql_url)
-          sh("unzip", windows_postgresql_archive_name)
+          download(windows_postgresql_url, ".")
+          extract_zip(windows_postgresql_archive_name, ".")
           sh("cmake",
              "..",
              "-G", cmake_generator,
@@ -279,20 +302,9 @@ postgresql94-devel
     desc "Build packages"
     task :build => windows_packages
 
-    desc "Download packages"
-    task :download => windows_packages_dir do
-      sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{rsync_path}/",
-         "#{windows_packages_dir}/pgroonga")
-    end
-
     desc "Upload packages"
     task :upload => windows_packages do
-      sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{windows_packages_dir}/pgroonga/",
-         "#{rsync_path}")
+      # TODO
     end
   end
 
