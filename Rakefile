@@ -32,13 +32,13 @@ end
 
 def download(url, download_dir)
   base_name = url.split("/").last
-  absolute_output_path = download_dir + base_name
+  absolute_output_path = File.join(download_dir, base_name)
 
-  unless absolute_output_path.exist?
+  unless File.exist?(absolute_output_path)
     mkdir_p(download_dir)
     rake_output_message "Downloading... #{url}"
     open(url) do |downloaded_file|
-      absolute_output_path.open("wb") do |output_file|
+      File.open(absolute_output_path, "wb") do |output_file|
         output_file.print(downloaded_file.read)
       end
     end
