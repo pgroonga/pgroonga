@@ -1,5 +1,7 @@
 # -*- ruby -*-
 
+require "open-uri"
+
 latest_groonga_version = "5.0.3"
 windows_postgresql_version = "9.4.1-3"
 
