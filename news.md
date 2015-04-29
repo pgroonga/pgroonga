@@ -12,6 +12,8 @@ index. You need to re-install PGroonga:
 ### Improvements
 
   * `pgroonga.score()`: Supported HOT update.
+  * Supported Ubuntu 15.04 Vivid Vervet.
+  * Supported Windows.
 
 ### Changes
 
