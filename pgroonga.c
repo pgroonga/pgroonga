@@ -916,14 +916,20 @@ PGrnIsAliveCtid(Relation table, ItemPointer ctid)
 	ItemPointerData realCtid;
 	bool allDead;
 	bool found;
-	bool isAlive;
+	bool isAlive = false;
 
 	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
 	snapshot = RegisterSnapshot(GetLatestSnapshot());
 	realCtid = *ctid;
 	found = heap_hot_search_buffer(&realCtid, table, buffer, snapshot, &tuple,
 								   &allDead, true);
-	isAlive = (found && CtidToUInt64(&(tuple.t_self)) == CtidToUInt64(ctid));
+	if (found) {
+		uint64 tupleID;
+
+		tupleID = CtidToUInt64(&(tuple.t_self));
+		isAlive = (tupleID == CtidToUInt64(ctid) ||
+				   tupleID == CtidToUInt64(&realCtid));
+	}
 	UnregisterSnapshot(snapshot);
 	ReleaseBuffer(buffer);
 
