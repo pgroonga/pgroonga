@@ -18,6 +18,8 @@ set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
 set(PGRN_POSTGRESQL_VERSION "unknown"
   CACHE STRING "PostgreSQL version")
 
+set(PGRN_LIBRARY_NAME "lib${PGRN_PROJECT_ID}")
+
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
 set(PGRN_DOCUMENT_DIR "share/${PGRN_PROJECT_ID}")
@@ -47,12 +49,14 @@ set(PGRN_SOURCES
 set_source_files_properties(${PGRN_SOURCES}
   PROPERTIES
   COMPILE_FLAGS "/EHsc")
-add_library(libpgroonga SHARED ${PGRN_SOURCES})
-set_target_properties(libpgroonga PROPERTIES OUTPUT_NAME "${PGRN_PROJECT_ID}")
-target_link_libraries(libpgroonga
+add_library("${PGRN_LIBRARY_NAME}" SHARED ${PGRN_SOURCES})
+set_target_properties("${PGRN_LIBRARY_NAME}"
+  PROPERTIES
+  OUTPUT_NAME "${PGRN_PROJECT_ID}")
+target_link_libraries("${PGRN_LIBRARY_NAME}"
   libgroonga
   "postgres.lib")
-install(TARGETS libpgroonga
+install(TARGETS "${PGRN_LIBRARY_NAME}"
   DESTINATION "${PGRN_EXTENSION_DIR}")
 
 install(FILES
