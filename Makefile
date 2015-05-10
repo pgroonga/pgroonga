@@ -25,61 +25,9 @@ all: pgroonga--$(EXTENSION_VERSION).sql
 pgroonga--$(EXTENSION_VERSION).sql: pgroonga.sql
 	@cp $< $@
 
-installcheck: results/full-text-search/text/single/contain
-installcheck: results/full-text-search/text/single/match
-installcheck: results/full-text-search/text/single/and
-installcheck: results/full-text-search/text/single/like
-installcheck: results/full-text-search/text/single/score
-installcheck: results/full-text-search/text/multiple/contain
-installcheck: results/full-text-search/text/options/tokenizer
-installcheck: results/full-text-search/text/options/normalizer
-installcheck: results/compare/varchar/single/equal
-installcheck: results/compare/integer/single/less-than-equal
-installcheck: results/compare/integer/single/greater-than-equal
-installcheck: results/compare/integer/single/between
-installcheck: results/compare/integer/multiple/greater-than-equal
-installcheck: results/compare/integer/order_by_limit
-installcheck: results/compare/timestamp/single/between
-installcheck: results/compare/timestamp_with_time_zone/single/between
-installcheck: results/array/text/single/contain
-installcheck: results/array/varchar/single/contain
-installcheck: results/groonga
+RESULT_DIRS = $(shell find sql -type d | sed -e 's,^sql/,results/,')
 
-results/full-text-search/text/single/contain:
-	@mkdir -p $@
-results/full-text-search/text/single/match:
-	@mkdir -p $@
-results/full-text-search/text/single/and:
-	@mkdir -p $@
-results/full-text-search/text/single/like:
-	@mkdir -p $@
-results/full-text-search/text/single/score:
-	@mkdir -p $@
-results/full-text-search/text/multiple/contain:
-	@mkdir -p $@
-results/full-text-search/text/options/tokenizer:
-	@mkdir -p $@
-results/full-text-search/text/options/normalizer:
-	@mkdir -p $@
-results/compare/varchar/single/equal:
-	@mkdir -p $@
-results/compare/integer/single/less-than-equal:
-	@mkdir -p $@
-results/compare/integer/single/greater-than-equal:
-	@mkdir -p $@
-results/compare/integer/single/between:
-	@mkdir -p $@
-results/compare/integer/multiple/greater-than-equal:
-	@mkdir -p $@
-results/compare/integer/order_by_limit:
-	@mkdir -p $@
-results/compare/timestamp/single/between:
-	@mkdir -p $@
-results/compare/timestamp_with_time_zone/single/between:
-	@mkdir -p $@
-results/array/text/single/contain:
-	@mkdir -p $@
-results/array/varchar/single/contain:
-	@mkdir -p $@
-results/groonga:
+installcheck: $(RESULT_DIRS)
+
+$(RESULT_DIRS):
 	@mkdir -p $@
