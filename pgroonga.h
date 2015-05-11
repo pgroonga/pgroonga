@@ -9,10 +9,6 @@
 #include <postgres.h>
 #include <fmgr.h>
 
-#ifndef PGDLLEXPORT
-#  define PGDLLEXPORT
-#endif
-
 /* Default values */
 #ifndef PGRN_DEFAULT_TOKENIZER
 #  define PGRN_DEFAULT_TOKENIZER "TokenBigram"
