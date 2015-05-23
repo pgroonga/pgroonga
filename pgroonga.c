@@ -2193,8 +2193,6 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 
-	scan->xs_recheck = false;
-
 	PGrnEnsureCursorOpened(scan, ForwardScanDirection);
 
 	if (so->indexCursor)
