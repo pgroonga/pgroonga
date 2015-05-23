@@ -2553,6 +2553,9 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 Datum
 pgroonga_costestimate(PG_FUNCTION_ARGS)
 {
+	return gistcostestimate(fcinfo);
+
+#ifdef NOT_USED
 	PlannerInfo *root = (PlannerInfo *) PG_GETARG_POINTER(0);
 	IndexPath *path = (IndexPath *) PG_GETARG_POINTER(1);
 	double loopCount = PG_GETARG_FLOAT8(2);
@@ -2563,9 +2566,15 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 	IndexOptInfo *index = path->indexinfo;
 
 	/* TODO: Use more clever logic.
-	 * We want to use index scan instead of bitmap scan for full text search.
-	 * We want to use the default scan for other operators such as <,
-	 * <= and so on.
+	 *
+	 * We want to use index scan rather than bitmap scan for full text search.
+	 * Because bitmap scan requires bitmap heap scan that is slow for
+	 * large result set.
+	 *
+	 * We want to use bitmap scan rather than index scan for OR search.
+	 * Because we can't use index scan for OR search.
+	 *
+	 * We want to use the default scan for other cases.
 	 */
 	*indexSelectivity = clauselist_selectivity(root,
 											   path->indexquals,
@@ -2578,6 +2587,7 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 	*indexCorrelation = 0.0;
 
 	PG_RETURN_VOID();
+#endif
 }
 
 /**
