@@ -17,12 +17,12 @@ groonga_source_dir = groonga_source_dir_candidates.find do |candidate|
 end
 groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
 
-def control_file
+def control_file(package)
   "#{package}.control"
 end
 
 def find_version(package)
-  control_content = File.read(control_file)
+  control_content = File.read(control_file(package))
   if /^default_version\s*=\s*'(.+)'$/ =~ control_content
     $1
   else
@@ -159,7 +159,7 @@ postgresql94-devel
 
     spec = "#{yum_dir}/#{rpm_package}.spec"
     spec_in = "#{spec}.in"
-    file spec => [spec_in, control_file] do
+    file spec => [spec_in, control_file(package)] do
       spec_in_data = File.read(spec_in)
       spec_data = spec_in_data.gsub(/@(.+)@/) do |matched|
         case $1
