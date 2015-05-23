@@ -14,6 +14,7 @@
 #include <lib/ilist.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
+#include <optimizer/cost.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
@@ -2552,11 +2553,31 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 Datum
 pgroonga_costestimate(PG_FUNCTION_ARGS)
 {
-	/*
-	 * We cannot use genericcostestimate because it is a static funciton.
-	 * Use gistcostestimate instead, which just calls genericcostestimate.
+	PlannerInfo *root = (PlannerInfo *) PG_GETARG_POINTER(0);
+	IndexPath *path = (IndexPath *) PG_GETARG_POINTER(1);
+	double loopCount = PG_GETARG_FLOAT8(2);
+	Cost *indexStartupCost = (Cost *) PG_GETARG_POINTER(3);
+	Cost *indexTotalCost = (Cost *) PG_GETARG_POINTER(4);
+	Selectivity *indexSelectivity = (Selectivity *) PG_GETARG_POINTER(5);
+	double *indexCorrelation = (double *) PG_GETARG_POINTER(6);
+	IndexOptInfo *index = path->indexinfo;
+
+	/* TODO: Use more clever logic.
+	 * We want to use index scan instead of bitmap scan for full text search.
+	 * We want to use the default scan for other operators such as <,
+	 * <= and so on.
 	 */
-	return gistcostestimate(fcinfo);
+	*indexSelectivity = clauselist_selectivity(root,
+											   path->indexquals,
+											   index->rel->relid,
+											   JOIN_INNER,
+											   NULL);
+
+	*indexStartupCost = 0.0;
+	*indexTotalCost = 0.0;
+	*indexCorrelation = 0.0;
+
+	PG_RETURN_VOID();
 }
 
 /**
