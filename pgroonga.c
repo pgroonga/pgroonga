@@ -203,6 +203,37 @@ PGrnEnsureDatabase(void)
 }
 
 static void
+PGrnLoggerLog(grn_ctx *ctx,
+			  grn_log_level level,
+			  const char *timestamp,
+			  const char *title,
+			  const char *message,
+			  const char *location,
+			  void *userData)
+{
+	const char levelTags[] = " EACewnid-";
+
+	if (location && *location) {
+		ereport(LOG,
+				(errmsg("pgroonga: %s|%c|%s %s %s",
+						timestamp, levelTags[level], title, message, location)));
+	} else {
+		ereport(LOG,
+				(errmsg("pgroonga: %s|%c|%s %s",
+						timestamp, levelTags[level], title, message)));
+	}
+}
+
+static grn_logger PGrnLogger = {
+	GRN_LOG_DEFAULT_LEVEL,
+	GRN_LOG_TIME | GRN_LOG_MESSAGE,
+	NULL,
+	PGrnLoggerLog,
+	NULL,
+	NULL
+};
+
+static void
 PGrnOnProcExit(int code, Datum arg)
 {
 	grn_obj *db;
@@ -342,6 +373,8 @@ _PG_init(void)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
+
+	grn_logger_set(ctx, &PGrnLogger);
 
 	on_proc_exit(PGrnOnProcExit, 0);
 
