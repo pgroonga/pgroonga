@@ -932,7 +932,7 @@ CtidToUInt64(ItemPointer ctid)
 
 	blockNumber = ItemPointerGetBlockNumber(ctid);
 	offsetNumber = ItemPointerGetOffsetNumber(ctid);
-	return (blockNumber << 16 | offsetNumber);
+	return (((uint64)blockNumber << 16) | ((uint64)offsetNumber));
 }
 
 static ItemPointerData
