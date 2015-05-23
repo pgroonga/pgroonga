@@ -213,11 +213,14 @@ PGrnLoggerLog(grn_ctx *ctx,
 {
 	const char levelTags[] = " EACewnid-";
 
-	if (location && *location) {
+	if (location && *location)
+	{
 		ereport(LOG,
 				(errmsg("pgroonga: %s|%c|%s %s %s",
 						timestamp, levelTags[level], title, message, location)));
-	} else {
+	}
+	else
+	{
 		ereport(LOG,
 				(errmsg("pgroonga: %s|%c|%s %s",
 						timestamp, levelTags[level], title, message)));
