@@ -4,9 +4,11 @@
 
 You can't upgrade to 0.5.0 from 0.4.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
-    DROP EXTENSION pgroonga CASCADE;
-    CREATE EXTENSION pgroonga;
-    -- Create your pgroonga indexes again.
+```sql
+DROP EXTENSION pgroonga CASCADE;
+CREATE EXTENSION pgroonga;
+-- Create your pgroonga indexes again.
+```
 
 ### Improvements
 
@@ -22,9 +24,11 @@ You can't upgrade to 0.5.0 from 0.4.0 without re-creating `pgroonga` index. You 
 
 You can't upgrade to 0.4.0 from 0.3.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
-    DROP EXTENSION pgroonga CASCADE;
-    CREATE EXTENSION pgroonga;
-    -- Create your pgroonga indexes again.
+```sql
+DROP EXTENSION pgroonga CASCADE;
+CREATE EXTENSION pgroonga;
+-- Create your pgroonga indexes again.
+```
 
 ### Improvements
 
@@ -53,20 +57,24 @@ You can't upgrade to 0.4.0 from 0.3.0 without re-creating `pgroonga` index. You 
 
 You can't upgrade to 0.3.0 from 0.2.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
-    DROP EXTENSION pgroonga CASCADE;
-    CREATE EXTENSION pgroonga;
-    -- Create your pgroonga indexes again.
+```sql
+DROP EXTENSION pgroonga CASCADE;
+CREATE EXTENSION pgroonga;
+-- Create your pgroonga indexes again.
+```
 
 ### Improvements
 
   * Supported encoding
   * Supported customizing tokenizer and normalizer by `WITH` such as:
 
-        CREATE INDEX pgroonga_index
-                  ON table
-               USING pgroonga (column)
-                WITH (tokenizer='TokenMecab',
-                      normalizer='NormalizerAuto');
+    ```sql
+    CREATE INDEX pgroonga_index
+              ON table
+           USING pgroonga (column)
+            WITH (tokenizer='TokenMecab',
+                  normalizer='NormalizerAuto');
+    ```
 
   * Reduced needless locks.
   * Supported column compression by LZ4.
