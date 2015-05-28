@@ -31,6 +31,14 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#ifdef WIN32
+#    define pgrn_stat(path, buffer) _stat(path, buffer)
+#else
+#    define pgrn_stat(path, buffer) stat(path, buffer)
+#endif
 
 #define VARCHARARRAYOID 1015
 
@@ -185,22 +193,31 @@ PGrnEnsureDatabase(void)
 {
 	char path[MAXPGPATH];
 	grn_obj	*db;
+	struct stat file_status;
 
 	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
 	join_path_components(path,
 						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
 						 PGrnDatabaseBasename);
 
-	db = grn_db_open(ctx, path);
-	if (db)
-		return;
-
-	db = grn_db_create(ctx, path, NULL);
-	if (!db)
-		ereport(ERROR,
-				(errcode(ERRCODE_IO_ERROR),
-				 errmsg("pgroonga: failed to create database: <%s>: %s",
-						path, ctx->errbuf)));
+	if (pgrn_stat(path, &file_status) == 0)
+	{
+		db = grn_db_open(ctx, path);
+		if (!db)
+			ereport(ERROR,
+					(errcode(ERRCODE_IO_ERROR),
+					 errmsg("pgroonga: failed to open database: <%s>: %s",
+							path, ctx->errbuf)));
+	}
+	else
+	{
+		db = grn_db_create(ctx, path, NULL);
+		if (!db)
+			ereport(ERROR,
+					(errcode(ERRCODE_IO_ERROR),
+					 errmsg("pgroonga: failed to create database: <%s>: %s",
+							path, ctx->errbuf)));
+	}
 }
 
 static void
