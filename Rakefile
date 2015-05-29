@@ -404,7 +404,7 @@ postgresql-server-dev-9.4
             "http://packages.groonga.org/source/#{package}"
           windows_pgroonga_source_url =
             "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
-          download(windows_groonga_source_url, ".")
+          download(windows_pgroonga_source_url, ".")
           extract_zip(windows_pgroonga_source_name, ".")
 
           sh("cmake",
