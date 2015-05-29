@@ -9,6 +9,7 @@ You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-cr
   * `pgroonga.score()`: Supported HOT update on PostgreSQL 9.3.
   * Supported log messages from Groonga.
   * Stopped to try opening Groonga database when Groonga database path doesn't exist.
+  * Supported Debian Jessie.
 
 ### Fixes
 
