@@ -2,7 +2,7 @@
 
 require "open-uri"
 
-latest_groonga_version = "5.0.3"
+latest_groonga_version = "5.0.4"
 windows_postgresql_version = "9.4.2-1"
 
 package = "pgroonga"
