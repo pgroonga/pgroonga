@@ -60,8 +60,8 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
   * CentOS 5
   * CentOS 6
   * CentOS 7
-  * Windows 32bit + PostgreSQL 9.4.1
-  * Windows 64bit + PostgreSQL 9.4.1
+  * Windows 32bit + PostgreSQL 9.4.2
+  * Windows 64bit + PostgreSQL 9.4.2
 
 その他の環境ではソースからインストールしてください。
 
@@ -197,7 +197,7 @@ PostgreSQLを起動します。
 
 ### Windowsにインストール
 
-PostgreSQLをインストールします。PostgreSQL 9.4.1-3のものであれば
+PostgreSQLをインストールします。PostgreSQL 9.4.2-1のものであれば
 [インストーラーバージョン](http://www.enterprisedb.com/products-services-training/pgdownload)
 でも
 [zipバージョン](http://www.enterprisedb.com/products-services-training/pgbindownload)
@@ -205,8 +205,8 @@ PostgreSQLをインストールします。PostgreSQL 9.4.1-3のものであれ�
 
 PGroongaのパッケージをダウンロードします。
 
-  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.6.0-postgresql-9.4.1-3-x86.zip)
-  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.6.0-postgresql-9.4.1-3-x64.zip)
+  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.6.0-postgresql-9.4.2-1-x86.zip)
+  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.6.0-postgresql-9.4.2-1-x64.zip)
 
 PGroongaのパッケージを展開します。展開先としてPostgreSQLのフォルダーを
 指定します。PostgreSQLのフォルダーはインストーラーを使ってPostgreSQLを
