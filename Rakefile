@@ -246,6 +246,113 @@ postgresql94-devel
   ]
   task :yum => yum_tasks
 
+  namespace :apt do
+    distribution = "debian"
+    code_names = [
+      "jessie",
+    ]
+    architectures = [
+      "i386",
+      "amd64",
+    ]
+    rsync_path = rsync_base_path
+    debian_dir = "#{packages_dir}/debian"
+    apt_dir = "#{packages_dir}/apt"
+    repositories_dir = "#{apt_dir}/repositories"
+
+    directory repositories_dir
+
+    env_sh = "#{apt_dir}/env.sh"
+    file env_sh => __FILE__ do
+      File.open(env_sh, "w") do |file|
+        file.puts(<<-ENV)
+PACKAGE=#{package}
+VERSION=#{version}
+DEPENDED_PACKAGES="
+debhelper
+pkg-config
+libgroonga-dev
+postgresql-server-dev-9.4
+"
+        ENV
+      end
+    end
+
+    desc "Build DEB packages"
+    task :build => [archive_name, env_sh, repositories_dir] do
+      tmp_dir = "#{apt_dir}/tmp"
+      rm_rf(tmp_dir)
+      mkdir_p(tmp_dir)
+      cp(archive_name, tmp_dir)
+      cp_r(debian_dir, tmp_dir)
+
+      cd(apt_dir) do
+        sh("vagrant", "destroy", "--force")
+        code_names.each do |code_name|
+          architectures.each do |arch|
+            id = "#{distribution}-#{code_name}-#{arch}"
+            sh("vagrant", "up", id)
+            sh("vagrant", "destroy", "--force", id)
+          end
+        end
+      end
+    end
+
+    desc "Sign packages"
+    task :sign do
+      sh("#{groonga_source_dir}/packages/apt/sign-packages.sh",
+         gpg_uid,
+         "#{repositories_dir}/",
+         code_names.join(" "))
+    end
+
+    namespace :repository do
+      desc "Update repositories"
+      task :update do
+        sh("#{groonga_source_dir}/packages/apt/update-repository.sh",
+           "Groonga",
+           "#{repositories_dir}/",
+           architectures.join(" "),
+           code_names.join(" "))
+      end
+
+      desc "Sign repositories"
+      task :sign do
+        sh("#{groonga_source_dir}/packages/apt/sign-repository.sh",
+           gpg_uid,
+           "#{repositories_dir}/",
+           architectures.join(" "))
+      end
+    end
+
+    desc "Download repositories"
+    task :download => repositories_dir do
+      sh("rsync", "-avz", "--progress",
+         "--delete",
+         "#{rsync_path}/#{distribution}/",
+         "#{repositories_dir}/#{distribution}")
+    end
+
+    desc "Upload repositories"
+    task :upload => repositories_dir do
+      sh("rsync", "-avz", "--progress",
+         "--delete",
+         "#{repositories_dir}/#{distribution}/",
+         "#{rsync_path}/#{distribution}")
+    end
+  end
+
+  desc "Release APT packages"
+  apt_tasks = [
+    "package:apt:download",
+    "package:apt:build",
+    "package:apt:sign",
+    "package:apt:repository:update",
+    "package:apt:repository:sign",
+    "package:apt:upload",
+  ]
+  task :apt => apt_tasks
+
   namespace :ubuntu do
     desc "Upload package"
     task :upload do

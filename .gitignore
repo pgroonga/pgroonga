@@ -6,6 +6,10 @@
 /regression.*
 /results/
 /packages/source/
+/packages/apt/.vagrant/
+/packages/apt/env.sh
+/packages/apt/repositories/
+/packages/apt/tmp/
 /packages/yum/.vagrant/
 /packages/yum/env.sh
 /packages/yum/repositories/
