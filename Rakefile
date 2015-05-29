@@ -396,8 +396,19 @@ postgresql-server-dev-9.4
             "#{windows_postgresql_download_base}/#{windows_postgresql_archive_name}"
           download(windows_postgresql_url, ".")
           extract_zip(windows_postgresql_archive_name, ".")
+
+          windows_pgroonga_source_name_base = "#{package}-#{version}"
+          windows_pgroonga_source_name =
+            "#{windows_pgroonga_source_name_base}.zip"
+          windows_pgroonga_source_url_base =
+            "http://packages.groonga.org/source/#{package}"
+          windows_pgroonga_source_url =
+            "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
+          download(windows_groonga_source_url, ".")
+          extract_zip(windows_pgroonga_source_name, ".")
+
           sh("cmake",
-             "..",
+             windows_pgroonga_source_name_base,
              "-G", cmake_generator,
              "-DCMAKE_INSTALL_PREFIX=pgsql",
              "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}")
