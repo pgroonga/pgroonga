@@ -35,8 +35,10 @@
 #include <sys/stat.h>
 
 #ifdef WIN32
+typedef struct _stat pgrn_stat_buffer;
 #    define pgrn_stat(path, buffer) _stat(path, buffer)
 #else
+typedef struct stat pgrn_stat_buffer;
 #    define pgrn_stat(path, buffer) stat(path, buffer)
 #endif
 
@@ -193,7 +195,7 @@ PGrnEnsureDatabase(void)
 {
 	char path[MAXPGPATH];
 	grn_obj	*db;
-	struct stat file_status;
+	pgrn_stat_buffer file_status;
 
 	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
 	join_path_components(path,
