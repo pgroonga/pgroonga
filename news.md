@@ -1,5 +1,19 @@
 # News
 
+## 0.6.0: 2015-05-29
+
+You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+
+### Improvements
+
+  * `pgroonga.score()`: Supported HOT update on PostgreSQL 9.3.
+  * Supported log messages from Groonga.
+  * Stopped to try opening Groonga database when Groonga database path doesn't exist.
+
+### Fixes
+
+  * Fixed a bug that large block number in ctid is overflowed.
+
 ## 0.5.0: 2015-04-29
 
 You can't upgrade to 0.5.0 from 0.4.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
