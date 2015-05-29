@@ -321,7 +321,7 @@ postgresql-server-dev-9.4
         sh("#{groonga_source_dir}/packages/apt/sign-repository.sh",
            gpg_uid,
            "#{repositories_dir}/",
-           architectures.join(" "))
+           code_names.join(" "))
       end
     end
 
