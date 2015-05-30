@@ -33,6 +33,9 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef WIN32
+#    include <unistd.h>
+#endif
 
 #ifdef WIN32
 typedef struct _stat pgrn_stat_buffer;
