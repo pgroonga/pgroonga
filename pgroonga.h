@@ -28,6 +28,7 @@
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 
 /* file and table names */
+#define PGrnLogBasename					"pgroonga.log"
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"
 #define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"

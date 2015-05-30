@@ -156,6 +156,16 @@ static grn_obj bodyBuffer;
 static grn_obj footBuffer;
 static grn_obj inspectBuffer;
 
+static void
+PGrnSetLogPath(void)
+{
+	char path[MAXPGPATH];
+	join_path_components(path,
+						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
+						 PGrnLogBasename);
+	grn_default_logger_set_path(path);
+}
+
 static const char *
 PGrnInspect(grn_obj *object)
 {
@@ -224,40 +234,6 @@ PGrnEnsureDatabase(void)
 							path, ctx->errbuf)));
 	}
 }
-
-static void
-PGrnLoggerLog(grn_ctx *ctx,
-			  grn_log_level level,
-			  const char *timestamp,
-			  const char *title,
-			  const char *message,
-			  const char *location,
-			  void *userData)
-{
-	const char levelTags[] = " EACewnid-";
-
-	if (location && *location)
-	{
-		ereport(LOG,
-				(errmsg("pgroonga: %s|%c|%s %s %s",
-						timestamp, levelTags[level], title, message, location)));
-	}
-	else
-	{
-		ereport(LOG,
-				(errmsg("pgroonga: %s|%c|%s %s",
-						timestamp, levelTags[level], title, message)));
-	}
-}
-
-static grn_logger PGrnLogger = {
-	GRN_LOG_DEFAULT_LEVEL,
-	GRN_LOG_TIME | GRN_LOG_MESSAGE,
-	NULL,
-	PGrnLoggerLog,
-	NULL,
-	NULL
-};
 
 static void
 PGrnOnProcExit(int code, Datum arg)
@@ -391,6 +367,8 @@ PGrnInitializeOptions(void)
 void
 _PG_init(void)
 {
+	PGrnSetLogPath();
+
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
@@ -399,8 +377,6 @@ _PG_init(void)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
-
-	grn_logger_set(ctx, &PGrnLogger);
 
 	on_proc_exit(PGrnOnProcExit, 0);
 
