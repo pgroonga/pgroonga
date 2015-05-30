@@ -156,16 +156,6 @@ static grn_obj bodyBuffer;
 static grn_obj footBuffer;
 static grn_obj inspectBuffer;
 
-static void
-PGrnSetLogPath(void)
-{
-	char path[MAXPGPATH];
-	join_path_components(path,
-						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
-						 PGrnLogBasename);
-	grn_default_logger_set_path(path);
-}
-
 static const char *
 PGrnInspect(grn_obj *object)
 {
@@ -201,6 +191,16 @@ PGrnGetEncoding(void)
 			 GetDatabaseEncodingName());
 		return GRN_ENC_DEFAULT;
 	}
+}
+
+static void
+PGrnSetLogPath(void)
+{
+	char path[MAXPGPATH];
+	join_path_components(path,
+						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
+						 PGrnLogBasename);
+	grn_default_logger_set_path(path);
 }
 
 static void
