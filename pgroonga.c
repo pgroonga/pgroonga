@@ -20,6 +20,7 @@
 #include <storage/lmgr.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
+#include <utils/guc.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
 #include <utils/snapmgr.h>
@@ -51,6 +52,20 @@ PG_MODULE_MAGIC;
 
 static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
+static int PGrnLogLevel;
+static struct config_enum_entry PGrnLogLevelEntries[] = {
+	{"none",      GRN_LOG_NONE,    false},
+	{"emergency", GRN_LOG_EMERG,   false},
+	{"alert",     GRN_LOG_ALERT,   false},
+	{"critical",  GRN_LOG_CRIT,    false},
+	{"error",     GRN_LOG_ERROR,   false},
+	{"warning",   GRN_LOG_WARNING, false},
+	{"notice",    GRN_LOG_NOTICE,  false},
+	{"info",      GRN_LOG_INFO,    false},
+	{"debug",     GRN_LOG_DEBUG,   false},
+	{"dump",      GRN_LOG_DUMP,    false},
+	{NULL,        GRN_LOG_NONE,    false}
+};
 
 typedef struct PGrnOptions
 {
@@ -201,6 +216,33 @@ PGrnSetLogPath(void)
 						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
 						 PGrnLogBasename);
 	grn_default_logger_set_path(path);
+}
+
+static void
+PGrnLogLevelAssign(int new_value, void *extra)
+{
+	grn_default_logger_set_max_level(new_value);
+}
+
+static void
+PGrnInitializeVariables(void)
+{
+	DefineCustomEnumVariable("pgroonga.log_level",
+							 "Log level for PGroonga.",
+							 "Available log levels: "
+							 "[none, emergency, alert, critical, "
+							 "error, warning, notice, info, debug, dump]. "
+							 "The default is notice.",
+							 &PGrnLogLevel,
+							 GRN_LOG_DEFAULT_LEVEL,
+							 PGrnLogLevelEntries,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnLogLevelAssign,
+							 NULL);
+
+	EmitWarningsOnPlaceholders("pgroonga");
 }
 
 static void
@@ -368,6 +410,8 @@ void
 _PG_init(void)
 {
 	PGrnSetLogPath();
+
+	PGrnInitializeVariables();
 
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,

@@ -1,0 +1,27 @@
+-- To load PGroonga
+SELECT pgroonga.command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SHOW pgroonga.log_level;
+ pgroonga.log_level 
+--------------------
+ notice
+(1 row)
+
+SET pgroonga.log_level = 'none';
+SHOW pgroonga.log_level;
+ pgroonga.log_level 
+--------------------
+ none
+(1 row)
+
+SET pgroonga.log_level = default;
+SHOW pgroonga.log_level;
+ pgroonga.log_level 
+--------------------
+ notice
+(1 row)
+
