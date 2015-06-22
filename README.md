@@ -1072,9 +1072,12 @@ DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 ## Travis CIで使う
 
 Travis CIでのPGroongaのセットアップをするシェルスクリプトを提供してい
-ます。次のように`.travis.yml`の`install`で使うようにしてください。
+ます。次のように`.travis.yml`の`install`で使うようにしてください。また、
+`sudo: required`を忘れないでください。セットアップスクリプトの中で
+`sudo`コマンドを使っているため`sudo: required`の設定が必要です。
 
 ```yaml
+sudo: required
 install:
   - curl --silent --location https://github.com/pgroonga/pgroonga/raw/master/data/travis/setup.sh | sh
 ```
