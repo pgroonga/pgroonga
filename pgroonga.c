@@ -2544,7 +2544,7 @@ PGrnRemoveUnusedTables(void)
 			grn_obj *table;
 
 			snprintf(tableName, sizeof(tableName),
-					 PGrnLexiconNameFormat, i, relationID);
+					 PGrnLexiconNameFormat, relationID, i);
 			table = grn_ctx_get(ctx, tableName, strlen(tableName));
 			if (!table)
 				break;
