@@ -1,5 +1,18 @@
 # News
 
+## 0.7.0: 2015-07-10
+
+You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+
+### Improvements
+
+  * incompatible: Changed to use Groonga's default logger. Messages for PGroonga is logged to `pgroonga.log` in database directory instead of PostgreSQL's log path.
+  * `pgroonga.log_level`: Add a variable that changes log level.
+
+### Fixes
+
+  * Fixed a bug that lexicon tables for dropped indexes aren't removed on `VACUUM`.
+
 ## 0.6.0: 2015-05-29
 
 You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
