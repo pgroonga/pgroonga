@@ -3,7 +3,7 @@
 require "open-uri"
 
 latest_groonga_version = "5.0.5"
-windows_postgresql_version = "9.4.2-1"
+windows_postgresql_version = "9.4.4-1"
 
 package = "pgroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
