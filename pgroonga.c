@@ -2531,6 +2531,8 @@ PGrnRemoveUnusedTables(void)
 		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
 		nameEnd = name + nameSize;
 		relationID = strtol(name + strlen(min), &nameEnd, 10);
+		if (nameEnd[0] == '.')
+			continue;
 		relation = RelationIdGetRelation(relationID);
 		if (relation)
 		{
