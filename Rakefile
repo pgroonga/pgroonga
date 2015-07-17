@@ -62,6 +62,10 @@ end
 version = find_version(package)
 
 archive_base_name = "#{package}-#{version}"
+suffix = ENV["SUFFIX"]
+if suffix
+  archive_base_name << suffix
+end
 archive_name = "#{archive_base_name}.tar.gz"
 windows_archive_name = "#{archive_base_name}.zip"
 
@@ -78,10 +82,19 @@ file windows_archive_name => dist_files do
   sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
      "tar xf -")
   groonga_base_name = "groonga-#{latest_groonga_version}"
-  groonga_archive_name = "#{groonga_base_name}.zip"
-  sh("curl",
-     "-O",
-     "http://packages.groonga.org/source/groonga/#{groonga_archive_name}")
+  groonga_suffix = ENV["GROONGA_SUFFIX"]
+  if groonga_suffix
+    groonga_base_name << groonga_suffix
+    groonga_archive_name = "#{groonga_base_name}.zip"
+    sh("curl",
+       "-O",
+       "http://packages.groonga.org/tmp/#{groonga_archive_name}")
+  else
+    groonga_archive_name = "#{groonga_base_name}.zip"
+    sh("curl",
+       "-O",
+       "http://packages.groonga.org/source/groonga/#{groonga_archive_name}")
+  end
   sh("unzip", groonga_archive_name)
   rm(groonga_archive_name)
   mkdir_p("#{archive_base_name}/vendor")
@@ -127,6 +140,14 @@ namespace :package do
         ln_sf(windows_archive_name, "#{package}-latest.zip")
       end
       sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
+    end
+
+    namespace :snapshot do
+      desc "Upload snapshot sources"
+      task :upload => [archive_name, windows_archive_name] do
+        sh("scp", archive_name, "#{rsync_base_path}/tmp")
+        sh("scp", windows_archive_name, "#{rsync_base_path}/tmp")
+      end
     end
   end
 
