@@ -219,15 +219,7 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 			grn_default_logger_set_path(new_value);
 		}
 	} else {
-		char *databasePath;
-		char path[MAXPGPATH];
-
-		databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
-		join_path_components(path,
-							 databasePath,
-							 PGrnLogBasename);
-		pfree(databasePath);
-		grn_default_logger_set_path(path);
+		grn_default_logger_set_path(PGrnLogBasename);
 	}
 }
 
@@ -243,7 +235,7 @@ PGrnInitializeVariables(void)
 	DefineCustomStringVariable("pgroonga.log_path",
 							   "Log path for PGroonga.",
 							   "The default is "
-							   "\"${database_dir}/" PGrnLogBasename "\". "
+							   "\"${PG_DATA}/" PGrnLogBasename "\". "
 							   "Use \"none\" to disable file output.",
 							   &PGrnLogPath,
 							   NULL,
