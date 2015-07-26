@@ -266,14 +266,17 @@ PGrnInitializeVariables(void)
 static void
 PGrnEnsureDatabase(void)
 {
+	char *databasePath;
 	char path[MAXPGPATH];
 	grn_obj	*db;
 	pgrn_stat_buffer file_status;
 
 	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
+	databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
 	join_path_components(path,
-						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
+						 databasePath,
 						 PGrnDatabaseBasename);
+	pfree(databasePath);
 
 	if (pgrn_stat(path, &file_status) == 0)
 	{
