@@ -1,0 +1,27 @@
+-- To load PGroonga
+SELECT pgroonga.command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SHOW pgroonga.log_type;
+ pgroonga.log_type 
+-------------------
+ file
+(1 row)
+
+SET pgroonga.log_type = 'windows_event_log';
+SHOW pgroonga.log_type;
+ pgroonga.log_type 
+-------------------
+ windows_event_log
+(1 row)
+
+SET pgroonga.log_type = default;
+SHOW pgroonga.log_type;
+ pgroonga.log_type 
+-------------------
+ file
+(1 row)
+

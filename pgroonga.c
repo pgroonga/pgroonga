@@ -52,7 +52,20 @@ PG_MODULE_MAGIC;
 
 static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
+
+static int PGrnLogType;
+enum PGrnLogType {
+	PGRN_LOG_TYPE_FILE,
+	PGRN_LOG_TYPE_WINDOWS_EVENT_LOG
+};
+static struct config_enum_entry PGrnLogTypeEntries[] = {
+	{"file",              PGRN_LOG_TYPE_FILE,              false},
+	{"windows_event_log", PGRN_LOG_TYPE_WINDOWS_EVENT_LOG, false},
+	{NULL,                PGRN_LOG_TYPE_FILE,              false}
+};
+
 static char *PGrnLogPath;
+
 static int PGrnLogLevel;
 static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"none",      GRN_LOG_NONE,    false},
@@ -210,6 +223,16 @@ PGrnGetEncoding(void)
 }
 
 static void
+PGrnLogTypeAssign(int new_value, void *extra)
+{
+	if (new_value == PGRN_LOG_TYPE_WINDOWS_EVENT_LOG) {
+		grn_windows_event_logger_set(ctx);
+	} else {
+		grn_logger_set(ctx, NULL);
+	}
+}
+
+static void
 PGrnLogPathAssign(const char *new_value, void *extra)
 {
 	if (new_value) {
@@ -232,6 +255,20 @@ PGrnLogLevelAssign(int new_value, void *extra)
 static void
 PGrnInitializeVariables(void)
 {
+	DefineCustomEnumVariable("pgroonga.log_type",
+							 "Log type for PGroonga.",
+							 "Available log types: "
+							 "[file, windows_event_log]. "
+							 "The default is file.",
+							 &PGrnLogType,
+							 PGRN_LOG_TYPE_FILE,
+							 PGrnLogTypeEntries,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnLogTypeAssign,
+							 NULL);
+
 	DefineCustomStringVariable("pgroonga.log_path",
 							   "Log path for PGroonga.",
 							   "The default is "
