@@ -6,6 +6,7 @@ compiler:
   - gcc
 addons:
   postgresql: "9.3"
+sudo: required
 env:
   - GROONGA_MASTER=yes
 install:
