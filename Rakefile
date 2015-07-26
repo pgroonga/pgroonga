@@ -1,6 +1,7 @@
 # -*- ruby -*-
 
 require "open-uri"
+require "octokit"
 
 latest_groonga_version = "5.0.5"
 windows_postgresql_version = "9.4.4-1"
@@ -450,7 +451,23 @@ postgresql-server-dev-9.4
 
     desc "Upload packages"
     task :upload => windows_packages do
-      # TODO
+      pgroonga_repository = "pgroonga/pgroonga"
+      tag_name = version
+
+      client = Octokit::Client.new(:access_token => env_value("GITHUB_TOKEN"))
+
+      releases = client.releases(pgroonga_repository)
+      current_release = releases.find do |release|
+        release.tag_name == tag_name
+      end
+      current_release ||= client.create_release(pgroonga_repository, tag_name)
+
+      options = {
+        :content_type => "application/zip",
+      }
+      windows_packages.each do |windows_package|
+        client.upload_asset(current_release.url, windows_package, options)
+      end
     end
   end
 
