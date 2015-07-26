@@ -53,6 +53,9 @@ PG_MODULE_MAGIC;
 static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
 
+#define PGrnDefaultWindowsEventSourceName "PGroonga"
+static char *PGrnWindowsEventSourceName;
+
 static int PGrnLogType;
 enum PGrnLogType {
 	PGRN_LOG_TYPE_FILE,
@@ -223,6 +226,16 @@ PGrnGetEncoding(void)
 }
 
 static void
+PGrnWindowsEventSourceNameAssign(const char *new_value, void *extra)
+{
+	if (new_value) {
+		grn_windows_event_logger_set_source_name(new_value);
+	} else {
+		grn_windows_event_logger_set_source_name(PGrnDefaultWindowsEventSourceName);
+	}
+}
+
+static void
 PGrnLogTypeAssign(int new_value, void *extra)
 {
 	if (new_value == PGRN_LOG_TYPE_WINDOWS_EVENT_LOG) {
@@ -255,6 +268,19 @@ PGrnLogLevelAssign(int new_value, void *extra)
 static void
 PGrnInitializeVariables(void)
 {
+	DefineCustomStringVariable("pgroonga.windows_event_source_name",
+							   "Event source name on Windows for PGroonga.",
+							   "The default is "
+							   PGrnDefaultWindowsEventSourceName
+							   ".",
+							   &PGrnWindowsEventSourceName,
+							   PGrnDefaultWindowsEventSourceName,
+							   PGC_USERSET,
+							   0,
+							   NULL,
+							   PGrnWindowsEventSourceNameAssign,
+							   NULL);
+
 	DefineCustomEnumVariable("pgroonga.log_type",
 							 "Log type for PGroonga.",
 							 "Available log types: "
