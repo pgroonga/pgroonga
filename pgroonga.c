@@ -211,10 +211,14 @@ PGrnGetEncoding(void)
 static void
 PGrnSetLogPath(void)
 {
+	char *databasePath;
 	char path[MAXPGPATH];
+
+	databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
 	join_path_components(path,
-						 GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID),
+						 databasePath,
 						 PGrnLogBasename);
+	pfree(databasePath);
 	grn_default_logger_set_path(path);
 }
 
