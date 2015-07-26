@@ -52,6 +52,7 @@ PG_MODULE_MAGIC;
 
 static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
+static char *PGrnLogPath;
 static int PGrnLogLevel;
 static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"none",      GRN_LOG_NONE,    false},
@@ -209,17 +210,25 @@ PGrnGetEncoding(void)
 }
 
 static void
-PGrnSetLogPath(void)
+PGrnLogPathAssign(const char *new_value, void *extra)
 {
-	char *databasePath;
-	char path[MAXPGPATH];
+	if (new_value) {
+		if (strcmp(new_value, "none") == 0) {
+			grn_default_logger_set_path(NULL);
+		} else {
+			grn_default_logger_set_path(new_value);
+		}
+	} else {
+		char *databasePath;
+		char path[MAXPGPATH];
 
-	databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
-	join_path_components(path,
-						 databasePath,
-						 PGrnLogBasename);
-	pfree(databasePath);
-	grn_default_logger_set_path(path);
+		databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
+		join_path_components(path,
+							 databasePath,
+							 PGrnLogBasename);
+		pfree(databasePath);
+		grn_default_logger_set_path(path);
+	}
 }
 
 static void
@@ -231,6 +240,19 @@ PGrnLogLevelAssign(int new_value, void *extra)
 static void
 PGrnInitializeVariables(void)
 {
+	DefineCustomStringVariable("pgroonga.log_path",
+							   "Log path for PGroonga.",
+							   "The default is "
+							   "\"${database_dir}/" PGrnLogBasename "\". "
+							   "Use \"none\" to disable file output.",
+							   &PGrnLogPath,
+							   NULL,
+							   PGC_USERSET,
+							   0,
+							   NULL,
+							   PGrnLogPathAssign,
+							   NULL);
+
 	DefineCustomEnumVariable("pgroonga.log_level",
 							 "Log level for PGroonga.",
 							 "Available log levels: "
@@ -413,8 +435,6 @@ PGrnInitializeOptions(void)
 void
 _PG_init(void)
 {
-	PGrnSetLogPath();
-
 	PGrnInitializeVariables();
 
 	if (grn_init() != GRN_SUCCESS)
