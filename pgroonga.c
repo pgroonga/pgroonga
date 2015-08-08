@@ -24,6 +24,7 @@
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
 #include <utils/snapmgr.h>
+#include <utils/syscache.h>
 #include <utils/timestamp.h>
 #include <utils/tqual.h>
 #include <utils/typcache.h>
@@ -1216,6 +1217,7 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	Datum indexNameDatum = PG_GETARG_DATUM(0);
 	Datum indexOidDatum;
 	Oid indexOid;
+	Oid fileNodeOid;
 	char tableName[GRN_TABLE_MAX_KEY_SIZE];
 	char *copiedTableName;
 
@@ -1229,9 +1231,25 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	}
 	indexOid = DatumGetObjectId(indexOidDatum);
 
+	{
+		HeapTuple tuple;
+		tuple = SearchSysCache1(RELOID, indexOid);
+		if (!HeapTupleIsValid(tuple)) {
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_NAME),
+					 errmsg("failed to find file node ID from index name: <%s>",
+							DatumGetCString(indexNameDatum))));
+		}
+		{
+			Form_pg_class indexClass = (Form_pg_class) GETSTRUCT(tuple);
+			fileNodeOid = indexClass->relfilenode;
+			ReleaseSysCache(tuple);
+		}
+	}
+
 	snprintf(tableName, sizeof(tableName),
 			 PGrnSourcesTableNameFormat,
-			 indexOid);
+			 fileNodeOid);
 	copiedTableName = pstrdup(tableName);
 	PG_RETURN_CSTRING(copiedTableName);
 }
