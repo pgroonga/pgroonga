@@ -1,4 +1,4 @@
-SELECT pgroonga.snippet_html(
+SELECT unnest(pgroonga.snippet_html(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||
@@ -11,4 +11,4 @@ SELECT pgroonga.snippet_html(
   'PostgreSQL, column-oriented systems are more suited for aggregate ' ||
   'queries. Due to this advantage, Groonga can cover weakness of ' ||
   'row-oriented systems.',
-  ARRAY['Groonga']);
+  ARRAY['Groonga']));
