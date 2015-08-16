@@ -52,11 +52,13 @@ static relopt_kind PGrnReloptionKind;
 static int PGrnLogType;
 enum PGrnLogType {
 	PGRN_LOG_TYPE_FILE,
-	PGRN_LOG_TYPE_WINDOWS_EVENT_LOG
+	PGRN_LOG_TYPE_WINDOWS_EVENT_LOG,
+	PGRN_LOG_TYPE_POSTGRESQL
 };
 static struct config_enum_entry PGrnLogTypeEntries[] = {
 	{"file",              PGRN_LOG_TYPE_FILE,              false},
 	{"windows_event_log", PGRN_LOG_TYPE_WINDOWS_EVENT_LOG, false},
+	{"postgresql",        PGRN_LOG_TYPE_POSTGRESQL,        false},
 	{NULL,                PGRN_LOG_TYPE_FILE,              false}
 };
 
@@ -220,12 +222,50 @@ PGrnGetEncoding(void)
 }
 
 static void
+PGrnLoggerLog(grn_ctx *ctx, grn_log_level level,
+			  const char *timestamp, const char *title,
+			  const char *message, const char *location,
+			  void *user_data)
+{
+	const char levelMarks[] = " EACewnid-";
+
+	if (location && location[0])
+	{
+		ereport(LOG,
+				(errmsg("pgroonga:log: %s|%c|%s %s %s",
+						timestamp, levelMarks[level], title,
+						message, location)));
+	}
+	else
+	{
+		ereport(LOG,
+				(errmsg("pgroonga:log: %s|%c|%s %s",
+						timestamp, levelMarks[level], title, message)));
+	}
+}
+
+static grn_logger PGrnPostgreSQLLogger = {
+  GRN_LOG_DEFAULT_LEVEL,
+  GRN_LOG_TIME | GRN_LOG_MESSAGE,
+  NULL,
+  PGrnLoggerLog,
+  NULL,
+  NULL
+};
+
+static void
 PGrnLogTypeAssign(int new_value, void *extra)
 {
-	if (new_value == PGRN_LOG_TYPE_WINDOWS_EVENT_LOG) {
+	switch (new_value) {
+	case PGRN_LOG_TYPE_WINDOWS_EVENT_LOG:
 		grn_windows_event_logger_set(ctx);
-	} else {
+		break;
+	case PGRN_LOG_TYPE_POSTGRESQL:
+		grn_logger_set(ctx, &PGrnPostgreSQLLogger);
+		break;
+	default:
 		grn_logger_set(ctx, NULL);
+		break;
 	}
 }
 

@@ -11,11 +11,11 @@ SHOW pgroonga.log_type;
  file
 (1 row)
 
-SET pgroonga.log_type = 'windows_event_log';
+SET pgroonga.log_type = 'postgresql';
 SHOW pgroonga.log_type;
  pgroonga.log_type 
 -------------------
- windows_event_log
+ postgresql
 (1 row)
 
 SET pgroonga.log_type = default;
