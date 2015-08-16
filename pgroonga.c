@@ -222,10 +222,10 @@ PGrnGetEncoding(void)
 }
 
 static void
-PGrnLoggerLog(grn_ctx *ctx, grn_log_level level,
-			  const char *timestamp, const char *title,
-			  const char *message, const char *location,
-			  void *user_data)
+PGrnPostgreSQLLoggerLog(grn_ctx *ctx, grn_log_level level,
+						const char *timestamp, const char *title,
+						const char *message, const char *location,
+						void *user_data)
 {
 	const char levelMarks[] = " EACewnid-";
 
@@ -248,7 +248,7 @@ static grn_logger PGrnPostgreSQLLogger = {
 	GRN_LOG_DEFAULT_LEVEL,
 	GRN_LOG_TIME | GRN_LOG_MESSAGE,
 	NULL,
-	PGrnLoggerLog,
+	PGrnPostgreSQLLoggerLog,
 	NULL,
 	NULL
 };
