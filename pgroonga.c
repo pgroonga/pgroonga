@@ -1,8 +1,3 @@
-/*
- * IDENTIFICATION
- *	pgroonga.c
- */
-
 #include "pgroonga.h"
 
 #include <access/reloptions.h>

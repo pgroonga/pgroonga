@@ -1,8 +1,3 @@
-/*
- * IDENTIFICATION
- *	pgroonga.h
- */
-
 #ifndef PGROONGA_H
 #define PGROONGA_H
 
