@@ -8,7 +8,6 @@ EXTENSION_VERSION =						\
 DATA = pgroonga--$(EXTENSION_VERSION).sql
 PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
 SHLIB_LINK = $(shell pkg-config --libs groonga) -lm
-# REGRESS = pgroonga update bench
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
