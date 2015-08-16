@@ -245,12 +245,12 @@ PGrnLoggerLog(grn_ctx *ctx, grn_log_level level,
 }
 
 static grn_logger PGrnPostgreSQLLogger = {
-  GRN_LOG_DEFAULT_LEVEL,
-  GRN_LOG_TIME | GRN_LOG_MESSAGE,
-  NULL,
-  PGrnLoggerLog,
-  NULL,
-  NULL
+	GRN_LOG_DEFAULT_LEVEL,
+	GRN_LOG_TIME | GRN_LOG_MESSAGE,
+	NULL,
+	PGrnLoggerLog,
+	NULL,
+	NULL
 };
 
 static void
