@@ -295,7 +295,7 @@ PGrnInitializeVariables(void)
 	DefineCustomEnumVariable("pgroonga.log_type",
 							 "Log type for PGroonga.",
 							 "Available log types: "
-							 "[file, windows_event_log]. "
+							 "[file, windows_event_log, postgresql]. "
 							 "The default is file.",
 							 &PGrnLogType,
 							 PGRN_LOG_TYPE_FILE,
