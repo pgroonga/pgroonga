@@ -258,7 +258,7 @@ PGrnLogTypeAssign(int new_value, void *extra)
 {
 	switch (new_value) {
 	case PGRN_LOG_TYPE_WINDOWS_EVENT_LOG:
-		grn_windows_event_logger_set(ctx);
+		grn_windows_event_logger_set(ctx, "PGroonga");
 		break;
 	case PGRN_LOG_TYPE_POSTGRESQL:
 		grn_logger_set(ctx, &PGrnPostgreSQLLogger);
