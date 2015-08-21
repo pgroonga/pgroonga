@@ -278,7 +278,7 @@ postgresql94-devel
       "amd64",
     ]
     rsync_path = rsync_base_path
-    debian_dir = "#{packages_dir}/debian"
+    debian_dir = "#{packages_dir}/debian94"
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
 
@@ -306,7 +306,7 @@ postgresql-server-dev-9.4
       rm_rf(tmp_dir)
       mkdir_p(tmp_dir)
       cp(archive_name, tmp_dir)
-      cp_r(debian_dir, tmp_dir)
+      cp_r(debian_dir, "#{tmp_dir}/debian")
 
       cd(apt_dir) do
         sh("vagrant", "destroy", "--force")
