@@ -77,12 +77,12 @@ GroongaのAPTリポジトリーを追加します。
     deb http://packages.groonga.org/debian/ jessie main
     deb-src http://packages.groonga.org/debian/ jessie main
 
-`postgresql-server-9.4-pgroonga`パッケージをインストールします。
+`postgresql-9.4-pgroonga`パッケージをインストールします。
 
     % sudo apt-get update
     % sudo apt-get install -y --allow-unauthenticated groonga-keyring
     % sudo apt-get update
-    % sudo apt-get install -y -V postgresql-server-9.4-pgroonga
+    % sudo apt-get install -y -V postgresql-9.4-pgroonga
 
 [MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
 い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
@@ -132,13 +132,13 @@ GroongaのAPTリポジトリーを追加します。
 
 ### Ubuntu 14.10またはUbuntu 15.04にインストール
 
-`postgresql-server-9.4-pgroonga`パッケージをインストールします。
+`postgresql-9.4-pgroonga`パッケージをインストールします。
 
     % sudo apt-get install -y software-properties-common
     % sudo add-apt-repository -y universe
     % sudo add-apt-repository -y ppa:groonga/ppa
     % sudo apt-get update
-    % sudo apt-get install -y postgresql-server-9.4-pgroonga
+    % sudo apt-get install -y postgresql-9.4-pgroonga
 
 [MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
 い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
