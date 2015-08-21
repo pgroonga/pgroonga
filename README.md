@@ -55,6 +55,7 @@ pg\_trgmとpg\_bigmが使っているGINやGiSTが対応しています。）
 次の環境用のパッケージを用意しています。
 
   * Debian GNU/Linux Jessie
+  * Ubuntu 14.04
   * Ubuntu 14.10
   * Ubuntu 15.04
   * CentOS 5
@@ -82,6 +83,34 @@ GroongaのAPTリポジトリーを追加します。
     % sudo apt-get install -y --allow-unauthenticated groonga-keyring
     % sudo apt-get update
     % sudo apt-get install -y -V postgresql-server-9.4-pgroonga
+
+[MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
+い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
+
+    % sudo apt-get install -y groonga-tokenizer-mecab
+
+データベースを作成します。
+
+    % sudo -u postgres -H psql --command 'CREATE DATABASE pgroonga_test'
+
+（ここで`pgroonga_test`用のユーザーを作成して、そのユーザーで接続する
+べき。）
+
+データベースに接続して`CREATE EXTENSION pgroonga`を実行します。
+
+    % sudo -u postgres -H psql -d pgroonga_test --command 'CREATE EXTENSION pgroonga'
+
+これでインストールは完了です。
+
+### Ubuntu 14.04にインストール
+
+`postgresql-9.3-pgroonga`パッケージをインストールします。
+
+    % sudo apt-get install -y software-properties-common
+    % sudo add-apt-repository -y universe
+    % sudo add-apt-repository -y ppa:groonga/ppa
+    % sudo apt-get update
+    % sudo apt-get install -y postgresql-9.3-pgroonga
 
 [MeCab](http://taku910.github.io/mecab/)ベースのトークナイザーを使いた
 い場合は`groonga-tokenizer-mecab`パッケージもインストールします。
