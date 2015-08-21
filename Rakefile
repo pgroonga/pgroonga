@@ -376,16 +376,36 @@ postgresql-server-dev-9.4
   task :apt => apt_tasks
 
   namespace :ubuntu do
-    desc "Upload package"
-    task :upload do
-      ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-           "--package", package,
-           "--version", version,
-           "--source-archive", archive_name,
-           "--code-names", "utopic,vivid",
-           "--debian-directory", "packages/debian",
-           "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+    namespace :upload do
+      desc "Upload package for PostgreSQL 9.3"
+      task :postgresql93 do
+        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
+             "--package", package,
+             "--version", version,
+             "--source-archive", archive_name,
+             "--code-names", "trusty",
+             "--debian-directory", "packages/debian93",
+             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+      end
+
+      desc "Upload package for PostgreSQL 9.4"
+      task :postgresql94 do
+        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
+             "--package", package,
+             "--version", version,
+             "--source-archive", archive_name,
+             "--code-names", "utopic,vivid",
+             "--debian-directory", "packages/debian94",
+             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+      end
     end
+
+    desc "Upload package"
+    upload_tasks = [
+      "package:ubuntu:upload:postgresql93",
+      "package:ubuntu:upload:postgresql94",
+    ]
+    task :upload => upload_tasks
   end
 
   namespace :windows do
@@ -481,7 +501,8 @@ postgresql-server-dev-9.4
            version,
            env_value("NEW_RELEASE_DATE"),
            "README.md",
-           "packages/debian/changelog",
+           "packages/debian93/changelog",
+           "packages/debian94/changelog",
            "packages/yum/postgresql94-pgroonga.spec.in")
     end
   end
