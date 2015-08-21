@@ -405,7 +405,6 @@ SET enable_seqscan = off;
 
 ```sql
 SELECT * FROM memos WHERE content %% '全文検索';
-
 --  id |                      content
 -- ----+---------------------------------------------------
 --   2 | Groongaは日本語対応の高速な全文検索エンジンです。
