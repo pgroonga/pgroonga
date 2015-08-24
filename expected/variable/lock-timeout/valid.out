@@ -1,0 +1,27 @@
+-- To load PGroonga
+SELECT pgroonga.command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SHOW pgroonga.lock_timeout;
+ pgroonga.lock_timeout 
+-----------------------
+ 10000000
+(1 row)
+
+SET pgroonga.lock_timeout = 1000;
+SHOW pgroonga.lock_timeout;
+ pgroonga.lock_timeout 
+-----------------------
+ 1000
+(1 row)
+
+SET pgroonga.lock_timeout = default;
+SHOW pgroonga.lock_timeout;
+ pgroonga.lock_timeout 
+-----------------------
+ 10000000
+(1 row)
+

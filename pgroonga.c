@@ -79,6 +79,8 @@ static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{NULL,        GRN_LOG_NONE,    false}
 };
 
+static int PGrnLockTimeout;
+
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
@@ -290,6 +292,12 @@ PGrnLogLevelAssign(int new_value, void *extra)
 }
 
 static void
+PGrnLockTimeoutAssign(int new_value, void *extra)
+{
+	grn_set_lock_timeout(new_value);
+}
+
+static void
 PGrnInitializeVariables(void)
 {
 	DefineCustomEnumVariable("pgroonga.log_type",
@@ -333,6 +341,23 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnLogLevelAssign,
 							 NULL);
+
+	DefineCustomIntVariable("pgroonga.lock_timeout",
+							"Try pgroonga.lock_timeout times "
+							"at 1 msec intervals to "
+							"get write lock in PGroonga.",
+							"The default is 10000000. "
+							"It means that PGroonga tries to get write lock "
+							"between about 2.7 hours.",
+							&PGrnLockTimeout,
+							grn_get_lock_timeout(),
+							0,
+							INT_MAX,
+							PGC_USERSET,
+							0,
+							NULL,
+							PGrnLockTimeoutAssign,
+							NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }
