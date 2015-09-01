@@ -595,6 +595,86 @@ SELECT *, pgroonga.score(score_memos)
 タマイズする機能があります。しかし、PostgreSQLらしく指定するAPIを思い
 ついていないためPGroongaから使うことはできません。
 
+#### 全文検索結果表示
+
+全文検索とは直接関係ありませんが、全文検索した結果を表示するときに有用
+な機能を紹介します。
+
+##### `pgroonga.snippet_html`関数
+
+`pgroonga.snippet_html`関数を使うと該当テキスト中からキーワードが含ま
+れている箇所の周辺テキストを抽出できます。Web検索エンジンは検索結果に
+この情報を含めていることが多いので見たことがあるはずです。
+
+例として、次のテキスト（Groongaの説明文）を使います。
+
+> Groonga is a fast and accurate full text search engine based on
+> inverted index. One of the characteristics of Groonga is that a
+> newly registered document instantly appears in search results.
+> Also, Groonga allows updates without read locks. These characteristics
+> result in superior performance on real-time applications.
+
+
+このテキストの中には「`fast`」というキーワードが含まれています。
+`pgroonga.snippet_html`を使うと「`fast`」周辺のテキストを抽出します。
+キーワードは「`<span class="keyword">`」と「`</span>`」で囲まれます。
+`pgroonga.snippet_html`の`html`はHTMLとして出力するという意味だという
+ことです。
+
+> Groonga is a <span class="keyword">fast</span> and accurate full
+> text search engine based on inverted index. One of the
+> characteristics of Groonga is that a newly registered document
+> instantly appears in search results. Also, Gro
+
+なお、この機能はPGroongaで検索した結果以外にも使えます。そのため、次の
+ように`FROM`なしの`SELECT`でも使えます。なお、
+[`unnest`](http://www.postgresql.org/docs/devel/static/functions-array.html)
+は配列を行にするPostgreSQLの関数です。
+
+```sql
+SELECT unnest(pgroonga.snippet_html(
+  'Groonga is a fast and accurate full text search engine based on ' ||
+  'inverted index. One of the characteristics of Groonga is that a ' ||
+  'newly registered document instantly appears in search results. ' ||
+  'Also, Groonga allows updates without read locks. These characteristics ' ||
+  'result in superior performance on real-time applications.' ||
+  '\n' ||
+  '\n' ||
+  'Groonga is also a column-oriented database management system (DBMS). ' ||
+  'Compared with well-known row-oriented systems, such as MySQL and ' ||
+  'PostgreSQL, column-oriented systems are more suited for aggregate ' ||
+  'queries. Due to this advantage, Groonga can cover weakness of ' ||
+  'row-oriented systems.',
+  ARRAY['fast', 'PostgreSQL']));
+                                                                                 --                                unnest                                                                                                                 
+-- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--  Groonga is a <span class="keyword">fast</span> and accurate full text search engine based on inverted index. One of the characteristics of Groonga is that a newly registered document instantly appears in search results. Also, Gro
+--  ase management system (DBMS). Compared with well-known row-oriented systems, such as MySQL and <span class="keyword">PostgreSQL</span>, column-oriented systems are more suited for aggregate queries. Due to this advantage, Groonga
+-- (2 rows)
+```
+
+`pgroonga.snippet_html`の使い方は次の通りです。
+
+```text
+pgroonga.snippet_html(target, ARRAY[keyword1, keyword2, ...])
+```
+
+`target`は`text`型の値でキーワード抽出対象のテキストを指定します。
+
+`keyword1`, `keyword2`, `...`は`text`型の配列で、抽出対象のテキストを
+指定します。1つ以上指定してします。
+
+`pgroonga.snippet_html`は`text`型の配列を返します。
+
+配列の各要素にはキーワード周辺のテキストが含まれています。キーワードは
+「`<span class="keyword">`」と「`</span>`」で囲まれ、元のテキストに含
+まれる`<`, `>`, `&`, `"`はHTMLエスケープされます。
+
+各要素に含まれる元テキストは最大200バイトになります。文字数ではなくバ
+イト数です。これに加えて「`<span class="keyword">`」と「`</span>`」が
+増え、`<`や`>`を`&lt;`, `&gt;`などに変換するので、各要素のテキストは
+200バイト以上になることがあります。
+
 #### カスタマイズ
 
 `CREATE INDEX`の`WITH`でトークナイザーとノーマライザーをカスタマイズす
@@ -1084,6 +1164,108 @@ SELECT *
 ```
 
 Groongaのデータを直接使うときは気をつけてください。
+
+## 変数
+
+PGroongaの挙動をカスタマイズする変数があります。
+
+### `pgroonga.log_type`変数
+
+`pgroonga.log_type`を使うとPGroongaのログをどのように出力するかを変更
+できます。
+
+有効な値は次の通りです。
+
+  * `file`: ファイルに出力します。デフォルトです。
+  * `windows_event_log`: Windowsイベントログに出力します。
+  * `postgresql`: PostgreSQLのログ出力先に出力します。
+
+`file`を指定した場合のログファイルの場所は「`${PostgreSQLのデータディ
+レクトリー}/pgroonga.log`」になります。場所は`pgroonga.log_path`で変更
+できます。
+
+`windows_event_log`はWindowsでしか使えません。使う場合はコマンドプロン
+プトで次のコマンドを実行し、にWindowsに「`PGroonga`」というイベントを
+登録してください。登録しなくてもログは出力されますが、イベントビューアー
+でログを見たときに警告メッセージが入り、読みにくいです。
+
+    > regsvr32 /n /i:PGroonga ${PostgreSQLをインストールしたフォルダ}\lib\pgevent.dll
+
+`postgresql`はPostgreSQLのログ出力機能を使ってログを出力します。
+PGroongaのログの先頭には次の文字列が含まれます。PGroongaのログだけ抽出
+する場合に利用してください。この文字列の後はGroongaと同じフォーマット
+のメッセージになります。
+
+```text
+pgroonga:log: 
+```
+
+Groongaのログメッセージのフォーマットは
+[Groongaのドキュメント](http://groonga.org/ja/docs/reference/log.html#process-log)
+を参照してください。
+
+### `pgroonga.log_path`変数
+
+`pgroonga.log_path`を使うとログ出力先のファイルを変更できます。
+`pgroonga.log_type`が`file`のときだけ有効です。
+
+デフォルトは「`${PostgreSQLのデータディレクトリー}/pgroonga.log`」です。
+
+### `pgroonga.log_level`変数
+
+`pgroonga.log_level`を使うとどのくらい詳細にログを出力するかを変更できます。
+
+有効な値は次の通りです。
+
+  * `none`: ログを出力しません。
+  * `emergency`: 緊急レベルのログのみを出力します。
+  * `alert`: `emergency`のログと警報レベルのログを出力します。
+  * `critical`: `alert`のログと重大レベルのログを出力します。
+  * `error`: `critical`のログとエラーレベルのログを出力します。
+  * `warning`: `error`のログと警告レベルのログを出力します。
+  * `notice`: `warning`のログと通知レベルのログを出力します。
+  * `info`: `notice`のログと参考情報レベルのログを出力します。
+  * `debug`: `info`のログとデバッグレベルのログを出力します。
+  * `dump`: すべてのログを出力します。
+
+デフォルトは`notice`です。
+
+通常は変更する必要はありません。
+
+変更する場合、使うことが多いのは`none`、`info`、`debug`です。
+
+`none`は一切ログが必要ないときに使います。
+
+`info`は通常時にもう少し詳細な情報が必要なときに使います。
+
+`debug`は問題調査時に使います。
+
+### `pgroonga.lock_timeout`変数
+
+`pgroonga.lock_timeout`を使うとロック獲得のリトライ回数を変更できます。
+
+PGroongaはデータを書き込むときにロックを獲得します。これは、同時にデー
+タを書き込んでデータを破壊しないようにするためです。
+
+ロックの実装はスピンロックです。つまり、次の処理を繰り返してロックを獲
+得します。
+
+  1. ロック獲得にトライ→獲得できたら繰り返し終了
+  2. 一定時間待つ
+
+ただし、一定回数リトライしてもロックを獲得できなかったら諦めます。その
+リトライ回数が`pgroonga.lock_timeout`です。
+
+デフォルト値は`10,000,000`（一千万）です。
+
+PGroongaの「一定時間」は1ミリ秒で、デフォルトでは一千万回リトライする
+ので、デフォルトでは約2.7時間かかってもロックを獲得できなかったら諦め
+ます。
+
+通常は約2.7時間もロック獲得に失敗することはありません。PGroongaのバグ
+の可能性があるので
+[GitHubのissue](https://github.com/pgroonga/pgroonga/issues)に報告して
+ください。
 
 ## アンインストール
 
