@@ -394,7 +394,7 @@ postgresql-server-dev-9.4
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "utopic,vivid",
+             "--code-names", "vivid",
              "--debian-directory", "packages/debian94",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
