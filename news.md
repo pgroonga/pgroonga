@@ -1,5 +1,27 @@
 # News
 
+## 0.8.0: 2015-09-01
+
+You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+
+### Improvements
+
+  * Reduced needless loop on `VACUUM`.
+  * Reduced temporary memory usage.
+  * `pgroonga.log_path`: Added a variable that changes path for Groonga log.
+  * incompatible: Changed the path for Groonga log to the database directory by default. You can change it by `pgroonga.log_path`.
+  * `pgroonga.log_type`: Added a variable that changes how to log.
+  * Supported `TRUNCATE`-ed table. [GitHub:#1] [Reported by Hiroki Nakamura]
+  * `pgroonga.snippet_html()`: Added a function that generates snippet HTML. [groonga-dev,03398] [Reported by Hiroki Nakamura]
+  * Supported Ubuntu 14.04 LTS (Trusty Tahr). [Suggested by Yokoda Toshiaki]
+  * `pgroonga.lock_timeout`: Added a variable that changes the number of retries. [groonga-dev,03419] [Suggested by Naoki Takami]
+
+### Thanks
+
+  * Hiroki Nakamura
+  * Yokoda Toshiaki
+  * Naoki Takami
+
 ## 0.7.0: 2015-07-10
 
 You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
@@ -7,7 +29,7 @@ You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-cr
 ### Improvements
 
   * incompatible: Changed to use Groonga's default logger. Messages for PGroonga is logged to `pgroonga.log` in database directory instead of PostgreSQL's log path.
-  * `pgroonga.log_level`: Add a variable that changes log level.
+  * `pgroonga.log_level`: Added a variable that changes log level.
 
 ### Fixes
 
