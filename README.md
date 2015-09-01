@@ -234,8 +234,8 @@ PostgreSQLをインストールします。PostgreSQL 9.4.2-1のものであれ�
 
 PGroongaのパッケージをダウンロードします。
 
-  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.7.0-postgresql-9.4.2-1-x86.zip)
-  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.7.0-postgresql-9.4.2-1-x64.zip)
+  * [32bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.8.0-postgresql-9.4.2-1-x86.zip)
+  * [64bit版](http://packages.groonga.org/windows/pgroonga/pgroonga-0.8.0-postgresql-9.4.2-1-x64.zip)
 
 PGroongaのパッケージを展開します。展開先としてPostgreSQLのフォルダーを
 指定します。PostgreSQLのフォルダーはインストーラーを使ってPostgreSQLを
@@ -275,9 +275,9 @@ PGroongaのソースを展開します。
 
 リリース版の場合:
 
-    % wget http://packages.groonga.org/source/pgroonga/pgroonga-0.7.0.tar.gz
-    % tar xvf pgroonga-0.7.0.tar.gz
-    % cd pgroonga-0.7.0
+    % wget http://packages.groonga.org/source/pgroonga/pgroonga-0.8.0.tar.gz
+    % tar xvf pgroonga-0.8.0.tar.gz
+    % cd pgroonga-0.8.0
 
 未リリースの最新版の場合:
 
@@ -317,18 +317,18 @@ Windowsでソースからインストールするために必要なものは次�
 ウンロードしてください。zipがWindows用のソースアーカイブです。Windows
 用のソースアーカイブにはGroongaがバンドルされています。
 
-  * http://packages.groonga.org/source/pgroonga/pgroonga-0.7.0.zip
+  * http://packages.groonga.org/source/pgroonga/pgroonga-0.8.0.zip
 
 ソースアーカイブを展開し、ソースフォルダーへ移動します。
 
-    > cd c:\Users\%USERNAME%\Downloads\pgroonga-0.7.0
+    > cd c:\Users\%USERNAME%\Downloads\pgroonga-0.8.0
 
 `cmake`でビルドオプションを設定します。以下のコマンドラインは64bit用の
 PostgreSQL用にビルドするためのものです。32bit用のPostgreSQL用にをビル
 ドする場合は代わりに`-G "Visual Studio 12 2013"`パラメーターを指定して
 ください。
 
-    pgroonga-0.7.0> cmake . -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX=%PostgreSQLをインストールしたフォルダー%
+    pgroonga-0.8.0> cmake . -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX=%PostgreSQLをインストールしたフォルダー%
 
 `%PostgreSQLをインストールしたフォルダー%`はインストーラーを使って
 PostgreSQLをインストールした場合は`C:\Program Files\PostgreSQL\9.4`で
@@ -337,13 +337,13 @@ PostgreSQLをインストールした場合は`C:\Program Files\PostgreSQL\9.4`�
 
 ビルドします。
 
-    pgroonga-0.7.0> cmake --build . --config Release
+    pgroonga-0.8.0> cmake --build . --config Release
 
 インストールします。インストールする場所によっては管理者権限が必要にな
 ります。（PostgreSQLをインストーラーでインストールしている場合は管理者
 権限が必要でしょう。）
 
-    pgroonga-0.7.0> cmake --build . --config Release --target Install
+    pgroonga-0.8.0> cmake --build . --config Release --target Install
 
 データベースを作成します。
 
