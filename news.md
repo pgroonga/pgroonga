@@ -14,7 +14,7 @@ You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-cr
   * Supported `TRUNCATE`-ed table. [GitHub:#1] [Reported by Hiroki Nakamura]
   * `pgroonga.snippet_html()`: Added a function that generates snippet HTML. [groonga-dev,03398] [Reported by Hiroki Nakamura]
   * Supported Ubuntu 14.04 LTS (Trusty Tahr). [Suggested by Yokoda Toshiaki]
-  * `pgroonga.lock_timeout`: Added a variable that changes the number of retries. [groonga-dev,03419] [Suggested by Naoki Takami]
+  * `pgroonga.lock_timeout`: Added a variable that changes the number of lock retries. [groonga-dev,03419] [Suggested by Naoki Takami]
 
 ### Thanks
 
