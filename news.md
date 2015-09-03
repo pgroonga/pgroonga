@@ -2,7 +2,7 @@
 
 ## 0.8.0: 2015-09-01
 
-You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+You can upgrade to 0.8.0 from 0.7.0 by override install. You don't need to re-create `pgroonga` indexes.
 
 ### Improvements
 
