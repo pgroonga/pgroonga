@@ -1653,8 +1653,7 @@ pgroonga_match(PG_FUNCTION_ARGS)
 }
 
 static void
-PGrnInsert(grn_ctx *ctx,
-		   Relation index,
+PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
 		   grn_obj *sourcesCtidColumn,
 		   Datum *values,
@@ -1713,7 +1712,7 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
-	PGrnInsert(ctx, index, sourcesTable, sourcesCtidColumn,
+	PGrnInsert(index, sourcesTable, sourcesCtidColumn,
 			   values, isnull, ht_ctid);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
 
@@ -2582,7 +2581,7 @@ PGrnBuildCallback(Relation index,
 	PGrnBuildState bs = (PGrnBuildState) state;
 
 	if (tupleIsAlive) {
-		PGrnInsert(ctx, index, bs->sourcesTable, bs->sourcesCtidColumn,
+		PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
 				   values, isnull, &(htup->t_self));
 		bs->nIndexedTuples++;
 	}
