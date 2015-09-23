@@ -29,6 +29,13 @@
 #define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"
 #define PGrnSourcesCtidColumnName		"ctid"
 #define PGrnSourcesCtidColumnNameLength	(sizeof(PGrnSourcesCtidColumnName) - 1)
+#define PGrnJSONPathsTableNamePrefix	"JSONPaths"
+#define PGrnJSONPathsTableNameFormat	PGrnJSONPathsTableNamePrefix "%u_%u"
+#define PGrnJSONValuesTableNamePrefix	"JSONValues"
+#define PGrnJSONValuesTableNameFormat	PGrnJSONValuesTableNamePrefix "%u_%u"
+#define PGrnJSONTypesTableNamePrefix	"JSONTypes"
+#define PGrnJSONTypesTableNameFormat	PGrnJSONTypesTableNamePrefix "%u_%u"
+#define PGrnJSONValueLexiconNameFormat	"JSONValueLexicon%s%u_%u"
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 

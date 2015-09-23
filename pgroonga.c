@@ -23,6 +23,9 @@
 #include <utils/timestamp.h>
 #include <utils/tqual.h>
 #include <utils/typcache.h>
+#ifdef JSONBOID
+#	include <utils/jsonb.h>
+#endif
 
 #include <groonga.h>
 
@@ -41,6 +44,12 @@ typedef struct _stat pgrn_stat_buffer;
 typedef struct stat pgrn_stat_buffer;
 #	define pgrn_stat(path, buffer) stat(path, buffer)
 #endif
+
+/* TODO: Remove me when Groonga 5.0.8 has been released. */
+unsigned int grn_vector_pop_element(grn_ctx *ctx, grn_obj *vector,
+									const char **str,
+									unsigned int *weight,
+									grn_id *domain);
 
 #define VARCHARARRAYOID 1015
 
@@ -93,6 +102,9 @@ typedef struct PGrnCreateData
 	Relation index;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
+	grn_obj *jsonPathsTable;
+	grn_obj *jsonValuesTable;
+	grn_obj *supplementaryTables;
 	grn_obj *lexicons;
 	unsigned int i;
 	TupleDesc desc;
@@ -855,6 +867,34 @@ PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
 	return PGrnLookup(name, errorLevel);
 }
 
+#ifdef JSONBOID
+static grn_obj *
+PGrnLookupJSONPathsTable(Relation index,
+						  unsigned int nthAttribute,
+						  int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONPathsTableNameFormat,
+			 index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+static grn_obj *
+PGrnLookupJSONValuesTable(Relation index,
+						  unsigned int nthAttribute,
+						  int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValuesTableNameFormat,
+			 index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+#endif
+
 static grn_obj *
 PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 {
@@ -952,6 +992,124 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 	PGrnCreateSourcesCtidColumn(data);
 }
 
+#ifdef JSONBOID
+static void
+PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
+{
+	grn_obj *jsonTypesTable;
+
+	{
+		char jsonPathsTableName[GRN_TABLE_MAX_KEY_SIZE];
+		snprintf(jsonPathsTableName, sizeof(jsonPathsTableName),
+				 PGrnJSONPathsTableNameFormat,
+				 data->relNode, data->i);
+		data->jsonPathsTable =
+			PGrnCreateTable(jsonPathsTableName,
+							GRN_OBJ_TABLE_PAT_KEY,
+							grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonPathsTable);
+	}
+
+	{
+		char jsonTypesTableName[GRN_TABLE_MAX_KEY_SIZE];
+		snprintf(jsonTypesTableName, sizeof(jsonTypesTableName),
+				 PGrnJSONTypesTableNameFormat,
+				 data->relNode, data->i);
+		jsonTypesTable = PGrnCreateTable(jsonTypesTableName,
+										 GRN_OBJ_TABLE_PAT_KEY,
+										 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonTypesTable);
+	}
+	{
+		char jsonValuesTableName[GRN_TABLE_MAX_KEY_SIZE];
+		snprintf(jsonValuesTableName, sizeof(jsonValuesTableName),
+				 PGrnJSONValuesTableNameFormat,
+				 data->relNode, data->i);
+		data->jsonValuesTable = PGrnCreateTable(jsonValuesTableName,
+												GRN_OBJ_TABLE_NO_KEY,
+												NULL);
+		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonValuesTable);
+	}
+
+	PGrnCreateColumn(data->jsonValuesTable,
+					 "paths",
+					 GRN_OBJ_COLUMN_VECTOR,
+					 data->jsonPathsTable);
+	{
+		grn_obj_flags flags = 0;
+		if (PGrnIsLZ4Available)
+			flags |= GRN_OBJ_COMPRESS_LZ4;
+		PGrnCreateColumn(data->jsonValuesTable,
+						 "string",
+						 flags,
+						 grn_ctx_at(ctx, GRN_DB_LONG_TEXT));
+	}
+	PGrnCreateColumn(data->jsonValuesTable,
+					 "number",
+					 0,
+					 grn_ctx_at(ctx, GRN_DB_FLOAT));
+	PGrnCreateColumn(data->jsonValuesTable,
+					 "boolean",
+					 0,
+					 grn_ctx_at(ctx, GRN_DB_BOOL));
+	PGrnCreateColumn(data->jsonValuesTable,
+					 "size",
+					 0,
+					 grn_ctx_at(ctx, GRN_DB_UINT32));
+	PGrnCreateColumn(data->jsonValuesTable,
+					 "type",
+					 0,
+					 jsonTypesTable);
+}
+
+static void
+PGrnCreateIndexColumnForJSON(PGrnCreateData *data,
+							 const char *typeName,
+							 grn_obj_flags tableType,
+							 grn_obj *type)
+{
+	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
+	grn_obj *lexicon;
+
+	snprintf(lexiconName, sizeof(lexiconName),
+			 PGrnJSONValueLexiconNameFormat,
+			 typeName, data->relNode, data->i);
+	lexicon = PGrnCreateTable(lexiconName, tableType, type);
+	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
+	PGrnCreateColumn(lexicon,
+					 PGrnIndexColumnName,
+					 GRN_OBJ_COLUMN_INDEX,
+					 data->jsonValuesTable);
+}
+
+static void
+PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
+{
+	PGrnCreateColumn(data->jsonPathsTable,
+					 PGrnIndexColumnName,
+					 GRN_OBJ_COLUMN_INDEX,
+					 data->jsonValuesTable);
+	/* TODO: 4KiB over string value can't be searched. */
+	/* TODO: Should we also support full text search against string value? */
+	PGrnCreateIndexColumnForJSON(data,
+								 "String",
+								 GRN_OBJ_TABLE_PAT_KEY,
+								 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+	PGrnCreateIndexColumnForJSON(data,
+								 "Number",
+								 GRN_OBJ_TABLE_PAT_KEY,
+								 grn_ctx_at(ctx, GRN_DB_FLOAT));
+	PGrnCreateIndexColumnForJSON(data,
+								 "Boolean",
+								 GRN_OBJ_TABLE_HASH_KEY,
+								 grn_ctx_at(ctx, GRN_DB_BOOL));
+	PGrnCreateIndexColumnForJSON(data,
+								 "Size",
+								 GRN_OBJ_TABLE_PAT_KEY,
+								 grn_ctx_at(ctx, GRN_DB_UINT32));
+}
+#endif
+
 static void
 PGrnCreateDataColumn(PGrnCreateData *data)
 {
@@ -1046,14 +1204,12 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 
 /**
  * PGrnCreate
- *
- * @param	ctx
- * @param	index
  */
 static void
 PGrnCreate(Relation index,
 		   grn_obj **sourcesTable,
 		   grn_obj **sourcesCtidColumn,
+		   grn_obj *supplementaryTables,
 		   grn_obj *lexicons)
 {
 	PGrnCreateData data;
@@ -1061,6 +1217,9 @@ PGrnCreate(Relation index,
 	data.index = index;
 	data.desc = RelationGetDescr(index);
 	data.relNode = index->rd_node.relNode;
+	data.jsonPathsTable = NULL;
+	data.jsonValuesTable = NULL;
+	data.supplementaryTables = supplementaryTables;
 	data.lexicons = lexicons;
 
 	PGrnCreateSourcesTable(&data);
@@ -1069,40 +1228,149 @@ PGrnCreate(Relation index,
 
 	for (data.i = 0; data.i < data.desc->natts; data.i++)
 	{
-		data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
-		data.attributeTypeID = PGrnGetType(index, data.i,
-										   &(data.attributeFlags));
+#ifdef JSONBOID
+		Form_pg_attribute attribute;
+
+		attribute = data.desc->attrs[data.i];
+		if (attribute->atttypid == JSONBOID)
+		{
+			if (data.desc->natts != 1)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+						 errmsg("pgroonga: multicolumn index for jsonb "
+								"isn't supported: <%s>",
+								index->rd_rel->relname.data)));
+			}
+
+			PGrnCreateDataColumnsForJSON(&data);
+			PGrnCreateIndexColumnsForJSON(&data);
+			data.forFullTextSearch = false;
+			data.attributeTypeID = grn_obj_id(ctx, data.jsonValuesTable);
+			data.attributeFlags = GRN_OBJ_VECTOR;
+		}
+		else
+#endif
+		{
+			data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
+			data.attributeTypeID = PGrnGetType(index, data.i,
+											   &(data.attributeFlags));
+		}
+
 		PGrnCreateDataColumn(&data);
 		PGrnCreateIndexColumn(&data);
 	}
 }
 
 static void
+PGrnSetSource(grn_obj *indexColumn,
+			  grn_obj *source,
+			  grn_obj *sourceIDs)
+{
+	grn_id sourceID;
+
+	GRN_BULK_REWIND(sourceIDs);
+
+	sourceID = grn_obj_id(ctx, source);
+	GRN_RECORD_PUT(ctx, sourceIDs, sourceID);
+
+	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
+}
+
+#ifdef JSONBOID
+static void
+PGrnSetSourceForJSON(Relation index,
+					 grn_obj *jsonValuesTable,
+					 const char *columnName,
+					 const char *typeName,
+					 unsigned int nthAttribute,
+					 grn_obj *sourceIDs)
+{
+	grn_obj *source;
+	char indexName[GRN_TABLE_MAX_KEY_SIZE];
+	grn_obj *indexColumn;
+
+	source = PGrnLookupColumn(jsonValuesTable, columnName, ERROR);
+
+	snprintf(indexName, sizeof(indexName),
+			 PGrnJSONValueLexiconNameFormat ".%s",
+			 typeName,
+			 index->rd_node.relNode,
+			 nthAttribute,
+			 PGrnIndexColumnName);
+	indexColumn = PGrnLookup(indexName, ERROR);
+
+	PGrnSetSource(indexColumn, source, sourceIDs);
+
+	grn_obj_unlink(ctx, source);
+	grn_obj_unlink(ctx, indexColumn);
+}
+
+static void
+PGrnSetSourcesForJSON(Relation index,
+					  unsigned int nthAttribute,
+					  grn_obj *sourceIDs)
+{
+	grn_obj *jsonPathsTable;
+	grn_obj *jsonValuesTable;
+
+	jsonPathsTable = PGrnLookupJSONPathsTable(index, nthAttribute, ERROR);
+	jsonValuesTable = PGrnLookupJSONValuesTable(index, nthAttribute, ERROR);
+
+	{
+		grn_obj *source;
+		grn_obj *indexColumn;
+
+		source = PGrnLookupColumn(jsonValuesTable, "paths", ERROR);
+		indexColumn = PGrnLookupColumn(jsonPathsTable, PGrnIndexColumnName,
+									   ERROR);
+		PGrnSetSource(indexColumn, source, sourceIDs);
+		grn_obj_unlink(ctx, source);
+		grn_obj_unlink(ctx, indexColumn);
+	}
+
+	PGrnSetSourceForJSON(index, jsonValuesTable, "string", "String",
+						 nthAttribute, sourceIDs);
+	PGrnSetSourceForJSON(index, jsonValuesTable, "number", "Number",
+						 nthAttribute, sourceIDs);
+	PGrnSetSourceForJSON(index, jsonValuesTable, "boolean", "Boolean",
+						 nthAttribute, sourceIDs);
+	PGrnSetSourceForJSON(index, jsonValuesTable, "size", "Size",
+						 nthAttribute, sourceIDs);
+
+	grn_obj_unlink(ctx, jsonValuesTable);
+	grn_obj_unlink(ctx, jsonPathsTable);
+}
+#endif
+
+static void
 PGrnSetSources(Relation index, grn_obj *sourcesTable)
 {
 	TupleDesc desc;
 	grn_obj sourceIDs;
-	int i;
+	unsigned int i;
 
 	desc = RelationGetDescr(index);
 	GRN_RECORD_INIT(&sourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	for (i = 0; i < desc->natts; i++)
 	{
-		NameData *name = &(desc->attrs[i]->attname);
+		Form_pg_attribute attribute = desc->attrs[i];
+		NameData *name = &(attribute->attname);
 		grn_obj *source;
-		grn_id sourceID;
 		grn_obj *indexColumn;
 
-		GRN_BULK_REWIND(&sourceIDs);
+#ifdef JSONBOID
+		if (attribute->atttypid == JSONBOID)
+		{
+			PGrnSetSourcesForJSON(index, i, &sourceIDs);
+		}
+#endif
 
-		source = grn_obj_column(ctx, sourcesTable,
-								name->data, strlen(name->data));
-		sourceID = grn_obj_id(ctx, source);
-		grn_obj_unlink(ctx, source);
-		GRN_RECORD_PUT(ctx, &sourceIDs, sourceID);
-
+		source = PGrnLookupColumn(sourcesTable, name->data, ERROR);
 		indexColumn = PGrnLookupIndexColumn(index, i, ERROR);
-		grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &sourceIDs);
+		PGrnSetSource(indexColumn, source, &sourceIDs);
+		grn_obj_unlink(ctx, source);
+		grn_obj_unlink(ctx, indexColumn);
 	}
 	GRN_OBJ_FIN(ctx, &sourceIDs);
 }
@@ -1674,6 +1942,302 @@ pgroonga_match(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(false);
 }
 
+#ifdef JSONBOID
+typedef struct PGrnInsertJSONData
+{
+	grn_obj *jsonPathsTable;
+	grn_obj *jsonValuesTable;
+	grn_obj *pathsColumn;
+	grn_obj *stringColumn;
+	grn_obj *numberColumn;
+	grn_obj *booleanColumn;
+	grn_obj *sizeColumn;
+	grn_obj *typeColumn;
+	grn_obj *valueIDs;
+	grn_obj components;
+	grn_obj path;
+	grn_obj pathIDs;
+	grn_obj value;
+	grn_obj type;
+} PGrnInsertJSONData;
+
+static void
+PGrnInsertJSONDataInit(PGrnInsertJSONData *data,
+					   Relation index,
+					   unsigned int nthValue,
+					   grn_obj *valueIDs)
+{
+	data->jsonPathsTable  = PGrnLookupJSONPathsTable(index, nthValue, ERROR);
+	data->jsonValuesTable = PGrnLookupJSONValuesTable(index, nthValue, ERROR);
+
+	data->pathsColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "paths", ERROR);
+	data->stringColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "string", ERROR);
+	data->numberColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "number", ERROR);
+	data->booleanColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "boolean", ERROR);
+	data->sizeColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "size", ERROR);
+	data->typeColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "type", ERROR);
+
+	data->valueIDs = valueIDs;
+	grn_obj_reinit(ctx, data->valueIDs,
+				   grn_obj_id(ctx, data->jsonValuesTable),
+				   GRN_OBJ_VECTOR);
+
+	GRN_TEXT_INIT(&(data->components), GRN_OBJ_VECTOR);
+	GRN_TEXT_INIT(&(data->path), 0);
+	GRN_RECORD_INIT(&(data->pathIDs), GRN_OBJ_VECTOR,
+					grn_obj_id(ctx, data->jsonPathsTable));
+	GRN_VOID_INIT(&(data->value));
+	GRN_TEXT_INIT(&(data->type), GRN_OBJ_DO_SHALLOW_COPY);
+}
+
+static void
+PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
+{
+	GRN_OBJ_FIN(ctx, &(data->type));
+	GRN_OBJ_FIN(ctx, &(data->value));
+	GRN_OBJ_FIN(ctx, &(data->pathIDs));
+	GRN_OBJ_FIN(ctx, &(data->path));
+	GRN_OBJ_FIN(ctx, &(data->components));
+
+	grn_obj_unlink(ctx, data->typeColumn);
+	grn_obj_unlink(ctx, data->sizeColumn);
+	grn_obj_unlink(ctx, data->booleanColumn);
+	grn_obj_unlink(ctx, data->numberColumn);
+	grn_obj_unlink(ctx, data->stringColumn);
+	grn_obj_unlink(ctx, data->pathsColumn);
+	grn_obj_unlink(ctx, data->jsonValuesTable);
+	grn_obj_unlink(ctx, data->jsonPathsTable);
+}
+
+static void
+PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
+										unsigned int parentStart,
+										unsigned int current)
+{
+	unsigned int i;
+
+	GRN_BULK_REWIND(&(data->path));
+
+	for (i = parentStart; i <= current; i++)
+	{
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   &(data->components),
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
+		if (i != current)
+			GRN_TEXT_PUTS(ctx, &(data->path), ".");
+	}
+
+	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
+	{
+		grn_id pathID;
+		pathID = grn_table_add(ctx, data->jsonPathsTable,
+							   GRN_TEXT_VALUE(&(data->path)),
+							   GRN_TEXT_LEN(&(data->path)),
+							   NULL);
+		GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
+	}
+
+	if (parentStart < current)
+		PGrnInsertJSONGenerateSubPathsRecursive(data, parentStart + 1, current);
+}
+
+static void
+PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
+									 unsigned int current,
+									 unsigned int nComponents)
+{
+	unsigned int i;
+
+	if (current == nComponents)
+		return;
+
+	GRN_BULK_REWIND(&(data->path));
+	for (i = 0; i <= current; i++)
+	{
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   &(data->components),
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		GRN_TEXT_PUTS(ctx, &(data->path), ".");
+		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
+	}
+
+	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
+	{
+		grn_id pathID;
+		pathID = grn_table_add(ctx, data->jsonPathsTable,
+							   GRN_TEXT_VALUE(&(data->path)),
+							   GRN_TEXT_LEN(&(data->path)),
+							   NULL);
+		GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
+	}
+
+	PGrnInsertJSONGenerateSubPathsRecursive(data, 0, current);
+	PGrnInsertJSONGeneratePathsRecursive(data, current + 1, nComponents);
+}
+
+static void
+PGrnInsertJSONGeneratePaths(PGrnInsertJSONData *data)
+{
+	unsigned int n;
+
+	GRN_BULK_REWIND(&(data->pathIDs));
+	n = grn_vector_size(ctx, &(data->components));
+	PGrnInsertJSONGeneratePathsRecursive(data, 0, n);
+}
+
+static void
+PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
+					   grn_obj *column,
+					   const char *typeName)
+{
+	grn_id valueID;
+
+	valueID = grn_table_add(ctx, data->jsonValuesTable, NULL, 0, NULL);
+	GRN_RECORD_PUT(ctx, data->valueIDs, valueID);
+
+	PGrnInsertJSONGeneratePaths(data);
+	grn_obj_set_value(ctx, data->pathsColumn, valueID,
+					  &(data->pathIDs), GRN_OBJ_SET);
+
+	if (column)
+		grn_obj_set_value(ctx, column, valueID, &(data->value), GRN_OBJ_SET);
+
+	GRN_TEXT_SETS(ctx, &(data->type), typeName);
+	grn_obj_set_value(ctx, data->typeColumn, valueID,
+					  &(data->type), GRN_OBJ_SET);
+}
+
+static void PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data);
+
+static void
+PGrnInsertJSONValue(JsonbIterator **iter,
+					JsonbValue *value,
+					PGrnInsertJSONData *data)
+{
+	switch (value->type)
+	{
+	case jbvNull:
+		PGrnInsertJSONValueSet(data, NULL, "null");
+		break;
+	case jbvString:
+		grn_obj_reinit(ctx, &(data->value), GRN_DB_LONG_TEXT,
+					   GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &(data->value),
+					 value->val.string.val,
+					 value->val.string.len);
+		PGrnInsertJSONValueSet(data, data->stringColumn, "string");
+		break;
+	case jbvNumeric:
+	{
+		Datum numericInString =
+			DirectFunctionCall1(numeric_out,
+								NumericGetDatum(value->val.numeric));
+		const char *numericInCString = DatumGetCString(numericInString);
+		grn_obj_reinit(ctx, &(data->value), GRN_DB_TEXT,
+					   GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SETS(ctx, &(data->value), numericInCString);
+		PGrnInsertJSONValueSet(data, data->numberColumn, "number");
+		break;
+	}
+	case jbvBool:
+		grn_obj_reinit(ctx, &(data->value), GRN_DB_BOOL, 0);
+		GRN_BOOL_SET(ctx, &(data->value), value->val.boolean);
+		PGrnInsertJSONValueSet(data, data->booleanColumn, "boolean");
+		break;
+	case jbvArray:
+		PGrnInsertJSON(iter, data);
+		break;
+	case jbvObject:
+		PGrnInsertJSON(iter, data);
+		break;
+	case jbvBinary:
+		PGrnInsertJSON(iter, data);
+		break;
+	}
+}
+
+static void
+PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
+{
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	while ((token = JsonbIteratorNext(iter, &value, false)) != WJB_DONE) {
+		switch (token)
+		{
+		case WJB_KEY:
+			grn_vector_add_element(ctx, &(data->components),
+								   value.val.string.val,
+								   value.val.string.len,
+								   0,
+								   GRN_DB_SHORT_TEXT);
+			break;
+		case WJB_VALUE:
+		{
+			const char *component;
+			PGrnInsertJSONValue(iter, &value, data);
+			grn_vector_pop_element(ctx, &(data->components), &component,
+								   NULL, NULL);
+			break;
+		}
+		case WJB_ELEM:
+			PGrnInsertJSONValue(iter, &value, data);
+			break;
+		case WJB_BEGIN_ARRAY:
+			break;
+		case WJB_END_ARRAY:
+			break;
+		case WJB_BEGIN_OBJECT:
+			break;
+		case WJB_END_OBJECT:
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_SYSTEM_ERROR),
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
+							token)));
+			break;
+		}
+	}
+}
+
+static void
+PGrnInsertForJSON(Relation index,
+				  Datum *values,
+				  unsigned int nthValue,
+				  grn_obj *valueIDs)
+{
+	PGrnInsertJSONData data;
+	Jsonb *jsonb;
+	JsonbIterator *iter;
+
+	PGrnInsertJSONDataInit(&data, index, nthValue, valueIDs);
+	jsonb = DatumGetJsonb(values[nthValue]);
+	iter = JsonbIteratorInit(&(jsonb->root));
+	PGrnInsertJSON(&iter, &data);
+	PGrnInsertJSONDataFin(&data);
+}
+#endif
+
 static void
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
@@ -1684,7 +2248,7 @@ PGrnInsert(Relation index,
 {
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
-	int i;
+	unsigned int i;
 
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 	GRN_UINT64_SET(ctx, &ctidBuffer, CtidToUInt64(ht_ctid));
@@ -1704,9 +2268,18 @@ PGrnInsert(Relation index,
 
 		dataColumn = grn_obj_column(ctx, sourcesTable,
 									name->data, strlen(name->data));
-		domain = PGrnGetType(index, i, &flags);
-		grn_obj_reinit(ctx, &buffer, domain, flags);
-		PGrnConvertDatum(values[i], attribute->atttypid, &buffer);
+#ifdef JSONBOID
+		if (attribute->atttypid == JSONBOID)
+		{
+			PGrnInsertForJSON(index, values, i, &buffer);
+		}
+		else
+#endif
+		{
+			domain = PGrnGetType(index, i, &flags);
+			grn_obj_reinit(ctx, &buffer, domain, flags);
+			PGrnConvertDatum(values[i], attribute->atttypid, &buffer);
+		}
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("pgroonga: failed to set column value")) {
@@ -1971,132 +2544,158 @@ PGrnSearchBuildConditionLike(PGrnSearchData *data,
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
 }
 
+static bool
+PGrnSearchBuildCondition(IndexScanDesc scan,
+						 PGrnScanOpaque so,
+						 PGrnSearchData *data,
+						 int i)
+{
+	Relation index = scan->indexRelation;
+	ScanKey key = &(scan->keyData[i]);
+	TupleDesc desc;
+	Form_pg_attribute attribute;
+	const char *targetColumnName;
+	grn_obj *targetColumn;
+	grn_obj *matchTarget, *matchTargetVariable;
+	grn_operator operator = GRN_OP_NOP;
+
+	/* NULL key is not supported */
+	if (key->sk_flags & SK_ISNULL)
+		return false;
+
+	desc = RelationGetDescr(index);
+	attribute = desc->attrs[key->sk_attno - 1];
+
+	targetColumnName = attribute->attname.data;
+	targetColumn = PGrnLookupColumn(so->sourcesTable, targetColumnName, ERROR);
+	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
+
+#ifdef JSONBOID
+	if (attribute->atttypid == JSONBOID)
+	{
+		grn_obj *subFilter;
+
+		grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+		PGrnConvertDatum(key->sk_argument, TEXTOID, &buffer);
+		subFilter = PGrnLookup("sub_filter", ERROR);
+		grn_expr_append_obj(ctx, data->expression,
+							subFilter, GRN_OP_PUSH, 1);
+		grn_expr_append_obj(ctx, data->expression,
+							targetColumn, GRN_OP_PUSH, 1);
+		grn_expr_append_const(ctx, data->expression,
+							  &buffer, GRN_OP_PUSH, 1);
+		grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
+		return true;
+	}
+#endif
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+							  matchTarget, matchTargetVariable);
+	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
+
+	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+
+	{
+		grn_id domain;
+		unsigned char flags = 0;
+		domain = PGrnGetType(index, key->sk_attno - 1, NULL);
+		grn_obj_reinit(ctx, &buffer, domain, flags);
+	}
+	{
+		Oid valueTypeID = attribute->atttypid;
+		switch (valueTypeID)
+		{
+		case VARCHARARRAYOID:
+			valueTypeID = VARCHAROID;
+			break;
+		case TEXTARRAYOID:
+			valueTypeID = TEXTOID;
+			break;
+		}
+		PGrnConvertDatum(key->sk_argument, valueTypeID, &buffer);
+	}
+
+	switch (key->sk_strategy)
+	{
+	case PGrnLessStrategyNumber:
+		operator = GRN_OP_LESS;
+		break;
+	case PGrnLessEqualStrategyNumber:
+		operator = GRN_OP_LESS_EQUAL;
+		break;
+	case PGrnEqualStrategyNumber:
+		operator = GRN_OP_EQUAL;
+		break;
+	case PGrnGreaterEqualStrategyNumber:
+		operator = GRN_OP_GREATER_EQUAL;
+		break;
+	case PGrnGreaterStrategyNumber:
+		operator = GRN_OP_GREATER;
+		break;
+	case PGrnLikeStrategyNumber:
+		break;
+	case PGrnContainStrategyNumber:
+		operator = GRN_OP_MATCH;
+		break;
+	case PGrnQueryStrategyNumber:
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("unexpected strategy number: %d",
+						key->sk_strategy)));
+		break;
+	}
+
+	switch (key->sk_strategy)
+	{
+	case PGrnLikeStrategyNumber:
+		PGrnSearchBuildConditionLike(data, matchTarget, &buffer);
+		break;
+	case PGrnQueryStrategyNumber:
+	{
+		grn_rc rc;
+		grn_expr_flags flags =
+			GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+		rc = grn_expr_parse(ctx, data->expression,
+							GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
+							matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+							flags);
+		if (rc != GRN_SUCCESS)
+		{
+			ereport(ERROR,
+					(errcode(PGrnRCToPgErrorCode(rc)),
+					 errmsg("pgroonga: failed to parse expression: %s",
+							ctx->errbuf)));
+		}
+		break;
+	}
+	default:
+		grn_expr_append_obj(ctx, data->expression,
+							matchTarget, GRN_OP_PUSH, 1);
+		grn_expr_append_const(ctx, data->expression,
+							  &buffer, GRN_OP_PUSH, 1);
+		grn_expr_append_op(ctx, data->expression, operator, 2);
+		break;
+	}
+
+	return true;
+}
+
 static void
 PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnScanOpaque so,
 						  PGrnSearchData *data)
 {
-	Relation index = scan->indexRelation;
-	TupleDesc desc;
 	int i, nExpressions = 0;
 
-	desc = RelationGetDescr(index);
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
-		ScanKey key = &(scan->keyData[i]);
-		Form_pg_attribute attribute;
-		grn_bool isValidStrategy = GRN_TRUE;
-		const char *targetColumnName;
-		grn_obj *targetColumn;
-		grn_obj *matchTarget, *matchTargetVariable;
-		grn_operator operator = GRN_OP_NOP;
-
-		/* NULL key is not supported */
-		if (key->sk_flags & SK_ISNULL)
+		if (!PGrnSearchBuildCondition(scan, so, data, i))
 			continue;
 
-		attribute = desc->attrs[key->sk_attno - 1];
-
-		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
-								  matchTarget, matchTargetVariable);
-		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-
-		targetColumnName = attribute->attname.data;
-		targetColumn = grn_obj_column(ctx, so->sourcesTable,
-									  targetColumnName,
-									  strlen(targetColumnName));
-		GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
-		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
-
-		{
-			grn_id domain;
-			unsigned char flags = 0;
-			domain = PGrnGetType(index, key->sk_attno - 1, NULL);
-			grn_obj_reinit(ctx, &buffer, domain, flags);
-		}
-		{
-			Oid valueTypeID = attribute->atttypid;
-			switch (valueTypeID)
-			{
-			case VARCHARARRAYOID:
-				valueTypeID = VARCHAROID;
-				break;
-			case TEXTARRAYOID:
-				valueTypeID = TEXTOID;
-				break;
-			}
-			PGrnConvertDatum(key->sk_argument, valueTypeID, &buffer);
-		}
-
-		switch (key->sk_strategy)
-		{
-		case PGrnLessStrategyNumber:
-			operator = GRN_OP_LESS;
-			break;
-		case PGrnLessEqualStrategyNumber:
-			operator = GRN_OP_LESS_EQUAL;
-			break;
-		case PGrnEqualStrategyNumber:
-			operator = GRN_OP_EQUAL;
-			break;
-		case PGrnGreaterEqualStrategyNumber:
-			operator = GRN_OP_GREATER_EQUAL;
-			break;
-		case PGrnGreaterStrategyNumber:
-			operator = GRN_OP_GREATER;
-			break;
-		case PGrnLikeStrategyNumber:
-			break;
-		case PGrnContainStrategyNumber:
-			operator = GRN_OP_MATCH;
-			break;
-		case PGrnQueryStrategyNumber:
-			break;
-		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("unexpected strategy number: %d",
-							key->sk_strategy)));
-			isValidStrategy = GRN_FALSE;
-			break;
-		}
-
-		if (!isValidStrategy)
-			continue;
-
-		switch (key->sk_strategy)
-		{
-		case PGrnLikeStrategyNumber:
-			PGrnSearchBuildConditionLike(data, matchTarget, &buffer);
-			if (data->isEmptyCondition)
-				return;
-			break;
-		case PGrnQueryStrategyNumber:
-		{
-			grn_rc rc;
-			grn_expr_flags flags =
-				GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
-			rc = grn_expr_parse(ctx, data->expression,
-								GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
-								matchTarget, GRN_OP_MATCH, GRN_OP_AND,
-								flags);
-			if (rc != GRN_SUCCESS)
-			{
-				ereport(ERROR,
-						(errcode(PGrnRCToPgErrorCode(rc)),
-						 errmsg("pgroonga: failed to parse expression: %s",
-								ctx->errbuf)));
-			}
-			break;
-		}
-		default:
-			grn_expr_append_obj(ctx, data->expression,
-								matchTarget, GRN_OP_PUSH, 1);
-			grn_expr_append_const(ctx, data->expression,
-								  &buffer, GRN_OP_PUSH, 1);
-			grn_expr_append_op(ctx, data->expression, operator, 2);
-			break;
-		}
+		if (data->isEmptyCondition)
+			return;
 
 		if (nExpressions > 0)
 			grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
@@ -2621,6 +3220,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
 	PGrnBuildStateData bs;
+	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
 	if (indexInfo->ii_Unique)
@@ -2631,12 +3231,14 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
 
+	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
 		PGrnCreate(index,
 				   &(bs.sourcesTable),
 				   &(bs.sourcesCtidColumn),
+				   &supplementaryTables,
 				   &lexicons);
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
@@ -2644,15 +3246,25 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	}
 	PG_CATCH();
 	{
-		size_t i, nLexicons;
+		size_t i, n;
 
-		nLexicons = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
-		for (i = 0; i < nLexicons; i++)
+		n = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
+		for (i = 0; i < n; i++)
 		{
-			grn_obj *lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
+			grn_obj *lexicon;
+			lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
 			grn_obj_remove(ctx, lexicon);
 		}
 		GRN_OBJ_FIN(ctx, &lexicons);
+
+		n = GRN_BULK_VSIZE(&supplementaryTables) / sizeof(grn_obj *);
+		for (i = 0; i < n; i++)
+		{
+			grn_obj *supplementaryTable;
+			supplementaryTable = GRN_PTR_VALUE_AT(&supplementaryTables, i);
+			grn_obj_remove(ctx, supplementaryTable);
+		}
+		GRN_OBJ_FIN(ctx, &supplementaryTables);
 
 		if (bs.sourcesTable)
 			grn_obj_remove(ctx, bs.sourcesTable);
@@ -2661,6 +3273,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	}
 	PG_END_TRY();
 	GRN_OBJ_FIN(ctx, &lexicons);
+	GRN_OBJ_FIN(ctx, &supplementaryTables);
 
 	result = (IndexBuildResult *) palloc(sizeof(IndexBuildResult));
 	result->heap_tuples = nHeapTuples;
@@ -2678,25 +3291,41 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 	Relation index = (Relation) PG_GETARG_POINTER(0);
 	grn_obj *sourcesTable = NULL;
 	grn_obj *sourcesCtidColumn = NULL;
+	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
+	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index, &sourcesTable, &sourcesCtidColumn, &lexicons);
+		PGrnCreate(index,
+				   &sourcesTable,
+				   &sourcesCtidColumn,
+				   &supplementaryTables,
+				   &lexicons);
 		PGrnSetSources(index, sourcesTable);
 	}
 	PG_CATCH();
 	{
-		size_t i, nLexicons;
+		size_t i, n;
 
-		nLexicons = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
-		for (i = 0; i < nLexicons; i++)
+		n = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
+		for (i = 0; i < n; i++)
 		{
-			grn_obj *lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
+			grn_obj *lexicon;
+			lexicon = GRN_PTR_VALUE_AT(&lexicons, i);
 			grn_obj_remove(ctx, lexicon);
 		}
 		GRN_OBJ_FIN(ctx, &lexicons);
+
+		n = GRN_BULK_VSIZE(&supplementaryTables) / sizeof(grn_obj *);
+		for (i = 0; i < n; i++)
+		{
+			grn_obj *supplementaryTable;
+			supplementaryTable = GRN_PTR_VALUE_AT(&supplementaryTables, i);
+			grn_obj_remove(ctx, supplementaryTable);
+		}
+		GRN_OBJ_FIN(ctx, &supplementaryTables);
 
 		if (sourcesTable)
 			grn_obj_remove(ctx, sourcesTable);
@@ -2705,6 +3334,7 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 	}
 	PG_END_TRY();
 	GRN_OBJ_FIN(ctx, &lexicons);
+	GRN_OBJ_FIN(ctx, &supplementaryTables);
 
 	PG_RETURN_VOID();
 }
@@ -2724,6 +3354,19 @@ PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *sourcesTable)
 		stats->num_index_tuples = 0;
 
 	return stats;
+}
+
+static void
+PGrnJSONValuesDelete(grn_obj *jsonValuesTable, grn_obj *values)
+{
+	unsigned int i, n;
+
+	n = GRN_BULK_VSIZE(values) / sizeof(grn_id);
+	for (i = 0; i < n; i++)
+	{
+		grn_id valueID = GRN_RECORD_VALUE_AT(values, i);
+		grn_table_delete_by_id(ctx, jsonValuesTable, valueID);
+	}
 }
 
 /**
@@ -2763,8 +3406,32 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	{
 		grn_id id;
 		grn_obj *sourcesCtidColumn;
+		grn_obj *sourcesValuesColumn = NULL;
+		grn_obj *jsonValuesTable = NULL;
+		grn_obj jsonValues;
 
 		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+
+#ifdef JSONBOID
+		{
+			TupleDesc desc;
+			Form_pg_attribute attribute;
+
+			desc = RelationGetDescr(index);
+			attribute = desc->attrs[0];
+			if (attribute->atttypid == JSONBOID)
+			{
+				sourcesValuesColumn = PGrnLookupColumn(sourcesTable,
+													   attribute->attname.data,
+													   ERROR);
+				jsonValuesTable = PGrnLookupJSONValuesTable(index, 0, ERROR);
+				GRN_RECORD_INIT(&jsonValues,
+								0,
+								grn_obj_id(ctx, jsonValuesTable));
+			}
+		}
+#endif
+
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
 			ItemPointerData	ctid;
@@ -2776,11 +3443,26 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
 			if (callback(&ctid, callback_state))
 			{
+				if (jsonValuesTable)
+				{
+					GRN_BULK_REWIND(&jsonValues);
+					grn_obj_get_value(ctx, sourcesValuesColumn, id, &jsonValues);
+					PGrnJSONValuesDelete(jsonValuesTable, &jsonValues);
+				}
+
 				grn_table_cursor_delete(ctx, cursor);
 
 				nRemovedTuples += 1;
 			}
 		}
+
+		if (jsonValuesTable)
+		{
+			GRN_OBJ_FIN(ctx, &jsonValues);
+			grn_obj_unlink(ctx, sourcesValuesColumn);
+			grn_obj_unlink(ctx, jsonValuesTable);
+		}
+
 		grn_table_cursor_close(ctx, cursor);
 	}
 	PG_CATCH();
@@ -2794,6 +3476,34 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 
 	PG_RETURN_POINTER(stats);
 }
+
+static bool
+PGrnRemoveObject(const char *name)
+{
+	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
+
+	if (object)
+	{
+		grn_obj_remove(ctx, object);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+#ifdef JSONBOID
+static bool
+PGrnRemoveJSONValueLexiconTable(const char *typeName, unsigned int relationID)
+{
+	char tableName[GRN_TABLE_MAX_KEY_SIZE];
+	snprintf(tableName, sizeof(tableName),
+			 PGrnJSONValueLexiconNameFormat,
+			 typeName, relationID, 0);
+	return PGrnRemoveObject(tableName);
+}
+#endif
 
 static void
 PGrnRemoveUnusedTables(void)
@@ -2828,28 +3538,49 @@ PGrnRemoveUnusedTables(void)
 		for (i = 0; true; i++)
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			grn_obj *table;
-
 			snprintf(tableName, sizeof(tableName),
 					 PGrnLexiconNameFormat, relationID, i);
-			table = grn_ctx_get(ctx, tableName, strlen(tableName));
-			if (!table)
+			if (!PGrnRemoveObject(tableName))
 				break;
-			grn_obj_remove(ctx, table);
 		}
 
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			grn_obj *table;
-
 			snprintf(tableName, sizeof(tableName),
 					 PGrnSourcesTableNameFormat, relationID);
-			table = grn_ctx_get(ctx, tableName, strlen(tableName));
-			if (table)
-			{
-				grn_obj_remove(ctx, table);
-			}
+			PGrnRemoveObject(tableName);
 		}
+
+#ifdef JSONBOID
+		PGrnRemoveJSONValueLexiconTable("String", relationID);
+		PGrnRemoveJSONValueLexiconTable("Number", relationID);
+		PGrnRemoveJSONValueLexiconTable("Boolean", relationID);
+		PGrnRemoveJSONValueLexiconTable("Size", relationID);
+
+		{
+			char name[GRN_TABLE_MAX_KEY_SIZE];
+
+			snprintf(name, sizeof(name),
+					 PGrnJSONPathsTableNameFormat ".%s",
+					 relationID, 0, PGrnIndexColumnName);
+			PGrnRemoveObject(name);
+
+			snprintf(name, sizeof(name),
+					 PGrnJSONValuesTableNameFormat,
+					 relationID, 0);
+			PGrnRemoveObject(name);
+
+			snprintf(name, sizeof(name),
+					 PGrnJSONPathsTableNameFormat,
+					 relationID, 0);
+			PGrnRemoveObject(name);
+
+			snprintf(name, sizeof(name),
+					 PGrnJSONTypesTableNameFormat,
+					 relationID, 0);
+			PGrnRemoveObject(name);
+		}
+#endif
 	}
 	grn_table_cursor_close(ctx, cursor);
 }

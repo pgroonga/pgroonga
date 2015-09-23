@@ -301,3 +301,31 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 3 =,
 		OPERATOR 4 >=,
 		OPERATOR 5 >;
+
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		FROM pg_type
+		WHERE typname = 'jsonb';
+
+	IF FOUND
+	THEN
+		CREATE FUNCTION pgroonga.match(jsonb, text)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_match'
+			LANGUAGE C
+			IMMUTABLE
+			STRICT;
+
+		CREATE OPERATOR @@ (
+			PROCEDURE = pgroonga.match,
+			LEFTARG = jsonb,
+			RIGHTARG = text
+		);
+
+		CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
+			USING pgroonga AS
+				OPERATOR 8 @@ (jsonb, text);
+	END IF;
+END;
+$$;
