@@ -812,6 +812,28 @@ PGrnLookup(const char *name, int errorLevel)
 }
 
 static grn_obj *
+PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
+{
+	grn_obj *column;
+
+	column = grn_obj_column(ctx, table, name, strlen(name));
+	if (!column)
+	{
+		char tableName[GRN_TABLE_MAX_KEY_SIZE];
+		int tableNameSize;
+
+		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
+		ereport(errorLevel,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: column isn't found: <%.*s>:<%s>",
+						tableNameSize, tableName,
+						name)));
+	}
+
+	return column;
+}
+
+static grn_obj *
 PGrnLookupSourcesTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
