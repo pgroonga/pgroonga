@@ -1654,12 +1654,12 @@ pgroonga_match(PG_FUNCTION_ARGS)
 
 static void
 PGrnInsert(grn_ctx *ctx,
-		  Relation index,
-		  grn_obj *sourcesTable,
-		  grn_obj *sourcesCtidColumn,
-		  Datum *values,
-		  bool *isnull,
-		  ItemPointer ht_ctid)
+		   Relation index,
+		   grn_obj *sourcesTable,
+		   grn_obj *sourcesCtidColumn,
+		   Datum *values,
+		   bool *isnull,
+		   ItemPointer ht_ctid)
 {
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
