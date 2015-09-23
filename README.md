@@ -13,7 +13,7 @@ PostgreSQLは標準では日本語で全文検索できませんが、PGroonga�
 語で高速に全文検索できるようになります。日本語で全文検索機能を実現する
 ための類似の拡張機能は次のものがあります。
 
-  * [pg_trgm](https://www.postgresql.jp/document/9.3/html/pgtrgm.html)
+  * [pg_trgm](https://www.postgresql.jp/document/current/html/pgtrgm.html)
     * PostgreSQLに付属しているがデフォルトではインストールされない。
     * 日本語に対応させるにはソースコードを変更する必要がある。
   * [pg_bigm](http://pgbigm.sourceforge.jp/)
@@ -628,7 +628,7 @@ SELECT *, pgroonga.score(score_memos)
 
 なお、この機能はPGroongaで検索した結果以外にも使えます。そのため、次の
 ように`FROM`なしの`SELECT`でも使えます。なお、
-[`unnest`](http://www.postgresql.org/docs/devel/static/functions-array.html)
+[`unnest`](http://www.postgresql.org/docs/current/static/functions-array.html)
 は配列を行にするPostgreSQLの関数です。
 
 ```sql
