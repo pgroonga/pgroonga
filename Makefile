@@ -24,9 +24,17 @@ all: pgroonga--$(EXTENSION_VERSION).sql
 pgroonga--$(EXTENSION_VERSION).sql: pgroonga.sql
 	@cp $< $@
 
-RESULT_DIRS = $(shell find sql -type d | sed -e 's,^sql/,results/,')
+RESULT_DIRS = $(shell find sql/* -type d | sed -e 's,^sql/,results/,')
+EXPECTED_DIRS = $(shell find sql/* -type d | sed -e 's,^sql/,expected/,')
+EXPECTED_FILES =				\
+	$(shell find sql -name '*.sql' |	\
+		sed -e 's,^sql/,expected/,'	\
+		    -e 's,sql$$,out,')
 
-installcheck: $(RESULT_DIRS)
+installcheck: $(RESULT_DIRS) $(EXPECTED_DIRS) $(EXPECTED_FILES)
 
-$(RESULT_DIRS):
+$(RESULT_DIRS) $(EXPECTED_DIRS):
 	@mkdir -p $@
+
+$(EXPECTED_FILES):
+	@touch $@
