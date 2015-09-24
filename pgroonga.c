@@ -50,6 +50,7 @@ unsigned int grn_vector_pop_element(grn_ctx *ctx, grn_obj *vector,
 									const char **str,
 									unsigned int *weight,
 									grn_id *domain);
+grn_rc grn_obj_cast(grn_ctx *ctx, grn_obj *src, grn_obj *dest, grn_bool addp);
 
 #define VARCHARARRAYOID 1015
 
@@ -1025,9 +1026,10 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 		snprintf(jsonValuesTableName, sizeof(jsonValuesTableName),
 				 PGrnJSONValuesTableNameFormat,
 				 data->relNode, data->i);
-		data->jsonValuesTable = PGrnCreateTable(jsonValuesTableName,
-												GRN_OBJ_TABLE_NO_KEY,
-												NULL);
+		data->jsonValuesTable =
+			PGrnCreateTable(jsonValuesTableName,
+							GRN_OBJ_TABLE_HASH_KEY,
+							grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
 		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonValuesTable);
 	}
 
@@ -1967,6 +1969,7 @@ typedef struct PGrnInsertJSONData
 	grn_obj *sizeColumn;
 	grn_obj *typeColumn;
 	grn_obj *valueIDs;
+	grn_obj key;
 	grn_obj components;
 	grn_obj path;
 	grn_obj pathIDs;
@@ -2001,6 +2004,7 @@ PGrnInsertJSONDataInit(PGrnInsertJSONData *data,
 				   grn_obj_id(ctx, data->jsonValuesTable),
 				   GRN_OBJ_VECTOR);
 
+	GRN_TEXT_INIT(&(data->key), 0);
 	GRN_TEXT_INIT(&(data->components), GRN_OBJ_VECTOR);
 	GRN_TEXT_INIT(&(data->path), 0);
 	GRN_RECORD_INIT(&(data->pathIDs), GRN_OBJ_VECTOR,
@@ -2017,6 +2021,7 @@ PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
 	GRN_OBJ_FIN(ctx, &(data->pathIDs));
 	GRN_OBJ_FIN(ctx, &(data->path));
 	GRN_OBJ_FIN(ctx, &(data->components));
+	GRN_OBJ_FIN(ctx, &(data->key));
 
 	grn_obj_unlink(ctx, data->typeColumn);
 	grn_obj_unlink(ctx, data->sizeColumn);
@@ -2026,6 +2031,42 @@ PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
 	grn_obj_unlink(ctx, data->pathsColumn);
 	grn_obj_unlink(ctx, data->jsonValuesTable);
 	grn_obj_unlink(ctx, data->jsonPathsTable);
+}
+
+static void
+PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
+						  bool haveValue,
+						  const char *typeName)
+{
+	/* TODO: Use hashed value as key to support 4KiB over key. */
+	unsigned int i, n;
+
+	GRN_BULK_REWIND(&(data->key));
+
+	n = grn_vector_size(ctx, &(data->components));
+	for (i = 0; i < n; i++)
+	{
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   &(data->components),
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		GRN_TEXT_PUTS(ctx, &(data->key), ".");
+		GRN_TEXT_PUT(ctx, &(data->key), component, componentSize);
+	}
+
+	GRN_TEXT_PUTS(ctx, &(data->key), "|");
+	GRN_TEXT_PUTS(ctx, &(data->key), typeName);
+
+	if (haveValue)
+	{
+		GRN_TEXT_PUTS(ctx, &(data->key), "|");
+		grn_obj_cast(ctx, &(data->value), &(data->key), GRN_FALSE);
+	}
 }
 
 static void
@@ -2123,9 +2164,16 @@ PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
 					   const char *typeName)
 {
 	grn_id valueID;
+	int added;
 
-	valueID = grn_table_add(ctx, data->jsonValuesTable, NULL, 0, NULL);
+	PGrnInsertJSONGenerateKey(data, column != NULL, typeName);
+	valueID = grn_table_add(ctx, data->jsonValuesTable,
+							GRN_TEXT_VALUE(&(data->key)),
+							GRN_TEXT_LEN(&(data->key)),
+							&added);
 	GRN_RECORD_PUT(ctx, data->valueIDs, valueID);
+	if (!added)
+		return;
 
 	PGrnInsertJSONGeneratePaths(data);
 	grn_obj_set_value(ctx, data->pathsColumn, valueID,
