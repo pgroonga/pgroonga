@@ -1085,10 +1085,15 @@ PGrnCreateIndexColumnForJSON(PGrnCreateData *data,
 static void
 PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
 {
+	PGrnCreateColumn(data->jsonValuesTable,
+					 PGrnIndexColumnName,
+					 GRN_OBJ_COLUMN_INDEX,
+					 data->sourcesTable);
 	PGrnCreateColumn(data->jsonPathsTable,
 					 PGrnIndexColumnName,
 					 GRN_OBJ_COLUMN_INDEX,
 					 data->jsonValuesTable);
+
 	/* TODO: 4KiB over string value can't be searched. */
 	/* TODO: Should we also support full text search against string value? */
 	PGrnCreateIndexColumnForJSON(data,
@@ -1248,6 +1253,7 @@ PGrnCreate(Relation index,
 			data.forFullTextSearch = false;
 			data.attributeTypeID = grn_obj_id(ctx, data.jsonValuesTable);
 			data.attributeFlags = GRN_OBJ_VECTOR;
+			PGrnCreateDataColumn(&data);
 		}
 		else
 #endif
@@ -1255,10 +1261,9 @@ PGrnCreate(Relation index,
 			data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
 			data.attributeTypeID = PGrnGetType(index, data.i,
 											   &(data.attributeFlags));
+			PGrnCreateDataColumn(&data);
+			PGrnCreateIndexColumn(&data);
 		}
-
-		PGrnCreateDataColumn(&data);
-		PGrnCreateIndexColumn(&data);
 	}
 }
 
@@ -1308,14 +1313,13 @@ PGrnSetSourceForJSON(Relation index,
 
 static void
 PGrnSetSourcesForJSON(Relation index,
+					  grn_obj *jsonValuesTable,
 					  unsigned int nthAttribute,
 					  grn_obj *sourceIDs)
 {
 	grn_obj *jsonPathsTable;
-	grn_obj *jsonValuesTable;
 
 	jsonPathsTable = PGrnLookupJSONPathsTable(index, nthAttribute, ERROR);
-	jsonValuesTable = PGrnLookupJSONValuesTable(index, nthAttribute, ERROR);
 
 	{
 		grn_obj *source;
@@ -1338,7 +1342,6 @@ PGrnSetSourcesForJSON(Relation index,
 	PGrnSetSourceForJSON(index, jsonValuesTable, "size", "Size",
 						 nthAttribute, sourceIDs);
 
-	grn_obj_unlink(ctx, jsonValuesTable);
 	grn_obj_unlink(ctx, jsonPathsTable);
 }
 #endif
@@ -1362,12 +1365,22 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 #ifdef JSONBOID
 		if (attribute->atttypid == JSONBOID)
 		{
-			PGrnSetSourcesForJSON(index, i, &sourceIDs);
+			grn_obj *jsonValuesTable;
+
+			jsonValuesTable = PGrnLookupJSONValuesTable(index, i, ERROR);
+			PGrnSetSourcesForJSON(index, jsonValuesTable, i, &sourceIDs);
+			indexColumn = PGrnLookupColumn(jsonValuesTable,
+										   PGrnIndexColumnName,
+										   ERROR);
+			grn_obj_unlink(ctx, jsonValuesTable);
 		}
+		else
 #endif
+		{
+			indexColumn = PGrnLookupIndexColumn(index, i, ERROR);
+		}
 
 		source = PGrnLookupColumn(sourcesTable, name->data, ERROR);
-		indexColumn = PGrnLookupIndexColumn(index, i, ERROR);
 		PGrnSetSource(indexColumn, source, &sourceIDs);
 		grn_obj_unlink(ctx, source);
 		grn_obj_unlink(ctx, indexColumn);
