@@ -175,7 +175,7 @@ CREATE FUNCTION pgroonga.options(internal)
 DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
-	8,		-- amstrategies
+	9,		-- amstrategies
 	0,		-- amsupport
 	true,		-- amcanorder
 	true,		-- amcanorderbyop
@@ -325,7 +325,8 @@ BEGIN
 
 		CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
 			USING pgroonga AS
-				OPERATOR 8 @@ (jsonb, text);
+				OPERATOR 8 @@ (jsonb, text),
+				OPERATOR 9 @>;
 	END IF;
 END;
 $$;

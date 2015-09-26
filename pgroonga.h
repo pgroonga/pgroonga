@@ -21,6 +21,7 @@
 #define PGrnLikeStrategyNumber			6	/* operator ~~ (LIKE) */
 #define PGrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
+#define PGrnJSONContainStrategyNumber	9	/* operator @> */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"

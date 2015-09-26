@@ -2652,6 +2652,203 @@ PGrnSearchBuildConditionLike(PGrnSearchData *data,
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
 }
 
+#ifdef JSONBOID
+static void
+PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
+								  grn_obj *subFilter,
+								  grn_obj *targetColumn,
+								  grn_obj *filter,
+								  unsigned int *nthCondition)
+{
+	grn_expr_append_obj(ctx, data->expression,
+						subFilter, GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, data->expression,
+						targetColumn, GRN_OP_PUSH, 1);
+	grn_expr_append_const(ctx, data->expression,
+						  filter, GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
+
+	if (*nthCondition > 0)
+		grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+
+	(*nthCondition)++;
+}
+
+static void
+PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
+										 grn_obj *subFilter,
+										 grn_obj *targetColumn,
+										 grn_obj *components,
+										 JsonbValue *value,
+										 unsigned int *nthCondition)
+{
+	unsigned int i, n;
+
+	GRN_BULK_REWIND(&buffer);
+
+	switch (value->type)
+	{
+	case jbvNull:
+		GRN_TEXT_PUTS(ctx, &buffer, "type == \"null\"");
+		break;
+	case jbvString:
+		if (value->val.string.len == 0) {
+			GRN_TEXT_PUTS(ctx, &buffer, "type == \"string\" && ");
+		}
+		GRN_TEXT_PUTS(ctx, &buffer, "string == \"");
+		/* TODO: escape double quote and backslash. */
+		GRN_TEXT_PUT(ctx, &buffer,
+					 value->val.string.val,
+					 value->val.string.len);
+		GRN_TEXT_PUTS(ctx, &buffer, "\"");
+		break;
+	case jbvNumeric:
+	{
+		Datum numericInString =
+			DirectFunctionCall1(numeric_out,
+								NumericGetDatum(value->val.numeric));
+		const char *numericInCString = DatumGetCString(numericInString);
+
+		if (strcmp(numericInCString, "0") == 0) {
+			GRN_TEXT_PUTS(ctx, &buffer, "type == \"number\" && ");
+		}
+		GRN_TEXT_PUTS(ctx, &buffer, "number == ");
+		GRN_TEXT_PUTS(ctx, &buffer, numericInCString);
+		break;
+	}
+	case jbvBool:
+		GRN_TEXT_PUTS(ctx, &buffer, "type == \"boolean\" && ");
+		GRN_TEXT_PUTS(ctx, &buffer, "boolean == ");
+		if (value->val.boolean)
+			GRN_TEXT_PUTS(ctx, &buffer, "true");
+		else
+			GRN_TEXT_PUTS(ctx, &buffer, "false");
+		break;
+	default:
+		return;
+		break;
+	}
+
+	GRN_TEXT_PUTS(ctx, &buffer, "&& paths @ \".");
+	n = grn_vector_size(ctx, components);
+	for (i = 0; i < n; i++)
+	{
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   components,
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		if (i > 0)
+			GRN_TEXT_PUTS(ctx, &buffer, ".");
+		/* TODO: escape double quote and backslash. */
+		/* TODO: use .["..."]["..."] form. */
+		GRN_TEXT_PUT(ctx, &buffer, component, componentSize);
+	}
+	GRN_TEXT_PUTS(ctx, &buffer, "\"");
+
+	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
+									  &buffer, nthCondition);
+}
+
+static void
+PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
+									grn_obj *subFilter,
+									grn_obj *targetColumn,
+									Jsonb *jsonb)
+{
+	unsigned int nthCondition = 0;
+	grn_obj components;
+	JsonbIterator *iter;
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	GRN_TEXT_INIT(&components, GRN_OBJ_VECTOR);
+	iter = JsonbIteratorInit(&(jsonb->root));
+	while ((token = JsonbIteratorNext(&iter, &value, false)) != WJB_DONE) {
+		switch (token)
+		{
+		case WJB_KEY:
+			grn_vector_add_element(ctx, &components,
+								   value.val.string.val,
+								   value.val.string.len,
+								   0,
+								   GRN_DB_SHORT_TEXT);
+			break;
+		case WJB_VALUE:
+		{
+			const char *component;
+			PGrnSearchBuildConditionJSONContainValue(data,
+													 subFilter,
+													 targetColumn,
+													 &components,
+													 &value,
+													 &nthCondition);
+			grn_vector_pop_element(ctx, &components, &component, NULL, NULL);
+			break;
+		}
+		case WJB_ELEM:
+			PGrnSearchBuildConditionJSONContainValue(data,
+													 subFilter,
+													 targetColumn,
+													 &components,
+													 &value,
+													 &nthCondition);
+			break;
+		case WJB_BEGIN_ARRAY:
+			break;
+		case WJB_END_ARRAY:
+			break;
+		case WJB_BEGIN_OBJECT:
+			break;
+		case WJB_END_OBJECT:
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_SYSTEM_ERROR),
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
+							token)));
+			break;
+		}
+	}
+	GRN_OBJ_FIN(ctx, &components);
+}
+
+static bool
+PGrnSearchBuildConditionJSON(PGrnSearchData *data,
+							 ScanKey key,
+							 grn_obj *targetColumn)
+{
+	grn_obj *subFilter;
+
+	subFilter = PGrnLookup("sub_filter", ERROR);
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+
+	if (key->sk_strategy == PGrnQueryStrategyNumber)
+	{
+		unsigned int nthCondition = 0;
+		PGrnConvertDatum(key->sk_argument, TEXTOID, &buffer);
+		PGrnSearchBuildConditionJSONQuery(data,
+										  subFilter,
+										  targetColumn,
+										  &buffer,
+										  &nthCondition);
+	}
+	else
+	{
+		PGrnSearchBuildConditionJSONContain(data,
+											subFilter,
+											targetColumn,
+											DatumGetJsonb(key->sk_argument));
+	}
+
+	return true;
+}
+#endif
+
 static bool
 PGrnSearchBuildCondition(IndexScanDesc scan,
 						 PGrnScanOpaque so,
@@ -2680,21 +2877,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 
 #ifdef JSONBOID
 	if (attribute->atttypid == JSONBOID)
-	{
-		grn_obj *subFilter;
-
-		grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-		PGrnConvertDatum(key->sk_argument, TEXTOID, &buffer);
-		subFilter = PGrnLookup("sub_filter", ERROR);
-		grn_expr_append_obj(ctx, data->expression,
-							subFilter, GRN_OP_PUSH, 1);
-		grn_expr_append_obj(ctx, data->expression,
-							targetColumn, GRN_OP_PUSH, 1);
-		grn_expr_append_const(ctx, data->expression,
-							  &buffer, GRN_OP_PUSH, 1);
-		grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
-		return true;
-	}
+		return PGrnSearchBuildConditionJSON(data, key, targetColumn);
 #endif
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
