@@ -52,6 +52,7 @@ extern Datum PGDLLEXPORT pgroonga_contain_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contain_varchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_contain_varchar_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_jsonb(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_insert(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_beginscan(PG_FUNCTION_ARGS);

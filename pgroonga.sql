@@ -312,7 +312,7 @@ BEGIN
 	THEN
 		CREATE FUNCTION pgroonga.match(jsonb, text)
 			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match'
+			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
 			LANGUAGE C
 			IMMUTABLE
 			STRICT;

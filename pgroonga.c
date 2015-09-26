@@ -2004,6 +2004,24 @@ pgroonga_match(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(false);
 }
 
+/**
+ * pgroonga.match_jsonb(jsonb, query) : bool
+ */
+Datum
+pgroonga_match_jsonb(PG_FUNCTION_ARGS)
+{
+#ifdef NOT_USED
+	Jsonb *jsonb = PG_GETARG_JSONB(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+#endif
+
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: operator @@ is available only in index scans")));
+
+	PG_RETURN_BOOL(false);
+}
+
 #ifdef JSONBOID
 typedef struct PGrnInsertJSONData
 {
