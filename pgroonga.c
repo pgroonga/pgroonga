@@ -45,12 +45,6 @@ typedef struct stat pgrn_stat_buffer;
 #	define pgrn_stat(path, buffer) stat(path, buffer)
 #endif
 
-/* TODO: Remove me when Groonga 5.0.8 has been released. */
-unsigned int grn_vector_pop_element(grn_ctx *ctx, grn_obj *vector,
-									const char **str,
-									unsigned int *weight,
-									grn_id *domain);
-grn_rc grn_obj_cast(grn_ctx *ctx, grn_obj *src, grn_obj *dest, grn_bool addp);
 
 #define VARCHARARRAYOID 1015
 
@@ -3418,7 +3412,10 @@ PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *sourcesTable)
 }
 
 static void
-PGrnJSONValuesDelete(grn_obj *jsonValuesTable, grn_obj *values)
+PGrnJSONValuesUpdateDeletedID(grn_obj *jsonValuesTable,
+							  grn_obj *values,
+							  grn_obj *valueMin,
+							  grn_obj *valueMax)
 {
 	unsigned int i, n;
 
@@ -3426,8 +3423,75 @@ PGrnJSONValuesDelete(grn_obj *jsonValuesTable, grn_obj *values)
 	for (i = 0; i < n; i++)
 	{
 		grn_id valueID = GRN_RECORD_VALUE_AT(values, i);
-		grn_table_delete_by_id(ctx, jsonValuesTable, valueID);
+
+		if (GRN_RECORD_VALUE(valueMin) == GRN_ID_NIL ||
+			GRN_RECORD_VALUE(valueMin) > valueID)
+		{
+			GRN_RECORD_SET(ctx, valueMin, valueID);
+		}
+
+		if (GRN_RECORD_VALUE(valueMax) == GRN_ID_NIL ||
+			GRN_RECORD_VALUE(valueMax) < valueID)
+		{
+			GRN_RECORD_SET(ctx, valueMax, valueID);
+		}
 	}
+}
+
+static void
+PGrnJSONValuesDeleteBulk(grn_obj *jsonValuesTable,
+						 grn_obj *jsonValuesIndexColumn,
+						 grn_obj *valueMin,
+						 grn_obj *valueMax)
+{
+	char minKey[GRN_TABLE_MAX_KEY_SIZE];
+	char maxKey[GRN_TABLE_MAX_KEY_SIZE];
+	unsigned int minKeySize;
+	unsigned int maxKeySize;
+	grn_table_cursor *tableCursor;
+	grn_id valueID;
+
+	minKeySize = grn_table_get_key(ctx,
+								   jsonValuesTable,
+								   GRN_RECORD_VALUE(valueMin),
+								   minKey,
+								   sizeof(minKey));
+	maxKeySize = grn_table_get_key(ctx,
+								   jsonValuesTable,
+								   GRN_RECORD_VALUE(valueMax),
+								   maxKey,
+								   sizeof(maxKey));
+	tableCursor = grn_table_cursor_open(ctx, jsonValuesTable,
+										minKey, minKeySize,
+										maxKey, maxKeySize,
+										0, -1, 0);
+	if (!tableCursor)
+		return;
+
+	while ((valueID = grn_table_cursor_next(ctx, tableCursor)) != GRN_ID_NIL)
+	{
+		grn_ii_cursor *iiCursor;
+		bool haveReference = false;
+
+		iiCursor = grn_ii_cursor_open(ctx,
+									  (grn_ii *)jsonValuesIndexColumn,
+									  valueID,
+									  GRN_ID_NIL, GRN_ID_MAX, 0, 0);
+		if (iiCursor)
+		{
+			while (grn_ii_cursor_next(ctx, iiCursor))
+			{
+				haveReference = true;
+				break;
+			}
+			grn_ii_cursor_close(ctx, iiCursor);
+		}
+
+		if (!haveReference)
+			grn_table_cursor_delete(ctx, tableCursor);
+	}
+
+	grn_table_cursor_close(ctx, tableCursor);
 }
 
 /**
@@ -3469,7 +3533,10 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 		grn_obj *sourcesCtidColumn;
 		grn_obj *sourcesValuesColumn = NULL;
 		grn_obj *jsonValuesTable = NULL;
+		grn_obj *jsonValuesIndexColumn = NULL;
 		grn_obj jsonValues;
+		grn_obj jsonValueMin;
+		grn_obj jsonValueMax;
 
 		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 
@@ -3482,13 +3549,23 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			attribute = desc->attrs[0];
 			if (attribute->atttypid == JSONBOID)
 			{
+				grn_id jsonValuesTableID;
+
 				sourcesValuesColumn = PGrnLookupColumn(sourcesTable,
 													   attribute->attname.data,
 													   ERROR);
 				jsonValuesTable = PGrnLookupJSONValuesTable(index, 0, ERROR);
-				GRN_RECORD_INIT(&jsonValues,
-								0,
-								grn_obj_id(ctx, jsonValuesTable));
+				jsonValuesIndexColumn = PGrnLookupColumn(jsonValuesTable,
+														 PGrnIndexColumnName,
+														 ERROR);
+
+				jsonValuesTableID = grn_obj_id(ctx, jsonValuesTable);
+				GRN_RECORD_INIT(&jsonValues,   0, jsonValuesTableID);
+				GRN_RECORD_INIT(&jsonValueMin, 0, jsonValuesTableID);
+				GRN_RECORD_INIT(&jsonValueMax, 0, jsonValuesTableID);
+
+				GRN_RECORD_SET(ctx, &jsonValueMin, GRN_ID_NIL);
+				GRN_RECORD_SET(ctx, &jsonValueMax, GRN_ID_NIL);
 			}
 		}
 #endif
@@ -3508,7 +3585,10 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 				{
 					GRN_BULK_REWIND(&jsonValues);
 					grn_obj_get_value(ctx, sourcesValuesColumn, id, &jsonValues);
-					PGrnJSONValuesDelete(jsonValuesTable, &jsonValues);
+					PGrnJSONValuesUpdateDeletedID(jsonValuesTable,
+												  &jsonValues,
+												  &jsonValueMin,
+												  &jsonValueMax);
 				}
 
 				grn_table_cursor_delete(ctx, cursor);
@@ -3519,8 +3599,14 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 
 		if (jsonValuesTable)
 		{
+			PGrnJSONValuesDeleteBulk(jsonValuesTable,
+									 jsonValuesIndexColumn,
+									 &jsonValueMin,
+									 &jsonValueMax);
+
 			GRN_OBJ_FIN(ctx, &jsonValues);
 			grn_obj_unlink(ctx, sourcesValuesColumn);
+			grn_obj_unlink(ctx, jsonValuesIndexColumn);
 			grn_obj_unlink(ctx, jsonValuesTable);
 		}
 
