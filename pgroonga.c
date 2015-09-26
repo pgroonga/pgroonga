@@ -2122,9 +2122,9 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 											   &component,
 											   NULL,
 											   NULL);
-		if (i > 0)
-			GRN_TEXT_PUTS(ctx, &(data->key), ".");
-		GRN_TEXT_PUT(ctx, &(data->key), component, componentSize);
+		GRN_TEXT_PUTS(ctx, &(data->key), "[");
+		grn_text_esc(ctx, &(data->key), component, componentSize);
+		GRN_TEXT_PUTS(ctx, &(data->key), "]");
 	}
 
 	GRN_TEXT_PUTS(ctx, &(data->key), "|");
@@ -2720,12 +2720,10 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 		if (value->val.string.len == 0) {
 			GRN_TEXT_PUTS(ctx, &buffer, "type == \"string\" && ");
 		}
-		GRN_TEXT_PUTS(ctx, &buffer, "string == \"");
-		/* TODO: escape double quote and backslash. */
-		GRN_TEXT_PUT(ctx, &buffer,
+		GRN_TEXT_PUTS(ctx, &buffer, "string == ");
+		grn_text_esc(ctx, &buffer,
 					 value->val.string.val,
 					 value->val.string.len);
-		GRN_TEXT_PUTS(ctx, &buffer, "\"");
 		break;
 	case jbvNumeric:
 	{
