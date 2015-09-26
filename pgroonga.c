@@ -29,6 +29,8 @@
 
 #include <groonga.h>
 
+#include <xxhash.h>
+
 #include <stdlib.h>
 #include <math.h>
 #include <sys/types.h>
@@ -1023,7 +1025,7 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 		data->jsonValuesTable =
 			PGrnCreateTable(jsonValuesTableName,
 							GRN_OBJ_TABLE_HASH_KEY,
-							grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+							grn_ctx_at(ctx, GRN_DB_UINT64));
 		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonValuesTable);
 	}
 
@@ -2098,16 +2100,16 @@ PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
 	grn_obj_unlink(ctx, data->jsonPathsTable);
 }
 
-static void
+static uint64_t
 PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 						  bool haveValue,
 						  const char *typeName)
 {
-	/* TODO: Use hashed value as key to support 4KiB over key. */
 	unsigned int i, n;
 
 	GRN_BULK_REWIND(&(data->key));
 
+	GRN_TEXT_PUTS(ctx, &(data->key), ".");
 	n = grn_vector_size(ctx, &(data->components));
 	for (i = 0; i < n; i++)
 	{
@@ -2120,7 +2122,8 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 											   &component,
 											   NULL,
 											   NULL);
-		GRN_TEXT_PUTS(ctx, &(data->key), ".");
+		if (i > 0)
+			GRN_TEXT_PUTS(ctx, &(data->key), ".");
 		GRN_TEXT_PUT(ctx, &(data->key), component, componentSize);
 	}
 
@@ -2132,6 +2135,10 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 		GRN_TEXT_PUTS(ctx, &(data->key), "|");
 		grn_obj_cast(ctx, &(data->value), &(data->key), GRN_FALSE);
 	}
+
+	return XXH64(GRN_TEXT_VALUE(&data->key),
+				 GRN_TEXT_LEN(&data->key),
+				 0);
 }
 
 static void
@@ -2228,13 +2235,13 @@ PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
 					   grn_obj *column,
 					   const char *typeName)
 {
+	uint64_t key;
 	grn_id valueID;
 	int added;
 
-	PGrnInsertJSONGenerateKey(data, column != NULL, typeName);
+	key = PGrnInsertJSONGenerateKey(data, column != NULL, typeName);
 	valueID = grn_table_add(ctx, data->jsonValuesTable,
-							GRN_TEXT_VALUE(&(data->key)),
-							GRN_TEXT_LEN(&(data->key)),
+							&key, sizeof(uint64_t),
 							&added);
 	GRN_RECORD_PUT(ctx, data->valueIDs, valueID);
 	if (!added)

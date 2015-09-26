@@ -1,5 +1,7 @@
 MODULE_big = pgroonga
-SRCS = pgroonga.c
+SRCS =						\
+	pgroonga.c				\
+	vendor/xxHash/xxhash.c
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
 EXTENSION_VERSION =						\
@@ -11,6 +13,7 @@ SHLIB_LINK = $(shell pkg-config --libs groonga) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
+COPT += -Ivendor/xxHash
 ifdef DEBUG
 COPT += -O0 -g3 -DPGROONGA_DEBUG=1
 SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L groonga | sed -e 's/^-L//')
