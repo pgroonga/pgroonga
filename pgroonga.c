@@ -1059,6 +1059,47 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 }
 
 static void
+PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
+{
+	PGrnOptions *options;
+	const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
+	const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
+	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
+	grn_obj *lexicon;
+
+	options = (PGrnOptions *) (data->index->rd_options);
+	if (options)
+	{
+		tokenizerName = (const char *) (options) + options->tokenizerOffset;
+		normalizerName = (const char *) (options) + options->normalizerOffset;
+	}
+
+	if (!tokenizerName || tokenizerName[0] == '\0')
+		return;
+
+	snprintf(lexiconName, sizeof(lexiconName),
+			 PGrnJSONValueLexiconNameFormat,
+			 "FullTextSearch", data->relNode, data->i);
+	lexicon = PGrnCreateTable(lexiconName,
+							  GRN_OBJ_TABLE_PAT_KEY,
+							  grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
+
+	grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
+					 PGrnLookup(tokenizerName, ERROR));
+	if (normalizerName && normalizerName[0])
+	{
+		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
+						 PGrnLookup(normalizerName, ERROR));
+	}
+
+	PGrnCreateColumn(lexicon,
+					 PGrnIndexColumnName,
+					 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION,
+					 data->jsonValuesTable);
+}
+
+static void
 PGrnCreateIndexColumnForJSON(PGrnCreateData *data,
 							 const char *typeName,
 							 grn_obj_flags tableType,
@@ -1091,7 +1132,6 @@ PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
 					 data->jsonValuesTable);
 
 	/* TODO: 4KiB over string value can't be searched. */
-	/* TODO: Should we also support full text search against string value? */
 	PGrnCreateIndexColumnForJSON(data,
 								 "String",
 								 GRN_OBJ_TABLE_PAT_KEY,
@@ -1108,6 +1148,8 @@ PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
 								 "Size",
 								 GRN_OBJ_TABLE_PAT_KEY,
 								 grn_ctx_at(ctx, GRN_DB_UINT32));
+
+	PGrnCreateFullTextSearchIndexColumnForJSON(data);
 }
 #endif
 
@@ -1285,13 +1327,12 @@ PGrnSetSourceForJSON(Relation index,
 					 const char *columnName,
 					 const char *typeName,
 					 unsigned int nthAttribute,
-					 grn_obj *sourceIDs)
+					 grn_obj *sourceIDs,
+					 bool required)
 {
-	grn_obj *source;
 	char indexName[GRN_TABLE_MAX_KEY_SIZE];
 	grn_obj *indexColumn;
-
-	source = PGrnLookupColumn(jsonValuesTable, columnName, ERROR);
+	grn_obj *source;
 
 	snprintf(indexName, sizeof(indexName),
 			 PGrnJSONValueLexiconNameFormat ".%s",
@@ -1299,8 +1340,18 @@ PGrnSetSourceForJSON(Relation index,
 			 index->rd_node.relNode,
 			 nthAttribute,
 			 PGrnIndexColumnName);
-	indexColumn = PGrnLookup(indexName, ERROR);
+	if (required)
+	{
+		indexColumn = PGrnLookup(indexName, ERROR);
+	}
+	else
+	{
+		indexColumn = grn_ctx_get(ctx, indexName, strlen(indexName));
+		if (!indexColumn)
+			return;
+	}
 
+	source = PGrnLookupColumn(jsonValuesTable, columnName, ERROR);
 	PGrnSetSource(indexColumn, source, sourceIDs);
 
 	grn_obj_unlink(ctx, source);
@@ -1330,13 +1381,15 @@ PGrnSetSourcesForJSON(Relation index,
 	}
 
 	PGrnSetSourceForJSON(index, jsonValuesTable, "string", "String",
-						 nthAttribute, sourceIDs);
+						 nthAttribute, sourceIDs, true);
 	PGrnSetSourceForJSON(index, jsonValuesTable, "number", "Number",
-						 nthAttribute, sourceIDs);
+						 nthAttribute, sourceIDs, true);
 	PGrnSetSourceForJSON(index, jsonValuesTable, "boolean", "Boolean",
-						 nthAttribute, sourceIDs);
+						 nthAttribute, sourceIDs, true);
 	PGrnSetSourceForJSON(index, jsonValuesTable, "size", "Size",
-						 nthAttribute, sourceIDs);
+						 nthAttribute, sourceIDs, true);
+	PGrnSetSourceForJSON(index, jsonValuesTable, "string", "FullTextSearch",
+						 nthAttribute, sourceIDs, false);
 
 	grn_obj_unlink(ctx, jsonPathsTable);
 }
@@ -3699,6 +3752,7 @@ PGrnRemoveUnusedTables(void)
 		}
 
 #ifdef JSONBOID
+		PGrnRemoveJSONValueLexiconTable("FullTextSearch", relationID);
 		PGrnRemoveJSONValueLexiconTable("String", relationID);
 		PGrnRemoveJSONValueLexiconTable("Number", relationID);
 		PGrnRemoveJSONValueLexiconTable("Boolean", relationID);
