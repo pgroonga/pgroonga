@@ -2,7 +2,8 @@
 *.so
 *.tar.gz
 *.zip
-*--*.sql
+pgroonga--*.sql
+!pgroonga--*--*.sql
 /regression.*
 /results/
 /packages/source/
