@@ -7,7 +7,9 @@ EXTENSION = pgroonga
 EXTENSION_VERSION =						\
 	$(shell grep default_version $(EXTENSION).control |	\
 		sed -e "s/^.*'\([0-9.]*\)'$$/\1/")
-DATA = pgroonga--$(EXTENSION_VERSION).sql
+DATA =						\
+	pgroonga--$(EXTENSION_VERSION).sql	\
+	$(shell echo pgroonga--*--*.sql)
 PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
 SHLIB_LINK = $(shell pkg-config --libs groonga) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
