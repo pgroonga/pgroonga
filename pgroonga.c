@@ -922,8 +922,8 @@ PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
 #ifdef JSONBOID
 static grn_obj *
 PGrnLookupJSONPathsTable(Relation index,
-						  unsigned int nthAttribute,
-						  int errorLevel)
+						 unsigned int nthAttribute,
+						 int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
