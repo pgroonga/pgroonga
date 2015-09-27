@@ -2881,8 +2881,6 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 										 JsonbValue *value,
 										 unsigned int *nthCondition)
 {
-	unsigned int i, n;
-
 	GRN_BULK_REWIND(&buffer);
 
 	switch (value->type)
