@@ -1,12 +1,12 @@
 version: "{build}"
 clone_depth: 10
 build_script:
+  - git submodule init
   - cd ..
   - choco install -y curl 7zip.commandline
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.4.1-3-windows-x64-binaries.zip
   - 7z x postgresql-9.4.1-3-windows-x64-binaries.zip > nul
   - cd pgroonga
-  - mkdir vendor
   - git clone --recursive --quiet --depth 1 https://github.com/groonga/groonga.git vendor\groonga
   - cmake . -G "Visual Studio 12 2013 Win64" -DCMAKE_INSTALL_PREFIX="..\\pgsql"
   - cmake --build . --config Debug
