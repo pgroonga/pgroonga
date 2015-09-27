@@ -2889,9 +2889,8 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 		GRN_TEXT_PUTS(ctx, &buffer, "type == \"null\"");
 		break;
 	case jbvString:
-		if (value->val.string.len == 0) {
+		if (value->val.string.len == 0)
 			GRN_TEXT_PUTS(ctx, &buffer, "type == \"string\" && ");
-		}
 		GRN_TEXT_PUTS(ctx, &buffer, "string == ");
 		grn_text_esc(ctx, &buffer,
 					 value->val.string.val,
@@ -2904,9 +2903,8 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 								NumericGetDatum(value->val.numeric));
 		const char *numericInCString = DatumGetCString(numericInString);
 
-		if (strcmp(numericInCString, "0") == 0) {
+		if (strcmp(numericInCString, "0") == 0)
 			GRN_TEXT_PUTS(ctx, &buffer, "type == \"number\" && ");
-		}
 		GRN_TEXT_PUTS(ctx, &buffer, "number == ");
 		GRN_TEXT_PUTS(ctx, &buffer, numericInCString);
 		break;
