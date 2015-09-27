@@ -47,7 +47,8 @@ link_directories(
   "${PGRN_POSTGRESQL_DIR}/lib")
 
 set(PGRN_SOURCES
-  "pgroonga.c")
+  "pgroonga.c"
+  "vendor/xxHash/xxhash.c")
 set_source_files_properties(${PGRN_SOURCES}
   PROPERTIES
   COMPILE_FLAGS "/EHsc")
