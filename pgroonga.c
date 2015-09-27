@@ -2377,10 +2377,12 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 			PGrnInsertJSONValue(iter, &value, data);
 			break;
 		case WJB_BEGIN_ARRAY:
+			PGrnInsertJSONValueSet(data, NULL, "array");
 			break;
 		case WJB_END_ARRAY:
 			break;
 		case WJB_BEGIN_OBJECT:
+			PGrnInsertJSONValueSet(data, NULL, "object");
 			break;
 		case WJB_END_OBJECT:
 			break;

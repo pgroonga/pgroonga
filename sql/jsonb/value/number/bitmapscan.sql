@@ -15,7 +15,7 @@ SET enable_bitmapscan = on;
 
 SELECT id, items
   FROM fruits
- WHERE items @@ 'number <= 100'
+ WHERE items @@ 'type == "number" && number <= 100'
  ORDER BY id;
 
 DROP TABLE fruits;
