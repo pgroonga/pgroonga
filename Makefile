@@ -1,3 +1,6 @@
+REQUIRED_GROONGA_VERSION = 5.0.7 # TODO: Update to 5.0.8
+GROONGA_PKG = "groonga >= $(REQUIRED_GROONGA_VERSION)"
+
 MODULE_big = pgroonga
 SRCS =						\
 	pgroonga.c				\
@@ -10,15 +13,15 @@ EXTENSION_VERSION =						\
 DATA =						\
 	pgroonga--$(EXTENSION_VERSION).sql	\
 	$(shell echo pgroonga--*--*.sql)
-PG_CPPFLAGS = $(shell pkg-config --cflags groonga)
-SHLIB_LINK = $(shell pkg-config --libs groonga) -lm
+PG_CPPFLAGS = $(shell pkg-config --cflags $(GROONGA_PKG))
+SHLIB_LINK = $(shell pkg-config --libs $(GROONGA_PKG)) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
 COPT += -Ivendor/xxHash
 ifdef DEBUG
 COPT += -O0 -g3 -DPGROONGA_DEBUG=1
-SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L groonga | sed -e 's/^-L//')
+SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L $(GROONGA_PKG) | sed -e 's/^-L//')
 endif
 
 PG_CONFIG = pg_config
