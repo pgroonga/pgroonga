@@ -1303,6 +1303,19 @@ PGroongaが使える状態になっています。
 
 著作権保持者などの詳細は[COPYING](COPYING)ファイルを参照してください。
 
+バンドルしているソフトウェアのライセンスは異なります。バンドルしている
+ソフトウェアとそのライセンス情報は次の通りです。
+
+  * [xxHash](https://github.com/Cyan4973/xxHash)
+    * BSDライセンス
+    * 著作権情報： `Copyright (c) 2012-2014, Yann Collet`
+    * 詳細： `vendor/xxHash/LICENSE`
+
+  * [Groonga](https://groonga.org/)（Windows用パッケージのみにバンドル）
+    * LGPL 2.1
+    * 著作権情報： `Copyright(C) 2009-2015 Brazil`
+    * 詳細： `vendor/groonga/COPYING`
+
 ## TODO
 
   * 実装
