@@ -188,6 +188,7 @@ PG_FUNCTION_INFO_V1(pgroonga_options);
 static grn_ctx grnContext;
 static grn_ctx *ctx = &grnContext;
 static grn_obj buffer;
+static grn_obj pathBuffer;
 static grn_obj ctidBuffer;
 static grn_obj scoreBuffer;
 static grn_obj headBuffer;
@@ -417,6 +418,7 @@ PGrnOnProcExit(int code, Datum arg)
 	GRN_OBJ_FIN(ctx, &headBuffer);
 	GRN_OBJ_FIN(ctx, &ctidBuffer);
 	GRN_OBJ_FIN(ctx, &scoreBuffer);
+	GRN_OBJ_FIN(ctx, &pathBuffer);
 	GRN_OBJ_FIN(ctx, &buffer);
 
 	db = grn_ctx_db(ctx);
@@ -552,6 +554,7 @@ _PG_init(void)
 	on_proc_exit(PGrnOnProcExit, 0);
 
 	GRN_VOID_INIT(&buffer);
+	GRN_TEXT_INIT(&pathBuffer, 0);
 	GRN_FLOAT_INIT(&scoreBuffer, 0);
 	GRN_UINT64_INIT(&ctidBuffer, 0);
 	GRN_TEXT_INIT(&headBuffer, 0);
@@ -2142,6 +2145,24 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 }
 
 static void
+PGrnInsertJSONAddPath(PGrnInsertJSONData *data)
+{
+	grn_id pathID;
+
+	if (GRN_TEXT_LEN(&(data->path)) >= GRN_TABLE_MAX_KEY_SIZE)
+		return;
+
+	pathID = grn_table_add(ctx, data->jsonPathsTable,
+						   GRN_TEXT_VALUE(&(data->path)),
+						   GRN_TEXT_LEN(&(data->path)),
+						   NULL);
+	if (pathID == GRN_ID_NIL)
+		return;
+
+	GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
+}
+
+static void
 PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
 										unsigned int parentStart,
 										unsigned int current)
@@ -2149,7 +2170,6 @@ PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
 	unsigned int i;
 
 	GRN_BULK_REWIND(&(data->path));
-
 	for (i = parentStart; i <= current; i++)
 	{
 		const char *component;
@@ -2165,16 +2185,25 @@ PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
 		if (i != current)
 			GRN_TEXT_PUTS(ctx, &(data->path), ".");
 	}
+	PGrnInsertJSONAddPath(data);
 
-	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
+	GRN_BULK_REWIND(&(data->path));
+	for (i = parentStart; i <= current; i++)
 	{
-		grn_id pathID;
-		pathID = grn_table_add(ctx, data->jsonPathsTable,
-							   GRN_TEXT_VALUE(&(data->path)),
-							   GRN_TEXT_LEN(&(data->path)),
-							   NULL);
-		GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   &(data->components),
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		GRN_TEXT_PUTS(ctx, &(data->path), "[");
+		grn_text_esc(ctx, &(data->path), component, componentSize);
+		GRN_TEXT_PUTS(ctx, &(data->path), "]");
 	}
+	PGrnInsertJSONAddPath(data);
 
 	if (parentStart < current)
 		PGrnInsertJSONGenerateSubPathsRecursive(data, parentStart + 1, current);
@@ -2191,6 +2220,7 @@ PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
 		return;
 
 	GRN_BULK_REWIND(&(data->path));
+	GRN_TEXT_PUTS(ctx, &(data->path), ".");
 	for (i = 0; i <= current; i++)
 	{
 		const char *component;
@@ -2202,19 +2232,30 @@ PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
 											   &component,
 											   NULL,
 											   NULL);
-		GRN_TEXT_PUTS(ctx, &(data->path), ".");
+		if (i > 0)
+			GRN_TEXT_PUTS(ctx, &(data->path), ".");
 		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
 	}
+	PGrnInsertJSONAddPath(data);
 
-	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
+	GRN_BULK_REWIND(&(data->path));
+	GRN_TEXT_PUTS(ctx, &(data->path), ".");
+	for (i = 0; i <= current; i++)
 	{
-		grn_id pathID;
-		pathID = grn_table_add(ctx, data->jsonPathsTable,
-							   GRN_TEXT_VALUE(&(data->path)),
-							   GRN_TEXT_LEN(&(data->path)),
-							   NULL);
-		GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
+		const char *component;
+		unsigned int componentSize;
+
+		componentSize = grn_vector_get_element(ctx,
+											   &(data->components),
+											   i,
+											   &component,
+											   NULL,
+											   NULL);
+		GRN_TEXT_PUTS(ctx, &(data->path), "[");
+		grn_text_esc(ctx, &(data->path), component, componentSize);
+		GRN_TEXT_PUTS(ctx, &(data->path), "]");
 	}
+	PGrnInsertJSONAddPath(data);
 
 	PGrnInsertJSONGenerateSubPathsRecursive(data, 0, current);
 	PGrnInsertJSONGeneratePathsRecursive(data, current + 1, nComponents);
@@ -2752,7 +2793,8 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 		break;
 	}
 
-	GRN_TEXT_PUTS(ctx, &buffer, "&& paths @ \".");
+	GRN_BULK_REWIND(&pathBuffer);
+	GRN_TEXT_PUTS(ctx, &pathBuffer, ".");
 	n = grn_vector_size(ctx, components);
 	for (i = 0; i < n; i++)
 	{
@@ -2765,13 +2807,14 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 											   &component,
 											   NULL,
 											   NULL);
-		if (i > 0)
-			GRN_TEXT_PUTS(ctx, &buffer, ".");
-		/* TODO: escape double quote and backslash. */
-		/* TODO: use .["..."]["..."] form. */
-		GRN_TEXT_PUT(ctx, &buffer, component, componentSize);
+		GRN_TEXT_PUTS(ctx, &pathBuffer, "[");
+		grn_text_esc(ctx, &pathBuffer, component, componentSize);
+		GRN_TEXT_PUTS(ctx, &pathBuffer, "]");
 	}
-	GRN_TEXT_PUTS(ctx, &buffer, "\"");
+	GRN_TEXT_PUTS(ctx, &buffer, " && paths @ ");
+	grn_text_esc(ctx, &buffer,
+				 GRN_TEXT_VALUE(&pathBuffer),
+				 GRN_TEXT_LEN(&pathBuffer));
 
 	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
 									  &buffer, nthCondition);
