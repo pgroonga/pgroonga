@@ -812,6 +812,58 @@ PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
 	}
 }
 
+#ifdef JSONBOID
+static void
+PGrnJSONGenerateCompletePath(grn_obj *components, grn_obj *path)
+{
+	unsigned int i, n;
+
+	n = grn_vector_size(ctx, components);
+
+	GRN_TEXT_PUTS(ctx, path, ".");
+	for (i = 0; i < n; i++)
+	{
+		const char *component;
+		unsigned int componentSize;
+		grn_id domain;
+
+		componentSize = grn_vector_get_element(ctx,
+											   components,
+											   i,
+											   &component,
+											   NULL,
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+		{
+			GRN_TEXT_PUTS(ctx, path, "[]");
+		}
+		else
+		{
+			GRN_TEXT_PUTS(ctx, path, "[");
+			grn_text_esc(ctx, path, component, componentSize);
+			GRN_TEXT_PUTS(ctx, path, "]");
+		}
+	}
+}
+
+static const char *
+PGrnJSONIteratorTokenName(JsonbIteratorToken token)
+{
+	static char *names[] = {
+		"WJB_DONE",
+		"WJB_KEY",
+		"WJB_VALUE",
+		"WJB_ELEM",
+		"WJB_BEGIN_ARRAY",
+		"WJB_END_ARRAY",
+		"WJB_BEGIN_OBJECT",
+		"WJB_END_OBJECT"
+	};
+
+	return names[token];
+}
+#endif
+
 static grn_obj *
 PGrnLookup(const char *name, int errorLevel)
 {
@@ -1033,6 +1085,10 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 	}
 
 	PGrnCreateColumn(data->jsonValuesTable,
+					 "path",
+					 GRN_OBJ_COLUMN_SCALAR,
+					 data->jsonPathsTable);
+	PGrnCreateColumn(data->jsonValuesTable,
 					 "paths",
 					 GRN_OBJ_COLUMN_VECTOR,
 					 data->jsonPathsTable);
@@ -1133,7 +1189,7 @@ PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
 					 data->sourcesTable);
 	PGrnCreateColumn(data->jsonPathsTable,
 					 PGrnIndexColumnName,
-					 GRN_OBJ_COLUMN_INDEX,
+					 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_SECTION,
 					 data->jsonValuesTable);
 
 	/* TODO: 4KiB over string value can't be searched. */
@@ -1377,11 +1433,19 @@ PGrnSetSourcesForJSON(Relation index,
 		grn_obj *source;
 		grn_obj *indexColumn;
 
+		GRN_BULK_REWIND(sourceIDs);
+
+		source = PGrnLookupColumn(jsonValuesTable, "path", ERROR);
+		GRN_RECORD_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
+		grn_obj_unlink(ctx, source);
+
 		source = PGrnLookupColumn(jsonValuesTable, "paths", ERROR);
+		GRN_RECORD_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
+		grn_obj_unlink(ctx, source);
+
 		indexColumn = PGrnLookupColumn(jsonPathsTable, PGrnIndexColumnName,
 									   ERROR);
-		PGrnSetSource(indexColumn, source, sourceIDs);
-		grn_obj_unlink(ctx, source);
+		grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
 		grn_obj_unlink(ctx, indexColumn);
 	}
 
@@ -2032,6 +2096,7 @@ typedef struct PGrnInsertJSONData
 {
 	grn_obj *jsonPathsTable;
 	grn_obj *jsonValuesTable;
+	grn_obj *pathColumn;
 	grn_obj *pathsColumn;
 	grn_obj *stringColumn;
 	grn_obj *numberColumn;
@@ -2056,6 +2121,8 @@ PGrnInsertJSONDataInit(PGrnInsertJSONData *data,
 	data->jsonPathsTable  = PGrnLookupJSONPathsTable(index, nthValue, ERROR);
 	data->jsonValuesTable = PGrnLookupJSONValuesTable(index, nthValue, ERROR);
 
+	data->pathColumn =
+		PGrnLookupColumn(data->jsonValuesTable, "path", ERROR);
 	data->pathsColumn =
 		PGrnLookupColumn(data->jsonValuesTable, "paths", ERROR);
 	data->stringColumn =
@@ -2099,6 +2166,7 @@ PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
 	grn_obj_unlink(ctx, data->numberColumn);
 	grn_obj_unlink(ctx, data->stringColumn);
 	grn_obj_unlink(ctx, data->pathsColumn);
+	grn_obj_unlink(ctx, data->pathColumn);
 	grn_obj_unlink(ctx, data->jsonValuesTable);
 	grn_obj_unlink(ctx, data->jsonPathsTable);
 }
@@ -2118,16 +2186,24 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 	{
 		const char *component;
 		unsigned int componentSize;
+		grn_id domain;
 
 		componentSize = grn_vector_get_element(ctx,
 											   &(data->components),
 											   i,
 											   &component,
 											   NULL,
-											   NULL);
-		GRN_TEXT_PUTS(ctx, &(data->key), "[");
-		grn_text_esc(ctx, &(data->key), component, componentSize);
-		GRN_TEXT_PUTS(ctx, &(data->key), "]");
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+		{
+			GRN_TEXT_PUTS(ctx, &(data->key), "[]");
+		}
+		else
+		{
+			GRN_TEXT_PUTS(ctx, &(data->key), "[");
+			grn_text_esc(ctx, &(data->key), component, componentSize);
+			GRN_TEXT_PUTS(ctx, &(data->key), "]");
+		}
 	}
 
 	GRN_TEXT_PUTS(ctx, &(data->key), "|");
@@ -2174,16 +2250,19 @@ PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
 	{
 		const char *component;
 		unsigned int componentSize;
+		grn_id domain;
 
 		componentSize = grn_vector_get_element(ctx,
 											   &(data->components),
 											   i,
 											   &component,
 											   NULL,
-											   NULL);
-		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
-		if (i != current)
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+			continue;
+		if (GRN_TEXT_LEN(&(data->path)) > 0)
 			GRN_TEXT_PUTS(ctx, &(data->path), ".");
+		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
 	}
 	PGrnInsertJSONAddPath(data);
 
@@ -2192,13 +2271,16 @@ PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
 	{
 		const char *component;
 		unsigned int componentSize;
+		grn_id domain;
 
 		componentSize = grn_vector_get_element(ctx,
 											   &(data->components),
 											   i,
 											   &component,
 											   NULL,
-											   NULL);
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+			continue;
 		GRN_TEXT_PUTS(ctx, &(data->path), "[");
 		grn_text_esc(ctx, &(data->path), component, componentSize);
 		GRN_TEXT_PUTS(ctx, &(data->path), "]");
@@ -2225,14 +2307,17 @@ PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
 	{
 		const char *component;
 		unsigned int componentSize;
+		grn_id domain;
 
 		componentSize = grn_vector_get_element(ctx,
 											   &(data->components),
 											   i,
 											   &component,
 											   NULL,
-											   NULL);
-		if (i > 0)
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+			continue;
+		if (GRN_TEXT_LEN(&(data->path)) > 1)
 			GRN_TEXT_PUTS(ctx, &(data->path), ".");
 		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
 	}
@@ -2244,13 +2329,16 @@ PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
 	{
 		const char *component;
 		unsigned int componentSize;
+		grn_id domain;
 
 		componentSize = grn_vector_get_element(ctx,
 											   &(data->components),
 											   i,
 											   &component,
 											   NULL,
-											   NULL);
+											   &domain);
+		if (domain == GRN_DB_UINT32)
+			continue;
 		GRN_TEXT_PUTS(ctx, &(data->path), "[");
 		grn_text_esc(ctx, &(data->path), component, componentSize);
 		GRN_TEXT_PUTS(ctx, &(data->path), "]");
@@ -2287,6 +2375,12 @@ PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
 	GRN_RECORD_PUT(ctx, data->valueIDs, valueID);
 	if (!added)
 		return;
+
+	GRN_BULK_REWIND(&(data->path));
+	PGrnJSONGenerateCompletePath(&(data->components), &(data->path));
+	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
+		grn_obj_set_value(ctx, data->pathColumn, valueID,
+						  &(data->path), GRN_OBJ_SET);
 
 	PGrnInsertJSONGeneratePaths(data);
 	grn_obj_set_value(ctx, data->pathsColumn, valueID,
@@ -2366,21 +2460,34 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 								   GRN_DB_SHORT_TEXT);
 			break;
 		case WJB_VALUE:
-		{
-			const char *component;
 			PGrnInsertJSONValue(iter, &value, data);
-			grn_vector_pop_element(ctx, &(data->components), &component,
-								   NULL, NULL);
+			{
+				const char *component;
+				grn_vector_pop_element(ctx, &(data->components), &component,
+									   NULL, NULL);
+			}
 			break;
-		}
 		case WJB_ELEM:
 			PGrnInsertJSONValue(iter, &value, data);
 			break;
 		case WJB_BEGIN_ARRAY:
+		{
+			uint32_t nElements = value.val.array.nElems;
+			grn_vector_add_element(ctx, &(data->components),
+								   (const char *)&nElements,
+								   sizeof(uint32_t),
+								   0,
+								   GRN_DB_UINT32);
 			PGrnInsertJSONValueSet(data, NULL, "array");
 			break;
+		}
 		case WJB_END_ARRAY:
+		{
+			const char *component;
+			grn_vector_pop_element(ctx, &(data->components), &component,
+								   NULL, NULL);
 			break;
+		}
 		case WJB_BEGIN_OBJECT:
 			PGrnInsertJSONValueSet(data, NULL, "object");
 			break;
@@ -2743,6 +2850,30 @@ PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
 }
 
 static void
+PGrnSearchBuildConditionJSONContainType(PGrnSearchData *data,
+										grn_obj *subFilter,
+										grn_obj *targetColumn,
+										grn_obj *components,
+										const char *typeName,
+										unsigned int *nthCondition)
+{
+	GRN_BULK_REWIND(&buffer);
+
+	GRN_TEXT_PUTS(ctx, &buffer, "type == ");
+	grn_text_esc(ctx, &buffer, typeName, strlen(typeName));
+
+	GRN_BULK_REWIND(&pathBuffer);
+	PGrnJSONGenerateCompletePath(components, &pathBuffer);
+	GRN_TEXT_PUTS(ctx, &buffer, " && path == ");
+	grn_text_esc(ctx, &buffer,
+				 GRN_TEXT_VALUE(&pathBuffer),
+				 GRN_TEXT_LEN(&pathBuffer));
+
+	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
+									  &buffer, nthCondition);
+}
+
+static void
 PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 										 grn_obj *subFilter,
 										 grn_obj *targetColumn,
@@ -2796,24 +2927,8 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 	}
 
 	GRN_BULK_REWIND(&pathBuffer);
-	GRN_TEXT_PUTS(ctx, &pathBuffer, ".");
-	n = grn_vector_size(ctx, components);
-	for (i = 0; i < n; i++)
-	{
-		const char *component;
-		unsigned int componentSize;
-
-		componentSize = grn_vector_get_element(ctx,
-											   components,
-											   i,
-											   &component,
-											   NULL,
-											   NULL);
-		GRN_TEXT_PUTS(ctx, &pathBuffer, "[");
-		grn_text_esc(ctx, &pathBuffer, component, componentSize);
-		GRN_TEXT_PUTS(ctx, &pathBuffer, "]");
-	}
-	GRN_TEXT_PUTS(ctx, &buffer, " && paths @ ");
+	PGrnJSONGenerateCompletePath(components, &pathBuffer);
+	GRN_TEXT_PUTS(ctx, &buffer, " && path == ");
 	grn_text_esc(ctx, &buffer,
 				 GRN_TEXT_VALUE(&pathBuffer),
 				 GRN_TEXT_LEN(&pathBuffer));
@@ -2867,10 +2982,37 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 													 &nthCondition);
 			break;
 		case WJB_BEGIN_ARRAY:
+		{
+			uint32_t nElements = value.val.array.nElems;
+			grn_vector_add_element(ctx, &components,
+								   (const char *)&nElements,
+								   sizeof(uint32_t),
+								   0,
+								   GRN_DB_UINT32);
+			if (nElements == 0)
+				PGrnSearchBuildConditionJSONContainType(data,
+														subFilter,
+														targetColumn,
+														&components,
+														"array",
+														&nthCondition);
 			break;
+		}
 		case WJB_END_ARRAY:
+		{
+			const char *component;
+			grn_vector_pop_element(ctx, &components, &component,
+								   NULL, NULL);
 			break;
+		}
 		case WJB_BEGIN_OBJECT:
+			if (value.val.object.nPairs == 0)
+				PGrnSearchBuildConditionJSONContainType(data,
+														subFilter,
+														targetColumn,
+														&components,
+														"object",
+														&nthCondition);
 			break;
 		case WJB_END_OBJECT:
 			break;
