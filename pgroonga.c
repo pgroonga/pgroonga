@@ -813,15 +813,29 @@ PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
 }
 
 #ifdef JSONBOID
+
+static const unsigned int PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE   = 1 << 0;
+static const unsigned int PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY = 1 << 1;
+static const unsigned int PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE = 1 << 2;
+
 static void
-PGrnJSONGenerateCompletePath(grn_obj *components, grn_obj *path)
+PGrnJSONGeneratePath(grn_obj *components,
+					 unsigned int start,
+					 unsigned int flags,
+					 grn_obj *path)
 {
 	unsigned int i, n;
+	unsigned int minimumPathSize = 0;
 
 	n = grn_vector_size(ctx, components);
 
-	GRN_TEXT_PUTS(ctx, path, ".");
-	for (i = 0; i < n; i++)
+	if (flags & PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE)
+	{
+		GRN_TEXT_PUTS(ctx, path, ".");
+		minimumPathSize = 1;
+	}
+
+	for (i = start; i < n; i++)
 	{
 		const char *component;
 		unsigned int componentSize;
@@ -835,15 +849,35 @@ PGrnJSONGenerateCompletePath(grn_obj *components, grn_obj *path)
 											   &domain);
 		if (domain == GRN_DB_UINT32)
 		{
-			GRN_TEXT_PUTS(ctx, path, "[]");
+			if (flags & PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY)
+				GRN_TEXT_PUTS(ctx, path, "[]");
 		}
 		else
 		{
-			GRN_TEXT_PUTS(ctx, path, "[");
-			grn_text_esc(ctx, path, component, componentSize);
-			GRN_TEXT_PUTS(ctx, path, "]");
+			if (flags & PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE)
+			{
+				if (GRN_TEXT_LEN(path) > minimumPathSize)
+					GRN_TEXT_PUTS(ctx, path, ".");
+				GRN_TEXT_PUT(ctx, path, component, componentSize);
+			}
+			else
+			{
+				GRN_TEXT_PUTS(ctx, path, "[");
+				grn_text_esc(ctx, path, component, componentSize);
+				GRN_TEXT_PUTS(ctx, path, "]");
+			}
 		}
 	}
+}
+
+static void
+PGrnJSONGenerateCompletePath(grn_obj *components, grn_obj *path)
+{
+	PGrnJSONGeneratePath(components,
+						 0,
+						 PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
+						 PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY,
+						 path);
 }
 
 static const char *
@@ -2221,9 +2255,17 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 }
 
 static void
-PGrnInsertJSONAddPath(PGrnInsertJSONData *data)
+PGrnInsertJSONAddPath(PGrnInsertJSONData *data,
+					  unsigned int start,
+					  unsigned int flags)
 {
 	grn_id pathID;
+
+	GRN_BULK_REWIND(&(data->path));
+	PGrnJSONGeneratePath(&(data->components),
+						 start,
+						 flags,
+						 &(data->path));
 
 	if (GRN_TEXT_LEN(&(data->path)) >= GRN_TABLE_MAX_KEY_SIZE)
 		return;
@@ -2235,128 +2277,58 @@ PGrnInsertJSONAddPath(PGrnInsertJSONData *data)
 	if (pathID == GRN_ID_NIL)
 		return;
 
+	{
+		unsigned int i, n;
+
+		n = GRN_BULK_VSIZE(&(data->pathIDs)) / sizeof(grn_id);
+		for (i = 0; i < n; i++)
+		{
+			if (GRN_RECORD_VALUE_AT(&(data->pathIDs), i) == pathID)
+				return;
+		}
+	}
+
 	GRN_RECORD_PUT(ctx, &(data->pathIDs), pathID);
 }
 
 static void
 PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
-										unsigned int parentStart,
-										unsigned int current)
+										unsigned int parentStart)
 {
-	unsigned int i;
-
-	GRN_BULK_REWIND(&(data->path));
-	for (i = parentStart; i <= current; i++)
-	{
-		const char *component;
-		unsigned int componentSize;
-		grn_id domain;
-
-		componentSize = grn_vector_get_element(ctx,
-											   &(data->components),
-											   i,
-											   &component,
-											   NULL,
-											   &domain);
-		if (domain == GRN_DB_UINT32)
-			continue;
-		if (GRN_TEXT_LEN(&(data->path)) > 0)
-			GRN_TEXT_PUTS(ctx, &(data->path), ".");
-		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
-	}
-	PGrnInsertJSONAddPath(data);
-
-	GRN_BULK_REWIND(&(data->path));
-	for (i = parentStart; i <= current; i++)
-	{
-		const char *component;
-		unsigned int componentSize;
-		grn_id domain;
-
-		componentSize = grn_vector_get_element(ctx,
-											   &(data->components),
-											   i,
-											   &component,
-											   NULL,
-											   &domain);
-		if (domain == GRN_DB_UINT32)
-			continue;
-		GRN_TEXT_PUTS(ctx, &(data->path), "[");
-		grn_text_esc(ctx, &(data->path), component, componentSize);
-		GRN_TEXT_PUTS(ctx, &(data->path), "]");
-	}
-	PGrnInsertJSONAddPath(data);
-
-	if (parentStart < current)
-		PGrnInsertJSONGenerateSubPathsRecursive(data, parentStart + 1, current);
-}
-
-static void
-PGrnInsertJSONGeneratePathsRecursive(PGrnInsertJSONData *data,
-									 unsigned int current,
-									 unsigned int nComponents)
-{
-	unsigned int i;
-
-	if (current == nComponents)
+	if (parentStart == grn_vector_size(ctx, &(data->components)))
 		return;
 
-	GRN_BULK_REWIND(&(data->path));
-	GRN_TEXT_PUTS(ctx, &(data->path), ".");
-	for (i = 0; i <= current; i++)
-	{
-		const char *component;
-		unsigned int componentSize;
-		grn_id domain;
+	PGrnInsertJSONAddPath(data,
+						  parentStart,
+						  PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
+	PGrnInsertJSONAddPath(data,
+						  parentStart,
+						  0);
+	PGrnInsertJSONAddPath(data,
+						  parentStart,
+						  PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
 
-		componentSize = grn_vector_get_element(ctx,
-											   &(data->components),
-											   i,
-											   &component,
-											   NULL,
-											   &domain);
-		if (domain == GRN_DB_UINT32)
-			continue;
-		if (GRN_TEXT_LEN(&(data->path)) > 1)
-			GRN_TEXT_PUTS(ctx, &(data->path), ".");
-		GRN_TEXT_PUT(ctx, &(data->path), component, componentSize);
-	}
-	PGrnInsertJSONAddPath(data);
-
-	GRN_BULK_REWIND(&(data->path));
-	GRN_TEXT_PUTS(ctx, &(data->path), ".");
-	for (i = 0; i <= current; i++)
-	{
-		const char *component;
-		unsigned int componentSize;
-		grn_id domain;
-
-		componentSize = grn_vector_get_element(ctx,
-											   &(data->components),
-											   i,
-											   &component,
-											   NULL,
-											   &domain);
-		if (domain == GRN_DB_UINT32)
-			continue;
-		GRN_TEXT_PUTS(ctx, &(data->path), "[");
-		grn_text_esc(ctx, &(data->path), component, componentSize);
-		GRN_TEXT_PUTS(ctx, &(data->path), "]");
-	}
-	PGrnInsertJSONAddPath(data);
-
-	PGrnInsertJSONGenerateSubPathsRecursive(data, 0, current);
-	PGrnInsertJSONGeneratePathsRecursive(data, current + 1, nComponents);
+	PGrnInsertJSONGenerateSubPathsRecursive(data, parentStart + 1);
 }
 
 static void
 PGrnInsertJSONGeneratePaths(PGrnInsertJSONData *data)
 {
-	unsigned int n;
-
 	GRN_BULK_REWIND(&(data->pathIDs));
-	n = grn_vector_size(ctx, &(data->components));
-	PGrnInsertJSONGeneratePathsRecursive(data, 0, n);
+
+	PGrnInsertJSONAddPath(data,
+						  0,
+						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
+						  PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
+	PGrnInsertJSONAddPath(data,
+						  0,
+						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE);
+	PGrnInsertJSONAddPath(data,
+						  0,
+						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
+						  PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
+
+	PGrnInsertJSONGenerateSubPathsRecursive(data, 0);
 }
 
 static void
