@@ -356,6 +356,18 @@ PostgreSQLをインストールした場合は`C:\Program Files\PostgreSQL\9.4`�
 
 これでインストールは完了です。
 
+## アップデート
+
+古いバージョンから新しいバージョンにアップデートする場合は、新しいバー
+ジョンのPGroongaをインストール後、次のSQLを実行してください。
+
+    pgroonga_test=# ALTER EXTENSION pgroonga UPDATE;
+
+これですでにPGroongaがインストール済みのデータベースでも新しいバージョ
+ンのPGroongaを使えます。
+
+アップデートをサポートしているのは0.9.0からです。
+
 ## 使い方
 
 PGroongaは全文検索はもちろん、数値や文字列の等価条件（`=`）や比較条件
