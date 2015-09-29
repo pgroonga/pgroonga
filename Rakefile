@@ -17,6 +17,7 @@ groonga_source_dir = groonga_source_dir_candidates.find do |candidate|
   File.exist?(candidate)
 end
 groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
+cutter_source_dir = File.expand_path("../cutter")
 
 def control_file(package)
   "#{package}.control"
@@ -494,7 +495,7 @@ postgresql-server-dev-9.4
   namespace :version do
     desc "Update versions"
     task :update do
-      ruby("#{groonga_source_dir}/misc/update-latest-release.rb",
+      ruby("#{cutter_source_dir}/misc/update-latest-release.rb",
            package,
            env_value("OLD_RELEASE"),
            env_value("OLD_RELEASE_DATE"),
