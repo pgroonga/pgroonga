@@ -387,7 +387,7 @@ postgresql-server-dev-9.4
   namespace :ubuntu do
     namespace :upload do
       desc "Upload package for PostgreSQL 9.3"
-      task :postgresql93 do
+      task :postgresql93 => [archvie_name] do
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
@@ -398,7 +398,7 @@ postgresql-server-dev-9.4
       end
 
       desc "Upload package for PostgreSQL 9.4"
-      task :postgresql94 do
+      task :postgresql94 => [archvie_name] do
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
