@@ -61,6 +61,14 @@ def extract_zip(filename, destrination_dir)
   Archive::Zip.extract(filename, destrination_dir)
 end
 
+def export_source(base_name)
+  sh("git archive --prefix=#{base_name}/ --format=tar HEAD | " +
+     "tar xf -")
+  sh("(cd vendor/xxHash && " +
+     "git archive --prefix=#{base_name}/vendor/xxHash/ --format=tar HEAD) | " +
+     "tar xf -")
+end
+
 version = find_version(package)
 
 archive_base_name = "#{package}-#{version}"
@@ -76,13 +84,13 @@ dist_files = `git ls-files`.split("\n").reject do |file|
 end
 
 file archive_name => dist_files do
-  sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
-     "gzip > #{archive_name}")
+  export_source(archive_base_name)
+  sh("tar", "czf", archive_name, archive_base_name)
+  rm_r(archive_base_name)
 end
 
 file windows_archive_name => dist_files do
-  sh("git archive --prefix=#{archive_base_name}/ --format=tar HEAD | " +
-     "tar xf -")
+  export_source(archive_base_name)
   groonga_base_name = "groonga-#{latest_groonga_version}"
   groonga_suffix = ENV["GROONGA_SUFFIX"]
   if groonga_suffix
