@@ -941,6 +941,305 @@ SELECT * FROM products WHERE tags %% 'PostgreSQL';
 -- (2 行)
 ```
 
+### `jsonb`を使う
+
+PGroongaは`jsonb`型のデータもサポートしています。PGroongaのインデック
+スを作成することにより高速に検索できます。
+
+PGroongaは`jsonb`の検索のために次の2つの演算子を提供しています。
+
+  * `@>`演算子
+  * `@@`演算子
+
+[`@>`演算子はPostgreSQLが標準で提供している演算子](http://www.postgresql.org/docs/current/static/functions-json.html#FUNCTIONS-JSONB-OP-TABLE)
+です。右辺が左辺のサブセットなら真になります。
+
+`@>`演算子はGINでも高速化できる演算子です。インデックス作成時間は
+PGroongaとGINでそれほど変わりませんが、検索時間はPGroongaの方が少し速
+いです。
+
+`@@`演算子はPGroonga独自の演算子です。GINではインデックスを使えない複
+雑な検索条件も記述できます。もし、
+[JsQuery](https://github.com/postgrespro/jsquery)を知っているなら
+構文が違うJsQueryのようなものと考えてください。
+
+JsQueryができる検索とPGroongaができる検索はほぼ同じですが、PGroongaだ
+けができる特徴的な検索は全文字列値に対しての全文検索です。
+
+たとえば、次のJSONがあるとします。
+
+```json
+{
+  "message": "Server is started.",
+  "host": "www.example.com",
+  "tags": [
+    "web",
+  ]
+}
+```
+
+すべての文字列値に対して全文検索ができるので、「`server`」でも
+「`example`」でも「`web`」でもヒットします。
+
+#### サンプル用テーブル定義とサンプルデータ
+
+例を示すために使うサンプル用のテーブル定義とサンプルデータを次に示します。
+
+```sql
+CREATE TABLE logs (
+  record jsonb
+);
+
+CREATE INDEX pgroonga_logs_index ON logs USING pgroonga (record);
+
+INSERT INTO logs
+     VALUES ('{
+                "message": "Server is started.",
+                "host":    "www.example.com",
+                "tags": [
+                  "web",
+                  "example.com"
+                ]
+              }');
+INSERT INTO logs
+     VALUES ('{
+                "message": "GET /",
+                "host":    "www.example.com",
+                "code":    200,
+                "tags": [
+                  "web",
+                  "example.com"
+                ]
+              }');
+INSERT INTO logs
+     VALUES ('{
+                "message": "Send to <info@example.com>.",
+                "host":    "mail.example.net",
+                "tags": [
+                  "mail",
+                  "example.net"
+                ]
+              }');
+```
+
+少ないデータでもインデックスを使うようにシーケンシャルスキャンを無効に
+します。
+
+```sql
+SET enable_seqscan = off;
+```
+
+#### `@>`演算子
+
+`@>`演算子は`jsonb`で条件を指定します。カラムの値が条件として指定した
+`jsonb`を含んでいればマッチします。
+
+マッチする例です。（結果を見やすくするためにPostgreSQL 9.5から使える
+`jsonb_pretty()`関数を使っています。）
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @> '{"host": "www.example.com"}'::jsonb;
+--             jsonb_pretty             
+-- -------------------------------------
+--  {                                  +
+--      "host": "www.example.com",     +
+--      "tags": [                      +
+--          "web",                     +
+--          "example.com"              +
+--      ],                             +
+--      "message": "Server is started."+
+--  }
+--  {                                  +
+--      "code": 200,                   +
+--      "host": "www.example.com",     +
+--      "tags": [                      +
+--          "web",                     +
+--          "example.com"              +
+--      ],                             +
+--      "message": "GET /"             +
+--  }
+-- (2 rows)
+```
+
+マッチしない例です。
+
+条件の`jsonb`で配列を指定した場合、すべての要素が含まれていればマッチ
+します。（配列の要素の順序は関係ありません。）しかし、1つでも含まれて
+いない要素があればマッチしません。次の`tags`に`"mail"`を含むレコードも
+`"web"`を含むレコードもありますが、両方含むレコードはないのでヒットし
+ません。
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @> '{"tags": ["mail", "web"]}'::jsonb;
+--  jsonb_pretty 
+-- --------------
+-- (0 rows)
+```
+
+#### `@@`演算子
+
+`@@`演算子は
+[Groongaのスクリプト構文](http://groonga.org/ja/docs/reference/grn_expr/script_syntax.html)
+で条件を指定します。条件をどのように指定すればよいかわかるためには、
+PGroongaがどのように`jsonb`のデータに対してインデックスを作成している
+かを理解する必要があります。
+
+PGroongaは`jsonb`の値を分解し、それぞれの値に対してインデックスを張っ
+ています。SQLでいうと次のスキーマがあると考えてください。
+
+```sql
+CREATE TABLE values (
+  key text PRIMARY KEY,
+  path text,
+  paths text[],
+  type text,
+  boolean boolean,
+  number double,
+  string text,
+  size numeric
+);
+```
+
+それぞれ次の値が入っています。
+
+  * `key`: 同じ値では同一になる値。フォーマットは「`${パス}|${種類}|${値}`」。条件で使うことはない。
+  * `path`: その値の位置を示すルートからのパス。[jq](https://stedolan.github.io/jq/)と互換で、オブジェクトは`["${要素名}"]`、配列は`[]`となる。たとえば、`{"tags": ["web"]}`の`"web"`を示すパスは`.["tags"][]`。パスが完全にわかっている場合は条件でこの値を使う。
+  * `paths`: その値の位置を示すパスが複数入っている。絶対パス、サブパス、`.${要素名1}.${要素名2}`表記のパス、配列なしのパスが入っているので条件で指定するときに便利。たとえば、`{"a": {"b": "c": ["x"]}}`の`"x"`の場合は次のパスが入っている。
+     * `.a.b.c`
+     * `.["a"]["b"]["c"]`
+     * `.["a"]["b"]["c"][]`
+     * `a.b.c`
+     * `["a"]["b"]["c"]`
+     * `["a"]["b"]["c"][]`
+     * `b.c`
+     * `["b"]["c"]`
+     * `["b"]["c"][]`
+     * `c`
+     * `["c"]`
+     * `["c"][]`
+     * `[]`
+  * `type`: そのパスの値の種類。種類によって値がどのカラムに入るかが変わる。次のうちのどれか。
+    * `object`: オブジェクト。値はない。
+    * `array`: 配列。`size`に要素数が入る。
+    * `boolean`: 真偽値。`boolean`に値が入る。
+    * `number`: 数値。`number`に値が入る。
+    * `string`: 文字列。`string`に値が入る。
+  * `boolean`: `type`が`boolean`のとき有効な値が入っている。それ以外のときは`false`が入っている。
+  * `number`: `type`が`number`のとき有効な値が入っている。それ以外のときは`0`が入っている。
+  * `string`: `type`が`string`のとき有効な値が入っている。それ以外のときは空文字列が入っている。
+  * `size`: `type`が`array`のとき配列の要素数が入っている。それ以外のときは`0`が入っている。
+
+たとえば、次のJSONを考えます。
+
+```json
+{
+  "message": "GET /",
+  "host":    "www.example.com",
+  "code":    200,
+  "tags": [
+    "web",
+    "example.com"
+  ]
+}
+```
+
+このJSONは次のように分解されます。（一部です。）
+
+| key | path | paths | type | boolean | number | string | size |
+| --- | ---- | ----- | ---- | ------- | ------ | ------ | ---- |
+| `.|object` | `.` | `[.]` | `object` | | | | |
+| `.["message"]|string|GET /` | `.["message"]` | `[.message, .["message"], message, ["message"]]` | `string` | | | `GET /` | |
+| `.["tags"][]|string|web` | `.["tags"]` | `[.tags, .["tags"], .["tags"][], tags, ["tags"], ["tags"][], []]` | `string` | | | `web` | |
+
+`@`演算子の条件では分解した個々の値を特定する条件を指定します。指定した条件すべてを含んだ`jsonb`がマッチした`jsonb`になります。
+
+`www.example.com`という文字列を含んだ`jsonb`を検索する場合は次のようにします。
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @@ 'string == "www.example.com"';
+--             jsonb_pretty             
+-- -------------------------------------
+--  {                                  +
+--      "host": "www.example.com",     +
+--      "tags": [                      +
+--          "web",                     +
+--          "example.com"              +
+--      ],                             +
+--      "message": "Server is started."+
+--  }
+--  {                                  +
+--      "code": 200,                   +
+--      "host": "www.example.com",     +
+--      "tags": [                      +
+--          "web",                     +
+--          "example.com"              +
+--      ],                             +
+--      "message": "GET /"             +
+--  }
+-- (2 rows)
+```
+
+`code`が`200`台のレコードを検索する場合は次のようにします。省略記法（`.code`）でパスを指定したいので`paths @ "..."`という条件指定をしています。
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @@ 'paths @ ".code" && number >= 200 && number < 300';
+--           jsonb_pretty          
+-- --------------------------------
+--  {                             +
+--      "code": 200,              +
+--      "host": "www.example.com",+
+--      "tags": [                 +
+--          "web",                +
+--          "example.com"         +
+--      ],                        +
+--      "message": "GET /"        +
+--  }
+-- (1 row)
+```
+
+全文検索をする場合は次のように`string @ "..."`を使います。
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @@ 'string @ "started"';
+--             jsonb_pretty             
+-- -------------------------------------
+--  {                                  +
+--      "host": "www.example.com",     +
+--      "tags": [                      +
+--          "web",                     +
+--          "example.com"              +
+--      ],                             +
+--      "message": "Server is started."+
+--  }
+-- (1 row)
+```
+
+クエリー構文（`a OR b`のような書き方）を使って全文検索をしたい場合は
+`query("string", "...")`を使います。
+
+```sql
+SELECT jsonb_pretty(record) FROM logs WHERE record @@ 'query("string", "send OR server")';
+--                  jsonb_pretty                 
+-- ----------------------------------------------
+--  {                                           +
+--      "host": "www.example.com",              +
+--      "tags": [                               +
+--          "web",                              +
+--          "example.com"                       +
+--      ],                                      +
+--      "message": "Server is started."         +
+--  }
+--  {                                           +
+--      "host": "mail.example.net",             +
+--      "tags": [                               +
+--          "mail",                             +
+--          "example.net"                       +
+--      ],                                      +
+--      "message": "Send to <info@example.com>."+
+--  }
+-- (2 rows)
+```
+
 ### Groongaの機能を使う
 
 多くの場合、PostgreSQLよりGroongaの方が高速に処理できます。たとえば、
