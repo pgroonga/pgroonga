@@ -1,8 +1,22 @@
 # News
 
+## 0.9.0: 2015-09-29
+
+You can update to 0.9.0 from 0.8.0 by override install and executing the following SQL:
+
+```sql
+ALTER EXTENSION pgroonga UPDATE;
+```
+
+You don't need to re-create `pgroonga` indexes.
+
+### Improvements
+
+  * Supported `jsonb`. You can use `@>` operator like GIN index for `jsonb`. `@>` operator works like GIN index for `jsonb`. It's compatible. You can also use `@@` operator. It's PGroonga original operator. It's more flexible.
+
 ## 0.8.0: 2015-09-01
 
-You can upgrade to 0.8.0 from 0.7.0 by override install. You don't need to re-create `pgroonga` indexes.
+You can update to 0.8.0 from 0.7.0 by override install. You don't need to re-create `pgroonga` indexes.
 
 ### Improvements
 
@@ -24,7 +38,7 @@ You can upgrade to 0.8.0 from 0.7.0 by override install. You don't need to re-cr
 
 ## 0.7.0: 2015-07-10
 
-You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+You can update to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
 
 ### Improvements
 
@@ -37,7 +51,7 @@ You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-cr
 
 ## 0.6.0: 2015-05-29
 
-You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
+You can update to 0.6.0 from 0.5.0 by override install. You don't need to re-create `pgroonga` indexes.
 
 ### Improvements
 
@@ -52,7 +66,7 @@ You can upgrade to 0.6.0 from 0.5.0 by override install. You don't need to re-cr
 
 ## 0.5.0: 2015-04-29
 
-You can't upgrade to 0.5.0 from 0.4.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
+You can't update to 0.5.0 from 0.4.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
 ```sql
 DROP EXTENSION pgroonga CASCADE;
@@ -72,7 +86,7 @@ CREATE EXTENSION pgroonga;
 
 ## 0.4.0: 2015-03-29
 
-You can't upgrade to 0.4.0 from 0.3.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
+You can't update to 0.4.0 from 0.3.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
 ```sql
 DROP EXTENSION pgroonga CASCADE;
@@ -105,7 +119,7 @@ CREATE EXTENSION pgroonga;
 
 ## 0.3.0: 2015-02-09
 
-You can't upgrade to 0.3.0 from 0.2.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
+You can't update to 0.3.0 from 0.2.0 without re-creating `pgroonga` index. You need to re-install PGroonga:
 
 ```sql
 DROP EXTENSION pgroonga CASCADE;
