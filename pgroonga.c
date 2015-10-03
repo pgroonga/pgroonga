@@ -52,6 +52,8 @@ typedef struct stat pgrn_stat_buffer;
 
 PG_MODULE_MAGIC;
 
+static bool PGrnInitialized = false;
+
 static bool PGrnIsLZ4Available;
 static relopt_kind PGrnReloptionKind;
 
@@ -540,6 +542,13 @@ PGrnInitializeOptions(void)
 void
 _PG_init(void)
 {
+	if (PGrnInitialized)
+		ereport(ERROR,
+				(errcode(ERRCODE_SYSTEM_ERROR),
+				 errmsg("pgroonga: already tried to initialize and failed")));
+
+	PGrnInitialized = true;
+
 	PGrnInitializeVariables();
 
 	if (grn_init() != GRN_SUCCESS)
