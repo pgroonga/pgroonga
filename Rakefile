@@ -480,6 +480,9 @@ postgresql-server-dev-9.4
 
     desc "Upload packages"
     task :upload => windows_packages do
+      download("http://curl.haxx.se/ca/cacert.pem", ".")
+      ENV["SSL_CERT_FILE"] ||= File.expand_path("cacert.pem")
+
       pgroonga_repository = "pgroonga/pgroonga"
       tag_name = version
 
