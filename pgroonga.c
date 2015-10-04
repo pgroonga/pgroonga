@@ -124,6 +124,7 @@ typedef PGrnBuildStateData *PGrnBuildState;
 
 typedef struct PGrnScanOpaqueData
 {
+	Relation index;
 	slist_node node;
 	Oid dataTableID;
 	struct
@@ -184,6 +185,7 @@ PG_FUNCTION_INFO_V1(pgroonga_build);
 PG_FUNCTION_INFO_V1(pgroonga_buildempty);
 PG_FUNCTION_INFO_V1(pgroonga_bulkdelete);
 PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
+PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 PG_FUNCTION_INFO_V1(pgroonga_options);
 
@@ -818,6 +820,130 @@ PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
 		PGrnConvertDatumArrayType(datum, typeID, buffer);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: unsupported datum type: %u",
+						typeID)));
+		break;
+	}
+}
+
+static Datum
+PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
+{
+	Oid elementTypeID;
+	int i, n;
+	Datum *values;
+
+	if (typeID == VARCHARARRAYOID)
+		elementTypeID = VARCHAROID;
+	else
+		elementTypeID = TEXTOID;
+
+	n = grn_vector_size(ctx, vector);
+	if (n == 0)
+		PG_RETURN_POINTER(construct_empty_array(elementTypeID));
+
+	values = palloc(sizeof(Datum) * n);
+	for (i = 0; i < n; i++)
+	{
+		const char *element;
+		unsigned int elementSize;
+		text *value;
+
+		elementSize = grn_vector_get_element(ctx, vector, i,
+											 &element,
+											 NULL,
+											 NULL);
+		value = cstring_to_text_with_len(element, elementSize);
+		values[i] = PointerGetDatum(value);
+	}
+
+	{
+		int	dims[1];
+		int	lbs[1];
+
+		dims[0] = n;
+		lbs[0] = 1;
+		PG_RETURN_POINTER(construct_md_array(values, NULL,
+											 1, dims, lbs,
+											 elementTypeID,
+											 -1, false, 'i'));
+	}
+}
+
+static Datum
+PGrnConvertToDatum(grn_obj *value, Oid typeID)
+{
+	switch (typeID)
+	{
+	case BOOLOID:
+		PG_RETURN_BOOL(GRN_BOOL_VALUE(value));
+		break;
+	case INT2OID:
+		PG_RETURN_INT16(GRN_INT16_VALUE(value));
+		break;
+	case INT4OID:
+		PG_RETURN_INT32(GRN_INT32_VALUE(value));
+		break;
+	case INT8OID:
+		PG_RETURN_INT64(GRN_INT64_VALUE(value));
+		break;
+	case FLOAT4OID:
+		PG_RETURN_FLOAT4(GRN_FLOAT_VALUE(value));
+		break;
+	case FLOAT8OID:
+		PG_RETURN_FLOAT8(GRN_FLOAT_VALUE(value));
+		break;
+	case TIMESTAMPOID:
+	case TIMESTAMPTZOID:
+	{
+		int64 grnTime;
+		int64 sec;
+		int64 usec;
+		pg_time_t unixTime;
+		TimestampTz timestamp;
+
+		grnTime = GRN_TIME_VALUE(value);
+		GRN_TIME_UNPACK(grnTime, sec, usec);
+		unixTime = sec;
+		timestamp = time_t_to_timestamptz(unixTime);
+#ifdef HAVE_INT64_TIMESTAMP
+		timestamp += usec;
+#else
+		timestamp += ((double) used) / USECS_PER_SEC;
+#endif
+		if (typeID == TIMESTAMPOID)
+			PG_RETURN_TIMESTAMP(timestamp);
+		else
+			PG_RETURN_TIMESTAMPTZ(timestamp);
+		break;
+	}
+	case TEXTOID:
+	case XMLOID:
+	{
+		text *text = cstring_to_text_with_len(GRN_TEXT_VALUE(value),
+											  GRN_TEXT_LEN(value));
+		PG_RETURN_TEXT_P(text);
+		break;
+	}
+	case VARCHAROID:
+	{
+		text *text = cstring_to_text_with_len(GRN_TEXT_VALUE(value),
+											  GRN_TEXT_LEN(value));
+		PG_RETURN_VARCHAR_P((VarChar *) text);
+		break;
+	}
+#ifdef NOT_USED
+	case POINTOID:
+		/* GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT; */
+		break;
+#endif
+	case VARCHARARRAYOID:
+	case TEXTARRAYOID:
+		return PGrnConvertToDatumArrayType(value, typeID);
 		break;
 	default:
 		ereport(ERROR,
@@ -2685,6 +2811,7 @@ PGrnScanOpaqueInitPrimaryKey(PGrnScanOpaque so, Relation index)
 static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
+	so->index = index;
 	so->dataTableID = index->rd_index->indrelid;
 	PGrnScanOpaqueInitPrimaryKey(so, index);
 	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -3544,6 +3671,57 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 	}
 }
 
+static void
+PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
+						   IndexScanDesc scan)
+{
+	TupleDesc desc;
+	Datum *values;
+	bool *isNulls;
+	grn_id recordID;
+	unsigned int i;
+
+	desc = RelationGetDescr(so->index);
+	scan->xs_itupdesc = desc;
+
+	values = palloc(sizeof(Datum) * desc->natts);
+	isNulls = palloc(sizeof(bool) * desc->natts);
+
+	recordID = so->currentID;
+	if (so->sorted)
+	{
+		GRN_BULK_REWIND(&buffer);
+		grn_obj_get_value(ctx, so->sorted, recordID, &buffer);
+		recordID = GRN_RECORD_VALUE(&buffer);
+	}
+	if (so->searched)
+	{
+		grn_table_get_key(ctx, so->searched, recordID,
+						  &recordID, sizeof(grn_id));
+	}
+
+	for (i = 0; i < desc->natts; i++)
+	{
+		Form_pg_attribute attribute = desc->attrs[i];
+		NameData *name;
+		grn_obj *dataColumn;
+
+		name = &(attribute->attname);
+		dataColumn = PGrnLookupColumn(so->sourcesTable, name->data, ERROR);
+		GRN_BULK_REWIND(&buffer);
+		grn_obj_get_value(ctx, dataColumn, recordID, &buffer);
+		values[i] = PGrnConvertToDatum(&buffer, attribute->atttypid);
+		isNulls[i] = false;
+		grn_obj_unlink(ctx, dataColumn);
+	}
+
+	scan->xs_itup = index_form_tuple(scan->xs_itupdesc,
+									 values,
+									 isNulls);
+
+	pfree(values);
+	pfree(isNulls);
+}
 
 /**
  * pgroonga.gettuple() -- amgettuple
@@ -3588,6 +3766,9 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 		GRN_BULK_REWIND(&ctidBuffer);
 		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &ctidBuffer);
 		scan->xs_ctup.t_self = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+
+		if (scan->xs_want_itup)
+			PGrnGetTupleFillIndexTuple(so, scan);
 
 		PG_RETURN_BOOL(true);
 	}
@@ -4183,6 +4364,31 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 	PGrnRemoveUnusedTables();
 
 	PG_RETURN_POINTER(stats);
+}
+
+/**
+ * pgroonga.canreturn() -- amcanreturn
+ */
+Datum
+pgroonga_canreturn(PG_FUNCTION_ARGS)
+{
+#ifdef JSONBOID
+	Relation index = (Relation) PG_GETARG_POINTER(0);
+	TupleDesc desc;
+	unsigned int i;
+
+	desc = RelationGetDescr(index);
+	for (i = 0; i < desc->natts; i++)
+	{
+		Form_pg_attribute attribute = desc->attrs[i];
+		if (attribute->atttypid == JSONBOID)
+		{
+			PG_RETURN_BOOL(false);
+		}
+	}
+#endif
+
+	PG_RETURN_BOOL(true);
 }
 
 /**

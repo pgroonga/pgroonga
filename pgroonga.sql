@@ -163,6 +163,10 @@ CREATE FUNCTION pgroonga.vacuumcleanup(internal)
 	RETURNS internal
 	AS 'MODULE_PATHNAME', 'pgroonga_vacuumcleanup'
 	LANGUAGE C;
+CREATE FUNCTION pgroonga.canreturn(internal)
+	RETURNS internal
+	AS 'MODULE_PATHNAME', 'pgroonga_canreturn'
+	LANGUAGE C;
 CREATE FUNCTION pgroonga.costestimate(internal)
 	RETURNS internal
 	AS 'MODULE_PATHNAME', 'pgroonga_costestimate'
@@ -201,7 +205,7 @@ INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga.buildempty',	-- ambuildempty
 	'pgroonga.bulkdelete',	-- ambulkdelete
 	'pgroonga.vacuumcleanup',	-- amvacuumcleanup
-	0,		-- amcanreturn
+	'pgroonga.canreturn',		-- amcanreturn
 	'pgroonga.costestimate',	-- amcostestimate
 	'pgroonga.options'	-- amoptions
 );
