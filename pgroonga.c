@@ -711,7 +711,7 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 }
 
 static void
-PGrnConvertDatumArrayType(Datum datum, Oid typeID, grn_obj *buffer)
+PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 {
 	ArrayType *value = DatumGetArrayTypeP(datum);
 	int i, n;
@@ -751,7 +751,7 @@ PGrnConvertDatumArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 }
 
 static void
-PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
+PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 {
 	switch (typeID)
 	{
@@ -819,7 +819,7 @@ PGrnConvertDatum(Datum datum, Oid typeID, grn_obj *buffer)
 #endif
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
-		PGrnConvertDatumArrayType(datum, typeID, buffer);
+		PGrnConvertFromDataArrayType(datum, typeID, buffer);
 		break;
 	default:
 		ereport(ERROR,
@@ -1754,7 +1754,7 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 
 	desc = RelationGetDescr(table);
 	primaryKeyValue = heap_getattr(tuple, so->primaryKey.number, desc, &isNULL);
-	PGrnConvertDatum(primaryKeyValue, so->primaryKey.type, &buffer);
+	PGrnConvertFromData(primaryKeyValue, so->primaryKey.type, &buffer);
 
 	tableCursor = grn_table_cursor_open(ctx, so->primaryKey.lexicon,
 										GRN_BULK_HEAD(&buffer),
@@ -2675,7 +2675,7 @@ PGrnInsert(Relation index,
 		{
 			domain = PGrnGetType(index, i, &flags);
 			grn_obj_reinit(ctx, &buffer, domain, flags);
-			PGrnConvertDatum(values[i], attribute->atttypid, &buffer);
+			PGrnConvertFromData(values[i], attribute->atttypid, &buffer);
 		}
 		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
@@ -3151,7 +3151,7 @@ PGrnSearchBuildConditionJSON(PGrnSearchData *data,
 	if (key->sk_strategy == PGrnQueryStrategyNumber)
 	{
 		unsigned int nthCondition = 0;
-		PGrnConvertDatum(key->sk_argument, TEXTOID, &buffer);
+		PGrnConvertFromData(key->sk_argument, TEXTOID, &buffer);
 		PGrnSearchBuildConditionJSONQuery(data,
 										  subFilter,
 										  targetColumn,
@@ -3224,7 +3224,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 			valueTypeID = TEXTOID;
 			break;
 		}
-		PGrnConvertDatum(key->sk_argument, valueTypeID, &buffer);
+		PGrnConvertFromData(key->sk_argument, valueTypeID, &buffer);
 	}
 
 	switch (key->sk_strategy)
@@ -3495,9 +3495,9 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (maxBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnConvertDatum(key->sk_argument,
-								 attribute->atttypid,
-								 &buffer);
+				PGrnConvertFromData(key->sk_argument,
+									attribute->atttypid,
+									&buffer);
 				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
 													 &buffer,
 													 *flags,
@@ -3507,9 +3507,9 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
-			PGrnConvertDatum(key->sk_argument,
-							 attribute->atttypid,
-							 maxBorderValue);
+			PGrnConvertFromData(key->sk_argument,
+								attribute->atttypid,
+								maxBorderValue);
 			*max = GRN_BULK_HEAD(maxBorderValue);
 			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
 			*flags &= ~(GRN_CURSOR_LT | GRN_CURSOR_LE);
@@ -3527,9 +3527,9 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (minBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &buffer, domain, 0);
-				PGrnConvertDatum(key->sk_argument,
-								 attribute->atttypid,
-								 &buffer);
+				PGrnConvertFromData(key->sk_argument,
+									attribute->atttypid,
+									&buffer);
 				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
 													 &buffer,
 													 *flags,
@@ -3539,9 +3539,9 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
-			PGrnConvertDatum(key->sk_argument,
-							 attribute->atttypid,
-							 minBorderValue);
+			PGrnConvertFromData(key->sk_argument,
+								attribute->atttypid,
+								minBorderValue);
 			*min = GRN_BULK_HEAD(minBorderValue);
 			*minSize = GRN_BULK_VSIZE(minBorderValue);
 			*flags &= ~(GRN_CURSOR_GT | GRN_CURSOR_GE);
