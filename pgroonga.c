@@ -188,7 +188,7 @@ PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 PG_FUNCTION_INFO_V1(pgroonga_options);
 
 static grn_ctx grnContext;
-static grn_ctx *ctx = &grnContext;
+static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
 static grn_obj ctidBuffer;
@@ -412,22 +412,26 @@ PGrnEnsureDatabase(void)
 static void
 PGrnOnProcExit(int code, Datum arg)
 {
-	grn_obj *db;
+	if (ctx)
+	{
+		grn_obj *db;
 
-	GRN_OBJ_FIN(ctx, &inspectBuffer);
-	GRN_OBJ_FIN(ctx, &footBuffer);
-	GRN_OBJ_FIN(ctx, &bodyBuffer);
-	GRN_OBJ_FIN(ctx, &headBuffer);
-	GRN_OBJ_FIN(ctx, &ctidBuffer);
-	GRN_OBJ_FIN(ctx, &scoreBuffer);
-	GRN_OBJ_FIN(ctx, &pathBuffer);
-	GRN_OBJ_FIN(ctx, &buffer);
+		GRN_OBJ_FIN(ctx, &inspectBuffer);
+		GRN_OBJ_FIN(ctx, &footBuffer);
+		GRN_OBJ_FIN(ctx, &bodyBuffer);
+		GRN_OBJ_FIN(ctx, &headBuffer);
+		GRN_OBJ_FIN(ctx, &ctidBuffer);
+		GRN_OBJ_FIN(ctx, &scoreBuffer);
+		GRN_OBJ_FIN(ctx, &pathBuffer);
+		GRN_OBJ_FIN(ctx, &buffer);
 
-	db = grn_ctx_db(ctx);
-	if (db)
-		grn_obj_close(ctx, db);
+		db = grn_ctx_db(ctx);
+		if (db)
+			grn_obj_close(ctx, db);
 
-	grn_ctx_fin(ctx);
+		grn_ctx_fin(ctx);
+	}
+
 	grn_fin();
 }
 
@@ -555,12 +559,15 @@ _PG_init(void)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga")));
-	if (grn_ctx_init(ctx, 0))
+
+	on_proc_exit(PGrnOnProcExit, 0);
+
+	if (grn_ctx_init(&grnContext, 0))
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
 
-	on_proc_exit(PGrnOnProcExit, 0);
+	ctx = &grnContext;
 
 	GRN_VOID_INIT(&buffer);
 	GRN_TEXT_INIT(&pathBuffer, 0);
