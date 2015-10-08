@@ -1632,6 +1632,7 @@ PGroongaが使える状態になっています。
   * 実装
     * WAL対応
     * COLLATE対応（今は必ずGroongaのNormalizerAutoを使っている）
+    * `pgroonga.query`型を作って`body @@ ROW('scorer_tf_idf(body) * 10', 'Groonga OR PostgreSQL')`と書けるようにする
   * ドキュメント
     * 英語で書く
     * サイトを用意する
