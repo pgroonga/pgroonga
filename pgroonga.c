@@ -109,6 +109,7 @@ typedef struct PGrnCreateData
 	TupleDesc desc;
 	Oid relNode;
 	bool forFullTextSearch;
+	bool forRegexpSearch;
 	grn_id attributeTypeID;
 	unsigned char attributeFlags;
 } PGrnCreateData;
@@ -174,6 +175,8 @@ PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_contain_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PG_FUNCTION_INFO_V1(pgroonga_match);
+PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -1197,6 +1200,22 @@ PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 	return OidIsValid(queryStrategyOID);
 }
 
+static bool
+PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
+{
+	Oid regexpStrategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+	rightType = leftType;
+	regexpStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnRegexpStrategyNumber);
+	return OidIsValid(regexpStrategyOID);
+}
+
 static void
 PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
 {
@@ -1447,11 +1466,17 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 							  grn_ctx_at(ctx, typeID));
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 
-	if (data->forFullTextSearch)
+	if (data->forFullTextSearch || data->forRegexpSearch)
 	{
 		PGrnOptions *options;
-		const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
+		const char *tokenizerName;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
+
+		if (data->forRegexpSearch) {
+			tokenizerName = "TokenRegexp";
+		} else {
+			tokenizerName = PGRN_DEFAULT_TOKENIZER;
+		}
 
 		options = (PGrnOptions *) (data->index->rd_options);
 		if (options)
@@ -1473,7 +1498,7 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 
 	{
 		grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
-		if (data->forFullTextSearch)
+		if (data->forFullTextSearch || data->forRegexpSearch)
 			flags |= GRN_OBJ_WITH_POSITION;
 		PGrnCreateColumn(lexicon,
 						 PGrnIndexColumnName,
@@ -1526,6 +1551,7 @@ PGrnCreate(Relation index,
 			PGrnCreateDataColumnsForJSON(&data);
 			PGrnCreateIndexColumnsForJSON(&data);
 			data.forFullTextSearch = false;
+			data.forRegexpSearch = false;
 			data.attributeTypeID = grn_obj_id(ctx, data.jsonValuesTable);
 			data.attributeFlags = GRN_OBJ_VECTOR;
 			PGrnCreateDataColumn(&data);
@@ -1534,6 +1560,7 @@ PGrnCreate(Relation index,
 #endif
 		{
 			data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
+			data.forRegexpSearch = PGrnIsForRegexpSearchIndex(index, data.i);
 			data.attributeTypeID = PGrnGetType(index, data.i,
 											   &(data.attributeFlags));
 			PGrnCreateDataColumn(&data);
@@ -2265,6 +2292,62 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 			 errmsg("pgroonga: operator @@ is available only in index scans")));
 
 	PG_RETURN_BOOL(false);
+}
+
+static grn_bool
+pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
+						  const char *pattern, unsigned int patternSize)
+{
+	grn_bool matched;
+	grn_obj targetBuffer;
+	grn_obj patternBuffer;
+
+	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
+
+	GRN_TEXT_INIT(&patternBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &patternBuffer, pattern, patternSize);
+
+	matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
+
+	GRN_OBJ_FIN(ctx, &targetBuffer);
+	GRN_OBJ_FIN(ctx, &patternBuffer);
+
+	return matched;
+}
+
+/**
+ * pgroonga.match_regexp_text(target, pattern) : bool
+ */
+Datum
+pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *pattern = PG_GETARG_TEXT_PP(1);
+	grn_bool matched;
+
+	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+										VARSIZE_ANY_EXHDR(target),
+										VARDATA_ANY(pattern),
+										VARSIZE_ANY_EXHDR(pattern));
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.match_regexp_varchar(target, pattern) : bool
+ */
+Datum
+pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
+	grn_bool matched;
+
+	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+										VARSIZE_ANY_EXHDR(target),
+										VARDATA_ANY(pattern),
+										VARSIZE_ANY_EXHDR(pattern));
+	PG_RETURN_BOOL(matched);
 }
 
 #ifdef JSONBOID
@@ -3250,6 +3333,9 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		operator = GRN_OP_MATCH;
 		break;
 	case PGrnQueryStrategyNumber:
+		break;
+	case PGrnRegexpStrategyNumber:
+		operator = GRN_OP_REGEXP;
 		break;
 	default:
 		ereport(ERROR,
