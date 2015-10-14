@@ -196,6 +196,7 @@ static grn_ctx grnContext;
 static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
+static grn_obj patternBuffer;
 static grn_obj ctidBuffer;
 static grn_obj scoreBuffer;
 static grn_obj headBuffer;
@@ -427,6 +428,7 @@ PGrnOnProcExit(int code, Datum arg)
 		GRN_OBJ_FIN(ctx, &headBuffer);
 		GRN_OBJ_FIN(ctx, &ctidBuffer);
 		GRN_OBJ_FIN(ctx, &scoreBuffer);
+		GRN_OBJ_FIN(ctx, &patternBuffer);
 		GRN_OBJ_FIN(ctx, &pathBuffer);
 		GRN_OBJ_FIN(ctx, &buffer);
 
@@ -576,6 +578,7 @@ _PG_init(void)
 
 	GRN_VOID_INIT(&buffer);
 	GRN_TEXT_INIT(&pathBuffer, 0);
+	GRN_TEXT_INIT(&patternBuffer, 0);
 	GRN_FLOAT_INIT(&scoreBuffer, 0);
 	GRN_UINT64_INIT(&ctidBuffer, 0);
 	GRN_TEXT_INIT(&headBuffer, 0);
@@ -2994,9 +2997,9 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 }
 
 static void
-PGrnSearchBuildConditionLike(PGrnSearchData *data,
-							 grn_obj *matchTarget,
-							 grn_obj *query)
+PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
+								  grn_obj *matchTarget,
+								  grn_obj *query)
 {
 	grn_obj *expression;
 	const char *queryRaw;
@@ -3023,6 +3026,124 @@ PGrnSearchBuildConditionLike(PGrnSearchData *data,
 							  queryRaw + 1, querySize - 2,
 							  GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+}
+
+static void
+PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
+								   grn_obj *matchTarget,
+								   grn_obj *query)
+{
+	grn_obj *expression;
+	const char *queryRaw;
+	const char *queryRawEnd;
+	const char *queryRawCurrent;
+	size_t querySize;
+	int characterSize;
+	bool escaping = false;
+	bool lastIsPercent = false;
+
+	expression = data->expression;
+	queryRaw = GRN_TEXT_VALUE(query);
+	querySize = GRN_TEXT_LEN(query);
+	queryRawEnd = queryRaw + querySize;
+
+	GRN_BULK_REWIND(&patternBuffer);
+	if (queryRaw[0] != '%')
+		GRN_TEXT_PUTS(ctx, &patternBuffer, "\\A");
+
+	queryRawCurrent = queryRaw;
+	while ((characterSize = grn_charlen(ctx, queryRawCurrent, queryRawEnd)) > 0)
+	{
+		const char *current = queryRawCurrent;
+		bool needToAddCharacter = true;
+
+		queryRawCurrent += characterSize;
+
+		if (!escaping && characterSize == 1)
+		{
+			switch (current[0])
+			{
+			case '%':
+				if (queryRaw == current)
+				{
+					/* do nothing */
+				}
+				else if (queryRawCurrent == queryRawEnd)
+				{
+					lastIsPercent = true;
+				}
+				else
+				{
+					GRN_TEXT_PUTS(ctx, &patternBuffer, ".*");
+				}
+				needToAddCharacter = false;
+				break;
+			case '_':
+				GRN_TEXT_PUTC(ctx, &patternBuffer, '.');
+				needToAddCharacter = false;
+				break;
+			case '\\':
+				escaping = true;
+				needToAddCharacter = false;
+				break;
+			default:
+				break;
+			}
+
+			if (!needToAddCharacter)
+				continue;
+		}
+
+		if (characterSize == 1)
+		{
+			switch (current[0])
+			{
+			case '\\':
+			case '|':
+			case '(':
+			case ')':
+			case '[':
+			case ']':
+			case '.':
+			case '*':
+			case '+':
+			case '?':
+			case '{':
+			case '}':
+			case '^':
+			case '$':
+				GRN_TEXT_PUTC(ctx, &patternBuffer, '\\');
+				GRN_TEXT_PUTC(ctx, &patternBuffer, current[0]);
+				break;
+			default:
+				GRN_TEXT_PUTC(ctx, &patternBuffer, current[0]);
+				break;
+			}
+		}
+		else
+		{
+			GRN_TEXT_PUT(ctx, &patternBuffer, current, characterSize);
+		}
+		escaping = false;
+	}
+
+	if (queryRawCurrent != queryRawEnd)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("invalid encoding character exist: <%.*s>",
+						(int) querySize, queryRaw)));
+	}
+
+	if (!lastIsPercent)
+		GRN_TEXT_PUTS(ctx, &patternBuffer, "\\z");
+
+	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+	grn_expr_append_const_str(ctx, expression,
+							  GRN_TEXT_VALUE(&patternBuffer),
+							  GRN_TEXT_LEN(&patternBuffer),
+							  GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
 }
 
 #ifdef JSONBOID
@@ -3348,7 +3469,10 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	switch (key->sk_strategy)
 	{
 	case PGrnLikeStrategyNumber:
-		PGrnSearchBuildConditionLike(data, matchTarget, &buffer);
+		if (PGrnIsForRegexpSearchIndex(index, key->sk_attno - 1))
+			PGrnSearchBuildConditionLikeRegexp(data, matchTarget, &buffer);
+		else
+			PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
 		break;
 	case PGrnQueryStrategyNumber:
 	{

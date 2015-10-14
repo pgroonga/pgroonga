@@ -40,6 +40,7 @@ CREATE OPERATOR @~ (
 
 CREATE OPERATOR CLASS pgroonga.text_regexp_ops FOR TYPE text
 	USING pgroonga AS
+		OPERATOR 6 pg_catalog.~~,
 		OPERATOR 10 @~;
 
 CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops FOR TYPE varchar
