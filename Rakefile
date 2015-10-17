@@ -462,7 +462,8 @@ postgresql-server-dev-9.4
              windows_pgroonga_source_name_base,
              "-G", cmake_generator,
              "-DCMAKE_INSTALL_PREFIX=pgsql",
-             "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}")
+             "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}"
+             "-DGRN_WITH_BUNDLED_MECAB=yes")
           sh("cmake",
              "--build", ".",
              "--config", "Release")
