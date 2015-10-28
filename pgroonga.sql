@@ -85,21 +85,21 @@ CREATE OPERATOR %% (
 
 CREATE FUNCTION pgroonga.match(text, text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.match(text[], text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.match(varchar, varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;

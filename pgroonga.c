@@ -32,6 +32,7 @@
 #include <xxhash.h>
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -163,6 +164,13 @@ typedef struct PGrnSearchData
 	bool    isEmptyCondition;
 } PGrnSearchData;
 
+typedef struct PGrnSequentialSearchData
+{
+	grn_obj *table;
+	grn_obj *textColumn;
+	grn_id recordID;
+} PGrnSequentialSearchData;
+
 static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
 
 PG_FUNCTION_INFO_V1(pgroonga_score);
@@ -174,7 +182,9 @@ PG_FUNCTION_INFO_V1(pgroonga_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_contain_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
-PG_FUNCTION_INFO_V1(pgroonga_match);
+PG_FUNCTION_INFO_V1(pgroonga_match_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_text_array);
+PG_FUNCTION_INFO_V1(pgroonga_match_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
@@ -203,6 +213,7 @@ static grn_obj headBuffer;
 static grn_obj bodyBuffer;
 static grn_obj footBuffer;
 static grn_obj inspectBuffer;
+static PGrnSequentialSearchData sequentialSearchData;
 
 static const char *
 PGrnInspect(grn_obj *object)
@@ -416,11 +427,20 @@ PGrnEnsureDatabase(void)
 }
 
 static void
+PGrnFinalizeSequentialSearchData(void)
+{
+	grn_obj_close(ctx, sequentialSearchData.textColumn);
+	grn_obj_close(ctx, sequentialSearchData.table);
+}
+
+static void
 PGrnOnProcExit(int code, Datum arg)
 {
 	if (ctx)
 	{
 		grn_obj *db;
+
+		PGrnFinalizeSequentialSearchData();
 
 		GRN_OBJ_FIN(ctx, &inspectBuffer);
 		GRN_OBJ_FIN(ctx, &footBuffer);
@@ -550,6 +570,28 @@ PGrnInitializeOptions(void)
 						 PGrnOptionValidateNormalizer);
 }
 
+static void
+PGrnInitializeSequentialSearchData(void)
+{
+	sequentialSearchData.table = grn_table_create(ctx,
+												  NULL, 0,
+												  NULL,
+												  GRN_OBJ_TABLE_NO_KEY,
+												  NULL, NULL);
+	sequentialSearchData.textColumn =
+		grn_column_create(ctx,
+						  sequentialSearchData.table,
+						  "text", strlen("text"),
+						  NULL,
+						  GRN_OBJ_COLUMN_SCALAR,
+						  grn_ctx_at(ctx, GRN_DB_TEXT));
+	sequentialSearchData.recordID =
+		grn_table_add(ctx,
+					  sequentialSearchData.table,
+					  NULL, 0,
+					  NULL);
+}
+
 void
 _PG_init(void)
 {
@@ -591,6 +633,8 @@ _PG_init(void)
 	PGrnInitializeGroongaInformation();
 
 	PGrnInitializeOptions();
+
+	PGrnInitializeSequentialSearchData();
 }
 
 static int
@@ -2261,22 +2305,136 @@ pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(contained);
 }
 
+static grn_bool
+pgroonga_match_text_raw(const char *target, unsigned int targetSize,
+						const char *query, unsigned int querySize)
+{
+	grn_obj *expression;
+	grn_obj *variable;
+	grn_expr_flags flags =
+		GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+	grn_rc rc;
+	grn_obj *result;
+	bool matched = false;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx,
+							  sequentialSearchData.table,
+							  expression,
+							  variable);
+	if (!expression)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_OUT_OF_MEMORY),
+				 errmsg("pgroonga: failed to create expression: %s",
+						ctx->errbuf)));
+	}
+
+	rc = grn_expr_parse(ctx,
+						expression,
+						query, querySize,
+						sequentialSearchData.textColumn,
+						GRN_OP_MATCH, GRN_OP_AND,
+						flags);
+	if (rc != GRN_SUCCESS)
+	{
+		char message[GRN_CTX_MSGSIZE];
+		grn_strncpy(message, GRN_CTX_MSGSIZE,
+					ctx->errbuf, GRN_CTX_MSGSIZE);
+
+		grn_obj_close(ctx, expression);
+		ereport(ERROR,
+				(errcode(PGrnRCToPgErrorCode(rc)),
+				 errmsg("pgroonga: failed to parse expression: %s",
+						message)));
+	}
+
+	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &buffer, target, targetSize);
+	grn_obj_set_value(ctx,
+					  sequentialSearchData.textColumn,
+					  sequentialSearchData.recordID,
+					  &buffer,
+					  GRN_OBJ_SET);
+	GRN_RECORD_SET(ctx, variable, sequentialSearchData.recordID);
+
+	result = grn_expr_exec(ctx, expression, 0);
+	GRN_OBJ_IS_TRUE(ctx, result, matched);
+
+	grn_obj_close(ctx, expression);
+
+	return matched;
+}
+
 /**
- * pgroonga.match(text, query) : bool
+ * pgroonga.match_text(target text, query text) : bool
  */
 Datum
-pgroonga_match(PG_FUNCTION_ARGS)
+pgroonga_match_text(PG_FUNCTION_ARGS)
 {
-#ifdef NOT_USED
-	text *text = PG_GETARG_TEXT_PP(0);
+	text *target = PG_GETARG_TEXT_PP(0);
 	text *query = PG_GETARG_TEXT_PP(1);
-#endif
+	bool matched = false;
 
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: operator @@ is available only in index scans")));
+	matched = pgroonga_match_text_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(query),
+									  VARSIZE_ANY_EXHDR(query));
 
-	PG_RETURN_BOOL(false);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.match_text(targets text[], query text) : bool
+ */
+Datum
+pgroonga_match_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+	int i, n;
+
+	n = ARR_DIMS(targets)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum targetDatum;
+		text *target;
+		bool isNULL;
+
+		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		target = DatumGetTextPP(targetDatum);
+		matched = pgroonga_match_text_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(query),
+										  VARSIZE_ANY_EXHDR(query));
+		if (matched)
+		{
+			break;
+		}
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.match_varchar(target varchar, query varchar) : bool
+ */
+Datum
+pgroonga_match_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	VarChar *query = PG_GETARG_VARCHAR_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_match_text_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(query),
+									  VARSIZE_ANY_EXHDR(query));
+
+	PG_RETURN_BOOL(matched);
 }
 
 /**

@@ -1,3 +1,5 @@
+SET search_path = "$user",public,pgroonga,pg_catalog;
+
 CREATE TABLE memos (
   id integer,
   content text
