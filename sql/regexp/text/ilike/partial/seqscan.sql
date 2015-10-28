@@ -10,12 +10,12 @@ INSERT INTO memos VALUES (4, 'groonga command is provided.');
 
 CREATE INDEX grnindex ON memos USING pgroonga (content pgroonga.text_regexp_ops);
 
-SET enable_seqscan = off;
+SET enable_seqscan = on;
 SET enable_indexscan = off;
-SET enable_bitmapscan = on;
+SET enable_bitmapscan = off;
 
 SELECT id, content
   FROM memos
- WHERE content LIKE 'Groonga%';
+ WHERE content ILIKE '%GROONGA%';
 
 DROP TABLE memos;

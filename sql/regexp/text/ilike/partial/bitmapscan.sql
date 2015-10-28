@@ -16,6 +16,6 @@ SET enable_bitmapscan = on;
 
 SELECT id, content
   FROM memos
- WHERE content LIKE 'Groonga%';
+ WHERE content ILIKE '%GROONGA%';
 
 DROP TABLE memos;
