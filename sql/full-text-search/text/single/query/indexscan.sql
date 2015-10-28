@@ -15,6 +15,6 @@ SET enable_bitmapscan = off;
 
 SELECT id, content
   FROM memos
- WHERE content @@ 'groonga postgresql';
+ WHERE content @@ 'rdbms OR engine';
 
 DROP TABLE memos;

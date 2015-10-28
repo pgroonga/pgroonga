@@ -12,10 +12,11 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT id, content
   FROM memos
- WHERE content @@ 'groonga postgresql';
- id |                        content                        
-----+-------------------------------------------------------
-  3 | PGroonga is a PostgreSQL extension that uses Groonga.
-(1 row)
+ WHERE content @@ 'rdbms OR engine';
+ id |                 content                  
+----+------------------------------------------
+  1 | PostgreSQL is a RDBMS.
+  2 | Groonga is fast full text search engine.
+(2 rows)
 
 DROP TABLE memos;
