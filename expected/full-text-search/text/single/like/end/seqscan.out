@@ -13,7 +13,7 @@ SET enable_bitmapscan = off;
 SELECT id, content
   FROM memos
  WHERE content LIKE '%Groonga';
- id |                        content                       
+ id |                       content                        
 ----+------------------------------------------------------
   3 | PGroonga is a PostgreSQL extension that uses Groonga
 (1 row)
