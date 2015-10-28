@@ -206,7 +206,7 @@ CREATE FUNCTION pgroonga.options(internal)
 DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
-	10,		-- amstrategies
+	11,		-- amstrategies
 	0,		-- amsupport
 	true,		-- amcanorder
 	true,		-- amcanorderbyop
@@ -240,20 +240,21 @@ INSERT INTO pg_catalog.pg_am VALUES(
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 pg_catalog.~~,
-		OPERATOR 7 %%,
-		OPERATOR 8 @@;
+		OPERATOR 7 pg_catalog.~~*,
+		OPERATOR 8 %%,
+		OPERATOR 9 @@;
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 	DEFAULT
 	FOR TYPE text[]
 	USING pgroonga AS
-		OPERATOR 7 %% (text[], text),
-		OPERATOR 8 @@ (text[], text);
+		OPERATOR 8 %% (text[], text),
+		OPERATOR 9 @@ (text[], text);
 
 CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops FOR TYPE varchar
 	USING pgroonga AS
-		OPERATOR 7 %%,
-		OPERATOR 8 @@;
+		OPERATOR 8 %%,
+		OPERATOR 9 @@;
 
 CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
@@ -267,7 +268,7 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 	DEFAULT
 	FOR TYPE varchar[]
 	USING pgroonga AS
-		OPERATOR 7 %% (varchar[], varchar);
+		OPERATOR 8 %% (varchar[], varchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS
@@ -356,8 +357,8 @@ BEGIN
 
 		CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
 			USING pgroonga AS
-				OPERATOR 8 @@ (jsonb, text),
-				OPERATOR 9 @>;
+				OPERATOR 9 @@ (jsonb, text),
+				OPERATOR 11 @>;
 	END IF;
 END;
 $$;
@@ -365,6 +366,7 @@ $$;
 CREATE OPERATOR CLASS pgroonga.text_regexp_ops FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 pg_catalog.~~,
+		OPERATOR 7 pg_catalog.~~*,
 		OPERATOR 10 @~;
 
 CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops FOR TYPE varchar
