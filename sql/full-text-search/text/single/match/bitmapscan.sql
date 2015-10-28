@@ -15,6 +15,6 @@ SET enable_bitmapscan = on;
 
 SELECT id, content
   FROM memos
- WHERE content @@ 'groonga postgresql';
+ WHERE content %% 'Groonga';
 
 DROP TABLE memos;

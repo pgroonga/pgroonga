@@ -1,4 +1,3 @@
-SET search_path = "$user",public,pgroonga,pg_catalog;
 CREATE TABLE memos (
   id integer,
   content text
@@ -12,10 +11,11 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT id, content
   FROM memos
- WHERE content @@ 'groonga postgresql';
+ WHERE content %% 'Groonga';
  id |                        content                        
 ----+-------------------------------------------------------
+  2 | Groonga is fast full text search engine.
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
-(1 row)
+(2 rows)
 
 DROP TABLE memos;

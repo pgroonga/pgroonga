@@ -1,5 +1,3 @@
-SET search_path = "$user",public,pgroonga,pg_catalog;
-
 CREATE TABLE memos (
   id integer,
   content text
@@ -17,6 +15,6 @@ SET enable_bitmapscan = off;
 
 SELECT id, content
   FROM memos
- WHERE content @@ 'groonga postgresql';
+ WHERE content %% 'Groonga';
 
 DROP TABLE memos;
