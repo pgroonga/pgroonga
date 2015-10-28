@@ -30,94 +30,94 @@ CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])
 	VOLATILE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(target text, query text)
+CREATE FUNCTION pgroonga.match_term(target text, term text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contain_text'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(target text[], query text)
+CREATE FUNCTION pgroonga.match_term(target text[], term text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contain_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(target varchar, query varchar)
+CREATE FUNCTION pgroonga.match_term(target varchar, term varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.contain(target varchar[], query varchar)
+CREATE FUNCTION pgroonga.match_term(target varchar[], term varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contain,
+	PROCEDURE = pgroonga.match_term,
 	LEFTARG = text,
 	RIGHTARG = text
 );
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contain,
+	PROCEDURE = pgroonga.match_term,
 	LEFTARG = text[],
 	RIGHTARG = text
 );
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contain,
+	PROCEDURE = pgroonga.match_term,
 	LEFTARG = varchar,
 	RIGHTARG = varchar
 );
 
 CREATE OPERATOR %% (
-	PROCEDURE = pgroonga.contain,
+	PROCEDURE = pgroonga.match_term,
 	LEFTARG = varchar[],
 	RIGHTARG = varchar
 );
 
 
-CREATE FUNCTION pgroonga.match(text, text)
+CREATE FUNCTION pgroonga.match_query(text, text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_text'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_query_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.match(text[], text)
+CREATE FUNCTION pgroonga.match_query(text[], text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_query_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga.match(varchar, varchar)
+CREATE FUNCTION pgroonga.match_query(varchar, varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_query_varchar'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR @@ (
-	PROCEDURE = pgroonga.match,
+	PROCEDURE = pgroonga.match_query,
 	LEFTARG = text,
 	RIGHTARG = text
 );
 
 CREATE OPERATOR @@ (
-	PROCEDURE = pgroonga.match,
+	PROCEDURE = pgroonga.match_query,
 	LEFTARG = text[],
 	RIGHTARG = text
 );
 
 CREATE OPERATOR @@ (
-	PROCEDURE = pgroonga.match,
+	PROCEDURE = pgroonga.match_query,
 	LEFTARG = varchar,
 	RIGHTARG = varchar
 );
@@ -341,7 +341,7 @@ BEGIN
 
 	IF FOUND
 	THEN
-		CREATE FUNCTION pgroonga.match(jsonb, text)
+		CREATE FUNCTION pgroonga.match_query(jsonb, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
 			LANGUAGE C
@@ -349,7 +349,7 @@ BEGIN
 			STRICT;
 
 		CREATE OPERATOR @@ (
-			PROCEDURE = pgroonga.match,
+			PROCEDURE = pgroonga.match_query,
 			LEFTARG = jsonb,
 			RIGHTARG = text
 		);

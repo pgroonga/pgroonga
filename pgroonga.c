@@ -178,13 +178,13 @@ PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
 PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 
-PG_FUNCTION_INFO_V1(pgroonga_contain_text);
-PG_FUNCTION_INFO_V1(pgroonga_contain_text_array);
-PG_FUNCTION_INFO_V1(pgroonga_contain_varchar);
-PG_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
-PG_FUNCTION_INFO_V1(pgroonga_match_text);
-PG_FUNCTION_INFO_V1(pgroonga_match_text_array);
-PG_FUNCTION_INFO_V1(pgroonga_match_varchar);
+PG_FUNCTION_INFO_V1(pgroonga_match_term_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_term_text_array);
+PG_FUNCTION_INFO_V1(pgroonga_match_term_varchar);
+PG_FUNCTION_INFO_V1(pgroonga_match_term_varchar_array);
+PG_FUNCTION_INFO_V1(pgroonga_match_query_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_query_text_array);
+PG_FUNCTION_INFO_V1(pgroonga_match_query_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
@@ -2165,58 +2165,58 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 }
 
 static grn_bool
-pgroonga_contain_raw(const char *text, unsigned int textSize,
-					 const char *subText, unsigned int subTextSize)
+pgroonga_match_term_raw(const char *text, unsigned int textSize,
+						const char *term, unsigned int termSize)
 {
-	grn_bool contained;
+	grn_bool matched;
 	grn_obj targetBuffer;
-	grn_obj subTextBuffer;
+	grn_obj termBuffer;
 
 	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
 
-	GRN_TEXT_INIT(&subTextBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &subTextBuffer, subText, subTextSize);
+	GRN_TEXT_INIT(&termBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &termBuffer, term, termSize);
 
-	contained = grn_operator_exec_match(ctx, &targetBuffer, &subTextBuffer);
+	matched = grn_operator_exec_match(ctx, &targetBuffer, &termBuffer);
 
 	GRN_OBJ_FIN(ctx, &targetBuffer);
-	GRN_OBJ_FIN(ctx, &subTextBuffer);
+	GRN_OBJ_FIN(ctx, &termBuffer);
 
-	return contained;
+	return matched;
 }
 
 /**
- * pgroonga.contain(target text, query text) : bool
+ * pgroonga.match_term(target text, term text) : bool
  */
 Datum
-pgroonga_contain_text(PG_FUNCTION_ARGS)
+pgroonga_match_term_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	text *query = PG_GETARG_TEXT_PP(1);
-	grn_bool contained;
+	text *term = PG_GETARG_TEXT_PP(1);
+	grn_bool matched;
 
-	contained = pgroonga_contain_raw(VARDATA_ANY(target),
-									 VARSIZE_ANY_EXHDR(target),
-									 VARDATA_ANY(query),
-									 VARSIZE_ANY_EXHDR(query));
-	PG_RETURN_BOOL(contained);
+	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(term),
+									  VARSIZE_ANY_EXHDR(term));
+	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.contain(target text[], query text) : bool
+ * pgroonga.match_term(target text[], term text) : bool
  */
 Datum
-pgroonga_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *target = PG_GETARG_ARRAYTYPE_P(0);
-	text *query = PG_GETARG_TEXT_PP(1);
-	bool contained = false;
+	text *term = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
 	grn_obj elementBuffer;
 	int i, n;
 
 	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
+	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
 
 	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 
@@ -2234,51 +2234,51 @@ pgroonga_contain_text_array(PG_FUNCTION_ARGS)
 		element = DatumGetTextPP(elementDatum);
 		GRN_TEXT_SET(ctx, &elementBuffer,
 					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
-		if (pgroonga_contain_raw(GRN_TEXT_VALUE(&elementBuffer),
-								 GRN_TEXT_LEN(&elementBuffer),
-								 GRN_TEXT_VALUE(&buffer),
-								 GRN_TEXT_LEN(&buffer)))
+		if (pgroonga_match_term_raw(GRN_TEXT_VALUE(&elementBuffer),
+									GRN_TEXT_LEN(&elementBuffer),
+									GRN_TEXT_VALUE(&buffer),
+									GRN_TEXT_LEN(&buffer)))
 		{
-			contained = true;
+			matched = true;
 			break;
 		}
 	}
 
 	GRN_OBJ_FIN(ctx, &elementBuffer);
 
-	PG_RETURN_BOOL(contained);
+	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.contain(target varchar, query varchar) : bool
+ * pgroonga.match_term(target varchar, term varchar) : bool
  */
 Datum
-pgroonga_contain_varchar(PG_FUNCTION_ARGS)
+pgroonga_match_term_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	VarChar *query = PG_GETARG_VARCHAR_PP(1);
-	grn_bool contained;
+	VarChar *term = PG_GETARG_VARCHAR_PP(1);
+	grn_bool matched;
 
-	contained =
-		pgroonga_contain_raw(VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target),
-							 VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
-	PG_RETURN_BOOL(contained);
+	matched =
+		pgroonga_match_term_raw(VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target),
+								VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
+	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.contain(target varchar[], query varchar) : bool
+ * pgroonga.match_term(target varchar[], term varchar) : bool
  */
 Datum
-pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
+pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *target = PG_GETARG_ARRAYTYPE_P(0);
-	VarChar *query = PG_GETARG_VARCHAR_PP(1);
-	bool contained = false;
+	VarChar *term = PG_GETARG_VARCHAR_PP(1);
+	bool matched = false;
 	grn_obj elementBuffer;
 	int i, n;
 
 	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
+	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
 
 	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 
@@ -2298,19 +2298,19 @@ pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
 		if (grn_operator_exec_equal(ctx, &buffer, &elementBuffer))
 		{
-			contained = true;
+			matched = true;
 			break;
 		}
 	}
 
 	GRN_OBJ_FIN(ctx, &elementBuffer);
 
-	PG_RETURN_BOOL(contained);
+	PG_RETURN_BOOL(matched);
 }
 
 static grn_bool
-pgroonga_match_text_raw(const char *target, unsigned int targetSize,
-						const char *query, unsigned int querySize)
+pgroonga_match_query_raw(const char *target, unsigned int targetSize,
+						 const char *query, unsigned int querySize)
 {
 	grn_obj *expression;
 	grn_obj *variable;
@@ -2369,28 +2369,28 @@ pgroonga_match_text_raw(const char *target, unsigned int targetSize,
 }
 
 /**
- * pgroonga.match_text(target text, query text) : bool
+ * pgroonga.match_query(target text, query text) : bool
  */
 Datum
-pgroonga_match_text(PG_FUNCTION_ARGS)
+pgroonga_match_query_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
 
-	matched = pgroonga_match_text_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(query),
-									  VARSIZE_ANY_EXHDR(query));
+	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+									   VARSIZE_ANY_EXHDR(target),
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query));
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_text(targets text[], query text) : bool
+ * pgroonga.match_query(targets text[], query text) : bool
  */
 Datum
-pgroonga_match_text_array(PG_FUNCTION_ARGS)
+pgroonga_match_query_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *query = PG_GETARG_TEXT_PP(1);
@@ -2409,10 +2409,10 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 			continue;
 
 		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_match_text_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  VARDATA_ANY(query),
-										  VARSIZE_ANY_EXHDR(query));
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query));
 		if (matched)
 		{
 			break;
@@ -2423,19 +2423,19 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_varchar(target varchar, query varchar) : bool
+ * pgroonga.match_query(target varchar, query varchar) : bool
  */
 Datum
-pgroonga_match_varchar(PG_FUNCTION_ARGS)
+pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *query = PG_GETARG_VARCHAR_PP(1);
 	bool matched = false;
 
-	matched = pgroonga_match_text_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(query),
-									  VARSIZE_ANY_EXHDR(query));
+	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(query),
+											VARSIZE_ANY_EXHDR(query));
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2481,7 +2481,7 @@ pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
 }
 
 /**
- * pgroonga.match_regexp_text(target, pattern) : bool
+ * pgroonga.match_regexp(target text, pattern text) : bool
  */
 Datum
 pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
@@ -2498,7 +2498,7 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_regexp_varchar(target, pattern) : bool
+ * pgroonga.match_regexp_varchar(target varchar, pattern varchar) : bool
  */
 Datum
 pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
@@ -3663,7 +3663,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		break;
 	case PGrnLikeStrategyNumber:
 		break;
-	case PGrnContainStrategyNumber:
+	case PGrnMatchStrategyNumber:
 		operator = GRN_OP_MATCH;
 		break;
 	case PGrnQueryStrategyNumber:

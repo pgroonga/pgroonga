@@ -19,7 +19,7 @@
 #define PGrnGreaterEqualStrategyNumber	4	/* operator >= */
 #define PGrnGreaterStrategyNumber		5	/* operator > */
 #define PGrnLikeStrategyNumber			6	/* operator ~~ (LIKE) */
-#define PGrnContainStrategyNumber		7	/* operator %% (@ in Groonga) */
+#define PGrnMatchStrategyNumber			7	/* operator %% (@ in Groonga) */
 #define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
 #define PGrnJSONContainStrategyNumber	9	/* operator @> */
 #define PGrnRegexpStrategyNumber		10	/* operator @~ (@~ in Groonga)  */
@@ -48,13 +48,15 @@ extern Datum PGDLLEXPORT pgroonga_table_name(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_command(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_snippet_html(PG_FUNCTION_ARGS);
 
-extern Datum PGDLLEXPORT pgroonga_contain_text(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_contain_text_array(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_contain_varchar(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_contain_varchar_array(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_match_text(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_match_text_array(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_match_varchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_term_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_term_text_array(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_term_varchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_query_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_query_text_array(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_query_varchar(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_regexp_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_jsonb(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_insert(PG_FUNCTION_ARGS);
