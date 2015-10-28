@@ -5,7 +5,7 @@ CREATE TABLE memos (
 
 INSERT INTO memos
      VALUES ('PostgreSQL',
-             ARRAY['PostgreSQL is an OSS RDMBS',
+             ARRAY['PostgreSQL is an OSS RDBMS',
                    'PostgreSQL has partial full-text search support']);
 INSERT INTO memos
      VALUES ('Groonga', ARRAY['Groonga is an OSS full-text search engine',
