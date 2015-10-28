@@ -3662,6 +3662,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		operator = GRN_OP_GREATER;
 		break;
 	case PGrnLikeStrategyNumber:
+	case PGrnILikeStrategyNumber:
 		break;
 	case PGrnMatchStrategyNumber:
 		operator = GRN_OP_MATCH;
@@ -3687,7 +3688,10 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		else
 			PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
 		break;
-	case PGrnQueryStrategyNumber:
+	case PGrnILikeStrategyNumber:
+		PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
+		break;
+				case PGrnQueryStrategyNumber:
 	{
 		grn_rc rc;
 		grn_expr_flags flags =
@@ -4082,7 +4086,8 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 		for (i = 0; i < scan->numberOfKeys; i++)
 		{
 			ScanKey key = &(scan->keyData[i]);
-			if (key->sk_strategy == PGrnLikeStrategyNumber)
+			if (key->sk_strategy == PGrnLikeStrategyNumber ||
+				key->sk_strategy == PGrnILikeStrategyNumber)
 			{
 				scan->xs_recheck = true;
 				break;

@@ -19,10 +19,11 @@
 #define PGrnGreaterEqualStrategyNumber	4	/* operator >= */
 #define PGrnGreaterStrategyNumber		5	/* operator > */
 #define PGrnLikeStrategyNumber			6	/* operator ~~ (LIKE) */
-#define PGrnMatchStrategyNumber			7	/* operator %% (@ in Groonga) */
-#define PGrnQueryStrategyNumber			8	/* operator @@ (Groonga query) */
-#define PGrnJSONContainStrategyNumber	9	/* operator @> */
+#define PGrnILikeStrategyNumber			7	/* operator ~~* (ILIKE) */
+#define PGrnMatchStrategyNumber			8	/* operator %% (@ in Groonga) */
+#define PGrnQueryStrategyNumber			9	/* operator @@ (Groonga query) */
 #define PGrnRegexpStrategyNumber		10	/* operator @~ (@~ in Groonga)  */
+#define PGrnJSONContainStrategyNumber	11	/* operator @> */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
