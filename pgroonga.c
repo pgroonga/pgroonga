@@ -206,6 +206,7 @@ static grn_ctx grnContext;
 static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
+static grn_obj keywordBuffer;
 static grn_obj patternBuffer;
 static grn_obj ctidBuffer;
 static grn_obj scoreBuffer;
@@ -449,6 +450,7 @@ PGrnOnProcExit(int code, Datum arg)
 		GRN_OBJ_FIN(ctx, &ctidBuffer);
 		GRN_OBJ_FIN(ctx, &scoreBuffer);
 		GRN_OBJ_FIN(ctx, &patternBuffer);
+		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		GRN_OBJ_FIN(ctx, &pathBuffer);
 		GRN_OBJ_FIN(ctx, &buffer);
 
@@ -620,6 +622,7 @@ _PG_init(void)
 
 	GRN_VOID_INIT(&buffer);
 	GRN_TEXT_INIT(&pathBuffer, 0);
+	GRN_TEXT_INIT(&keywordBuffer, 0);
 	GRN_TEXT_INIT(&patternBuffer, 0);
 	GRN_FLOAT_INIT(&scoreBuffer, 0);
 	GRN_UINT64_INIT(&ctidBuffer, 0);
@@ -3155,13 +3158,36 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
+									   grn_obj *matchTarget,
+									   grn_obj *keyword,
+									   int *nKeywords)
+{
+	if (GRN_TEXT_LEN(keyword) == 0)
+		return;
+
+	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+	grn_expr_append_const_str(ctx, expression,
+							  GRN_TEXT_VALUE(keyword),
+							  GRN_TEXT_LEN(keyword),
+							  GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+	if (*nKeywords > 0)
+			grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
+	(*nKeywords)++;
+
+	GRN_BULK_REWIND(keyword);
+}
+
+static void
 PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 								  grn_obj *matchTarget,
 								  grn_obj *query)
 {
 	grn_obj *expression;
 	const char *queryRaw;
-	size_t querySize;
+	size_t i, querySize;
+	int nKeywords = 0;
 
 	expression = data->expression;
 	queryRaw = GRN_TEXT_VALUE(query);
@@ -3173,17 +3199,46 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		return;
 	}
 
-	if (!(queryRaw[0] == '%' && queryRaw[querySize - 1] == '%'))
+	GRN_BULK_REWIND(&keywordBuffer);
+	for (i = 0; i < querySize; i++)
 	{
-		data->isEmptyCondition = true;
-		return;
+		switch (queryRaw[i])
+		{
+		case '\\':
+			if (i == querySize)
+			{
+				GRN_TEXT_PUTC(ctx, &keywordBuffer, '\\');
+			}
+			else
+			{
+				GRN_TEXT_PUTC(ctx, &keywordBuffer, queryRaw[i + 1]);
+				i++;
+			}
+			break;
+		case '%':
+		case '_':
+			PGrnSearchBuildConditionLikeMatchFlush(expression,
+												   matchTarget,
+												   &keywordBuffer,
+												   &nKeywords);
+			break;
+		default:
+			GRN_TEXT_PUTC(ctx, &keywordBuffer, queryRaw[i]);
+			break;
+		}
 	}
 
-	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
-	grn_expr_append_const_str(ctx, expression,
-							  queryRaw + 1, querySize - 2,
-							  GRN_OP_PUSH, 1);
-	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+	PGrnSearchBuildConditionLikeMatchFlush(expression,
+										   matchTarget,
+										   &keywordBuffer,
+										   &nKeywords);
+	if (nKeywords == 0)
+	{
+		grn_expr_append_obj(ctx, expression,
+							grn_ctx_get(ctx, "all_records", -1),
+							GRN_OP_PUSH, 1);
+		grn_expr_append_op(ctx, expression, GRN_OP_CALL, 0);
+	}
 }
 
 static void
@@ -4022,6 +4077,19 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+	{
+		int i;
+		for (i = 0; i < scan->numberOfKeys; i++)
+		{
+			ScanKey key = &(scan->keyData[i]);
+			if (key->sk_strategy == PGrnLikeStrategyNumber)
+			{
+				scan->xs_recheck = true;
+				break;
+			}
+		}
+	}
+
 	if (so->indexCursor)
 		return;
 	if (so->tableCursor)
@@ -4166,7 +4234,7 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 			GRN_BULK_REWIND(&ctidBuffer);
 			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &ctidBuffer);
 			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
-			tbm_add_tuples(tbm, &ctid, 1, false);
+			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
 	}
@@ -4179,7 +4247,7 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 			GRN_BULK_REWIND(&ctidBuffer);
 			grn_obj_get_value(ctx, so->ctidAccessor, id, &ctidBuffer);
 			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
-			tbm_add_tuples(tbm, &ctid, 1, false);
+			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
 	}

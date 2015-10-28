@@ -12,12 +12,10 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SELECT id, content
   FROM memos
- WHERE content LIKE '%groonga%';
+ WHERE content LIKE '%Groonga.';
  id |                        content                        
 ----+-------------------------------------------------------
-  2 | Groonga is fast full text search engine.
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
-  4 | groonga command is provided.
-(3 rows)
+(1 row)
 
 DROP TABLE memos;
