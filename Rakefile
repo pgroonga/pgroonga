@@ -136,7 +136,7 @@ namespace :package do
 
     desc "Download sources"
     task :download => source_dir do
-      sh("rsync", "-avz", "--progress", "#{rsync_path}/", source_dir)
+      sh("rsync", "-avz", "--progress", "--delete", "#{rsync_path}/", source_dir)
     end
 
     desc "Upload sources"
