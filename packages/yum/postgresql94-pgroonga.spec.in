@@ -14,7 +14,7 @@ Summary:	Fast full-text search plugin for PostgreSQL based on Groonga
 
 Group:		Applications/Text
 License:	PostgreSQL
-URL:		https://github.com/pgroonga/pgroonga
+URL:		http://pgroonga.github.io/
 Source0:	http://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
@@ -40,7 +40,7 @@ PATH="%{pg_bindir}:$PATH" \
   make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
 
 %files
-%doc README.md news.md COPYING
+%doc README.md COPYING
 %{pg_libdir}/*.so
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
