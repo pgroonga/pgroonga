@@ -105,6 +105,7 @@ file windows_archive_name => dist_files do
        "-O",
        "http://packages.groonga.org/source/groonga/#{groonga_archive_name}")
   end
+  rm_rf(groonga_base_name)
   sh("unzip", groonga_archive_name)
   rm(groonga_archive_name)
   mkdir_p("#{archive_base_name}/vendor")
