@@ -7,7 +7,7 @@ INSERT INTO memos VALUES (2, 'PostgreSQL Groonga');
 INSERT INTO memos VALUES (3, 'Groonga');
 CREATE INDEX grnindex ON memos
  USING pgroonga (tag)
-  WITH (tokenizer = '');
+  WITH (tokenizer = 'none');
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;

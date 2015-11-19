@@ -51,6 +51,8 @@ typedef struct stat pgrn_stat_buffer;
 
 #define VARCHARARRAYOID 1015
 
+#define PGRN_NONE_VALUE "none"
+
 PG_MODULE_MAGIC;
 
 static bool PGrnInitialized = false;
@@ -305,7 +307,7 @@ static void
 PGrnLogPathAssign(const char *new_value, void *extra)
 {
 	if (new_value) {
-		if (strcmp(new_value, "none") == 0) {
+		if (strcmp(new_value, PGRN_NONE_VALUE) == 0) {
 			grn_default_logger_set_path(NULL);
 		} else {
 			grn_default_logger_set_path(new_value);
@@ -487,17 +489,30 @@ PGrnIsTokenizer(grn_obj *object)
   return true;
 }
 
+static bool
+PGrnIsNoneValue(const char *value)
+{
+	if (!value)
+		return true;
+
+	if (!value[0])
+		return true;
+
+	if (strcmp(value, PGRN_NONE_VALUE) == 0)
+		return true;
+
+	return false;
+}
+
 static void
 PGrnOptionValidateTokenizer(char *name)
 {
 	grn_obj *tokenizer;
-	size_t name_length;
 
-	name_length = strlen(name);
-	if (name_length == 0)
+	if (PGrnIsNoneValue(name))
 		return;
 
-	tokenizer = grn_ctx_get(ctx, name, name_length);
+	tokenizer = grn_ctx_get(ctx, name, -1);
 	if (!tokenizer)
 	{
 		ereport(ERROR,
@@ -531,13 +546,11 @@ static void
 PGrnOptionValidateNormalizer(char *name)
 {
 	grn_obj *normalizer;
-	size_t name_length;
 
-	name_length = strlen(name);
-	if (name_length == 0)
+	if (PGrnIsNoneValue(name))
 		return;
 
-	normalizer = grn_ctx_get(ctx, name, name_length);
+	normalizer = grn_ctx_get(ctx, name, -1);
 	if (!normalizer)
 	{
 		ereport(ERROR,
@@ -1380,7 +1393,7 @@ PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 		normalizerName = (const char *) (options) + options->normalizerOffset;
 	}
 
-	if (!tokenizerName || tokenizerName[0] == '\0')
+	if (PGrnIsNoneValue(tokenizerName))
 		return;
 
 	snprintf(lexiconName, sizeof(lexiconName),
@@ -1393,7 +1406,7 @@ PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 
 	grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
 					 PGrnLookup(tokenizerName, ERROR));
-	if (normalizerName && normalizerName[0])
+	if (!PGrnIsNoneValue(normalizerName))
 	{
 		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
 						 PGrnLookup(normalizerName, ERROR));
@@ -1534,12 +1547,12 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 			tokenizerName = (const char *) (options) + options->tokenizerOffset;
 			normalizerName = (const char *) (options) + options->normalizerOffset;
 		}
-		if (tokenizerName && tokenizerName[0])
+		if (!PGrnIsNoneValue(tokenizerName))
 		{
 			grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
 							 PGrnLookup(tokenizerName, ERROR));
 		}
-		if (normalizerName && normalizerName[0])
+		if (!PGrnIsNoneValue(normalizerName))
 		{
 			grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
 							 PGrnLookup(normalizerName, ERROR));

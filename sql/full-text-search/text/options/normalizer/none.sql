@@ -9,7 +9,7 @@ INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groon
 
 CREATE INDEX grnindex ON memos
  USING pgroonga (content)
-  WITH (normalizer = '');
+  WITH (normalizer = 'none');
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;

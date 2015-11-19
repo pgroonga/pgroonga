@@ -9,7 +9,7 @@ INSERT INTO memos VALUES (3, 'Groonga');
 
 CREATE INDEX grnindex ON memos
  USING pgroonga (tag)
-  WITH (tokenizer = 'none');
+  WITH (tokenizer = '');
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;
