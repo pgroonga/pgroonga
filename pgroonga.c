@@ -1564,6 +1564,20 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 					 jsonTypesTable);
 }
 
+#ifdef PGRN_SUPPORT_OPTIONS
+static void
+PGrnApplyOptionValues(PGrnOptions *options,
+					  const char **tokenizerName,
+					  const char **normalizerName)
+{
+	if (!options)
+		return;
+
+	*tokenizerName  = ((const char *) options) + options->tokenizerOffset;
+	*normalizerName = ((const char *) options) + options->normalizerOffset;
+}
+#endif
+
 static void
 PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 {
@@ -1573,16 +1587,9 @@ PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 	grn_obj *lexicon;
 
 #ifdef PGRN_SUPPORT_OPTIONS
-	{
-		PGrnOptions *options;
-		options = (PGrnOptions *) (data->index->rd_options);
-		if (options)
-		{
-			tokenizerName = ((const char *) options) + options->tokenizerOffset;
-			normalizerName =
-				((const char *) options) + options->normalizerOffset;
-		}
-	}
+	PGrnApplyOptionValues((PGrnOptions *) (data->index->rd_options),
+						  &tokenizerName,
+						  &normalizerName);
 #endif
 
 	if (PGrnIsNoneValue(tokenizerName))
@@ -1733,17 +1740,9 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 		}
 
 #ifdef PGRN_SUPPORT_OPTIONS
-		{
-			PGrnOptions *options;
-			options = (PGrnOptions *) (data->index->rd_options);
-			if (options)
-			{
-				tokenizerName =
-					((const char *) options) + options->tokenizerOffset;
-				normalizerName =
-					((const char *) options) + options->normalizerOffset;
-			}
-		}
+		PGrnApplyOptionValues((PGrnOptions *) (data->index->rd_options),
+							  &tokenizerName,
+							  &normalizerName);
 #endif
 
 		if (!PGrnIsNoneValue(tokenizerName))
