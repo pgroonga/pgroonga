@@ -1,12 +1,127 @@
 #include "pgroonga.h"
 
-#include <access/reloptions.h>
+#ifdef GP_VERSION
+#	define PGRN_IS_GREENPLUM
+#endif
+
+#ifndef PGRN_IS_GREENPLUM
+#	define PGRN_SUPPORT_SCORE
+#	define PGRN_SUPPORT_OPTIONS
+#	define PGRN_SUPPORT_ENUM_VARIABLE
+#	define PGRN_SUPPORT_RECHECK_PER_SCAN
+#	define PGRN_SUPPORT_INDEX_ONLY_SCAN
+#	define PGRN_SUPPORT_BITMAP_INDEX
+#endif
+
+#ifndef ERRCODE_SYSTEM_ERROR
+#	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
+#endif
+
+#ifdef PGRN_IS_GREENPLUM
+#	define PGrnDefineCustomIntVariable(name,			\
+									   shortDesc,		\
+									   longDesc,		\
+									   valueAddr,		\
+									   bootValue,		\
+									   minValue,		\
+									   maxValue,		\
+									   context,			\
+									   flags,			\
+									   checkHook,		\
+									   assignHook,		\
+									   showHook)		\
+	DefineCustomIntVariable(name,						\
+							shortDesc,					\
+							longDesc,					\
+							valueAddr,					\
+							minValue,					\
+							maxValue,					\
+							context,					\
+							assignHook,					\
+							showHook)
+#	define PGrnDefineCustomStringVariable(name,			\
+										  shortDesc,	\
+										  longDesc,		\
+										  valueAddr,	\
+										  bootValue,	\
+										  context,		\
+										  flags,		\
+										  checkHook,	\
+										  assignHook,	\
+										  showHook)		\
+	DefineCustomStringVariable(name,					\
+							   shortDesc,				\
+							   longDesc,				\
+							   valueAddr,				\
+							   context,					\
+							   assignHook,				\
+							   showHook)
+#else
+#	define PGrnDefineCustomIntVariable(name,			\
+									   shortDesc,		\
+									   longDesc,		\
+									   valueAddr,		\
+									   bootValue,		\
+									   minValue,		\
+									   maxValue,		\
+									   context,			\
+									   flags,			\
+									   checkHook,		\
+									   assignHook,		\
+									   showHook)		\
+	DefineCustomIntVariable(name,						\
+							shortDesc,					\
+							longDesc,					\
+							valueAddr,					\
+							bootValue,					\
+							minValue,					\
+							maxValue,					\
+							context,					\
+							flags,						\
+							checkHook,					\
+							assignHook,					\
+							showHook)
+#	define PGrnDefineCustomStringVariable(name,			\
+										  shortDesc,	\
+										  longDesc,		\
+										  valueAddr,	\
+										  bootValue,	\
+										  context,		\
+										  flags,		\
+										  checkHook,	\
+										  assignHook,	\
+										  showHook)		\
+	DefineCustomStringVariable(name,					\
+							   shortDesc,				\
+							   longDesc,				\
+							   valueAddr,				\
+							   bootValue,				\
+							   context,					\
+							   flags,					\
+							   checkHook,				\
+							   assignHook,				\
+							   showHook)
+#endif
+
+#ifdef PGRN_IS_GREENPLUM
+#	define IndexBuildHeapScan(heapRelation,		\
+							  indexRelation,	\
+							  indexInfo,		\
+							  allow_sync,		\
+							  callback,			\
+							  callbackState)	\
+	IndexBuildScan(heapRelation,				\
+				   indexRelation,				\
+				   indexInfo,					\
+				   callback,					\
+				   callbackState)
+#endif
+
 #include <access/relscan.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_tablespace.h>
 #include <catalog/pg_type.h>
-#include <lib/ilist.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
 #include <optimizer/cost.h>
@@ -18,13 +133,21 @@
 #include <utils/guc.h>
 #include <utils/lsyscache.h>
 #include <utils/selfuncs.h>
-#include <utils/snapmgr.h>
 #include <utils/syscache.h>
 #include <utils/timestamp.h>
 #include <utils/tqual.h>
 #include <utils/typcache.h>
 #ifdef JSONBOID
 #	include <utils/jsonb.h>
+#endif
+
+#ifdef PGRN_SUPPORT_OPTIONS
+#	include <access/reloptions.h>
+#endif
+
+#ifdef PGRN_SUPPORT_SCORE
+#	include <lib/ilist.h>
+#	include <utils/snapmgr.h>
 #endif
 
 #include <groonga.h>
@@ -58,8 +181,11 @@ PG_MODULE_MAGIC;
 static bool PGrnInitialized = false;
 
 static bool PGrnIsLZ4Available;
+#ifdef PGRN_SUPPORT_OPTIONS
 static relopt_kind PGrnReloptionKind;
+#endif
 
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static int PGrnLogType;
 enum PGrnLogType {
 	PGRN_LOG_TYPE_FILE,
@@ -72,9 +198,11 @@ static struct config_enum_entry PGrnLogTypeEntries[] = {
 	{"postgresql",        PGRN_LOG_TYPE_POSTGRESQL,        false},
 	{NULL,                PGRN_LOG_TYPE_FILE,              false}
 };
+#endif
 
 static char *PGrnLogPath;
 
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static int PGrnLogLevel;
 static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"none",      GRN_LOG_NONE,    false},
@@ -89,15 +217,18 @@ static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"dump",      GRN_LOG_DUMP,    false},
 	{NULL,        GRN_LOG_NONE,    false}
 };
+#endif
 
 static int PGrnLockTimeout;
 
+#ifdef PGRN_SUPPORT_OPTIONS
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
 	int tokenizerOffset;
 	int normalizerOffset;
 } PGrnOptions;
+#endif
 
 typedef struct PGrnCreateData
 {
@@ -129,7 +260,9 @@ typedef PGrnBuildStateData *PGrnBuildState;
 typedef struct PGrnScanOpaqueData
 {
 	Relation index;
+#ifdef PGRN_SUPPORT_SCORE
 	slist_node node;
+#endif
 	Oid dataTableID;
 	struct
 	{
@@ -173,9 +306,13 @@ typedef struct PGrnSequentialSearchData
 	grn_id recordID;
 } PGrnSequentialSearchData;
 
+#ifdef PGRN_SUPPORT_SCORE
 static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
+#endif
 
+#ifdef PGRN_SUPPORT_SCORE
 PG_FUNCTION_INFO_V1(pgroonga_score);
+#endif
 PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
 PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
@@ -193,7 +330,9 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
 PG_FUNCTION_INFO_V1(pgroonga_gettuple);
+#ifdef PGRN_SUPPORT_BITMAP_INDEX
 PG_FUNCTION_INFO_V1(pgroonga_getbitmap);
+#endif
 PG_FUNCTION_INFO_V1(pgroonga_rescan);
 PG_FUNCTION_INFO_V1(pgroonga_endscan);
 PG_FUNCTION_INFO_V1(pgroonga_build);
@@ -255,6 +394,7 @@ PGrnGetEncoding(void)
 	}
 }
 
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx, grn_log_level level,
 						const char *timestamp, const char *title,
@@ -302,9 +442,10 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		break;
 	}
 }
+#endif
 
 static void
-PGrnLogPathAssign(const char *new_value, void *extra)
+PGrnLogPathAssignRaw(const char *new_value)
 {
 	if (new_value) {
 		if (strcmp(new_value, PGRN_NONE_VALUE) == 0) {
@@ -317,21 +458,54 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 	}
 }
 
+#ifdef PGRN_IS_GREENPLUM
+static const char *
+PGrnLogPathAssign(const char *new_value, bool doit, GucSource source)
+{
+	PGrnLogPathAssignRaw(new_value);
+	return new_value;
+}
+#else
+static void
+PGrnLogPathAssign(const char *new_value, void *extra)
+{
+	PGrnLogPathAssignRaw(new_value);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
 	grn_default_logger_set_max_level(new_value);
 }
+#endif
 
 static void
-PGrnLockTimeoutAssign(int new_value, void *extra)
+PGrnLockTimeoutAssignRaw(int new_value)
 {
 	grn_set_lock_timeout(new_value);
 }
 
+#ifdef PGRN_IS_GREENPLUM
+static bool
+PGrnLockTimeoutAssign(int new_value, bool doit, GucSource source)
+{
+	PGrnLockTimeoutAssignRaw(new_value);
+	return true;
+}
+#else
+static void
+PGrnLockTimeoutAssign(int new_value, void *extra)
+{
+	PGrnLockTimeoutAssignRaw(new_value);
+}
+#endif
+
 static void
 PGrnInitializeVariables(void)
 {
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 	DefineCustomEnumVariable("pgroonga.log_type",
 							 "Log type for PGroonga.",
 							 "Available log types: "
@@ -345,20 +519,22 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnLogTypeAssign,
 							 NULL);
+#endif
 
-	DefineCustomStringVariable("pgroonga.log_path",
-							   "Log path for PGroonga.",
-							   "The default is "
-							   "\"${PG_DATA}/" PGrnLogBasename "\". "
-							   "Use \"none\" to disable file output.",
-							   &PGrnLogPath,
-							   NULL,
-							   PGC_USERSET,
-							   0,
-							   NULL,
-							   PGrnLogPathAssign,
-							   NULL);
+	PGrnDefineCustomStringVariable("pgroonga.log_path",
+								   "Log path for PGroonga.",
+								   "The default is "
+								   "\"${PG_DATA}/" PGrnLogBasename "\". "
+								   "Use \"none\" to disable file output.",
+								   &PGrnLogPath,
+								   NULL,
+								   PGC_USERSET,
+								   0,
+								   NULL,
+								   PGrnLogPathAssign,
+								   NULL);
 
+#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 	DefineCustomEnumVariable("pgroonga.log_level",
 							 "Log level for PGroonga.",
 							 "Available log levels: "
@@ -373,23 +549,24 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnLogLevelAssign,
 							 NULL);
+#endif
 
-	DefineCustomIntVariable("pgroonga.lock_timeout",
-							"Try pgroonga.lock_timeout times "
-							"at 1 msec intervals to "
-							"get write lock in PGroonga.",
-							"The default is 10000000. "
-							"It means that PGroonga tries to get write lock "
-							"between about 2.7 hours.",
-							&PGrnLockTimeout,
-							grn_get_lock_timeout(),
-							0,
-							INT_MAX,
-							PGC_USERSET,
-							0,
-							NULL,
-							PGrnLockTimeoutAssign,
-							NULL);
+	PGrnDefineCustomIntVariable("pgroonga.lock_timeout",
+								"Try pgroonga.lock_timeout times "
+								"at 1 msec intervals to "
+								"get write lock in PGroonga.",
+								"The default is 10000000. "
+								"It means that PGroonga tries to get write lock "
+								"between about 2.7 hours.",
+								&PGrnLockTimeout,
+								grn_get_lock_timeout(),
+								0,
+								INT_MAX,
+								PGC_USERSET,
+								0,
+								NULL,
+								PGrnLockTimeoutAssign,
+								NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }
@@ -478,18 +655,6 @@ PGrnInitializeGroongaInformation(void)
 }
 
 static bool
-PGrnIsTokenizer(grn_obj *object)
-{
-	if (object->header.type != GRN_PROC)
-		return false;
-
-  if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKENIZER)
-	  return false;
-
-  return true;
-}
-
-static bool
 PGrnIsNoneValue(const char *value)
 {
 	if (!value)
@@ -502,6 +667,19 @@ PGrnIsNoneValue(const char *value)
 		return true;
 
 	return false;
+}
+
+#ifdef PGRN_SUPPORT_OPTIONS
+static bool
+PGrnIsTokenizer(grn_obj *object)
+{
+	if (object->header.type != GRN_PROC)
+		return false;
+
+	if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKENIZER)
+		return false;
+
+	return true;
 }
 
 static void
@@ -529,7 +707,9 @@ PGrnOptionValidateTokenizer(char *name)
 						name, PGrnInspect(tokenizer))));
 	}
 }
+#endif
 
+#ifdef PGRN_SUPPORT_OPTIONS
 static bool
 PGrnIsNormalizer(grn_obj *object)
 {
@@ -567,7 +747,9 @@ PGrnOptionValidateNormalizer(char *name)
 						name, PGrnInspect(normalizer))));
 	}
 }
+#endif
 
+#ifdef PGRN_SUPPORT_OPTIONS
 static void
 PGrnInitializeOptions(void)
 {
@@ -584,6 +766,7 @@ PGrnInitializeOptions(void)
 						 PGRN_DEFAULT_NORMALIZER,
 						 PGrnOptionValidateNormalizer);
 }
+#endif
 
 static void
 PGrnInitializeSequentialSearchData(void)
@@ -648,7 +831,9 @@ _PG_init(void)
 
 	PGrnInitializeGroongaInformation();
 
+#ifdef PGRN_SUPPORT_OPTIONS
 	PGrnInitializeOptions();
+#endif
 
 	PGrnInitializeSequentialSearchData();
 }
@@ -896,6 +1081,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	}
 }
 
+#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 static Datum
 PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 {
@@ -1019,6 +1205,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		break;
 	}
 }
+#endif
 
 #ifdef JSONBOID
 
@@ -1380,18 +1567,23 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 static void
 PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 {
-	PGrnOptions *options;
 	const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
 	const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 	grn_obj *lexicon;
 
-	options = (PGrnOptions *) (data->index->rd_options);
-	if (options)
+#ifdef PGRN_SUPPORT_OPTIONS
 	{
-		tokenizerName = (const char *) (options) + options->tokenizerOffset;
-		normalizerName = (const char *) (options) + options->normalizerOffset;
+		PGrnOptions *options;
+		options = (PGrnOptions *) (data->index->rd_options);
+		if (options)
+		{
+			tokenizerName = ((const char *) options) + options->tokenizerOffset;
+			normalizerName =
+				((const char *) options) + options->normalizerOffset;
+		}
 	}
+#endif
 
 	if (PGrnIsNoneValue(tokenizerName))
 		return;
@@ -1531,7 +1723,6 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 
 	if (data->forFullTextSearch || data->forRegexpSearch)
 	{
-		PGrnOptions *options;
 		const char *tokenizerName;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 
@@ -1541,12 +1732,20 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 			tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		}
 
-		options = (PGrnOptions *) (data->index->rd_options);
-		if (options)
+#ifdef PGRN_SUPPORT_OPTIONS
 		{
-			tokenizerName = (const char *) (options) + options->tokenizerOffset;
-			normalizerName = (const char *) (options) + options->normalizerOffset;
+			PGrnOptions *options;
+			options = (PGrnOptions *) (data->index->rd_options);
+			if (options)
+			{
+				tokenizerName =
+					((const char *) options) + options->tokenizerOffset;
+				normalizerName =
+					((const char *) options) + options->normalizerOffset;
+			}
 		}
+#endif
+
 		if (!PGrnIsNoneValue(tokenizerName))
 		{
 			grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
@@ -1791,6 +1990,7 @@ UInt64ToCtid(uint64 key)
 	return ctid;
 }
 
+#ifdef PGRN_SUPPORT_SCORE
 static bool
 PGrnIsAliveCtid(Relation table, ItemPointer ctid)
 {
@@ -1955,6 +2155,7 @@ pgroonga_score(PG_FUNCTION_ARGS)
 
 	PG_RETURN_FLOAT8(score);
 }
+#endif
 
 /**
  * pgroonga.table_name(indexName cstring) : cstring
@@ -3087,7 +3288,9 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 
+#ifdef PGRN_SUPPORT_SCORE
 	slist_push_head(&PGrnScanOpaques, &(so->node));
+#endif
 }
 
 static void
@@ -3131,6 +3334,7 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
+#ifdef PGRN_SUPPORT_SCORE
 	slist_mutable_iter iter;
 
 	slist_foreach_modify(iter, &PGrnScanOpaques)
@@ -3144,6 +3348,7 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 			break;
 		}
 	}
+#endif
 
 	PGrnScanOpaqueReinit(so);
 }
@@ -3156,11 +3361,19 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 {
 	Relation index = (Relation) PG_GETARG_POINTER(0);
 	int nkeys = PG_GETARG_INT32(1);
+#ifdef PGRN_IS_GREENPLUM
+	ScanKey key = (ScanKey) PG_GETARG_POINTER(2);
+#else
 	int norderbys = PG_GETARG_INT32(2);
+#endif
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
 
+#ifdef PGRN_IS_GREENPLUM
+	scan = RelationGetIndexScan(index, nkeys, key);
+#else
 	scan = RelationGetIndexScan(index, nkeys, norderbys);
+#endif
 
 	so = (PGrnScanOpaque) palloc(sizeof(PGrnScanOpaqueData));
 	PGrnScanOpaqueInit(so, index);
@@ -4094,6 +4307,7 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+#ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
 	{
 		int i;
 		for (i = 0; i < scan->numberOfKeys; i++)
@@ -4107,6 +4321,7 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 			}
 		}
 	}
+#endif
 
 	if (so->indexCursor)
 		return;
@@ -4125,6 +4340,7 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 	}
 }
 
+#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 static void
 PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 						   IndexScanDesc scan)
@@ -4176,6 +4392,7 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 	pfree(values);
 	pfree(isNulls);
 }
+#endif
 
 /**
  * pgroonga.gettuple() -- amgettuple
@@ -4187,7 +4404,9 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 	ScanDirection dir = (ScanDirection) PG_GETARG_INT32(1);
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+#ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
 	scan->xs_recheck = false;
+#endif
 
 	PGrnEnsureCursorOpened(scan, dir);
 
@@ -4221,14 +4440,17 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &ctidBuffer);
 		scan->xs_ctup.t_self = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
 
+#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 		if (scan->xs_want_itup)
 			PGrnGetTupleFillIndexTuple(so, scan);
+#endif
 
 		PG_RETURN_BOOL(true);
 	}
 
 }
 
+#ifdef PGRN_SUPPORT_BITMAP_INDEX
 /**
  * pgroonga.getbitmap() -- amgetbitmap
  */
@@ -4272,6 +4494,7 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 
 	PG_RETURN_INT64(nRecords);
 }
+#endif
 
 /**
  * pgroonga.rescan() -- amrescan
@@ -4312,6 +4535,40 @@ pgroonga_endscan(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnBuildCallbackRaw(Relation index,
+					 ItemPointer ctid,
+					 Datum *values,
+					 bool *isnull,
+					 bool tupleIsAlive,
+					 void *state)
+{
+	PGrnBuildState bs = (PGrnBuildState) state;
+
+	if (tupleIsAlive) {
+		PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
+				   values, isnull, ctid);
+		bs->nIndexedTuples++;
+	}
+}
+
+#ifdef PGRN_IS_GREENPLUM
+static void
+PGrnBuildCallback(Relation index,
+				  ItemPointer ctid,
+				  Datum *values,
+				  bool *isnull,
+				  bool tupleIsAlive,
+				  void *state)
+{
+	PGrnBuildCallbackRaw(index,
+						 ctid,
+						 values,
+						 isnull,
+						 tupleIsAlive,
+						 state);
+}
+#else
+static void
 PGrnBuildCallback(Relation index,
 				  HeapTuple htup,
 				  Datum *values,
@@ -4319,14 +4576,14 @@ PGrnBuildCallback(Relation index,
 				  bool tupleIsAlive,
 				  void *state)
 {
-	PGrnBuildState bs = (PGrnBuildState) state;
-
-	if (tupleIsAlive) {
-		PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
-				   values, isnull, &(htup->t_self));
-		bs->nIndexedTuples++;
-	}
+	PGrnBuildCallbackRaw(index,
+						 &(htup->t_self),
+						 values,
+						 isnull,
+						 tupleIsAlive,
+						 state);
 }
+#endif
 
 /**
  * pgroonga.build() -- ambuild
@@ -4888,6 +5145,7 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 #endif
 }
 
+#ifdef PGRN_SUPPORT_OPTIONS
 /**
  * pgroonga.options() -- amoptions
  */
@@ -4915,3 +5173,4 @@ pgroonga_options(PG_FUNCTION_ARGS)
 
 	PG_RETURN_BYTEA_P(grnOptions);
 }
+#endif
