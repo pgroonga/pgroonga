@@ -580,7 +580,7 @@ PGrnEnsureDatabase(void)
 	pgrn_stat_buffer file_status;
 
 	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
-	databasePath = GetDatabasePath(MyDatabaseId, DEFAULTTABLESPACE_OID);
+	databasePath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
 	join_path_components(path,
 						 databasePath,
 						 PGrnDatabaseBasename);
