@@ -10,9 +10,14 @@ EXTENSION = pgroonga
 EXTENSION_VERSION =						\
 	$(shell grep default_version $(EXTENSION).control |	\
 		sed -e "s/^.*'\([0-9.]*\)'$$/\1/")
+ifdef GP
+DATA =						\
+	pgroonga-gpdb.sql
+else
 DATA =						\
 	pgroonga--$(EXTENSION_VERSION).sql
 #	$(shell echo pgroonga--*--*.sql)
+endif
 
 PG_CPPFLAGS = $(shell pkg-config --cflags $(GROONGA_PKG))
 SHLIB_LINK = $(shell pkg-config --libs $(GROONGA_PKG)) -lm
