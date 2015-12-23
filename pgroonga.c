@@ -4272,6 +4272,22 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 	int i;
 	AttrNumber previousAttrNumber = InvalidAttrNumber;
 
+	if (scan->numberOfKeys == 0)
+	{
+		grn_obj *indexColumn;
+		grn_obj *lexicon;
+		grn_obj *tokenizer;
+
+		indexColumn = PGrnLookupIndexColumn(scan->indexRelation, 0, ERROR);
+		lexicon = grn_column_table(ctx, indexColumn);
+		tokenizer = grn_obj_get_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
+									 NULL);
+		if (tokenizer)
+		{
+			return false;
+		}
+	}
+
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
 		ScanKey key = &(scan->keyData[i]);
