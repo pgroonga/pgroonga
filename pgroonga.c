@@ -3384,14 +3384,15 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 
 static void
 PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
-									   grn_obj *matchTarget,
+									   grn_obj *targetColumn,
 									   grn_obj *keyword,
 									   int *nKeywords)
 {
 	if (GRN_TEXT_LEN(keyword) == 0)
 		return;
 
-	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
 	grn_expr_append_const_str(ctx, expression,
 							  GRN_TEXT_VALUE(keyword),
 							  GRN_TEXT_LEN(keyword),
@@ -3406,7 +3407,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 
 static void
 PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
-								  grn_obj *matchTarget,
+								  grn_obj *targetColumn,
 								  grn_obj *query)
 {
 	grn_obj *expression;
@@ -3443,7 +3444,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		case '%':
 		case '_':
 			PGrnSearchBuildConditionLikeMatchFlush(expression,
-												   matchTarget,
+												   targetColumn,
 												   &keywordBuffer,
 												   &nKeywords);
 			break;
@@ -3454,7 +3455,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 	}
 
 	PGrnSearchBuildConditionLikeMatchFlush(expression,
-										   matchTarget,
+										   targetColumn,
 										   &keywordBuffer,
 										   &nKeywords);
 	if (nKeywords == 0)
@@ -3468,7 +3469,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 
 static void
 PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
-								   grn_obj *matchTarget,
+								   grn_obj *targetColumn,
 								   grn_obj *query)
 {
 	grn_obj *expression;
@@ -3576,7 +3577,8 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	if (!lastIsPercent)
 		GRN_TEXT_PUTS(ctx, &patternBuffer, "\\z");
 
-	grn_expr_append_obj(ctx, expression, matchTarget, GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
 	grn_expr_append_const_str(ctx, expression,
 							  GRN_TEXT_VALUE(&patternBuffer),
 							  GRN_TEXT_LEN(&patternBuffer),
@@ -3824,7 +3826,6 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	Form_pg_attribute attribute;
 	const char *targetColumnName;
 	grn_obj *targetColumn;
-	grn_obj *matchTarget, *matchTargetVariable;
 	grn_operator operator = GRN_OP_NOP;
 
 	/* NULL key is not supported */
@@ -3842,12 +3843,6 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	if (attribute->atttypid == JSONBOID)
 		return PGrnSearchBuildConditionJSON(data, key, targetColumn);
 #endif
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
-							  matchTarget, matchTargetVariable);
-	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-
-	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
 	{
 		grn_id domain;
@@ -3909,18 +3904,25 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	{
 	case PGrnLikeStrategyNumber:
 		if (PGrnIsForRegexpSearchIndex(index, key->sk_attno - 1))
-			PGrnSearchBuildConditionLikeRegexp(data, matchTarget, &buffer);
+			PGrnSearchBuildConditionLikeRegexp(data, targetColumn, &buffer);
 		else
-			PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
+			PGrnSearchBuildConditionLikeMatch(data, targetColumn, &buffer);
 		break;
 	case PGrnILikeStrategyNumber:
-		PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
+		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &buffer);
 		break;
 	case PGrnQueryStrategyNumber:
 	{
 		grn_rc rc;
+		grn_obj *matchTarget, *matchTargetVariable;
 		grn_expr_flags flags =
 			GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+
+		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+								  matchTarget, matchTargetVariable);
+		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
+		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+
 		rc = grn_expr_parse(ctx, data->expression,
 							GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
 							matchTarget, GRN_OP_MATCH, GRN_OP_AND,
@@ -3936,7 +3938,8 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	}
 	default:
 		grn_expr_append_obj(ctx, data->expression,
-							matchTarget, GRN_OP_PUSH, 1);
+							targetColumn, GRN_OP_PUSH, 1);
+		grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
 		grn_expr_append_const(ctx, data->expression,
 							  &buffer, GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, data->expression, operator, 2);
