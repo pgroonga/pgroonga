@@ -3916,7 +3916,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnILikeStrategyNumber:
 		PGrnSearchBuildConditionLikeMatch(data, matchTarget, &buffer);
 		break;
-				case PGrnQueryStrategyNumber:
+	case PGrnQueryStrategyNumber:
 	{
 		grn_rc rc;
 		grn_expr_flags flags =
