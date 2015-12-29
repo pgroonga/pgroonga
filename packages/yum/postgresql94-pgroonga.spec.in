@@ -46,6 +46,9 @@ PATH="%{pg_bindir}:$PATH" \
 %{pg_datadir}/extension/*.sql
 
 %changelog
+* Tue Dec 29 2015 Kouhei Sutou <kou@clear-code.com> - 1.0.1-1
+- new upstream release.
+
 * Thu Oct 29 2015 Kouhei Sutou <kou@clear-code.com> - 1.0.0-1
 - new upstream release.
 
