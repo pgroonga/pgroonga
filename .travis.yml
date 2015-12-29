@@ -5,7 +5,7 @@ language: c
 compiler:
   - gcc
 addons:
-  postgresql: "9.3"
+  postgresql: "9.4"
 sudo: required
 # env:
 #   - GROONGA_MASTER=yes
