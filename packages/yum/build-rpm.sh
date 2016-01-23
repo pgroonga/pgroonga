@@ -28,7 +28,7 @@ case "${architecture}" in
     ;;
 esac
 
-run rpm -ivh http://yum.postgresql.org/9.4/redhat/rhel-${distribution_version}-${architecture}/pgdg-centos94-9.4-1.noarch.rpm
+run rpm -ivh http://yum.postgresql.org/${PG_VERSION}/redhat/rhel-${distribution_version}-${architecture}/pgdg-centos${PG_PACKAGE_VERSION}-${PG_VERSION}-1.noarch.rpm
 run rpm -ivh http://packages.groonga.org/centos/groonga-release-1.1.0-1.noarch.rpm
 run yum makecache
 

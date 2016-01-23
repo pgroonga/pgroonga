@@ -167,76 +167,93 @@ namespace :package do
 
   namespace :yum do
     distribution = "centos"
-    rpm_package = "postgresql94-#{package}"
     rsync_path = rsync_base_path
     yum_dir = "#{packages_dir}/yum"
     repositories_dir = "#{yum_dir}/repositories"
 
     directory repositories_dir
 
-    env_sh = "#{yum_dir}/env.sh"
-    file env_sh => __FILE__ do
-      File.open(env_sh, "w") do |file|
-        file.puts(<<-ENV)
+    postgresql_package_versions = [
+      "94",
+      "95",
+    ]
+    namespace :build do
+      postgresql_package_versions.each do |postgresql_package_version|
+        rpm_package = "postgresql#{postgresql_package_version}-#{package}"
+
+        postgresql_version = postgresql_package_version.scan(/(.)/).join(".")
+        desc "Build RPM packages for PostgreSQL #{postgresql_version}"
+        task postgresql_package_version => [archive_name, repositories_dir] do
+          tmp_dir = "#{yum_dir}/tmp"
+          rm_rf(tmp_dir)
+          mkdir_p(tmp_dir)
+          cp(archive_name, tmp_dir)
+
+          env_sh = "#{yum_dir}/env.sh"
+          File.open(env_sh, "w") do |file|
+            file.puts(<<-ENV)
 SOURCE_ARCHIVE=#{archive_name}
 PACKAGE=#{rpm_package}
 VERSION=#{version}
+PG_VERSION=#{postgresql_version}
+PG_PACKAGE_VERSION=#{postgresql_package_version}
 DEPENDED_PACKAGES="
 gcc
 make
 pkg-config
 groonga-devel
-postgresql94-devel
+postgresql#{postgresql_package_version}-devel
 "
-        ENV
-      end
-    end
+            ENV
+          end
 
-    spec = "#{yum_dir}/#{rpm_package}.spec"
-    spec_in = "#{spec}.in"
-    file spec => [spec_in, control_file(package)] do
-      spec_in_data = File.read(spec_in)
-      spec_data = spec_in_data.gsub(/@(.+)@/) do |matched|
-        case $1
-        when "PACKAGE"
-          rpm_package
-        when "VERSION"
-          version
-        else
-          matched
-        end
-      end
-      File.open(spec, "w") do |spec_file|
-        spec_file.print(spec_data)
-      end
-    end
+          tmp_distribution_dir = "#{tmp_dir}/#{distribution}"
+          mkdir_p(tmp_distribution_dir)
+          spec = "#{tmp_distribution_dir}/#{rpm_package}.spec"
+          spec_in = "#{yum_dir}/postgresql-pgroonga.spec.in"
+          spec_in_data = File.read(spec_in)
+          spec_data = spec_in_data.gsub(/@(.+)@/) do |matched|
+            case $1
+            when "PG_VERSION"
+              postgresql_version
+            when "PG_PACKAGE_VERSION"
+              postgresql_package_version
+            when "PACKAGE"
+              rpm_package
+            when "VERSION"
+              version
+            else
+              matched
+            end
+          end
+          File.open(spec, "w") do |spec_file|
+            spec_file.print(spec_data)
+          end
 
-    desc "Build RPM packages"
-    task :build => [archive_name, env_sh, spec, repositories_dir] do
-      tmp_dir = "#{yum_dir}/tmp"
-      rm_rf(tmp_dir)
-      mkdir_p(tmp_dir)
-      cp(archive_name, tmp_dir)
-      tmp_distribution_dir = "#{tmp_dir}/#{distribution}"
-      mkdir_p(tmp_distribution_dir)
-      cp(spec, tmp_distribution_dir)
-
-      cd(yum_dir) do
-        sh("vagrant", "destroy", "--force")
-        distribution_versions = {
-          "5" => ["i386", "x86_64"],
-          "6" => ["i386", "x86_64"],
-          "7" => ["x86_64"],
-        }
-        distribution_versions.each do |ver, archs|
-          archs.each do |arch|
-            id = "#{distribution}-#{ver}-#{arch}"
-            sh("vagrant", "up", id)
-            sh("vagrant", "destroy", "--force", id)
+          cd(yum_dir) do
+            sh("vagrant", "destroy", "--force")
+            distribution_versions = {
+              "5" => ["i386", "x86_64"],
+              "6" => ["i386", "x86_64"],
+              "7" => ["x86_64"],
+            }
+            distribution_versions.each do |ver, archs|
+              archs.each do |arch|
+                id = "#{distribution}-#{ver}-#{arch}"
+                sh("vagrant", "up", id)
+                sh("vagrant", "destroy", "--force", id)
+              end
+            end
           end
         end
       end
     end
+
+    desc "Build RPM packages"
+    build_tasks = postgresql_package_versions.collect do |package_version|
+      "build:#{package_version}"
+    end
+    task :build => build_tasks
 
     desc "Sign packages"
     task :sign do
@@ -520,7 +537,7 @@ postgresql-server-dev-9.4
            "README.md",
            "packages/debian93/changelog",
            "packages/debian94/changelog",
-           "packages/yum/postgresql94-pgroonga.spec.in")
+           "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
 end
