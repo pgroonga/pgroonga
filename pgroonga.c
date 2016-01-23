@@ -326,6 +326,9 @@ PG_FUNCTION_INFO_V1(pgroonga_match_query_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_match_query_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
+#ifdef JSONBOID
+PG_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+#endif
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -2653,6 +2656,7 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+#ifdef JSONBOID
 /**
  * pgroonga.match_jsonb(jsonb, query) : bool
  */
@@ -2670,6 +2674,7 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 
 	PG_RETURN_BOOL(false);
 }
+#endif
 
 static grn_bool
 pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
