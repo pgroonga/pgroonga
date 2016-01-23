@@ -230,7 +230,7 @@ PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 PG_FUNCTION_INFO_V1(pgroonga_options);
 
-static grn_ctx grnContext;
+grn_ctx PGrnContext;
 static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
@@ -681,12 +681,12 @@ _PG_init(void)
 
 	on_proc_exit(PGrnOnProcExit, 0);
 
-	if (grn_ctx_init(&grnContext, 0))
+	if (grn_ctx_init(&PGrnContext, 0))
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
 
-	ctx = &grnContext;
+	ctx = &PGrnContext;
 
 	GRN_VOID_INIT(&buffer);
 	GRN_TEXT_INIT(&pathBuffer, 0);
