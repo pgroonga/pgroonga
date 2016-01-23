@@ -1,5 +1,7 @@
 #include "pgrn_global.h"
 
+#include <stdlib.h>
+
 grn_ctx PGrnContext;
 struct PGrnBuffers PGrnBuffers;
 
