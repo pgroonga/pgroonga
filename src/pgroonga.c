@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn_compatible.h"
+#include "pgrn_global.h"
 #include "pgrn_value.h"
 
 #include <access/relscan.h>
