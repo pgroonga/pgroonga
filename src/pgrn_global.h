@@ -8,3 +8,6 @@ struct PGrnBuffers {
 
 grn_ctx PGrnContext;
 struct PGrnBuffers PGrnBuffers;
+
+void PGrnInitializeBuffers(void);
+void PGrnFinalizeBuffers(void);

@@ -179,9 +179,6 @@ PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
 PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 
-grn_ctx PGrnContext;
-struct PGrnBuffers PGrnBuffers;
-
 static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
@@ -273,7 +270,7 @@ PGrnOnProcExit(int code, Datum arg)
 
 		PGrnFinalizeSequentialSearchData();
 
-		GRN_OBJ_FIN(ctx, &(PGrnBuffers.inspect));
+		PGrnFinalizeBuffers();
 		GRN_OBJ_FIN(ctx, &footBuffer);
 		GRN_OBJ_FIN(ctx, &bodyBuffer);
 		GRN_OBJ_FIN(ctx, &headBuffer);
@@ -362,7 +359,8 @@ _PG_init(void)
 	GRN_TEXT_INIT(&headBuffer, 0);
 	GRN_TEXT_INIT(&bodyBuffer, 0);
 	GRN_TEXT_INIT(&footBuffer, 0);
-	GRN_TEXT_INIT(&(PGrnBuffers.inspect), 0);
+
+	PGrnInitializeBuffers();
 
 	PGrnEnsureDatabase();
 
