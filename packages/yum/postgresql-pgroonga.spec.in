@@ -33,7 +33,9 @@ It is based on Groonga.
 
 %build
 PATH="%{pg_bindir}:$PATH" \
-  make %{?_smp_mflags}
+  make \
+    enable_rpath=no \
+    %{?_smp_mflags}
 
 %install
 PATH="%{pg_bindir}:$PATH" \
