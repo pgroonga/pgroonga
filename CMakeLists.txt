@@ -48,6 +48,7 @@ link_directories(
 
 set(PGRN_SOURCES
   "src/pgroonga.c"
+  "src/pgn_value.c"
   "vendor/xxHash/xxhash.c")
 set_source_files_properties(${PGRN_SOURCES}
   PROPERTIES

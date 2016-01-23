@@ -116,6 +116,7 @@
 				   callback,					\
 				   callbackState)
 #endif
+#include "pgrn_value.h"
 
 #include <access/relscan.h>
 #include <catalog/catalog.h>
@@ -173,8 +174,6 @@ typedef struct stat pgrn_stat_buffer;
 
 
 #define VARCHARARRAYOID 1015
-
-#define PGRN_NONE_VALUE "none"
 
 PG_MODULE_MAGIC;
 
@@ -655,21 +654,6 @@ PGrnInitializeGroongaInformation(void)
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_LZ4, &grnIsSupported);
 	PGrnIsLZ4Available = (GRN_BOOL_VALUE(&grnIsSupported));
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
-}
-
-static bool
-PGrnIsNoneValue(const char *value)
-{
-	if (!value)
-		return true;
-
-	if (!value[0])
-		return true;
-
-	if (strcmp(value, PGRN_NONE_VALUE) == 0)
-		return true;
-
-	return false;
 }
 
 #ifdef PGRN_SUPPORT_OPTIONS
