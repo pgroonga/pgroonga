@@ -3,7 +3,7 @@ GROONGA_PKG = "groonga >= $(REQUIRED_GROONGA_VERSION)"
 
 MODULE_big = pgroonga
 SRCS =						\
-	pgroonga.c				\
+	src/pgroonga.c				\
 	vendor/xxHash/xxhash.c
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
