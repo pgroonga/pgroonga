@@ -180,15 +180,7 @@ PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 
 static grn_ctx *ctx = NULL;
-static grn_obj buffer;
-static grn_obj pathBuffer;
-static grn_obj keywordBuffer;
-static grn_obj patternBuffer;
-static grn_obj ctidBuffer;
-static grn_obj scoreBuffer;
-static grn_obj headBuffer;
-static grn_obj bodyBuffer;
-static grn_obj footBuffer;
+static struct PGrnBuffers *buffers = &PGrnBuffers;
 static PGrnSequentialSearchData sequentialSearchData;
 
 static grn_encoding
@@ -271,15 +263,6 @@ PGrnOnProcExit(int code, Datum arg)
 		PGrnFinalizeSequentialSearchData();
 
 		PGrnFinalizeBuffers();
-		GRN_OBJ_FIN(ctx, &footBuffer);
-		GRN_OBJ_FIN(ctx, &bodyBuffer);
-		GRN_OBJ_FIN(ctx, &headBuffer);
-		GRN_OBJ_FIN(ctx, &ctidBuffer);
-		GRN_OBJ_FIN(ctx, &scoreBuffer);
-		GRN_OBJ_FIN(ctx, &patternBuffer);
-		GRN_OBJ_FIN(ctx, &keywordBuffer);
-		GRN_OBJ_FIN(ctx, &pathBuffer);
-		GRN_OBJ_FIN(ctx, &buffer);
 
 		db = grn_ctx_db(ctx);
 		if (db)
@@ -349,16 +332,6 @@ _PG_init(void)
 				 errmsg("pgroonga: failed to initialize Groonga context")));
 
 	ctx = &PGrnContext;
-
-	GRN_VOID_INIT(&buffer);
-	GRN_TEXT_INIT(&pathBuffer, 0);
-	GRN_TEXT_INIT(&keywordBuffer, 0);
-	GRN_TEXT_INIT(&patternBuffer, 0);
-	GRN_FLOAT_INIT(&scoreBuffer, 0);
-	GRN_UINT64_INIT(&ctidBuffer, 0);
-	GRN_TEXT_INIT(&headBuffer, 0);
-	GRN_TEXT_INIT(&bodyBuffer, 0);
-	GRN_TEXT_INIT(&footBuffer, 0);
 
 	PGrnInitializeBuffers();
 
@@ -1550,17 +1523,17 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 	if (!OidIsValid(so->primaryKey.type))
 		return 0.0;
 
-	grn_obj_reinit(ctx, &buffer, so->primaryKey.domain, so->primaryKey.flags);
+	grn_obj_reinit(ctx, &(buffers->general), so->primaryKey.domain, so->primaryKey.flags);
 
 	desc = RelationGetDescr(table);
 	primaryKeyValue = heap_getattr(tuple, so->primaryKey.number, desc, &isNULL);
-	PGrnConvertFromData(primaryKeyValue, so->primaryKey.type, &buffer);
+	PGrnConvertFromData(primaryKeyValue, so->primaryKey.type, &(buffers->general));
 
 	tableCursor = grn_table_cursor_open(ctx, so->primaryKey.lexicon,
-										GRN_BULK_HEAD(&buffer),
-										GRN_BULK_VSIZE(&buffer),
-										GRN_BULK_HEAD(&buffer),
-										GRN_BULK_VSIZE(&buffer),
+										GRN_BULK_HEAD(&(buffers->general)),
+										GRN_BULK_VSIZE(&(buffers->general)),
+										GRN_BULK_HEAD(&(buffers->general)),
+										GRN_BULK_VSIZE(&(buffers->general)),
 										0, -1, GRN_CURSOR_ASCENDING);
 	if (!tableCursor)
 		return 0.0;
@@ -1585,22 +1558,22 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 		if (id == GRN_ID_NIL)
 			continue;
 
-		GRN_BULK_REWIND(&ctidBuffer);
-		grn_obj_get_value(ctx, so->ctidAccessor, id, &ctidBuffer);
-		ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+		GRN_BULK_REWIND(&(buffers->ctid));
+		grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
+		ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 
 		if (!PGrnIsAliveCtid(table, &ctid))
 			continue;
 
-		GRN_BULK_REWIND(&scoreBuffer);
-		grn_obj_get_value(ctx, so->scoreAccessor, id, &scoreBuffer);
-		if (scoreBuffer.header.domain == GRN_DB_FLOAT)
+		GRN_BULK_REWIND(&(buffers->score));
+		grn_obj_get_value(ctx, so->scoreAccessor, id, &(buffers->score));
+		if (buffers->score.header.domain == GRN_DB_FLOAT)
 		{
-			score += GRN_FLOAT_VALUE(&scoreBuffer);
+			score += GRN_FLOAT_VALUE(&(buffers->score));
 		}
 		else
 		{
-			score += GRN_INT32_VALUE(&scoreBuffer);
+			score += GRN_INT32_VALUE(&(buffers->score));
 		}
 	}
 
@@ -1729,33 +1702,36 @@ pgroonga_command(PG_FUNCTION_ARGS)
 				 VARSIZE_ANY_EXHDR(groongaCommand), 0);
 	rc = ctx->rc;
 
-	GRN_BULK_REWIND(&bodyBuffer);
+	GRN_BULK_REWIND(&(buffers->body));
 	do {
 		char *chunk;
 		unsigned int chunkSize;
 		grn_ctx_recv(ctx, &chunk, &chunkSize, &flags);
-		GRN_TEXT_PUT(ctx, &bodyBuffer, chunk, chunkSize);
+		GRN_TEXT_PUT(ctx, &(buffers->body), chunk, chunkSize);
 	} while ((flags & GRN_CTX_MORE));
 
-	GRN_BULK_REWIND(&headBuffer);
-	GRN_BULK_REWIND(&footBuffer);
+	GRN_BULK_REWIND(&(buffers->head));
+	GRN_BULK_REWIND(&(buffers->foot));
 	grn_output_envelope(ctx,
 						rc,
-						&headBuffer,
-						&bodyBuffer,
-						&footBuffer,
+						&(buffers->head),
+						&(buffers->body),
+						&(buffers->foot),
 						NULL,
 						0);
 
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_PUT(ctx, &buffer,
-				 GRN_TEXT_VALUE(&headBuffer), GRN_TEXT_LEN(&headBuffer));
-	GRN_TEXT_PUT(ctx, &buffer,
-				 GRN_TEXT_VALUE(&bodyBuffer), GRN_TEXT_LEN(&bodyBuffer));
-	GRN_TEXT_PUT(ctx, &buffer,
-				 GRN_TEXT_VALUE(&footBuffer), GRN_TEXT_LEN(&footBuffer));
-	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&buffer),
-									  GRN_TEXT_LEN(&buffer));
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_PUT(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(&(buffers->head)),
+				 GRN_TEXT_LEN(&(buffers->head)));
+	GRN_TEXT_PUT(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(&(buffers->body)),
+				 GRN_TEXT_LEN(&(buffers->body)));
+	GRN_TEXT_PUT(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(&(buffers->foot)),
+				 GRN_TEXT_LEN(&(buffers->foot)));
+	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&(buffers->general)),
+									  GRN_TEXT_LEN(&(buffers->general)));
 	PG_RETURN_TEXT_P(result);
 }
 
@@ -1939,8 +1915,8 @@ pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 	grn_obj elementBuffer;
 	int i, n;
 
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &(buffers->general), VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
 
 	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 
@@ -1960,8 +1936,8 @@ pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
 		if (pgroonga_match_term_raw(GRN_TEXT_VALUE(&elementBuffer),
 									GRN_TEXT_LEN(&elementBuffer),
-									GRN_TEXT_VALUE(&buffer),
-									GRN_TEXT_LEN(&buffer)))
+									GRN_TEXT_VALUE(&(buffers->general)),
+									GRN_TEXT_LEN(&(buffers->general))))
 		{
 			matched = true;
 			break;
@@ -2001,8 +1977,8 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 	grn_obj elementBuffer;
 	int i, n;
 
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &buffer, VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &(buffers->general), VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
 
 	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 
@@ -2020,7 +1996,7 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 		element = DatumGetVarCharPP(elementDatum);
 		GRN_TEXT_SET(ctx, &elementBuffer,
 					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
-		if (grn_operator_exec_equal(ctx, &buffer, &elementBuffer))
+		if (grn_operator_exec_equal(ctx, &(buffers->general), &elementBuffer))
 		{
 			matched = true;
 			break;
@@ -2075,12 +2051,12 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						message)));
 	}
 
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &buffer, target, targetSize);
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
 	grn_obj_set_value(ctx,
 					  sequentialSearchData.textColumn,
 					  sequentialSearchData.recordID,
-					  &buffer,
+					  &(buffers->general),
 					  GRN_OBJ_SET);
 	GRN_RECORD_SET(ctx, variable, sequentialSearchData.recordID);
 
@@ -2621,8 +2597,8 @@ PGrnInsert(Relation index,
 	unsigned int i;
 
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-	GRN_UINT64_SET(ctx, &ctidBuffer, CtidToUInt64(ht_ctid));
-	grn_obj_set_value(ctx, sourcesCtidColumn, id, &ctidBuffer, GRN_OBJ_SET);
+	GRN_UINT64_SET(ctx, &(buffers->ctid), CtidToUInt64(ht_ctid));
+	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -2641,16 +2617,16 @@ PGrnInsert(Relation index,
 #ifdef JSONBOID
 		if (attribute->atttypid == JSONBOID)
 		{
-			PGrnInsertForJSON(index, values, i, &buffer);
+			PGrnInsertForJSON(index, values, i, &(buffers->general));
 		}
 		else
 #endif
 		{
 			domain = PGrnGetType(index, i, &flags);
-			grn_obj_reinit(ctx, &buffer, domain, flags);
-			PGrnConvertFromData(values[i], attribute->atttypid, &buffer);
+			grn_obj_reinit(ctx, &(buffers->general), domain, flags);
+			PGrnConvertFromData(values[i], attribute->atttypid, &(buffers->general));
 		}
-		grn_obj_set_value(ctx, dataColumn, id, &buffer, GRN_OBJ_SET);
+		grn_obj_set_value(ctx, dataColumn, id, &(buffers->general), GRN_OBJ_SET);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("pgroonga: failed to set column value")) {
 			continue;
@@ -2938,7 +2914,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		return;
 	}
 
-	GRN_BULK_REWIND(&keywordBuffer);
+	GRN_BULK_REWIND(&(buffers->keyword));
 	for (i = 0; i < querySize; i++)
 	{
 		switch (queryRaw[i])
@@ -2946,11 +2922,11 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		case '\\':
 			if (i == querySize)
 			{
-				GRN_TEXT_PUTC(ctx, &keywordBuffer, '\\');
+				GRN_TEXT_PUTC(ctx, &(buffers->keyword), '\\');
 			}
 			else
 			{
-				GRN_TEXT_PUTC(ctx, &keywordBuffer, queryRaw[i + 1]);
+				GRN_TEXT_PUTC(ctx, &(buffers->keyword), queryRaw[i + 1]);
 				i++;
 			}
 			break;
@@ -2958,18 +2934,18 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		case '_':
 			PGrnSearchBuildConditionLikeMatchFlush(expression,
 												   targetColumn,
-												   &keywordBuffer,
+												   &(buffers->keyword),
 												   &nKeywords);
 			break;
 		default:
-			GRN_TEXT_PUTC(ctx, &keywordBuffer, queryRaw[i]);
+			GRN_TEXT_PUTC(ctx, &(buffers->keyword), queryRaw[i]);
 			break;
 		}
 	}
 
 	PGrnSearchBuildConditionLikeMatchFlush(expression,
 										   targetColumn,
-										   &keywordBuffer,
+										   &(buffers->keyword),
 										   &nKeywords);
 	if (nKeywords == 0)
 	{
@@ -2999,9 +2975,9 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	querySize = GRN_TEXT_LEN(query);
 	queryRawEnd = queryRaw + querySize;
 
-	GRN_BULK_REWIND(&patternBuffer);
+	GRN_BULK_REWIND(&(buffers->pattern));
 	if (queryRaw[0] != '%')
-		GRN_TEXT_PUTS(ctx, &patternBuffer, "\\A");
+		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\A");
 
 	queryRawCurrent = queryRaw;
 	while ((characterSize = grn_charlen(ctx, queryRawCurrent, queryRawEnd)) > 0)
@@ -3026,12 +3002,12 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 				}
 				else
 				{
-					GRN_TEXT_PUTS(ctx, &patternBuffer, ".*");
+					GRN_TEXT_PUTS(ctx, &(buffers->pattern), ".*");
 				}
 				needToAddCharacter = false;
 				break;
 			case '_':
-				GRN_TEXT_PUTC(ctx, &patternBuffer, '.');
+				GRN_TEXT_PUTC(ctx, &(buffers->pattern), '.');
 				needToAddCharacter = false;
 				break;
 			case '\\':
@@ -3064,17 +3040,17 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 			case '}':
 			case '^':
 			case '$':
-				GRN_TEXT_PUTC(ctx, &patternBuffer, '\\');
-				GRN_TEXT_PUTC(ctx, &patternBuffer, current[0]);
+				GRN_TEXT_PUTC(ctx, &(buffers->pattern), '\\');
+				GRN_TEXT_PUTC(ctx, &(buffers->pattern), current[0]);
 				break;
 			default:
-				GRN_TEXT_PUTC(ctx, &patternBuffer, current[0]);
+				GRN_TEXT_PUTC(ctx, &(buffers->pattern), current[0]);
 				break;
 			}
 		}
 		else
 		{
-			GRN_TEXT_PUT(ctx, &patternBuffer, current, characterSize);
+			GRN_TEXT_PUT(ctx, &(buffers->pattern), current, characterSize);
 		}
 		escaping = false;
 	}
@@ -3088,13 +3064,13 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	}
 
 	if (!lastIsPercent)
-		GRN_TEXT_PUTS(ctx, &patternBuffer, "\\z");
+		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\z");
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
 	grn_expr_append_const_str(ctx, expression,
-							  GRN_TEXT_VALUE(&patternBuffer),
-							  GRN_TEXT_LEN(&patternBuffer),
+							  GRN_TEXT_VALUE(&(buffers->pattern)),
+							  GRN_TEXT_LEN(&(buffers->pattern)),
 							  GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
 }
@@ -3129,20 +3105,20 @@ PGrnSearchBuildConditionJSONContainType(PGrnSearchData *data,
 										const char *typeName,
 										unsigned int *nthCondition)
 {
-	GRN_BULK_REWIND(&buffer);
+	GRN_BULK_REWIND(&(buffers->general));
 
-	GRN_TEXT_PUTS(ctx, &buffer, "type == ");
-	grn_text_esc(ctx, &buffer, typeName, strlen(typeName));
+	GRN_TEXT_PUTS(ctx, &(buffers->general), "type == ");
+	grn_text_esc(ctx, &(buffers->general), typeName, strlen(typeName));
 
-	GRN_BULK_REWIND(&pathBuffer);
-	PGrnJSONGenerateCompletePath(components, &pathBuffer);
-	GRN_TEXT_PUTS(ctx, &buffer, " && path == ");
-	grn_text_esc(ctx, &buffer,
-				 GRN_TEXT_VALUE(&pathBuffer),
-				 GRN_TEXT_LEN(&pathBuffer));
+	GRN_BULK_REWIND(&(buffers->path));
+	PGrnJSONGenerateCompletePath(components, &(buffers->path));
+	GRN_TEXT_PUTS(ctx, &(buffers->general), " && path == ");
+	grn_text_esc(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(&(buffers->path)),
+				 GRN_TEXT_LEN(&(buffers->path)));
 
 	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
-									  &buffer, nthCondition);
+									  &(buffers->general), nthCondition);
 }
 
 static void
@@ -3153,18 +3129,18 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 										 JsonbValue *value,
 										 unsigned int *nthCondition)
 {
-	GRN_BULK_REWIND(&buffer);
+	GRN_BULK_REWIND(&(buffers->general));
 
 	switch (value->type)
 	{
 	case jbvNull:
-		GRN_TEXT_PUTS(ctx, &buffer, "type == \"null\"");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), "type == \"null\"");
 		break;
 	case jbvString:
 		if (value->val.string.len == 0)
-			GRN_TEXT_PUTS(ctx, &buffer, "type == \"string\" && ");
-		GRN_TEXT_PUTS(ctx, &buffer, "string == ");
-		grn_text_esc(ctx, &buffer,
+			GRN_TEXT_PUTS(ctx, &(buffers->general), "type == \"string\" && ");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), "string == ");
+		grn_text_esc(ctx, &(buffers->general),
 					 value->val.string.val,
 					 value->val.string.len);
 		break;
@@ -3176,33 +3152,33 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 		const char *numericInCString = DatumGetCString(numericInString);
 
 		if (strcmp(numericInCString, "0") == 0)
-			GRN_TEXT_PUTS(ctx, &buffer, "type == \"number\" && ");
-		GRN_TEXT_PUTS(ctx, &buffer, "number == ");
-		GRN_TEXT_PUTS(ctx, &buffer, numericInCString);
+			GRN_TEXT_PUTS(ctx, &(buffers->general), "type == \"number\" && ");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), "number == ");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), numericInCString);
 		break;
 	}
 	case jbvBool:
-		GRN_TEXT_PUTS(ctx, &buffer, "type == \"boolean\" && ");
-		GRN_TEXT_PUTS(ctx, &buffer, "boolean == ");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), "type == \"boolean\" && ");
+		GRN_TEXT_PUTS(ctx, &(buffers->general), "boolean == ");
 		if (value->val.boolean)
-			GRN_TEXT_PUTS(ctx, &buffer, "true");
+			GRN_TEXT_PUTS(ctx, &(buffers->general), "true");
 		else
-			GRN_TEXT_PUTS(ctx, &buffer, "false");
+			GRN_TEXT_PUTS(ctx, &(buffers->general), "false");
 		break;
 	default:
 		return;
 		break;
 	}
 
-	GRN_BULK_REWIND(&pathBuffer);
-	PGrnJSONGenerateCompletePath(components, &pathBuffer);
-	GRN_TEXT_PUTS(ctx, &buffer, " && path == ");
-	grn_text_esc(ctx, &buffer,
-				 GRN_TEXT_VALUE(&pathBuffer),
-				 GRN_TEXT_LEN(&pathBuffer));
+	GRN_BULK_REWIND(&(buffers->path));
+	PGrnJSONGenerateCompletePath(components, &(buffers->path));
+	GRN_TEXT_PUTS(ctx, &(buffers->general), " && path == ");
+	grn_text_esc(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(&(buffers->path)),
+				 GRN_TEXT_LEN(&(buffers->path)));
 
 	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
-									  &buffer, nthCondition);
+									  &(buffers->general), nthCondition);
 }
 
 static void
@@ -3303,16 +3279,16 @@ PGrnSearchBuildConditionJSON(PGrnSearchData *data,
 	grn_obj *subFilter;
 
 	subFilter = PGrnLookup("sub_filter", ERROR);
-	grn_obj_reinit(ctx, &buffer, GRN_DB_TEXT, 0);
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 
 	if (key->sk_strategy == PGrnQueryStrategyNumber)
 	{
 		unsigned int nthCondition = 0;
-		PGrnConvertFromData(key->sk_argument, TEXTOID, &buffer);
+		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->general));
 		PGrnSearchBuildConditionJSONQuery(data,
 										  subFilter,
 										  targetColumn,
-										  &buffer,
+										  &(buffers->general),
 										  &nthCondition);
 	}
 	else
@@ -3361,7 +3337,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		grn_id domain;
 		unsigned char flags = 0;
 		domain = PGrnGetType(index, key->sk_attno - 1, NULL);
-		grn_obj_reinit(ctx, &buffer, domain, flags);
+		grn_obj_reinit(ctx, &(buffers->general), domain, flags);
 	}
 	{
 		Oid valueTypeID = attribute->atttypid;
@@ -3374,7 +3350,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 			valueTypeID = TEXTOID;
 			break;
 		}
-		PGrnConvertFromData(key->sk_argument, valueTypeID, &buffer);
+		PGrnConvertFromData(key->sk_argument, valueTypeID, &(buffers->general));
 	}
 
 	switch (key->sk_strategy)
@@ -3417,12 +3393,12 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	{
 	case PGrnLikeStrategyNumber:
 		if (PGrnIsForRegexpSearchIndex(index, key->sk_attno - 1))
-			PGrnSearchBuildConditionLikeRegexp(data, targetColumn, &buffer);
+			PGrnSearchBuildConditionLikeRegexp(data, targetColumn, &(buffers->general));
 		else
-			PGrnSearchBuildConditionLikeMatch(data, targetColumn, &buffer);
+			PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
 		break;
 	case PGrnILikeStrategyNumber:
-		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &buffer);
+		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
 		break;
 	case PGrnQueryStrategyNumber:
 	{
@@ -3437,7 +3413,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
 		rc = grn_expr_parse(ctx, data->expression,
-							GRN_TEXT_VALUE(&buffer), GRN_TEXT_LEN(&buffer),
+							GRN_TEXT_VALUE(&(buffers->general)), GRN_TEXT_LEN(&(buffers->general)),
 							matchTarget, GRN_OP_MATCH, GRN_OP_AND,
 							flags);
 		if (rc != GRN_SUCCESS)
@@ -3454,7 +3430,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 							targetColumn, GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
 		grn_expr_append_const(ctx, data->expression,
-							  &buffer, GRN_OP_PUSH, 1);
+							  &(buffers->general), GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, data->expression, operator, 2);
 		break;
 	}
@@ -3662,12 +3638,12 @@ PGrnFillBorder(IndexScanDesc scan,
 		case PGrnLessEqualStrategyNumber:
 			if (maxBorderValue->header.type != GRN_DB_VOID)
 			{
-				grn_obj_reinit(ctx, &buffer, domain, 0);
+				grn_obj_reinit(ctx, &(buffers->general), domain, 0);
 				PGrnConvertFromData(key->sk_argument,
 									attribute->atttypid,
-									&buffer);
+									&(buffers->general));
 				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
-													 &buffer,
+													 &(buffers->general),
 													 *flags,
 													 key->sk_strategy))
 				{
@@ -3694,12 +3670,12 @@ PGrnFillBorder(IndexScanDesc scan,
 		case PGrnGreaterStrategyNumber:
 			if (minBorderValue->header.type != GRN_DB_VOID)
 			{
-				grn_obj_reinit(ctx, &buffer, domain, 0);
+				grn_obj_reinit(ctx, &(buffers->general), domain, 0);
 				PGrnConvertFromData(key->sk_argument,
 									attribute->atttypid,
-									&buffer);
+									&(buffers->general));
 				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
-													 &buffer,
+													 &(buffers->general),
 													 *flags,
 													 key->sk_strategy))
 				{
@@ -3891,9 +3867,9 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 	recordID = so->currentID;
 	if (so->sorted)
 	{
-		GRN_BULK_REWIND(&buffer);
-		grn_obj_get_value(ctx, so->sorted, recordID, &buffer);
-		recordID = GRN_RECORD_VALUE(&buffer);
+		GRN_BULK_REWIND(&(buffers->general));
+		grn_obj_get_value(ctx, so->sorted, recordID, &(buffers->general));
+		recordID = GRN_RECORD_VALUE(&(buffers->general));
 	}
 	if (so->searched)
 	{
@@ -3909,9 +3885,9 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 
 		name = &(attribute->attname);
 		dataColumn = PGrnLookupColumn(so->sourcesTable, name->data, ERROR);
-		GRN_BULK_REWIND(&buffer);
-		grn_obj_get_value(ctx, dataColumn, recordID, &buffer);
-		values[i] = PGrnConvertToDatum(&buffer, attribute->atttypid);
+		GRN_BULK_REWIND(&(buffers->general));
+		grn_obj_get_value(ctx, dataColumn, recordID, &(buffers->general));
+		values[i] = PGrnConvertToDatum(&(buffers->general), attribute->atttypid);
 		isNulls[i] = false;
 		grn_obj_unlink(ctx, dataColumn);
 	}
@@ -3967,9 +3943,9 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 	}
 	else
 	{
-		GRN_BULK_REWIND(&ctidBuffer);
-		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &ctidBuffer);
-		scan->xs_ctup.t_self = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+		GRN_BULK_REWIND(&(buffers->ctid));
+		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
+		scan->xs_ctup.t_self = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 		if (scan->xs_want_itup)
@@ -4002,9 +3978,9 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 		while ((posting = grn_index_cursor_next(ctx, so->indexCursor, &termID)))
 		{
 			ItemPointerData ctid;
-			GRN_BULK_REWIND(&ctidBuffer);
-			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &ctidBuffer);
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+			GRN_BULK_REWIND(&(buffers->ctid));
+			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &(buffers->ctid));
+			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
@@ -4015,9 +3991,9 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 		while ((id = grn_table_cursor_next(ctx, so->tableCursor)) != GRN_ID_NIL)
 		{
 			ItemPointerData ctid;
-			GRN_BULK_REWIND(&ctidBuffer);
-			grn_obj_get_value(ctx, so->ctidAccessor, id, &ctidBuffer);
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+			GRN_BULK_REWIND(&(buffers->ctid));
+			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
+			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
@@ -4429,9 +4405,9 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 
 			CHECK_FOR_INTERRUPTS();
 
-			GRN_BULK_REWIND(&ctidBuffer);
-			grn_obj_get_value(ctx, sourcesCtidColumn, id, &ctidBuffer);
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&ctidBuffer));
+			GRN_BULK_REWIND(&(buffers->ctid));
+			grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
+			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 			if (callback(&ctid, callback_state))
 			{
 				if (jsonValuesTable)
