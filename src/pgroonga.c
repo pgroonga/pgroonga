@@ -2,6 +2,7 @@
 
 #include "pgrn_compatible.h"
 #include "pgrn_global.h"
+#include "pgrn_options.h"
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
 
@@ -26,10 +27,6 @@
 #include <utils/typcache.h>
 #ifdef JSONBOID
 #	include <utils/jsonb.h>
-#endif
-
-#ifdef PGRN_SUPPORT_OPTIONS
-#	include <access/reloptions.h>
 #endif
 
 #ifdef PGRN_SUPPORT_SCORE
@@ -66,18 +63,6 @@ PG_MODULE_MAGIC;
 static bool PGrnInitialized = false;
 
 static bool PGrnIsLZ4Available;
-#ifdef PGRN_SUPPORT_OPTIONS
-static relopt_kind PGrnReloptionKind;
-#endif
-
-#ifdef PGRN_SUPPORT_OPTIONS
-typedef struct PGrnOptions
-{
-	int32 vl_len_;
-	int tokenizerOffset;
-	int normalizerOffset;
-} PGrnOptions;
-#endif
 
 typedef struct PGrnCreateData
 {
@@ -193,9 +178,10 @@ PG_FUNCTION_INFO_V1(pgroonga_bulkdelete);
 PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
 PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
-PG_FUNCTION_INFO_V1(pgroonga_options);
 
 grn_ctx PGrnContext;
+struct PGrnBuffers PGrnBuffers;
+
 static grn_ctx *ctx = NULL;
 static grn_obj buffer;
 static grn_obj pathBuffer;
@@ -206,17 +192,7 @@ static grn_obj scoreBuffer;
 static grn_obj headBuffer;
 static grn_obj bodyBuffer;
 static grn_obj footBuffer;
-static grn_obj inspectBuffer;
 static PGrnSequentialSearchData sequentialSearchData;
-
-static const char *
-PGrnInspect(grn_obj *object)
-{
-	GRN_BULK_REWIND(&inspectBuffer);
-	grn_inspect(ctx, &inspectBuffer, object);
-	GRN_TEXT_PUTC(ctx, &inspectBuffer, '\0');
-	return GRN_TEXT_VALUE(&inspectBuffer);
-}
 
 static grn_encoding
 PGrnGetEncoding(void)
@@ -297,7 +273,7 @@ PGrnOnProcExit(int code, Datum arg)
 
 		PGrnFinalizeSequentialSearchData();
 
-		GRN_OBJ_FIN(ctx, &inspectBuffer);
+		GRN_OBJ_FIN(ctx, &(PGrnBuffers.inspect));
 		GRN_OBJ_FIN(ctx, &footBuffer);
 		GRN_OBJ_FIN(ctx, &bodyBuffer);
 		GRN_OBJ_FIN(ctx, &headBuffer);
@@ -328,105 +304,6 @@ PGrnInitializeGroongaInformation(void)
 	PGrnIsLZ4Available = (GRN_BOOL_VALUE(&grnIsSupported));
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }
-
-#ifdef PGRN_SUPPORT_OPTIONS
-static bool
-PGrnIsTokenizer(grn_obj *object)
-{
-	if (object->header.type != GRN_PROC)
-		return false;
-
-	if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKENIZER)
-		return false;
-
-	return true;
-}
-
-static void
-PGrnOptionValidateTokenizer(char *name)
-{
-	grn_obj *tokenizer;
-
-	if (PGrnIsNoneValue(name))
-		return;
-
-	tokenizer = grn_ctx_get(ctx, name, -1);
-	if (!tokenizer)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: nonexistent tokenizer: <%s>",
-						name)));
-	}
-
-	if (!PGrnIsTokenizer(tokenizer))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: not tokenizer: <%s>: %s",
-						name, PGrnInspect(tokenizer))));
-	}
-}
-#endif
-
-#ifdef PGRN_SUPPORT_OPTIONS
-static bool
-PGrnIsNormalizer(grn_obj *object)
-{
-	if (object->header.type != GRN_PROC)
-		return false;
-
-  if (grn_proc_get_type(ctx, object) != GRN_PROC_NORMALIZER)
-	  return false;
-
-  return true;
-}
-
-static void
-PGrnOptionValidateNormalizer(char *name)
-{
-	grn_obj *normalizer;
-
-	if (PGrnIsNoneValue(name))
-		return;
-
-	normalizer = grn_ctx_get(ctx, name, -1);
-	if (!normalizer)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: nonexistent normalizer: <%s>",
-						name)));
-	}
-
-	if (!PGrnIsNormalizer(normalizer))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: not normalizer: <%s>: %s",
-						name, PGrnInspect(normalizer))));
-	}
-}
-#endif
-
-#ifdef PGRN_SUPPORT_OPTIONS
-static void
-PGrnInitializeOptions(void)
-{
-	PGrnReloptionKind = add_reloption_kind();
-
-	add_string_reloption(PGrnReloptionKind,
-						 "tokenizer",
-						 "Tokenizer name to be used for full-text search",
-						 PGRN_DEFAULT_TOKENIZER,
-						 PGrnOptionValidateTokenizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "normalizer",
-						 "Normalizer name to be used for full-text search",
-						 PGRN_DEFAULT_NORMALIZER,
-						 PGrnOptionValidateNormalizer);
-}
-#endif
 
 static void
 PGrnInitializeSequentialSearchData(void)
@@ -485,15 +362,13 @@ _PG_init(void)
 	GRN_TEXT_INIT(&headBuffer, 0);
 	GRN_TEXT_INIT(&bodyBuffer, 0);
 	GRN_TEXT_INIT(&footBuffer, 0);
-	GRN_TEXT_INIT(&inspectBuffer, 0);
+	GRN_TEXT_INIT(&(PGrnBuffers.inspect), 0);
 
 	PGrnEnsureDatabase();
 
 	PGrnInitializeGroongaInformation();
 
-#ifdef PGRN_SUPPORT_OPTIONS
 	PGrnInitializeOptions();
-#endif
 
 	PGrnInitializeSequentialSearchData();
 }
@@ -1224,20 +1099,6 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 					 jsonTypesTable);
 }
 
-#ifdef PGRN_SUPPORT_OPTIONS
-static void
-PGrnApplyOptionValues(PGrnOptions *options,
-					  const char **tokenizerName,
-					  const char **normalizerName)
-{
-	if (!options)
-		return;
-
-	*tokenizerName  = ((const char *) options) + options->tokenizerOffset;
-	*normalizerName = ((const char *) options) + options->normalizerOffset;
-}
-#endif
-
 static void
 PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 {
@@ -1246,11 +1107,7 @@ PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 	grn_obj *lexicon;
 
-#ifdef PGRN_SUPPORT_OPTIONS
-	PGrnApplyOptionValues((PGrnOptions *) (data->index->rd_options),
-						  &tokenizerName,
-						  &normalizerName);
-#endif
+	PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
 
 	if (PGrnIsNoneValue(tokenizerName))
 		return;
@@ -1399,11 +1256,7 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 			tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		}
 
-#ifdef PGRN_SUPPORT_OPTIONS
-		PGrnApplyOptionValues((PGrnOptions *) (data->index->rd_options),
-							  &tokenizerName,
-							  &normalizerName);
-#endif
+		PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
 
 		if (!PGrnIsNoneValue(tokenizerName))
 		{
@@ -4825,32 +4678,3 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 #endif
 }
 
-#ifdef PGRN_SUPPORT_OPTIONS
-/**
- * pgroonga.options() -- amoptions
- */
-Datum
-pgroonga_options(PG_FUNCTION_ARGS)
-{
-	Datum reloptions = PG_GETARG_DATUM(0);
-	bool validate = PG_GETARG_BOOL(1);
-	relopt_value *options;
-	PGrnOptions *grnOptions;
-	int nOptions;
-	const relopt_parse_elt optionsMap[] = {
-		{"tokenizer", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, tokenizerOffset)},
-		{"normalizer", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, normalizerOffset)}
-	};
-
-	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,
-							  &nOptions);
-	grnOptions = allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
-	fillRelOptions(grnOptions, sizeof(PGrnOptions), options, nOptions,
-				   validate, optionsMap, lengthof(optionsMap));
-	pfree(options);
-
-	PG_RETURN_BYTEA_P(grnOptions);
-}
-#endif

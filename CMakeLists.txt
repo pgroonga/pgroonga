@@ -48,8 +48,10 @@ link_directories(
 
 set(PGRN_SOURCES
   "src/pgroonga.c"
-  "src/pgn_value.c"
-  "src/pgn_variables.c"
+  "src/pgrn_inspect.c"
+  "src/pgrn_options.c"
+  "src/pgrn_value.c"
+  "src/pgrn_variables.c"
   "vendor/xxHash/xxhash.c")
 set_source_files_properties(${PGRN_SOURCES}
   PROPERTIES

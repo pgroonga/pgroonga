@@ -4,6 +4,8 @@ GROONGA_PKG = "groonga >= $(REQUIRED_GROONGA_VERSION)"
 MODULE_big = pgroonga
 SRCS =						\
 	src/pgroonga.c				\
+	src/pgrn_inspect.c			\
+	src/pgrn_options.c			\
 	src/pgrn_value.c			\
 	src/pgrn_variables.c			\
 	vendor/xxHash/xxhash.c
