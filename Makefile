@@ -5,6 +5,7 @@ MODULE_big = pgroonga
 SRCS =						\
 	src/pgroonga.c				\
 	src/pgrn_value.c			\
+	src/pgrn_variables.c			\
 	vendor/xxHash/xxhash.c
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
