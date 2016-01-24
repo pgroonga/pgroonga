@@ -1,0 +1,41 @@
+#pragma once
+
+#include <postgres.h>
+#include <access/skey.h>
+
+#include "pgrn_create.h"
+#include "pgrn_search.h"
+
+bool PGrnAttributeIsJSONB(Oid id);
+
+void PGrnJSONBCreate(PGrnCreateData *data);
+
+grn_obj *PGrnJSONBSetSource(Relation index, unsigned int i);
+
+void PGrnJSONBInsert(Relation index,
+					 Datum *values,
+					 unsigned int nthValue,
+					 grn_obj *valueIDs);
+
+bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
+								   ScanKey key,
+								   grn_obj *targetColumn);
+
+typedef struct {
+	bool isJSONBAttribute;
+	Relation index;
+	grn_obj *sourcesTable;
+	grn_obj *sourcesValuesColumn;
+	grn_obj *valuesTable;
+	grn_obj *valuesIndexColumn;
+	grn_obj values;
+	grn_obj valueMin;
+	grn_obj valueMax;
+	grn_id id;
+} PGrnJSONBBulkDeleteData;
+
+void PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data);
+void PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data);
+void PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data);
+
+void PGrnJSONBRemoveUnusedTables(Oid relationID);

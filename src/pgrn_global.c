@@ -16,6 +16,7 @@ PGrnInitializeBuffers(void)
 	GRN_TEXT_INIT(&(PGrnBuffers.pattern), 0);
 	GRN_UINT64_INIT(&(PGrnBuffers.ctid), 0);
 	GRN_FLOAT_INIT(&(PGrnBuffers.score), 0);
+	GRN_RECORD_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_TEXT_INIT(&(PGrnBuffers.head), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.body), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.foot), 0);
@@ -31,6 +32,7 @@ PGrnFinalizeBuffers(void)
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.pattern));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.ctid));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.score));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.sourceIDs));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.head));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.body));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.foot));

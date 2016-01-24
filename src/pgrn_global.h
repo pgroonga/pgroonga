@@ -9,6 +9,7 @@ struct PGrnBuffers {
 	grn_obj pattern;
 	grn_obj ctid;
 	grn_obj score;
+	grn_obj sourceIDs;
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;

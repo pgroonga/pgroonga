@@ -171,17 +171,14 @@ PGrnCreateColumn(grn_obj	*table,
 void
 PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source)
 {
-	grn_obj sourceIDs;
 	grn_id sourceID;
 
-	GRN_RECORD_INIT(&sourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_BULK_REWIND(&(buffers->sourceIDs));
 
 	sourceID = grn_obj_id(ctx, source);
-	GRN_RECORD_PUT(ctx, &sourceIDs, sourceID);
+	GRN_RECORD_PUT(ctx, &(buffers->sourceIDs), sourceID);
 
-	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &sourceIDs);
-
-	GRN_OBJ_FIN(ctx, &sourceIDs);
+	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &(buffers->sourceIDs));
 }
 
 bool
