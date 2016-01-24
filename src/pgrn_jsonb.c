@@ -22,6 +22,12 @@ PG_FUNCTION_INFO_V1(pgroonga_match_jsonb);
 #endif
 
 #ifdef JSONBOID
+typedef struct
+{
+	grn_obj *pathsTable;
+	grn_obj *typesTable;
+	grn_obj *valuesTable;
+} PGrnJSONBCreateData;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -30,6 +36,97 @@ static const unsigned int PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE   = 1 << 0;
 static const unsigned int PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY = 1 << 1;
 static const unsigned int PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE = 1 << 2;
 
+static grn_obj *tmpPathsTable = NULL;
+static grn_obj *tmpTypesTable = NULL;
+static grn_obj *tmpValuesTable = NULL;
+
+static grn_obj *
+PGrnJSONBCreatePathsTable(const char *name)
+{
+	return PGrnCreateTable(name,
+						   GRN_OBJ_TABLE_PAT_KEY,
+						   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+}
+
+static grn_obj *
+PGrnJSONBCreateTypesTable(const char *name)
+{
+	return PGrnCreateTable(name,
+						   GRN_OBJ_TABLE_PAT_KEY,
+						   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+}
+
+static grn_obj *
+PGrnJSONBCreateValuesTable(const char *name)
+{
+	return PGrnCreateTable(name,
+						   GRN_OBJ_TABLE_HASH_KEY,
+						   grn_ctx_at(ctx, GRN_DB_UINT64));
+}
+
+static void
+PGrnJSONBCreateDataColumns(PGrnJSONBCreateData *jsonbData)
+{
+	PGrnCreateColumn(jsonbData->valuesTable,
+					 "path",
+					 GRN_OBJ_COLUMN_SCALAR,
+					 jsonbData->pathsTable);
+	PGrnCreateColumn(jsonbData->valuesTable,
+					 "paths",
+					 GRN_OBJ_COLUMN_VECTOR,
+					 jsonbData->pathsTable);
+	{
+		grn_obj_flags flags = 0;
+		if (PGrnIsLZ4Available)
+			flags |= GRN_OBJ_COMPRESS_LZ4;
+		PGrnCreateColumn(jsonbData->valuesTable,
+						 "string",
+						 flags,
+						 grn_ctx_at(ctx, GRN_DB_LONG_TEXT));
+	}
+	PGrnCreateColumn(jsonbData->valuesTable,
+					 "number",
+					 0,
+					 grn_ctx_at(ctx, GRN_DB_FLOAT));
+	PGrnCreateColumn(jsonbData->valuesTable,
+					 "size",
+					 0,
+					 grn_ctx_at(ctx, GRN_DB_UINT32));
+	PGrnCreateColumn(jsonbData->valuesTable,
+					 "type",
+					 0,
+					 jsonbData->typesTable);
+}
+#endif
+
+void
+PGrnInitializeJSONB(void)
+{
+#ifdef JSONBOID
+	PGrnJSONBCreateData data;
+
+	tmpPathsTable = PGrnJSONBCreatePathsTable(NULL);
+	tmpTypesTable = PGrnJSONBCreateTypesTable(NULL);
+	tmpValuesTable = PGrnJSONBCreateValuesTable(NULL);
+
+	data.pathsTable = tmpPathsTable;
+	data.typesTable = tmpTypesTable;
+	data.valuesTable = tmpValuesTable;
+	PGrnJSONBCreateDataColumns(&data);
+#endif
+}
+
+void
+PGrnFinalizeJSONB(void)
+{
+#ifdef JSONBOID
+	grn_obj_remove(ctx, tmpValuesTable);
+	grn_obj_remove(ctx, tmpTypesTable);
+	grn_obj_remove(ctx, tmpPathsTable);
+#endif
+}
+
+#ifdef JSONBOID
 static void
 PGrnJSONGeneratePath(grn_obj *components,
 					 unsigned int start,
@@ -136,20 +233,16 @@ PGrnLookupJSONValuesTable(Relation index,
 }
 
 static void
-PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
+PGrnJSONBCreateTables(PGrnCreateData *data,
+					  PGrnJSONBCreateData *jsonbData)
 {
-	grn_obj *jsonTypesTable;
-
 	{
 		char jsonPathsTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonPathsTableName, sizeof(jsonPathsTableName),
 				 PGrnJSONPathsTableNameFormat,
 				 data->relNode, data->i);
-		data->jsonPathsTable =
-			PGrnCreateTable(jsonPathsTableName,
-							GRN_OBJ_TABLE_PAT_KEY,
-							grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
-		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonPathsTable);
+		jsonbData->pathsTable = PGrnJSONBCreatePathsTable(jsonPathsTableName);
+		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->pathsTable);
 	}
 
 	{
@@ -157,60 +250,23 @@ PGrnCreateDataColumnsForJSON(PGrnCreateData *data)
 		snprintf(jsonTypesTableName, sizeof(jsonTypesTableName),
 				 PGrnJSONTypesTableNameFormat,
 				 data->relNode, data->i);
-		jsonTypesTable = PGrnCreateTable(jsonTypesTableName,
-										 GRN_OBJ_TABLE_PAT_KEY,
-										 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
-		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonTypesTable);
+		jsonbData->typesTable = PGrnJSONBCreateTypesTable(jsonTypesTableName);
+		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->typesTable);
 	}
+
 	{
 		char jsonValuesTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonValuesTableName, sizeof(jsonValuesTableName),
 				 PGrnJSONValuesTableNameFormat,
 				 data->relNode, data->i);
-		data->jsonValuesTable =
-			PGrnCreateTable(jsonValuesTableName,
-							GRN_OBJ_TABLE_HASH_KEY,
-							grn_ctx_at(ctx, GRN_DB_UINT64));
-		GRN_PTR_PUT(ctx, data->supplementaryTables, data->jsonValuesTable);
+		jsonbData->valuesTable = PGrnJSONBCreateValuesTable(jsonValuesTableName);
+		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->valuesTable);
 	}
-
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "path",
-					 GRN_OBJ_COLUMN_SCALAR,
-					 data->jsonPathsTable);
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "paths",
-					 GRN_OBJ_COLUMN_VECTOR,
-					 data->jsonPathsTable);
-	{
-		grn_obj_flags flags = 0;
-		if (PGrnIsLZ4Available)
-			flags |= GRN_OBJ_COMPRESS_LZ4;
-		PGrnCreateColumn(data->jsonValuesTable,
-						 "string",
-						 flags,
-						 grn_ctx_at(ctx, GRN_DB_LONG_TEXT));
-	}
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "number",
-					 0,
-					 grn_ctx_at(ctx, GRN_DB_FLOAT));
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "boolean",
-					 0,
-					 grn_ctx_at(ctx, GRN_DB_BOOL));
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "size",
-					 0,
-					 grn_ctx_at(ctx, GRN_DB_UINT32));
-	PGrnCreateColumn(data->jsonValuesTable,
-					 "type",
-					 0,
-					 jsonTypesTable);
 }
 
 static void
-PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
+PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
+										 PGrnJSONBCreateData *jsonbData)
 {
 	const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
 	const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
@@ -241,14 +297,15 @@ PGrnCreateFullTextSearchIndexColumnForJSON(PGrnCreateData *data)
 	PGrnCreateColumn(lexicon,
 					 PGrnIndexColumnName,
 					 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION,
-					 data->jsonValuesTable);
+					 jsonbData->valuesTable);
 }
 
 static void
-PGrnCreateIndexColumnForJSON(PGrnCreateData *data,
-							 const char *typeName,
-							 grn_obj_flags tableType,
-							 grn_obj *type)
+PGrnJSONBCreateIndexColumn(PGrnCreateData *data,
+						   PGrnJSONBCreateData *jsonbData,
+						   const char *typeName,
+						   grn_obj_flags tableType,
+						   grn_obj *type)
 {
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 	grn_obj *lexicon;
@@ -261,40 +318,45 @@ PGrnCreateIndexColumnForJSON(PGrnCreateData *data,
 	PGrnCreateColumn(lexicon,
 					 PGrnIndexColumnName,
 					 GRN_OBJ_COLUMN_INDEX,
-					 data->jsonValuesTable);
+					 jsonbData->valuesTable);
 }
 
 static void
-PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
+PGrnJSONBCreateIndexColumns(PGrnCreateData *data,
+							PGrnJSONBCreateData *jsonbData)
 {
-	PGrnCreateColumn(data->jsonValuesTable,
+	PGrnCreateColumn(jsonbData->valuesTable,
 					 PGrnIndexColumnName,
 					 GRN_OBJ_COLUMN_INDEX,
 					 data->sourcesTable);
-	PGrnCreateColumn(data->jsonPathsTable,
+	PGrnCreateColumn(jsonbData->pathsTable,
 					 PGrnIndexColumnName,
 					 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_SECTION,
-					 data->jsonValuesTable);
+					 jsonbData->valuesTable);
 
 	/* TODO: 4KiB over string value can't be searched. */
-	PGrnCreateIndexColumnForJSON(data,
-								 "String",
-								 GRN_OBJ_TABLE_PAT_KEY,
-								 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
-	PGrnCreateIndexColumnForJSON(data,
-								 "Number",
-								 GRN_OBJ_TABLE_PAT_KEY,
-								 grn_ctx_at(ctx, GRN_DB_FLOAT));
-	PGrnCreateIndexColumnForJSON(data,
-								 "Boolean",
-								 GRN_OBJ_TABLE_HASH_KEY,
-								 grn_ctx_at(ctx, GRN_DB_BOOL));
-	PGrnCreateIndexColumnForJSON(data,
-								 "Size",
-								 GRN_OBJ_TABLE_PAT_KEY,
-								 grn_ctx_at(ctx, GRN_DB_UINT32));
+	PGrnJSONBCreateIndexColumn(data,
+							   jsonbData,
+							   "String",
+							   GRN_OBJ_TABLE_PAT_KEY,
+							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT));
+	PGrnJSONBCreateIndexColumn(data,
+							   jsonbData,
+							   "Number",
+							   GRN_OBJ_TABLE_PAT_KEY,
+							   grn_ctx_at(ctx, GRN_DB_FLOAT));
+	PGrnJSONBCreateIndexColumn(data,
+							   jsonbData,
+							   "Boolean",
+							   GRN_OBJ_TABLE_HASH_KEY,
+							   grn_ctx_at(ctx, GRN_DB_BOOL));
+	PGrnJSONBCreateIndexColumn(data,
+							   jsonbData,
+							   "Size",
+							   GRN_OBJ_TABLE_PAT_KEY,
+							   grn_ctx_at(ctx, GRN_DB_UINT32));
 
-	PGrnCreateFullTextSearchIndexColumnForJSON(data);
+	PGrnJSONBCreateFullTextSearchIndexColumn(data, jsonbData);
 }
 #endif
 
@@ -312,6 +374,8 @@ void
 PGrnJSONBCreate(PGrnCreateData *data)
 {
 #ifdef JSONBOID
+	PGrnJSONBCreateData jsonbData;
+
 	if (data->desc->natts != 1)
 	{
 		ereport(ERROR,
@@ -321,11 +385,12 @@ PGrnJSONBCreate(PGrnCreateData *data)
 						data->index->rd_rel->relname.data)));
 	}
 
-	PGrnCreateDataColumnsForJSON(data);
-	PGrnCreateIndexColumnsForJSON(data);
+	PGrnJSONBCreateTables(data, &jsonbData);
+	PGrnJSONBCreateDataColumns(&jsonbData);
+	PGrnJSONBCreateIndexColumns(data, &jsonbData);
 	data->forFullTextSearch = false;
 	data->forRegexpSearch = false;
-	data->attributeTypeID = grn_obj_id(ctx, data->jsonValuesTable);
+	data->attributeTypeID = grn_obj_id(ctx, jsonbData.valuesTable);
 	data->attributeFlags = GRN_OBJ_VECTOR;
 	PGrnCreateDataColumn(data);
 #endif

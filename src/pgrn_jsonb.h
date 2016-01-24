@@ -6,6 +6,9 @@
 #include "pgrn_create.h"
 #include "pgrn_search.h"
 
+void PGrnInitializeJSONB(void);
+void PGrnFinalizeJSONB(void);
+
 bool PGrnAttributeIsJSONB(Oid id);
 
 void PGrnJSONBCreate(PGrnCreateData *data);
@@ -21,7 +24,8 @@ bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 								   ScanKey key,
 								   grn_obj *targetColumn);
 
-typedef struct {
+typedef struct
+{
 	bool isJSONBAttribute;
 	Relation index;
 	grn_obj *sourcesTable;

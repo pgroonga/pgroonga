@@ -226,6 +226,8 @@ PGrnOnProcExit(int code, Datum arg)
 	{
 		grn_obj *db;
 
+		PGrnFinalizeJSONB();
+
 		PGrnFinalizeSequentialSearchData();
 
 		PGrnFinalizeBuffers();
@@ -297,6 +299,8 @@ _PG_init(void)
 	PGrnInitializeOptions();
 
 	PGrnInitializeSequentialSearchData();
+
+	PGrnInitializeJSONB();
 }
 
 static grn_id
@@ -570,8 +574,6 @@ PGrnCreate(Relation index,
 	data.index = index;
 	data.desc = RelationGetDescr(index);
 	data.relNode = index->rd_node.relNode;
-	data.jsonPathsTable = NULL;
-	data.jsonValuesTable = NULL;
 	data.supplementaryTables = supplementaryTables;
 	data.lexicons = lexicons;
 
@@ -2833,13 +2835,13 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	{
 		grn_id id;
 		grn_obj *sourcesCtidColumn;
-		PGrnJSONBBulkDeleteData JSONBData;
+		PGrnJSONBBulkDeleteData jsonbData;
 
 		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 
-		JSONBData.index = index;
-		JSONBData.sourcesTable = sourcesTable;
-		PGrnJSONBBulkDeleteInit(&JSONBData);
+		jsonbData.index = index;
+		jsonbData.sourcesTable = sourcesTable;
+		PGrnJSONBBulkDeleteInit(&jsonbData);
 
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
@@ -2852,8 +2854,8 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
 			if (callback(&ctid, callback_state))
 			{
-				JSONBData.id = id;
-				PGrnJSONBBulkDeleteRecord(&JSONBData);
+				jsonbData.id = id;
+				PGrnJSONBBulkDeleteRecord(&jsonbData);
 
 				grn_table_cursor_delete(ctx, cursor);
 
@@ -2861,7 +2863,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			}
 		}
 
-		PGrnJSONBBulkDeleteFin(&JSONBData);
+		PGrnJSONBBulkDeleteFin(&jsonbData);
 
 		grn_table_cursor_close(ctx, cursor);
 	}
