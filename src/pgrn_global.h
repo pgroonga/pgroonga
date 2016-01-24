@@ -2,7 +2,8 @@
 
 #include <groonga.h>
 
-struct PGrnBuffers {
+struct PGrnBuffers
+{
 	grn_obj general;
 	grn_obj path;
 	grn_obj keyword;
