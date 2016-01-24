@@ -516,7 +516,7 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(false);
 }
 
-typedef struct PGrnInsertJSONData
+typedef struct PGrnJSONBInsertData
 {
 	grn_obj *jsonPathsTable;
 	grn_obj *jsonValuesTable;
@@ -534,13 +534,13 @@ typedef struct PGrnInsertJSONData
 	grn_obj pathIDs;
 	grn_obj value;
 	grn_obj type;
-} PGrnInsertJSONData;
+} PGrnJSONBInsertData;
 
 static void
-PGrnInsertJSONDataInit(PGrnInsertJSONData *data,
-					   Relation index,
-					   unsigned int nthValue,
-					   grn_obj *valueIDs)
+PGrnJSONBInsertDataInit(PGrnJSONBInsertData *data,
+						Relation index,
+						unsigned int nthValue,
+						grn_obj *valueIDs)
 {
 	data->jsonPathsTable  = PGrnLookupJSONPathsTable(index, nthValue, ERROR);
 	data->jsonValuesTable = PGrnLookupJSONValuesTable(index, nthValue, ERROR);
@@ -575,7 +575,7 @@ PGrnInsertJSONDataInit(PGrnInsertJSONData *data,
 }
 
 static void
-PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
+PGrnJSONBInsertDataFin(PGrnJSONBInsertData *data)
 {
 	GRN_OBJ_FIN(ctx, &(data->type));
 	GRN_OBJ_FIN(ctx, &(data->value));
@@ -596,9 +596,9 @@ PGrnInsertJSONDataFin(PGrnInsertJSONData *data)
 }
 
 static uint64_t
-PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
-						  bool haveValue,
-						  const char *typeName)
+PGrnJSONBInsertGenerateKey(PGrnJSONBInsertData *data,
+						   bool haveValue,
+						   const char *typeName)
 {
 	unsigned int i, n;
 
@@ -645,9 +645,9 @@ PGrnInsertJSONGenerateKey(PGrnInsertJSONData *data,
 }
 
 static void
-PGrnInsertJSONAddPath(PGrnInsertJSONData *data,
-					  unsigned int start,
-					  unsigned int flags)
+PGrnJSONBInsertAddPath(PGrnJSONBInsertData *data,
+					   unsigned int start,
+					   unsigned int flags)
 {
 	grn_id pathID;
 
@@ -682,55 +682,55 @@ PGrnInsertJSONAddPath(PGrnInsertJSONData *data,
 }
 
 static void
-PGrnInsertJSONGenerateSubPathsRecursive(PGrnInsertJSONData *data,
-										unsigned int parentStart)
+PGrnJSONBInsertGenerateSubPathsRecursive(PGrnJSONBInsertData *data,
+										 unsigned int parentStart)
 {
 	if (parentStart == grn_vector_size(ctx, &(data->components)))
 		return;
 
-	PGrnInsertJSONAddPath(data,
-						  parentStart,
-						  PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
-	PGrnInsertJSONAddPath(data,
-						  parentStart,
-						  0);
-	PGrnInsertJSONAddPath(data,
-						  parentStart,
-						  PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
+	PGrnJSONBInsertAddPath(data,
+						   parentStart,
+						   PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
+	PGrnJSONBInsertAddPath(data,
+						   parentStart,
+						   0);
+	PGrnJSONBInsertAddPath(data,
+						   parentStart,
+						   PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
 
-	PGrnInsertJSONGenerateSubPathsRecursive(data, parentStart + 1);
+	PGrnJSONBInsertGenerateSubPathsRecursive(data, parentStart + 1);
 }
 
 static void
-PGrnInsertJSONGeneratePaths(PGrnInsertJSONData *data)
+PGrnJSONBInsertGeneratePaths(PGrnJSONBInsertData *data)
 {
 	GRN_BULK_REWIND(&(data->pathIDs));
 
-	PGrnInsertJSONAddPath(data,
-						  0,
-						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
-						  PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
-	PGrnInsertJSONAddPath(data,
-						  0,
-						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE);
-	PGrnInsertJSONAddPath(data,
-						  0,
-						  PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
-						  PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
+	PGrnJSONBInsertAddPath(data,
+						   0,
+						   PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
+						   PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE);
+	PGrnJSONBInsertAddPath(data,
+						   0,
+						   PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE);
+	PGrnJSONBInsertAddPath(data,
+						   0,
+						   PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
+						   PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY);
 
-	PGrnInsertJSONGenerateSubPathsRecursive(data, 0);
+	PGrnJSONBInsertGenerateSubPathsRecursive(data, 0);
 }
 
 static void
-PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
-					   grn_obj *column,
-					   const char *typeName)
+PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
+						grn_obj *column,
+						const char *typeName)
 {
 	uint64_t key;
 	grn_id valueID;
 	int added;
 
-	key = PGrnInsertJSONGenerateKey(data, column != NULL, typeName);
+	key = PGrnJSONBInsertGenerateKey(data, column != NULL, typeName);
 	valueID = grn_table_add(ctx, data->jsonValuesTable,
 							&key, sizeof(uint64_t),
 							&added);
@@ -744,7 +744,7 @@ PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
 		grn_obj_set_value(ctx, data->pathColumn, valueID,
 						  &(data->path), GRN_OBJ_SET);
 
-	PGrnInsertJSONGeneratePaths(data);
+	PGrnJSONBInsertGeneratePaths(data);
 	grn_obj_set_value(ctx, data->pathsColumn, valueID,
 					  &(data->pathIDs), GRN_OBJ_SET);
 
@@ -756,17 +756,17 @@ PGrnInsertJSONValueSet(PGrnInsertJSONData *data,
 					  &(data->type), GRN_OBJ_SET);
 }
 
-static void PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data);
+static void PGrnJSONBInsert(JsonbIterator **iter, PGrnJSONBInsertData *data);
 
 static void
-PGrnInsertJSONValue(JsonbIterator **iter,
+PGrnJSONBInsertValue(JsonbIterator **iter,
 					JsonbValue *value,
-					PGrnInsertJSONData *data)
+					PGrnJSONBInsertData *data)
 {
 	switch (value->type)
 	{
 	case jbvNull:
-		PGrnInsertJSONValueSet(data, NULL, "null");
+		PGrnJSONBInsertValueSet(data, NULL, "null");
 		break;
 	case jbvString:
 		grn_obj_reinit(ctx, &(data->value), GRN_DB_LONG_TEXT,
@@ -774,7 +774,7 @@ PGrnInsertJSONValue(JsonbIterator **iter,
 		GRN_TEXT_SET(ctx, &(data->value),
 					 value->val.string.val,
 					 value->val.string.len);
-		PGrnInsertJSONValueSet(data, data->stringColumn, "string");
+		PGrnJSONBInsertValueSet(data, data->stringColumn, "string");
 		break;
 	case jbvNumeric:
 	{
@@ -785,28 +785,28 @@ PGrnInsertJSONValue(JsonbIterator **iter,
 		grn_obj_reinit(ctx, &(data->value), GRN_DB_TEXT,
 					   GRN_OBJ_DO_SHALLOW_COPY);
 		GRN_TEXT_SETS(ctx, &(data->value), numericInCString);
-		PGrnInsertJSONValueSet(data, data->numberColumn, "number");
+		PGrnJSONBInsertValueSet(data, data->numberColumn, "number");
 		break;
 	}
 	case jbvBool:
 		grn_obj_reinit(ctx, &(data->value), GRN_DB_BOOL, 0);
 		GRN_BOOL_SET(ctx, &(data->value), value->val.boolean);
-		PGrnInsertJSONValueSet(data, data->booleanColumn, "boolean");
+		PGrnJSONBInsertValueSet(data, data->booleanColumn, "boolean");
 		break;
 	case jbvArray:
-		PGrnInsertJSON(iter, data);
+		PGrnJSONBInsert(iter, data);
 		break;
 	case jbvObject:
-		PGrnInsertJSON(iter, data);
+		PGrnJSONBInsert(iter, data);
 		break;
 	case jbvBinary:
-		PGrnInsertJSON(iter, data);
+		PGrnJSONBInsert(iter, data);
 		break;
 	}
 }
 
 static void
-PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
+PGrnJSONBInsert(JsonbIterator **iter, PGrnJSONBInsertData *data)
 {
 	JsonbIteratorToken token;
 	JsonbValue value;
@@ -822,7 +822,7 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 								   GRN_DB_SHORT_TEXT);
 			break;
 		case WJB_VALUE:
-			PGrnInsertJSONValue(iter, &value, data);
+			PGrnJSONBInsertValue(iter, &value, data);
 			{
 				const char *component;
 				grn_vector_pop_element(ctx, &(data->components), &component,
@@ -830,7 +830,7 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 			}
 			break;
 		case WJB_ELEM:
-			PGrnInsertJSONValue(iter, &value, data);
+			PGrnJSONBInsertValue(iter, &value, data);
 			break;
 		case WJB_BEGIN_ARRAY:
 		{
@@ -840,7 +840,7 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 								   sizeof(uint32_t),
 								   0,
 								   GRN_DB_UINT32);
-			PGrnInsertJSONValueSet(data, NULL, "array");
+			PGrnJSONBInsertValueSet(data, NULL, "array");
 			break;
 		}
 		case WJB_END_ARRAY:
@@ -851,7 +851,7 @@ PGrnInsertJSON(JsonbIterator **iter, PGrnInsertJSONData *data)
 			break;
 		}
 		case WJB_BEGIN_OBJECT:
-			PGrnInsertJSONValueSet(data, NULL, "object");
+			PGrnJSONBInsertValueSet(data, NULL, "object");
 			break;
 		case WJB_END_OBJECT:
 			break;
@@ -873,15 +873,15 @@ PGrnJSONBInsert(Relation index,
 				grn_obj *valueIDs)
 {
 #ifdef JSONBOID
-	PGrnInsertJSONData data;
+	PGrnJSONBInsertData data;
 	Jsonb *jsonb;
 	JsonbIterator *iter;
 
-	PGrnInsertJSONDataInit(&data, index, nthValue, valueIDs);
+	PGrnJSONBInsertDataInit(&data, index, nthValue, valueIDs);
 	jsonb = DatumGetJsonb(values[nthValue]);
 	iter = JsonbIteratorInit(&(jsonb->root));
-	PGrnInsertJSON(&iter, &data);
-	PGrnInsertJSONDataFin(&data);
+	PGrnJSONBInsert(&iter, &data);
+	PGrnJSONBInsertDataFin(&data);
 #endif
 }
 
