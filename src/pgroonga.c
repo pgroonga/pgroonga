@@ -2,6 +2,7 @@
 
 #include "pgrn_compatible.h"
 #include "pgrn_global.h"
+#include "pgrn_groonga.h"
 #include "pgrn_options.h"
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
@@ -61,8 +62,6 @@ typedef struct stat pgrn_stat_buffer;
 PG_MODULE_MAGIC;
 
 static bool PGrnInitialized = false;
-
-static bool PGrnIsLZ4Available;
 
 typedef struct PGrnCreateData
 {
@@ -275,17 +274,6 @@ PGrnOnProcExit(int code, Datum arg)
 }
 
 static void
-PGrnInitializeGroongaInformation(void)
-{
-	grn_obj grnIsSupported;
-
-	GRN_BOOL_INIT(&grnIsSupported, 0);
-	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_LZ4, &grnIsSupported);
-	PGrnIsLZ4Available = (GRN_BOOL_VALUE(&grnIsSupported));
-	GRN_OBJ_FIN(ctx, &grnIsSupported);
-}
-
-static void
 PGrnInitializeSequentialSearchData(void)
 {
 	sequentialSearchData.table = grn_table_create(ctx,
@@ -342,42 +330,6 @@ _PG_init(void)
 	PGrnInitializeOptions();
 
 	PGrnInitializeSequentialSearchData();
-}
-
-static int
-PGrnRCToPgErrorCode(grn_rc rc)
-{
-	int errorCode = ERRCODE_SYSTEM_ERROR;
-
-	/* TODO: Fill me. */
-	switch (rc)
-	{
-	case GRN_NO_SUCH_FILE_OR_DIRECTORY:
-		errorCode = ERRCODE_IO_ERROR;
-		break;
-	case GRN_INPUT_OUTPUT_ERROR:
-		errorCode = ERRCODE_IO_ERROR;
-		break;
-	case GRN_INVALID_ARGUMENT:
-		errorCode = ERRCODE_INVALID_PARAMETER_VALUE;
-		break;
-	default:
-		break;
-	}
-
-	return errorCode;
-}
-
-static grn_bool
-PGrnCheck(const char *message)
-{
-	if (ctx->rc == GRN_SUCCESS)
-		return GRN_TRUE;
-
-	ereport(ERROR,
-			(errcode(PGrnRCToPgErrorCode(ctx->rc)),
-			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
-	return GRN_FALSE;
 }
 
 static grn_id
@@ -799,61 +751,6 @@ PGrnJSONIteratorTokenName(JsonbIteratorToken token)
 }
 #endif
 
-static grn_obj *
-PGrnLookup(const char *name, int errorLevel)
-{
-	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
-	if (!object)
-		ereport(errorLevel,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: object isn't found: <%s>", name)));
-	return object;
-}
-
-static grn_obj *
-PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
-{
-	grn_obj *column;
-
-	column = grn_obj_column(ctx, table, name, strlen(name));
-	if (!column)
-	{
-		char tableName[GRN_TABLE_MAX_KEY_SIZE];
-		int tableNameSize;
-
-		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
-		ereport(errorLevel,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: column isn't found: <%.*s>:<%s>",
-						tableNameSize, tableName,
-						name)));
-	}
-
-	return column;
-}
-
-static grn_obj *
-PGrnLookupSourcesTable(Relation index, int errorLevel)
-{
-	char name[GRN_TABLE_MAX_KEY_SIZE];
-
-	snprintf(name, sizeof(name),
-			 PGrnSourcesTableNameFormat,
-			 index->rd_node.relNode);
-	return PGrnLookup(name, errorLevel);
-}
-
-static grn_obj *
-PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
-{
-	char name[GRN_TABLE_MAX_KEY_SIZE];
-
-	snprintf(name, sizeof(name),
-			 PGrnSourcesTableNameFormat "." PGrnSourcesCtidColumnName,
-			 index->rd_node.relNode);
-	return PGrnLookup(name, errorLevel);
-}
-
 #ifdef JSONBOID
 static grn_obj *
 PGrnLookupJSONPathsTable(Relation index,
@@ -881,53 +778,6 @@ PGrnLookupJSONValuesTable(Relation index,
 	return PGrnLookup(name, errorLevel);
 }
 #endif
-
-static grn_obj *
-PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
-{
-	char name[GRN_TABLE_MAX_KEY_SIZE];
-
-	snprintf(name, sizeof(name),
-			 PGrnLexiconNameFormat ".%s",
-			 index->rd_node.relNode,
-			 nthAttribute,
-			 PGrnIndexColumnName);
-	return PGrnLookup(name, errorLevel);
-}
-
-static grn_obj *
-PGrnCreateTable(const char *name,
-				grn_obj_flags flags,
-				grn_obj *type)
-{
-	grn_obj	*table;
-
-	table = grn_table_create(ctx,
-							 name, strlen(name), NULL,
-							 GRN_OBJ_PERSISTENT | flags,
-							 type,
-							 NULL);
-	PGrnCheck("pgroonga: failed to create table");
-
-	return table;
-}
-
-static grn_obj *
-PGrnCreateColumn(grn_obj	*table,
-				 const char *name,
-				 grn_obj_flags flags,
-				 grn_obj	*type)
-{
-	grn_obj *column;
-
-    column = grn_column_create(ctx, table,
-							   name, strlen(name), NULL,
-							   GRN_OBJ_PERSISTENT | flags,
-							   type);
-	PGrnCheck("pgroonga: failed to create column");
-
-	return column;
-}
 
 static bool
 PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
@@ -970,29 +820,6 @@ PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
 											rightType,
 											PGrnRegexpStrategyNumber);
 	return OidIsValid(regexpStrategyOID);
-}
-
-static void
-PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
-{
-	data->sourcesCtidColumn = PGrnCreateColumn(data->sourcesTable,
-											   PGrnSourcesCtidColumnName,
-											   GRN_OBJ_COLUMN_SCALAR,
-											   grn_ctx_at(ctx, GRN_DB_UINT64));
-}
-
-static void
-PGrnCreateSourcesTable(PGrnCreateData *data)
-{
-	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
-
-	snprintf(sourcesTableName, sizeof(sourcesTableName),
-			 PGrnSourcesTableNameFormat, data->relNode);
-	data->sourcesTable = PGrnCreateTable(sourcesTableName,
-										 GRN_OBJ_TABLE_NO_KEY,
-										 NULL);
-
-	PGrnCreateSourcesCtidColumn(data);
 }
 
 #ifdef JSONBOID
@@ -1158,99 +985,6 @@ PGrnCreateIndexColumnsForJSON(PGrnCreateData *data)
 	PGrnCreateFullTextSearchIndexColumnForJSON(data);
 }
 #endif
-
-static void
-PGrnCreateDataColumn(PGrnCreateData *data)
-{
-	grn_obj_flags flags = 0;
-
-	if (data->attributeFlags & GRN_OBJ_VECTOR)
-	{
-		flags |= GRN_OBJ_COLUMN_VECTOR;
-	}
-	else
-	{
-		flags |= GRN_OBJ_COLUMN_SCALAR;
-
-		if (PGrnIsLZ4Available)
-		{
-			switch (data->attributeTypeID)
-			{
-			case GRN_DB_SHORT_TEXT:
-			case GRN_DB_TEXT:
-			case GRN_DB_LONG_TEXT:
-				flags |= GRN_OBJ_COMPRESS_LZ4;
-				break;
-			}
-		}
-	}
-
-	PGrnCreateColumn(data->sourcesTable,
-					 data->desc->attrs[data->i]->attname.data,
-					 flags,
-					 grn_ctx_at(ctx, data->attributeTypeID));
-}
-
-static void
-PGrnCreateIndexColumn(PGrnCreateData *data)
-{
-	grn_id typeID = GRN_ID_NIL;
-	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_obj *lexicon;
-
-	switch (data->attributeTypeID)
-	{
-	case GRN_DB_TEXT:
-	case GRN_DB_LONG_TEXT:
-		typeID = GRN_DB_SHORT_TEXT;
-		break;
-	default:
-		typeID = data->attributeTypeID;
-		break;
-	}
-
-	snprintf(lexiconName, sizeof(lexiconName),
-			 PGrnLexiconNameFormat, data->relNode, data->i);
-	lexicon = PGrnCreateTable(lexiconName,
-							  GRN_OBJ_TABLE_PAT_KEY,
-							  grn_ctx_at(ctx, typeID));
-	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
-
-	if (data->forFullTextSearch || data->forRegexpSearch)
-	{
-		const char *tokenizerName;
-		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
-
-		if (data->forRegexpSearch) {
-			tokenizerName = "TokenRegexp";
-		} else {
-			tokenizerName = PGRN_DEFAULT_TOKENIZER;
-		}
-
-		PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
-
-		if (!PGrnIsNoneValue(tokenizerName))
-		{
-			grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-							 PGrnLookup(tokenizerName, ERROR));
-		}
-		if (!PGrnIsNoneValue(normalizerName))
-		{
-			grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
-							 PGrnLookup(normalizerName, ERROR));
-		}
-	}
-
-	{
-		grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
-		if (data->forFullTextSearch || data->forRegexpSearch)
-			flags |= GRN_OBJ_WITH_POSITION;
-		PGrnCreateColumn(lexicon,
-						 PGrnIndexColumnName,
-						 flags,
-						 data->sourcesTable);
-	}
-}
 
 /**
  * PGrnCreate
