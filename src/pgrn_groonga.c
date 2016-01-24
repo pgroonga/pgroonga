@@ -140,10 +140,17 @@ PGrnCreateTable(const char *name,
 				grn_obj *type)
 {
 	grn_obj	*table;
+	unsigned int nameSize = 0;
+
+	if (name)
+	{
+		nameSize = strlen(name);
+		flags |= GRN_OBJ_PERSISTENT;
+	}
 
 	table = grn_table_create(ctx,
-							 name, strlen(name), NULL,
-							 GRN_OBJ_PERSISTENT | flags,
+							 name, nameSize, NULL,
+							 flags,
 							 type,
 							 NULL);
 	PGrnCheck("pgroonga: failed to create table");
