@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn_compatible.h"
+#include "pgrn_create.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_options.h"
@@ -62,24 +63,6 @@ typedef struct stat pgrn_stat_buffer;
 PG_MODULE_MAGIC;
 
 static bool PGrnInitialized = false;
-
-typedef struct PGrnCreateData
-{
-	Relation index;
-	grn_obj *sourcesTable;
-	grn_obj *sourcesCtidColumn;
-	grn_obj *jsonPathsTable;
-	grn_obj *jsonValuesTable;
-	grn_obj *supplementaryTables;
-	grn_obj *lexicons;
-	unsigned int i;
-	TupleDesc desc;
-	Oid relNode;
-	bool forFullTextSearch;
-	bool forRegexpSearch;
-	grn_id attributeTypeID;
-	unsigned char attributeFlags;
-} PGrnCreateData;
 
 typedef struct PGrnBuildStateData
 {
