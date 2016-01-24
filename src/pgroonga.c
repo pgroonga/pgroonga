@@ -4035,22 +4035,6 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
-static bool
-PGrnRemoveObject(const char *name)
-{
-	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
-
-	if (object)
-	{
-		grn_obj_remove(ctx, object);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 #ifdef JSONBOID
 static bool
 PGrnRemoveJSONValueLexiconTable(const char *typeName, unsigned int relationID)

@@ -31,3 +31,5 @@ grn_obj *PGrnCreateColumn(grn_obj *table,
 						  grn_obj *type);
 
 void PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source);
+
+bool PGrnRemoveObject(const char *name);

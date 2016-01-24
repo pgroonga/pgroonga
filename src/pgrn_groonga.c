@@ -6,6 +6,7 @@
 bool PGrnIsLZ4Available;
 
 static grn_ctx *ctx = &PGrnContext;
+static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void
 PGrnInitializeGroongaInformation(void)
@@ -181,4 +182,20 @@ PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source)
 	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &sourceIDs);
 
 	GRN_OBJ_FIN(ctx, &sourceIDs);
+}
+
+bool
+PGrnRemoveObject(const char *name)
+{
+	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
+
+	if (object)
+	{
+		grn_obj_remove(ctx, object);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
