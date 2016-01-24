@@ -2,7 +2,7 @@
 
 #include "pgrn_compatible.h"
 #include "pgrn_global.h"
-#include "pgrn_inspect.h"
+#include "pgrn_groonga.h"
 #include "pgrn_options.h"
 #include "pgrn_value.h"
 

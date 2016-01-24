@@ -5,7 +5,7 @@ MODULE_big = pgroonga
 SRCS =						\
 	src/pgroonga.c				\
 	src/pgrn_global.c			\
-	src/pgrn_inspect.c			\
+	src/pgrn_groonga.c			\
 	src/pgrn_options.c			\
 	src/pgrn_value.c			\
 	src/pgrn_variables.c			\

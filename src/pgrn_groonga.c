@@ -1,7 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn_global.h"
-#include "pgrn_inspect.h"
+#include "pgrn_groonga.h"
 
 static grn_ctx *ctx = &PGrnContext;
 
