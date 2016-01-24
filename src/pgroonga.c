@@ -1031,21 +1031,6 @@ PGrnCreate(Relation index,
 	}
 }
 
-static void
-PGrnSetSource(grn_obj *indexColumn,
-			  grn_obj *source,
-			  grn_obj *sourceIDs)
-{
-	grn_id sourceID;
-
-	GRN_BULK_REWIND(sourceIDs);
-
-	sourceID = grn_obj_id(ctx, source);
-	GRN_RECORD_PUT(ctx, sourceIDs, sourceID);
-
-	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
-}
-
 #ifdef JSONBOID
 static void
 PGrnSetSourceForJSON(Relation index,
@@ -1164,7 +1149,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 		}
 
 		source = PGrnLookupColumn(sourcesTable, name->data, ERROR);
-		PGrnSetSource(indexColumn, source, &sourceIDs);
+		PGrnIndexColumnSetSource(indexColumn, source);
 		grn_obj_unlink(ctx, source);
 		grn_obj_unlink(ctx, indexColumn);
 	}
