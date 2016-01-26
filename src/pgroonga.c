@@ -1311,9 +1311,9 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	bool matched = false;
 
 	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											VARDATA_ANY(query),
-											VARSIZE_ANY_EXHDR(query));
+									   VARSIZE_ANY_EXHDR(target),
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query));
 
 	PG_RETURN_BOOL(matched);
 }
