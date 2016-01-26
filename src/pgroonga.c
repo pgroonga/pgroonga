@@ -130,6 +130,9 @@ PG_FUNCTION_INFO_V1(pgroonga_match_query_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
+/* v2 */
+PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
 PG_FUNCTION_INFO_V1(pgroonga_gettuple);
@@ -304,17 +307,12 @@ _PG_init(void)
 }
 
 static grn_id
-PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
+PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 {
-	TupleDesc desc = RelationGetDescr(index);
-	Form_pg_attribute attr;
 	grn_id typeID = GRN_ID_NIL;
 	unsigned char typeFlags = 0;
-	int32 maxLength;
 
-	attr = desc->attrs[n];
-
-	switch (attr->atttypid)
+	switch (pgTypeID)
 	{
 	case BOOLOID:
 		typeID = GRN_DB_BOOL;
@@ -341,15 +339,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		typeID = GRN_DB_LONG_TEXT;
 		break;
 	case VARCHAROID:
-		maxLength = type_maximum_size(attr->atttypid, attr->atttypmod);
-		if (maxLength > 4096)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"4097bytes over size varchar isn't supported: %d",
-							maxLength)));
-		}
 		typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
 		break;
 #ifdef NOT_USED
@@ -358,16 +347,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 		break;
 #endif
 	case VARCHARARRAYOID:
-		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
-		if (maxLength > 4096)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"array of 4097bytes over size varchar "
-							"isn't supported: %d",
-							maxLength)));
-		}
 		typeID = GRN_DB_SHORT_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
 		break;
@@ -378,7 +357,7 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: unsupported type: %u", attr->atttypid)));
+				 errmsg("pgroonga: unsupported type: %u", pgTypeID)));
 		break;
 	}
 
@@ -388,6 +367,35 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	}
 
 	return typeID;
+}
+
+static grn_id
+PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
+{
+	TupleDesc desc = RelationGetDescr(index);
+	Form_pg_attribute attr;
+	int32 maxLength;
+
+	attr = desc->attrs[n];
+	switch (attr->atttypid)
+	{
+	case VARCHAROID:
+	case VARCHARARRAYOID:
+		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
+		if (maxLength > 4096)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("pgroonga: "
+							"4097bytes over size varchar isn't supported: %d",
+							maxLength)));
+		}
+		break;
+	default:
+		break;
+	}
+
+	return PGrnPGTypeToGrnType(attr->atttypid, flags);
 }
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
@@ -517,13 +525,14 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 #endif
 
 static bool
-PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
+PGrnIsQueryStrategyIndex(Relation index, int nthAttribute)
 {
-	Oid queryStrategyOID;
+	Oid strategyOID;
 	Oid leftType;
 	Oid rightType;
 
 	leftType = index->rd_opcintype[nthAttribute];
+
 	switch (leftType)
 	{
 	case VARCHARARRAYOID:
@@ -536,11 +545,53 @@ PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 		rightType = leftType;
 		break;
 	}
-	queryStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
-										   leftType,
-										   rightType,
-										   PGrnQueryStrategyNumber);
-	return OidIsValid(queryStrategyOID);
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryStrategyNumber);
+	return OidIsValid(strategyOID);
+}
+
+static bool
+PGrnIsQueryContainStrategyIndex(Relation index, int nthAttribute)
+{
+	Oid strategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+
+	switch (leftType)
+	{
+	case VARCHAROID:
+		rightType = VARCHARARRAYOID;
+		break;
+	case TEXTOID:
+		rightType = TEXTARRAYOID;
+		break;
+	default:
+		rightType = leftType;
+		break;
+	}
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryContainStrategyNumber);
+	return OidIsValid(strategyOID);
+}
+
+static bool
+PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
+{
+	if (PGrnIsQueryStrategyIndex(index, nthAttribute))
+		return true;
+
+	if (PGrnIsQueryContainStrategyIndex(index, nthAttribute))
+		return true;
+
+	return false;
 }
 
 static bool
@@ -1374,6 +1425,41 @@ pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/* v2 */
+/**
+ * pgroonga.query_contain(target text, queries text[]) : bool
+ */
+Datum
+pgroonga_query_contain_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
+	grn_bool matched;
+	int i, n;
+
+	n = ARR_DIMS(queries)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum queryDatum;
+		text *query;
+		bool isNULL;
+
+		queryDatum = array_ref(queries, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		query = DatumGetTextPP(queryDatum);
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query));
+		if (matched)
+			break;
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
 static void
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
@@ -1863,6 +1949,35 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
 }
 
+static void
+PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
+							  PGrnSearchData *data,
+							  grn_obj *targetColumn,
+							  const char *query,
+							  unsigned int querySize)
+{
+	grn_rc rc;
+	grn_obj *matchTarget, *matchTargetVariable;
+	grn_expr_flags flags = GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+							  matchTarget, matchTargetVariable);
+	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
+	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+
+	rc = grn_expr_parse(ctx, data->expression,
+						query, querySize,
+						matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+						flags);
+	if (rc != GRN_SUCCESS)
+	{
+		ereport(ERROR,
+				(errcode(PGrnRCToPgErrorCode(rc)),
+				 errmsg("pgroonga: failed to parse expression: %s",
+						ctx->errbuf)));
+	}
+}
+
 static bool
 PGrnSearchBuildCondition(IndexScanDesc scan,
 						 PGrnScanOpaque so,
@@ -1876,6 +1991,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	const char *targetColumnName;
 	grn_obj *targetColumn;
 	grn_operator operator = GRN_OP_NOP;
+	Oid valueTypeID;
 
 	/* NULL key is not supported */
 	if (key->sk_flags & SK_ISNULL)
@@ -1891,24 +2007,15 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
 		return PGrnJSONBBuildSearchCondition(data, key, targetColumn);
 
+	valueTypeID = attribute->atttypid;
+	switch (valueTypeID)
 	{
-		grn_id domain;
-		unsigned char flags = 0;
-		domain = PGrnGetType(index, key->sk_attno - 1, NULL);
-		grn_obj_reinit(ctx, &(buffers->general), domain, flags);
-	}
-	{
-		Oid valueTypeID = attribute->atttypid;
-		switch (valueTypeID)
-		{
-		case VARCHARARRAYOID:
-			valueTypeID = VARCHAROID;
-			break;
-		case TEXTARRAYOID:
-			valueTypeID = TEXTOID;
-			break;
-		}
-		PGrnConvertFromData(key->sk_argument, valueTypeID, &(buffers->general));
+	case VARCHARARRAYOID:
+		valueTypeID = VARCHAROID;
+		break;
+	case TEXTARRAYOID:
+		valueTypeID = TEXTOID;
+		break;
 	}
 
 	switch (key->sk_strategy)
@@ -1939,12 +2046,28 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
 		break;
+	case PGrnQueryContainStrategyNumber:
+		switch (attribute->atttypid)
+		{
+		case TEXTOID:
+			valueTypeID = TEXTARRAYOID;
+			break;
+		}
+		break;
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("unexpected strategy number: %d",
 						key->sk_strategy)));
 		break;
+	}
+
+	{
+		grn_id domain;
+		unsigned char flags = 0;
+		domain = PGrnPGTypeToGrnType(valueTypeID, &flags);
+		grn_obj_reinit(ctx, &(buffers->general), domain, flags);
+		PGrnConvertFromData(key->sk_argument, valueTypeID, &(buffers->general));
 	}
 
 	switch (key->sk_strategy)
@@ -1959,27 +2082,32 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
 		break;
 	case PGrnQueryStrategyNumber:
+		PGrnSearchBuildConditionQuery(so,
+									  data,
+									  targetColumn,
+									  GRN_TEXT_VALUE(&(buffers->general)),
+									  GRN_TEXT_LEN(&(buffers->general)));
+		break;
+	case PGrnQueryContainStrategyNumber:
 	{
-		grn_rc rc;
-		grn_obj *matchTarget, *matchTargetVariable;
-		grn_expr_flags flags =
-			GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+		grn_obj *queries = &(buffers->general);
+		unsigned int i, n;
 
-		GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
-								  matchTarget, matchTargetVariable);
-		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-		grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
-
-		rc = grn_expr_parse(ctx, data->expression,
-							GRN_TEXT_VALUE(&(buffers->general)), GRN_TEXT_LEN(&(buffers->general)),
-							matchTarget, GRN_OP_MATCH, GRN_OP_AND,
-							flags);
-		if (rc != GRN_SUCCESS)
+		n = grn_vector_size(ctx, queries);
+		for (i = 0; i < n; i++)
 		{
-			ereport(ERROR,
-					(errcode(PGrnRCToPgErrorCode(rc)),
-					 errmsg("pgroonga: failed to parse expression: %s",
-							ctx->errbuf)));
+			const char *query;
+			unsigned int querySize;
+
+			querySize = grn_vector_get_element(ctx, queries, i,
+												&query, NULL, NULL);
+			PGrnSearchBuildConditionQuery(so,
+										  data,
+										  targetColumn,
+										  query,
+										  querySize);
+			if (i > 0)
+				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
 		}
 		break;
 	}
