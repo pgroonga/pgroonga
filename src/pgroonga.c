@@ -3106,7 +3106,7 @@ PGrnRemoveUnusedTables(void)
 		if (nameEnd[0] == '.')
 			continue;
 		relation = RelationIdGetRelation(relationID);
-		if (relation)
+		if (RelationIsValid(relation))
 		{
 			RelationClose(relation);
 			continue;
