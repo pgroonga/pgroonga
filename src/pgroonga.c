@@ -132,6 +132,7 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 /* v2 */
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -1460,6 +1461,40 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * pgroonga.match_contain(target text, keywords text[]) : bool
+ */
+Datum
+pgroonga_match_contain_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
+	grn_bool matched;
+	int i, n;
+
+	n = ARR_DIMS(keywords)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum keywordDatum;
+		text *keyword;
+		bool isNULL;
+
+		keywordDatum = array_ref(keywords, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		keyword = DatumGetTextPP(keywordDatum);
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(keyword),
+										  VARSIZE_ANY_EXHDR(keyword));
+		if (matched)
+			break;
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
 static void
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
@@ -1978,6 +2013,20 @@ PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
 	}
 }
 
+static void
+PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
+										grn_obj *targetColumn,
+										grn_obj *value,
+										grn_operator operator)
+{
+	grn_expr_append_obj(ctx, data->expression,
+						targetColumn, GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
+	grn_expr_append_const(ctx, data->expression,
+						  value, GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, data->expression, operator, 2);
+}
+
 static bool
 PGrnSearchBuildCondition(IndexScanDesc scan,
 						 PGrnScanOpaque so,
@@ -2047,6 +2096,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		operator = GRN_OP_REGEXP;
 		break;
 	case PGrnQueryContainStrategyNumber:
+	case PGrnMatchContainStrategyNumber:
 		switch (attribute->atttypid)
 		{
 		case TEXTOID:
@@ -2111,13 +2161,37 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		}
 		break;
 	}
+	case PGrnMatchContainStrategyNumber:
+	{
+		grn_obj *keywords = &(buffers->general);
+		grn_obj keywordBuffer;
+		unsigned int i, n;
+
+		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		n = grn_vector_size(ctx, keywords);
+		for (i = 0; i < n; i++)
+		{
+			const char *keyword;
+			unsigned int keywordSize;
+
+			keywordSize = grn_vector_get_element(ctx, keywords, i,
+												&keyword, NULL, NULL);
+			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
+			PGrnSearchBuildConditionBinaryOperation(data,
+													targetColumn,
+													&keywordBuffer,
+													GRN_OP_MATCH);
+			if (i > 0)
+				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
+		}
+		GRN_OBJ_FIN(ctx, &keywordBuffer);
+		break;
+	}
 	default:
-		grn_expr_append_obj(ctx, data->expression,
-							targetColumn, GRN_OP_PUSH, 1);
-		grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
-		grn_expr_append_const(ctx, data->expression,
-							  &(buffers->general), GRN_OP_PUSH, 1);
-		grn_expr_append_op(ctx, data->expression, operator, 2);
+		PGrnSearchBuildConditionBinaryOperation(data,
+												targetColumn,
+												&(buffers->general),
+												operator);
 		break;
 	}
 

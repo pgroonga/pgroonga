@@ -24,7 +24,8 @@
 #define PGrnRegexpStrategyNumber		10	/* operator @~ (@~ in Groonga)  */
 #define PGrnJSONContainStrategyNumber	11	/* operator @> */
 
-#define PGrnQueryContainStrategyNumber	12	/* operator &?> */
+#define PGrnQueryContainStrategyNumber	12	/* operator &?> (query in Groonga) */
+#define PGrnMatchContainStrategyNumber	13	/* operator &@> (@ in Groonga) */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
