@@ -3105,10 +3105,13 @@ PGrnRemoveUnusedTables(void)
 		relationID = strtol(name + strlen(min), &nameEnd, 10);
 		if (nameEnd[0] == '.')
 			continue;
+
+		LockRelationOid(relationId, AccessShareLock);
 		relation = RelationIdGetRelation(relationID);
 		if (RelationIsValid(relation))
 		{
 			RelationClose(relation);
+			UnlockRelationOid(relationId, AccessShareLock);
 			continue;
 		}
 
