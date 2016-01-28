@@ -3091,7 +3091,8 @@ PGrnRemoveUnusedTables(void)
 								   min, strlen(min),
 								   NULL, 0,
 								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
-	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL) {
+	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
+	{
 		char *name;
 		char *nameEnd;
 		int nameSize;
