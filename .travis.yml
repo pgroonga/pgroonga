@@ -8,8 +8,8 @@ compiler:
 addons:
   postgresql: "9.4"
 sudo: required
-env:
-  - GROONGA_MASTER=yes
+# env:
+#   - GROONGA_MASTER=yes
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
