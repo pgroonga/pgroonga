@@ -7,6 +7,7 @@ latest_groonga_version = "5.1.1"
 windows_postgresql_version = "9.5.0-1"
 
 package = "pgroonga"
+package_label = "PGroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
 gpg_uid = "45499429"
 groonga_source_dir_candidates = [
@@ -125,7 +126,7 @@ desc "Tag #{version}"
 task :tag do
   sh("git", "tag",
      "-a", version,
-     "-m", "#{package} #{version} has been released!!!")
+     "-m", "#{package_label} #{version} has been released!!!")
   sh("git", "push", "--tags")
 end
 
