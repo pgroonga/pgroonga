@@ -1334,36 +1334,36 @@ PGrnRemoveJSONValueLexiconTable(const char *typeName, unsigned int relationID)
 #endif
 
 void
-PGrnJSONBRemoveUnusedTables(Oid relationID)
+PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 {
 #ifdef JSONBOID
-		PGrnRemoveJSONValueLexiconTable("FullTextSearch", relationID);
-		PGrnRemoveJSONValueLexiconTable("String", relationID);
-		PGrnRemoveJSONValueLexiconTable("Number", relationID);
-		PGrnRemoveJSONValueLexiconTable("Boolean", relationID);
-		PGrnRemoveJSONValueLexiconTable("Size", relationID);
+		PGrnRemoveJSONValueLexiconTable("FullTextSearch", relationFileNodeID);
+		PGrnRemoveJSONValueLexiconTable("String", relationFileNodeID);
+		PGrnRemoveJSONValueLexiconTable("Number", relationFileNodeID);
+		PGrnRemoveJSONValueLexiconTable("Boolean", relationFileNodeID);
+		PGrnRemoveJSONValueLexiconTable("Size", relationFileNodeID);
 
 		{
 			char name[GRN_TABLE_MAX_KEY_SIZE];
 
 			snprintf(name, sizeof(name),
 					 PGrnJSONPathsTableNameFormat ".%s",
-					 relationID, 0, PGrnIndexColumnName);
+					 relationFileNodeID, 0, PGrnIndexColumnName);
 			PGrnRemoveObject(name);
 
 			snprintf(name, sizeof(name),
 					 PGrnJSONValuesTableNameFormat,
-					 relationID, 0);
+					 relationFileNodeID, 0);
 			PGrnRemoveObject(name);
 
 			snprintf(name, sizeof(name),
 					 PGrnJSONPathsTableNameFormat,
-					 relationID, 0);
+					 relationFileNodeID, 0);
 			PGrnRemoveObject(name);
 
 			snprintf(name, sizeof(name),
 					 PGrnJSONTypesTableNameFormat,
-					 relationID, 0);
+					 relationFileNodeID, 0);
 			PGrnRemoveObject(name);
 		}
 #endif

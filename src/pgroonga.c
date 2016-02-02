@@ -26,6 +26,7 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
+#include <utils/relfilenodemap.h>
 #include <utils/selfuncs.h>
 #include <utils/syscache.h>
 #include <utils/timestamp.h>
@@ -3134,30 +3135,36 @@ PGrnRemoveUnusedTables(void)
 		char *name;
 		char *nameEnd;
 		int nameSize;
+		Oid relationFileNodeID;
 		Oid relationID;
-		Relation relation;
 		unsigned int i;
 
 		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
 		nameEnd = name + nameSize;
-		relationID = strtol(name + strlen(min), &nameEnd, 10);
+		relationFileNodeID = strtol(name + strlen(min), &nameEnd, 10);
 		if (nameEnd[0] == '.')
 			continue;
 
-		LockRelationOid(relationID, AccessShareLock);
-		relation = RelationIdGetRelation(relationID);
-		if (RelationIsValid(relation))
+		relationID = RelidByRelfilenode(MyDatabaseTableSpace,
+										relationFileNodeID);
+		if (OidIsValid(relationID))
 		{
-			RelationClose(relation);
-			UnlockRelationOid(relationID, AccessShareLock);
-			continue;
+			Relation relation;
+			LockRelationOid(relationID, AccessShareLock);
+			relation = RelationIdGetRelation(relationID);
+			if (RelationIsValid(relation))
+			{
+				RelationClose(relation);
+				UnlockRelationOid(relationID, AccessShareLock);
+				continue;
+			}
 		}
 
 		for (i = 0; true; i++)
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
 			snprintf(tableName, sizeof(tableName),
-					 PGrnLexiconNameFormat, relationID, i);
+					 PGrnLexiconNameFormat, relationFileNodeID, i);
 			if (!PGrnRemoveObject(tableName))
 				break;
 		}
@@ -3165,11 +3172,11 @@ PGrnRemoveUnusedTables(void)
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
 			snprintf(tableName, sizeof(tableName),
-					 PGrnSourcesTableNameFormat, relationID);
+					 PGrnSourcesTableNameFormat, relationFileNodeID);
 			PGrnRemoveObject(tableName);
 		}
 
-		PGrnJSONBRemoveUnusedTables(relationID);
+		PGrnJSONBRemoveUnusedTables(relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
 }

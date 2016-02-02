@@ -42,4 +42,4 @@ void PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data);
 void PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data);
 void PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data);
 
-void PGrnJSONBRemoveUnusedTables(Oid relationID);
+void PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID);
