@@ -26,7 +26,6 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
-#include <utils/relfilenodemap.h>
 #include <utils/selfuncs.h>
 #include <utils/syscache.h>
 #include <utils/timestamp.h>
@@ -36,6 +35,10 @@
 #ifdef PGRN_SUPPORT_SCORE
 #	include <lib/ilist.h>
 #	include <utils/snapmgr.h>
+#endif
+
+#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
+#	include <utils/relfilenodemap.h>
 #endif
 
 #include <groonga.h>
@@ -3173,6 +3176,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 static void
 PGrnRemoveUnusedTables(void)
 {
+#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
 
@@ -3229,6 +3233,7 @@ PGrnRemoveUnusedTables(void)
 		PGrnJSONBRemoveUnusedTables(relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
+#endif
 }
 
 
