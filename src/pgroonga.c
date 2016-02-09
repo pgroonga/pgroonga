@@ -137,8 +137,10 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 /* v2 */
-PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_match_text);
+PG_FUNCTION_INFO_V1(pgroonga_query_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -557,7 +559,17 @@ PGrnIsQueryStrategyIndex(Relation index, int nthAttribute)
 									  leftType,
 									  rightType,
 									  PGrnQueryStrategyNumber);
-	return OidIsValid(strategyOID);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryStrategyV2Number);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	return false;
 }
 
 static bool
@@ -1465,41 +1477,42 @@ pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 
 /* v2 */
 /**
- * pgroonga.query_contain(target text, queries text[]) : bool
+ * pgroonga.match_text(target text, term text) : bool
  */
 Datum
-pgroonga_query_contain_text(PG_FUNCTION_ARGS)
+pgroonga_match_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
+	text *term = PG_GETARG_TEXT_PP(1);
 	grn_bool matched;
-	int i, n;
 
-	n = ARR_DIMS(queries)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum queryDatum;
-		text *query;
-		bool isNULL;
+	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(term),
+									  VARSIZE_ANY_EXHDR(term));
+	PG_RETURN_BOOL(matched);
+}
 
-		queryDatum = array_ref(queries, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
+/**
+ * pgroonga.query_text(target text, query text) : bool
+ */
+Datum
+pgroonga_query_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
 
-		query = DatumGetTextPP(queryDatum);
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   VARDATA_ANY(query),
-										   VARSIZE_ANY_EXHDR(query));
-		if (matched)
-			break;
-	}
+	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+									   VARSIZE_ANY_EXHDR(target),
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query));
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_contain(target text, keywords text[]) : bool
+ * pgroonga.match_contain_text(target text, keywords text[]) : bool
  */
 Datum
 pgroonga_match_contain_text(PG_FUNCTION_ARGS)
@@ -1525,6 +1538,40 @@ pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 										  VARSIZE_ANY_EXHDR(target),
 										  VARDATA_ANY(keyword),
 										  VARSIZE_ANY_EXHDR(keyword));
+		if (matched)
+			break;
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.query_contain_text(target text, queries text[]) : bool
+ */
+Datum
+pgroonga_query_contain_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
+	grn_bool matched;
+	int i, n;
+
+	n = ARR_DIMS(queries)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum queryDatum;
+		text *query;
+		bool isNULL;
+
+		queryDatum = array_ref(queries, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		query = DatumGetTextPP(queryDatum);
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query));
 		if (matched)
 			break;
 	}
@@ -2127,9 +2174,11 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnILikeStrategyNumber:
 		break;
 	case PGrnMatchStrategyNumber:
+	case PGrnMatchStrategyV2Number:
 		operator = GRN_OP_MATCH;
 		break;
 	case PGrnQueryStrategyNumber:
+	case PGrnQueryStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
@@ -2171,6 +2220,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
 		break;
 	case PGrnQueryStrategyNumber:
+	case PGrnQueryStrategyV2Number:
 		PGrnSearchBuildConditionQuery(so,
 									  data,
 									  targetColumn,

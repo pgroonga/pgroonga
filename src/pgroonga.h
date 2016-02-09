@@ -24,8 +24,10 @@
 #define PGrnRegexpStrategyNumber		10	/* operator @~ (@~ in Groonga)  */
 #define PGrnJSONContainStrategyNumber	11	/* operator @> */
 
-#define PGrnQueryContainStrategyNumber	12	/* operator &?> (query in Groonga) */
-#define PGrnMatchContainStrategyNumber	13	/* operator &@> (@ in Groonga) */
+#define PGrnMatchStrategyV2Number		12	/* operator &@	(@ in Groonga) */
+#define PGrnQueryStrategyV2Number		13	/* operator &?  (query in Groonga) */
+#define PGrnMatchContainStrategyNumber	14	/* operator &@> (@ in Groonga) */
+#define PGrnQueryContainStrategyNumber	15	/* operator &?> (query in Groonga) */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
@@ -61,6 +63,12 @@ extern Datum PGDLLEXPORT pgroonga_match_query_varchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_regexp_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_jsonb(PG_FUNCTION_ARGS);
+
+/* v2 */
+extern Datum PGDLLEXPORT pgroonga_match_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_query_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_match_contain_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_query_contain_text(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_insert(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_beginscan(PG_FUNCTION_ARGS);
