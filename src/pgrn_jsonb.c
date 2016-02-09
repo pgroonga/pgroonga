@@ -1167,6 +1167,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 #endif
 }
 
+#ifdef JSONBOID
 static void
 PGrnJSONValuesUpdateDeletedID(grn_obj *jsonValuesTable,
 							  grn_obj *values,
@@ -1249,6 +1250,7 @@ PGrnJSONValuesDeleteBulk(grn_obj *jsonValuesTable,
 
 	grn_table_cursor_close(ctx, tableCursor);
 }
+#endif
 
 void
 PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
