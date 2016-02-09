@@ -403,5 +403,7 @@ CREATE OPERATOR &@> (
 
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
+		OPERATOR 6 pg_catalog.~~,
+		OPERATOR 7 pg_catalog.~~*,
 		OPERATOR 12 &?> (text, text[]),
 		OPERATOR 13 &@> (text, text[]);
