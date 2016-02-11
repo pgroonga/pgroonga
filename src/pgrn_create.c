@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn_column_name.h"
 #include "pgrn_create.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
@@ -57,10 +58,15 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		}
 	}
 
-	PGrnCreateColumn(data->sourcesTable,
-					 data->desc->attrs[data->i]->attname.data,
-					 flags,
-					 grn_ctx_at(ctx, data->attributeTypeID));
+	{
+		char columnName[GRN_TABLE_MAX_KEY_SIZE];
+		PGrnColumnNameEncode(data->desc->attrs[data->i]->attname.data,
+							 columnName);
+		PGrnCreateColumn(data->sourcesTable,
+						 columnName,
+						 flags,
+						 grn_ctx_at(ctx, data->attributeTypeID));
+	}
 }
 
 void

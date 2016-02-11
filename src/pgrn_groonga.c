@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn_column_name.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 
@@ -80,9 +81,12 @@ PGrnLookup(const char *name, int errorLevel)
 grn_obj *
 PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
 {
+	char columnName[GRN_TABLE_MAX_KEY_SIZE];
+	size_t columnNameSize;
 	grn_obj *column;
 
-	column = grn_obj_column(ctx, table, name, strlen(name));
+	columnNameSize = PGrnColumnNameEncode(name, columnName);
+	column = grn_obj_column(ctx, table, columnName, columnNameSize);
 	if (!column)
 	{
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];

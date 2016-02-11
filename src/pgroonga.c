@@ -1610,8 +1610,8 @@ PGrnInsert(Relation index,
 		if (isnull[i])
 			continue;
 
-		dataColumn = grn_obj_column(ctx, sourcesTable,
-									name->data, strlen(name->data));
+		dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
+
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
 			PGrnJSONBInsert(index, values, i, &(buffers->general));

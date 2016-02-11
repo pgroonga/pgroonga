@@ -4,6 +4,7 @@ GROONGA_PKG = "groonga >= $(REQUIRED_GROONGA_VERSION)"
 MODULE_big = pgroonga
 SRCS =						\
 	src/pgroonga.c				\
+	src/pgrn_column_name.c			\
 	src/pgrn_convert.c			\
 	src/pgrn_create.c			\
 	src/pgrn_global.c			\
