@@ -48,6 +48,7 @@ link_directories(
 
 set(PGRN_SOURCES
   "src/pgroonga.c"
+  "src/pgrn_column_name.c"
   "src/pgrn_convert.c"
   "src/pgrn_create.c"
   "src/pgrn_global.c"
