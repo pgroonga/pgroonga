@@ -142,6 +142,7 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 /* v2 */
 PG_FUNCTION_INFO_V1(pgroonga_match_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_text);
+PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
 
@@ -605,12 +606,47 @@ PGrnIsQueryContainStrategyIndex(Relation index, int nthAttribute)
 }
 
 static bool
+PGrnIsScriptStrategyIndex(Relation index, int nthAttribute)
+{
+	Oid strategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+
+	switch (leftType)
+	{
+	case VARCHARARRAYOID:
+		rightType = VARCHAROID;
+		break;
+	case TEXTARRAYOID:
+		rightType = TEXTOID;
+		break;
+	default:
+		rightType = leftType;
+		break;
+	}
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnScriptStrategyV2Number);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	return false;
+}
+
+static bool
 PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 {
 	if (PGrnIsQueryStrategyIndex(index, nthAttribute))
 		return true;
 
 	if (PGrnIsQueryContainStrategyIndex(index, nthAttribute))
+		return true;
+
+	if (PGrnIsScriptStrategyIndex(index, nthAttribute))
 		return true;
 
 	return false;
@@ -1514,6 +1550,83 @@ pgroonga_query_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+static grn_bool
+pgroonga_script_raw(const char *target, unsigned int targetSize,
+					const char *script, unsigned int scriptSize)
+{
+	grn_obj *expression;
+	grn_obj *variable;
+	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
+	grn_rc rc;
+	grn_obj *result;
+	bool matched = false;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx,
+							  sequentialSearchData.table,
+							  expression,
+							  variable);
+	if (!expression)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_OUT_OF_MEMORY),
+				 errmsg("pgroonga: failed to create expression: %s",
+						ctx->errbuf)));
+	}
+
+	rc = grn_expr_parse(ctx,
+						expression,
+						script, scriptSize,
+						sequentialSearchData.textColumn,
+						GRN_OP_MATCH, GRN_OP_AND,
+						flags);
+	if (rc != GRN_SUCCESS)
+	{
+		char message[GRN_CTX_MSGSIZE];
+		grn_strncpy(message, GRN_CTX_MSGSIZE,
+					ctx->errbuf, GRN_CTX_MSGSIZE);
+
+		grn_obj_close(ctx, expression);
+		ereport(ERROR,
+				(errcode(PGrnRCToPgErrorCode(rc)),
+				 errmsg("pgroonga: failed to parse expression: %s",
+						message)));
+	}
+
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
+	grn_obj_set_value(ctx,
+					  sequentialSearchData.textColumn,
+					  sequentialSearchData.recordID,
+					  &(buffers->general),
+					  GRN_OBJ_SET);
+	GRN_RECORD_SET(ctx, variable, sequentialSearchData.recordID);
+
+	result = grn_expr_exec(ctx, expression, 0);
+	GRN_OBJ_IS_TRUE(ctx, result, matched);
+
+	grn_obj_close(ctx, expression);
+
+	return matched;
+}
+
+/**
+ * pgroonga.script_text(target text, script text) : bool
+ */
+Datum
+pgroonga_script_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_script_raw(VARDATA_ANY(target),
+								  VARSIZE_ANY_EXHDR(target),
+								  VARDATA_ANY(script),
+								  VARSIZE_ANY_EXHDR(script));
+
+	PG_RETURN_BOOL(matched);
+}
+
 /**
  * pgroonga.match_contain_text(target text, keywords text[]) : bool
  */
@@ -2103,6 +2216,35 @@ PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
 }
 
 static void
+PGrnSearchBuildConditionScript(PGrnScanOpaque so,
+							   PGrnSearchData *data,
+							   grn_obj *targetColumn,
+							   const char *script,
+							   unsigned int scriptSize)
+{
+	grn_rc rc;
+	grn_obj *matchTarget, *matchTargetVariable;
+	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+							  matchTarget, matchTargetVariable);
+	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
+	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+
+	rc = grn_expr_parse(ctx, data->expression,
+						script, scriptSize,
+						matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+						flags);
+	if (rc != GRN_SUCCESS)
+	{
+		ereport(ERROR,
+				(errcode(PGrnRCToPgErrorCode(rc)),
+				 errmsg("pgroonga: failed to parse expression: %s",
+						ctx->errbuf)));
+	}
+}
+
+static void
 PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_obj *targetColumn,
 										grn_obj *value,
@@ -2182,6 +2324,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
+	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
@@ -2229,6 +2372,13 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 									  targetColumn,
 									  GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
+		break;
+	case PGrnScriptStrategyV2Number:
+		PGrnSearchBuildConditionScript(so,
+									   data,
+									   targetColumn,
+									   GRN_TEXT_VALUE(&(buffers->general)),
+									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnQueryContainStrategyNumber:
 	{

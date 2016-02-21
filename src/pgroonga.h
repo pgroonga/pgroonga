@@ -26,8 +26,9 @@
 
 #define PGrnMatchStrategyV2Number		12	/* operator &@	(@ in Groonga) */
 #define PGrnQueryStrategyV2Number		13	/* operator &?  (query in Groonga) */
-#define PGrnMatchContainStrategyNumber	14	/* operator &@> (@ in Groonga) */
-#define PGrnQueryContainStrategyNumber	15	/* operator &?> (query in Groonga) */
+#define PGrnScriptStrategyV2Number		14	/* operator &`  (script in Groonga) */
+#define PGrnMatchContainStrategyNumber	15	/* operator &@> (@ in Groonga) */
+#define PGrnQueryContainStrategyNumber	16	/* operator &?> (query in Groonga) */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
