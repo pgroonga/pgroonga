@@ -24,8 +24,8 @@ DATA =						\
 	pgroonga-gpdb.sql
 else
 DATA =						\
-	pgroonga--$(EXTENSION_VERSION).sql
-#	$(shell echo pgroonga--*--*.sql)
+	pgroonga--$(EXTENSION_VERSION).sql	\
+	$(shell echo pgroonga--*--*.sql)
 endif
 
 PG_CPPFLAGS = $(shell pkg-config --cflags $(GROONGA_PKG))
