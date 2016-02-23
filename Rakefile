@@ -110,6 +110,7 @@ file windows_archive_name => dist_files do
   sh("unzip", groonga_archive_name)
   rm(groonga_archive_name)
   cd("#{groonga_base_name}/vendor") do
+    ruby("download_lz4.rb")
     ruby("download_mecab.rb")
   end
   mkdir_p("#{archive_base_name}/vendor")
@@ -485,6 +486,7 @@ postgresql-server-dev-9.4
              "-G", cmake_generator,
              "-DCMAKE_INSTALL_PREFIX=pgsql",
              "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}",
+             "-DGRN_WITH_BUNDLED_LZ4=yes",
              "-DGRN_WITH_BUNDLED_MECAB=yes",
              "-DGRN_WITH_MRUBY=yes")
           sh("cmake",
