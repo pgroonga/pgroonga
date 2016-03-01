@@ -68,6 +68,7 @@ extern Datum PGDLLEXPORT pgroonga_match_jsonb(PG_FUNCTION_ARGS);
 /* v2 */
 extern Datum PGDLLEXPORT pgroonga_match_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_script_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_contain_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_contain_text(PG_FUNCTION_ARGS);
 
