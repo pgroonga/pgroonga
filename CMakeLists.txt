@@ -27,6 +27,7 @@ set(PGRN_DOCUMENT_DIR "share/${PGRN_PROJECT_ID}")
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${PGRN_PROJECT_ID}.control"
   PGRN_CONTROL)
+
 string(REGEX REPLACE "^default_version = '([0-9.]+)'.*" "\\1"
   PGRN_VERSION "${PGRN_CONTROL}")
 string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1"
@@ -35,6 +36,9 @@ string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\2"
   PGRN_VERSION_MINOR "${PGRN_VERSION}")
 string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\3"
   PGRN_VERSION_MICRO "${PGRN_VERSION}")
+
+string(REGEX REPLACE ".*comment = '([^']+)'.*" "\\1"
+  PGRN_DESCRIPTION "${PGRN_CONTROL}")
 
 include_directories(
   "${PGRN_POSTGRESQL_DIR}/include/server/port/win32_msvc"
@@ -46,7 +50,12 @@ include_directories(
 link_directories(
   "${PGRN_POSTGRESQL_DIR}/lib")
 
+configure_file(
+  "src/pgroonga.rc.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
+  @ONLY)
 set(PGRN_SOURCES
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
   "src/pgroonga.c"
   "src/pgrn_column_name.c"
   "src/pgrn_convert.c"
