@@ -142,6 +142,7 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 /* v2 */
 PG_FUNCTION_INFO_V1(pgroonga_match_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_text);
+PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
@@ -1550,6 +1551,32 @@ pgroonga_query_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * pgroonga.similar_text(target text, document text) : bool
+ */
+Datum
+pgroonga_similar_text(PG_FUNCTION_ARGS)
+{
+#ifdef NOT_USED
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *document = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_similar_raw(VARDATA_ANY(target),
+								   VARSIZE_ANY_EXHDR(target),
+								   VARDATA_ANY(document),
+								   VARSIZE_ANY_EXHDR(document));
+
+	PG_RETURN_BOOL(matched);
+#endif
+
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: operator &~? is available only in index scan")));
+
+	PG_RETURN_BOOL(false);
+}
+
 static grn_bool
 pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize)
@@ -2324,6 +2351,10 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
+		break;
+	case PGrnSimilarStrategyV2Number:
+		operator = GRN_OP_SIMILAR;
+		break;
 	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:

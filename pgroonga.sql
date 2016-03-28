@@ -206,7 +206,7 @@ CREATE FUNCTION pgroonga.options(internal)
 DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 INSERT INTO pg_catalog.pg_am VALUES(
 	'pgroonga',	-- amname
-	16,		-- amstrategies
+	17,		-- amstrategies
 	0,		-- amsupport
 	true,		-- amcanorder
 	true,		-- amcanorderbyop
@@ -401,6 +401,19 @@ CREATE OPERATOR &? (
 	RIGHTARG = text
 );
 
+CREATE FUNCTION pgroonga.similar_text(text, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_similar_text'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_text,
+	LEFTARG = text,
+	RIGHTARG = text
+);
+
 CREATE FUNCTION pgroonga.script_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_script_text'
@@ -446,6 +459,7 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 		OPERATOR 7 pg_catalog.~~*,
 		OPERATOR 12 &@,
 		OPERATOR 13 &?,
-		OPERATOR 14 &`,
-		OPERATOR 15 &@> (text, text[]),
-		OPERATOR 16 &?> (text, text[]);
+		OPERATOR 14 &~?,
+		OPERATOR 15 &`,
+		OPERATOR 16 &@> (text, text[]),
+		OPERATOR 17 &?> (text, text[]);
