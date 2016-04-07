@@ -4,12 +4,12 @@ build_script:
   - git submodule update --init
   - cd ..
   - choco install -y curl 7zip.commandline
-  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.4.1-3-windows-x64-binaries.zip
-  - 7z x postgresql-9.4.1-3-windows-x64-binaries.zip > nul
+  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.2-1-windows-x64-binaries.zip
+  - 7z x postgresql-9.5.2-1-windows-x64-binaries.zip > nul
   - cd pgroonga
-  - curl -O http://packages.groonga.org/source/groonga/groonga-5.1.2.zip
-  - 7z x groonga-5.1.2.zip > nul
-  - mv groonga-5.1.2 vendor\groonga
+  - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.1.zip
+  - 7z x groonga-6.0.1.zip > nul
+  - mv groonga-6.0.1 vendor\groonga
   - cmake . -G "Visual Studio 12 2013 Win64"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
       -DGRN_WITH_MRUBY=yes
