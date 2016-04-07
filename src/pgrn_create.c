@@ -36,6 +36,20 @@ void
 PGrnCreateDataColumn(PGrnCreateData *data)
 {
 	grn_obj_flags flags = 0;
+	grn_obj *range;
+	grn_id rangeID;
+
+	if (data->forPrefixSearch) {
+		char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
+
+		snprintf(lexiconName, sizeof(lexiconName),
+				 PGrnLexiconNameFormat, data->relNode, data->i);
+		range = PGrnLookup(lexiconName, ERROR);
+		rangeID = grn_obj_id(ctx, range);
+	} else {
+		rangeID = data->attributeTypeID;
+		range = grn_ctx_at(ctx, rangeID);
+	}
 
 	if (data->attributeFlags & GRN_OBJ_VECTOR)
 	{
@@ -47,7 +61,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 
 		if (PGrnIsLZ4Available)
 		{
-			switch (data->attributeTypeID)
+			switch (rangeID)
 			{
 			case GRN_DB_SHORT_TEXT:
 			case GRN_DB_TEXT:
@@ -65,12 +79,12 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		PGrnCreateColumn(data->sourcesTable,
 						 columnName,
 						 flags,
-						 grn_ctx_at(ctx, data->attributeTypeID));
+						 range);
 	}
 }
 
 void
-PGrnCreateIndexColumn(PGrnCreateData *data)
+PGrnCreateLexicon(PGrnCreateData *data)
 {
 	grn_id typeID = GRN_ID_NIL;
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
@@ -124,14 +138,23 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 							 PGrnLookup(normalizerName, ERROR));
 		}
 	}
+}
 
-	{
-		grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
-		if (data->forFullTextSearch || data->forRegexpSearch)
-			flags |= GRN_OBJ_WITH_POSITION;
-		PGrnCreateColumn(lexicon,
-						 PGrnIndexColumnName,
-						 flags,
-						 data->sourcesTable);
-	}
+void
+PGrnCreateIndexColumn(PGrnCreateData *data)
+{
+	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
+	grn_obj *lexicon;
+	grn_obj_flags flags = GRN_OBJ_COLUMN_INDEX;
+
+	snprintf(lexiconName, sizeof(lexiconName),
+			 PGrnLexiconNameFormat, data->relNode, data->i);
+	lexicon = PGrnLookup(lexiconName, ERROR);
+
+	if (data->forFullTextSearch || data->forRegexpSearch)
+		flags |= GRN_OBJ_WITH_POSITION;
+	PGrnCreateColumn(lexicon,
+					 PGrnIndexColumnName,
+					 flags,
+					 data->sourcesTable);
 }

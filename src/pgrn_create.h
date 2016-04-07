@@ -24,5 +24,6 @@ typedef struct PGrnCreateData
 
 void PGrnCreateSourcesCtidColumn(PGrnCreateData *data);
 void PGrnCreateSourcesTable(PGrnCreateData *data);
+void PGrnCreateLexicon(PGrnCreateData *data);
 void PGrnCreateDataColumn(PGrnCreateData *data);
 void PGrnCreateIndexColumn(PGrnCreateData *data);

@@ -28,9 +28,10 @@
 #define PGrnQueryStrategyV2Number		13	/* operator &?  (query in Groonga) */
 #define PGrnSimilarStrategyV2Number		14	/* operator &~? (similar search) */
 #define PGrnPrefixStrategyV2Number		15	/* operator &^  (prefix search) */
-#define PGrnScriptStrategyV2Number		16	/* operator &`  (script in Groonga) */
-#define PGrnMatchContainStrategyNumber	17	/* operator &@> (@ in Groonga) */
-#define PGrnQueryContainStrategyNumber	18	/* operator &?> (query in Groonga) */
+#define PGrnPrefixRKStrategyV2Number	16	/* operator &^~ (prefix RK search) */
+#define PGrnScriptStrategyV2Number		17	/* operator &`  (script in Groonga) */
+#define PGrnMatchContainStrategyNumber	18	/* operator &@> (@ in Groonga) */
+#define PGrnQueryContainStrategyNumber	19	/* operator &?> (query in Groonga) */
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
@@ -72,6 +73,7 @@ extern Datum PGDLLEXPORT pgroonga_match_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_similar_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_prefix_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_prefix_rk_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_script_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_contain_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_contain_text(PG_FUNCTION_ARGS);

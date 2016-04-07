@@ -111,12 +111,19 @@ typedef struct PGrnScanOpaqueData
 
 typedef PGrnScanOpaqueData *PGrnScanOpaque;
 
-typedef struct PGrnSequentialSearchData
+typedef struct PGrnMatchSequentialSearchData
 {
 	grn_obj *table;
 	grn_obj *textColumn;
 	grn_id recordID;
-} PGrnSequentialSearchData;
+} PGrnMatchSequentialSearchData;
+
+typedef struct PGrnPrefixRKSequentialSearchData
+{
+	grn_obj *table;
+	grn_obj *key;
+	grn_obj *resultTable;
+} PGrnPrefixRKSequentialSearchData;
 
 #ifdef PGRN_SUPPORT_SCORE
 static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
@@ -144,6 +151,7 @@ PG_FUNCTION_INFO_V1(pgroonga_match_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_text);
 PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
+PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
 PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
@@ -165,7 +173,8 @@ PG_FUNCTION_INFO_V1(pgroonga_costestimate);
 
 static grn_ctx *ctx = NULL;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
-static PGrnSequentialSearchData sequentialSearchData;
+static PGrnMatchSequentialSearchData matchSequentialSearchData;
+static PGrnPrefixRKSequentialSearchData prefixRKSequentialSearchData;
 
 static grn_encoding
 PGrnGetEncoding(void)
@@ -231,10 +240,18 @@ PGrnEnsureDatabase(void)
 }
 
 static void
-PGrnFinalizeSequentialSearchData(void)
+PGrnFinalizeMatchSequentialSearchData(void)
 {
-	grn_obj_close(ctx, sequentialSearchData.textColumn);
-	grn_obj_close(ctx, sequentialSearchData.table);
+	grn_obj_close(ctx, matchSequentialSearchData.textColumn);
+	grn_obj_close(ctx, matchSequentialSearchData.table);
+}
+
+static void
+PGrnFinalizePrefixRKSequentialSearchData(void)
+{
+	grn_obj_close(ctx, prefixRKSequentialSearchData.resultTable);
+	grn_obj_close(ctx, prefixRKSequentialSearchData.key);
+	grn_obj_close(ctx, prefixRKSequentialSearchData.table);
 }
 
 static void
@@ -246,7 +263,8 @@ PGrnOnProcExit(int code, Datum arg)
 
 		PGrnFinalizeJSONB();
 
-		PGrnFinalizeSequentialSearchData();
+		PGrnFinalizeMatchSequentialSearchData();
+		PGrnFinalizePrefixRKSequentialSearchData();
 
 		PGrnFinalizeBuffers();
 
@@ -261,25 +279,51 @@ PGrnOnProcExit(int code, Datum arg)
 }
 
 static void
-PGrnInitializeSequentialSearchData(void)
+PGrnInitializeMatchSequentialSearchData(void)
 {
-	sequentialSearchData.table = grn_table_create(ctx,
-												  NULL, 0,
-												  NULL,
-												  GRN_OBJ_TABLE_NO_KEY,
-												  NULL, NULL);
-	sequentialSearchData.textColumn =
+	matchSequentialSearchData.table = grn_table_create(ctx,
+													   NULL, 0,
+													   NULL,
+													   GRN_OBJ_TABLE_NO_KEY,
+													   NULL, NULL);
+	matchSequentialSearchData.textColumn =
 		grn_column_create(ctx,
-						  sequentialSearchData.table,
+						  matchSequentialSearchData.table,
 						  "text", strlen("text"),
 						  NULL,
 						  GRN_OBJ_COLUMN_SCALAR,
 						  grn_ctx_at(ctx, GRN_DB_TEXT));
-	sequentialSearchData.recordID =
+	matchSequentialSearchData.recordID =
 		grn_table_add(ctx,
-					  sequentialSearchData.table,
+					  matchSequentialSearchData.table,
 					  NULL, 0,
 					  NULL);
+}
+
+static void
+PGrnInitializePrefixRKSequentialSearchData(void)
+{
+	prefixRKSequentialSearchData.table =
+		grn_table_create(ctx,
+						 NULL, 0,
+						 NULL,
+						 GRN_OBJ_TABLE_PAT_KEY,
+						 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
+						 NULL);
+
+	prefixRKSequentialSearchData.key =
+		grn_obj_column(ctx,
+					   prefixRKSequentialSearchData.table,
+					   GRN_COLUMN_NAME_KEY,
+					   GRN_COLUMN_NAME_KEY_LEN);
+
+	prefixRKSequentialSearchData.resultTable =
+		grn_table_create(ctx,
+						 NULL, 0,
+						 NULL,
+						 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
+						 prefixRKSequentialSearchData.table,
+						 NULL);
 }
 
 void
@@ -316,7 +360,8 @@ _PG_init(void)
 
 	PGrnInitializeOptions();
 
-	PGrnInitializeSequentialSearchData();
+	PGrnInitializeMatchSequentialSearchData();
+	PGrnInitializePrefixRKSequentialSearchData();
 
 	PGrnInitializeJSONB();
 }
@@ -724,6 +769,7 @@ PGrnCreate(Relation index,
 			data.forPrefixSearch = PGrnIsForPrefixSearchIndex(index, data.i);
 			data.attributeTypeID = PGrnGetType(index, data.i,
 											   &(data.attributeFlags));
+			PGrnCreateLexicon(&data);
 			PGrnCreateDataColumn(&data);
 			PGrnCreateIndexColumn(&data);
 		}
@@ -1358,7 +1404,7 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 	bool matched = false;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  sequentialSearchData.table,
+							  matchSequentialSearchData.table,
 							  expression,
 							  variable);
 	if (!expression)
@@ -1372,7 +1418,7 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 	rc = grn_expr_parse(ctx,
 						expression,
 						query, querySize,
-						sequentialSearchData.textColumn,
+						matchSequentialSearchData.textColumn,
 						GRN_OP_MATCH, GRN_OP_AND,
 						flags);
 	if (rc != GRN_SUCCESS)
@@ -1391,11 +1437,11 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
 	grn_obj_set_value(ctx,
-					  sequentialSearchData.textColumn,
-					  sequentialSearchData.recordID,
+					  matchSequentialSearchData.textColumn,
+					  matchSequentialSearchData.recordID,
 					  &(buffers->general),
 					  GRN_OBJ_SET);
-	GRN_RECORD_SET(ctx, variable, sequentialSearchData.recordID);
+	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
 
 	result = grn_expr_exec(ctx, expression, 0);
 	GRN_OBJ_IS_TRUE(ctx, result, matched);
@@ -1636,6 +1682,77 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 }
 
 static grn_bool
+pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
+					   const char *prefix, unsigned int prefixSize)
+{
+	grn_obj *expression;
+	grn_obj *variable;
+	grn_bool matched;
+	grn_id id;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx,
+							  prefixRKSequentialSearchData.table,
+							  expression,
+							  variable);
+	if (!expression)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_OUT_OF_MEMORY),
+				 errmsg("pgroonga: failed to create expression: %s",
+						ctx->errbuf)));
+	}
+
+	grn_expr_append_obj(ctx, expression,
+						grn_ctx_get(ctx, "prefix_rk_search", -1),
+						GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, expression,
+						prefixRKSequentialSearchData.key,
+						GRN_OP_GET_VALUE, 1);
+	grn_expr_append_const_str(ctx, expression,
+							  prefix, prefixSize,
+							  GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, expression, GRN_OP_CALL, 2);
+
+	id = grn_table_add(ctx,
+					   prefixRKSequentialSearchData.table,
+					   text, textSize, NULL);
+	grn_table_select(ctx,
+					 prefixRKSequentialSearchData.table,
+					 expression,
+					 prefixRKSequentialSearchData.resultTable,
+					 GRN_OP_OR);
+	matched = grn_table_size(ctx, prefixRKSequentialSearchData.resultTable) > 0;
+	grn_table_delete(ctx,
+					 prefixRKSequentialSearchData.resultTable,
+					 &id, sizeof(grn_id));
+	grn_table_delete(ctx,
+					 prefixRKSequentialSearchData.table,
+					 text, textSize);
+
+	grn_obj_close(ctx, expression);
+
+	return matched;
+}
+
+/**
+ * pgroonga.prefix_rk_text(target text, prefix text) : bool
+ */
+Datum
+pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+									 VARSIZE_ANY_EXHDR(target),
+									 VARDATA_ANY(prefix),
+									 VARSIZE_ANY_EXHDR(prefix));
+
+	PG_RETURN_BOOL(matched);
+}
+
+static grn_bool
 pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize)
 {
@@ -1647,7 +1764,7 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 	bool matched = false;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  sequentialSearchData.table,
+							  matchSequentialSearchData.table,
 							  expression,
 							  variable);
 	if (!expression)
@@ -1661,7 +1778,7 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 	rc = grn_expr_parse(ctx,
 						expression,
 						script, scriptSize,
-						sequentialSearchData.textColumn,
+						matchSequentialSearchData.textColumn,
 						GRN_OP_MATCH, GRN_OP_AND,
 						flags);
 	if (rc != GRN_SUCCESS)
@@ -1680,11 +1797,11 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
 	grn_obj_set_value(ctx,
-					  sequentialSearchData.textColumn,
-					  sequentialSearchData.recordID,
+					  matchSequentialSearchData.textColumn,
+					  matchSequentialSearchData.recordID,
 					  &(buffers->general),
 					  GRN_OBJ_SET);
-	GRN_RECORD_SET(ctx, variable, sequentialSearchData.recordID);
+	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
 
 	result = grn_expr_exec(ctx, expression, 0);
 	GRN_OBJ_IS_TRUE(ctx, result, matched);
@@ -2301,6 +2418,35 @@ PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
 }
 
 static void
+PGrnSearchBuildConditionPrefixRK(PGrnScanOpaque so,
+								 PGrnSearchData *data,
+								 grn_obj *targetColumn,
+								 const char *prefix,
+								 unsigned int prefixSize)
+{
+	grn_obj subFilterScript;
+
+	GRN_TEXT_INIT(&subFilterScript, 0);
+	GRN_TEXT_PUTS(ctx, &subFilterScript, "prefix_rk_search(_key, ");
+	grn_text_esc(ctx, &subFilterScript, prefix, prefixSize);
+	GRN_TEXT_PUTS(ctx, &subFilterScript, ")");
+
+	grn_expr_append_obj(ctx, data->expression,
+						grn_ctx_get(ctx, "sub_filter", -1),
+						GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, data->expression,
+						targetColumn,
+						GRN_OP_GET_VALUE, 1);
+	grn_expr_append_const_str(ctx, data->expression,
+							  GRN_TEXT_VALUE(&subFilterScript),
+							  GRN_TEXT_LEN(&subFilterScript),
+							  GRN_OP_PUSH, 1);
+	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
+
+	GRN_OBJ_FIN(ctx, &subFilterScript);
+}
+
+static void
 PGrnSearchBuildConditionScript(PGrnScanOpaque so,
 							   PGrnSearchData *data,
 							   grn_obj *targetColumn,
@@ -2416,6 +2562,8 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnPrefixStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
+	case PGrnPrefixRKStrategyV2Number:
+		break;
 	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
@@ -2464,6 +2612,13 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 									  targetColumn,
 									  GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
+		break;
+	case PGrnPrefixRKStrategyV2Number:
+		PGrnSearchBuildConditionPrefixRK(so,
+										 data,
+										 targetColumn,
+										 GRN_TEXT_VALUE(&(buffers->general)),
+										 GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnScriptStrategyV2Number:
 		PGrnSearchBuildConditionScript(so,
@@ -3515,6 +3670,11 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 	{
 		Form_pg_attribute attribute = desc->attrs[i];
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
+		{
+			PG_RETURN_BOOL(false);
+		}
+
+		if (PGrnIsForPrefixSearchIndex(index, i))
 		{
 			PG_RETURN_BOOL(false);
 		}
