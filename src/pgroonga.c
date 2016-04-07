@@ -143,6 +143,7 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_text);
 PG_FUNCTION_INFO_V1(pgroonga_similar_text);
+PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
@@ -669,6 +670,22 @@ PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
 	return OidIsValid(regexpStrategyOID);
 }
 
+static bool
+PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
+{
+	Oid prefixStrategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+	rightType = leftType;
+	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnPrefixStrategyV2Number);
+	return OidIsValid(prefixStrategyOID);
+}
+
 /**
  * PGrnCreate
  */
@@ -704,6 +721,7 @@ PGrnCreate(Relation index,
 		{
 			data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
 			data.forRegexpSearch = PGrnIsForRegexpSearchIndex(index, data.i);
+			data.forPrefixSearch = PGrnIsForPrefixSearchIndex(index, data.i);
 			data.attributeTypeID = PGrnGetType(index, data.i,
 											   &(data.attributeFlags));
 			PGrnCreateDataColumn(&data);
@@ -1578,6 +1596,46 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 }
 
 static grn_bool
+pgroonga_prefix_raw(const char *text, unsigned int textSize,
+					const char *prefix, unsigned int prefixSize)
+{
+	grn_bool matched;
+	grn_obj targetBuffer;
+	grn_obj prefixBuffer;
+
+	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
+
+	GRN_TEXT_INIT(&prefixBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &prefixBuffer, prefix, prefixSize);
+
+	matched = grn_operator_exec_prefix(ctx, &targetBuffer, &prefixBuffer);
+
+	GRN_OBJ_FIN(ctx, &targetBuffer);
+	GRN_OBJ_FIN(ctx, &prefixBuffer);
+
+	return matched;
+}
+
+/**
+ * pgroonga.prefix_text(target text, prefix text) : bool
+ */
+Datum
+pgroonga_prefix_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+								  VARSIZE_ANY_EXHDR(target),
+								  VARDATA_ANY(prefix),
+								  VARSIZE_ANY_EXHDR(prefix));
+
+	PG_RETURN_BOOL(matched);
+}
+
+static grn_bool
 pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize)
 {
@@ -2354,6 +2412,9 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		break;
 	case PGrnSimilarStrategyV2Number:
 		operator = GRN_OP_SIMILAR;
+		break;
+	case PGrnPrefixStrategyV2Number:
+		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnScriptStrategyV2Number:
 		break;

@@ -17,6 +17,7 @@ typedef struct PGrnCreateData
 	Oid relNode;
 	bool forFullTextSearch;
 	bool forRegexpSearch;
+	bool forPrefixSearch;
 	grn_id attributeTypeID;
 	unsigned char attributeFlags;
 } PGrnCreateData;

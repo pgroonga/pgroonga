@@ -94,7 +94,9 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 							  grn_ctx_at(ctx, typeID));
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 
-	if (data->forFullTextSearch || data->forRegexpSearch)
+	if (data->forFullTextSearch ||
+		data->forRegexpSearch ||
+		data->forPrefixSearch)
 	{
 		const char *tokenizerName;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
@@ -107,11 +109,15 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 
 		PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
 
-		if (!PGrnIsNoneValue(tokenizerName))
+		if (data->forFullTextSearch || data->forRegexpSearch)
 		{
-			grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-							 PGrnLookup(tokenizerName, ERROR));
+			if (!PGrnIsNoneValue(tokenizerName))
+			{
+				grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
+								 PGrnLookup(tokenizerName, ERROR));
+			}
 		}
+
 		if (!PGrnIsNoneValue(normalizerName))
 		{
 			grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER,
