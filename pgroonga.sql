@@ -490,7 +490,7 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 		OPERATOR 18 &@> (text, text[]),
 		OPERATOR 19 &?> (text, text[]);
 
-CREATE OPERATOR CLASS pgroonga.prefix_search_ops_v2 FOR TYPE text
+CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 16 &^,
 		OPERATOR 17 &^~;

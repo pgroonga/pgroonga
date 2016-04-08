@@ -1,23 +1,21 @@
 CREATE TABLE readings (
   katakana text
 );
+
 INSERT INTO readings VALUES ('ポストグレスキューエル');
 INSERT INTO readings VALUES ('グルンガ');
 INSERT INTO readings VALUES ('ピージールンガ');
 INSERT INTO readings VALUES ('ピージーロジカル');
+
 CREATE INDEX pgrn_index ON readings
-  USING pgroonga (katakana pgroonga.prefix_search_ops_v2);
+  USING pgroonga (katakana pgroonga.text_term_search_ops_v2);
+
 SET enable_seqscan = off;
-SET enable_indexscan = off;
-SET enable_bitmapscan = on;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+
 SELECT katakana
   FROM readings
  WHERE katakana &^~ 'p';
-        katakana        
-------------------------
- ポストグレスキューエル
- ピージールンガ
- ピージーロジカル
-(3 rows)
 
 DROP TABLE readings;
