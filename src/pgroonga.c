@@ -150,9 +150,9 @@ PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 PG_FUNCTION_INFO_V1(pgroonga_match_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_text);
 PG_FUNCTION_INFO_V1(pgroonga_similar_text);
+PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
-PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
 
@@ -1642,6 +1642,83 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 }
 
 static grn_bool
+pgroonga_script_raw(const char *target, unsigned int targetSize,
+					const char *script, unsigned int scriptSize)
+{
+	grn_obj *expression;
+	grn_obj *variable;
+	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
+	grn_rc rc;
+	grn_obj *result;
+	bool matched = false;
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx,
+							  matchSequentialSearchData.table,
+							  expression,
+							  variable);
+	if (!expression)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_OUT_OF_MEMORY),
+				 errmsg("pgroonga: failed to create expression: %s",
+						ctx->errbuf)));
+	}
+
+	rc = grn_expr_parse(ctx,
+						expression,
+						script, scriptSize,
+						matchSequentialSearchData.textColumn,
+						GRN_OP_MATCH, GRN_OP_AND,
+						flags);
+	if (rc != GRN_SUCCESS)
+	{
+		char message[GRN_CTX_MSGSIZE];
+		grn_strncpy(message, GRN_CTX_MSGSIZE,
+					ctx->errbuf, GRN_CTX_MSGSIZE);
+
+		grn_obj_close(ctx, expression);
+		ereport(ERROR,
+				(errcode(PGrnRCToPgErrorCode(rc)),
+				 errmsg("pgroonga: failed to parse expression: %s",
+						message)));
+	}
+
+	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
+	grn_obj_set_value(ctx,
+					  matchSequentialSearchData.textColumn,
+					  matchSequentialSearchData.recordID,
+					  &(buffers->general),
+					  GRN_OBJ_SET);
+	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
+
+	result = grn_expr_exec(ctx, expression, 0);
+	GRN_OBJ_IS_TRUE(ctx, result, matched);
+
+	grn_obj_close(ctx, expression);
+
+	return matched;
+}
+
+/**
+ * pgroonga.script_text(target text, script text) : bool
+ */
+Datum
+pgroonga_script_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_script_raw(VARDATA_ANY(target),
+								  VARSIZE_ANY_EXHDR(target),
+								  VARDATA_ANY(script),
+								  VARSIZE_ANY_EXHDR(script));
+
+	PG_RETURN_BOOL(matched);
+}
+
+static grn_bool
 pgroonga_prefix_raw(const char *text, unsigned int textSize,
 					const char *prefix, unsigned int prefixSize)
 {
@@ -1748,83 +1825,6 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 									 VARSIZE_ANY_EXHDR(target),
 									 VARDATA_ANY(prefix),
 									 VARSIZE_ANY_EXHDR(prefix));
-
-	PG_RETURN_BOOL(matched);
-}
-
-static grn_bool
-pgroonga_script_raw(const char *target, unsigned int targetSize,
-					const char *script, unsigned int scriptSize)
-{
-	grn_obj *expression;
-	grn_obj *variable;
-	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
-	grn_rc rc;
-	grn_obj *result;
-	bool matched = false;
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  matchSequentialSearchData.table,
-							  expression,
-							  variable);
-	if (!expression)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: failed to create expression: %s",
-						ctx->errbuf)));
-	}
-
-	rc = grn_expr_parse(ctx,
-						expression,
-						script, scriptSize,
-						matchSequentialSearchData.textColumn,
-						GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
-		grn_obj_close(ctx, expression);
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						message)));
-	}
-
-	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
-	grn_obj_set_value(ctx,
-					  matchSequentialSearchData.textColumn,
-					  matchSequentialSearchData.recordID,
-					  &(buffers->general),
-					  GRN_OBJ_SET);
-	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
-
-	result = grn_expr_exec(ctx, expression, 0);
-	GRN_OBJ_IS_TRUE(ctx, result, matched);
-
-	grn_obj_close(ctx, expression);
-
-	return matched;
-}
-
-/**
- * pgroonga.script_text(target text, script text) : bool
- */
-Datum
-pgroonga_script_text(PG_FUNCTION_ARGS)
-{
-	text *target = PG_GETARG_TEXT_PP(0);
-	text *script = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-
-	matched = pgroonga_script_raw(VARDATA_ANY(target),
-								  VARSIZE_ANY_EXHDR(target),
-								  VARDATA_ANY(script),
-								  VARSIZE_ANY_EXHDR(script));
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2559,12 +2559,12 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnSimilarStrategyV2Number:
 		operator = GRN_OP_SIMILAR;
 		break;
+	case PGrnScriptStrategyV2Number:
+		break;
 	case PGrnPrefixStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
-		break;
-	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
@@ -2613,19 +2613,19 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 									  GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
 		break;
-	case PGrnPrefixRKStrategyV2Number:
-		PGrnSearchBuildConditionPrefixRK(so,
-										 data,
-										 targetColumn,
-										 GRN_TEXT_VALUE(&(buffers->general)),
-										 GRN_TEXT_LEN(&(buffers->general)));
-		break;
 	case PGrnScriptStrategyV2Number:
 		PGrnSearchBuildConditionScript(so,
 									   data,
 									   targetColumn,
 									   GRN_TEXT_VALUE(&(buffers->general)),
 									   GRN_TEXT_LEN(&(buffers->general)));
+		break;
+	case PGrnPrefixRKStrategyV2Number:
+		PGrnSearchBuildConditionPrefixRK(so,
+										 data,
+										 targetColumn,
+										 GRN_TEXT_VALUE(&(buffers->general)),
+										 GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnQueryContainStrategyNumber:
 	{
