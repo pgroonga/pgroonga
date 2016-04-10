@@ -457,7 +457,7 @@ postgresql-server-dev-9.4
         rm_rf("tmp")
         mkdir_p("tmp")
         cd("tmp") do
-          cmake_generator = "Visual Studio 14 2015"
+          cmake_generator = "Visual Studio 12 2013"
           if arch == "x64"
             cmake_generator << " Win64"
             windows_postgresql_archive_name =
