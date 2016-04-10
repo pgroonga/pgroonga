@@ -40,13 +40,14 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-SELECT name, katakana
-  FROM tags LEFT JOIN tags_readings
-                        INNER JOIN readings
-                          ON tags_readings.reading_katakana = readings.katakana
-             ON tags.name = tags_readings.tag_name
- WHERE tags.name &^ 'Groon' OR
-       readings.katakana &^~ 'posu';
+SELECT name, pgroonga.score(tags)
+  FROM tags
+  WHERE name &^ 'Groon'
+UNION
+SELECT tag_name, pgroonga.score(readings)
+  FROM readings INNER JOIN tags_readings
+                  ON readings.katakana = tags_readings.reading_katakana
+  WHERE katakana &^~ 'posu';
 
 DROP TABLE tags_readings;
 DROP TABLE readings;

@@ -32,19 +32,19 @@ CREATE INDEX pgrn_readings_index ON readings
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
-SELECT name, katakana
-  FROM tags LEFT JOIN tags_readings
-                        INNER JOIN readings
-                          ON tags_readings.reading_katakana = readings.katakana
-             ON tags.name = tags_readings.tag_name
- WHERE tags.name &^ 'Groon' OR
-       readings.katakana &^~ 'posu';
-    name    |        katakana        
-------------+------------------------
- Groonga    | グルンガ
- PostgreSQL | ポスグレ
- PostgreSQL | ポストグレスキューエル
-(3 rows)
+SELECT name, pgroonga.score(tags)
+  FROM tags
+  WHERE name &^ 'Groon'
+UNION
+SELECT tag_name, pgroonga.score(readings)
+  FROM readings INNER JOIN tags_readings
+                  ON readings.katakana = tags_readings.reading_katakana
+  WHERE katakana &^~ 'posu';
+    name    | score 
+------------+-------
+ PostgreSQL |     1
+ Groonga    |     1
+(2 rows)
 
 DROP TABLE tags_readings;
 DROP TABLE readings;
