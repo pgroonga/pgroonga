@@ -3,14 +3,13 @@
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_highlight_html.h"
+#include "pgrn_keywords.h"
 
 #include <catalog/pg_type.h>
-#include <utils/array.h>
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
-static grn_obj keywordIDs;
 
 PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
@@ -25,10 +24,6 @@ PGrnInitializeHighlightHTML(void)
 					 keywordsTable,
 					 GRN_INFO_NORMALIZER,
 					 grn_ctx_get(ctx, "NormalizerAuto", -1));
-
-	GRN_RECORD_INIT(&keywordIDs,
-					GRN_OBJ_VECTOR,
-					grn_obj_id(ctx, keywordsTable));
 }
 
 void
@@ -37,85 +32,8 @@ PGrnFinalizeHighlightHTML(void)
 	if (!keywordsTable)
 		return;
 
-	GRN_OBJ_FIN(ctx, &keywordIDs);
-
 	grn_obj_close(ctx, keywordsTable);
 	keywordsTable = NULL;
-}
-
-static void
-PGrnKeywordsTableUpdate(ArrayType *keywords)
-{
-	{
-		int i, n;
-
-		GRN_BULK_REWIND(&keywordIDs);
-
-		n = ARR_DIMS(keywords)[0];
-		for (i = 1; i <= n; i++)
-		{
-			Datum keywordDatum;
-			text *keyword;
-			bool isNULL;
-			grn_id id;
-
-			keywordDatum = array_ref(keywords, 1, &i, -1, -1, false,
-									 'i', &isNULL);
-			if (isNULL)
-				continue;
-
-			keyword = DatumGetTextPP(keywordDatum);
-			id = grn_table_add(ctx, keywordsTable,
-							   VARDATA_ANY(keyword),
-							   VARSIZE_ANY_EXHDR(keyword),
-							   NULL);
-			if (id == GRN_ID_NIL)
-				continue;
-			GRN_RECORD_PUT(ctx, &keywordIDs, id);
-		}
-	}
-
-	{
-		grn_table_cursor *cursor;
-		grn_id id;
-		size_t nIDs;
-
-		cursor = grn_table_cursor_open(ctx,
-									   keywordsTable,
-									   NULL, 0,
-									   NULL, 0,
-									   0, -1, 0);
-		if (!cursor) {
-			ereport(ERROR,
-					(errcode(ERRCODE_OUT_OF_MEMORY),
-					 errmsg("pgroonga: "
-							"failed to create cursor for keywordsTable: %s",
-							ctx->errbuf)));
-		}
-
-		nIDs = GRN_BULK_VSIZE(&keywordIDs) / sizeof(grn_id);
-		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
-		{
-			size_t i;
-			bool specified = false;
-
-			for (i = 0; i < nIDs; i++)
-			{
-				if (id == GRN_RECORD_VALUE_AT(&keywordIDs, i))
-				{
-					specified = true;
-					break;
-				}
-			}
-
-			if (specified)
-				continue;
-
-			grn_table_cursor_delete(ctx, cursor);
-		}
-
-		grn_table_cursor_close(ctx, cursor);
-	}
 }
 
 static text *
@@ -193,7 +111,7 @@ pgroonga_highlight_html(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	text *highlighted;
 
-	PGrnKeywordsTableUpdate(keywords);
+	PGrnKeywordsUpdateTable(keywords, keywordsTable);
 	highlighted = PGrnHighlightHTML(target);
 
 	PG_RETURN_TEXT_P(highlighted);

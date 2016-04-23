@@ -7,6 +7,7 @@
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_highlight_html.h"
+#include "pgrn_keywords.h"
 #include "pgrn_jsonb.h"
 #include "pgrn_options.h"
 #include "pgrn_search.h"
@@ -263,6 +264,8 @@ PGrnOnProcExit(int code, Datum arg)
 
 		PGrnFinalizeHighlightHTML();
 
+		PGrnFinalizeKeywords();
+
 		PGrnFinalizeJSONB();
 
 		PGrnFinalizeMatchSequentialSearchData();
@@ -366,6 +369,8 @@ _PG_init(void)
 	PGrnInitializePrefixRKSequentialSearchData();
 
 	PGrnInitializeJSONB();
+
+	PGrnInitializeKeywords();
 
 	PGrnInitializeHighlightHTML();
 }

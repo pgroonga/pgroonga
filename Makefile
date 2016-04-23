@@ -10,6 +10,7 @@ SRCS =						\
 	src/pgrn_global.c			\
 	src/pgrn_groonga.c			\
 	src/pgrn_highlight_html.c		\
+	src/pgrn_keywords.c			\
 	src/pgrn_jsonb.c			\
 	src/pgrn_options.c			\
 	src/pgrn_snippet_html.c			\
