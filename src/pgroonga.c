@@ -6,6 +6,7 @@
 #include "pgrn_create.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
+#include "pgrn_highlight_html.h"
 #include "pgrn_jsonb.h"
 #include "pgrn_options.h"
 #include "pgrn_search.h"
@@ -135,6 +136,7 @@ PG_FUNCTION_INFO_V1(pgroonga_score);
 PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
 PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
+PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
 PG_FUNCTION_INFO_V1(pgroonga_match_term_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_term_text_array);
@@ -261,6 +263,8 @@ PGrnOnProcExit(int code, Datum arg)
 	{
 		grn_obj *db;
 
+		PGrnFinalizeHighlightHTML();
+
 		PGrnFinalizeJSONB();
 
 		PGrnFinalizeMatchSequentialSearchData();
@@ -364,6 +368,8 @@ _PG_init(void)
 	PGrnInitializePrefixRKSequentialSearchData();
 
 	PGrnInitializeJSONB();
+
+	PGrnInitializeHighlightHTML();
 }
 
 static grn_id

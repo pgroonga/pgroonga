@@ -30,6 +30,13 @@ CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga.highlight_html(target text, keywords text[])
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.match_term(target text, term text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'
