@@ -9,6 +9,8 @@
 
 static grn_ctx *ctx = &PGrnContext;
 
+PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
+
 static grn_obj *
 PGrnSnipCreate(ArrayType *keywords)
 {

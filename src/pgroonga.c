@@ -135,8 +135,6 @@ PG_FUNCTION_INFO_V1(pgroonga_score);
 #endif
 PG_FUNCTION_INFO_V1(pgroonga_table_name);
 PG_FUNCTION_INFO_V1(pgroonga_command);
-PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
-PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
 PG_FUNCTION_INFO_V1(pgroonga_match_term_text);
 PG_FUNCTION_INFO_V1(pgroonga_match_term_text_array);

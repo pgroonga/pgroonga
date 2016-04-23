@@ -12,6 +12,8 @@ static grn_ctx *ctx = &PGrnContext;
 static grn_obj *PGrnKeywordsTable = NULL;
 static grn_obj PGrnKeywordIDs;
 
+PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
+
 void
 PGrnInitializeHighlightHTML(void)
 {
