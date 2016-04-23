@@ -104,6 +104,7 @@ PGrnMatchPositionsByte(text *target)
 									   sizeof(int32_t),
 									   true,
 									   'i');
+		pfree(elements);
 	}
 
 	GRN_OBJ_FIN(ctx, &buffer);
