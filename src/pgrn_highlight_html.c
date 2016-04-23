@@ -20,7 +20,7 @@ PGrnInitializeHighlightHTML(void)
 	PGrnKeywordsTable = grn_table_create(ctx, NULL, 0, NULL,
 										 GRN_OBJ_TABLE_PAT_KEY,
 										 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
-										 0);
+										 NULL);
 	grn_obj_set_info(ctx,
 					 PGrnKeywordsTable,
 					 GRN_INFO_NORMALIZER,
