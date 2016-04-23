@@ -1,0 +1,6 @@
+SELECT pgroonga.query_extract_keywords('Groonga PostgreSQL');
+ query_extract_keywords 
+------------------------
+ {PostgreSQL,Groonga}
+(1 row)
+

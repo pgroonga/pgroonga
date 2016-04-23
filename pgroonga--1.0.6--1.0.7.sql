@@ -11,3 +11,10 @@ CREATE FUNCTION pgroonga.match_positions_byte(target text, keywords text[])
 	LANGUAGE C
 	VOLATILE
 	STRICT;
+
+CREATE FUNCTION pgroonga.query_extract_keywords(query text)
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
