@@ -9,38 +9,38 @@
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
-static grn_obj *PGrnKeywordsTable = NULL;
-static grn_obj PGrnKeywordIDs;
+static grn_obj *keywordsTable = NULL;
+static grn_obj keywordIDs;
 
 PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
 void
 PGrnInitializeHighlightHTML(void)
 {
-	PGrnKeywordsTable = grn_table_create(ctx, NULL, 0, NULL,
-										 GRN_OBJ_TABLE_PAT_KEY,
-										 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
-										 NULL);
+	keywordsTable = grn_table_create(ctx, NULL, 0, NULL,
+									 GRN_OBJ_TABLE_PAT_KEY,
+									 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
+									 NULL);
 	grn_obj_set_info(ctx,
-					 PGrnKeywordsTable,
+					 keywordsTable,
 					 GRN_INFO_NORMALIZER,
 					 grn_ctx_get(ctx, "NormalizerAuto", -1));
 
-	GRN_RECORD_INIT(&PGrnKeywordIDs,
+	GRN_RECORD_INIT(&keywordIDs,
 					GRN_OBJ_VECTOR,
-					grn_obj_id(ctx, PGrnKeywordsTable));
+					grn_obj_id(ctx, keywordsTable));
 }
 
 void
 PGrnFinalizeHighlightHTML(void)
 {
-	if (!PGrnKeywordsTable)
+	if (!keywordsTable)
 		return;
 
-	GRN_OBJ_FIN(ctx, &PGrnKeywordIDs);
+	GRN_OBJ_FIN(ctx, &keywordIDs);
 
-	grn_obj_close(ctx, PGrnKeywordsTable);
-	PGrnKeywordsTable = NULL;
+	grn_obj_close(ctx, keywordsTable);
+	keywordsTable = NULL;
 }
 
 static void
@@ -49,7 +49,7 @@ PGrnKeywordsTableUpdate(ArrayType *keywords)
 	{
 		int i, n;
 
-		GRN_BULK_REWIND(&PGrnKeywordIDs);
+		GRN_BULK_REWIND(&keywordIDs);
 
 		n = ARR_DIMS(keywords)[0];
 		for (i = 1; i <= n; i++)
@@ -65,13 +65,13 @@ PGrnKeywordsTableUpdate(ArrayType *keywords)
 				continue;
 
 			keyword = DatumGetTextPP(keywordDatum);
-			id = grn_table_add(ctx, PGrnKeywordsTable,
+			id = grn_table_add(ctx, keywordsTable,
 							   VARDATA_ANY(keyword),
 							   VARSIZE_ANY_EXHDR(keyword),
 							   NULL);
 			if (id == GRN_ID_NIL)
 				continue;
-			GRN_RECORD_PUT(ctx, &PGrnKeywordIDs, id);
+			GRN_RECORD_PUT(ctx, &keywordIDs, id);
 		}
 	}
 
@@ -81,7 +81,7 @@ PGrnKeywordsTableUpdate(ArrayType *keywords)
 		size_t nIDs;
 
 		cursor = grn_table_cursor_open(ctx,
-									   PGrnKeywordsTable,
+									   keywordsTable,
 									   NULL, 0,
 									   NULL, 0,
 									   0, -1, 0);
@@ -89,11 +89,11 @@ PGrnKeywordsTableUpdate(ArrayType *keywords)
 			ereport(ERROR,
 					(errcode(ERRCODE_OUT_OF_MEMORY),
 					 errmsg("pgroonga: "
-							"failed to create cursor for PGrnKeywordsTable: %s",
+							"failed to create cursor for keywordsTable: %s",
 							ctx->errbuf)));
 		}
 
-		nIDs = GRN_BULK_VSIZE(&PGrnKeywordIDs) / sizeof(grn_id);
+		nIDs = GRN_BULK_VSIZE(&keywordIDs) / sizeof(grn_id);
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
 			size_t i;
@@ -101,7 +101,7 @@ PGrnKeywordsTableUpdate(ArrayType *keywords)
 
 			for (i = 0; i < nIDs; i++)
 			{
-				if (id == GRN_RECORD_VALUE_AT(&PGrnKeywordIDs, i))
+				if (id == GRN_RECORD_VALUE_AT(&keywordIDs, i))
 				{
 					specified = true;
 					break;
@@ -145,7 +145,7 @@ PGrnHighlightHTML(text *target)
 			size_t previous = 0;
 			size_t chunkLength;
 
-			nHits = grn_pat_scan(ctx, (grn_pat *)PGrnKeywordsTable,
+			nHits = grn_pat_scan(ctx, (grn_pat *)keywordsTable,
 								 string, stringLength,
 								 hits, MAX_N_HITS, &rest);
 			for (i = 0; i < nHits; i++) {
