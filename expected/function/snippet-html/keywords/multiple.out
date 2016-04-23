@@ -4,8 +4,8 @@ SELECT unnest(pgroonga.snippet_html(
   'newly registered document instantly appears in search results. ' ||
   'Also, Groonga allows updates without read locks. These characteristics ' ||
   'result in superior performance on real-time applications.' ||
-  '\n' ||
-  '\n' ||
+  E'\n' ||
+  E'\n' ||
   'Groonga is also a column-oriented database management system (DBMS). ' ||
   'Compared with well-known row-oriented systems, such as MySQL and ' ||
   'PostgreSQL, column-oriented systems are more suited for aggregate ' ||

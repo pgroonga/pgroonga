@@ -4,8 +4,8 @@ SELECT unnest(pgroonga.snippet_html(
   'newly registered document instantly appears in search results. ' ||
   'Also, Groonga allows updates without read locks. These characteristics ' ||
   'result in superior performance on real-time applications.' ||
-  '\n' ||
-  '\n' ||
+  E'\n' ||
+  E'\n' ||
   'Groonga is also a column-oriented database management system (DBMS). ' ||
   'Compared with well-known row-oriented systems, such as MySQL and ' ||
   'PostgreSQL, column-oriented systems are more suited for aggregate ' ||
@@ -15,7 +15,9 @@ SELECT unnest(pgroonga.snippet_html(
                                                                                                                                unnest                                                                                                                               
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  <span class="keyword">Groonga</span> is a fast and accurate full text search engine based on inverted index. One of the characteristics of <span class="keyword">Groonga</span> is that a newly registered document instantly appears in search results. Also, Gro
- t read locks. These characteristics result in superior performance on real-time applications.\n\n<span class="keyword">Groonga</span> is also a column-oriented database management system (DBMS). Compared with well-known row-orien
+ out read locks. These characteristics result in superior performance on real-time applications.                                                                                                                                                                   +
+                                                                                                                                                                                                                                                                   +
+ <span class="keyword">Groonga</span> is also a column-oriented database management system (DBMS). Compared with well-known row-orien
  ted systems, such as MySQL and PostgreSQL, column-oriented systems are more suited for aggregate queries. Due to this advantage, <span class="keyword">Groonga</span> can cover weakness of row-oriented systems.
 (3 rows)
 
