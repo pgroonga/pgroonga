@@ -1,0 +1,89 @@
+pgroonga (1.0.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Fri, 15 Apr 2016 00:00:00 +0900
+
+pgroonga (1.0.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 01 Mar 2016 00:00:00 +0900
+
+pgroonga (1.0.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 01 Mar 2016 00:00:00 +0900
+
+pgroonga (1.0.3-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Mon, 29 Feb 2016 00:00:00 +0900
+
+pgroonga (1.0.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 09 Feb 2016 00:00:00 +0900
+
+pgroonga (1.0.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 29 Dec 2015 00:00:00 +0900
+
+pgroonga (1.0.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Thu, 29 Oct 2015 00:00:00 +0900
+
+pgroonga (0.9.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 29 Sep 2015 00:00:00 +0900
+
+pgroonga (0.8.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Tue, 01 Sep 2015 00:00:00 +0900
+
+pgroonga (0.7.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Fri, 10 Jul 2015 00:00:00 +0900
+
+pgroonga (0.6.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Fri, 29 May 2015 00:00:00 +0900
+
+pgroonga (0.5.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Wed, 29 Apr 2015 00:00:00 +0900
+
+pgroonga (0.4.0-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Sun, 29 Mar 2015 00:00:00 +0900
+
+pgroonga (0.3.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Kouhei Sutou <kou@clear-code.com>  Mon, 09 Feb 2015 11:48:41 +0900
+
+pgroonga (0.2.0-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Kouhei Sutou <kou@clear-code.com>  Thu, 29 Jan 2015 00:00:00 +0900
