@@ -9,6 +9,7 @@
 #include "pgrn_highlight_html.h"
 #include "pgrn_keywords.h"
 #include "pgrn_jsonb.h"
+#include "pgrn_match_positions_byte.h"
 #include "pgrn_options.h"
 #include "pgrn_search.h"
 #include "pgrn_value.h"
@@ -262,6 +263,8 @@ PGrnOnProcExit(int code, Datum arg)
 	{
 		grn_obj *db;
 
+		PGrnFinalizeMatchPositionsByte();
+
 		PGrnFinalizeHighlightHTML();
 
 		PGrnFinalizeKeywords();
@@ -373,6 +376,8 @@ _PG_init(void)
 	PGrnInitializeKeywords();
 
 	PGrnInitializeHighlightHTML();
+
+	PGrnInitializeMatchPositionsByte();
 }
 
 static grn_id

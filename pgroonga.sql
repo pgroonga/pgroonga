@@ -37,6 +37,13 @@ CREATE FUNCTION pgroonga.highlight_html(target text, keywords text[])
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga.match_positions_byte(target text, keywords text[])
+	RETURNS integer[2][]
+	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.match_term(target text, term text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'
