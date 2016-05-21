@@ -47,6 +47,7 @@ PGrnMatchPositionsByte(text *target)
 	{
 		const char *string;
 		size_t stringLength;
+		int baseOffset = 0;
 
 		string = VARDATA_ANY(target);
 		stringLength = VARSIZE_ANY_EXHDR(target);
@@ -62,11 +63,12 @@ PGrnMatchPositionsByte(text *target)
 								 string, stringLength,
 								 hits, MAX_N_HITS, &rest);
 			for (i = 0; i < nHits; i++) {
-				GRN_UINT32_PUT(ctx, &buffer, hits[i].offset);
+				GRN_UINT32_PUT(ctx, &buffer, hits[i].offset + baseOffset);
 				GRN_UINT32_PUT(ctx, &buffer, hits[i].length);
 			}
 
 			chunkLength = rest - string;
+			baseOffset += chunkLength;
 			stringLength -= chunkLength;
 			string = rest;
 #undef MAX_N_HITS
