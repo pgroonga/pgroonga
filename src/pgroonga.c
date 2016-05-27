@@ -16,6 +16,12 @@
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
 
+#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
+#	include <access/amapi.h>
+#endif
+#ifdef PGRN_SUPPORT_OPTIONS
+#	include <access/reloptions.h>
+#endif
 #include <access/relscan.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
@@ -173,6 +179,9 @@ PG_FUNCTION_INFO_V1(pgroonga_bulkdelete);
 PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
 PG_FUNCTION_INFO_V1(pgroonga_canreturn);
 PG_FUNCTION_INFO_V1(pgroonga_costestimate);
+#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
+PG_FUNCTION_INFO_V1(pgroonga_handler);
+#endif
 
 static grn_ctx *ctx = NULL;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -1835,6 +1844,26 @@ PGrnInsert(Relation index,
 	}
 }
 
+static bool
+pgroonga_insert_raw(Relation index,
+					Datum *values,
+					bool *isnull,
+					ItemPointer ctid,
+					Relation heap,
+					IndexUniqueCheck checkUnique)
+{
+	grn_obj *sourcesTable;
+	grn_obj *sourcesCtidColumn;
+
+	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+	PGrnInsert(index, sourcesTable, sourcesCtidColumn,
+			   values, isnull, ctid);
+	grn_db_touch(ctx, grn_ctx_db(ctx));
+
+	return false;
+}
+
 /**
  * pgroonga.insert() -- aminsert
  */
@@ -1844,21 +1873,19 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	Relation index = (Relation) PG_GETARG_POINTER(0);
 	Datum *values = (Datum *) PG_GETARG_POINTER(1);
 	bool *isnull = (bool *) PG_GETARG_POINTER(2);
-	ItemPointer ht_ctid = (ItemPointer) PG_GETARG_POINTER(3);
-#ifdef NOT_USED
+	ItemPointer ctid = (ItemPointer) PG_GETARG_POINTER(3);
 	Relation heap = (Relation) PG_GETARG_POINTER(4);
-	IndexUniqueCheck checkUnique = PG_GETARG_INT32(5);
-#endif
-	grn_obj *sourcesTable;
-	grn_obj *sourcesCtidColumn;
+	IndexUniqueCheck uniqueCheck = PG_GETARG_INT32(5);
+	bool isUnique;
 
-	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
-	PGrnInsert(index, sourcesTable, sourcesCtidColumn,
-			   values, isnull, ht_ctid);
-	grn_db_touch(ctx, grn_ctx_db(ctx));
+	isUnique = pgroonga_insert_raw(index,
+								   values,
+								   isnull,
+								   ctid,
+								   heap,
+								   uniqueCheck);
 
-	PG_RETURN_BOOL(true);
+	PG_RETURN_BOOL(isUnique);
 }
 
 #ifdef PGRN_SUPPORT_SCORE
@@ -2044,6 +2071,33 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	PGrnScanOpaqueReinit(so);
 }
 
+static IndexScanDesc
+pgroonga_beginscan_raw(Relation index,
+					   int nKeys,
+#ifdef PGRN_IS_GREENPLUM
+					   ScanKey key
+#else
+					   int nOrderBys
+#endif
+	)
+{
+	IndexScanDesc scan;
+	PGrnScanOpaque so;
+
+#ifdef PGRN_IS_GREENPLUM
+	scan = RelationGetIndexScan(index, nKeys, key);
+#else
+	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
+#endif
+
+	so = (PGrnScanOpaque) palloc(sizeof(PGrnScanOpaqueData));
+	PGrnScanOpaqueInit(so, index);
+
+	scan->opaque = so;
+
+	return scan;
+}
+
 /**
  * pgroonga.beginscan() -- ambeginscan
  */
@@ -2051,25 +2105,22 @@ Datum
 pgroonga_beginscan(PG_FUNCTION_ARGS)
 {
 	Relation index = (Relation) PG_GETARG_POINTER(0);
-	int nkeys = PG_GETARG_INT32(1);
+	int nKeys = PG_GETARG_INT32(1);
 #ifdef PGRN_IS_GREENPLUM
 	ScanKey key = (ScanKey) PG_GETARG_POINTER(2);
 #else
-	int norderbys = PG_GETARG_INT32(2);
+	int nOrderBys = PG_GETARG_INT32(2);
 #endif
 	IndexScanDesc scan;
-	PGrnScanOpaque so;
 
+	scan = pgroonga_beginscan_raw(index,
+								  nKeys,
 #ifdef PGRN_IS_GREENPLUM
-	scan = RelationGetIndexScan(index, nkeys, key);
+								  key
 #else
-	scan = RelationGetIndexScan(index, nkeys, norderbys);
+								  nOrderBys
 #endif
-
-	so = (PGrnScanOpaque) palloc(sizeof(PGrnScanOpaqueData));
-	PGrnScanOpaqueInit(so, index);
-
-	scan->opaque = so;
+		);
 
 	PG_RETURN_POINTER(scan);
 }
@@ -3040,21 +3091,17 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 }
 #endif
 
-/**
- * pgroonga.gettuple() -- amgettuple
- */
-Datum
-pgroonga_gettuple(PG_FUNCTION_ARGS)
+static bool
+pgroonga_gettuple_raw(IndexScanDesc scan,
+					  ScanDirection direction)
 {
-	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
-	ScanDirection dir = (ScanDirection) PG_GETARG_INT32(1);
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
 #ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
 	scan->xs_recheck = false;
 #endif
 
-	PGrnEnsureCursorOpened(scan, dir);
+	PGrnEnsureCursorOpened(scan, direction);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL)
 	{
@@ -3078,7 +3125,7 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 
 	if (so->currentID == GRN_ID_NIL)
 	{
-		PG_RETURN_BOOL(false);
+		return false;
 	}
 	else
 	{
@@ -3091,20 +3138,29 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 			PGrnGetTupleFillIndexTuple(so, scan);
 #endif
 
-		PG_RETURN_BOOL(true);
+		return true;
 	}
-
 }
 
-#ifdef PGRN_SUPPORT_BITMAP_INDEX
 /**
- * pgroonga.getbitmap() -- amgetbitmap
+ * pgroonga.gettuple() -- amgettuple
  */
 Datum
-pgroonga_getbitmap(PG_FUNCTION_ARGS)
+pgroonga_gettuple(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
-	TIDBitmap *tbm = (TIDBitmap *) PG_GETARG_POINTER(1);
+	ScanDirection direction = (ScanDirection) PG_GETARG_INT32(1);
+	bool found;
+
+	found = pgroonga_gettuple_raw(scan, direction);
+
+	PG_RETURN_BOOL(found);
+}
+
+static int64
+pgroonga_getbitmap_raw(IndexScanDesc scan,
+					   TIDBitmap *tbm)
+{
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 
@@ -3138,9 +3194,40 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 		}
 	}
 
+	return nRecords;
+}
+
+#ifdef PGRN_SUPPORT_BITMAP_INDEX
+/**
+ * pgroonga.getbitmap() -- amgetbitmap
+ */
+Datum
+pgroonga_getbitmap(PG_FUNCTION_ARGS)
+{
+	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
+	TIDBitmap *tbm = (TIDBitmap *) PG_GETARG_POINTER(1);
+	int64 nRecords;
+
+	nRecords = pgroonga_getbitmap_raw(scan, tbm);
+
 	PG_RETURN_INT64(nRecords);
 }
 #endif
+
+static void
+pgroonga_rescan_raw(IndexScanDesc scan,
+					ScanKey keys,
+					int nKeys,
+					ScanKey orderBys,
+					int nOrderBys)
+{
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+
+	PGrnScanOpaqueReinit(so);
+
+	if (keys && scan->numberOfKeys > 0)
+		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
+}
 
 /**
  * pgroonga.rescan() -- amrescan
@@ -3150,19 +3237,24 @@ pgroonga_rescan(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
 	ScanKey	keys = (ScanKey) PG_GETARG_POINTER(1);
-#ifdef NOT_USED
-	int nkeys = PG_GETARG_INT32(2);
-	ScanKey	orderbys = (ScanKey) PG_GETARG_POINTER(3);
-	int norderbys = PG_GETARG_INT32(4);
-#endif
-	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	int nKeys = PG_GETARG_INT32(2);
+	ScanKey	orderBys = (ScanKey) PG_GETARG_POINTER(3);
+	int nOrderBys = PG_GETARG_INT32(4);
 
-	PGrnScanOpaqueReinit(so);
-
-	if (keys && scan->numberOfKeys > 0)
-		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
+	pgroonga_rescan_raw(scan,
+						keys, nKeys,
+						orderBys, nOrderBys);
 
 	PG_RETURN_VOID();
+}
+
+static void
+pgroonga_endscan_raw(IndexScanDesc scan)
+{
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+
+	PGrnScanOpaqueFin(so);
+	pfree(so);
 }
 
 /**
@@ -3172,10 +3264,8 @@ Datum
 pgroonga_endscan(PG_FUNCTION_ARGS)
 {
 	IndexScanDesc scan = (IndexScanDesc) PG_GETARG_POINTER(0);
-	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	PGrnScanOpaqueFin(so);
-	pfree(so);
+	pgroonga_endscan_raw(scan);
 
 	PG_RETURN_VOID();
 }
@@ -3231,15 +3321,11 @@ PGrnBuildCallback(Relation index,
 }
 #endif
 
-/**
- * pgroonga.build() -- ambuild
- */
-Datum
-pgroonga_build(PG_FUNCTION_ARGS)
+static IndexBuildResult *
+pgroonga_build_raw(Relation heap,
+				   Relation index,
+				   IndexInfo *indexInfo)
 {
-	Relation heap = (Relation) PG_GETARG_POINTER(0);
-	Relation index = (Relation) PG_GETARG_POINTER(1);
-	IndexInfo *indexInfo = (IndexInfo *) PG_GETARG_POINTER(2);
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
 	PGrnBuildStateData bs;
@@ -3302,16 +3388,28 @@ pgroonga_build(PG_FUNCTION_ARGS)
 	result->heap_tuples = nHeapTuples;
 	result->index_tuples = bs.nIndexedTuples;
 
-	PG_RETURN_POINTER(result);
+	return result;
 }
 
 /**
- * pgroonga.buildempty() -- ambuildempty
+ * pgroonga.build() -- ambuild
  */
 Datum
-pgroonga_buildempty(PG_FUNCTION_ARGS)
+pgroonga_build(PG_FUNCTION_ARGS)
 {
-	Relation index = (Relation) PG_GETARG_POINTER(0);
+	Relation heap = (Relation) PG_GETARG_POINTER(0);
+	Relation index = (Relation) PG_GETARG_POINTER(1);
+	IndexInfo *indexInfo = (IndexInfo *) PG_GETARG_POINTER(2);
+	IndexBuildResult *result;
+
+	result = pgroonga_build_raw(heap, index, indexInfo);
+
+	PG_RETURN_POINTER(result);
+}
+
+static void
+pgroonga_buildempty_raw(Relation index)
+{
 	grn_obj *sourcesTable = NULL;
 	grn_obj *sourcesCtidColumn = NULL;
 	grn_obj supplementaryTables;
@@ -3358,6 +3456,17 @@ pgroonga_buildempty(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	GRN_OBJ_FIN(ctx, &lexicons);
 	GRN_OBJ_FIN(ctx, &supplementaryTables);
+}
+
+/**
+ * pgroonga.buildempty() -- ambuildempty
+ */
+Datum
+pgroonga_buildempty(PG_FUNCTION_ARGS)
+{
+	Relation index = (Relation) PG_GETARG_POINTER(0);
+
+	pgroonga_buildempty_raw(index);
 
 	PG_RETURN_VOID();
 }
@@ -3379,16 +3488,12 @@ PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *sourcesTable)
 	return stats;
 }
 
-/**
- * pgroonga.bulkdelete() -- ambulkdelete
- */
-Datum
-pgroonga_bulkdelete(PG_FUNCTION_ARGS)
+static IndexBulkDeleteResult *
+pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
+						IndexBulkDeleteResult *stats,
+						IndexBulkDeleteCallback callback,
+						void *callbackState)
 {
-	IndexVacuumInfo *info = (IndexVacuumInfo *) PG_GETARG_POINTER(0);
-	IndexBulkDeleteResult *stats = (IndexBulkDeleteResult *) PG_GETARG_POINTER(1);
-	IndexBulkDeleteCallback	callback = (IndexBulkDeleteCallback) PG_GETARG_POINTER(2);
-	void *callback_state = (void *) PG_GETARG_POINTER(3);
 	Relation index = info->index;
 	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
@@ -3400,7 +3505,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 		stats = PGrnBulkDeleteResult(info, sourcesTable);
 
 	if (!sourcesTable || !callback)
-		PG_RETURN_POINTER(stats);
+		return stats;
 
 	nRemovedTuples = 0;
 
@@ -3433,7 +3538,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
 			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
-			if (callback(&ctid, callback_state))
+			if (callback(&ctid, callbackState))
 			{
 				jsonbData.id = id;
 				PGrnJSONBBulkDeleteRecord(&jsonbData);
@@ -3456,6 +3561,25 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 
 	stats->tuples_removed = nRemovedTuples;
+
+	return stats;
+}
+
+/**
+ * pgroonga.bulkdelete() -- ambulkdelete
+ */
+Datum
+pgroonga_bulkdelete(PG_FUNCTION_ARGS)
+{
+	IndexVacuumInfo *info = (IndexVacuumInfo *) PG_GETARG_POINTER(0);
+	IndexBulkDeleteResult *stats = (IndexBulkDeleteResult *) PG_GETARG_POINTER(1);
+	IndexBulkDeleteCallback	callback = (IndexBulkDeleteCallback) PG_GETARG_POINTER(2);
+	void *callbackState = (void *) PG_GETARG_POINTER(3);
+
+	stats = pgroonga_bulkdelete_raw(info,
+									stats,
+									callback,
+									callbackState);
 
 	PG_RETURN_POINTER(stats);
 }
@@ -3523,6 +3647,21 @@ PGrnRemoveUnusedTables(void)
 #endif
 }
 
+static IndexBulkDeleteResult *
+pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
+						   IndexBulkDeleteResult *stats)
+{
+	if (!stats)
+	{
+		grn_obj *sourcesTable;
+		sourcesTable = PGrnLookupSourcesTable(info->index, WARNING);
+		stats = PGrnBulkDeleteResult(info, sourcesTable);
+	}
+
+	PGrnRemoveUnusedTables();
+
+	return stats;
+}
 
 /**
  * pgroonga.vacuumcleanup() -- amvacuumcleanup
@@ -3533,25 +3672,15 @@ pgroonga_vacuumcleanup(PG_FUNCTION_ARGS)
 	IndexVacuumInfo *info = (IndexVacuumInfo *) PG_GETARG_POINTER(0);
 	IndexBulkDeleteResult *stats = (IndexBulkDeleteResult *) PG_GETARG_POINTER(1);
 
-	if (!stats)
-	{
-		grn_obj *sourcesTable;
-		sourcesTable = PGrnLookupSourcesTable(info->index, WARNING);
-		stats = PGrnBulkDeleteResult(info, sourcesTable);
-	}
-
-	PGrnRemoveUnusedTables();
+	stats = pgroonga_vacuumcleanup_raw(info, stats);
 
 	PG_RETURN_POINTER(stats);
 }
 
-/**
- * pgroonga.canreturn() -- amcanreturn
- */
-Datum
-pgroonga_canreturn(PG_FUNCTION_ARGS)
+static bool
+pgroonga_canreturn_raw(Relation index,
+					   int nthAttribute)
 {
-	Relation index = (Relation) PG_GETARG_POINTER(0);
 	TupleDesc desc;
 	unsigned int i;
 
@@ -3561,34 +3690,42 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 		Form_pg_attribute attribute = desc->attrs[i];
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
-			PG_RETURN_BOOL(false);
+			return false;
 		}
 
 		if (PGrnIsForPrefixSearchIndex(index, i))
 		{
-			PG_RETURN_BOOL(false);
+			return false;
 		}
 	}
 
-	PG_RETURN_BOOL(true);
+	return true;
 }
 
 /**
- * pgroonga.costestimate() -- amcostestimate
+ * pgroonga.canreturn() -- amcanreturn
  */
 Datum
-pgroonga_costestimate(PG_FUNCTION_ARGS)
+pgroonga_canreturn(PG_FUNCTION_ARGS)
 {
-	return gistcostestimate(fcinfo);
+	Relation index = (Relation) PG_GETARG_POINTER(0);
+	int nthAttribute = PG_GETARG_INT32(1);
+	bool can;
 
-#ifdef NOT_USED
-	PlannerInfo *root = (PlannerInfo *) PG_GETARG_POINTER(0);
-	IndexPath *path = (IndexPath *) PG_GETARG_POINTER(1);
-	double loopCount = PG_GETARG_FLOAT8(2);
-	Cost *indexStartupCost = (Cost *) PG_GETARG_POINTER(3);
-	Cost *indexTotalCost = (Cost *) PG_GETARG_POINTER(4);
-	Selectivity *indexSelectivity = (Selectivity *) PG_GETARG_POINTER(5);
-	double *indexCorrelation = (double *) PG_GETARG_POINTER(6);
+	can = pgroonga_canreturn_raw(index, nthAttribute);
+
+	PG_RETURN_BOOL(can);
+}
+
+static void
+pgroonga_costestimate_raw(PlannerInfo *root,
+						  IndexPath *path,
+						  double loopCount,
+						  Cost *indexStartupCost,
+						  Cost *indexTotalCost,
+						  Selectivity *indexSelectivity,
+						  double *indexCorrelation)
+{
 	IndexOptInfo *index = path->indexinfo;
 
 	/* TODO: Use more clever logic.
@@ -3611,8 +3748,77 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 	*indexStartupCost = 0.0;
 	*indexTotalCost = 0.0;
 	*indexCorrelation = 0.0;
-
-	PG_RETURN_VOID();
-#endif
 }
 
+/**
+ * pgroonga.costestimate() -- amcostestimate
+ */
+Datum
+pgroonga_costestimate(PG_FUNCTION_ARGS)
+{
+	PlannerInfo *root = (PlannerInfo *) PG_GETARG_POINTER(0);
+	IndexPath *path = (IndexPath *) PG_GETARG_POINTER(1);
+	double loopCount = PG_GETARG_FLOAT8(2);
+	Cost *indexStartupCost = (Cost *) PG_GETARG_POINTER(3);
+	Cost *indexTotalCost = (Cost *) PG_GETARG_POINTER(4);
+	Selectivity *indexSelectivity = (Selectivity *) PG_GETARG_POINTER(5);
+	double *indexCorrelation = (double *) PG_GETARG_POINTER(6);
+
+	pgroonga_costestimate_raw(root,
+							  path,
+							  loopCount,
+							  indexStartupCost,
+							  indexTotalCost,
+							  indexSelectivity,
+							  indexCorrelation);
+
+	PG_RETURN_VOID();
+}
+
+#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
+static bool
+pgroonga_validate_raw(Oid opClassOid)
+{
+	return true;
+}
+
+Datum
+pgroonga_handler(PG_FUNCTION_ARGS)
+{
+	IndexAmRoutine *routine = makeNode(IndexAmRoutine);
+
+	routine->amstrategies = PGRN_N_STRATEGIES;
+	routine->amsupport    = 0;
+	routine->amcanorder = true;
+	routine->amcanorderbyop = true;
+	routine->amcanbackward = true;
+	routine->amcanunique = true;
+	routine->amcanmulticol = true;
+	routine->amoptionalkey = true;
+	routine->amsearcharray = true;
+	routine->amsearchnulls = false;
+	routine->amstorage = false;
+	routine->amclusterable = true;
+	routine->ampredlocks = false;
+	routine->amkeytype = 0;
+
+	routine->aminsert = pgroonga_insert_raw;
+	routine->ambeginscan = pgroonga_beginscan_raw;
+	routine->amgettuple = pgroonga_gettuple_raw;
+	routine->amgetbitmap = pgroonga_getbitmap_raw;
+	routine->amrescan = pgroonga_rescan_raw;
+	routine->amendscan = pgroonga_endscan_raw;
+	routine->ammarkpos = NULL;
+	routine->amrestrpos = NULL;
+	routine->ambuild = pgroonga_build_raw;
+	routine->ambuildempty = pgroonga_buildempty_raw;
+	routine->ambulkdelete = pgroonga_bulkdelete_raw;
+	routine->amvacuumcleanup = pgroonga_vacuumcleanup_raw;
+	routine->amcanreturn = pgroonga_canreturn_raw;
+	routine->amcostestimate = pgroonga_costestimate_raw;
+	routine->amoptions = pgroonga_options_raw;
+	routine->amvalidate = pgroonga_validate_raw;
+
+	PG_RETURN_POINTER(routine);
+}
+#endif

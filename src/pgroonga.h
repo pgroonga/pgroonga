@@ -33,6 +33,8 @@
 #define PGrnMatchContainStrategyNumber	18	/* operator &@> (@ in Groonga) */
 #define PGrnQueryContainStrategyNumber	19	/* operator &?> (query in Groonga) */
 
+#define PGRN_N_STRATEGIES PGrnQueryContainStrategyNumber
+
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
 #define PGrnDatabaseBasename			"pgrn"
@@ -94,3 +96,4 @@ extern Datum PGDLLEXPORT pgroonga_vacuumcleanup(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_canreturn(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_costestimate(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_options(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_handler(PG_FUNCTION_ARGS);

@@ -16,6 +16,10 @@
 #	endif
 #endif
 
+#if PG_VERSION_NUM >= 90600
+#	define PGRN_SUPPORT_CREATE_ACCESS_METHOD
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif

@@ -224,39 +224,61 @@ CREATE FUNCTION pgroonga.options(internal)
 	AS 'MODULE_PATHNAME', 'pgroonga_options'
 	LANGUAGE C;
 
-DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
-INSERT INTO pg_catalog.pg_am VALUES(
-	'pgroonga',	-- amname
-	19,		-- amstrategies
-	0,		-- amsupport
-	true,		-- amcanorder
-	true,		-- amcanorderbyop
-	true,		-- amcanbackward
-	true,		-- amcanunique
-	true,		-- amcanmulticol
-	true,		-- amoptionalkey
-	true,		-- amsearcharray
-	false,		-- amsearchnulls
-	false,		-- amstorage
-	true,		-- amclusterable
-	false,		-- ampredlocks
-	0,		-- amkeytype
-	'pgroonga.insert',	-- aminsert
-	'pgroonga.beginscan',	-- ambeginscan
-	'pgroonga.gettuple',	-- amgettuple
-	'pgroonga.getbitmap',	-- amgetbitmap
-	'pgroonga.rescan',	-- amrescan
-	'pgroonga.endscan',	-- amendscan
-	0,		-- ammarkpos,
-	0,		-- amrestrpos,
-	'pgroonga.build',	-- ambuild
-	'pgroonga.buildempty',	-- ambuildempty
-	'pgroonga.bulkdelete',	-- ambulkdelete
-	'pgroonga.vacuumcleanup',	-- amvacuumcleanup
-	'pgroonga.canreturn',		-- amcanreturn
-	'pgroonga.costestimate',	-- amcostestimate
-	'pgroonga.options'	-- amoptions
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	BEGIN
+		EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
+	EXCEPTION
+		WHEN syntax_error THEN
+			-- Re-raise. This is for a bug of PostgreSQL 9.6beta1.
+			EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga';
+		WHEN OTHERS THEN
+			-- Ignore. This is for a bug of PostgreSQL 9.6beta1.
+	END;
+	CREATE FUNCTION pgroonga.handler(internal)
+		RETURNS index_am_handler
+		AS 'MODULE_PATHNAME', 'pgroonga_handler'
+		LANGUAGE C;
+	EXECUTE 'CREATE ACCESS METHOD pgroonga ' ||
+		'TYPE INDEX ' ||
+		'HANDLER pgroonga.handler';
+EXCEPTION
+	WHEN syntax_error THEN
+		DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
+		INSERT INTO pg_catalog.pg_am VALUES(
+			'pgroonga',	-- amname
+			19,		-- amstrategies
+			0,		-- amsupport
+			true,		-- amcanorder
+			true,		-- amcanorderbyop
+			true,		-- amcanbackward
+			true,		-- amcanunique
+			true,		-- amcanmulticol
+			true,		-- amoptionalkey
+			true,		-- amsearcharray
+			false,		-- amsearchnulls
+			false,		-- amstorage
+			true,		-- amclusterable
+			false,		-- ampredlocks
+			0,		-- amkeytype
+			'pgroonga.insert',	-- aminsert
+			'pgroonga.beginscan',	-- ambeginscan
+			'pgroonga.gettuple',	-- amgettuple
+			'pgroonga.getbitmap',	-- amgetbitmap
+			'pgroonga.rescan',	-- amrescan
+			'pgroonga.endscan',	-- amendscan
+			0,		-- ammarkpos,
+			0,		-- amrestrpos,
+			'pgroonga.build',	-- ambuild
+			'pgroonga.buildempty',	-- ambuildempty
+			'pgroonga.bulkdelete',	-- ambulkdelete
+			'pgroonga.vacuumcleanup',	-- amvacuumcleanup
+			'pgroonga.canreturn',		-- amcanreturn
+			'pgroonga.costestimate',	-- amcostestimate
+			'pgroonga.options'	-- amoptions
+		);
+END;
+$$;
 
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
@@ -361,8 +383,7 @@ BEGIN
 		FROM pg_type
 		WHERE typname = 'jsonb';
 
-	IF FOUND
-	THEN
+	IF FOUND THEN
 		CREATE FUNCTION pgroonga.match_query(jsonb, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'

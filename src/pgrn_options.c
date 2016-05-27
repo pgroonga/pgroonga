@@ -140,14 +140,10 @@ PGrnApplyOptionValues(Relation index,
 }
 
 #ifdef PGRN_SUPPORT_OPTIONS
-/**
- * pgroonga.options() -- amoptions
- */
-Datum
-pgroonga_options(PG_FUNCTION_ARGS)
+bytea *
+pgroonga_options_raw(Datum reloptions,
+					 bool validate)
 {
-	Datum reloptions = PG_GETARG_DATUM(0);
-	bool validate = PG_GETARG_BOOL(1);
 	relopt_value *options;
 	PGrnOptions *grnOptions;
 	int nOptions;
@@ -164,6 +160,21 @@ pgroonga_options(PG_FUNCTION_ARGS)
 	fillRelOptions(grnOptions, sizeof(PGrnOptions), options, nOptions,
 				   validate, optionsMap, lengthof(optionsMap));
 	pfree(options);
+
+	return (bytea *) grnOptions;
+}
+
+/**
+ * pgroonga.options() -- amoptions
+ */
+Datum
+pgroonga_options(PG_FUNCTION_ARGS)
+{
+	Datum reloptions = PG_GETARG_DATUM(0);
+	bool validate = PG_GETARG_BOOL(1);
+	bytea *grnOptions;
+
+	grnOptions = pgroonga_options_raw(reloptions, validate);
 
 	PG_RETURN_BYTEA_P(grnOptions);
 }
