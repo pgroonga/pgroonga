@@ -79,7 +79,9 @@ extern Datum PGDLLEXPORT pgroonga_query_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_similar_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_script_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_prefix_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_prefix_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_prefix_rk_text(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_contain_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_contain_text(PG_FUNCTION_ARGS);
 
