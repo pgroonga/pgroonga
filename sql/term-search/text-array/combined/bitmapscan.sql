@@ -12,7 +12,7 @@ INSERT INTO tags VALUES (2,
                          ARRAY['グルンガ', 'グルン']);
 INSERT INTO tags VALUES (3,
                          ARRAY['PGroonga', 'pgrn'],
-                         ARRAY['ピージルンガ', 'ピーグルン']);
+                         ARRAY['ピージールンガ', 'ピーグルン']);
 
 CREATE INDEX pgrn_tags_index ON tags
   USING pgroonga (id,
