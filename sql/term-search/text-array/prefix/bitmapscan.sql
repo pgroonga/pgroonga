@@ -15,6 +15,6 @@ SET enable_bitmapscan = on;
 
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
+ WHERE names &^> 'pG';
 
 DROP TABLE tags;

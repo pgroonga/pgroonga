@@ -15,6 +15,6 @@ SET enable_bitmapscan = off;
 
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~ 'p';
+ WHERE katakanas &^~> 'p';
 
 DROP TABLE readings;

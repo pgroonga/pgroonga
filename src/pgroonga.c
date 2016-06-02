@@ -161,11 +161,11 @@ PG_FUNCTION_INFO_V1(pgroonga_query_text);
 PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
-PG_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
-PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
 PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PG_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
+PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
 
 PG_FUNCTION_INFO_V1(pgroonga_insert);
 PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -749,6 +749,7 @@ static bool
 PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 {
 	Oid prefixStrategyOID;
+	Oid prefixContainStrategyOID;
 	Oid leftType;
 	Oid rightType;
 
@@ -771,7 +772,18 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 											leftType,
 											rightType,
 											PGrnPrefixStrategyV2Number);
-	return OidIsValid(prefixStrategyOID);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixContainStrategyOID =
+		get_opfamily_member(index->rd_opfamily[nthAttribute],
+							leftType,
+							rightType,
+							PGrnPrefixContainStrategyV2Number);
+	if (OidIsValid(prefixContainStrategyOID))
+		return true;
+
+	return false;
 }
 
 /**
@@ -1672,44 +1684,6 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-
-/**
- * pgroonga.prefix_text_array(targets text[], prefix text) : bool
- */
-Datum
-pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
-{
-	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
-	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-
-	int i, n;
-
-	n = ARR_DIMS(targets)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum targetDatum;
-		text *target;
-		bool isNULL;
-
-		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(prefix),
-									  VARSIZE_ANY_EXHDR(prefix));
-		if (matched)
-		{
-			break;
-		}
-	}
-
-	PG_RETURN_BOOL(matched);
-}
-
 static grn_bool
 pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 					   const char *prefix, unsigned int prefixSize)
@@ -1782,42 +1756,6 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.prefix_rk_text_array(targets text[], prefix text) : bool
- */
-Datum
-pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
-{
-	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
-	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-	int i, n;
-
-	n = ARR_DIMS(targets)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum targetDatum;
-		text *target;
-		bool isNULL;
-
-		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 VARDATA_ANY(prefix),
-										 VARSIZE_ANY_EXHDR(prefix));
-		if (matched)
-		{
-			break;
-		}
-	}
-
-	PG_RETURN_BOOL(matched);
-}
-
-/**
  * pgroonga.match_contain_text(target text, keywords text[]) : bool
  */
 Datum
@@ -1880,6 +1818,79 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 										   VARSIZE_ANY_EXHDR(query));
 		if (matched)
 			break;
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
+ */
+Datum
+pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	int i, n;
+
+	n = ARR_DIMS(targets)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum targetDatum;
+		text *target;
+		bool isNULL;
+
+		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		target = DatumGetTextPP(targetDatum);
+		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(prefix),
+									  VARSIZE_ANY_EXHDR(prefix));
+		if (matched)
+		{
+			break;
+		}
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
+ */
+Datum
+pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+	int i, n;
+
+	n = ARR_DIMS(targets)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum targetDatum;
+		text *target;
+		bool isNULL;
+
+		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		target = DatumGetTextPP(targetDatum);
+		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+										 VARSIZE_ANY_EXHDR(target),
+										 VARDATA_ANY(prefix),
+										 VARSIZE_ANY_EXHDR(prefix));
+		if (matched)
+		{
+			break;
+		}
 	}
 
 	PG_RETURN_BOOL(matched);
@@ -2592,9 +2603,11 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnPrefixStrategyV2Number:
+	case PGrnPrefixContainStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
+	case PGrnPrefixRKContainStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
@@ -2651,6 +2664,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnPrefixRKStrategyV2Number:
+	case PGrnPrefixRKContainStrategyV2Number:
 		PGrnSearchBuildConditionPrefixRK(so,
 										 data,
 										 targetColumn,

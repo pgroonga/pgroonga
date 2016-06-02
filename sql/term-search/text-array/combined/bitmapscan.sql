@@ -25,7 +25,7 @@ SET enable_bitmapscan = on;
 
 SELECT names, pgroonga.score(tags)
   FROM tags
-  WHERE names &^ 'Groon' OR
-        readings &^~ 'posu';
+  WHERE names &^> 'Groon' OR
+        readings &^~> 'posu';
 
 DROP TABLE tags;

@@ -11,7 +11,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~ 'p';
+ WHERE katakanas &^~> 'p';
              katakanas             
 -----------------------------------
  {ポストグレスキューエル,ポスグレ}

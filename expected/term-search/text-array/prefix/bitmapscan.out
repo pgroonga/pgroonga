@@ -11,7 +11,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
+ WHERE names &^> 'pG';
       names      
 -----------------
  {PostgreSQL,PG}

@@ -247,7 +247,7 @@ EXCEPTION
 		DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_catalog.pg_am VALUES(
 			'pgroonga',	-- amname
-			19,		-- amstrategies
+			21,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
@@ -469,19 +469,6 @@ CREATE OPERATOR &^ (
 	RIGHTARG = text
 );
 
-CREATE FUNCTION pgroonga.prefix_text_array(text[], text)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array'
-	LANGUAGE C
-	IMMUTABLE
-	STRICT;
-
-CREATE OPERATOR &^ (
-	PROCEDURE = pgroonga.prefix_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
-
 CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text'
@@ -492,19 +479,6 @@ CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga.prefix_rk_text,
 	LEFTARG = text,
-	RIGHTARG = text
-);
-
-CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text_array'
-	LANGUAGE C
-	IMMUTABLE
-	STRICT;
-
-CREATE OPERATOR &^~ (
-	PROCEDURE = pgroonga.prefix_rk_text_array,
-	LEFTARG = text[],
 	RIGHTARG = text
 );
 
@@ -547,6 +521,32 @@ CREATE OPERATOR &?> (
 	RIGHTARG = text[]
 );
 
+CREATE FUNCTION pgroonga.prefix_contain_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_contain_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &^> (
+	PROCEDURE = pgroonga.prefix_contain_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.prefix_rk_contain_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_contain_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &^~> (
+	PROCEDURE = pgroonga.prefix_rk_contain_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 pg_catalog.~~,
@@ -565,5 +565,5 @@ CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
 
 CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
-		OPERATOR 16 &^ (text[], text),
-		OPERATOR 17 &^~ (text[], text);
+		OPERATOR 20 &^> (text[], text),
+		OPERATOR 21 &^~> (text[], text);
