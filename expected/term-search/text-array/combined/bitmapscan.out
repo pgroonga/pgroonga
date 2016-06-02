@@ -22,7 +22,7 @@ SET enable_bitmapscan = on;
 SELECT names, pgroonga.score(tags)
   FROM tags
   WHERE names &^> 'Groon' OR
-        readings &^~ 'posu';
+        readings &^~> 'posu';
       names      | score 
 -----------------+-------
  {PostgreSQL,PG} |     2
