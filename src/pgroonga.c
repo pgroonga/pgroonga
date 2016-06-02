@@ -678,7 +678,7 @@ PGrnIsQueryContainStrategyIndex(Relation index, int nthAttribute)
 	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
 									  leftType,
 									  rightType,
-									  PGrnQueryContainStrategyNumber);
+									  PGrnQueryContainStrategyV2Number);
 	return OidIsValid(strategyOID);
 }
 
@@ -2612,8 +2612,8 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
 		break;
-	case PGrnQueryContainStrategyNumber:
-	case PGrnMatchContainStrategyNumber:
+	case PGrnQueryContainStrategyV2Number:
+	case PGrnMatchContainStrategyV2Number:
 		switch (attribute->atttypid)
 		{
 		case TEXTOID:
@@ -2671,7 +2671,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 										 GRN_TEXT_VALUE(&(buffers->general)),
 										 GRN_TEXT_LEN(&(buffers->general)));
 		break;
-	case PGrnQueryContainStrategyNumber:
+	case PGrnQueryContainStrategyV2Number:
 	{
 		grn_obj *queries = &(buffers->general);
 		unsigned int i, n;
@@ -2694,7 +2694,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		}
 		break;
 	}
-	case PGrnMatchContainStrategyNumber:
+	case PGrnMatchContainStrategyV2Number:
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;

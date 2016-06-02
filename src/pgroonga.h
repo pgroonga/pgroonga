@@ -30,8 +30,8 @@
 #define PGrnScriptStrategyV2Number		15	/* operator &`  (script in Groonga) */
 #define PGrnPrefixStrategyV2Number		16	/* operator &^  (prefix search) */
 #define PGrnPrefixRKStrategyV2Number	17	/* operator &^~ (prefix RK search) */
-#define PGrnMatchContainStrategyNumber	18	/* operator &@> (@ in Groonga) */
-#define PGrnQueryContainStrategyNumber	19	/* operator &?> (query in Groonga) */
+#define PGrnMatchContainStrategyV2Number	18	/* operator &@> (@ in Groonga) */
+#define PGrnQueryContainStrategyV2Number	19	/* operator &?> (query in Groonga) */
 #define PGrnPrefixContainStrategyV2Number	20	/* operator &^>  (prefix search) */
 #define PGrnPrefixRKContainStrategyV2Number	21	/* operator &^~> (prefix RK search) */
 
