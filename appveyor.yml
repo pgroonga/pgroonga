@@ -7,15 +7,15 @@ build_script:
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
   - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
   - cd pgroonga
-  - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.3.zip
-  - 7z x groonga-6.0.3.zip > nul
-  - mv groonga-6.0.3 vendor\groonga
+  - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.4.zip
+  - 7z x groonga-6.0.4.zip > nul
+  - mv groonga-6.0.4 vendor\groonga
   - cmake . -G "Visual Studio 12 2013 Win64"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
       -DGRN_WITH_MRUBY=yes
       -DGRN_WITH_BUNDLED_MECAB=yes
       -DGRN_WITH_BUNDLED_LZ4=yes
-      -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes
+#      -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes
   - cmake --build . --config Debug
   - cmake --build . --config Debug --target Install
 
