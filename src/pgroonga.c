@@ -19,6 +19,9 @@
 #ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #	include <access/amapi.h>
 #endif
+#ifdef PGRN_SUPPORT_XLOG
+#	include <access/generic_xlog.h>
+#endif
 #ifdef PGRN_SUPPORT_OPTIONS
 #	include <access/reloptions.h>
 #endif
