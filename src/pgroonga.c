@@ -29,6 +29,7 @@
 #include <catalog/pg_type.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
+#include <optimizer/clauses.h>
 #include <optimizer/cost.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
@@ -2528,12 +2529,10 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 }
 
 static bool
-PGrnSearchBuildCondition(IndexScanDesc scan,
-						 PGrnSearchData *data,
-						 int i)
+PGrnSearchBuildCondition(Relation index,
+						 ScanKey key,
+						 PGrnSearchData *data)
 {
-	Relation index = scan->indexRelation;
-	ScanKey key = &(scan->keyData[i]);
 	TupleDesc desc;
 	Form_pg_attribute attribute;
 	const char *targetColumnName;
@@ -2732,7 +2731,10 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
-		if (!PGrnSearchBuildCondition(scan, data, i))
+		Relation index = scan->indexRelation;
+		ScanKey key = &(scan->keyData[i]);
+
+		if (!PGrnSearchBuildCondition(index, key, data))
 			continue;
 
 		if (data->isEmptyCondition)
@@ -3819,6 +3821,121 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnCostEstimateUpdateSelectivity(IndexPath *path)
+{
+	ListCell *cell;
+	foreach(cell, path->indexquals)
+	{
+		Node *clause = (Node *) lfirst(cell);
+		RestrictInfo *info;
+
+		if (!IsA(clause, RestrictInfo))
+			continue;
+
+		info = (RestrictInfo *) clause;
+		if (info->norm_selec > 0.1)
+		{
+			/* TODO: Make more clever */
+			info->norm_selec = 0.1;
+		}
+	}
+#if 0
+	IndexOptInfo *indexInfo = path->indexinfo;
+	Relation index;
+	grn_obj *sourcesTable;
+	ListCell *cell;
+
+	index = RelationIdGetRelation(indexInfo->indexoid);
+	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+
+	foreach(cell, path->indexquals)
+	{
+		Node *clause = (Node *) lfirst(cell);
+		RestrictInfo *info;
+		OpExpr *expr;
+		int strategy;
+		Oid leftType;
+		Oid rightType;
+		Node *leftNode;
+		Node *rightNode;
+		Var *var;
+		Oid opFamily;
+		ScanKeyData key;
+		PGrnSearchData data;
+
+		if (!IsA(clause, RestrictInfo))
+			continue;
+
+		info = (RestrictInfo *) clause;
+
+		if (!IsA(info->clause, OpExpr))
+			continue;
+
+		expr = (OpExpr *) info->clause;
+
+		leftNode = get_leftop(info->clause);
+		rightNode = get_rightop(info->clause);
+
+		if (!IsA(leftNode, Var))
+			continue;
+		if (!IsA(rightNode, Const))
+			continue;
+
+		var = (Var *) leftNode;
+		/* TODO: var->varattno is the number in table not index. So
+		 * the following code is a bug. */
+		opFamily = index->rd_opfamily[var->varattno - 1];
+		get_op_opfamily_properties(expr->opno,
+								   opFamily,
+								   false,
+								   &strategy,
+								   &leftType,
+								   &rightType);
+
+		key.sk_flags = 0;
+		key.sk_attno = var->varattno;
+		key.sk_strategy = strategy;
+		key.sk_argument = ((Const *) rightNode)->constvalue;
+		PGrnSearchDataInit(&data, sourcesTable);
+		if (PGrnSearchBuildCondition(index, &key, &data)) {
+			if (data.isEmptyCondition)
+			{
+				info->norm_selec = 0.0;
+			}
+			else
+			{
+				unsigned int estimatedSize;
+				unsigned int nRecords;
+
+				estimatedSize = grn_expr_estimate_size(ctx, data.expression);
+				nRecords = grn_table_size(ctx, sourcesTable);
+				if (estimatedSize > nRecords)
+				{
+					estimatedSize = nRecords;
+				}
+				if (estimatedSize == nRecords)
+				{
+					/* TODO: estimatedSize == nRecords means
+					 * estimation isn't support in Groonga. We should
+					 * support it in Groonga. */
+					info->norm_selec = 0.1;
+				}
+				else
+				{
+					info->norm_selec = (double)estimatedSize / (double)nRecords;
+				}
+			}
+		} else {
+			info->norm_selec = 0.0;
+		}
+		PGrnSearchDataFree(&data);
+	}
+
+	RelationClose(index);
+#endif
+}
+
+static void
 pgroonga_costestimate_raw(PlannerInfo *root,
 						  IndexPath *path,
 						  double loopCount,
@@ -3840,6 +3957,7 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 	 *
 	 * We want to use the default scan for other cases.
 	 */
+	PGrnCostEstimateUpdateSelectivity(path);
 	*indexSelectivity = clauselist_selectivity(root,
 											   path->indexquals,
 											   index->rel->relid,
