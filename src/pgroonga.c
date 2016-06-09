@@ -2430,8 +2430,7 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 }
 
 static void
-PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
-							  PGrnSearchData *data,
+PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 							  grn_obj *targetColumn,
 							  const char *query,
 							  unsigned int querySize)
@@ -2440,7 +2439,7 @@ PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
 							  matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
@@ -2459,8 +2458,7 @@ PGrnSearchBuildConditionQuery(PGrnScanOpaque so,
 }
 
 static void
-PGrnSearchBuildConditionPrefixRK(PGrnScanOpaque so,
-								 PGrnSearchData *data,
+PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 								 grn_obj *targetColumn,
 								 const char *prefix,
 								 unsigned int prefixSize)
@@ -2488,8 +2486,7 @@ PGrnSearchBuildConditionPrefixRK(PGrnScanOpaque so,
 }
 
 static void
-PGrnSearchBuildConditionScript(PGrnScanOpaque so,
-							   PGrnSearchData *data,
+PGrnSearchBuildConditionScript(PGrnSearchData *data,
 							   grn_obj *targetColumn,
 							   const char *script,
 							   unsigned int scriptSize)
@@ -2498,7 +2495,7 @@ PGrnSearchBuildConditionScript(PGrnScanOpaque so,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
 							  matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
@@ -2532,7 +2529,6 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 
 static bool
 PGrnSearchBuildCondition(IndexScanDesc scan,
-						 PGrnScanOpaque so,
 						 PGrnSearchData *data,
 						 int i)
 {
@@ -2553,7 +2549,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 	attribute = desc->attrs[key->sk_attno - 1];
 
 	targetColumnName = attribute->attname.data;
-	targetColumn = PGrnLookupColumn(so->sourcesTable, targetColumnName, ERROR);
+	targetColumn = PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
 	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
@@ -2650,23 +2646,20 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
-		PGrnSearchBuildConditionQuery(so,
-									  data,
+		PGrnSearchBuildConditionQuery(data,
 									  targetColumn,
 									  GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnScriptStrategyV2Number:
-		PGrnSearchBuildConditionScript(so,
-									   data,
+		PGrnSearchBuildConditionScript(data,
 									   targetColumn,
 									   GRN_TEXT_VALUE(&(buffers->general)),
 									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnPrefixRKStrategyV2Number:
 	case PGrnPrefixRKContainStrategyV2Number:
-		PGrnSearchBuildConditionPrefixRK(so,
-										 data,
+		PGrnSearchBuildConditionPrefixRK(data,
 										 targetColumn,
 										 GRN_TEXT_VALUE(&(buffers->general)),
 										 GRN_TEXT_LEN(&(buffers->general)));
@@ -2684,8 +2677,7 @@ PGrnSearchBuildCondition(IndexScanDesc scan,
 
 			querySize = grn_vector_get_element(ctx, queries, i,
 												&query, NULL, NULL);
-			PGrnSearchBuildConditionQuery(so,
-										  data,
+			PGrnSearchBuildConditionQuery(data,
 										  targetColumn,
 										  query,
 										  querySize);
@@ -2740,7 +2732,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
-		if (!PGrnSearchBuildCondition(scan, so, data, i))
+		if (!PGrnSearchBuildCondition(scan, data, i))
 			continue;
 
 		if (data->isEmptyCondition)
@@ -2750,6 +2742,19 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 			grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
 		nExpressions++;
 	}
+}
+
+static void
+PGrnSearchDataInit(PGrnSearchData *data, grn_obj *sourcesTable)
+{
+	data->sourcesTable = sourcesTable;
+	GRN_PTR_INIT(&(data->matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_PTR_INIT(&(data->targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_UINT32_INIT(&(data->sectionID), 0);
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, sourcesTable,
+							  data->expression, data->expressionVariable);
+	data->isEmptyCondition = false;
 }
 
 static void
@@ -2789,14 +2794,7 @@ PGrnSearch(IndexScanDesc scan)
 	if (scan->numberOfKeys == 0)
 		return;
 
-	GRN_PTR_INIT(&(data.matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
-	GRN_PTR_INIT(&(data.targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
-	GRN_UINT32_INIT(&(data.sectionID), 0);
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable,
-							  data.expression, data.expressionVariable);
-	data.isEmptyCondition = false;
-
+	PGrnSearchDataInit(&data, so->sourcesTable);
 	PG_TRY();
 	{
 		PGrnSearchBuildConditions(scan, so, &data);

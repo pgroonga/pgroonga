@@ -6,6 +6,7 @@
 
 typedef struct PGrnSearchData
 {
+	grn_obj *sourcesTable;
 	grn_obj targetColumns;
 	grn_obj matchTargets;
 	grn_obj sectionID;
