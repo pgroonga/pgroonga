@@ -9,9 +9,12 @@ fi
 input=$1
 
 cat <<SQL
-SET enable_seqscan = no;
+-- SET enable_seqscan = no;
+-- EXPLAIN ANALYZE VERBOSE
 SELECT term, readings, english
   FROM dictionary
  WHERE term &^ '$1' OR
-       readings &^~> '$1';
+       readings &^~> '$1'
+ ORDER BY term
+ LIMIT 10;
 SQL
