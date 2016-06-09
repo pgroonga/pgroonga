@@ -4,6 +4,7 @@
 *.zip
 pgroonga--*.sql
 !pgroonga--*--*.sql
+/examples/completion/edict.gz
 /regression.*
 /results/
 /packages/source/
