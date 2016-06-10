@@ -21,6 +21,7 @@ CREATE TABLE dictionary (
   english text
 );
 
+\\timing
 SQL
 
 zcat "${edict_gz}" | ./create-insert.rb
