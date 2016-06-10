@@ -31,6 +31,5 @@ cat <<SQL
 CREATE INDEX pgroonga_index
   ON dictionary
   USING pgroonga (term pgroonga.text_term_search_ops_v2,
-                  readings pgroonga.text_array_term_search_ops_v2,
-                  english pgroonga.text_full_text_search_ops_v2);
+                  readings pgroonga.text_array_term_search_ops_v2);
 SQL
