@@ -3826,23 +3826,6 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 static void
 PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 {
-	ListCell *cell;
-	foreach(cell, path->indexquals)
-	{
-		Node *clause = (Node *) lfirst(cell);
-		RestrictInfo *info;
-
-		if (!IsA(clause, RestrictInfo))
-			continue;
-
-		info = (RestrictInfo *) clause;
-		if (info->norm_selec > 0.1)
-		{
-			/* TODO: Make more clever */
-			info->norm_selec = 0.1;
-		}
-	}
-#if 0
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index;
 	grn_obj *sourcesTable;
@@ -3862,7 +3845,8 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 		Node *leftNode;
 		Node *rightNode;
 		Var *var;
-		Oid opFamily;
+		int nthAttribute = InvalidAttrNumber;
+		Oid opFamily = InvalidOid;
 		ScanKeyData key;
 		PGrnSearchData data;
 
@@ -3885,9 +3869,22 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 			continue;
 
 		var = (Var *) leftNode;
-		/* TODO: var->varattno is the number in table not index. So
-		 * the following code is a bug. */
-		opFamily = index->rd_opfamily[var->varattno - 1];
+		{
+			int i;
+
+			for (i = 0; i < indexInfo->ncolumns; i++)
+			{
+				if (indexInfo->indexkeys[i] == var->varattno)
+				{
+					nthAttribute = i + 1;
+					break;
+				}
+			}
+		}
+		if (!AttributeNumberIsValid(nthAttribute))
+			continue;
+
+		opFamily = index->rd_opfamily[nthAttribute - 1];
 		get_op_opfamily_properties(expr->opno,
 								   opFamily,
 								   false,
@@ -3896,46 +3893,47 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 								   &rightType);
 
 		key.sk_flags = 0;
-		key.sk_attno = var->varattno;
+		key.sk_attno = nthAttribute;
 		key.sk_strategy = strategy;
 		key.sk_argument = ((Const *) rightNode)->constvalue;
 		PGrnSearchDataInit(&data, sourcesTable);
-		if (PGrnSearchBuildCondition(index, &key, &data)) {
+		if (PGrnSearchBuildCondition(index, &key, &data))
+		{
+			unsigned int estimatedSize;
+			unsigned int nRecords;
+
 			if (data.isEmptyCondition)
 			{
-				info->norm_selec = 0.0;
+				estimatedSize = 0;
 			}
 			else
 			{
-				unsigned int estimatedSize;
-				unsigned int nRecords;
-
 				estimatedSize = grn_expr_estimate_size(ctx, data.expression);
-				nRecords = grn_table_size(ctx, sourcesTable);
-				if (estimatedSize > nRecords)
-				{
-					estimatedSize = nRecords;
-				}
-				if (estimatedSize == nRecords)
-				{
-					/* TODO: estimatedSize == nRecords means
-					 * estimation isn't support in Groonga. We should
-					 * support it in Groonga. */
-					info->norm_selec = 0.1;
-				}
-				else
-				{
-					info->norm_selec = (double)estimatedSize / (double)nRecords;
-				}
 			}
-		} else {
+
+			nRecords = grn_table_size(ctx, sourcesTable);
+			if (estimatedSize > nRecords)
+				estimatedSize = nRecords;
+			if (estimatedSize == nRecords)
+			{
+				/* TODO: estimatedSize == nRecords means
+				 * estimation isn't support in Groonga. We should
+				 * support it in Groonga. */
+				info->norm_selec = 0.01;
+			}
+			else
+			{
+				info->norm_selec = (double) estimatedSize / (double) nRecords;
+			}
+		}
+		else
+		{
 			info->norm_selec = 0.0;
 		}
 		PGrnSearchDataFree(&data);
 	}
 
 	RelationClose(index);
-#endif
 }
 
 static void
@@ -3947,28 +3945,15 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 						  Selectivity *indexSelectivity,
 						  double *indexCorrelation)
 {
-	IndexOptInfo *index = path->indexinfo;
-
-	/* TODO: Use more clever logic.
-	 *
-	 * We want to use index scan rather than bitmap scan for full text search.
-	 * Because bitmap scan requires bitmap heap scan that is slow for
-	 * large result set.
-	 *
-	 * We want to use bitmap scan rather than index scan for OR search.
-	 * Because we can't use index scan for OR search.
-	 *
-	 * We want to use the default scan for other cases.
-	 */
 	PGrnCostEstimateUpdateSelectivity(path);
 	*indexSelectivity = clauselist_selectivity(root,
-											   path->indexquals,
+											   path->indexinfo->indexquals,
 											   index->rel->relid,
 											   JOIN_INNER,
 											   NULL);
 
-	*indexStartupCost = 0.0;
-	*indexTotalCost = 0.0;
+	*indexStartupCost = 0.0; /* TODO */
+	*indexTotalCost = 0.0; /* TODO */
 	*indexCorrelation = 0.0;
 }
 
