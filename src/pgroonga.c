@@ -3947,8 +3947,8 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 {
 	PGrnCostEstimateUpdateSelectivity(path);
 	*indexSelectivity = clauselist_selectivity(root,
-											   path->indexinfo->indexquals,
-											   index->rel->relid,
+											   path->indexquals,
+											   path->indexinfo->rel->relid,
 											   JOIN_INNER,
 											   NULL);
 
