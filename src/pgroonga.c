@@ -34,6 +34,7 @@
 #include <miscadmin.h>
 #include <optimizer/clauses.h>
 #include <optimizer/cost.h>
+#include <postmaster/bgworker.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/lmgr.h>
@@ -355,6 +356,9 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 void
 _PG_init(void)
 {
+	if (MyBgworkerEntry)
+		return;
+
 	if (PGrnInitialized)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
