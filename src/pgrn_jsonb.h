@@ -13,6 +13,31 @@ bool PGrnAttributeIsJSONB(Oid id);
 
 void PGrnJSONBCreate(PGrnCreateData *data);
 
+grn_obj *PGrnJSONBLookupValuesTable(Relation index,
+									unsigned int nthAttribute,
+									int errorLevel);
+grn_obj *PGrnJSONBLookupPathsTable(Relation index,
+								   unsigned int nthAttribute,
+								   int errorLevel);
+grn_obj *PGrnJSONBLookupTypesTable(Relation index,
+								   unsigned int nthAttribute,
+								   int errorLevel);
+grn_obj *PGrnJSONBLookupFullTextSearchLexicon(Relation index,
+											  unsigned int nthAttribute,
+											  int errorLevel);
+grn_obj *PGrnJSONBLookupStringLexicon(Relation index,
+									  unsigned int nthAttribute,
+									  int errorLevel);
+grn_obj *PGrnJSONBLookupNumberLexicon(Relation index,
+									  unsigned int nthAttribute,
+									  int errorLevel);
+grn_obj *PGrnJSONBLookupBooleanLexicon(Relation index,
+									   unsigned int nthAttribute,
+									   int errorLevel);
+grn_obj *PGrnJSONBLookupSizeLexicon(Relation index,
+									unsigned int nthAttribute,
+									int errorLevel);
+
 grn_obj *PGrnJSONBSetSource(Relation index, unsigned int i);
 
 void PGrnJSONBInsert(Relation index,

@@ -60,10 +60,23 @@ static grn_obj *tmpPathsTable = NULL;
 static grn_obj *tmpTypesTable = NULL;
 static grn_obj *tmpValuesTable = NULL;
 
-static grn_obj *
-PGrnLookupJSONPathsTable(Relation index,
-						 unsigned int nthAttribute,
-						 int errorLevel)
+grn_obj *
+PGrnJSONBLookupValuesTable(Relation index,
+						   unsigned int nthAttribute,
+						   int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValuesTableNameFormat,
+			 index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupPathsTable(Relation index,
+						  unsigned int nthAttribute,
+						  int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
@@ -73,16 +86,81 @@ PGrnLookupJSONPathsTable(Relation index,
 	return PGrnLookup(name, errorLevel);
 }
 
-static grn_obj *
-PGrnLookupJSONValuesTable(Relation index,
+grn_obj *
+PGrnJSONBLookupTypesTable(Relation index,
 						  unsigned int nthAttribute,
 						  int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
 	snprintf(name, sizeof(name),
-			 PGrnJSONValuesTableNameFormat,
+			 PGrnJSONTypesTableNameFormat,
 			 index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupFullTextSearchLexicon(Relation index,
+									 unsigned int nthAttribute,
+									 int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValueLexiconNameFormat,
+			 "FullTextSearch", index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupStringLexicon(Relation index,
+							 unsigned int nthAttribute,
+							 int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValueLexiconNameFormat,
+			 "String", index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupNumberLexicon(Relation index,
+							 unsigned int nthAttribute,
+							 int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValueLexiconNameFormat,
+			 "Number", index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupBooleanLexicon(Relation index,
+							  unsigned int nthAttribute,
+							  int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValueLexiconNameFormat,
+			 "Boolean", index->rd_node.relNode, nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
+PGrnJSONBLookupSizeLexicon(Relation index,
+						   unsigned int nthAttribute,
+						   int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnJSONValueLexiconNameFormat,
+			 "Size", index->rd_node.relNode, nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -773,7 +851,7 @@ PGrnJSONBSetSources(Relation index,
 {
 	grn_obj *jsonPathsTable;
 
-	jsonPathsTable = PGrnLookupJSONPathsTable(index, nthAttribute, ERROR);
+	jsonPathsTable = PGrnJSONBLookupPathsTable(index, nthAttribute, ERROR);
 
 	{
 		grn_obj *source;
@@ -818,7 +896,7 @@ PGrnJSONBSetSource(Relation index, unsigned int i)
 	grn_obj *jsonValuesTable;
 	grn_obj *indexColumn;
 
-	jsonValuesTable = PGrnLookupJSONValuesTable(index, i, ERROR);
+	jsonValuesTable = PGrnJSONBLookupValuesTable(index, i, ERROR);
 	PGrnJSONBSetSources(index, jsonValuesTable, i);
 	indexColumn = PGrnLookupColumn(jsonValuesTable,
 								   PGrnIndexColumnName,
@@ -922,8 +1000,8 @@ PGrnJSONBInsert(Relation index,
 	Jsonb *jsonb;
 	JsonbIterator *iter;
 
-	data.pathsTable  = PGrnLookupJSONPathsTable(index, nthValue, ERROR);
-	data.valuesTable = PGrnLookupJSONValuesTable(index, nthValue, ERROR);
+	data.pathsTable  = PGrnJSONBLookupPathsTable(index, nthValue, ERROR);
+	data.valuesTable = PGrnJSONBLookupValuesTable(index, nthValue, ERROR);
 	data.valueIDs = valueIDs;
 	grn_obj_reinit(ctx, data.valueIDs,
 				   grn_obj_id(ctx, data.valuesTable),
@@ -1270,7 +1348,7 @@ PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 	data->sourcesValuesColumn = PGrnLookupColumn(data->sourcesTable,
 												 attribute->attname.data,
 												 ERROR);
-	data->valuesTable = PGrnLookupJSONValuesTable(index, 0, ERROR);
+	data->valuesTable = PGrnJSONBLookupValuesTable(index, 0, ERROR);
 	data->valuesIndexColumn = PGrnLookupColumn(data->valuesTable,
 											   PGrnIndexColumnName,
 											   ERROR);
