@@ -233,15 +233,7 @@ CREATE FUNCTION pgroonga.options(internal)
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	BEGIN
-		EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
-	EXCEPTION
-		WHEN syntax_error THEN
-			-- Re-raise. This is for a bug of PostgreSQL 9.6beta1.
-			EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga';
-		WHEN OTHERS THEN
-			-- Ignore. This is for a bug of PostgreSQL 9.6beta1.
-	END;
+	EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
 	CREATE FUNCTION pgroonga.handler(internal)
 		RETURNS index_am_handler
 		AS 'MODULE_PATHNAME', 'pgroonga_handler'
