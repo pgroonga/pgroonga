@@ -219,3 +219,29 @@ PGrnRemoveObject(const char *name)
 		return false;
 	}
 }
+
+void
+PGrnFlushObject(grn_obj *object, bool recursive)
+{
+	grn_rc rc;
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+	int name_size;
+
+	if (recursive)
+	{
+		rc = grn_obj_flush_recursive(ctx, object);
+	}
+	else
+	{
+		rc = grn_obj_flush(ctx, object);
+	}
+	if (rc == GRN_SUCCESS)
+		return;
+
+	name_size = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+	ereport(ERROR,
+			(errcode(PGrnRCToPgErrorCode(rc)),
+			 errmsg("pgroonga: failed to flush: <%.*s>: %s",
+					name_size, name,
+					ctx->errbuf)));
+}

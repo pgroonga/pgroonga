@@ -36,3 +36,5 @@ grn_obj *PGrnCreateColumn(grn_obj *table,
 void PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source);
 
 bool PGrnRemoveObject(const char *name);
+
+void PGrnFlushObject(grn_obj *object, bool recursive);

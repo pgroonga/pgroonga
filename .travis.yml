@@ -19,4 +19,5 @@ before_script:
   - sudo make install
 script:
   - rm -rf sql/jsonb
+  - rm -rf sql/function/flush/jsonb.sql
   - make installcheck || (cat regression.diffs; false)

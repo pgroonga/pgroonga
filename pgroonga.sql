@@ -58,6 +58,13 @@ CREATE FUNCTION pgroonga.query_extract_keywords(query text)
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga.flush(indexName cstring)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_flush'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.match_term(target text, term text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'

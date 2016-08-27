@@ -7,6 +7,7 @@ SRCS =						\
 	src/pgrn_column_name.c			\
 	src/pgrn_convert.c			\
 	src/pgrn_create.c			\
+	src/pgrn_flush.c			\
 	src/pgrn_global.c			\
 	src/pgrn_groonga.c			\
 	src/pgrn_highlight_html.c		\
