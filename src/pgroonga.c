@@ -196,6 +196,12 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 static PGrnMatchSequentialSearchData matchSequentialSearchData;
 static PGrnPrefixRKSequentialSearchData prefixRKSequentialSearchData;
 
+static uint32_t
+PGrnGetThreadLimit(void *data)
+{
+	return 1;
+}
+
 static grn_encoding
 PGrnGetEncoding(void)
 {
@@ -369,6 +375,8 @@ _PG_init(void)
 	PGrnInitialized = true;
 
 	PGrnInitializeVariables();
+
+	grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
 
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,
