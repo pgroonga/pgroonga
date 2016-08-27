@@ -4,7 +4,7 @@
 #include "pgrn_groonga.h"
 #include "pgrn_jsonb.h"
 
-#include <storage/lockdefs.h>
+#include <storage/lock.h>
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
 
