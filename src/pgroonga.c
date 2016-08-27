@@ -1107,7 +1107,7 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("unknown index name: <%s>",
+				 errmsg("pgroonga: unknown index name: <%s>",
 						DatumGetCString(indexNameDatum))));
 	}
 	indexOid = DatumGetObjectId(indexOidDatum);
@@ -1118,7 +1118,8 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 		if (!HeapTupleIsValid(tuple)) {
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("failed to find file node ID from index name: <%s>",
+					 errmsg("pgroonga: "
+							"failed to find file node ID from index name: <%s>",
 							DatumGetCString(indexNameDatum))));
 		}
 		{

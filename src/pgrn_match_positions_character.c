@@ -81,7 +81,7 @@ PGrnMatchPositionsCharacter(text *target)
 						GRN_OBJ_FIN(ctx, &buffer);
 						ereport(ERROR,
 								(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-								 errmsg("invalid string: %s",
+								 errmsg("pgroonga: invalid string: %s",
 										stringForNCharacters)));
 					}
 					if (stringForNCharacters == start) {
