@@ -1325,7 +1325,7 @@ PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 
 #ifdef JSONBOID
 static bool
-PGrnRemoveJSONValueLexiconTable(const char *typeName, unsigned int relationID)
+PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 {
 	char tableName[GRN_TABLE_MAX_KEY_SIZE];
 	snprintf(tableName, sizeof(tableName),
@@ -1339,11 +1339,11 @@ void
 PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 {
 #ifdef JSONBOID
-		PGrnRemoveJSONValueLexiconTable("FullTextSearch", relationFileNodeID);
-		PGrnRemoveJSONValueLexiconTable("String", relationFileNodeID);
-		PGrnRemoveJSONValueLexiconTable("Number", relationFileNodeID);
-		PGrnRemoveJSONValueLexiconTable("Boolean", relationFileNodeID);
-		PGrnRemoveJSONValueLexiconTable("Size", relationFileNodeID);
+		PGrnRemoveJSONValueLexicon("FullTextSearch", relationFileNodeID);
+		PGrnRemoveJSONValueLexicon("String", relationFileNodeID);
+		PGrnRemoveJSONValueLexicon("Number", relationFileNodeID);
+		PGrnRemoveJSONValueLexicon("Boolean", relationFileNodeID);
+		PGrnRemoveJSONValueLexicon("Size", relationFileNodeID);
 
 		{
 			char name[GRN_TABLE_MAX_KEY_SIZE];
