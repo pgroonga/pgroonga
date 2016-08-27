@@ -250,8 +250,8 @@ BEGIN
 		'HANDLER pgroonga.handler';
 EXCEPTION
 	WHEN syntax_error THEN
-		DELETE FROM pg_catalog.pg_am WHERE amname = 'pgroonga';
-		INSERT INTO pg_catalog.pg_am VALUES(
+		DELETE FROM pg_am WHERE amname = 'pgroonga';
+		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
 			21,		-- amstrategies
 			0,		-- amsupport
@@ -288,8 +288,8 @@ $$;
 
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 	USING pgroonga AS
-		OPERATOR 6 pg_catalog.~~,
-		OPERATOR 7 pg_catalog.~~*,
+		OPERATOR 6 ~~,
+		OPERATOR 7 ~~*,
 		OPERATOR 8 %%,
 		OPERATOR 9 @@;
 
@@ -413,8 +413,8 @@ $$;
 
 CREATE OPERATOR CLASS pgroonga.text_regexp_ops FOR TYPE text
 	USING pgroonga AS
-		OPERATOR 6 pg_catalog.~~,
-		OPERATOR 7 pg_catalog.~~*,
+		OPERATOR 6 ~~,
+		OPERATOR 7 ~~*,
 		OPERATOR 10 @~;
 
 CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops FOR TYPE varchar
@@ -555,8 +555,8 @@ CREATE OPERATOR &^~> (
 
 CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
-		OPERATOR 6 pg_catalog.~~,
-		OPERATOR 7 pg_catalog.~~*,
+		OPERATOR 6 ~~,
+		OPERATOR 7 ~~*,
 		OPERATOR 12 &@,
 		OPERATOR 13 &?,
 		OPERATOR 14 &~?,
