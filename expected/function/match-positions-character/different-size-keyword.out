@@ -1,0 +1,8 @@
+SELECT pgroonga.match_positions_character(
+  '100㍉メートル',
+  ARRAY['ミリ']);
+ match_positions_character 
+---------------------------
+ {{3,1}}
+(1 row)
+

@@ -10,6 +10,7 @@
 #include "pgrn_keywords.h"
 #include "pgrn_jsonb.h"
 #include "pgrn_match_positions_byte.h"
+#include "pgrn_match_positions_character.h"
 #include "pgrn_options.h"
 #include "pgrn_query_extract_keywords.h"
 #include "pgrn_search.h"
@@ -283,6 +284,7 @@ PGrnOnProcExit(int code, Datum arg)
 		PGrnFinalizeQueryExtractKeywords();
 
 		PGrnFinalizeMatchPositionsByte();
+		PGrnFinalizeMatchPositionsCharacter();
 
 		PGrnFinalizeHighlightHTML();
 
@@ -400,6 +402,7 @@ _PG_init(void)
 	PGrnInitializeHighlightHTML();
 
 	PGrnInitializeMatchPositionsByte();
+	PGrnInitializeMatchPositionsCharacter();
 
 	PGrnInitializeQueryExtractKeywords();
 }

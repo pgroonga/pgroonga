@@ -13,6 +13,7 @@ SRCS =						\
 	src/pgrn_keywords.c			\
 	src/pgrn_jsonb.c			\
 	src/pgrn_match_positions_byte.c		\
+	src/pgrn_match_positions_character.c	\
 	src/pgrn_options.c			\
 	src/pgrn_query_extract_keywords.c	\
 	src/pgrn_snippet_html.c			\
