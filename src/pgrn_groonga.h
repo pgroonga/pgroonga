@@ -18,6 +18,9 @@ grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel);
 grn_obj *PGrnLookupSourcesTable(Relation index, int errorLevel);
 grn_obj *PGrnLookupSourcesCtidColumn(Relation index, int errorLevel);
+grn_obj *PGrnLookupLexicon(Relation index,
+						   unsigned int nthAttribute,
+						   int errorLevel);
 grn_obj *PGrnLookupIndexColumn(Relation index,
 							   unsigned int nthAttribute,
 							   int errorLevel);

@@ -126,6 +126,18 @@ PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
 }
 
 grn_obj *
+PGrnLookupLexicon(Relation index, unsigned int nthAttribute, int errorLevel)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(name, sizeof(name),
+			 PGrnLexiconNameFormat,
+			 index->rd_node.relNode,
+			 nthAttribute);
+	return PGrnLookup(name, errorLevel);
+}
+
+grn_obj *
 PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
