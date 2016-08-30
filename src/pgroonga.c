@@ -3127,6 +3127,8 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
 #ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
+	scan->xs_recheck = false;
+
 	{
 		int i;
 		for (i = 0; i < scan->numberOfKeys; i++)
@@ -3218,10 +3220,6 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
-
-#ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
-	scan->xs_recheck = false;
-#endif
 
 	PGrnEnsureCursorOpened(scan, direction);
 
