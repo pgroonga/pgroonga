@@ -168,6 +168,14 @@ namespace :package do
     end
   end
 
+  desc "Release sources"
+  source_tasks = [
+    "package:source:download",
+    "package:source:upload",
+  ]
+  task :source => source_tasks
+
+
   namespace :yum do
     distribution = "centos"
     rsync_path = rsync_base_path
