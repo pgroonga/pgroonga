@@ -2245,6 +2245,72 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(scan);
 }
 
+static bool
+PGrnSearchIsInCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY &&
+			key->sk_strategy == PGrnEqualStrategyNumber);
+}
+
+static bool
+PGrnSearchBuildConditionIn(PGrnSearchData *data,
+						   ScanKey key,
+						   grn_obj *targetColumn,
+						   Form_pg_attribute attribute)
+{
+	grn_id domain;
+	unsigned char flags = 0;
+	ArrayType *values;
+	int i, n;
+
+	domain = PGrnPGTypeToGrnType(attribute->atttypid, &flags);
+	grn_obj_reinit(ctx, &(buffers->general), domain, flags);
+	values = DatumGetArrayTypeP(key->sk_argument);
+	n = ARR_DIMS(values)[0];
+
+	grn_expr_append_obj(ctx, data->expression,
+						PGrnLookup("in_values", ERROR),
+						GRN_OP_PUSH,
+						1);
+	PGrnCheck("pgroonga: IN: failed to push in_values()");
+	grn_expr_append_obj(ctx, data->expression,
+						targetColumn,
+						GRN_OP_PUSH,
+						1);
+	PGrnCheck("pgroonga: IN: failed to push target column");
+	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
+	PGrnCheck("pgroonga: IN: failed to push GET_VALUE");
+
+	for (i = 1; i <= n; i++)
+	{
+		Datum valueDatum;
+		bool isNULL;
+
+		valueDatum = array_ref(values, 1, &i, -1,
+							   attribute->attlen,
+							   attribute->attbyval,
+							   attribute->attalign,
+							   &isNULL);
+		if (isNULL)
+			return false;
+
+		PGrnConvertFromData(valueDatum,
+							attribute->atttypid,
+							&(buffers->general));
+		grn_expr_append_const(ctx,
+							  data->expression,
+							  &(buffers->general),
+							  GRN_OP_PUSH,
+							  1);
+		PGrnCheck("pgroonga: IN: failed to push a value");
+	}
+
+	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2 + (n - 1));
+	PGrnCheck("pgroonga: IN: failed to push CALL");
+
+	return true;
+}
+
 static void
 PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 									   grn_obj *targetColumn,
@@ -2570,6 +2636,9 @@ PGrnSearchBuildCondition(Relation index,
 	targetColumn = PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
 	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 
+	if (PGrnSearchIsInCondition(key))
+		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
+
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
 		return PGrnJSONBBuildSearchCondition(data, key, targetColumn);
 
@@ -2845,7 +2914,44 @@ PGrnSearch(IndexScanDesc scan)
 static void
 PGrnSort(IndexScanDesc scan)
 {
-	/* TODO */
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	ScanKey key;
+	TupleDesc desc;
+	Form_pg_attribute attribute;
+	const char *targetColumnName;
+	grn_table_sort_key sort_key;
+
+	if (!so->searched)
+		return;
+
+	if (scan->numberOfKeys != 1)
+		return;
+
+	key = &(scan->keyData[0]);
+	if (!PGrnSearchIsInCondition(key))
+		return;
+
+	so->sorted = grn_table_create(ctx, NULL, 0, NULL,
+								  GRN_OBJ_TABLE_NO_KEY,
+								  NULL, so->searched);
+
+	desc = RelationGetDescr(scan->indexRelation);
+	attribute = desc->attrs[key->sk_attno - 1];
+	targetColumnName = attribute->attname.data;
+	sort_key.key = grn_obj_column(ctx, so->searched,
+								  targetColumnName,
+								  strlen(targetColumnName));
+
+	sort_key.flags = GRN_TABLE_SORT_ASC;
+	sort_key.offset = 0;
+	grn_table_sort(ctx,
+				   so->searched,
+				   0,
+				   -1,
+				   so->sorted,
+				   &sort_key,
+				   1);
+	grn_obj_close(ctx, sort_key.key);
 }
 
 static void
@@ -3122,7 +3228,9 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 }
 
 static void
-PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
+PGrnEnsureCursorOpened(IndexScanDesc scan,
+					   ScanDirection dir,
+					   bool needSort)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
@@ -3156,7 +3264,8 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir)
 	else
 	{
 		PGrnSearch(scan);
-		PGrnSort(scan);
+		if (needSort)
+			PGrnSort(scan);
 		PGrnOpenTableCursor(scan, dir);
 	}
 }
@@ -3221,7 +3330,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	PGrnEnsureCursorOpened(scan, direction);
+	PGrnEnsureCursorOpened(scan, direction, true);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL)
 	{
@@ -3284,7 +3393,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 
-	PGrnEnsureCursorOpened(scan, ForwardScanDirection);
+	PGrnEnsureCursorOpened(scan, ForwardScanDirection, false);
 
 	if (so->indexCursor)
 	{
