@@ -7,9 +7,11 @@ compiler:
   - gcc
 matrix:
   include:
-    - addons:
+    - env: PG_VERSION=9.3
+      addons:
         postgresql: "9.3"
-    - addons:
+    - env: PG_VERSION=9.4
+      addons:
         postgresql: "9.4"
 sudo: required
 # env:
@@ -17,7 +19,7 @@ sudo: required
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
-  - sudo apt-get install -qq -y postgresql-server-dev-9.4
+  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION}
 before_script:
   - make DEBUG=1
   - sudo make install
