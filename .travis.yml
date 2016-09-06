@@ -3,14 +3,16 @@ notifications:
     - groonga-commit@lists.sourceforge.jp
 dist: trusty
 language: c
-compiler:
-  - gcc
 matrix:
   include:
     - env: PG_VERSION=9.3
+      compiler:
+        - gcc
       addons:
         postgresql: "9.3"
     - env: PG_VERSION=9.4
+      compiler:
+        - gcc
       addons:
         postgresql: "9.4"
 sudo: required
@@ -19,11 +21,10 @@ sudo: required
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
-  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION}
+  - sudo apt-get install -qq -y postgresql-server-Devi-${PG_VERSION}
 before_script:
   - make DEBUG=1
   - sudo make install
 script:
-  - rm -rf sql/jsonb
-  - rm -rf sql/function/flush/jsonb.sql
+  - if [ ${PG_VERSION} = "9.3" ]; then rm -rf sql/jsonb sql/function/flush/jsonb.sql; fi
   - make installcheck || (cat regression.diffs; false)
