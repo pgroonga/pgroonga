@@ -29,5 +29,6 @@ script:
     if [ ${PG_VERSION} = "9.3" ]; then
       rm -rf sql/jsonb
       rm -rf sql/function/flush/jsonb.sql
+      rm -rf sql/reindex/analyze.sql
     fi
   - make installcheck || (cat regression.diffs; false)
