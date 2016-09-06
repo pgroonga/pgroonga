@@ -55,6 +55,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 		desc = RelationGetDescr(index);
 		for (i = 0; i < desc->natts; i++)
 		{
+#ifdef JSONBOID
 			Form_pg_attribute attribute;
 
 			attribute = desc->attrs[i];
@@ -80,6 +81,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 								true);
 			}
 			else
+#endif
 			{
 				PGrnFlushObject(PGrnLookupLexicon(index, i, ERROR),
 								true);
