@@ -6,15 +6,20 @@ language: c
 matrix:
   include:
     - env: PG_VERSION=9.3
-      compiler:
-        - gcc
+      # compiler:
+      #   - gcc
       addons:
         postgresql: "9.3"
     - env: PG_VERSION=9.4
-      compiler:
-        - gcc
+      # compiler:
+      #   - gcc
       addons:
         postgresql: "9.4"
+    - env: PG_VERSION=9.5
+      # compiler:
+      #   - gcc
+      addons:
+        postgresql: "9.5"
 sudo: required
 # env:
 #   - GROONGA_MASTER=yes
