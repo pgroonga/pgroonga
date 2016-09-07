@@ -31,4 +31,6 @@ script:
       rm -rf sql/function/flush/jsonb.sql
       rm -rf sql/reindex/analyze.sql
     fi
-  - make installcheck || (cat regression.diffs; false)
+  - make installcheck
+after_failure:
+  - cat regression.diffs
