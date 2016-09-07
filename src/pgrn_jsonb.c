@@ -800,8 +800,6 @@ PGrnJSONBCreate(PGrnCreateData *data)
 	PGrnJSONBCreateTables(data, &jsonbData);
 	PGrnJSONBCreateDataColumns(&jsonbData);
 	PGrnJSONBCreateIndexColumns(data, &jsonbData);
-	data->forFullTextSearch = false;
-	data->forRegexpSearch = false;
 	data->attributeTypeID = grn_obj_id(ctx, jsonbData.valuesTable);
 	data->attributeFlags = GRN_OBJ_VECTOR;
 	PGrnCreateDataColumn(data);

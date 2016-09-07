@@ -834,6 +834,9 @@ PGrnCreate(Relation index,
 		attribute = data.desc->attrs[data.i];
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
+			data.forFullTextSearch = false;
+			data.forRegexpSearch = false;
+			data.forPrefixSerach = false;
 			PGrnJSONBCreate(&data);
 		}
 		else
