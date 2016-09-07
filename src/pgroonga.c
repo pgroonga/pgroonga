@@ -836,7 +836,7 @@ PGrnCreate(Relation index,
 		{
 			data.forFullTextSearch = false;
 			data.forRegexpSearch = false;
-			data.forPrefixSerach = false;
+			data.forPrefixSearch = false;
 			PGrnJSONBCreate(&data);
 		}
 		else
