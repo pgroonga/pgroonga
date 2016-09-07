@@ -30,9 +30,5 @@ script:
       rm -rf sql/jsonb
       rm -rf sql/function/flush/jsonb.sql
       rm -rf sql/reindex/analyze.sql
-    else
-      # TODO: Re-enable again
-      rm -rf sql/jsonb/full-text-search/disable.sql
-      rm -rf sql/function/flush/jsonb.sql
     fi
   - make installcheck || (cat regression.diffs; false)

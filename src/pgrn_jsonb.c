@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
 #include "pgrn_convert.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
@@ -9,7 +10,7 @@
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 #	include <utils/jsonb.h>
 #endif
 
@@ -17,11 +18,11 @@
 
 #include <xxhash.h>
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 PG_FUNCTION_INFO_V1(pgroonga_match_jsonb);
 #endif
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 typedef struct
 {
 	grn_obj *pathsTable;
@@ -618,7 +619,7 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 void
 PGrnInitializeJSONB(void)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBCreateData data;
 
 	tmpPathsTable = PGrnJSONBCreatePathsTable(NULL);
@@ -635,14 +636,14 @@ PGrnInitializeJSONB(void)
 void
 PGrnFinalizeJSONB(void)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	grn_obj_remove(ctx, tmpValuesTable);
 	grn_obj_remove(ctx, tmpTypesTable);
 	grn_obj_remove(ctx, tmpPathsTable);
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBCreateTables(PGrnCreateData *data,
 					  PGrnJSONBCreateData *jsonbData)
@@ -774,7 +775,7 @@ PGrnJSONBCreateIndexColumns(PGrnCreateData *data,
 bool
 PGrnAttributeIsJSONB(Oid id)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	return id == JSONBOID;
 #else
 	return false;
@@ -784,7 +785,7 @@ PGrnAttributeIsJSONB(Oid id)
 void
 PGrnJSONBCreate(PGrnCreateData *data)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBCreateData jsonbData;
 
 	if (data->desc->natts != 1)
@@ -807,7 +808,7 @@ PGrnJSONBCreate(PGrnCreateData *data)
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBValueSetSource(Relation index,
 						grn_obj *jsonValuesTable,
@@ -892,7 +893,7 @@ PGrnJSONBSetSources(Relation index,
 grn_obj *
 PGrnJSONBSetSource(Relation index, unsigned int i)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	grn_obj *jsonValuesTable;
 	grn_obj *indexColumn;
 
@@ -908,7 +909,7 @@ PGrnJSONBSetSource(Relation index, unsigned int i)
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBDeleteValues(grn_obj *valuesTable, grn_obj *valueIDs)
 {
@@ -995,7 +996,7 @@ PGrnJSONBInsert(Relation index,
 				unsigned int nthValue,
 				grn_obj *valueIDs)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBInsertData data;
 	Jsonb *jsonb;
 	JsonbIterator *iter;
@@ -1014,7 +1015,7 @@ PGrnJSONBInsert(Relation index,
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
 								  grn_obj *subFilter,
@@ -1216,7 +1217,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 							  ScanKey key,
 							  grn_obj *targetColumn)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	grn_obj *subFilter;
 
 	subFilter = PGrnLookup("sub_filter", ERROR);
@@ -1245,7 +1246,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONValuesUpdateDeletedID(grn_obj *jsonValuesTable,
 							  grn_obj *values,
@@ -1333,7 +1334,7 @@ PGrnJSONValuesDeleteBulk(grn_obj *jsonValuesTable,
 void
 PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	Relation index = data->index;
 	TupleDesc desc;
 	Form_pg_attribute attribute;
@@ -1366,7 +1367,7 @@ PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 void
 PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	if (!data->isJSONBAttribute)
 		return;
 
@@ -1385,7 +1386,7 @@ PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data)
 void
 PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 	if (!data->isJSONBAttribute)
 		return;
 
@@ -1401,7 +1402,7 @@ PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 #endif
 }
 
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 static bool
 PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 {
@@ -1416,7 +1417,7 @@ PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 void
 PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 {
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 		PGrnRemoveJSONValueLexicon("FullTextSearch", relationFileNodeID);
 		PGrnRemoveJSONValueLexicon("String", relationFileNodeID);
 		PGrnRemoveJSONValueLexicon("Number", relationFileNodeID);

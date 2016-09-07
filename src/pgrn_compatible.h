@@ -24,6 +24,10 @@
 #	define PGRN_SUPPORT_XLOG
 #endif
 
+#if PG_VERSION_NUM >= 90400
+#	define PGRN_SUPPORT_JSONB
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif

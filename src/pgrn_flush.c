@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_jsonb.h"
@@ -55,7 +56,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 		desc = RelationGetDescr(index);
 		for (i = 0; i < desc->natts; i++)
 		{
-#ifdef JSONBOID
+#ifdef PGRN_SUPPORT_JSONB
 			Form_pg_attribute attribute;
 
 			attribute = desc->attrs[i];
