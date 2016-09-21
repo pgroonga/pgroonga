@@ -3,7 +3,8 @@ clone_depth: 10
 build_script:
   - git submodule update --init
   - cd ..
-  - choco install -y curl 7zip.commandline
+  - choco install -y curl 7zip.commandline msys2
+  - bash -lc "pacman -Sy --needed --noconfirm diff"
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
   - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
   - cd pgroonga
@@ -27,8 +28,8 @@ notifications:
     on_build_status_changed: true
 
 test_script:
+  - mkdir results\array\varchar\single\match
   - ..\pgsql\bin\pg_regress
-      --inputdir=C:/projects/pgroonga
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
