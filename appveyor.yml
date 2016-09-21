@@ -1,9 +1,11 @@
 version: "{build}"
 clone_depth: 10
+install:
+  - SET PATH=C:\msys64\usr\bin;%PATH%
 build_script:
   - git submodule update --init
   - cd ..
-  - choco install -y curl 7zip.commandline msys2
+  - choco install -y curl 7zip.commandline
   - bash -lc "pacman -Sy --needed --noconfirm diff"
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
   - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
