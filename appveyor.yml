@@ -28,6 +28,7 @@ notifications:
 
 test_script:
   - ..\pgsql\bin\pg_regress
+      --inputdir=C:/projects/pgroonga
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
