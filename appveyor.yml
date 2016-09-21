@@ -35,4 +35,4 @@ test_script:
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
       array/varchar/single/match/seqscan ||
-    type regression.out
+    (SET RETURN_CODE=%ERRORLEVEL%; type regression.diffs; EXIT %RETURN_CODE%)
