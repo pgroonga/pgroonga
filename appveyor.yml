@@ -32,7 +32,7 @@ before_test:
       --encoding=UTF-8
       --no-locale
       ..\pgsql\data
-  - ..\pgsql\bin\pg_ctl start -D ..\pgsql\data
+  - ps: $PGProcess = Start-Process ..\pgsql\bin\postgres -D ..\pgsql\data
 test_script:
   - mkdir results\array\varchar\single\match
   - ..\pgsql\bin\pg_regress
@@ -41,4 +41,4 @@ test_script:
       array/varchar/single/match/seqscan ||
     (type regression.diffs & nonexistent_command)
 after_test:
-  - ..\pgsql\bin\pg_ctl stop -D ..\pgsql\data
+  - ps: Stop-Process -Id $PGProcess.Id
