@@ -27,11 +27,18 @@ notifications:
       - groonga-commit@lists.sourceforge.jp
     on_build_status_changed: true
 
+before_test:
+  - ..\pgsql\bin\initdb
+      --encoding=UTF-8
+      --no-locale
+      ..\pgsql\data
+  - ..\pgsql\bin\pg_ctl start -D ..\pgsql\data
 test_script:
   - mkdir results\array\varchar\single\match
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
-      --temp-instance=..\pgsql\test
       array/varchar/single/match/seqscan ||
     (type regression.diffs & nonexistent_command)
+after_test:
+  - ..\pgsql\bin\pg_ctl stop -D ..\pgsql\data
