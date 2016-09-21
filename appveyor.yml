@@ -30,4 +30,5 @@ test_script:
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
-      array/varchar/single/match/seqscan
+      --temp-instance=..\pgsql\test
+      array\varchar\single\match\seqscan
