@@ -31,4 +31,4 @@ test_script:
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
-      array\varchar\single\match\seqscan
+      array/varchar/single/match/seqscan
