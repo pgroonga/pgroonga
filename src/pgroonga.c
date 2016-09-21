@@ -216,6 +216,7 @@ PGrnGetEncoding(void)
 	case PG_EUC_JIS_2004:
 		return GRN_ENC_EUC_JP;
 	case PG_LATIN1:
+	case PG_WIN1252:
 		return GRN_ENC_LATIN1;
 	case PG_KOI8R:
 		return GRN_ENC_KOI8R;
