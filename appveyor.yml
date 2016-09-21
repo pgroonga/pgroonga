@@ -1,7 +1,7 @@
 version: "{build}"
 clone_depth: 10
 install:
-  - SET PATH=C:\msys64\usr\bin;%PATH%
+  - set PATH=C:\msys64\usr\bin;%PATH%
 build_script:
   - git submodule update --init
   - cd ..
