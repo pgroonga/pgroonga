@@ -24,7 +24,6 @@ build_script:
 notifications:
   - provider: Email
     to:
-      - kou@clear-code.com
       - groonga-commit@lists.sourceforge.jp
     on_build_status_changed: true
 
