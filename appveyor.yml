@@ -35,4 +35,5 @@ test_script:
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
       array/varchar/single/match/seqscan
+after_test:
   - type regression.out
