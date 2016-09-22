@@ -31,7 +31,7 @@ notifications:
 
 test_script:
   - mkdir results\array\varchar\single\match
-  - Set-Culture ja-JP
+  - ps: Set-Culture ja-JP
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
