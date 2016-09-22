@@ -13,7 +13,7 @@ build_script:
       --encoding=UTF-8
       --no-locale
       pgsql\data
-  - ps: $PGProcess = Start-Process pgsql\bin\postgres -D pgsql\data
+  - pgsql\bin\pg_ctl start -D pgsql\data
 
   - cd pgroonga
   - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.8.zip
@@ -43,4 +43,4 @@ test_script:
     (type regression.diffs & nonexistent_command)
 
 on_finish:
-  - ps: Stop-Process -Id $PGProcess.Id
+  - ..\pgsql\bin\pg_ctl stop -D ..\pgsql\data
