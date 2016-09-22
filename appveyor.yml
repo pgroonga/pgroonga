@@ -34,7 +34,6 @@ test_script:
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
       sed -e 's,\.sql$,,g' > schedule
-  - type schedule
   - ps: Set-Culture ja-JP
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
