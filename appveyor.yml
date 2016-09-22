@@ -32,7 +32,7 @@ notifications:
 test_script:
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
-      sed -e 's,^sql/,test: ,g' |
+      sed -e 's,^sql/,test:\ ,g' |
       sed -e 's,\.sql$,,g' > schedule
   - type schedule
   - ps: Set-Culture ja-JP
