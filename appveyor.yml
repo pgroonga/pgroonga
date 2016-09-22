@@ -9,11 +9,6 @@ build_script:
 
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
   - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
-  - pgsql\bin\initdb
-      --encoding=UTF-8
-      --no-locale
-      pgsql\data
-  - pgsql\bin\pg_ctl start -D pgsql\data
 
   - cd pgroonga
   - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.8.zip
@@ -36,11 +31,10 @@ notifications:
 
 test_script:
   - mkdir results\array\varchar\single\match
+  - Set-Culture ja-JP
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
+      --temp-instance=..\pgsql\test
       array/varchar/single/match/seqscan ||
     (type regression.diffs & nonexistent_command)
-
-on_finish:
-  - ..\pgsql\bin\pg_ctl stop -D ..\pgsql\data
