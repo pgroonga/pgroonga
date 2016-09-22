@@ -6,8 +6,15 @@ build_script:
   - git submodule update --init
   - cd ..
   - choco install -y curl 7zip.commandline
+
   - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
   - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
+  - pgsql\bin\initdb
+      --encoding=UTF-8
+      --no-locale
+      pgsql\data
+  - ps: $PGProcess = Start-Process pgsql\bin\postgres -D pgsql\data
+
   - cd pgroonga
   - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.8.zip
   - 7z x groonga-6.0.8.zip > nul
@@ -27,12 +34,6 @@ notifications:
       - groonga-commit@lists.sourceforge.jp
     on_build_status_changed: true
 
-before_test:
-  - ..\pgsql\bin\initdb
-      --encoding=UTF-8
-      --no-locale
-      ..\pgsql\data
-  - ps: $PGProcess = Start-Process ..\pgsql\bin\postgres -D ..\pgsql\data
 test_script:
   - mkdir results\array\varchar\single\match
   - ..\pgsql\bin\pg_regress
@@ -40,5 +41,6 @@ test_script:
       --load-extension=pgroonga
       array/varchar/single/match/seqscan ||
     (type regression.diffs & nonexistent_command)
-after_test:
+
+on_finish:
   - ps: Stop-Process -Id $PGProcess.Id
