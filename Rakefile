@@ -248,13 +248,17 @@ postgresql#{postgresql_package_version}-devel
               "6" => ["i386", "x86_64"],
               "7" => ["x86_64"],
             }
+            threads = []
             distribution_versions.each do |ver, archs|
               archs.each do |arch|
                 id = "#{distribution}-#{ver}-#{arch}"
-                sh("vagrant", "up", id)
-                sh("vagrant", "destroy", "--force", id)
+                threads << Thread.new do
+                  sh("vagrant", "up", id)
+                  sh("vagrant", "destroy", "--force", id)
+                end
               end
             end
+            threads.each(&:join)
           end
         end
       end
