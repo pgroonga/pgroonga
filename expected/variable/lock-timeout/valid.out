@@ -8,7 +8,7 @@ SELECT pgroonga.command('status')::json->0->0;
 SHOW pgroonga.lock_timeout;
  pgroonga.lock_timeout 
 -----------------------
- 10000000
+ 900000
 (1 row)
 
 SET pgroonga.lock_timeout = 1000;
@@ -22,6 +22,6 @@ SET pgroonga.lock_timeout = default;
 SHOW pgroonga.lock_timeout;
  pgroonga.lock_timeout 
 -----------------------
- 10000000
+ 900000
 (1 row)
 

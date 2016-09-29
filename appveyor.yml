@@ -8,27 +8,27 @@ build_script:
   - choco install -y curl 7zip.commandline
 
   # PostgreSQL
-  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.3-1-windows-x64-binaries.zip
-  - 7z x postgresql-9.5.3-1-windows-x64-binaries.zip > nul
+  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.4-1-windows-x64-binaries.zip
+  - 7z x postgresql-9.5.4-1-windows-x64-binaries.zip > nul
 
   - cd pgroonga
 
   # Groonga
   #   Released version:
-  # - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.8.zip
-  # - 7z x groonga-6.0.8.zip > nul
-  # - mv groonga-6.0.8 vendor\groonga
+  - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.9.zip
+  - 7z x groonga-6.0.9.zip > nul
+  - mv groonga-6.0.9 vendor\groonga
   #   Unreleased version:
-  - git clone --depth 1
-      https://github.com/groonga/groonga.git
-      vendor\groonga
-  - cd vendor\groonga
-  - git submodule update --init
-  - cd vendor
-  - ruby download_mecab.rb
-  - ruby download_message_pack.rb
-  - ruby download_lz4.rb
-  - cd ..\..\..
+  # - git clone --depth 1
+  #     https://github.com/groonga/groonga.git
+  #     vendor\groonga
+  # - cd vendor\groonga
+  # - git submodule update --init
+  # - cd vendor
+  # - ruby download_mecab.rb
+  # - ruby download_message_pack.rb
+  # - ruby download_lz4.rb
+  # - cd ..\..\..
 
   - cmake . -G "Visual Studio 12 2013 Win64"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
