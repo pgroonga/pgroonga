@@ -32,6 +32,8 @@ build_script:
 
   - cmake . -G "Visual Studio 12 2013 Win64"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
+      # TODO: Remove the following when Groonga 6.1.0 is released.
+      -DGRN_LOCK_TIMEOUT=900000
       -DGRN_WITH_MRUBY=yes
       -DGRN_WITH_BUNDLED_MECAB=yes
       -DGRN_WITH_BUNDLED_LZ4=yes
