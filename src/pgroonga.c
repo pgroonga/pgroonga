@@ -3338,7 +3338,19 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL)
 	{
-		grn_table_delete_by_id(ctx, so->sourcesTable, so->currentID);
+		grn_id recordID = so->currentID;
+		if (so->sorted)
+		{
+			GRN_BULK_REWIND(&(buffers->general));
+			grn_obj_get_value(ctx, so->sorted, recordID, &(buffers->general));
+			recordID = GRN_RECORD_VALUE(&(buffers->general));
+		}
+		if (so->searched)
+		{
+			grn_table_get_key(ctx, so->searched, recordID,
+							  &recordID, sizeof(grn_id));
+		}
+		grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
 	}
 
 	if (so->indexCursor)
