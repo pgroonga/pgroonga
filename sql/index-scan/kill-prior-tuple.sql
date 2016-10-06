@@ -34,3 +34,5 @@ UPDATE ids SET memo = 'b' WHERE id = 10;
 UPDATE ids SET memo = 'b' WHERE id = 5;
 UPDATE ids SET memo = 'b' WHERE id = 6;
 SELECT * FROM ids WHERE 2 <= id and memo @@ 'a';
+
+DROP TABLE ids;

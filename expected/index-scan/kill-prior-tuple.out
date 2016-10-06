@@ -50,3 +50,4 @@ SELECT * FROM ids WHERE 2 <= id and memo @@ 'a';
  110 | a
 (16 rows)
 
+DROP TABLE ids;
