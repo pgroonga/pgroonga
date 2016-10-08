@@ -1787,7 +1787,7 @@ pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched;
+	grn_bool matched = GRN_FALSE;
 	int i, n;
 
 	n = ARR_DIMS(keywords)[0];
@@ -1821,7 +1821,7 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched;
+	grn_bool matched = GRN_FALSE;
 	int i, n;
 
 	n = ARR_DIMS(queries)[0];
