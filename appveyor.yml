@@ -1,5 +1,9 @@
 version: "{build}"
 clone_depth: 10
+environment:
+  global:
+    - POSTGRESQL_VERSION: 9.6.0-1
+    - GROONGA_VERSION: 6.0.9
 install:
   - set PATH=C:\msys64\usr\bin;%PATH%
 build_script:
@@ -8,16 +12,16 @@ build_script:
   - choco install -y curl 7zip.commandline
 
   # PostgreSQL
-  - curl -O http://get.enterprisedb.com/postgresql/postgresql-9.5.4-1-windows-x64-binaries.zip
-  - 7z x postgresql-9.5.4-1-windows-x64-binaries.zip > nul
+  - curl -O http://get.enterprisedb.com/postgresql/postgresql-%POSTGRESQL_VERSION%-windows-x64-binaries.zip
+  - 7z x postgresql-%POSTGRESQL_VERSION%-windows-x64-binaries.zip > nul
 
   - cd pgroonga
 
   # Groonga
   #   Released version:
-  - curl -O http://packages.groonga.org/source/groonga/groonga-6.0.9.zip
-  - 7z x groonga-6.0.9.zip > nul
-  - mv groonga-6.0.9 vendor\groonga
+  - curl -O http://packages.groonga.org/source/groonga/groonga-%GROONGA_VERSION%.zip
+  - 7z x groonga-%GROONGA_VERSION%.zip > nul
+  - mv groonga-%GROONGA_VERSION% vendor\groonga
   #   Unreleased version:
   # - git clone --depth 1
   #     https://github.com/groonga/groonga.git
