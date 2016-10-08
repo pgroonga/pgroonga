@@ -251,6 +251,7 @@ postgresql#{postgresql_package_version}-devel
             }
             threads = []
             distribution_versions.each do |ver, archs|
+              next if postgresql_package_version == "96" and ver == "5"
               archs.each do |arch|
                 id = "#{distribution}-#{ver}-#{arch}"
                 threads << Thread.new do
