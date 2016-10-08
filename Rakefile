@@ -4,7 +4,7 @@ require "open-uri"
 require "octokit"
 
 latest_groonga_version = "6.0.9"
-windows_postgresql_version = "9.5.4-1"
+windows_postgresql_version = "9.6.0-1"
 
 package = "pgroonga"
 package_label = "PGroonga"
@@ -187,6 +187,7 @@ namespace :package do
     postgresql_package_versions = [
       "94",
       "95",
+      "96",
     ]
     namespace :build do
       postgresql_package_versions.each do |postgresql_package_version|
