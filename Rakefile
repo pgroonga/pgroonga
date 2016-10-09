@@ -4,7 +4,10 @@ require "open-uri"
 require "octokit"
 
 latest_groonga_version = "6.0.9"
-windows_postgresql_version = "9.6.0-1"
+windows_postgresql_versions = [
+  "9.5.4-1",
+  "9.6.0-1",
+]
 
 package = "pgroonga"
 package_label = "PGroonga"
@@ -476,6 +479,7 @@ postgresql-server-dev-9.4
 
     windows_architectures = ["x86", "x64"]
     windows_packages = []
+    windows_postgresql_versions.each do |windows_postgresql_version|
     windows_architectures.each do |arch|
       windows_package =
         "pgroonga-#{version}-postgresql-#{windows_postgresql_version}-#{arch}.zip"
@@ -527,6 +531,7 @@ postgresql-server-dev-9.4
           mv(windows_package, "..")
         end
       end
+    end
     end
 
     desc "Build packages"
