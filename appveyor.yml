@@ -1,9 +1,8 @@
 version: "{build}"
 clone_depth: 10
 environment:
-  global:
-    - POSTGRESQL_VERSION: 9.6.0-1
-    - GROONGA_VERSION: 6.0.9
+  - POSTGRESQL_VERSION: 9.6.0-1
+  - GROONGA_VERSION: 6.0.9
 install:
   - set PATH=C:\msys64\usr\bin;%PATH%
 build_script:
