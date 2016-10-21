@@ -2163,12 +2163,12 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
 	if (so->sorted)
 	{
-		grn_obj_unlink(ctx, so->sorted);
+		grn_obj_close(ctx, so->sorted);
 		so->sorted = NULL;
 	}
 	if (so->searched)
 	{
-		grn_obj_unlink(ctx, so->searched);
+		grn_obj_close(ctx, so->searched);
 		so->searched = NULL;
 	}
 }
