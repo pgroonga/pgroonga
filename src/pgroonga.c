@@ -1041,6 +1041,8 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 		grn_obj_unlink(ctx, tableCursor);
 	}
 
+	grn_obj_close(ctx, records);
+
 	return score;
 }
 
