@@ -257,9 +257,9 @@ postgresql#{postgresql_package_version}-devel
               next if postgresql_package_version == "96" and ver == "5"
               archs.each do |arch|
                 id = "#{distribution}-#{ver}-#{arch}"
-                threads << Thread.new do
-                  sh("vagrant", "up", id)
-                  sh("vagrant", "destroy", "--force", id)
+                threads << Thread.new(id) do |local_id|
+                  sh("vagrant", "up", local_id)
+                  sh("vagrant", "destroy", "--force", local_id)
                 end
               end
             end
