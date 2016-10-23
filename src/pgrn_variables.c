@@ -4,6 +4,7 @@
 #include "pgrn_global.h"
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
+#include "pgrn_xlog.h"
 
 #include <utils/guc.h>
 
@@ -46,6 +47,7 @@ static struct config_enum_entry PGrnLogLevelEntries[] = {
 #endif
 
 static int PGrnLockTimeout;
+static bool PGrnEnableWAL;
 
 #ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
@@ -157,6 +159,19 @@ PGrnLockTimeoutAssign(int new_value, void *extra)
 }
 #endif
 
+static void
+PGrnEnableWALAssign(bool new_value, void *extra)
+{
+	if (new_value)
+	{
+		PGrnXLogEnable();
+	}
+	else
+	{
+		PGrnXLogDisable();
+	}
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -210,9 +225,9 @@ PGrnInitializeVariables(void)
 								"Try pgroonga.lock_timeout times "
 								"at 1 msec intervals to "
 								"get write lock in PGroonga.",
-								"The default is 10000000. "
+								"The default is 900000. "
 								"It means that PGroonga tries to get write lock "
-								"between about 2.7 hours.",
+								"between about 15 minutes.",
 								&PGrnLockTimeout,
 								grn_get_lock_timeout(),
 								0,
@@ -222,6 +237,18 @@ PGrnInitializeVariables(void)
 								NULL,
 								PGrnLockTimeoutAssign,
 								NULL);
+
+	DefineCustomBoolVariable("pgroonga.enable_wal",
+							 "Enable WAL. (experimental)",
+							 "It requires PostgreSQL 9.6 or later. "
+							 "It's an experimental feature.",
+							 &PGrnEnableWAL,
+							 PGrnXLogGetEnabled(),
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnEnableWALAssign,
+							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

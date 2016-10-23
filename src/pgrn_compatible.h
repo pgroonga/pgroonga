@@ -20,7 +20,7 @@
 #	define PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #endif
 
-#if PG_VERSION_NUM >= 90600
+#if PG_VERSION_NUM >= 90600 && defined(PGRN_HAVE_MSGPACK)
 #	define PGRN_SUPPORT_XLOG
 #endif
 

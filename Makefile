@@ -1,5 +1,9 @@
 REQUIRED_GROONGA_VERSION = 5.1.2
 GROONGA_PKG = "groonga >= $(REQUIRED_GROONGA_VERSION)"
+PACKAGES = $(GROONGA_PKG)
+ifdef HAVE_MSGPACK
+PACKAGES += msgpack
+endif
 
 MODULE_big = pgroonga
 include sources.am
@@ -17,15 +21,18 @@ DATA =						\
 	$(shell echo pgroonga--*--*.sql)
 endif
 
-PG_CPPFLAGS = $(shell pkg-config --cflags $(GROONGA_PKG))
-SHLIB_LINK = $(shell pkg-config --libs $(GROONGA_PKG)) -lm
+PG_CPPFLAGS = $(shell pkg-config --cflags $(PACKAGES))
+SHLIB_LINK = $(shell pkg-config --libs $(PACKAGES)) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
 COPT += -Ivendor/xxHash
+ifdef HAVE_MSGPACK
+COPT += -DPGRN_HAVE_MSGPACK
+endif
 ifdef DEBUG
 COPT += -O0 -g3 -DPGROONGA_DEBUG=1
-SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L $(GROONGA_PKG) | sed -e 's/^-L//')
+SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L $(PACKAGES) | sed -e 's/^-L//')
 endif
 
 PG_CONFIG = pg_config
