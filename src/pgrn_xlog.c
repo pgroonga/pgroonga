@@ -5,11 +5,6 @@
 #include "pgrn_global.h"
 #include "pgrn_xlog.h"
 
-#include <storage/bufmgr.h>
-#include <storage/bufpage.h>
-#include <storage/lmgr.h>
-#include <storage/lockdefs.h>
-
 static bool PGrnXLogEnabled = false;
 
 bool
@@ -32,6 +27,11 @@ PGrnXLogDisable(void)
 
 #ifdef PGRN_SUPPORT_XLOG
 #	include <access/generic_xlog.h>
+#	include <storage/bufmgr.h>
+#	include <storage/bufpage.h>
+#	include <storage/lmgr.h>
+#	include <storage/lockdefs.h>
+
 #	include <msgpack.h>
 #endif
 
