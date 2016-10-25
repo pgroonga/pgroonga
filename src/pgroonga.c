@@ -955,7 +955,7 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 
 	records = grn_table_create(ctx, NULL, 0, NULL,
 							   GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-							   so->sourcesTable, 0);
+							   so->sourcesTable, NULL);
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable, expression, variable);
 
 	slist_foreach(iter, &(so->primaryKeyColumns))
