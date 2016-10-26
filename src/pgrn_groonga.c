@@ -81,11 +81,20 @@ PGrnLookup(const char *name, int errorLevel)
 grn_obj *
 PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
 {
+	return PGrnLookupColumnWithSize(table, name, strlen(name), errorLevel);
+}
+
+grn_obj *
+PGrnLookupColumnWithSize(grn_obj *table,
+						 const char *name,
+						 size_t nameSize,
+						 int errorLevel)
+{
 	char columnName[GRN_TABLE_MAX_KEY_SIZE];
 	size_t columnNameSize;
 	grn_obj *column;
 
-	columnNameSize = PGrnColumnNameEncode(name, columnName);
+	columnNameSize = PGrnColumnNameEncodeWithSize(name, nameSize, columnName);
 	column = grn_obj_column(ctx, table, columnName, columnNameSize);
 	if (!column)
 	{
@@ -95,9 +104,9 @@ PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
 		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
 		ereport(errorLevel,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: column isn't found: <%.*s>:<%s>",
+				 errmsg("pgroonga: column isn't found: <%.*s>:<%.*s>",
 						tableNameSize, tableName,
-						name)));
+						(int)nameSize, name)));
 	}
 
 	return column;

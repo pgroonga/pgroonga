@@ -41,15 +41,19 @@ checkSize(size_t size)
 }
 
 static size_t
-PGrnColumnNameEncodeUTF8(const char *name, char *encodedName)
+PGrnColumnNameEncodeUTF8WithSize(const char *name,
+								 size_t nameSize,
+								 char *encodedName)
 {
 	const char *current;
+	const char *end;
 	char *encodedCurrent;
 	size_t encodedNameSize = 0;
 
 	current = name;
+	end = name + nameSize;
 	encodedCurrent = encodedName;
-	while (*current != '\0')
+	while (current < end)
 	{
 		int length;
 
@@ -82,16 +86,26 @@ PGrnColumnNameEncodeUTF8(const char *name, char *encodedName)
 size_t
 PGrnColumnNameEncode(const char *name, char *encodedName)
 {
+	return PGrnColumnNameEncodeWithSize(name, strlen(name), encodedName);
+}
+
+size_t
+PGrnColumnNameEncodeWithSize(const char *name,
+							 size_t nameSize,
+							 char *encodedName)
+{
 	const char *current;
+	const char *end;
 	char *encodedCurrent;
 	size_t encodedNameSize = 0;
 
 	if (GetDatabaseEncoding() == PG_UTF8)
-		return PGrnColumnNameEncodeUTF8(name, encodedName);
+		return PGrnColumnNameEncodeUTF8WithSize(name, nameSize, encodedName);
 
 	current = name;
+	end = name + nameSize;
 	encodedCurrent = encodedName;
-	while (*current != '\0')
+	while (current < end)
 	{
 		int length;
 

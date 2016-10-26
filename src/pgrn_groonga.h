@@ -16,6 +16,10 @@ grn_bool PGrnCheck(const char *message);
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel);
+grn_obj *PGrnLookupColumnWithSize(grn_obj *table,
+								  const char *name,
+								  size_t nameSize,
+								  int errorLevel);
 grn_obj *PGrnLookupSourcesTable(Relation index, int errorLevel);
 grn_obj *PGrnLookupSourcesCtidColumn(Relation index, int errorLevel);
 grn_obj *PGrnLookupLexicon(Relation index,
