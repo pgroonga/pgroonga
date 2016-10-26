@@ -3987,6 +3987,7 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 	ListCell *cell;
 
 	index = RelationIdGetRelation(indexInfo->indexoid);
+	PGrnXLogApply(index);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
 	foreach(cell, path->indexquals)

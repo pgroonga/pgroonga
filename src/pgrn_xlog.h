@@ -22,3 +22,5 @@ void PGrnXLogInsertColumnFinish(PGrnXLogData *data);
 void PGrnXLogInsertColumn(PGrnXLogData *data,
 						  const char *name,
 						  grn_obj *value);
+
+void PGrnXLogApply(Relation index);
