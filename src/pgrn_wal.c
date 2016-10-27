@@ -43,9 +43,9 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 #ifdef PGRN_SUPPORT_WAL
 typedef enum {
-	PGRN_WAL_ACTION_RECORD_ADD,
-	PGRN_WAL_ACTION_TABLE_CREATE,
-	PGRN_WAL_ACTION_COLUMN_CREATE
+	PGRN_WAL_ACTION_INSERT,
+	PGRN_WAL_ACTION_CREATE_TABLE,
+	PGRN_WAL_ACTION_CREATE_COLUMN
 } PGrnWALAction;
 
 typedef struct {
@@ -583,9 +583,9 @@ PGrnWALApplyKeyEqual(msgpack_object *key, const char *name)
 }
 
 static void
-PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
-					  msgpack_object_map *map,
-					  uint32_t currentElement)
+PGrnWALApplyInsert(PGrnWALApplyData *data,
+				   msgpack_object_map *map,
+				   uint32_t currentElement)
 {
 	grn_obj *table = data->sources;
 	const char *key = NULL;
@@ -604,7 +604,7 @@ PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: WAL: apply: record: add: "
+						 errmsg("pgroonga: WAL: apply: insert: "
 								"_table value must be string: "
 								"<%#x>",
 								kv->val.type)));
@@ -627,7 +627,7 @@ PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: WAL: apply: record: add: "
+						 errmsg("pgroonga: WAL: apply: insert: "
 								"_key value must be binary: "
 								"<%#x>",
 								kv->val.type)));
@@ -652,7 +652,7 @@ PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: record: add: "
+					 errmsg("pgroonga: WAL: apply: insert: "
 							"key must be map: <%#x>",
 							key->type)));
 		}
@@ -698,7 +698,7 @@ PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: record: add: "
+					 errmsg("pgroonga: WAL: apply: insert: "
 							"unexpected value type: <%#x>",
 							value->type)));
 			break;
@@ -708,7 +708,7 @@ PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
 }
 
 static void
-PGrnWALApplyTableCreate(PGrnWALApplyData *data,
+PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 						msgpack_object_map *map,
 						uint32_t currentElement)
 {
@@ -716,7 +716,7 @@ PGrnWALApplyTableCreate(PGrnWALApplyData *data,
 }
 
 static void
-PGrnWALApplyColumnCreate(PGrnWALApplyData *data,
+PGrnWALApplyCreateColumn(PGrnWALApplyData *data,
 						 msgpack_object_map *map,
 						 uint32_t currentElement)
 {
@@ -728,7 +728,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	msgpack_object_map *map;
 	uint32_t currentElement = 0;
-	PGrnWALAction action = PGRN_WAL_ACTION_RECORD_ADD;
+	PGrnWALAction action = PGRN_WAL_ACTION_INSERT;
 
 	if (object->type != MSGPACK_OBJECT_MAP)
 	{
@@ -766,14 +766,14 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 
 	switch (action)
 	{
-	case PGRN_WAL_ACTION_RECORD_ADD:
-		PGrnWALApplyRecordAdd(data, map, currentElement);
+	case PGRN_WAL_ACTION_INSERT:
+		PGrnWALApplyInsert(data, map, currentElement);
 		break;
-	case PGRN_WAL_ACTION_TABLE_CREATE:
-		PGrnWALApplyTableCreate(data, map, currentElement);
+	case PGRN_WAL_ACTION_CREATE_TABLE:
+		PGrnWALApplyCreateTable(data, map, currentElement);
 		break;
-	case PGRN_WAL_ACTION_COLUMN_CREATE:
-		PGrnWALApplyColumnCreate(data, map, currentElement);
+	case PGRN_WAL_ACTION_CREATE_COLUMN:
+		PGrnWALApplyCreateColumn(data, map, currentElement);
 		break;
 	default:
 		ereport(ERROR,
