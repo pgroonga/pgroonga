@@ -33,11 +33,11 @@ grn_obj *PGrnLookupIndexColumn(Relation index,
 							   int errorLevel);
 
 grn_obj *PGrnCreateTable(const char *name,
-						 grn_obj_flags flags,
+						 grn_table_flags flags,
 						 grn_obj *type);
 grn_obj *PGrnCreateColumn(grn_obj *table,
 						  const char*name,
-						  grn_obj_flags flags,
+						  grn_column_flags flags,
 						  grn_obj *type);
 
 void PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source);
