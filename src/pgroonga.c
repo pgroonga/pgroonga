@@ -877,6 +877,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 
 		source = PGrnLookupColumn(sourcesTable, name->data, ERROR);
 		PGrnIndexColumnSetSource(indexColumn, source);
+		PGrnWALSetSource(index, indexColumn, source);
 		grn_obj_unlink(ctx, source);
 		grn_obj_unlink(ctx, indexColumn);
 	}

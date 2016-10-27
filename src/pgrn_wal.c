@@ -45,7 +45,8 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 typedef enum {
 	PGRN_WAL_ACTION_INSERT,
 	PGRN_WAL_ACTION_CREATE_TABLE,
-	PGRN_WAL_ACTION_CREATE_COLUMN
+	PGRN_WAL_ACTION_CREATE_COLUMN,
+	PGRN_WAL_ACTION_SET_SOURCES
 } PGrnWALAction;
 
 typedef struct {
@@ -94,10 +95,37 @@ struct PGrnWALData_
 #define PGRN_WAL_STATUES_TABLE_NAME_SIZE strlen(PGRN_WAL_STATUES_TABLE_NAME)
 #define PGRN_WAL_STATUES_CURRENT_COLUMN_NAME "current"
 
+#ifdef PGRN_SUPPORT_WAL
+static void
+msgpack_pack_cstr(msgpack_packer *packer, const char *string)
+{
+	size_t size;
+
+	size = strlen(string);
+	msgpack_pack_str(packer, size);
+	msgpack_pack_str_body(packer, string, size);
+}
+
+static void
+msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
+{
+	if (object)
+	{
+		char name[GRN_TABLE_MAX_KEY_SIZE];
+		int nameSize;
+		nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+		msgpack_pack_str(packer, nameSize);
+		msgpack_pack_str_body(packer, name, nameSize);
+	}
+	else
+	{
+		msgpack_pack_nil(packer);
+	}
+}
+
 static void
 PGrnWALEnsureStatusesTable(void)
 {
-#ifdef PGRN_SUPPORT_WAL
 	grn_obj *walStatuses;
 
 	walStatuses = grn_ctx_get(ctx,
@@ -113,10 +141,8 @@ PGrnWALEnsureStatusesTable(void)
 					 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
 					 GRN_OBJ_COLUMN_SCALAR,
 					 grn_ctx_at(ctx, GRN_DB_UINT64));
-#endif
 }
 
-#ifdef PGRN_SUPPORT_WAL
 static uint64_t
 PGrnWALPackPosition(BlockNumber block, OffsetNumber offset)
 {
@@ -507,6 +533,162 @@ PGrnWALInsertColumn(PGrnWALData *data,
 #endif
 }
 
+void
+PGrnWALCreateTable(Relation index,
+				   const char *name,
+				   grn_obj_flags flags,
+				   grn_obj *type,
+				   grn_obj *tokenizer,
+				   grn_obj *normalizer)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 6;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_CREATE_TABLE);
+
+	msgpack_pack_cstr(packer, "name");
+	msgpack_pack_cstr(packer, name);
+
+	msgpack_pack_cstr(packer, "flags");
+	msgpack_pack_uint32(packer, flags);
+
+	msgpack_pack_cstr(packer, "type");
+	msgpack_pack_grn_obj(packer, type);
+
+	msgpack_pack_cstr(packer, "tokenizer");
+	msgpack_pack_grn_obj(packer, tokenizer);
+
+	msgpack_pack_cstr(packer, "normalizer");
+	msgpack_pack_grn_obj(packer, normalizer);
+
+	PGrnWALFinish(data);
+#endif
+}
+
+void
+PGrnWALCreateColumn(Relation index,
+					grn_obj *table,
+					const char *name,
+					grn_obj_flags flags,
+					grn_obj *type)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 5;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_CREATE_COLUMN);
+
+	msgpack_pack_cstr(packer, "table");
+	msgpack_pack_grn_obj(packer, table);
+
+	msgpack_pack_cstr(packer, "name");
+	msgpack_pack_cstr(packer, name);
+
+	msgpack_pack_cstr(packer, "flags");
+	msgpack_pack_uint32(packer, flags);
+
+	msgpack_pack_cstr(packer, "type");
+	msgpack_pack_grn_obj(packer, type);
+
+	PGrnWALFinish(data);
+#endif
+}
+
+void
+PGrnWALSetSource(Relation index,
+				 grn_obj *column,
+				 grn_obj *source)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 3;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_SET_SOURCES);
+
+	msgpack_pack_cstr(packer, "column");
+	msgpack_pack_grn_obj(packer, column);
+
+	msgpack_pack_cstr(packer, "sources");
+	msgpack_pack_array(packer, 1);
+	msgpack_pack_grn_obj(packer, source);
+
+	PGrnWALFinish(data);
+#endif
+}
+
+void
+PGrnWALSetSources(Relation index,
+				  grn_obj *column,
+				  grn_obj *sources)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 3;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_SET_SOURCES);
+
+	msgpack_pack_cstr(packer, "column");
+	msgpack_pack_grn_obj(packer, column);
+
+	msgpack_pack_cstr(packer, "sources");
+	{
+		unsigned int i, nElements;
+
+		nElements = GRN_BULK_VSIZE(sources) / sizeof(grn_id);
+		msgpack_pack_array(packer, nElements);
+		for (i = 0; i < nElements; i++)
+		{
+			grn_obj *source;
+			source = grn_ctx_at(ctx, GRN_RECORD_VALUE_AT(sources, i));
+			msgpack_pack_grn_obj(packer, source);
+		}
+	}
+
+	PGrnWALFinish(data);
+#endif
+}
+
 #ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	Relation index;
@@ -587,7 +769,7 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 				   msgpack_object_map *map,
 				   uint32_t currentElement)
 {
-	grn_obj *table = data->sources;
+	grn_obj *table = NULL;
 	const char *key = NULL;
 	size_t keySize = 0;
 	grn_id id;
@@ -614,6 +796,12 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 									   ERROR);
 			currentElement++;
 		}
+	}
+	if (!table)
+	{
+		if (!data->sources)
+			data->sources = PGrnLookupSourcesTable(data->index, ERROR);
+		table = data->sources;
 	}
 
 	if (currentElement < map->size)
@@ -724,6 +912,14 @@ PGrnWALApplyCreateColumn(PGrnWALApplyData *data,
 }
 
 static void
+PGrnWALApplySetSources(PGrnWALApplyData *data,
+					   msgpack_object_map *map,
+					   uint32_t currentElement)
+{
+	/* TODO */
+}
+
+static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	msgpack_object_map *map;
@@ -775,6 +971,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 	case PGRN_WAL_ACTION_CREATE_COLUMN:
 		PGrnWALApplyCreateColumn(data, map, currentElement);
 		break;
+	case PGRN_WAL_ACTION_SET_SOURCES:
+		PGrnWALApplySetSources(data, map, currentElement);
+		break;
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -793,8 +992,6 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	BlockNumber lastBlock = data->current.block;
 	OffsetNumber lastOffset = data->current.offset;
 
-	data->sources = PGrnLookupSourcesTable(data->index, ERROR);
-
 	msgpack_unpacker_init(&unpacker, PGRN_PAGE_DATA_SIZE);
 	msgpack_unpacked_init(&unpacked);
 	nBlocks = RelationGetNumberOfBlocks(data->index);
@@ -804,6 +1001,9 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		Page page;
 		PGrnPageSpecial *pageSpecial;
 		size_t dataSize;
+
+		if (i == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
+			continue;
 
 		buffer = ReadBuffer(data->index, i);
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);

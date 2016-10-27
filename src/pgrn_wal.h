@@ -23,4 +23,24 @@ void PGrnWALInsertColumn(PGrnWALData *data,
 						  const char *name,
 						  grn_obj *value);
 
+void PGrnWALCreateTable(Relation index,
+						const char *name,
+						grn_obj_flags flags,
+						grn_obj *type,
+						grn_obj *tokenizer,
+						grn_obj *normalizer);
+
+void PGrnWALCreateColumn(Relation index,
+						 grn_obj *table,
+						 const char *name,
+						 grn_obj_flags flags,
+						 grn_obj *type);
+
+void PGrnWALSetSource(Relation index,
+					  grn_obj *column,
+					  grn_obj *source);
+void PGrnWALSetSources(Relation index,
+					   grn_obj *column,
+					   grn_obj *sources);
+
 void PGrnWALApply(Relation index);
