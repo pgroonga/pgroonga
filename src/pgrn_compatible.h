@@ -21,7 +21,7 @@
 #endif
 
 #if PG_VERSION_NUM >= 90600 && defined(PGRN_HAVE_MSGPACK)
-#	define PGRN_SUPPORT_XLOG
+#	define PGRN_SUPPORT_WAL
 #endif
 
 #if PG_VERSION_NUM >= 90400

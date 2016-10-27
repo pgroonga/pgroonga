@@ -7,7 +7,7 @@
 #include "pgrn_jsonb.h"
 #include "pgrn_options.h"
 #include "pgrn_value.h"
-#include "pgrn_xlog.h"
+#include "pgrn_wal.h"
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
@@ -43,7 +43,7 @@ typedef struct PGrnJSONBInsertData
 	grn_obj *sizeColumn;
 	grn_obj *typeColumn;
 	grn_obj *valueIDs;
-	PGrnXLogData *xlogData;
+	PGrnWALData *walData;
 	grn_obj key;
 	grn_obj components;
 	grn_obj path;
@@ -493,13 +493,13 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	PGrnJSONGenerateCompletePath(&(data->components), &(data->path));
 	if (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE)
 	{
-		/* TODO: XLog */
+		/* TODO: WAL */
 		grn_obj_set_value(ctx, data->pathColumn, valueID,
 						  &(data->path), GRN_OBJ_SET);
 	}
 
 	PGrnJSONBInsertGeneratePaths(data);
-	/* TODO: XLog */
+	/* TODO: WAL */
 	grn_obj_set_value(ctx, data->pathsColumn, valueID,
 					  &(data->pathIDs), GRN_OBJ_SET);
 
@@ -507,7 +507,7 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 		grn_obj_set_value(ctx, column, valueID, &(data->value), GRN_OBJ_SET);
 
 	GRN_TEXT_SETS(ctx, &(data->type), typeName);
-	/* TODO: XLog */
+	/* TODO: WAL */
 	grn_obj_set_value(ctx, data->typeColumn, valueID,
 					  &(data->type), GRN_OBJ_SET);
 }
@@ -949,7 +949,7 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 	data.valuesTable = tmpValuesTable;
 	GRN_PTR_INIT(&valueIDs, GRN_OBJ_VECTOR, grn_obj_id(ctx, data.valuesTable));
 	data.valueIDs = &valueIDs;
-	data.xlogData = NULL;
+	data.walData = NULL;
 	PGrnJSONBInsertDataInit(&data);
 	iter = JsonbIteratorInit(&(jsonb->root));
 	PGrnJSONBInsertContainer(&iter, &data);
@@ -1001,7 +1001,7 @@ PGrnJSONBInsert(Relation index,
 				Datum *values,
 				unsigned int nthValue,
 				grn_obj *valueIDs,
-				PGrnXLogData *xlogData)
+				PGrnWALData *walData)
 {
 #ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBInsertData data;
@@ -1011,7 +1011,7 @@ PGrnJSONBInsert(Relation index,
 	data.pathsTable  = PGrnJSONBLookupPathsTable(index, nthValue, ERROR);
 	data.valuesTable = PGrnJSONBLookupValuesTable(index, nthValue, ERROR);
 	data.valueIDs = valueIDs;
-	data.xlogData = xlogData;
+	data.walData = walData;
 	grn_obj_reinit(ctx, data.valueIDs,
 				   grn_obj_id(ctx, data.valuesTable),
 				   GRN_OBJ_VECTOR);

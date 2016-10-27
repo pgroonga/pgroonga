@@ -16,7 +16,7 @@
 #include "pgrn_search.h"
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
-#include "pgrn_xlog.h"
+#include "pgrn_wal.h"
 
 #ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #	include <access/amapi.h>
@@ -1930,17 +1930,17 @@ PGrnInsert(Relation index,
 {
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
-	PGrnXLogData *xlogData;
+	PGrnWALData *walData;
 	unsigned int i;
 
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 
-	xlogData = PGrnXLogStart(index);
-	PGrnXLogInsertStart(xlogData, desc->natts + 1);
+	walData = PGrnWALStart(index);
+	PGrnWALInsertStart(walData, desc->natts + 1);
 
 	GRN_UINT64_SET(ctx, &(buffers->ctid), CtidToUInt64(ht_ctid));
 	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
-	PGrnXLogInsertColumn(xlogData, "ctid", &(buffers->ctid));
+	PGrnWALInsertColumn(walData, "ctid", &(buffers->ctid));
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -1960,11 +1960,11 @@ PGrnInsert(Relation index,
 		buffer = &(buffers->general);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
-			/* PGrnXLogInsertColumnStart(xlogData, name->data); */
-			PGrnJSONBInsert(index, values, i, buffer, xlogData);
+			/* PGrnWALInsertColumnStart(walData, name->data); */
+			PGrnJSONBInsert(index, values, i, buffer, walData);
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			/* PGrnXLogInsertColumnFinish(xlogData); */
-			PGrnXLogInsertColumn(xlogData, name->data, buffer);
+			/* PGrnWALInsertColumnFinish(walData); */
+			PGrnWALInsertColumn(walData, name->data, buffer);
 		}
 		else
 		{
@@ -1972,7 +1972,7 @@ PGrnInsert(Relation index,
 			grn_obj_reinit(ctx, &(buffers->general), domain, flags);
 			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			PGrnXLogInsertColumn(xlogData, name->data, buffer);
+			PGrnWALInsertColumn(walData, name->data, buffer);
 		}
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("pgroonga: failed to set column value")) {
@@ -1980,8 +1980,8 @@ PGrnInsert(Relation index,
 		}
 	}
 
-	PGrnXLogInsertFinish(xlogData);
-	PGrnXLogFinish(xlogData);
+	PGrnWALInsertFinish(walData);
+	PGrnWALFinish(walData);
 }
 
 static bool
@@ -3987,7 +3987,7 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 	ListCell *cell;
 
 	index = RelationIdGetRelation(indexInfo->indexoid);
-	PGrnXLogApply(index);
+	PGrnWALApply(index);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
 	foreach(cell, path->indexquals)

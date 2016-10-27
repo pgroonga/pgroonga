@@ -4,29 +4,29 @@
 
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
-#include "pgrn_xlog.h"
+#include "pgrn_wal.h"
 
-static bool PGrnXLogEnabled = false;
+static bool PGrnWALEnabled = false;
 
 bool
-PGrnXLogGetEnabled(void)
+PGrnWALGetEnabled(void)
 {
-	return PGrnXLogEnabled;
+	return PGrnWALEnabled;
 }
 
 void
-PGrnXLogEnable(void)
+PGrnWALEnable(void)
 {
-	PGrnXLogEnabled = true;
+	PGrnWALEnabled = true;
 }
 
 void
-PGrnXLogDisable(void)
+PGrnWALDisable(void)
 {
-	PGrnXLogEnabled = false;
+	PGrnWALEnabled = false;
 }
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 #	include <access/generic_xlog.h>
 #	include <storage/bufmgr.h>
 #	include <storage/bufpage.h>
@@ -36,12 +36,12 @@ PGrnXLogDisable(void)
 #	include <msgpack.h>
 #endif
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 #endif
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	BlockNumber start;
 	BlockNumber current;
@@ -63,10 +63,10 @@ typedef struct {
 } PGrnPageWriteData;
 #endif
 
-struct PGrnXLogData_
+struct PGrnWALData_
 {
 	Relation index;
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 	GenericXLogState *state;
 	struct
 	{
@@ -84,41 +84,41 @@ struct PGrnXLogData_
 #endif
 };
 
-#define PGRN_XLOG_STATUES_TABLE_NAME "XLogStatuses"
-#define PGRN_XLOG_STATUES_TABLE_NAME_SIZE strlen(PGRN_XLOG_STATUES_TABLE_NAME)
-#define PGRN_XLOG_STATUES_CURRENT_COLUMN_NAME "current"
+#define PGRN_WAL_STATUES_TABLE_NAME "WALStatuses"
+#define PGRN_WAL_STATUES_TABLE_NAME_SIZE strlen(PGRN_WAL_STATUES_TABLE_NAME)
+#define PGRN_WAL_STATUES_CURRENT_COLUMN_NAME "current"
 
 static void
-PGrnXLogEnsureStatusesTable(void)
+PGrnWALEnsureStatusesTable(void)
 {
-#ifdef PGRN_SUPPORT_XLOG
-	grn_obj *xlogStatuses;
+#ifdef PGRN_SUPPORT_WAL
+	grn_obj *walStatuses;
 
-	xlogStatuses = grn_ctx_get(ctx,
-							   PGRN_XLOG_STATUES_TABLE_NAME,
-							   PGRN_XLOG_STATUES_TABLE_NAME_SIZE);
-	if (xlogStatuses)
+	walStatuses = grn_ctx_get(ctx,
+							  PGRN_WAL_STATUES_TABLE_NAME,
+							  PGRN_WAL_STATUES_TABLE_NAME_SIZE);
+	if (walStatuses)
 		return;
 
-	xlogStatuses = PGrnCreateTable(PGRN_XLOG_STATUES_TABLE_NAME,
-								   GRN_OBJ_TABLE_HASH_KEY,
-								   grn_ctx_at(ctx, GRN_DB_UINT32));
-	PGrnCreateColumn(xlogStatuses,
-					 PGRN_XLOG_STATUES_CURRENT_COLUMN_NAME,
+	walStatuses = PGrnCreateTable(PGRN_WAL_STATUES_TABLE_NAME,
+								  GRN_OBJ_TABLE_HASH_KEY,
+								  grn_ctx_at(ctx, GRN_DB_UINT32));
+	PGrnCreateColumn(walStatuses,
+					 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
 					 GRN_OBJ_COLUMN_SCALAR,
 					 grn_ctx_at(ctx, GRN_DB_UINT64));
 #endif
 }
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 static uint64_t
-PGrnXLogPackPosition(BlockNumber block, OffsetNumber offset)
+PGrnWALPackPosition(BlockNumber block, OffsetNumber offset)
 {
 	return (((uint64_t)block) << 32) + (uint64_t)offset;
 }
 
 static void
-PGrnXLogUnpackPosition(uint64_t position,
+PGrnWALUnpackPosition(uint64_t position,
 					   BlockNumber *block,
 					   OffsetNumber *offset)
 {
@@ -127,7 +127,7 @@ PGrnXLogUnpackPosition(uint64_t position,
 }
 
 static void
-PGrnXLogUpdateStatus(Relation index,
+PGrnWALUpdateStatus(Relation index,
 					 BlockNumber block,
 					 OffsetNumber offset)
 {
@@ -138,26 +138,26 @@ PGrnXLogUpdateStatus(Relation index,
 	uint64_t positionRaw;
 	grn_obj *position = &(buffers->general);
 
-	PGrnXLogEnsureStatusesTable();
+	PGrnWALEnsureStatusesTable();
 
-	statusesTable = PGrnLookup(PGRN_XLOG_STATUES_TABLE_NAME, ERROR);
+	statusesTable = PGrnLookup(PGRN_WAL_STATUES_TABLE_NAME, ERROR);
 	currentColumn = PGrnLookupColumn(statusesTable,
-									 PGRN_XLOG_STATUES_CURRENT_COLUMN_NAME,
+									 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
 									 ERROR);
 	oid = RelationGetRelid(index);
 	id = grn_table_add(ctx, statusesTable, &oid, sizeof(uint32_t), NULL);
-	positionRaw = PGrnXLogPackPosition(block, offset);
+	positionRaw = PGrnWALPackPosition(block, offset);
 	grn_obj_reinit(ctx, position, GRN_DB_UINT64, 0);
 	GRN_UINT64_SET(ctx, position, positionRaw);
 	grn_obj_set_value(ctx, currentColumn, id, position, GRN_OBJ_SET);
 }
 #endif
 
-#define PGRN_XLOG_META_PAGE_BLOCK_NUMBER 0
+#define PGRN_WAL_META_PAGE_BLOCK_NUMBER 0
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 static void
-PGrnXLogDataInitMeta(PGrnXLogData *data)
+PGrnWALDataInitMeta(PGrnWALData *data)
 {
 	if (RelationGetNumberOfBlocks(data->index) == 0)
 	{
@@ -169,7 +169,7 @@ PGrnXLogDataInitMeta(PGrnXLogData *data)
 	else
 	{
 		data->meta.buffer = ReadBuffer(data->index,
-									   PGRN_XLOG_META_PAGE_BLOCK_NUMBER);
+									   PGRN_WAL_META_PAGE_BLOCK_NUMBER);
 		LockBuffer(data->meta.buffer, BUFFER_LOCK_EXCLUSIVE);
 	}
 
@@ -181,7 +181,7 @@ PGrnXLogDataInitMeta(PGrnXLogData *data)
 		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnMetaPageSpecial));
 		data->meta.pageSpecial =
 			(PGrnMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
-		data->meta.pageSpecial->start = PGRN_XLOG_META_PAGE_BLOCK_NUMBER + 1;
+		data->meta.pageSpecial->start = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
 		data->meta.pageSpecial->current = data->meta.pageSpecial->start;
 		data->meta.pageSpecial->end = data->meta.pageSpecial->start;
 	}
@@ -193,7 +193,7 @@ PGrnXLogDataInitMeta(PGrnXLogData *data)
 }
 
 static void
-PGrnXLogDataInitCurrent(PGrnXLogData *data)
+PGrnWALDataInitCurrent(PGrnWALData *data)
 {
 	data->current.buffer = InvalidBuffer;
 	data->current.page = NULL;
@@ -201,11 +201,11 @@ PGrnXLogDataInitCurrent(PGrnXLogData *data)
 }
 
 static int
-PGrnXLogPageWriter(void *userData,
+PGrnWALPageWriter(void *userData,
 				   const char *buffer,
 				   size_t length)
 {
-	PGrnXLogData *data = userData;
+	PGrnWALData *data = userData;
 	int written = 0;
 
 	while (written < length)
@@ -260,7 +260,7 @@ PGrnXLogPageWriter(void *userData,
 				   buffer,
 				   length);
 			data->current.pageSpecial->current += length;
-			PGrnXLogUpdateStatus(data->index,
+			PGrnWALUpdateStatus(data->index,
 								 BufferGetBlockNumber(data->current.buffer),
 								 data->current.pageSpecial->current);
 			written += length;
@@ -277,7 +277,7 @@ PGrnXLogPageWriter(void *userData,
 				   buffer,
 				   writableSize);
 			data->current.pageSpecial->current += writableSize;
-			PGrnXLogUpdateStatus(data->index,
+			PGrnWALUpdateStatus(data->index,
 								 BufferGetBlockNumber(data->current.buffer),
 								 data->current.pageSpecial->current);
 			written += writableSize;
@@ -295,29 +295,29 @@ PGrnXLogPageWriter(void *userData,
 }
 
 static void
-PGrnXLogDataInitMessagePack(PGrnXLogData *data)
+PGrnWALDataInitMessagePack(PGrnWALData *data)
 {
-	msgpack_packer_init(&(data->packer), data, PGrnXLogPageWriter);
+	msgpack_packer_init(&(data->packer), data, PGrnWALPageWriter);
 }
 #endif
 
-PGrnXLogData *
-PGrnXLogStart(Relation index)
+PGrnWALData *
+PGrnWALStart(Relation index)
 {
-#ifdef PGRN_SUPPORT_XLOG
-	PGrnXLogData *data;
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
 
-	if (!PGrnXLogEnabled)
+	if (!PGrnWALEnabled)
 		return NULL;
 
-	data = palloc(sizeof(PGrnXLogData));
+	data = palloc(sizeof(PGrnWALData));
 
 	data->index = index;
 	data->state = GenericXLogStart(data->index);
 
-	PGrnXLogDataInitMeta(data);
-	PGrnXLogDataInitCurrent(data);
-	PGrnXLogDataInitMessagePack(data);
+	PGrnWALDataInitMeta(data);
+	PGrnWALDataInitCurrent(data);
+	PGrnWALDataInitMessagePack(data);
 
 	return data;
 #else
@@ -326,10 +326,10 @@ PGrnXLogStart(Relation index)
 }
 
 void
-PGrnXLogFinish(PGrnXLogData *data)
+PGrnWALFinish(PGrnWALData *data)
 {
-#ifdef PGRN_SUPPORT_XLOG
-	if (!PGrnXLogEnabled)
+#ifdef PGRN_SUPPORT_WAL
+	if (!data)
 		return;
 
 	GenericXLogFinish(data->state);
@@ -345,10 +345,10 @@ PGrnXLogFinish(PGrnXLogData *data)
 }
 
 void
-PGrnXLogAbort(PGrnXLogData *data)
+PGrnWALAbort(PGrnWALData *data)
 {
-#ifdef PGRN_SUPPORT_XLOG
-	if (!PGrnXLogEnabled)
+#ifdef PGRN_SUPPORT_WAL
+	if (!data)
 		return;
 
 	GenericXLogAbort(data->state);
@@ -364,13 +364,13 @@ PGrnXLogAbort(PGrnXLogData *data)
 }
 
 void
-PGrnXLogInsertStart(PGrnXLogData *data,
+PGrnWALInsertStart(PGrnWALData *data,
 					size_t nColumns)
 {
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
 
-	if (!PGrnXLogEnabled)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -379,19 +379,19 @@ PGrnXLogInsertStart(PGrnXLogData *data,
 }
 
 void
-PGrnXLogInsertFinish(PGrnXLogData *data)
+PGrnWALInsertFinish(PGrnWALData *data)
 {
 }
 
 void
-PGrnXLogInsertColumnStart(PGrnXLogData *data,
+PGrnWALInsertColumnStart(PGrnWALData *data,
 						  const char *name)
 {
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
 	size_t nameSize;
 
-	if (!PGrnXLogEnabled)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -403,29 +403,29 @@ PGrnXLogInsertColumnStart(PGrnXLogData *data,
 }
 
 void
-PGrnXLogInsertColumnFinish(PGrnXLogData *data)
+PGrnWALInsertColumnFinish(PGrnWALData *data)
 {
 }
 
 void
-PGrnXLogInsertColumn(PGrnXLogData *data,
+PGrnWALInsertColumn(PGrnWALData *data,
 					 const char *name,
 					 grn_obj *value)
 {
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
 
-	if (!PGrnXLogEnabled)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
 
-	PGrnXLogInsertColumnStart(data, name);
+	PGrnWALInsertColumnStart(data, name);
 
 	if (value->header.type != GRN_BULK) {
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: XLog: array value isn't supported yet: <%s>",
+				 errmsg("pgroonga: WAL: array value isn't supported yet: <%s>",
 						grn_obj_type_to_string(value->header.type))));
 	}
 
@@ -491,17 +491,17 @@ PGrnXLogInsertColumn(PGrnXLogData *data,
 										 GRN_TABLE_MAX_KEY_SIZE);
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: XLog: unsupported type: <%.*s>",
+					 errmsg("pgroonga: WAL: unsupported type: <%.*s>",
 							nameSize, name)));
 		}
 		break;
 	}
 
-	PGrnXLogInsertColumnFinish(data);
+	PGrnWALInsertColumnFinish(data);
 #endif
 }
 
-#ifdef PGRN_SUPPORT_XLOG
+#ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	Relation index;
 	grn_obj *statusesTable;
@@ -512,10 +512,10 @@ typedef struct {
 		OffsetNumber offset;
 	} current;
 	grn_obj *sources;
-} PGrnXLogApplyData;
+} PGrnWALApplyData;
 
 static bool
-PGrnXLogApplyNeeded(PGrnXLogApplyData *data)
+PGrnWALApplyNeeded(PGrnWALApplyData *data)
 {
 	BlockNumber currentBlock;
 	OffsetNumber currentOffset;
@@ -525,7 +525,7 @@ PGrnXLogApplyNeeded(PGrnXLogApplyData *data)
 		grn_obj *position = &(buffers->general);
 		grn_obj_reinit(ctx, position, GRN_DB_UINT64, 0);
 		grn_obj_get_value(ctx, data->currentColumn, data->statusID, position);
-		PGrnXLogUnpackPosition(GRN_UINT64_VALUE(position),
+		PGrnWALUnpackPosition(GRN_UINT64_VALUE(position),
 							   &currentBlock,
 							   &currentOffset);
 	}
@@ -555,7 +555,7 @@ PGrnXLogApplyNeeded(PGrnXLogApplyData *data)
 }
 
 static void
-PGrnXLogApplyObject(PGrnXLogApplyData *data, msgpack_object *object)
+PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	grn_id id;
 	uint32_t i, nColumns;
@@ -564,7 +564,7 @@ PGrnXLogApplyObject(PGrnXLogApplyData *data, msgpack_object *object)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: XLog: apply: record must be map: <%#x>",
+				 errmsg("pgroonga: WAL: apply: record must be map: <%#x>",
 						object->type)));
 	}
 
@@ -583,7 +583,7 @@ PGrnXLogApplyObject(PGrnXLogApplyData *data, msgpack_object *object)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: XLog: apply: key must be map: <%#x>",
+					 errmsg("pgroonga: WAL: apply: key must be map: <%#x>",
 							key->type)));
 		}
 
@@ -628,7 +628,7 @@ PGrnXLogApplyObject(PGrnXLogApplyData *data, msgpack_object *object)
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: XLog: apply: unexpected value type: <%#x>",
+					 errmsg("pgroonga: WAL: apply: unexpected value type: <%#x>",
 							value->type)));
 			break;
 		}
@@ -637,7 +637,7 @@ PGrnXLogApplyObject(PGrnXLogApplyData *data, msgpack_object *object)
 }
 
 static void
-PGrnXLogApplyConsume(PGrnXLogApplyData *data)
+PGrnWALApplyConsume(PGrnWALApplyData *data)
 {
 	BlockNumber i, nBlocks;
 	msgpack_unpacker unpacker;
@@ -673,7 +673,7 @@ PGrnXLogApplyConsume(PGrnXLogApplyData *data)
 		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
 			   MSGPACK_UNPACK_SUCCESS)
 		{
-			PGrnXLogApplyObject(data, &unpacked.data);
+			PGrnWALApplyObject(data, &unpacked.data);
 		}
 
 		lastBlock = i;
@@ -682,23 +682,23 @@ PGrnXLogApplyConsume(PGrnXLogApplyData *data)
 	msgpack_unpacked_destroy(&unpacked);
 	msgpack_unpacker_destroy(&unpacker);
 
-	PGrnXLogUpdateStatus(data->index, lastBlock, lastOffset);
+	PGrnWALUpdateStatus(data->index, lastBlock, lastOffset);
 }
 #endif
 
 void
-PGrnXLogApply(Relation index)
+PGrnWALApply(Relation index)
 {
-#ifdef PGRN_SUPPORT_XLOG
-	PGrnXLogApplyData data;
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALApplyData data;
 	uint32_t oid;
 
-	PGrnXLogEnsureStatusesTable();
+	PGrnWALEnsureStatusesTable();
 
 	data.index = index;
-	data.statusesTable = PGrnLookup(PGRN_XLOG_STATUES_TABLE_NAME, ERROR);
+	data.statusesTable = PGrnLookup(PGRN_WAL_STATUES_TABLE_NAME, ERROR);
 	data.currentColumn = PGrnLookupColumn(data.statusesTable,
-										  PGRN_XLOG_STATUES_CURRENT_COLUMN_NAME,
+										  PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
 										  ERROR);
 	oid = RelationGetRelid(index);
 	data.statusID = grn_table_add(ctx,
@@ -706,7 +706,7 @@ PGrnXLogApply(Relation index)
 								  &oid,
 								  sizeof(uint32_t),
 								  NULL);
-	if (!PGrnXLogApplyNeeded(&data))
+	if (!PGrnWALApplyNeeded(&data))
 		return;
 
 	LockRelation(index, RowExclusiveLock);
@@ -715,11 +715,11 @@ PGrnXLogApply(Relation index)
 
 		grn_obj_reinit(ctx, position, GRN_DB_UINT64, 0);
 		grn_obj_get_value(ctx, data.currentColumn, data.statusID, position);
-		PGrnXLogUnpackPosition(GRN_UINT64_VALUE(position),
+		PGrnWALUnpackPosition(GRN_UINT64_VALUE(position),
 							   &(data.current.block),
 							   &(data.current.offset));
 	}
-	PGrnXLogApplyConsume(&data);
+	PGrnWALApplyConsume(&data);
 	UnlockRelation(index, RowExclusiveLock);
 #endif
 }

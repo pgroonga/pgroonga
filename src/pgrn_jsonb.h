@@ -5,7 +5,7 @@
 
 #include "pgrn_create.h"
 #include "pgrn_search.h"
-#include "pgrn_xlog.h"
+#include "pgrn_wal.h"
 
 void PGrnInitializeJSONB(void);
 void PGrnFinalizeJSONB(void);
@@ -45,7 +45,7 @@ void PGrnJSONBInsert(Relation index,
 					 Datum *values,
 					 unsigned int nthValue,
 					 grn_obj *valueIDs,
-					 PGrnXLogData *xlogData);
+					 PGrnWALData *walData);
 
 bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 								   ScanKey key,

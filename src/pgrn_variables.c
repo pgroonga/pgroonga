@@ -4,7 +4,7 @@
 #include "pgrn_global.h"
 #include "pgrn_value.h"
 #include "pgrn_variables.h"
-#include "pgrn_xlog.h"
+#include "pgrn_wal.h"
 
 #include <utils/guc.h>
 
@@ -164,11 +164,11 @@ PGrnEnableWALAssign(bool new_value, void *extra)
 {
 	if (new_value)
 	{
-		PGrnXLogEnable();
+		PGrnWALEnable();
 	}
 	else
 	{
-		PGrnXLogDisable();
+		PGrnWALDisable();
 	}
 }
 
@@ -243,7 +243,7 @@ PGrnInitializeVariables(void)
 							 "It requires PostgreSQL 9.6 or later. "
 							 "It's an experimental feature.",
 							 &PGrnEnableWAL,
-							 PGrnXLogGetEnabled(),
+							 PGrnWALGetEnabled(),
 							 PGC_USERSET,
 							 0,
 							 NULL,

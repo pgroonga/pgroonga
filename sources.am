@@ -16,5 +16,5 @@ SRCS =						\
 	src/pgrn_snippet_html.c			\
 	src/pgrn_value.c			\
 	src/pgrn_variables.c			\
-	src/pgrn_xlog.c				\
+	src/pgrn_wal.c				\
 	vendor/xxHash/xxhash.c
