@@ -42,6 +42,12 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 #endif
 
 #ifdef PGRN_SUPPORT_WAL
+typedef enum {
+	PGRN_WAL_ACTION_RECORD_ADD,
+	PGRN_WAL_ACTION_TABLE_CREATE,
+	PGRN_WAL_ACTION_COLUMN_CREATE
+} PGrnWALAction;
+
 typedef struct {
 	BlockNumber start;
 	BlockNumber current;
@@ -554,36 +560,100 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	}
 }
 
-static void
-PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
+static bool
+PGrnWALApplyKeyEqual(msgpack_object *key, const char *name)
 {
-	grn_id id;
-	uint32_t i, nColumns;
+	size_t nameSize;
 
-	if (object->type != MSGPACK_OBJECT_MAP)
+	if (key->type != MSGPACK_OBJECT_STR)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: record must be map: <%#x>",
-						object->type)));
+				 errmsg("pgroonga: WAL: apply: key must be map: <%#x>",
+						key->type)));
 	}
 
-	id = grn_table_add(ctx, data->sources, NULL, 0, NULL);
-	nColumns = object->via.map.size;
-	for (i = 0; i < nColumns; i++)
+	nameSize = strlen(name);
+	if (key->via.str.size != nameSize)
+		return false;
+	if (memcmp(key->via.str.ptr, name, nameSize) != 0)
+		return false;
+
+	return true;
+}
+
+static void
+PGrnWALApplyRecordAdd(PGrnWALApplyData *data,
+					  msgpack_object_map *map,
+					  uint32_t currentElement)
+{
+	grn_obj *table = data->sources;
+	const char *key = NULL;
+	size_t keySize = 0;
+	grn_id id;
+	uint32_t i;
+
+	if (currentElement < map->size)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[currentElement]);
+		if (PGrnWALApplyKeyEqual(&(kv->key), "_table"))
+		{
+			if (kv->val.type != MSGPACK_OBJECT_STR)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: WAL: apply: record: add: "
+								"_table value must be string: "
+								"<%#x>",
+								kv->val.type)));
+			}
+			table = PGrnLookupWithSize(kv->val.via.str.ptr,
+									   kv->val.via.str.size,
+									   ERROR);
+			currentElement++;
+		}
+	}
+
+	if (currentElement < map->size)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[currentElement]);
+		if (PGrnWALApplyKeyEqual(&(kv->key), "_key"))
+		{
+			if (kv->val.type != MSGPACK_OBJECT_BIN)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: WAL: apply: record: add: "
+								"_key value must be binary: "
+								"<%#x>",
+								kv->val.type)));
+			}
+			key = kv->val.via.bin.ptr;
+			keySize = kv->val.via.bin.size;
+			currentElement++;
+		}
+	}
+
+	id = grn_table_add(ctx, table, key, keySize, NULL);
+	for (i = currentElement; i < map->size; i++)
 	{
 		msgpack_object *key;
 		msgpack_object *value;
 		grn_obj *column;
 
-		key = &(object->via.map.ptr[i].key);
-		value = &(object->via.map.ptr[i].val);
+		key = &(map->ptr[i].key);
+		value = &(map->ptr[i].val);
 
 		if (key->type != MSGPACK_OBJECT_STR)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: key must be map: <%#x>",
+					 errmsg("pgroonga: WAL: apply: record: add: "
+							"key must be map: <%#x>",
 							key->type)));
 		}
 
@@ -628,11 +698,89 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: unexpected value type: <%#x>",
+					 errmsg("pgroonga: WAL: apply: record: add: "
+							"unexpected value type: <%#x>",
 							value->type)));
 			break;
 		}
 		grn_obj_set_value(ctx, column, id, &(buffers->general), GRN_OBJ_SET);
+	}
+}
+
+static void
+PGrnWALApplyTableCreate(PGrnWALApplyData *data,
+						msgpack_object_map *map,
+						uint32_t currentElement)
+{
+	/* TODO */
+}
+
+static void
+PGrnWALApplyColumnCreate(PGrnWALApplyData *data,
+						 msgpack_object_map *map,
+						 uint32_t currentElement)
+{
+	/* TODO */
+}
+
+static void
+PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
+{
+	msgpack_object_map *map;
+	uint32_t currentElement = 0;
+	PGrnWALAction action = PGRN_WAL_ACTION_RECORD_ADD;
+
+	if (object->type != MSGPACK_OBJECT_MAP)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: WAL: apply: record must be map: <%#x>",
+						object->type)));
+	}
+
+	map = &(object->via.map);
+
+	if (currentElement < map->size)
+	{
+		msgpack_object *key;
+
+		key = &(object->via.map.ptr[currentElement].key);
+		if (PGrnWALApplyKeyEqual(key, "_action"))
+		{
+			msgpack_object *value;
+
+			value = &(object->via.map.ptr[currentElement].val);
+			if (value->type != MSGPACK_OBJECT_POSITIVE_INTEGER)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: WAL: apply: "
+								"_action value must be positive integer: "
+								"<%#x>",
+								value->type)));
+			}
+			action = value->via.u64;
+			currentElement++;
+		}
+	}
+
+	switch (action)
+	{
+	case PGRN_WAL_ACTION_RECORD_ADD:
+		PGrnWALApplyRecordAdd(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_TABLE_CREATE:
+		PGrnWALApplyTableCreate(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_COLUMN_CREATE:
+		PGrnWALApplyColumnCreate(data, map, currentElement);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: WAL: apply: unexpected action: <%d>",
+						action)));
+		break;
 	}
 }
 
