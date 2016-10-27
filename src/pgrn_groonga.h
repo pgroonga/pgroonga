@@ -15,6 +15,9 @@ int PGrnRCToPgErrorCode(grn_rc rc);
 grn_bool PGrnCheck(const char *message);
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
+grn_obj *PGrnLookupWithSize(const char *name,
+							size_t nameSize,
+							int errorLevel);
 grn_obj *PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel);
 grn_obj *PGrnLookupColumnWithSize(grn_obj *table,
 								  const char *name,

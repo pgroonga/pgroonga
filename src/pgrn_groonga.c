@@ -70,11 +70,20 @@ PGrnCheck(const char *message)
 grn_obj *
 PGrnLookup(const char *name, int errorLevel)
 {
-	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
+	return PGrnLookupWithSize(name, strlen(name), errorLevel);
+}
+
+grn_obj *
+PGrnLookupWithSize(const char *name,
+				   size_t nameSize,
+				   int errorLevel)
+{
+	grn_obj *object = grn_ctx_get(ctx, name, nameSize);
 	if (!object)
 		ereport(errorLevel,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: object isn't found: <%s>", name)));
+				 errmsg("pgroonga: object isn't found: <%.*s>",
+						(int)nameSize, name)));
 	return object;
 }
 
