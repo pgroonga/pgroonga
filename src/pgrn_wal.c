@@ -49,6 +49,8 @@ typedef enum {
 	PGRN_WAL_ACTION_SET_SOURCES
 } PGrnWALAction;
 
+#define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
+
 typedef struct {
 	BlockNumber next;
 	BlockNumber max; /* TODO */
@@ -207,6 +209,7 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
 		data->meta.pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
 		data->meta.pageSpecial->max = 0;
+		data->meta.pageSpecial->version = PGRN_WAL_META_PAGE_SPECIAL_VERSION;
 	}
 	else
 	{
