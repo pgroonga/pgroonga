@@ -1970,7 +1970,7 @@ PGrnInsert(Relation index,
 		else
 		{
 			domain = PGrnGetType(index, i, &flags);
-			grn_obj_reinit(ctx, &(buffers->general), domain, flags);
+			grn_obj_reinit(ctx, buffer, domain, flags);
 			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
 			PGrnWALInsertColumn(walData, name->data, buffer);
