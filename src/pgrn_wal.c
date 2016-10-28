@@ -55,7 +55,8 @@ typedef struct {
 	BlockNumber end;
 } PGrnMetaPageSpecial;
 
-#define PGRN_PAGE_DATA_SIZE BLCKSZ - SizeOfPageHeaderData - sizeof(OffsetNumber)
+#define PGRN_PAGE_DATA_SIZE										\
+	(BLCKSZ - SizeOfPageHeaderData - sizeof(OffsetNumber) - 1)
 typedef struct {
 	OffsetNumber current;
 	uint8_t data[PGRN_PAGE_DATA_SIZE];
@@ -287,7 +288,6 @@ PGrnWALPageWriter(void *userData,
 		if (data->current.pageSpecial->current + length <= PGRN_PAGE_DATA_SIZE)
 		{
 			memcpy(data->current.pageSpecial->data +
-				   SizeOfPageHeaderData +
 				   data->current.pageSpecial->current,
 				   buffer,
 				   length);
@@ -304,7 +304,6 @@ PGrnWALPageWriter(void *userData,
 			writableSize =
 				PGRN_PAGE_DATA_SIZE - data->current.pageSpecial->current;
 			memcpy(data->current.pageSpecial->data +
-				   SizeOfPageHeaderData +
 				   data->current.pageSpecial->current,
 				   buffer,
 				   writableSize);
@@ -1228,7 +1227,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		dataSize = pageSpecial->current - data->current.offset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
-			   pageSpecial->data + SizeOfPageHeaderData + data->current.offset,
+			   pageSpecial->data + data->current.offset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
 		data->current.offset = 0;
