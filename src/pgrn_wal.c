@@ -439,27 +439,15 @@ PGrnWALInsertColumnFinish(PGrnWALData *data)
 {
 }
 
-void
-PGrnWALInsertColumn(PGrnWALData *data,
-					 const char *name,
-					 grn_obj *value)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALInsertColumnValueBulk(PGrnWALData *data,
+							 const char *name,
+							 grn_obj *value)
+{
 	msgpack_packer *packer;
 
-	if (!PGrnWALEnabled)
-		return;
-
 	packer = &(data->packer);
-
-	PGrnWALInsertColumnStart(data, name);
-
-	if (value->header.type != GRN_BULK) {
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: WAL: array value isn't supported yet: <%s>",
-						grn_obj_type_to_string(value->header.type))));
-	}
 
 	switch (value->header.domain)
 	{
@@ -526,6 +514,34 @@ PGrnWALInsertColumn(PGrnWALData *data,
 					 errmsg("pgroonga: WAL: unsupported type: <%.*s>",
 							nameSize, name)));
 		}
+		break;
+	}
+}
+#endif
+
+void
+PGrnWALInsertColumn(PGrnWALData *data,
+					const char *name,
+					grn_obj *value)
+{
+#ifdef PGRN_SUPPORT_WAL
+	if (!PGrnWALEnabled)
+		return;
+
+	PGrnWALInsertColumnStart(data, name);
+
+	switch (value->header.type)
+	{
+	case GRN_BULK:
+		PGrnWALInsertColumnValueBulk(data, name, value);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: WAL: not bulk value isn't supported yet: "
+						"<%s>: <%s>",
+						name,
+						grn_obj_type_to_string(value->header.type))));
 		break;
 	}
 
