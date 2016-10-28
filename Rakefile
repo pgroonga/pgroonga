@@ -5,8 +5,8 @@ require "octokit"
 
 latest_groonga_version = "6.0.9"
 windows_postgresql_versions = [
-  "9.5.4-1",
-  "9.6.0-1",
+  "9.5.5-1",
+  "9.6.1-1",
 ]
 
 package = "pgroonga"
