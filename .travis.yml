@@ -31,7 +31,7 @@ script:
       rm -rf sql/function/flush/jsonb.sql
       rm -rf sql/reindex/analyze.sql
     fi
-  - ln -s /tmp ./
-  - make installcheck
+  - sudo -u postgres -H mkdir -p /tmp/space
+  - make installcheck TMP_DIR=/tmp SETUP_TMP_DIR=no
 after_failure:
   - cat regression.diffs

@@ -55,14 +55,17 @@ installcheck: $(RESULT_DIRS)
 installcheck: $(EXPECTED_DIRS)
 installcheck: $(EXPECTED_FILES)
 
+TMP_DIR = $(shell pwd)/tmp
+SETUP_TMP_DIR = yes
 prepare-regress:
-	rm -rf tmp/space
-	mkdir -p tmp/space
-	chmod -R 1777 tmp/space
-	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	@if [ $(SETUP_TMP_DIR) = "yes" ]; then	\
+	  rm -rf $(TMP_DIR)/space &&		\
+	  mkdir -p $(TMP_DIR)/space;		\
+	fi
+	@sed -e "s,@TMP_DIR@,$(TMP_DIR),g"	\
 	  sql/vacuum/tablespace.sql.in >	\
 	  sql/vacuum/tablespace.sql
-	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	@sed -e "s,@TMP_DIR@,$(TMP_DIR),g"	\
 	  expected/vacuum/tablespace.out.in >	\
 	  expected/vacuum/tablespace.out
 
