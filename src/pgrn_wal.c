@@ -501,20 +501,116 @@ PGrnWALInsertColumnValueBulk(PGrnWALData *data,
 		break;
 	default:
 		{
-			char name[GRN_TABLE_MAX_KEY_SIZE];
-			int nameSize;
+			char domainName[GRN_TABLE_MAX_KEY_SIZE];
+			int domainNameSize;
 
-			nameSize = grn_table_get_key(ctx,
-										 grn_ctx_db(ctx),
-										 value->header.domain,
-										 name,
-										 GRN_TABLE_MAX_KEY_SIZE);
+			domainNameSize = grn_table_get_key(ctx,
+											   grn_ctx_db(ctx),
+											   value->header.domain,
+											   domainName,
+											   GRN_TABLE_MAX_KEY_SIZE);
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: WAL: unsupported type: <%.*s>",
-							nameSize, name)));
+					 errmsg("pgroonga: WAL: insert: unsupported type: "
+							"<%s>: <%.*s>",
+							name,
+							domainNameSize, domainName)));
 		}
 		break;
+	}
+}
+
+static void
+PGrnWALInsertColumnValueVector(PGrnWALData *data,
+							   const char *name,
+							   grn_obj *value)
+{
+	msgpack_packer *packer;
+	unsigned int i, n;
+
+	packer = &(data->packer);
+
+	n = grn_vector_size(ctx, value);
+	msgpack_pack_array(packer, n);
+	for (i = 0; i < n; i++)
+	{
+		const char *element;
+		unsigned int elementSize;
+		grn_id domain;
+
+		elementSize = grn_vector_get_element(ctx,
+											 value,
+											 i,
+											 &element,
+											 NULL,
+											 &domain);
+		switch (domain)
+		{
+		case GRN_DB_BOOL:
+			if (*((grn_bool *)element))
+			{
+				msgpack_pack_true(packer);
+			}
+			else
+			{
+				msgpack_pack_false(packer);
+			}
+			break;
+		case GRN_DB_INT8:
+			msgpack_pack_int8(packer, *((int8_t *)element));
+			break;
+		case GRN_DB_UINT8:
+			msgpack_pack_uint8(packer, *((uint8_t *)element));
+			break;
+		case GRN_DB_INT16:
+			msgpack_pack_int16(packer, *((int16_t *)element));
+			break;
+		case GRN_DB_UINT16:
+			msgpack_pack_uint16(packer, *((uint16_t *)element));
+			break;
+		case GRN_DB_INT32:
+			msgpack_pack_int32(packer, *((int32_t *)element));
+			break;
+		case GRN_DB_UINT32:
+			msgpack_pack_uint32(packer, *((uint32_t *)element));
+			break;
+		case GRN_DB_INT64:
+			msgpack_pack_int64(packer, *((int64_t *)element));
+			break;
+		case GRN_DB_UINT64:
+			msgpack_pack_uint64(packer, *((uint64_t *)element));
+			break;
+		case GRN_DB_FLOAT:
+			msgpack_pack_double(packer, *((double *)element));
+			break;
+		case GRN_DB_TIME:
+			msgpack_pack_int64(packer, *((int64_t *)element));
+			break;
+		case GRN_DB_SHORT_TEXT:
+		case GRN_DB_TEXT:
+		case GRN_DB_LONG_TEXT:
+			msgpack_pack_str(packer, elementSize);
+			msgpack_pack_str_body(packer, element, elementSize);
+			break;
+		default:
+			{
+				char domainName[GRN_TABLE_MAX_KEY_SIZE];
+				int domainNameSize;
+
+				domainNameSize = grn_table_get_key(ctx,
+												   grn_ctx_db(ctx),
+												   domain,
+												   domainName,
+												   GRN_TABLE_MAX_KEY_SIZE);
+				ereport(ERROR,
+						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+						 errmsg("pgroonga: WAL: insert: array: "
+								"unsupported type: <%s>: <%.*s>",
+								name,
+								domainNameSize, domainName)));
+			}
+			break;
+		}
 	}
 }
 #endif
@@ -534,6 +630,9 @@ PGrnWALInsertColumn(PGrnWALData *data,
 	{
 	case GRN_BULK:
 		PGrnWALInsertColumnValueBulk(data, name, value);
+		break;
+	case GRN_VECTOR:
+		PGrnWALInsertColumnValueVector(data, name, value);
 		break;
 	default:
 		ereport(ERROR,
