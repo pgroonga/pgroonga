@@ -58,7 +58,7 @@ installcheck: $(EXPECTED_FILES)
 prepare-regress:
 	rm -rf tmp/space
 	mkdir -p tmp/space
-	chmod -R 777 tmp/space
+	chmod -R 1777 tmp/space
 	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
 	  sql/vacuum/tablespace.sql.in >	\
 	  sql/vacuum/tablespace.sql
