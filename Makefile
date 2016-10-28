@@ -56,12 +56,12 @@ installcheck: $(EXPECTED_DIRS)
 installcheck: $(EXPECTED_FILES)
 
 prepare-regress:
-	@rm -rf tmp
-	@mkdir -p tmp/space
-	@sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	rm -rf tmp
+	mkdir -p tmp/space
+	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
 	  sql/vacuum/tablespace.sql.in >	\
 	  sql/vacuum/tablespace.sql
-	@sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
 	  expected/vacuum/tablespace.out.in >	\
 	  expected/vacuum/tablespace.out
 
