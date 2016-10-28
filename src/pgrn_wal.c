@@ -53,22 +53,22 @@ typedef struct {
 	BlockNumber start;
 	BlockNumber current;
 	BlockNumber end;
-} PGrnMetaPageSpecial;
+} PGrnWALMetaPageSpecial;
 
 #define PGRN_PAGE_DATA_SIZE										\
 	(BLCKSZ - SizeOfPageHeaderData - sizeof(OffsetNumber) - 1)
 typedef struct {
 	OffsetNumber current;
 	uint8_t data[PGRN_PAGE_DATA_SIZE];
-} PGrnPageSpecial;
+} PGrnWALPageSpecial;
 
 typedef struct {
 	GenericXLogState *state;
-	PGrnMetaPageSpecial *metaPageSpecial;
+	PGrnWALMetaPageSpecial *metaPageSpecial;
 	Buffer buffer;
 	Page page;
-	PGrnPageSpecial *special;
-} PGrnPageWriteData;
+	PGrnWALPageSpecial *special;
+} PGrnWALPageWriteData;
 #endif
 
 struct PGrnWALData_
@@ -80,13 +80,13 @@ struct PGrnWALData_
 	{
 		Buffer buffer;
 		Page page;
-		PGrnMetaPageSpecial *pageSpecial;
+		PGrnWALMetaPageSpecial *pageSpecial;
 	} meta;
 	struct
 	{
 		Buffer buffer;
 		Page page;
-		PGrnPageSpecial *pageSpecial;
+		PGrnWALPageSpecial *pageSpecial;
 	} current;
 	msgpack_packer packer;
 #endif
@@ -211,9 +211,9 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 												GENERIC_XLOG_FULL_IMAGE);
 	if (PageIsNew(data->meta.page))
 	{
-		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnMetaPageSpecial));
+		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnWALMetaPageSpecial));
 		data->meta.pageSpecial =
-			(PGrnMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
+			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
 		data->meta.pageSpecial->start = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
 		data->meta.pageSpecial->current = data->meta.pageSpecial->start;
 		data->meta.pageSpecial->end = data->meta.pageSpecial->start;
@@ -221,7 +221,7 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 	else
 	{
 		data->meta.pageSpecial =
-			(PGrnMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
+			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
 	}
 }
 
@@ -235,8 +235,8 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 
 static int
 PGrnWALPageWriter(void *userData,
-				   const char *buffer,
-				   size_t length)
+				  const char *buffer,
+				  size_t length)
 {
 	PGrnWALData *data = userData;
 	int written = 0;
@@ -273,15 +273,15 @@ PGrnWALPageWriter(void *userData,
 										  GENERIC_XLOG_FULL_IMAGE);
 			if (PageIsNew(data->current.page))
 			{
-				PageInit(data->current.page, BLCKSZ, sizeof(PGrnPageSpecial));
+				PageInit(data->current.page, BLCKSZ, sizeof(PGrnWALPageSpecial));
 				data->current.pageSpecial =
-					(PGrnPageSpecial *)PageGetSpecialPointer(data->current.page);
+					(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
 				data->current.pageSpecial->current = 0;
 			}
 			else
 			{
 				data->current.pageSpecial =
-					(PGrnPageSpecial *)PageGetSpecialPointer(data->current.page);
+					(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
 			}
 		}
 
@@ -726,13 +726,13 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
-		PGrnPageSpecial *pageSpecial;
+		PGrnWALPageSpecial *pageSpecial;
 		bool needToApply;
 
 		buffer = ReadBuffer(data->index, currentBlock);
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		pageSpecial = (PGrnPageSpecial *)PageGetSpecialPointer(page);
+		pageSpecial = (PGrnWALPageSpecial *)PageGetSpecialPointer(page);
 		needToApply = (pageSpecial->current > currentOffset);
 		UnlockReleaseBuffer(buffer);
 		return needToApply;
@@ -1214,7 +1214,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
-		PGrnPageSpecial *pageSpecial;
+		PGrnWALPageSpecial *pageSpecial;
 		size_t dataSize;
 
 		if (i == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
@@ -1223,7 +1223,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		buffer = ReadBuffer(data->index, i);
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		pageSpecial = (PGrnPageSpecial *)PageGetSpecialPointer(page);
+		pageSpecial = (PGrnWALPageSpecial *)PageGetSpecialPointer(page);
 		dataSize = pageSpecial->current - data->current.offset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
