@@ -56,7 +56,7 @@ installcheck: $(EXPECTED_DIRS)
 installcheck: $(EXPECTED_FILES)
 
 prepare-regress:
-	rm -rf tmp
+	rm -rf tmp/space
 	mkdir -p tmp/space
 	sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
 	  sql/vacuum/tablespace.sql.in >	\
