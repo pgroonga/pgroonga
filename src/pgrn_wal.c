@@ -50,9 +50,9 @@ typedef enum {
 } PGrnWALAction;
 
 typedef struct {
-	BlockNumber start;
-	BlockNumber current;
-	BlockNumber end;
+	BlockNumber next;
+	BlockNumber max; /* TODO */
+	uint8_t version;
 } PGrnWALMetaPageSpecial;
 
 #define PGRN_PAGE_DATA_SIZE										\
@@ -198,28 +198,25 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 		data->meta.buffer = ReadBuffer(data->index, P_NEW);
 		LockBuffer(data->meta.buffer, BUFFER_LOCK_EXCLUSIVE);
 		UnlockRelationForExtension(data->index, ExclusiveLock);
+
+		data->meta.page = GenericXLogRegisterBuffer(data->state,
+													data->meta.buffer,
+													GENERIC_XLOG_FULL_IMAGE);
+		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnWALMetaPageSpecial));
+		data->meta.pageSpecial =
+			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
+		data->meta.pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
+		data->meta.pageSpecial->max = 0;
 	}
 	else
 	{
 		data->meta.buffer = ReadBuffer(data->index,
 									   PGRN_WAL_META_PAGE_BLOCK_NUMBER);
 		LockBuffer(data->meta.buffer, BUFFER_LOCK_EXCLUSIVE);
-	}
 
-	data->meta.page = GenericXLogRegisterBuffer(data->state,
-												data->meta.buffer,
-												GENERIC_XLOG_FULL_IMAGE);
-	if (PageIsNew(data->meta.page))
-	{
-		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnWALMetaPageSpecial));
-		data->meta.pageSpecial =
-			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
-		data->meta.pageSpecial->start = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
-		data->meta.pageSpecial->current = data->meta.pageSpecial->start;
-		data->meta.pageSpecial->end = data->meta.pageSpecial->start;
-	}
-	else
-	{
+		data->meta.page = GenericXLogRegisterBuffer(data->state,
+													data->meta.buffer,
+													0);
 		data->meta.pageSpecial =
 			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
 	}
@@ -246,21 +243,20 @@ PGrnWALPageWriter(void *userData,
 		if (BufferIsInvalid(data->current.buffer))
 		{
 			if (RelationGetNumberOfBlocks(data->index) <=
-				data->meta.pageSpecial->current)
+				data->meta.pageSpecial->next)
 			{
 				LockRelationForExtension(data->index, ExclusiveLock);
 				data->current.buffer = ReadBuffer(data->index, P_NEW);
 				LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
 				UnlockRelationForExtension(data->index, ExclusiveLock);
 
-				data->meta.pageSpecial->current =
+				data->meta.pageSpecial->next =
 					BufferGetBlockNumber(data->current.buffer);
-				data->meta.pageSpecial->end = data->meta.pageSpecial->current;
 			}
 			else
 			{
 				data->current.buffer =
-					ReadBuffer(data->index, data->meta.pageSpecial->current);
+					ReadBuffer(data->index, data->meta.pageSpecial->next);
 				LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
 			}
 		}
@@ -318,7 +314,7 @@ PGrnWALPageWriter(void *userData,
 			data->current.page = NULL;
 			UnlockReleaseBuffer(data->current.buffer);
 			data->current.buffer = InvalidBuffer;
-			data->meta.pageSpecial->current++;
+			data->meta.pageSpecial->next++;
 		}
 	}
 
