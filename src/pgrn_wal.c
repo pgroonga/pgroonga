@@ -233,6 +233,47 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 	data->current.pageSpecial = NULL;
 }
 
+static void
+PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
+{
+	PGrnWALMetaPageSpecial *meta;
+
+	if (!BufferIsInvalid(data->current.buffer))
+		return;
+
+	meta = data->meta.pageSpecial;
+	if (RelationGetNumberOfBlocks(data->index) <= meta->next)
+	{
+		LockRelationForExtension(data->index, ExclusiveLock);
+		data->current.buffer = ReadBuffer(data->index, P_NEW);
+		LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
+		UnlockRelationForExtension(data->index, ExclusiveLock);
+
+		meta->next = BufferGetBlockNumber(data->current.buffer);
+
+		data->current.page =
+			GenericXLogRegisterBuffer(data->state,
+									  data->current.buffer,
+									  GENERIC_XLOG_FULL_IMAGE);
+		PageInit(data->current.page, BLCKSZ, sizeof(PGrnWALPageSpecial));
+		data->current.pageSpecial =
+			(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
+		data->current.pageSpecial->current = 0;
+	}
+	else
+	{
+		data->current.buffer = ReadBuffer(data->index, meta->next);
+		LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
+
+		data->current.page =
+			GenericXLogRegisterBuffer(data->state,
+									  data->current.buffer,
+									  0);
+		data->current.pageSpecial =
+			(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
+	}
+}
+
 static int
 PGrnWALPageWriter(void *userData,
 				  const char *buffer,
@@ -243,46 +284,7 @@ PGrnWALPageWriter(void *userData,
 
 	while (written < length)
 	{
-		if (BufferIsInvalid(data->current.buffer))
-		{
-			if (RelationGetNumberOfBlocks(data->index) <=
-				data->meta.pageSpecial->next)
-			{
-				LockRelationForExtension(data->index, ExclusiveLock);
-				data->current.buffer = ReadBuffer(data->index, P_NEW);
-				LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
-				UnlockRelationForExtension(data->index, ExclusiveLock);
-
-				data->meta.pageSpecial->next =
-					BufferGetBlockNumber(data->current.buffer);
-			}
-			else
-			{
-				data->current.buffer =
-					ReadBuffer(data->index, data->meta.pageSpecial->next);
-				LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
-			}
-		}
-
-		if (!PageIsValid(data->current.page))
-		{
-			data->current.page =
-				GenericXLogRegisterBuffer(data->state,
-										  data->current.buffer,
-										  GENERIC_XLOG_FULL_IMAGE);
-			if (PageIsNew(data->current.page))
-			{
-				PageInit(data->current.page, BLCKSZ, sizeof(PGrnWALPageSpecial));
-				data->current.pageSpecial =
-					(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
-				data->current.pageSpecial->current = 0;
-			}
-			else
-			{
-				data->current.pageSpecial =
-					(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
-			}
-		}
+		PGrnWALPageWriterEnsureCurrent(data);
 
 		if (data->current.pageSpecial->current + length <= PGRN_PAGE_DATA_SIZE)
 		{
@@ -292,8 +294,8 @@ PGrnWALPageWriter(void *userData,
 				   length);
 			data->current.pageSpecial->current += length;
 			PGrnWALUpdateStatus(data->index,
-								 BufferGetBlockNumber(data->current.buffer),
-								 data->current.pageSpecial->current);
+								BufferGetBlockNumber(data->current.buffer),
+								data->current.pageSpecial->current);
 			written += length;
 		}
 		else
@@ -308,8 +310,8 @@ PGrnWALPageWriter(void *userData,
 				   writableSize);
 			data->current.pageSpecial->current += writableSize;
 			PGrnWALUpdateStatus(data->index,
-								 BufferGetBlockNumber(data->current.buffer),
-								 data->current.pageSpecial->current);
+								BufferGetBlockNumber(data->current.buffer),
+								data->current.pageSpecial->current);
 			written += writableSize;
 			length -= writableSize;
 			buffer += writableSize;
