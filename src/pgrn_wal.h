@@ -20,12 +20,12 @@ void PGrnWALInsertFinish(PGrnWALData *data);
 void PGrnWALInsertColumnStart(PGrnWALData *data, const char *name);
 void PGrnWALInsertColumnFinish(PGrnWALData *data);
 void PGrnWALInsertColumn(PGrnWALData *data,
-						  const char *name,
-						  grn_obj *value);
+						 const char *name,
+						 grn_obj *value);
 
 void PGrnWALCreateTable(Relation index,
 						const char *name,
-						grn_obj_flags flags,
+						grn_table_flags flags,
 						grn_obj *type,
 						grn_obj *tokenizer,
 						grn_obj *normalizer);
@@ -33,7 +33,7 @@ void PGrnWALCreateTable(Relation index,
 void PGrnWALCreateColumn(Relation index,
 						 grn_obj *table,
 						 const char *name,
-						 grn_obj_flags flags,
+						 grn_column_flags flags,
 						 grn_obj *type);
 
 void PGrnWALSetSource(Relation index,

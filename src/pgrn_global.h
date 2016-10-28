@@ -11,6 +11,8 @@ struct PGrnBuffers
 	grn_obj ctid;
 	grn_obj score;
 	grn_obj sourceIDs;
+	grn_obj walPosition;
+	grn_obj walValue;
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;
