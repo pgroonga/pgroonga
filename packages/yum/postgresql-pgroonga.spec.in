@@ -20,7 +20,7 @@ Source0:	http://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
 BuildRequires:	postgresql%{pg_package_version}-devel
-Requires:	groonga-libs
+Requires:	groonga-libs >= 6.0.7
 Requires:	postgresql%{pg_package_version}-server
 
 %description
