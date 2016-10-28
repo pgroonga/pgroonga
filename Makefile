@@ -50,7 +50,20 @@ EXPECTED_FILES =				\
 		sed -e 's,^sql/,expected/,'	\
 		    -e 's,sql$$,out,')
 
-installcheck: $(RESULT_DIRS) $(EXPECTED_DIRS) $(EXPECTED_FILES)
+installcheck: prepare-regress
+installcheck: $(RESULT_DIRS)
+installcheck: $(EXPECTED_DIRS)
+installcheck: $(EXPECTED_FILES)
+
+prepare-regress:
+	@rm -rf tmp
+	@mkdir -p tmp/space
+	@sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	  sql/vacuum/tablespace.sql.in >	\
+	  sql/vacuum/tablespace.sql
+	@sed -e "s,@TMP_DIR@,$(PWD)/tmp,g"	\
+	  expected/vacuum/tablespace.out.in >	\
+	  expected/vacuum/tablespace.out
 
 $(RESULT_DIRS) $(EXPECTED_DIRS):
 	@mkdir -p $@

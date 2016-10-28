@@ -50,6 +50,13 @@ notifications:
     on_build_status_changed: true
 
 test_script:
+  - mkdir -p tmp\space
+  - sed -e 's,@TMP_DIR@,C:\\projects\\pgroonga\\tmp,g'
+      sql\vacuum\tablespace.sql.in >
+      sql\vacuum\tablespace.sql
+  - sed -e 's,@TMP_DIR@,C:\\projects\\pgroonga\\tmp,g'
+      expected\vacuum\tablespace.out.in >
+      expected\vacuum\tablespace.out
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |

@@ -6,6 +6,8 @@ pgroonga--*.sql
 !pgroonga--*--*.sql
 /examples/completion/edict.gz
 /regression.*
+/sql/vaccum/tablespace.sql
+/expected/vaccum/tablespace.out
 /results/
 /packages/source/
 /packages/apt/.vagrant/

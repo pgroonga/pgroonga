@@ -3846,6 +3846,48 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
+#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
+static bool
+PGrnIsValidRelationFileNodeID(Oid relationFileNodeID)
+{
+	bool valid = false;
+	Relation tableSpaces;
+	HeapScanDesc scan;
+
+	tableSpaces = heap_open(TableSpaceRelationId, AccessShareLock);
+	scan = heap_beginscan_catalog(tableSpaces, 0, NULL);
+	while (!valid)
+	{
+		HeapTuple tuple;
+		Oid relationID;
+		Relation relation;
+
+		tuple = heap_getnext(scan, ForwardScanDirection);
+
+		if (!HeapTupleIsValid(tuple))
+			break;
+
+		relationID = RelidByRelfilenode(HeapTupleGetOid(tuple),
+										relationFileNodeID);
+		if (!OidIsValid(relationID))
+			continue;
+
+		LockRelationOid(relationID, AccessShareLock);
+		relation = RelationIdGetRelation(relationID);
+		if (RelationIsValid(relation))
+		{
+			RelationClose(relation);
+			valid = true;
+		}
+		UnlockRelationOid(relationID, AccessShareLock);
+	}
+	heap_endscan(scan);
+	heap_close(tableSpaces, AccessShareLock);
+
+	return valid;
+}
+#endif
+
 static void
 PGrnRemoveUnusedTables(void)
 {
@@ -3863,7 +3905,6 @@ PGrnRemoveUnusedTables(void)
 		char *nameEnd;
 		int nameSize;
 		Oid relationFileNodeID;
-		Oid relationID;
 		unsigned int i;
 
 		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
@@ -3872,20 +3913,8 @@ PGrnRemoveUnusedTables(void)
 		if (nameEnd[0] == '.')
 			continue;
 
-		relationID = RelidByRelfilenode(MyDatabaseTableSpace,
-										relationFileNodeID);
-		if (OidIsValid(relationID))
-		{
-			Relation relation;
-			LockRelationOid(relationID, AccessShareLock);
-			relation = RelationIdGetRelation(relationID);
-			if (RelationIsValid(relation))
-			{
-				RelationClose(relation);
-				UnlockRelationOid(relationID, AccessShareLock);
-				continue;
-			}
-		}
+		if (PGrnIsValidRelationFileNodeID(relationFileNodeID))
+			continue;
 
 		for (i = 0; true; i++)
 		{
