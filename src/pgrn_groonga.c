@@ -173,12 +173,24 @@ PGrnCreateTable(const char *name,
 				grn_table_flags flags,
 				grn_obj *type)
 {
-	grn_obj	*table;
 	unsigned int nameSize = 0;
 
 	if (name)
-	{
 		nameSize = strlen(name);
+
+	return PGrnCreateTableWithSize(name, nameSize, flags, type);
+}
+
+grn_obj *
+PGrnCreateTableWithSize(const char *name,
+						size_t nameSize,
+						grn_table_flags flags,
+						grn_obj *type)
+{
+	grn_obj	*table;
+
+	if (name)
+	{
 		flags |= GRN_OBJ_PERSISTENT;
 	}
 
@@ -198,10 +210,24 @@ PGrnCreateColumn(grn_obj	*table,
 				 grn_column_flags flags,
 				 grn_obj	*type)
 {
+	return PGrnCreateColumnWithSize(table,
+									name,
+									strlen(name),
+									flags,
+									type);
+}
+
+grn_obj *
+PGrnCreateColumnWithSize(grn_obj	*table,
+						 const char *name,
+						 size_t		nameSize,
+						 grn_column_flags flags,
+						 grn_obj	*type)
+{
 	grn_obj *column;
 
     column = grn_column_create(ctx, table,
-							   name, strlen(name), NULL,
+							   name, nameSize, NULL,
 							   GRN_OBJ_PERSISTENT | flags,
 							   type);
 	PGrnCheck("pgroonga: failed to create column");

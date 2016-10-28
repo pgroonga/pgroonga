@@ -35,10 +35,19 @@ grn_obj *PGrnLookupIndexColumn(Relation index,
 grn_obj *PGrnCreateTable(const char *name,
 						 grn_table_flags flags,
 						 grn_obj *type);
+grn_obj *PGrnCreateTableWithSize(const char *name,
+								 size_t nameSize,
+								 grn_table_flags flags,
+								 grn_obj *type);
 grn_obj *PGrnCreateColumn(grn_obj *table,
 						  const char*name,
 						  grn_column_flags flags,
 						  grn_obj *type);
+grn_obj *PGrnCreateColumnWithSize(grn_obj *table,
+								  const char*name,
+								  size_t nameSize,
+								  grn_column_flags flags,
+								  grn_obj *type);
 
 void PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source);
 
