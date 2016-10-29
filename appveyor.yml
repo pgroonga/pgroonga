@@ -51,7 +51,7 @@ notifications:
 
 test_script:
   - mkdir -p c:\tmp\space
-  - chmod -R 1777 c:\tmp
+  - ls -la c:\tmp
   - sed -e 's,@TMP_DIR@,C:/tmp,g'
       sql\vacuum\tablespace.sql.in >
       sql\vacuum\tablespace.sql
