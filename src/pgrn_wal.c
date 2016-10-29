@@ -962,6 +962,84 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 }
 
 static void
+PGrnWALApplyInsertArray(PGrnWALApplyData *data,
+						msgpack_object_array *array,
+						grn_obj *value,
+						grn_id range_id)
+{
+	const char *context = "insert: array";
+	uint32_t i;
+
+	grn_obj_reinit(ctx, value, range_id, GRN_OBJ_VECTOR);
+	for (i = 0; i < array->size; i++)
+	{
+		msgpack_object *element;
+
+		element = &(array->ptr[i]);
+		switch (element->type)
+		{
+		case MSGPACK_OBJECT_BOOLEAN:
+			GRN_BOOL_PUT(ctx, value, element->via.boolean);
+			break;
+		case MSGPACK_OBJECT_POSITIVE_INTEGER:
+		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
+#define ELEMENT_VALUE											\
+			(element->type == MSGPACK_OBJECT_POSITIVE_INTEGER ? \
+			 element->via.u64 :									\
+			 element->via.i64)
+			switch (range_id)
+			{
+			case GRN_DB_INT8:
+				GRN_INT8_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_UINT8:
+				GRN_UINT8_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_INT16:
+				GRN_INT16_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_UINT16:
+				GRN_UINT16_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_INT32:
+				GRN_INT32_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_UINT32:
+				GRN_UINT32_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_INT64:
+				GRN_INT64_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			case GRN_DB_UINT64:
+				GRN_UINT64_PUT(ctx, value, ELEMENT_VALUE);
+				break;
+			}
+			break;
+#undef ELEMENT_VALUE
+		case MSGPACK_OBJECT_FLOAT:
+			GRN_FLOAT_PUT(ctx, value, element->via.f64);
+			break;
+		case MSGPACK_OBJECT_STR:
+			grn_vector_add_element(ctx,
+								   value,
+								   element->via.str.ptr,
+								   element->via.str.size,
+								   0,
+								   range_id);
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: WAL: apply: %s: "
+							"unexpected element type: <%#x>",
+							context,
+							element->type)));
+			break;
+		}
+	}
+}
+
+static void
 PGrnWALApplyInsert(PGrnWALApplyData *data,
 				   msgpack_object_map *map,
 				   uint32_t currentElement)
@@ -1063,9 +1141,13 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 						 value->via.str.ptr,
 						 value->via.str.size);
 			break;
-/*
 		case MSGPACK_OBJECT_ARRAY:
+			PGrnWALApplyInsertArray(data,
+									&(value->via.array),
+									walValue,
+									grn_obj_get_range(ctx, column));
 			break;
+/*
 		case MSGPACK_OBJECT_MAP:
 			break;
 		case MSGPACK_OBJECT_BIN:
