@@ -556,7 +556,7 @@ PGrnWALInsertColumnValueVector(PGrnWALData *data,
 											 &element,
 											 NULL,
 											 &domain);
-		PGrnWALInsertColumnValueBraw(data, name, domain, element, elementSize);
+		PGrnWALInsertColumnValueRaw(data, name, domain, element, elementSize);
 	}
 }
 #endif
