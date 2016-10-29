@@ -50,11 +50,11 @@ notifications:
     on_build_status_changed: true
 
 test_script:
-  - mkdir -p input
+  - mkdir input
   - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
       sql\vacuum\tablespace.sql.in >
       input\vacuum_tablespace.source
-  - mkdir -p output
+  - mkdir output
   - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
       expected\vacuum\tablespace.out.in >
       output\vacuum_tablespace.source
