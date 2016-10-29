@@ -50,18 +50,19 @@ notifications:
     on_build_status_changed: true
 
 test_script:
-  - mkdir -p c:\tmp\space
-  - ls -la c:\tmp
-  - sed -e 's,@TMP_DIR@,C:/tmp,g'
+  - mkdir -p input
+  - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
       sql\vacuum\tablespace.sql.in >
-      sql\vacuum\tablespace.sql
-  - sed -e 's,@TMP_DIR@,C:/tmp,g'
+      input\vacuum_tablespace.source
+  - mkdir -p output
+  - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
       expected\vacuum\tablespace.out.in >
-      expected\vacuum\tablespace.out
+      output\vacuum_tablespace.source
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
       sed -e 's,\.sql$,,g' > schedule
+  - echo 'test: vacuum_tablespace' >> schedule
   - ps: Set-Culture ja-JP
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
