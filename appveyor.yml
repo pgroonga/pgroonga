@@ -50,21 +50,18 @@ notifications:
     on_build_status_changed: true
 
 test_script:
-  - mkdir input
-  - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
+  - mkdir tmp/space
+  - chown "NETWORK SERVICE" tmp/space
+  - sed -e 's,@TMP_DIR@,C:/projects/pgroonga/tmp,g'
       sql\vacuum\tablespace.sql.in >
-      input\vacuum_tablespace.source
-  - mkdir output
-  - sed -e 's,@TMP_DIR@/space,@testtablespace@,g'
+      sql\vacuum\tablespace.sql
+  - sed -e 's,@TMP_DIR@,C:/projects/pgroonga/tmp,g'
       expected\vacuum\tablespace.out.in >
-      output\vacuum_tablespace.source
+      expected\vacuum\tablespace.out
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
       sed -e 's,\.sql$,,g' > schedule
-  - find input -name '*.source' |
-      sed -e 's,^input/,test:\ ,g' |
-      sed -e 's,\.source$,,g' >> schedule
   - ps: Set-Culture ja-JP
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
