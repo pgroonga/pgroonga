@@ -50,7 +50,7 @@ notifications:
     on_build_status_changed: true
 
 test_script:
-  - mkdir tmp/space
+  - mkdir tmp\space
   - chown "NETWORK SERVICE" tmp/space
   - sed -e 's,@TMP_DIR@,C:/projects/pgroonga/tmp,g'
       sql\vacuum\tablespace.sql.in >
