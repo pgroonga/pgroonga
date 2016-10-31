@@ -15,13 +15,19 @@ PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);
 void PGrnWALAbort(PGrnWALData *data);
 
-void PGrnWALInsertStart(PGrnWALData *data, size_t nColumns);
+void PGrnWALInsertStart(PGrnWALData *data,
+						grn_obj *table,
+						size_t nColumns);
 void PGrnWALInsertFinish(PGrnWALData *data);
-void PGrnWALInsertColumnStart(PGrnWALData *data, const char *name);
+void PGrnWALInsertColumnStart(PGrnWALData *data,
+							  const char *name,
+							  size_t nameSize);
 void PGrnWALInsertColumnFinish(PGrnWALData *data);
 void PGrnWALInsertColumn(PGrnWALData *data,
-						 const char *name,
+						 grn_obj *column,
 						 grn_obj *value);
+void PGrnWALInsertKey(PGrnWALData *data,
+					  grn_obj *key);
 
 void PGrnWALCreateTable(Relation index,
 						const char *name,

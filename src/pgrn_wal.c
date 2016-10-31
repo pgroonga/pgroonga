@@ -154,8 +154,8 @@ PGrnWALPackPosition(BlockNumber block, OffsetNumber offset)
 
 static void
 PGrnWALUnpackPosition(uint64_t position,
-					   BlockNumber *block,
-					   OffsetNumber *offset)
+					  BlockNumber *block,
+					  OffsetNumber *offset)
 {
 	*block = (BlockNumber)(position >> 32);
 	*offset = (OffsetNumber)(position & ((1 << 16) - 1));
@@ -163,8 +163,8 @@ PGrnWALUnpackPosition(uint64_t position,
 
 static void
 PGrnWALUpdateStatus(Relation index,
-					 BlockNumber block,
-					 OffsetNumber offset)
+					BlockNumber block,
+					OffsetNumber offset)
 {
 	grn_obj *statusesTable;
 	grn_obj *currentColumn;
@@ -342,6 +342,9 @@ PGrnWALStart(Relation index)
 	if (!PGrnWALEnabled)
 		return NULL;
 
+	if (!RelationIsValid(index))
+		return NULL;
+
 	data = palloc(sizeof(PGrnWALData));
 
 	data->index = index;
@@ -397,16 +400,35 @@ PGrnWALAbort(PGrnWALData *data)
 
 void
 PGrnWALInsertStart(PGrnWALData *data,
-					size_t nColumns)
+				   grn_obj *table,
+				   size_t nColumns)
 {
 #ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
+	size_t nElements = nColumns;
 
-	if (!PGrnWALEnabled)
+	if (!data)
 		return;
 
+	if (table)
+		nElements++;
+
 	packer = &(data->packer);
-	msgpack_pack_map(packer, nColumns);
+	msgpack_pack_map(packer, nElements);
+
+	if (table)
+	{
+		char tableName[GRN_TABLE_MAX_KEY_SIZE];
+		int tableNameSize;
+
+		tableNameSize = grn_obj_name(ctx,
+									 table,
+									 tableName,
+									 GRN_TABLE_MAX_KEY_SIZE);
+		msgpack_pack_cstr(packer, "_table");
+		msgpack_pack_str(packer, tableNameSize);
+		msgpack_pack_str_body(packer, tableName, tableNameSize);
+	}
 #endif
 }
 
@@ -417,18 +439,17 @@ PGrnWALInsertFinish(PGrnWALData *data)
 
 void
 PGrnWALInsertColumnStart(PGrnWALData *data,
-						  const char *name)
+						 const char *name,
+						 size_t nameSize)
 {
 #ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
-	size_t nameSize;
 
-	if (!PGrnWALEnabled)
+	if (!data)
 		return;
 
 	packer = &(data->packer);
 
-	nameSize = strlen(name);
 	msgpack_pack_str(packer, nameSize);
 	msgpack_pack_str_body(packer, name, nameSize);
 #endif
@@ -443,6 +464,7 @@ PGrnWALInsertColumnFinish(PGrnWALData *data)
 static void
 PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 							const char *name,
+							size_t nameSize,
 							grn_id domain,
 							const char *value,
 							size_t valueSize)
@@ -512,8 +534,8 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 			ereport(ERROR,
 					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 					 errmsg("pgroonga: WAL: insert: unsupported type: "
-							"<%s>: <%.*s>",
-							name,
+							"<%.*s>: <%.*s>",
+							(int)nameSize, name,
 							domainNameSize, domainName)));
 		}
 		break;
@@ -523,10 +545,12 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 static void
 PGrnWALInsertColumnValueBulk(PGrnWALData *data,
 							 const char *name,
+							 size_t nameSize,
 							 grn_obj *value)
 {
 	PGrnWALInsertColumnValueRaw(data,
 								name,
+								nameSize,
 								value->header.domain,
 								GRN_BULK_HEAD(value),
 								GRN_BULK_VSIZE(value));
@@ -535,6 +559,7 @@ PGrnWALInsertColumnValueBulk(PGrnWALData *data,
 static void
 PGrnWALInsertColumnValueVector(PGrnWALData *data,
 							   const char *name,
+							   size_t nameSize,
 							   grn_obj *value)
 {
 	msgpack_packer *packer;
@@ -556,40 +581,107 @@ PGrnWALInsertColumnValueVector(PGrnWALData *data,
 											 &element,
 											 NULL,
 											 &domain);
-		PGrnWALInsertColumnValueRaw(data, name, domain, element, elementSize);
+		PGrnWALInsertColumnValueRaw(data,
+									name,
+									nameSize,
+									domain,
+									element,
+									elementSize);
+	}
+}
+
+static void
+PGrnWALInsertColumnUValueVector(PGrnWALData *data,
+								const char *name,
+								size_t nameSize,
+								grn_obj *value)
+{
+	msgpack_packer *packer;
+	grn_id domain;
+	unsigned int elementSize;
+	unsigned int i, n;
+
+	packer = &(data->packer);
+
+	domain = value->header.domain;
+	elementSize = grn_uvector_element_size(ctx, value);
+	n = grn_uvector_size(ctx, value);
+	msgpack_pack_array(packer, n);
+	for (i = 0; i < n; i++)
+	{
+		const char *element;
+
+		element = GRN_BULK_HEAD(value) + (elementSize * i);
+		PGrnWALInsertColumnValueRaw(data,
+									name,
+									nameSize,
+									domain,
+									element,
+									elementSize);
 	}
 }
 #endif
 
 void
 PGrnWALInsertColumn(PGrnWALData *data,
-					const char *name,
+					grn_obj *column,
 					grn_obj *value)
 {
 #ifdef PGRN_SUPPORT_WAL
-	if (!PGrnWALEnabled)
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+	int nameSize;
+
+	if (!data)
 		return;
 
-	PGrnWALInsertColumnStart(data, name);
+	nameSize = grn_column_name(ctx, column, name, GRN_TABLE_MAX_KEY_SIZE);
+
+	if (!data)
+		return;
+
+	PGrnWALInsertColumnStart(data, name, nameSize);
 
 	switch (value->header.type)
 	{
 	case GRN_BULK:
-		PGrnWALInsertColumnValueBulk(data, name, value);
+		PGrnWALInsertColumnValueBulk(data, name, nameSize, value);
 		break;
 	case GRN_VECTOR:
-		PGrnWALInsertColumnValueVector(data, name, value);
+		PGrnWALInsertColumnValueVector(data, name, nameSize, value);
+		break;
+	case GRN_UVECTOR:
+		PGrnWALInsertColumnUValueVector(data, name, nameSize, value);
 		break;
 	default:
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("pgroonga: WAL: not bulk value isn't supported yet: "
-						"<%s>: <%s>",
-						name,
+						"<%.*s>: <%s>",
+						(int)nameSize, name,
 						grn_obj_type_to_string(value->header.type))));
 		break;
 	}
 
+	PGrnWALInsertColumnFinish(data);
+#endif
+}
+
+void
+PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
+{
+#ifdef PGRN_SUPPORT_WAL
+	msgpack_packer *packer;
+
+	if (!data)
+		return;
+
+	packer = &(data->packer);
+
+	PGrnWALInsertColumnStart(data,
+							 GRN_COLUMN_NAME_KEY,
+							 GRN_COLUMN_NAME_KEY_LEN);
+	msgpack_pack_bin(packer, GRN_BULK_VSIZE(key));
+	msgpack_pack_bin_body(packer, GRN_BULK_HEAD(key), GRN_BULK_VSIZE(key));
 	PGrnWALInsertColumnFinish(data);
 #endif
 }
@@ -607,10 +699,9 @@ PGrnWALCreateTable(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 6;
 
-	if (!PGrnWALEnabled)
-		return;
-
 	data = PGrnWALStart(index);
+	if (!data)
+		return;
 
 	packer = &(data->packer);
 	msgpack_pack_map(packer, nElements);
@@ -649,10 +740,9 @@ PGrnWALCreateColumn(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 5;
 
-	if (!PGrnWALEnabled)
-		return;
-
 	data = PGrnWALStart(index);
+	if (!data)
+		return;
 
 	packer = &(data->packer);
 	msgpack_pack_map(packer, nElements);
@@ -686,10 +776,9 @@ PGrnWALSetSource(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 3;
 
-	if (!PGrnWALEnabled)
-		return;
-
 	data = PGrnWALStart(index);
+	if (!data)
+		return;
 
 	packer = &(data->packer);
 	msgpack_pack_map(packer, nElements);
@@ -718,10 +807,9 @@ PGrnWALSetSources(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 3;
 
-	if (!PGrnWALEnabled)
-		return;
-
 	data = PGrnWALStart(index);
+	if (!data)
+		return;
 
 	packer = &(data->packer);
 	msgpack_pack_map(packer, nElements);
@@ -775,8 +863,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		GRN_BULK_REWIND(position);
 		grn_obj_get_value(ctx, data->currentColumn, data->statusID, position);
 		PGrnWALUnpackPosition(GRN_UINT64_VALUE(position),
-							   &currentBlock,
-							   &currentOffset);
+							  &currentBlock,
+							  &currentOffset);
 	}
 
 	nBlocks = RelationGetNumberOfBlocks(data->index);
@@ -1074,16 +1162,17 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[currentElement]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "_key"))
+		if (PGrnWALApplyKeyEqual(context, &(kv->key), GRN_COLUMN_NAME_KEY))
 		{
 			if (kv->val.type != MSGPACK_OBJECT_BIN)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 						 errmsg("pgroonga: WAL: apply: %s: "
-								"_key value must be binary: "
+								"%s value must be binary: "
 								"<%#x>",
 								context,
+								GRN_COLUMN_NAME_KEY,
 								kv->val.type)));
 			}
 			key = kv->val.via.bin.ptr;
@@ -1113,7 +1202,7 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 							key->type)));
 		}
 
-		column = PGrnLookupColumnWithSize(data->sources,
+		column = PGrnLookupColumnWithSize(table,
 										  key->via.str.ptr,
 										  key->via.str.size,
 										  ERROR);

@@ -42,10 +42,11 @@ grn_obj *PGrnJSONBLookupSizeLexicon(Relation index,
 grn_obj *PGrnJSONBSetSource(Relation index, unsigned int i);
 
 void PGrnJSONBInsert(Relation index,
+					 grn_obj *sourcesTable,
+					 grn_obj *sourcesCtidColumn,
 					 Datum *values,
-					 unsigned int nthValue,
-					 grn_obj *valueIDs,
-					 PGrnWALData *walData);
+					 bool *isnull,
+					 uint64_t packedCtid);
 
 bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 								   ScanKey key,

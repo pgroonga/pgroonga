@@ -1934,14 +1934,25 @@ PGrnInsert(Relation index,
 	PGrnWALData *walData;
 	unsigned int i;
 
+	if (desc->natts == 1 && PGrnAttributeIsJSONB(desc->attrs[0]->atttypid))
+	{
+		PGrnJSONBInsert(index,
+						sourcesTable,
+						sourcesCtidColumn,
+						values,
+						isnull,
+						CtidToUInt64(ht_ctid));
+		return;
+	}
+
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 
 	walData = PGrnWALStart(index);
-	PGrnWALInsertStart(walData, desc->natts + 1);
+	PGrnWALInsertStart(walData, NULL, desc->natts + 1);
 
 	GRN_UINT64_SET(ctx, &(buffers->ctid), CtidToUInt64(ht_ctid));
 	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
-	PGrnWALInsertColumn(walData, "ctid", &(buffers->ctid));
+	PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -1957,24 +1968,12 @@ PGrnInsert(Relation index,
 			continue;
 
 		dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
-
 		buffer = &(buffers->general);
-		if (PGrnAttributeIsJSONB(attribute->atttypid))
-		{
-			/* PGrnWALInsertColumnStart(walData, name->data); */
-			PGrnJSONBInsert(index, values, i, buffer, walData);
-			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			/* PGrnWALInsertColumnFinish(walData); */
-			PGrnWALInsertColumn(walData, name->data, buffer);
-		}
-		else
-		{
-			domain = PGrnGetType(index, i, &flags);
-			grn_obj_reinit(ctx, buffer, domain, flags);
-			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
-			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			PGrnWALInsertColumn(walData, name->data, buffer);
-		}
+		domain = PGrnGetType(index, i, &flags);
+		grn_obj_reinit(ctx, buffer, domain, flags);
+		PGrnConvertFromData(values[i], attribute->atttypid, buffer);
+		grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
+		PGrnWALInsertColumn(walData, dataColumn, buffer);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("pgroonga: failed to set column value")) {
 			continue;
