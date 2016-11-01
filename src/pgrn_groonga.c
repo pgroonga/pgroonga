@@ -3,6 +3,7 @@
 #include "pgrn_column_name.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
+#include "pgrn_wal.h"
 
 bool PGrnIsLZ4Available;
 
@@ -169,23 +170,35 @@ PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 }
 
 grn_obj *
-PGrnCreateTable(const char *name,
+PGrnCreateTable(Relation index,
+				const char *name,
 				grn_table_flags flags,
-				grn_obj *type)
+				grn_obj *type,
+				grn_obj *tokenizer,
+				grn_obj *normalizer)
 {
 	unsigned int nameSize = 0;
 
 	if (name)
 		nameSize = strlen(name);
 
-	return PGrnCreateTableWithSize(name, nameSize, flags, type);
+	return PGrnCreateTableWithSize(index,
+								   name,
+								   nameSize,
+								   flags,
+								   type,
+								   tokenizer,
+								   normalizer);
 }
 
 grn_obj *
-PGrnCreateTableWithSize(const char *name,
+PGrnCreateTableWithSize(Relation index,
+						const char *name,
 						size_t nameSize,
 						grn_table_flags flags,
-						grn_obj *type)
+						grn_obj *type,
+						grn_obj *tokenizer,
+						grn_obj *normalizer)
 {
 	grn_obj	*table;
 
@@ -200,17 +213,31 @@ PGrnCreateTableWithSize(const char *name,
 							 type,
 							 NULL);
 	PGrnCheck("pgroonga: failed to create table");
+	if (tokenizer)
+		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
+	if (normalizer)
+		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZER, normalizer);
+
+	PGrnWALCreateTable(index,
+					   name,
+					   nameSize,
+					   flags,
+					   type,
+					   tokenizer,
+					   normalizer);
 
 	return table;
 }
 
 grn_obj *
-PGrnCreateColumn(grn_obj	*table,
+PGrnCreateColumn(Relation	index,
+				 grn_obj	*table,
 				 const char *name,
 				 grn_column_flags flags,
 				 grn_obj	*type)
 {
-	return PGrnCreateColumnWithSize(table,
+	return PGrnCreateColumnWithSize(index,
+									table,
 									name,
 									strlen(name),
 									flags,
@@ -218,7 +245,8 @@ PGrnCreateColumn(grn_obj	*table,
 }
 
 grn_obj *
-PGrnCreateColumnWithSize(grn_obj	*table,
+PGrnCreateColumnWithSize(Relation	index,
+						 grn_obj	*table,
 						 const char *name,
 						 size_t		nameSize,
 						 grn_column_flags flags,
@@ -226,17 +254,22 @@ PGrnCreateColumnWithSize(grn_obj	*table,
 {
 	grn_obj *column;
 
+	flags |= GRN_OBJ_PERSISTENT;
     column = grn_column_create(ctx, table,
 							   name, nameSize, NULL,
-							   GRN_OBJ_PERSISTENT | flags,
+							   flags,
 							   type);
 	PGrnCheck("pgroonga: failed to create column");
+
+	PGrnWALCreateColumn(index, table, name, nameSize, flags, type);
 
 	return column;
 }
 
 void
-PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source)
+PGrnIndexColumnSetSource(Relation index,
+						 grn_obj *indexColumn,
+						 grn_obj *source)
 {
 	grn_id sourceID;
 
@@ -245,7 +278,16 @@ PGrnIndexColumnSetSource(grn_obj *indexColumn, grn_obj *source)
 	sourceID = grn_obj_id(ctx, source);
 	GRN_RECORD_PUT(ctx, &(buffers->sourceIDs), sourceID);
 
-	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, &(buffers->sourceIDs));
+	PGrnIndexColumnSetSourceIDs(index, indexColumn, &(buffers->sourceIDs));
+}
+
+void
+PGrnIndexColumnSetSourceIDs(Relation index,
+							grn_obj *indexColumn,
+							grn_obj *sourceIDs)
+{
+	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
+	PGrnWALSetSourceIDs(index, indexColumn, sourceIDs);
 }
 
 bool

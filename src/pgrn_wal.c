@@ -137,10 +137,14 @@ PGrnWALEnsureStatusesTable(void)
 	if (walStatuses)
 		return;
 
-	walStatuses = PGrnCreateTable(PGRN_WAL_STATUES_TABLE_NAME,
+	walStatuses = PGrnCreateTable(NULL,
+								  PGRN_WAL_STATUES_TABLE_NAME,
 								  GRN_OBJ_TABLE_HASH_KEY,
-								  grn_ctx_at(ctx, GRN_DB_UINT32));
-	PGrnCreateColumn(walStatuses,
+								  grn_ctx_at(ctx, GRN_DB_UINT32),
+								  NULL,
+								  NULL);
+	PGrnCreateColumn(NULL,
+					 walStatuses,
 					 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
 					 GRN_OBJ_COLUMN_SCALAR,
 					 grn_ctx_at(ctx, GRN_DB_UINT64));
@@ -689,6 +693,7 @@ PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
 void
 PGrnWALCreateTable(Relation index,
 				   const char *name,
+				   size_t nameSize,
 				   grn_table_flags flags,
 				   grn_obj *type,
 				   grn_obj *tokenizer,
@@ -710,7 +715,8 @@ PGrnWALCreateTable(Relation index,
 	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_CREATE_TABLE);
 
 	msgpack_pack_cstr(packer, "name");
-	msgpack_pack_cstr(packer, name);
+	msgpack_pack_str(packer, nameSize);
+	msgpack_pack_str_body(packer, name, nameSize);
 
 	msgpack_pack_cstr(packer, "flags");
 	msgpack_pack_uint32(packer, flags);
@@ -732,6 +738,7 @@ void
 PGrnWALCreateColumn(Relation index,
 					grn_obj *table,
 					const char *name,
+					size_t nameSize,
 					grn_column_flags flags,
 					grn_obj *type)
 {
@@ -754,7 +761,8 @@ PGrnWALCreateColumn(Relation index,
 	msgpack_pack_grn_obj(packer, table);
 
 	msgpack_pack_cstr(packer, "name");
-	msgpack_pack_cstr(packer, name);
+	msgpack_pack_str(packer, nameSize);
+	msgpack_pack_str_body(packer, name, nameSize);
 
 	msgpack_pack_cstr(packer, "flags");
 	msgpack_pack_uint32(packer, flags);
@@ -767,40 +775,9 @@ PGrnWALCreateColumn(Relation index,
 }
 
 void
-PGrnWALSetSource(Relation index,
-				 grn_obj *column,
-				 grn_obj *source)
-{
-#ifdef PGRN_SUPPORT_WAL
-	PGrnWALData *data;
-	msgpack_packer *packer;
-	size_t nElements = 3;
-
-	data = PGrnWALStart(index);
-	if (!data)
-		return;
-
-	packer = &(data->packer);
-	msgpack_pack_map(packer, nElements);
-
-	msgpack_pack_cstr(packer, "_action");
-	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_SET_SOURCES);
-
-	msgpack_pack_cstr(packer, "column");
-	msgpack_pack_grn_obj(packer, column);
-
-	msgpack_pack_cstr(packer, "sources");
-	msgpack_pack_array(packer, 1);
-	msgpack_pack_grn_obj(packer, source);
-
-	PGrnWALFinish(data);
-#endif
-}
-
-void
-PGrnWALSetSources(Relation index,
-				  grn_obj *column,
-				  grn_obj *sources)
+PGrnWALSetSourceIDs(Relation index,
+					grn_obj *column,
+					grn_obj *sourceIDs)
 {
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALData *data;
@@ -824,12 +801,12 @@ PGrnWALSetSources(Relation index,
 	{
 		unsigned int i, nElements;
 
-		nElements = GRN_BULK_VSIZE(sources) / sizeof(grn_id);
+		nElements = GRN_BULK_VSIZE(sourceIDs) / sizeof(grn_id);
 		msgpack_pack_array(packer, nElements);
 		for (i = 0; i < nElements; i++)
 		{
 			grn_obj *source;
-			source = grn_ctx_at(ctx, GRN_RECORD_VALUE_AT(sources, i));
+			source = grn_ctx_at(ctx, GRN_RECORD_VALUE_AT(sourceIDs, i));
 			msgpack_pack_grn_obj(packer, source);
 		}
 	}
@@ -1270,7 +1247,6 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
 	uint32_t i;
-	grn_obj *table;
 
 	for (i = currentElement; i < map->size; i++)
 	{
@@ -1299,15 +1275,13 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 		}
 	}
 
-	table = PGrnCreateTableWithSize(name, nameSize, flags, type);
-	if (tokenizer)
-	{
-		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
-	}
-	if (normalizer)
-	{
-		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZER, normalizer);
-	}
+	PGrnCreateTableWithSize(NULL,
+							name,
+							nameSize,
+							flags,
+							type,
+							tokenizer,
+							normalizer);
 }
 
 static void
@@ -1346,7 +1320,7 @@ PGrnWALApplyCreateColumn(PGrnWALApplyData *data,
 		}
 	}
 
-	PGrnCreateColumnWithSize(table, name, nameSize, flags, type);
+	PGrnCreateColumnWithSize(NULL, table, name, nameSize, flags, type);
 }
 
 static void

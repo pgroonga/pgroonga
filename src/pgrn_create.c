@@ -6,45 +6,32 @@
 #include "pgrn_groonga.h"
 #include "pgrn_options.h"
 #include "pgrn_value.h"
-#include "pgrn_wal.h"
 
 static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
 {
-	grn_column_flags flags = GRN_OBJ_COLUMN_SCALAR;
-	grn_obj *type;
-
-	type = grn_ctx_at(ctx, GRN_DB_UINT64);
-	data->sourcesCtidColumn = PGrnCreateColumn(data->sourcesTable,
+	data->sourcesCtidColumn = PGrnCreateColumn(data->index,
+											   data->sourcesTable,
 											   PGrnSourcesCtidColumnName,
 											   GRN_OBJ_COLUMN_SCALAR,
-											   type);
-	PGrnWALCreateColumn(data->index,
-						data->sourcesTable,
-						PGrnSourcesCtidColumnName,
-						flags,
-						type);
+											   grn_ctx_at(ctx, GRN_DB_UINT64));
 }
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
 {
 	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_table_flags flags = GRN_OBJ_TABLE_NO_KEY;
 
 	snprintf(sourcesTableName, sizeof(sourcesTableName),
 			 PGrnSourcesTableNameFormat, data->relNode);
-	data->sourcesTable = PGrnCreateTable(sourcesTableName,
+	data->sourcesTable = PGrnCreateTable(data->index,
+										 sourcesTableName,
 										 GRN_OBJ_TABLE_NO_KEY,
+										 NULL,
+										 NULL,
 										 NULL);
-	PGrnWALCreateTable(data->index,
-					   sourcesTableName,
-					   flags,
-					   NULL,
-					   NULL,
-					   NULL);
 
 	PGrnCreateSourcesCtidColumn(data);
 }
@@ -93,15 +80,11 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		char columnName[GRN_TABLE_MAX_KEY_SIZE];
 		PGrnColumnNameEncode(data->desc->attrs[data->i]->attname.data,
 							 columnName);
-		PGrnCreateColumn(data->sourcesTable,
+		PGrnCreateColumn(data->index,
+						 data->sourcesTable,
 						 columnName,
 						 flags,
 						 range);
-		PGrnWALCreateColumn(data->index,
-							data->sourcesTable,
-							columnName,
-							flags,
-							range);
 	}
 }
 
@@ -127,12 +110,6 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		break;
 	}
 
-	snprintf(lexiconName, sizeof(lexiconName),
-			 PGrnLexiconNameFormat, data->relNode, data->i);
-	type = grn_ctx_at(ctx, typeID);
-	lexicon = PGrnCreateTable(lexiconName, flags, type);
-	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
-
 	if (data->forFullTextSearch ||
 		data->forRegexpSearch ||
 		data->forPrefixSearch)
@@ -153,24 +130,25 @@ PGrnCreateLexicon(PGrnCreateData *data)
 			if (!PGrnIsNoneValue(tokenizerName))
 			{
 				tokenizer = PGrnLookup(tokenizerName, ERROR);
-				grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-								 tokenizer);
 			}
 		}
 
 		if (!PGrnIsNoneValue(normalizerName))
 		{
 			normalizer = PGrnLookup(normalizerName, ERROR);
-			grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER, normalizer);
 		}
 	}
 
-	PGrnWALCreateTable(data->index,
-					   lexiconName,
-					   flags,
-					   type,
-					   tokenizer,
-					   normalizer);
+	snprintf(lexiconName, sizeof(lexiconName),
+			 PGrnLexiconNameFormat, data->relNode, data->i);
+	type = grn_ctx_at(ctx, typeID);
+	lexicon = PGrnCreateTable(data->index,
+							  lexiconName,
+							  flags,
+							  type,
+							  tokenizer,
+							  normalizer);
+	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 }
 
 void
@@ -186,13 +164,9 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 
 	if (data->forFullTextSearch || data->forRegexpSearch)
 		flags |= GRN_OBJ_WITH_POSITION;
-	PGrnCreateColumn(lexicon,
+	PGrnCreateColumn(data->index,
+					 lexicon,
 					 PGrnIndexColumnName,
 					 flags,
 					 data->sourcesTable);
-	PGrnWALCreateColumn(data->index,
-						lexicon,
-						PGrnIndexColumnName,
-						flags,
-						data->sourcesTable);
 }
