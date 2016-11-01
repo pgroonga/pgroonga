@@ -5,6 +5,8 @@
 #include "pgrn_groonga.h"
 #include "pgrn_wal.h"
 
+#include <miscadmin.h>
+
 bool PGrnIsLZ4Available;
 
 static grn_ctx *ctx = &PGrnContext;
@@ -200,15 +202,38 @@ PGrnCreateTableWithSize(Relation index,
 						grn_obj *tokenizer,
 						grn_obj *normalizer)
 {
+	const char *path = NULL;
+	char pathBuffer[MAXPGPATH];
 	grn_obj	*table;
 
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
+		if (index && index->rd_node.spcNode != MyDatabaseTableSpace)
+		{
+			char *databasePath;
+			char filePath[MAXPGPATH];
+
+			databasePath =
+				GetDatabasePath(MyDatabaseId, index->rd_node.spcNode);
+			snprintf(filePath, sizeof(filePath),
+					 "%s.%.*s",
+					 PGrnDatabaseBasename,
+					 (int)nameSize,
+					 name);
+			join_path_components(pathBuffer,
+								 databasePath,
+								 filePath);
+			pfree(databasePath);
+
+			path = pathBuffer;
+		}
 	}
 
 	table = grn_table_create(ctx,
-							 name, nameSize, NULL,
+							 name,
+							 nameSize,
+							 path,
 							 flags,
 							 type,
 							 NULL);
@@ -252,11 +277,46 @@ PGrnCreateColumnWithSize(Relation	index,
 						 grn_column_flags flags,
 						 grn_obj	*type)
 {
+	const char *path = NULL;
+	char pathBuffer[MAXPGPATH];
 	grn_obj *column;
 
-	flags |= GRN_OBJ_PERSISTENT;
-    column = grn_column_create(ctx, table,
-							   name, nameSize, NULL,
+	if (name)
+	{
+		flags |= GRN_OBJ_PERSISTENT;
+		if (index && index->rd_node.spcNode != MyDatabaseTableSpace)
+		{
+			char *databasePath;
+			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			int tableNameSize;
+			char filePath[MAXPGPATH];
+
+			databasePath =
+				GetDatabasePath(MyDatabaseId, index->rd_node.spcNode);
+			tableNameSize = grn_obj_name(ctx,
+										 table,
+										 tableName,
+										 GRN_TABLE_MAX_KEY_SIZE);
+			snprintf(filePath, sizeof(filePath),
+					 "%s.%.*s.%.*s",
+					 PGrnDatabaseBasename,
+					 tableNameSize,
+					 tableName,
+					 (int)nameSize,
+					 name);
+			join_path_components(pathBuffer,
+								 databasePath,
+								 filePath);
+			pfree(databasePath);
+
+			path = pathBuffer;
+		}
+	}
+    column = grn_column_create(ctx,
+							   table,
+							   name,
+							   nameSize,
+							   path,
 							   flags,
 							   type);
 	PGrnCheck("pgroonga: failed to create column");
