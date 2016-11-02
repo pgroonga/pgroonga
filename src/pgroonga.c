@@ -7,8 +7,9 @@
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_highlight_html.h"
-#include "pgrn_keywords.h"
+#include "pgrn_index_status.h"
 #include "pgrn_jsonb.h"
+#include "pgrn_keywords.h"
 #include "pgrn_match_positions_byte.h"
 #include "pgrn_match_positions_character.h"
 #include "pgrn_options.h"
@@ -398,6 +399,8 @@ _PG_init(void)
 	PGrnInitializeGroongaInformation();
 
 	PGrnInitializeOptions();
+
+	PGrnInitializeIndexStatus();
 
 	PGrnInitializeMatchSequentialSearchData();
 	PGrnInitializePrefixRKSequentialSearchData();
@@ -1932,6 +1935,22 @@ PGrnInsert(Relation index,
 	grn_id id;
 	PGrnWALData *walData;
 	unsigned int i;
+
+	{
+		uint32_t currentMaxRecordSize;
+
+		currentMaxRecordSize = PGrnIndexStatusGetMaxRecordSize(index);
+		if (currentMaxRecordSize < INDEX_SIZE_MASK)
+		{
+			Size recordSize;
+
+			recordSize = heap_compute_data_size(desc, values, isnull);
+			if (recordSize >= INDEX_SIZE_MASK)
+			{
+				PGrnIndexStatusSetMaxRecordSize(index, recordSize);
+			}
+		}
+	}
 
 	if (desc->natts == 1 && PGrnAttributeIsJSONB(desc->attrs[0]->atttypid))
 	{
@@ -3972,6 +3991,9 @@ pgroonga_canreturn_raw(Relation index,
 {
 	TupleDesc desc;
 	unsigned int i;
+
+	if (PGrnIndexStatusGetMaxRecordSize(index) >= INDEX_SIZE_MASK)
+		return false;
 
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)

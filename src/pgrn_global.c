@@ -20,6 +20,8 @@ PGrnInitializeBuffers(void)
 	GRN_UINT64_INIT(&(PGrnBuffers.jsonbValueKeys), GRN_OBJ_VECTOR);
 	GRN_UINT64_INIT(&(PGrnBuffers.walPosition), 0);
 	GRN_VOID_INIT(&(PGrnBuffers.walValue));
+	GRN_UINT32_INIT(&(PGrnBuffers.maxRecordSize), 0);
+	GRN_UINT64_INIT(&(PGrnBuffers.walAppliedPosition), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.head), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.body), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.foot), 0);
@@ -39,6 +41,8 @@ PGrnFinalizeBuffers(void)
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.jsonbValueKeys));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walPosition));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walValue));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.maxRecordSize));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walAppliedPosition));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.head));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.body));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.foot));

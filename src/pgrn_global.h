@@ -14,6 +14,8 @@ struct PGrnBuffers
 	grn_obj jsonbValueKeys;
 	grn_obj walPosition;
 	grn_obj walValue;
+	grn_obj maxRecordSize;
+	grn_obj walAppliedPosition;
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;

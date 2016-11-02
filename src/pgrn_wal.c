@@ -4,6 +4,7 @@
 
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
+#include "pgrn_index_status.h"
 #include "pgrn_wal.h"
 
 static bool PGrnWALEnabled = false;
@@ -94,10 +95,6 @@ struct PGrnWALData_
 #endif
 };
 
-#define PGRN_WAL_STATUES_TABLE_NAME "WALStatuses"
-#define PGRN_WAL_STATUES_TABLE_NAME_SIZE strlen(PGRN_WAL_STATUES_TABLE_NAME)
-#define PGRN_WAL_STATUES_CURRENT_COLUMN_NAME "current"
-
 #ifdef PGRN_SUPPORT_WAL
 static void
 msgpack_pack_cstr(msgpack_packer *packer, const char *string)
@@ -124,71 +121,6 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 	{
 		msgpack_pack_nil(packer);
 	}
-}
-
-static void
-PGrnWALEnsureStatusesTable(void)
-{
-	grn_obj *walStatuses;
-
-	walStatuses = grn_ctx_get(ctx,
-							  PGRN_WAL_STATUES_TABLE_NAME,
-							  PGRN_WAL_STATUES_TABLE_NAME_SIZE);
-	if (walStatuses)
-		return;
-
-	walStatuses = PGrnCreateTable(NULL,
-								  PGRN_WAL_STATUES_TABLE_NAME,
-								  GRN_OBJ_TABLE_HASH_KEY,
-								  grn_ctx_at(ctx, GRN_DB_UINT32),
-								  NULL,
-								  NULL);
-	PGrnCreateColumn(NULL,
-					 walStatuses,
-					 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
-					 GRN_OBJ_COLUMN_SCALAR,
-					 grn_ctx_at(ctx, GRN_DB_UINT64));
-}
-
-static uint64_t
-PGrnWALPackPosition(BlockNumber block, OffsetNumber offset)
-{
-	return (((uint64_t)block) << 32) + (uint64_t)offset;
-}
-
-static void
-PGrnWALUnpackPosition(uint64_t position,
-					  BlockNumber *block,
-					  OffsetNumber *offset)
-{
-	*block = (BlockNumber)(position >> 32);
-	*offset = (OffsetNumber)(position & ((1 << 16) - 1));
-}
-
-static void
-PGrnWALUpdateStatus(Relation index,
-					BlockNumber block,
-					OffsetNumber offset)
-{
-	grn_obj *statusesTable;
-	grn_obj *currentColumn;
-	uint32_t oid;
-	grn_id id;
-	uint64_t positionRaw;
-	grn_obj *position = &(buffers->walPosition);
-
-	PGrnWALEnsureStatusesTable();
-
-	statusesTable = PGrnLookup(PGRN_WAL_STATUES_TABLE_NAME, ERROR);
-	currentColumn = PGrnLookupColumn(statusesTable,
-									 PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
-									 ERROR);
-	oid = RelationGetRelid(index);
-	id = grn_table_add(ctx, statusesTable, &oid, sizeof(uint32_t), NULL);
-	positionRaw = PGrnWALPackPosition(block, offset);
-	GRN_BULK_REWIND(position);
-	GRN_UINT64_SET(ctx, position, positionRaw);
-	grn_obj_set_value(ctx, currentColumn, id, position, GRN_OBJ_SET);
 }
 #endif
 
@@ -297,9 +229,10 @@ PGrnWALPageWriter(void *userData,
 				   buffer,
 				   length);
 			data->current.pageSpecial->current += length;
-			PGrnWALUpdateStatus(data->index,
-								BufferGetBlockNumber(data->current.buffer),
-								data->current.pageSpecial->current);
+			PGrnIndexStatusSetWALAppliedPosition(
+				data->index,
+				BufferGetBlockNumber(data->current.buffer),
+				data->current.pageSpecial->current);
 			written += length;
 		}
 		else
@@ -313,9 +246,10 @@ PGrnWALPageWriter(void *userData,
 				   buffer,
 				   writableSize);
 			data->current.pageSpecial->current += writableSize;
-			PGrnWALUpdateStatus(data->index,
-								BufferGetBlockNumber(data->current.buffer),
-								data->current.pageSpecial->current);
+			PGrnIndexStatusSetWALAppliedPosition(
+				data->index,
+				BufferGetBlockNumber(data->current.buffer),
+				data->current.pageSpecial->current);
 			written += writableSize;
 			length -= writableSize;
 			buffer += writableSize;
@@ -818,9 +752,6 @@ PGrnWALSetSourceIDs(Relation index,
 #ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	Relation index;
-	grn_obj *statusesTable;
-	grn_obj *currentColumn;
-	grn_id statusID;
 	struct {
 		BlockNumber block;
 		OffsetNumber offset;
@@ -835,14 +766,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	OffsetNumber currentOffset;
 	BlockNumber nBlocks;
 
-	{
-		grn_obj *position = &(buffers->walPosition);
-		GRN_BULK_REWIND(position);
-		grn_obj_get_value(ctx, data->currentColumn, data->statusID, position);
-		PGrnWALUnpackPosition(GRN_UINT64_VALUE(position),
-							  &currentBlock,
-							  &currentOffset);
-	}
+	PGrnIndexStatusGetWALAppliedPosition(data->index,
+										 &currentBlock,
+										 &currentOffset);
 
 	nBlocks = RelationGetNumberOfBlocks(data->index);
 	if (currentBlock >= nBlocks)
@@ -1445,10 +1371,13 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
 			   MSGPACK_UNPACK_SUCCESS)
 		{
+			OffsetNumber appliedOffset;
+
 			PGrnWALApplyObject(data, &unpacked.data);
-			PGrnWALUpdateStatus(data->index,
-								i,
-								unpacker.off - unpackerBaseOffset);
+			appliedOffset = unpacker.off - unpackerBaseOffset;
+			PGrnIndexStatusSetWALAppliedPosition(data->index,
+												 i,
+												 appliedOffset);
 		}
 	}
 	msgpack_unpacked_destroy(&unpacked);
@@ -1461,34 +1390,15 @@ PGrnWALApply(Relation index)
 {
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALApplyData data;
-	uint32_t oid;
-
-	PGrnWALEnsureStatusesTable();
 
 	data.index = index;
-	data.statusesTable = PGrnLookup(PGRN_WAL_STATUES_TABLE_NAME, ERROR);
-	data.currentColumn = PGrnLookupColumn(data.statusesTable,
-										  PGRN_WAL_STATUES_CURRENT_COLUMN_NAME,
-										  ERROR);
-	oid = RelationGetRelid(index);
-	data.statusID = grn_table_add(ctx,
-								  data.statusesTable,
-								  &oid,
-								  sizeof(uint32_t),
-								  NULL);
 	if (!PGrnWALApplyNeeded(&data))
 		return;
 
 	LockRelation(index, RowExclusiveLock);
-	{
-		grn_obj *position = &(buffers->walPosition);
-
-		GRN_BULK_REWIND(position);
-		grn_obj_get_value(ctx, data.currentColumn, data.statusID, position);
-		PGrnWALUnpackPosition(GRN_UINT64_VALUE(position),
-							   &(data.current.block),
-							   &(data.current.offset));
-	}
+	PGrnIndexStatusGetWALAppliedPosition(data.index,
+										 &(data.current.block),
+										 &(data.current.offset));
 	data.sources = NULL;
 	PGrnWALApplyConsume(&data);
 	UnlockRelation(index, RowExclusiveLock);
