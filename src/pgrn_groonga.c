@@ -5,6 +5,7 @@
 #include "pgrn_groonga.h"
 #include "pgrn_wal.h"
 
+#include <catalog/catalog.h>
 #include <miscadmin.h>
 
 bool PGrnIsLZ4Available;
