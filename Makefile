@@ -50,7 +50,7 @@ EXPECTED_FILES =				\
 		sed -e 's,^sql/,expected/,'	\
 		    -e 's,sql$$,out,')
 
-installcheck: prepare-regress
+# installcheck: prepare-regress
 installcheck: $(RESULT_DIRS)
 installcheck: $(EXPECTED_DIRS)
 installcheck: $(EXPECTED_FILES)
