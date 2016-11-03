@@ -1,7 +1,7 @@
 #pragma once
 
 #include <postgres.h>
-#include <storage/off.h>
+#include <storage/bufpage.h>
 #include <utils/rel.h>
 
 #include <groonga.h>
@@ -13,7 +13,7 @@ void PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size);
 
 void PGrnIndexStatusGetWALAppliedPosition(Relation index,
 										  BlockNumber *block,
-										  OffsetNumber *offset);
+										  LocationIndex *offset);
 void PGrnIndexStatusSetWALAppliedPosition(Relation index,
 										  BlockNumber block,
-										  OffsetNumber offset);
+										  LocationIndex offset);

@@ -119,7 +119,7 @@ PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size)
 void
 PGrnIndexStatusGetWALAppliedPosition(Relation index,
 									 BlockNumber *block,
-									 OffsetNumber *offset)
+									 LocationIndex *offset)
 {
 	grn_id id;
 	grn_obj *column;
@@ -133,13 +133,13 @@ PGrnIndexStatusGetWALAppliedPosition(Relation index,
 	grn_obj_get_value(ctx, column, id, position);
 	positionRaw = GRN_UINT64_VALUE(position);
 	*block = (BlockNumber)(positionRaw >> 32);
-	*offset = (OffsetNumber)(positionRaw & ((1 << 16) - 1));
+	*offset = (LocationIndex)(positionRaw & ((1 << 16) - 1));
 }
 
 void
 PGrnIndexStatusSetWALAppliedPosition(Relation index,
 									 BlockNumber block,
-									 OffsetNumber offset)
+									 LocationIndex offset)
 {
 	grn_id id;
 	grn_obj *column;

@@ -58,19 +58,11 @@ typedef struct {
 	uint8_t version;
 } PGrnWALMetaPageSpecial;
 
-#define PGRN_PAGE_DATA_SIZE										\
-	(BLCKSZ - SizeOfPageHeaderData - sizeof(OffsetNumber) - 1)
-typedef struct {
-	OffsetNumber current;
-	uint8_t data[PGRN_PAGE_DATA_SIZE];
-} PGrnWALPageSpecial;
-
 typedef struct {
 	GenericXLogState *state;
 	PGrnWALMetaPageSpecial *metaPageSpecial;
 	Buffer buffer;
 	Page page;
-	PGrnWALPageSpecial *special;
 } PGrnWALPageWriteData;
 #endif
 
@@ -90,7 +82,6 @@ struct PGrnWALData_
 	{
 		Buffer buffer;
 		Page page;
-		PGrnWALPageSpecial *pageSpecial;
 	} current;
 	msgpack_packer packer;
 #endif
@@ -173,7 +164,6 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 {
 	data->current.buffer = InvalidBuffer;
 	data->current.page = NULL;
-	data->current.pageSpecial = NULL;
 }
 
 static void
@@ -191,6 +181,42 @@ PGrnWALDataRestart(PGrnWALData *data)
 	PGrnWALDataInitNUsedPages(data);
 	PGrnWALDataInitMeta(data);
 	PGrnWALDataInitCurrent(data);
+}
+
+static char *
+PGrnWALPageGetData(Page page)
+{
+	return PageGetContents(page);
+}
+
+static size_t
+PGrnWALPageGetFreeSize(Page page)
+{
+	PageHeader pageHeader;
+
+	pageHeader = (PageHeader)page;
+	return pageHeader->pd_upper - pageHeader->pd_lower;
+}
+
+static LocationIndex
+PGrnWALPageGetLastOffset(Page page)
+{
+	PageHeader pageHeader;
+
+	pageHeader = (PageHeader)page;
+	return pageHeader->pd_lower - SizeOfPageHeaderData;
+}
+
+static void
+PGrnWALPageAppend(Page page, const char *data, size_t dataSize)
+{
+	PageHeader pageHeader;
+
+	pageHeader = (PageHeader)page;
+	memcpy(PGrnWALPageGetData(page) + PGrnWALPageGetLastOffset(page),
+		   data,
+		   dataSize);
+	pageHeader->pd_lower += dataSize;
 }
 
 static void
@@ -221,10 +247,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
 									  GENERIC_XLOG_FULL_IMAGE);
-		PageInit(data->current.page, BLCKSZ, sizeof(PGrnWALPageSpecial));
-		data->current.pageSpecial =
-			(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
-		data->current.pageSpecial->current = 0;
+		PageInit(data->current.page, BLCKSZ, 0);
 	}
 	else
 	{
@@ -235,8 +258,6 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
 									  0);
-		data->current.pageSpecial =
-			(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
 	}
 
 	data->nUsedPages++;
@@ -253,35 +274,26 @@ PGrnWALPageWriter(void *userData,
 
 	while (written < length)
 	{
+		size_t freeSize;
+
 		PGrnWALPageWriterEnsureCurrent(data);
 
-		if (data->current.pageSpecial->current + rest <= PGRN_PAGE_DATA_SIZE)
+		freeSize = PGrnWALPageGetFreeSize(data->current.page);
+		if (rest <= freeSize)
 		{
-			memcpy(data->current.pageSpecial->data +
-				   data->current.pageSpecial->current,
-				   buffer,
-				   rest);
-			data->current.pageSpecial->current += rest;
+			PGrnWALPageAppend(data->current.page, buffer, rest);
 			PGrnIndexStatusSetWALAppliedPosition(
 				data->index,
 				BufferGetBlockNumber(data->current.buffer),
-				data->current.pageSpecial->current);
+				PGrnWALPageGetLastOffset(data->current.page));
 			written += rest;
 		}
 		else
 		{
-			size_t writableSize;
-
-			writableSize =
-				PGRN_PAGE_DATA_SIZE - data->current.pageSpecial->current;
-			memcpy(data->current.pageSpecial->data +
-				   data->current.pageSpecial->current,
-				   buffer,
-				   writableSize);
-			data->current.pageSpecial->current += writableSize;
-			written += writableSize;
-			rest -= writableSize;
-			buffer += writableSize;
+			PGrnWALPageAppend(data->current.page, buffer, freeSize);
+			written += freeSize;
+			rest -= freeSize;
+			buffer += freeSize;
 
 			data->current.page = NULL;
 			UnlockReleaseBuffer(data->current.buffer);
@@ -797,7 +809,7 @@ typedef struct {
 	Relation index;
 	struct {
 		BlockNumber block;
-		OffsetNumber offset;
+		LocationIndex offset;
 	} current;
 	grn_obj *sources;
 } PGrnWALApplyData;
@@ -806,7 +818,7 @@ static bool
 PGrnWALApplyNeeded(PGrnWALApplyData *data)
 {
 	BlockNumber currentBlock;
-	OffsetNumber currentOffset;
+	LocationIndex currentOffset;
 	BlockNumber nBlocks;
 
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
@@ -822,14 +834,12 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
-		PGrnWALPageSpecial *pageSpecial;
 		bool needToApply;
 
 		buffer = ReadBuffer(data->index, currentBlock);
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		pageSpecial = (PGrnWALPageSpecial *)PageGetSpecialPointer(page);
-		needToApply = (pageSpecial->current > currentOffset);
+		needToApply = (PGrnWALPageGetLastOffset(page) > currentOffset);
 		UnlockReleaseBuffer(buffer);
 		return needToApply;
 	} else {
@@ -1379,12 +1389,12 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 {
 	BlockNumber i;
 	BlockNumber startBlock;
-	OffsetNumber dataOffset;
+	LocationIndex dataOffset;
 	BlockNumber nBlocks;
 	msgpack_unpacker unpacker;
 	msgpack_unpacked unpacked;
 
-	msgpack_unpacker_init(&unpacker, PGRN_PAGE_DATA_SIZE);
+	msgpack_unpacker_init(&unpacker, MSGPACK_UNPACKER_INIT_BUFFER_SIZE);
 	msgpack_unpacked_init(&unpacked);
 	startBlock = data->current.block;
 	dataOffset = data->current.offset;
@@ -1395,17 +1405,15 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
-		PGrnWALPageSpecial *pageSpecial;
 		size_t dataSize;
 
 		buffer = ReadBuffer(data->index, i);
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		pageSpecial = (PGrnWALPageSpecial *)PageGetSpecialPointer(page);
-		dataSize = pageSpecial->current - dataOffset;
+		dataSize = PGrnWALPageGetLastOffset(page) - dataOffset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
-			   pageSpecial->data + dataOffset,
+			   PGrnWALPageGetData(page) + dataOffset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
 
@@ -1413,7 +1421,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
 			   MSGPACK_UNPACK_SUCCESS)
 		{
-			OffsetNumber appliedOffset;
+			LocationIndex appliedOffset;
 
 			PGrnWALApplyObject(data, &unpacked.data);
 			appliedOffset =
