@@ -515,13 +515,13 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	if (!added)
 		return;
 
-	if (column)
-		nColumns++;
-
 	GRN_BULK_REWIND(&(data->path));
 	PGrnJSONGenerateCompletePath(&(data->components), &(data->path));
 	setPath = (GRN_TEXT_LEN(&(data->path)) < GRN_TABLE_MAX_KEY_SIZE);
 	if (setPath)
+		nColumns++;
+
+	if (column)
 		nColumns++;
 
 	if (data->index)
