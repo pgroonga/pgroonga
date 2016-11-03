@@ -535,7 +535,7 @@ postgresql-server-dev-9.4
                "--build", ".",
                "--config", "Release",
                "--target", "package")
-            mv(windows_package, "..")
+            mv(windows_package, "../../")
           end
         end
       end
