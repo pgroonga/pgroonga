@@ -12,7 +12,8 @@ void PGrnInitializeGroongaInformation(void);
 const char *PGrnInspect(grn_obj *object);
 
 int PGrnRCToPgErrorCode(grn_rc rc);
-grn_bool PGrnCheck(const char *message);
+grn_bool PGrnCheck(const char *format,
+				   ...) pg_attribute_printf(1, 2);
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupWithSize(const char *name,
@@ -65,5 +66,6 @@ void PGrnIndexColumnSetSourceIDs(Relation index,
 								 grn_obj *sourceIDs);
 
 bool PGrnRemoveObject(const char *name);
+bool PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);

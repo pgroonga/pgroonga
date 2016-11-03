@@ -1051,19 +1051,21 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 	PG_TRY();
 	{
 		GRN_EXPR_CREATE_FOR_QUERY(ctx, tmpValuesTable, filter, dummy_variable);
-		PGrnCheck("pgroonga: match_jsonb: failed to create expression object");
+		PGrnCheck("match_jsonb: failed to create expression object");
 		grn_expr_parse(ctx, filter,
 					   VARDATA_ANY(query),
 					   VARSIZE_ANY_EXHDR(query),
 					   NULL, GRN_OP_MATCH, GRN_OP_AND,
 					   GRN_EXPR_SYNTAX_SCRIPT);
-		PGrnCheck("pgroonga: match_jsonb: failed to parse query");
+		PGrnCheck("match_jsonb: failed to parse query: <%.*s>",
+				  (int)VARSIZE_ANY_EXHDR(query),
+				  VARDATA_ANY(query));
 		result = grn_table_create(ctx, NULL, 0, NULL,
 								  GRN_TABLE_HASH_KEY|GRN_OBJ_WITH_SUBREC,
 								  tmpValuesTable, NULL);
-		PGrnCheck("pgroonga: match_jsonb: failed to create result table");
+		PGrnCheck("match_jsonb: failed to create result table");
 		grn_table_select(ctx, tmpValuesTable, filter, result, GRN_OP_OR);
-		PGrnCheck("pgroonga: match_jsonb: failed to select");
+		PGrnCheck("match_jsonb: failed to select");
 	}
 	PG_CATCH();
 	{
@@ -1125,7 +1127,7 @@ PGrnJSONBInsertRecord(Relation index,
 	attributeName = &(attribute->attname);
 	column = PGrnLookupColumn(sourcesTable, attributeName->data, ERROR);
 	grn_obj_set_value(ctx, column, id, data->valueIDs, GRN_OBJ_SET);
-	PGrnCheck("pgroonga: failed to set column value");
+	PGrnCheck("failed to set column value: <%s>", attributeName->data);
 
 	if (walData)
 	{

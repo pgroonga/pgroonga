@@ -2037,7 +2037,7 @@ PGrnInsert(Relation index,
 		grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
 		PGrnWALInsertColumn(walData, dataColumn, buffer);
 		grn_obj_unlink(ctx, dataColumn);
-		if (!PGrnCheck("pgroonga: failed to set column value")) {
+		if (!PGrnCheck("failed to set column value")) {
 			continue;
 		}
 	}
@@ -2356,14 +2356,14 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						PGrnLookup("in_values", ERROR),
 						GRN_OP_PUSH,
 						1);
-	PGrnCheck("pgroonga: IN: failed to push in_values()");
+	PGrnCheck("IN: failed to push in_values()");
 	grn_expr_append_obj(ctx, data->expression,
 						targetColumn,
 						GRN_OP_PUSH,
 						1);
-	PGrnCheck("pgroonga: IN: failed to push target column");
+	PGrnCheck("IN: failed to push target column");
 	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
-	PGrnCheck("pgroonga: IN: failed to push GET_VALUE");
+	PGrnCheck("IN: failed to push GET_VALUE");
 
 	for (i = 1; i <= n; i++)
 	{
@@ -2386,11 +2386,11 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 							  &(buffers->general),
 							  GRN_OP_PUSH,
 							  1);
-		PGrnCheck("pgroonga: IN: failed to push a value");
+		PGrnCheck("IN: failed to push a value");
 	}
 
 	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2 + (n - 1));
-	PGrnCheck("pgroonga: IN: failed to push CALL");
+	PGrnCheck("IN: failed to push CALL");
 
 	return true;
 }

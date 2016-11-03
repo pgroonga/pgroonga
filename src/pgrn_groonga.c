@@ -60,15 +60,23 @@ PGrnRCToPgErrorCode(grn_rc rc)
 }
 
 grn_bool
-PGrnCheck(const char *message)
+PGrnCheck(const char *format, ...)
 {
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
 	if (ctx->rc == GRN_SUCCESS)
 		return GRN_TRUE;
 
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
 	ereport(ERROR,
 			(errcode(PGrnRCToPgErrorCode(ctx->rc)),
 			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
 	return GRN_FALSE;
+#undef MESSAGE_SIZE
 }
 
 grn_obj *
@@ -238,7 +246,8 @@ PGrnCreateTableWithSize(Relation index,
 							 flags,
 							 type,
 							 NULL);
-	PGrnCheck("pgroonga: failed to create table");
+	PGrnCheck("failed to create table: <%.*s>",
+			  (int)nameSize, name);
 	if (tokenizer)
 		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
 	if (normalizer)
@@ -320,7 +329,8 @@ PGrnCreateColumnWithSize(Relation	index,
 							   path,
 							   flags,
 							   type);
-	PGrnCheck("pgroonga: failed to create column");
+	PGrnCheck("failed to create column: <%.*s>",
+			  (int)nameSize, name);
 
 	PGrnWALCreateColumn(index, table, name, nameSize, flags, type);
 
@@ -354,11 +364,21 @@ PGrnIndexColumnSetSourceIDs(Relation index,
 bool
 PGrnRemoveObject(const char *name)
 {
-	grn_obj *object = grn_ctx_get(ctx, name, strlen(name));
+	return PGrnRemoveObjectWithSize(name, strlen(name));
+}
 
+bool
+PGrnRemoveObjectWithSize(const char *name,
+						 size_t nameSize)
+{
+	grn_obj *object;
+
+	object = grn_ctx_get(ctx, name, nameSize);
 	if (object)
 	{
 		grn_obj_remove(ctx, object);
+		PGrnCheck("failed to remove: <%.*s>",
+				  (int)nameSize, name);
 		return true;
 	}
 	else
@@ -372,7 +392,7 @@ PGrnFlushObject(grn_obj *object, bool recursive)
 {
 	grn_rc rc;
 	char name[GRN_TABLE_MAX_KEY_SIZE];
-	int name_size;
+	int nameSize;
 
 	if (recursive)
 	{
@@ -385,10 +405,7 @@ PGrnFlushObject(grn_obj *object, bool recursive)
 	if (rc == GRN_SUCCESS)
 		return;
 
-	name_size = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
-	ereport(ERROR,
-			(errcode(PGrnRCToPgErrorCode(rc)),
-			 errmsg("pgroonga: failed to flush: <%.*s>: %s",
-					name_size, name,
-					ctx->errbuf)));
+	nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+	PGrnCheck("failed to flush: <%.*s>",
+			  (int)nameSize, name);
 }
