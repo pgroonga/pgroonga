@@ -13,7 +13,7 @@ const char *PGrnInspect(grn_obj *object);
 
 int PGrnRCToPgErrorCode(grn_rc rc);
 grn_bool PGrnCheck(const char *format,
-				   ...) pg_attribute_printf(1, 2);
+				   ...) GRN_ATTRIBUTE_PRINTF(1);
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupWithSize(const char *name,
