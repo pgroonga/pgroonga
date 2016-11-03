@@ -3,6 +3,7 @@
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_index_status.h"
+#include "pgrn_wal.h"
 
 #include <miscadmin.h>
 
@@ -53,16 +54,32 @@ PGrnInitializeIndexStatus(void)
 }
 
 static grn_id
-PGrnIndexStatusGetRecordID(Relation index)
+PGrnIndexStatusGetRecordIDWithWAL(Relation index,
+								  PGrnWALData **walData,
+								  size_t nColumns)
 {
 	grn_obj *table;
+	const void *key;
+	size_t keySize;
+	grn_id id;
 
 	table = PGrnLookupWithSize(TABLE_NAME, TABLE_NAME_SIZE, ERROR);
-	return grn_table_add(ctx,
-						 table,
-						 &(index->rd_node.relNode),
-						 sizeof(uint32_t),
-						 NULL);
+	key = &(index->rd_node.relNode);
+	keySize = sizeof(uint32_t);
+	id = grn_table_add(ctx, table, key, keySize, NULL);
+	if (id != GRN_ID_NIL && walData)
+	{
+		*walData = PGrnWALStart(index);
+		PGrnWALInsertStart(*walData, table, nColumns);
+		PGrnWALInsertKeyRaw(*walData, key, keySize);
+	}
+	return id;
+}
+
+static grn_id
+PGrnIndexStatusGetRecordID(Relation index)
+{
+	return PGrnIndexStatusGetRecordIDWithWAL(index, NULL, 0);
 }
 
 uint32_t
@@ -86,12 +103,17 @@ PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size)
 	grn_id id;
 	grn_obj *column;
 	grn_obj *maxRecordSize = &(buffers->maxRecordSize);
+	PGrnWALData *walData = NULL;
+	size_t nColumns = 2;
 
-	id = PGrnIndexStatusGetRecordID(index);
+	id = PGrnIndexStatusGetRecordIDWithWAL(index, &walData, nColumns);
 	column = PGrnLookup(TABLE_NAME "." MAX_RECORD_SIZE_COLUMN_NAME,
 						ERROR);
 	GRN_UINT32_SET(ctx, maxRecordSize, size);
 	grn_obj_set_value(ctx, column, id, maxRecordSize, GRN_OBJ_SET);
+
+	PGrnWALInsertColumn(walData, column, maxRecordSize);
+	PGrnWALFinish(walData);
 }
 
 void
