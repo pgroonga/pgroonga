@@ -79,6 +79,7 @@ struct PGrnWALData_
 	Relation index;
 #ifdef PGRN_SUPPORT_WAL
 	GenericXLogState *state;
+	unsigned int nUsedPages;
 	struct
 	{
 		Buffer buffer;
@@ -128,6 +129,12 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 
 #ifdef PGRN_SUPPORT_WAL
 static void
+PGrnWALDataInitNUsedPages(PGrnWALData *data)
+{
+	data->nUsedPages = 1; /* meta page */
+}
+
+static void
 PGrnWALDataInitMeta(PGrnWALData *data)
 {
 	if (RelationGetNumberOfBlocks(data->index) == 0)
@@ -170,12 +177,35 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 }
 
 static void
+PGrnWALDataRestart(PGrnWALData *data)
+{
+	GenericXLogFinish(data->state);
+
+	if (data->current.buffer)
+	{
+		UnlockReleaseBuffer(data->current.buffer);
+	}
+	UnlockReleaseBuffer(data->meta.buffer);
+
+	data->state = GenericXLogStart(data->index);
+	PGrnWALDataInitNUsedPages(data);
+	PGrnWALDataInitMeta(data);
+	PGrnWALDataInitCurrent(data);
+}
+
+static void
 PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 {
 	PGrnWALMetaPageSpecial *meta;
 
 	if (!BufferIsInvalid(data->current.buffer))
 		return;
+
+	if (RelationGetNumberOfBlocks(data->index) <= data->meta.pageSpecial->next &&
+		data->nUsedPages == MAX_GENERIC_XLOG_PAGES)
+	{
+		PGrnWALDataRestart(data);
+	}
 
 	meta = data->meta.pageSpecial;
 	if (RelationGetNumberOfBlocks(data->index) <= meta->next)
@@ -208,6 +238,8 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 		data->current.pageSpecial =
 			(PGrnWALPageSpecial *)PageGetSpecialPointer(data->current.page);
 	}
+
+	data->nUsedPages++;
 }
 
 static int
@@ -285,6 +317,7 @@ PGrnWALStart(Relation index)
 	data->index = index;
 	data->state = GenericXLogStart(data->index);
 
+	PGrnWALDataInitNUsedPages(data);
 	PGrnWALDataInitMeta(data);
 	PGrnWALDataInitCurrent(data);
 	PGrnWALDataInitMessagePack(data);
