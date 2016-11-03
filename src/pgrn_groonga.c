@@ -377,8 +377,8 @@ PGrnRemoveObjectWithSize(const char *name,
 	if (object)
 	{
 		grn_obj_remove(ctx, object);
-		PGrnCheck("failed to remove: <%.*s>",
-				  (int)nameSize, name);
+		/* PGrnCheck("failed to remove: <%.*s>", */
+		/* 		  (int)nameSize, name); */
 		return true;
 	}
 	else
