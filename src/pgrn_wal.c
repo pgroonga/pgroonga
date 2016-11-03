@@ -1370,10 +1370,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	BlockNumber nBlocks;
 	msgpack_unpacker unpacker;
 	msgpack_unpacked unpacked;
-	size_t unpackerBaseOffset;
 
 	msgpack_unpacker_init(&unpacker, PGRN_PAGE_DATA_SIZE);
-	unpackerBaseOffset = unpacker.off;
 	msgpack_unpacked_init(&unpacked);
 	startBlock = data->current.block;
 	dataOffset = data->current.offset;
@@ -1405,7 +1403,9 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			OffsetNumber appliedOffset;
 
 			PGrnWALApplyObject(data, &unpacked.data);
-			appliedOffset = dataOffset + unpacker.off - unpackerBaseOffset;
+			appliedOffset =
+				dataOffset +
+				dataSize - (unpacker.used - unpacker.off);
 			PGrnIndexStatusSetWALAppliedPosition(data->index,
 												 i,
 												 appliedOffset);
