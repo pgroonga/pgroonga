@@ -438,24 +438,13 @@ postgresql-server-dev-9.4
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
-      desc "Upload package for PostgreSQL 9.4"
-      task :postgresql94 => [archive_name] do
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--code-names", "wily",
-             "--debian-directory", "packages/debian94",
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
-      end
-
       desc "Upload package for PostgreSQL 9.5"
       task :postgresql95 => [archive_name] do
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "xenial",
+             "--code-names", "xenial,yakkety",
              "--debian-directory", "packages/debian95",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
@@ -464,7 +453,6 @@ postgresql-server-dev-9.4
     desc "Upload package"
     upload_tasks = [
       "package:ubuntu:upload:postgresql93",
-      "package:ubuntu:upload:postgresql94",
       "package:ubuntu:upload:postgresql95",
     ]
     task :upload => upload_tasks
