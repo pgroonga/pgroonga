@@ -111,6 +111,7 @@ PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size)
 						ERROR);
 	GRN_UINT32_SET(ctx, maxRecordSize, size);
 	grn_obj_set_value(ctx, column, id, maxRecordSize, GRN_OBJ_SET);
+	grn_db_touch(ctx, grn_ctx_db(ctx));
 
 	PGrnWALInsertColumn(walData, column, maxRecordSize);
 	PGrnWALFinish(walData);
@@ -152,4 +153,5 @@ PGrnIndexStatusSetWALAppliedPosition(Relation index,
 	positionRaw = (((uint64_t)block) << 32) + (uint64_t)offset;
 	GRN_UINT64_SET(ctx, position, positionRaw);
 	grn_obj_set_value(ctx, column, id, position, GRN_OBJ_SET);
+	grn_db_touch(ctx, grn_ctx_db(ctx));
 }
