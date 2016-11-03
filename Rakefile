@@ -485,9 +485,14 @@ postgresql-server-dev-9.4
           "pgroonga-#{version}-postgresql-#{windows_postgresql_version}-#{arch}.zip"
         windows_packages << windows_package
         file windows_package => windows_packages_dir do
-          rm_rf("tmp")
-          mkdir_p("tmp")
-          cd("tmp") do
+          rm_rf("tmp/build")
+          mkdir_p("tmp/build")
+
+          download_dir = "download"
+          mkdir_p("tmp/#{download_dir}")
+          cd("tmp/build") do
+            relative_download_dir = "../#{download_dir}"
+
             cmake_generator = "Visual Studio 12 2013"
             if arch == "x64"
               cmake_generator << " Win64"
@@ -499,8 +504,9 @@ postgresql-server-dev-9.4
             end
             windows_postgresql_url =
               "#{windows_postgresql_download_base}/#{windows_postgresql_archive_name}"
-            download(windows_postgresql_url, ".")
-            extract_zip(windows_postgresql_archive_name, ".")
+            download(windows_postgresql_url, relative_download_dir)
+            extract_zip("#{relative_download_dir}/#{windows_postgresql_archive_name}",
+                        ".")
 
             windows_pgroonga_source_name_base = "#{package}-#{version}"
             windows_pgroonga_source_name =
@@ -509,8 +515,9 @@ postgresql-server-dev-9.4
               "http://packages.groonga.org/source/#{package}"
             windows_pgroonga_source_url =
               "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
-            download(windows_pgroonga_source_url, ".")
-            extract_zip(windows_pgroonga_source_name, ".")
+            download(windows_pgroonga_source_url, relative_download_dir)
+            extract_zip("#{relative_download_dir}/#{windows_pgroonga_source_name}",
+                        ".")
 
             sh("cmake",
                windows_pgroonga_source_name_base,
