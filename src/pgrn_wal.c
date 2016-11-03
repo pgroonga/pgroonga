@@ -635,7 +635,7 @@ PGrnWALInsertColumn(PGrnWALData *data,
 }
 
 void
-PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
+PGrnWALInsertKeyRaw(PGrnWALData *data, const void *key, size_t keySize)
 {
 #ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
@@ -648,9 +648,22 @@ PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
 	PGrnWALInsertColumnStart(data,
 							 GRN_COLUMN_NAME_KEY,
 							 GRN_COLUMN_NAME_KEY_LEN);
-	msgpack_pack_bin(packer, GRN_BULK_VSIZE(key));
-	msgpack_pack_bin_body(packer, GRN_BULK_HEAD(key), GRN_BULK_VSIZE(key));
+	msgpack_pack_bin(packer, keySize);
+	msgpack_pack_bin_body(packer, key, keySize);
 	PGrnWALInsertColumnFinish(data);
+#endif
+}
+
+void
+PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
+{
+#ifdef PGRN_SUPPORT_WAL
+	if (!data)
+		return;
+
+	PGrnWALInsertKeyRaw(data,
+						GRN_BULK_HEAD(key),
+						GRN_BULK_VSIZE(key));
 #endif
 }
 

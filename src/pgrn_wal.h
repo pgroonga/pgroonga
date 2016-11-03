@@ -26,6 +26,9 @@ void PGrnWALInsertColumnFinish(PGrnWALData *data);
 void PGrnWALInsertColumn(PGrnWALData *data,
 						 grn_obj *column,
 						 grn_obj *value);
+void PGrnWALInsertKeyRaw(PGrnWALData *data,
+						 const void *key,
+						 size_t keySize);
 void PGrnWALInsertKey(PGrnWALData *data,
 					  grn_obj *key);
 
