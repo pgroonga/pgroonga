@@ -8,18 +8,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   vms = [
     {
       :id => "debian-jessie-i386",
-      :box_url => "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-8.4-i386_chef-provisionerless.box",
+      :box => "bento/debian-8.6-i386",
     },
     {
       :id => "debian-jessie-amd64",
-      :box_url => "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-8.4_chef-provisionerless.box",
+      :box => "bento/debian-8.6",
     },
   ]
 
   vms.each do |vm|
     config.vm.define(vm[:id]) do |node|
-      node.vm.box = vm[:id]
-      node.vm.box_url = vm[:box_url]
+      node.vm.box = vm[:box]
       node.vm.provision(:shell, :privileged => false, :path => "build-deb.sh")
     end
   end
