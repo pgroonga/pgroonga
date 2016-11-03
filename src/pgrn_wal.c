@@ -217,23 +217,24 @@ PGrnWALPageWriter(void *userData,
 {
 	PGrnWALData *data = userData;
 	int written = 0;
+	size_t rest = length;
 
 	while (written < length)
 	{
 		PGrnWALPageWriterEnsureCurrent(data);
 
-		if (data->current.pageSpecial->current + length <= PGRN_PAGE_DATA_SIZE)
+		if (data->current.pageSpecial->current + rest <= PGRN_PAGE_DATA_SIZE)
 		{
 			memcpy(data->current.pageSpecial->data +
 				   data->current.pageSpecial->current,
 				   buffer,
-				   length);
-			data->current.pageSpecial->current += length;
+				   rest);
+			data->current.pageSpecial->current += rest;
 			PGrnIndexStatusSetWALAppliedPosition(
 				data->index,
 				BufferGetBlockNumber(data->current.buffer),
 				data->current.pageSpecial->current);
-			written += length;
+			written += rest;
 		}
 		else
 		{
@@ -246,12 +247,8 @@ PGrnWALPageWriter(void *userData,
 				   buffer,
 				   writableSize);
 			data->current.pageSpecial->current += writableSize;
-			PGrnIndexStatusSetWALAppliedPosition(
-				data->index,
-				BufferGetBlockNumber(data->current.buffer),
-				data->current.pageSpecial->current);
 			written += writableSize;
-			length -= writableSize;
+			rest -= writableSize;
 			buffer += writableSize;
 
 			data->current.page = NULL;
