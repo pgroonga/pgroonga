@@ -1336,6 +1336,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 {
 	BlockNumber i;
 	BlockNumber startBlock;
+	OffsetNumber dataOffset;
 	BlockNumber nBlocks;
 	msgpack_unpacker unpacker;
 	msgpack_unpacked unpacked;
@@ -1345,6 +1346,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	unpackerBaseOffset = unpacker.off;
 	msgpack_unpacked_init(&unpacked);
 	startBlock = data->current.block;
+	dataOffset = data->current.offset;
 	if (startBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
 		startBlock++;
 	nBlocks = RelationGetNumberOfBlocks(data->index);
@@ -1359,13 +1361,12 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		LockBuffer(buffer, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
 		pageSpecial = (PGrnWALPageSpecial *)PageGetSpecialPointer(page);
-		dataSize = pageSpecial->current - data->current.offset;
+		dataSize = pageSpecial->current - dataOffset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
-			   pageSpecial->data + data->current.offset,
+			   pageSpecial->data + dataOffset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
-		data->current.offset = 0;
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
 		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
@@ -1374,11 +1375,12 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			OffsetNumber appliedOffset;
 
 			PGrnWALApplyObject(data, &unpacked.data);
-			appliedOffset = unpacker.off - unpackerBaseOffset;
+			appliedOffset = dataOffset + unpacker.off - unpackerBaseOffset;
 			PGrnIndexStatusSetWALAppliedPosition(data->index,
 												 i,
 												 appliedOffset);
 		}
+		dataOffset = 0;
 	}
 	msgpack_unpacked_destroy(&unpacked);
 	msgpack_unpacker_destroy(&unpacker);
