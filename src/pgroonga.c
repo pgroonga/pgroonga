@@ -85,6 +85,8 @@ typedef struct PGrnBuildStateData
 	grn_obj	*sourcesTable;
 	grn_obj	*sourcesCtidColumn;
 	double nIndexedTuples;
+	bool needMaxRecordSizeUpdate;
+	uint32_t maxRecordSize;
 } PGrnBuildStateData;
 
 typedef PGrnBuildStateData *PGrnBuildState;
@@ -1923,6 +1925,64 @@ pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+static bool
+PGrnNeedMaxRecordSizeUpdate(Relation index)
+{
+	TupleDesc desc = RelationGetDescr(index);
+	unsigned int nVarCharColumns = 0;
+	unsigned int i;
+
+	for (i = 0; i < desc->natts; i++)
+	{
+		Form_pg_attribute attribute;
+
+		attribute = desc->attrs[i];
+		switch (attribute->atttypid)
+		{
+		case VARCHAROID:
+			nVarCharColumns++;
+			break;
+		case TEXTOID:
+		case VARCHARARRAYOID:
+		case TEXTARRAYOID:
+			return true;
+			break;
+		default:
+			break;
+		}
+	}
+
+	return nVarCharColumns >= 2;
+}
+
+static void
+PGrnUpdateMaxRecordSizeRaw(Relation index,
+						   uint32_t recordSize)
+{
+	uint32_t currentMaxRecordSize;
+
+	if (recordSize < INDEX_SIZE_MASK)
+		return;
+
+	currentMaxRecordSize = PGrnIndexStatusGetMaxRecordSize(index);
+	if (recordSize < currentMaxRecordSize)
+		return;
+
+	PGrnIndexStatusSetMaxRecordSize(index, recordSize);
+}
+
+static void
+PGrnUpdateMaxRecordSize(Relation index,
+						Datum *values,
+						bool *isnull)
+{
+	TupleDesc desc = RelationGetDescr(index);
+	Size recordSize;
+
+	recordSize = heap_compute_data_size(desc, values, isnull);
+	PGrnUpdateMaxRecordSizeRaw(index, recordSize);
+}
+
 static void
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
@@ -1935,22 +1995,6 @@ PGrnInsert(Relation index,
 	grn_id id;
 	PGrnWALData *walData;
 	unsigned int i;
-
-	{
-		uint32_t currentMaxRecordSize;
-
-		currentMaxRecordSize = PGrnIndexStatusGetMaxRecordSize(index);
-		if (currentMaxRecordSize < INDEX_SIZE_MASK)
-		{
-			Size recordSize;
-
-			recordSize = heap_compute_data_size(desc, values, isnull);
-			if (recordSize >= INDEX_SIZE_MASK)
-			{
-				PGrnIndexStatusSetMaxRecordSize(index, recordSize);
-			}
-		}
-	}
 
 	if (desc->natts == 1 && PGrnAttributeIsJSONB(desc->attrs[0]->atttypid))
 	{
@@ -2017,6 +2061,8 @@ pgroonga_insert_raw(Relation index,
 	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 	PGrnInsert(index, sourcesTable, sourcesCtidColumn,
 			   values, isnull, ctid);
+	if (PGrnNeedMaxRecordSizeUpdate(index))
+		PGrnUpdateMaxRecordSize(index, values, isnull);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
 
 	return false;
@@ -3559,11 +3605,23 @@ PGrnBuildCallbackRaw(Relation index,
 {
 	PGrnBuildState bs = (PGrnBuildState) state;
 
-	if (tupleIsAlive) {
-		PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
-				   values, isnull, ctid);
-		bs->nIndexedTuples++;
+	if (!tupleIsAlive)
+		return;
+
+	PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
+			   values, isnull, ctid);
+	if (bs->needMaxRecordSizeUpdate)
+	{
+		TupleDesc desc = RelationGetDescr(index);
+		Size recordSize;
+
+		recordSize = heap_compute_data_size(desc, values, isnull);
+		if (recordSize > bs->maxRecordSize)
+		{
+			bs->maxRecordSize = recordSize;
+		}
 	}
+	bs->nIndexedTuples++;
 }
 
 #ifdef PGRN_IS_GREENPLUM
@@ -3618,6 +3676,10 @@ pgroonga_build_raw(Relation heap,
 
 	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
+	bs.needMaxRecordSizeUpdate =
+		(PGrnNeedMaxRecordSizeUpdate(index) &&
+		 PGrnIndexStatusGetMaxRecordSize(index) < INDEX_SIZE_MASK);
+	bs.maxRecordSize = 0;
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -3666,6 +3728,11 @@ pgroonga_build_raw(Relation heap,
 	result = (IndexBuildResult *) palloc(sizeof(IndexBuildResult));
 	result->heap_tuples = nHeapTuples;
 	result->index_tuples = bs.nIndexedTuples;
+
+	if (bs.needMaxRecordSizeUpdate)
+	{
+		PGrnUpdateMaxRecordSizeRaw(index, bs.maxRecordSize);
+	}
 
 	return result;
 }
