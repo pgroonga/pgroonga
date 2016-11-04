@@ -394,6 +394,8 @@ _PG_init(void)
 
 	ctx = &PGrnContext;
 
+	GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+
 	PGrnInitializeBuffers();
 
 	PGrnEnsureDatabase();

@@ -49,6 +49,7 @@ set(PGRN_BUNDLED_MESSAGE_PACK_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/vendor/msgpack-${PGRN_BUNDLED_MESSAGE_PACK_VERSION}")
 
 add_definitions(
+  -DPGRN_VERSION="\"${PGRN_VERSION}\""
   -DPGRN_HAVE_MSGPACK)
 include_directories(
   "${PGRN_POSTGRESQL_DIR}/include/server/port/win32_msvc"

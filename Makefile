@@ -26,6 +26,7 @@ SHLIB_LINK = $(shell pkg-config --libs $(PACKAGES)) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
+COPT += -DPGRN_VERSION="\"${EXTENSION_VERSION}\""
 COPT += -Ivendor/xxHash
 ifdef HAVE_MSGPACK
 COPT += -DPGRN_HAVE_MSGPACK
