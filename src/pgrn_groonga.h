@@ -10,6 +10,7 @@ bool PGrnIsLZ4Available;
 void PGrnInitializeGroongaInformation(void);
 
 const char *PGrnInspect(grn_obj *object);
+const char *PGrnInspectName(grn_obj *object);
 
 int PGrnRCToPgErrorCode(grn_rc rc);
 grn_bool PGrnCheck(const char *format,

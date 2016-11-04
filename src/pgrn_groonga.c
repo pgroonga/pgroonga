@@ -35,6 +35,17 @@ PGrnInspect(grn_obj *object)
 	return GRN_TEXT_VALUE(buffer);
 }
 
+const char *
+PGrnInspectName(grn_obj *object)
+{
+	static char name[GRN_TABLE_MAX_KEY_SIZE];
+	int nameSize;
+
+	nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+	name[nameSize] = '\0';
+	return name;
+}
+
 int
 PGrnRCToPgErrorCode(grn_rc rc)
 {
