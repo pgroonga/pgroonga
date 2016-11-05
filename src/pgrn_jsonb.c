@@ -1157,7 +1157,7 @@ PGrnJSONBInsertRecord(Relation index,
 }
 #endif
 
-void
+uint32_t
 PGrnJSONBInsert(Relation index,
 				grn_obj *sourcesTable,
 				grn_obj *sourcesCtidColumn,
@@ -1165,6 +1165,7 @@ PGrnJSONBInsert(Relation index,
 				bool *isnull,
 				uint64_t packedCtid)
 {
+	uint32_t recordSize = 0; /* always 0 */
 #ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBInsertData data;
 	unsigned int nthValue = 0;
@@ -1190,6 +1191,8 @@ PGrnJSONBInsert(Relation index,
 
 	PGrnJSONBInsertDataFin(&data);
 #endif
+
+	return recordSize;
 }
 
 #ifdef PGRN_SUPPORT_JSONB

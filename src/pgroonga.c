@@ -1957,13 +1957,15 @@ PGrnNeedMaxRecordSizeUpdate(Relation index)
 	return nVarCharColumns >= 2;
 }
 
+#define PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE (INDEX_SIZE_MASK * 0.9)
+
 static void
-PGrnUpdateMaxRecordSizeRaw(Relation index,
-						   uint32_t recordSize)
+PGrnUpdateMaxRecordSize(Relation index,
+						uint32_t recordSize)
 {
 	uint32_t currentMaxRecordSize;
 
-	if (recordSize < INDEX_SIZE_MASK)
+	if (recordSize < PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE)
 		return;
 
 	currentMaxRecordSize = PGrnIndexStatusGetMaxRecordSize(index);
@@ -1973,19 +1975,7 @@ PGrnUpdateMaxRecordSizeRaw(Relation index,
 	PGrnIndexStatusSetMaxRecordSize(index, recordSize);
 }
 
-static void
-PGrnUpdateMaxRecordSize(Relation index,
-						Datum *values,
-						bool *isnull)
-{
-	TupleDesc desc = RelationGetDescr(index);
-	Size recordSize;
-
-	recordSize = heap_compute_data_size(desc, values, isnull);
-	PGrnUpdateMaxRecordSizeRaw(index, recordSize);
-}
-
-static void
+static uint32_t
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
 		   grn_obj *sourcesCtidColumn,
@@ -1997,16 +1987,16 @@ PGrnInsert(Relation index,
 	grn_id id;
 	PGrnWALData *walData;
 	unsigned int i;
+	uint32_t recordSize = 0;
 
 	if (desc->natts == 1 && PGrnAttributeIsJSONB(desc->attrs[0]->atttypid))
 	{
-		PGrnJSONBInsert(index,
-						sourcesTable,
-						sourcesCtidColumn,
-						values,
-						isnull,
-						CtidToUInt64(ht_ctid));
-		return;
+		return PGrnJSONBInsert(index,
+							   sourcesTable,
+							   sourcesCtidColumn,
+							   values,
+							   isnull,
+							   CtidToUInt64(ht_ctid));
 	}
 
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
@@ -2037,6 +2027,7 @@ PGrnInsert(Relation index,
 		grn_obj_reinit(ctx, buffer, domain, flags);
 		PGrnConvertFromData(values[i], attribute->atttypid, buffer);
 		grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
+		recordSize += GRN_BULK_VSIZE(buffer);
 		PGrnWALInsertColumn(walData, dataColumn, buffer);
 		grn_obj_unlink(ctx, dataColumn);
 		if (!PGrnCheck("failed to set column value")) {
@@ -2046,6 +2037,8 @@ PGrnInsert(Relation index,
 
 	PGrnWALInsertFinish(walData);
 	PGrnWALFinish(walData);
+
+	return recordSize;
 }
 
 static bool
@@ -2058,13 +2051,18 @@ pgroonga_insert_raw(Relation index,
 {
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
+	uint32_t recordSize;
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
-	PGrnInsert(index, sourcesTable, sourcesCtidColumn,
-			   values, isnull, ctid);
+	recordSize = PGrnInsert(index,
+							sourcesTable,
+							sourcesCtidColumn,
+							values,
+							isnull,
+							ctid);
 	if (PGrnNeedMaxRecordSizeUpdate(index))
-		PGrnUpdateMaxRecordSize(index, values, isnull);
+		PGrnUpdateMaxRecordSize(index, recordSize);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
 
 	return false;
@@ -3606,22 +3604,21 @@ PGrnBuildCallbackRaw(Relation index,
 					 void *state)
 {
 	PGrnBuildState bs = (PGrnBuildState) state;
+	uint32_t recordSize;
 
 	if (!tupleIsAlive)
 		return;
 
-	PGrnInsert(index, bs->sourcesTable, bs->sourcesCtidColumn,
-			   values, isnull, ctid);
-	if (bs->needMaxRecordSizeUpdate)
+	recordSize = PGrnInsert(index,
+							bs->sourcesTable,
+							bs->sourcesCtidColumn,
+							values,
+							isnull,
+							ctid);
+	if (bs->needMaxRecordSizeUpdate &&
+		recordSize > bs->maxRecordSize)
 	{
-		TupleDesc desc = RelationGetDescr(index);
-		Size recordSize;
-
-		recordSize = heap_compute_data_size(desc, values, isnull);
-		if (recordSize > bs->maxRecordSize)
-		{
-			bs->maxRecordSize = recordSize;
-		}
+		bs->maxRecordSize = recordSize;
 	}
 	bs->nIndexedTuples++;
 }
@@ -3678,9 +3675,7 @@ pgroonga_build_raw(Relation heap,
 
 	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
-	bs.needMaxRecordSizeUpdate =
-		(PGrnNeedMaxRecordSizeUpdate(index) &&
-		 PGrnIndexStatusGetMaxRecordSize(index) < INDEX_SIZE_MASK);
+	bs.needMaxRecordSizeUpdate = PGrnNeedMaxRecordSizeUpdate(index);
 	bs.maxRecordSize = 0;
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -3733,7 +3728,7 @@ pgroonga_build_raw(Relation heap,
 
 	if (bs.needMaxRecordSizeUpdate)
 	{
-		PGrnUpdateMaxRecordSizeRaw(index, bs.maxRecordSize);
+		PGrnUpdateMaxRecordSize(index, bs.maxRecordSize);
 	}
 
 	return result;
