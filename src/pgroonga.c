@@ -4000,16 +4000,35 @@ PGrnRemoveUnusedTables(void)
 		for (i = 0; true; i++)
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			grn_obj *lexicon;
+
 			snprintf(tableName, sizeof(tableName),
 					 PGrnLexiconNameFormat, relationFileNodeID, i);
-			if (!PGrnRemoveObject(tableName))
+			lexicon = grn_ctx_get(ctx, tableName, -1);
+			if (!lexicon)
 				break;
+
+			PGrnRemoveColumns(lexicon);
 		}
 
 		{
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
 			snprintf(tableName, sizeof(tableName),
 					 PGrnSourcesTableNameFormat, relationFileNodeID);
+			PGrnRemoveObject(tableName);
+		}
+
+		for (i = 0; true; i++)
+		{
+			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			grn_obj *lexicon;
+
+			snprintf(tableName, sizeof(tableName),
+					 PGrnLexiconNameFormat, relationFileNodeID, i);
+			lexicon = grn_ctx_get(ctx, tableName, -1);
+			if (!lexicon)
+				break;
+
 			PGrnRemoveObject(tableName);
 		}
 

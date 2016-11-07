@@ -66,7 +66,9 @@ void PGrnIndexColumnSetSourceIDs(Relation index,
 								 grn_obj *indexColumn,
 								 grn_obj *sourceIDs);
 
-bool PGrnRemoveObject(const char *name);
-bool PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
+void PGrnRemoveObject(const char *name);
+void PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
+
+void PGrnRemoveColumns(grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);

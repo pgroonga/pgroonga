@@ -372,30 +372,22 @@ PGrnIndexColumnSetSourceIDs(Relation index,
 	PGrnWALSetSourceIDs(index, indexColumn, sourceIDs);
 }
 
-bool
+void
 PGrnRemoveObject(const char *name)
 {
-	return PGrnRemoveObjectWithSize(name, strlen(name));
+	PGrnRemoveObjectWithSize(name, strlen(name));
 }
 
-bool
+void
 PGrnRemoveObjectWithSize(const char *name,
 						 size_t nameSize)
 {
 	grn_obj *object;
 
-	object = grn_ctx_get(ctx, name, nameSize);
-	if (object)
-	{
-		grn_obj_remove(ctx, object);
-		/* PGrnCheck("failed to remove: <%.*s>", */
-		/* 		  (int)nameSize, name); */
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	object = PGrnLookupWithSize(name, nameSize, ERROR);
+	grn_obj_remove(ctx, object);
+	PGrnCheck("failed to remove: <%.*s>",
+			  (int)nameSize, name);
 }
 
 void
@@ -418,5 +410,39 @@ PGrnFlushObject(grn_obj *object, bool recursive)
 
 	nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
 	PGrnCheck("failed to flush: <%.*s>",
-			  (int)nameSize, name);
+			  nameSize, name);
+}
+
+void
+PGrnRemoveColumns(grn_obj *table)
+{
+	grn_hash *columns;
+
+	columns = grn_hash_create(ctx,
+							  NULL,
+							  sizeof(grn_id),
+							  0,
+							  GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
+	if (!columns)
+	{
+		PGrnCheck("failed to create columns container for removing columns: "
+				  "<%s>",
+				  PGrnInspectName(table));
+	}
+
+	GRN_HASH_EACH_BEGIN(ctx, columns, cursor, id) {
+		grn_id *columnID;
+		grn_obj *column;
+
+		grn_hash_cursor_get_key(ctx, cursor, (void **)&columnID);
+		column = grn_ctx_at(ctx, *columnID);
+		if (!column)
+			continue;
+
+		grn_obj_remove(ctx, column);
+		PGrnCheck("failed to remove column: <%s>",
+				  PGrnInspectName(column));
+	} GRN_HASH_EACH_END(ctx, cursor);
+
+	grn_hash_close(ctx, columns);
 }
