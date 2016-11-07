@@ -1590,6 +1590,8 @@ PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 	snprintf(tableName, sizeof(tableName),
 			 PGrnJSONValueLexiconNameFormat,
 			 typeName, relationID, 0);
+	if (!grn_ctx_get(ctx, tableName, -1))
+		return;
 	PGrnRemoveObject(tableName);
 }
 #endif
