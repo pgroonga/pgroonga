@@ -4075,9 +4075,6 @@ pgroonga_canreturn_raw(Relation index,
 	TupleDesc desc;
 	unsigned int i;
 
-	if (PGrnIndexStatusGetMaxRecordSize(index) >= INDEX_SIZE_MASK)
-		return false;
-
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -4093,7 +4090,8 @@ pgroonga_canreturn_raw(Relation index,
 		}
 	}
 
-	return true;
+	return PGrnIndexStatusGetMaxRecordSize(index) <
+		PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE;
 }
 
 /**
