@@ -63,14 +63,21 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	{
 		flags |= GRN_OBJ_COLUMN_SCALAR;
 
-		if (PGrnIsLZ4Available)
+		if (PGrnIsLZ4Available || PGrnIsZLIBAvailable)
 		{
 			switch (rangeID)
 			{
 			case GRN_DB_SHORT_TEXT:
 			case GRN_DB_TEXT:
 			case GRN_DB_LONG_TEXT:
-				flags |= GRN_OBJ_COMPRESS_LZ4;
+				if (PGrnIsLZ4Available)
+				{
+					flags |= GRN_OBJ_COMPRESS_LZ4;
+				}
+				else if (PGrnIsZLIBAvailable)
+				{
+					flags |= GRN_OBJ_COMPRESS_ZLIB;
+				}
 				break;
 			}
 		}

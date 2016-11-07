@@ -219,7 +219,13 @@ PGrnJSONBCreateDataColumns(Relation index,
 	{
 		grn_column_flags flags = 0;
 		if (PGrnIsLZ4Available)
+		{
 			flags |= GRN_OBJ_COMPRESS_LZ4;
+		}
+		else if (PGrnIsZLIBAvailable)
+		{
+			flags |= GRN_OBJ_COMPRESS_ZLIB;
+		}
 		PGrnCreateColumn(index,
 						 jsonbData->valuesTable,
 						 "string",

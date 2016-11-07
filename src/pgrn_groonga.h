@@ -6,6 +6,7 @@
 #include <groonga.h>
 
 bool PGrnIsLZ4Available;
+bool PGrnIsZLIBAvailable;
 
 void PGrnInitializeGroongaInformation(void);
 
