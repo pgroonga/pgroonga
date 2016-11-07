@@ -1,5 +1,9 @@
 # -*- rpm -*-
 
+%define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:5}
+
+%define _use_msgpack %{?use_msgpack:%{use_msgpack}}%{!?use_msgpack:%{_centos_ver} >= 7}
+
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
 %define pg_prefix          /usr/pgsql-%{pg_version}
@@ -19,8 +23,14 @@ Source0:	http://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
+%if %{_use_msgpack}
+BuildRequires:	msgpack-devel
+%endif
 BuildRequires:	postgresql%{pg_package_version}-devel
 Requires:	groonga-libs >= 6.0.7
+%if %{_use_msgpack}
+Requires:	msgpack
+%endif
 Requires:	postgresql%{pg_package_version}-server
 
 %description
@@ -34,6 +44,9 @@ It is based on Groonga.
 %build
 PATH="%{pg_bindir}:$PATH" \
   make \
+%if %{_use_msgpack}
+    HAVE_MSGPACK=1 \
+%endif
     enable_rpath=no \
     %{?_smp_mflags}
 

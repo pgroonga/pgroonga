@@ -68,6 +68,11 @@ else
 fi
 run cp /vagrant/tmp/${distribution}/${PACKAGE}.spec rpmbuild/SPECS/
 
+if grep -q -E 'Requires:\s+msgpack' rpmbuild/SPECS/${PACKAGE}.spec; then
+  run yum install -y epel-release
+  run yum install -y msgpack-devel
+fi
+
 run rpmbuild -ba ${rpmbuild_options} rpmbuild/SPECS/${PACKAGE}.spec
 
 run mv rpmbuild/RPMS/*/* "${rpm_dir}/"
