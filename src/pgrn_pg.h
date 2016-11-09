@@ -1,7 +1,7 @@
 #pragma once
 
 #include <postgres.h>
-#include <storage/lockdefs.h>
+#include <storage/lock.h>
 #include <utils/relcache.h>
 
 Relation PGrnPGResolveFileNodeID(Oid fileNodeID,
