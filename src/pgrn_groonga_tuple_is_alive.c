@@ -210,11 +210,29 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
   {
 	  if (op == GRN_OP_AND)
 	  {
-		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+		  GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
 		  {
 			  grn_table_cursor_delete(ctx, cursor);
 		  }
 		  GRN_TABLE_EACH_END(ctx, cursor);
+	  }
+	  else
+	  {
+		  grn_posting posting;
+
+		  memset(&posting, 0, sizeof(grn_posting));
+		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+		  {
+			  grn_rc grn_ii_posting_add(grn_ctx *ctx,
+										grn_posting *pos,
+										grn_hash *s,
+										grn_operator op);
+			  posting.rid = id;
+			  grn_ii_posting_add(ctx, &posting, (grn_hash *)res, op);
+		  }
+		  GRN_TABLE_EACH_END(ctx, cursor);
+		  /* TODO: Enable it when we support GRN_OP_AND_NOT and GRN_OP_ADJUST. */
+		  /* grn_ii_resolve_sel_and(ctx, res, op); */
 	  }
   }
 
