@@ -4,6 +4,7 @@
 
 #include "pgrn_convert.h"
 #include "pgrn_create.h"
+#include "pgrn_ctid.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_highlight_html.h"
@@ -889,55 +890,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	}
 }
 
-static uint64
-CtidToUInt64(ItemPointer ctid)
-{
-	BlockNumber blockNumber;
-	OffsetNumber offsetNumber;
-
-	blockNumber = ItemPointerGetBlockNumber(ctid);
-	offsetNumber = ItemPointerGetOffsetNumber(ctid);
-	return (((uint64)blockNumber << 16) | ((uint64)offsetNumber));
-}
-
-static ItemPointerData
-UInt64ToCtid(uint64 key)
-{
-	ItemPointerData	ctid;
-	ItemPointerSet(&ctid, (key >> 16) & 0xFFFFFFFF, key & 0xFFFF);
-	return ctid;
-}
-
 #ifdef PGRN_SUPPORT_SCORE
-static bool
-PGrnIsAliveCtid(Relation table, ItemPointer ctid)
-{
-	Buffer buffer;
-	HeapTupleData tuple;
-	Snapshot snapshot;
-	ItemPointerData realCtid;
-	bool allDead;
-	bool found;
-	bool isAlive = false;
-
-	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
-	snapshot = RegisterSnapshot(GetLatestSnapshot());
-	realCtid = *ctid;
-	found = heap_hot_search_buffer(&realCtid, table, buffer, snapshot, &tuple,
-								   &allDead, true);
-	if (found) {
-		uint64 tupleID;
-
-		tupleID = CtidToUInt64(&(tuple.t_self));
-		isAlive = (tupleID == CtidToUInt64(ctid) ||
-				   tupleID == CtidToUInt64(&realCtid));
-	}
-	UnregisterSnapshot(snapshot);
-	ReleaseBuffer(buffer);
-
-	return isAlive;
-}
-
 static double
 PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 {
@@ -1027,9 +980,9 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
+			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 
-			if (!PGrnIsAliveCtid(table, &ctid))
+			if (!PGrnCtidIsAlive(table, &ctid))
 				continue;
 
 			GRN_BULK_REWIND(&(buffers->score));
@@ -1996,7 +1949,7 @@ PGrnInsert(Relation index,
 							   sourcesCtidColumn,
 							   values,
 							   isnull,
-							   CtidToUInt64(ht_ctid));
+							   PGrnCtidPack(ht_ctid));
 	}
 
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
@@ -2004,7 +1957,7 @@ PGrnInsert(Relation index,
 	walData = PGrnWALStart(index);
 	PGrnWALInsertStart(walData, NULL, desc->natts + 1);
 
-	GRN_UINT64_SET(ctx, &(buffers->ctid), CtidToUInt64(ht_ctid));
+	GRN_UINT64_SET(ctx, &(buffers->ctid), PGrnCtidPack(ht_ctid));
 	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
 	PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
 
@@ -3456,7 +3409,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 	{
 		GRN_BULK_REWIND(&(buffers->ctid));
 		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
-		scan->xs_ctup.t_self = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
+		scan->xs_ctup.t_self = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 		if (scan->xs_want_itup)
@@ -3500,7 +3453,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 			ItemPointerData ctid;
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &(buffers->ctid));
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
+			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
@@ -3513,7 +3466,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 			ItemPointerData ctid;
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
+			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
@@ -3880,7 +3833,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
-			ctid = UInt64ToCtid(GRN_UINT64_VALUE(&(buffers->ctid)));
+			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 			if (callback(&ctid, callbackState))
 			{
 				jsonbData.id = id;
