@@ -14,6 +14,7 @@
 #include "pgrn_match_positions_byte.h"
 #include "pgrn_match_positions_character.h"
 #include "pgrn_options.h"
+#include "pgrn_pg.h"
 #include "pgrn_query_extract_keywords.h"
 #include "pgrn_search.h"
 #include "pgrn_value.h"
@@ -29,7 +30,6 @@
 #include <access/relscan.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
-#include <catalog/pg_tablespace.h>
 #include <catalog/pg_type.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
@@ -38,7 +38,6 @@
 #include <postmaster/bgworker.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
-#include <storage/lmgr.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
@@ -51,10 +50,6 @@
 #ifdef PGRN_SUPPORT_SCORE
 #	include <lib/ilist.h>
 #	include <utils/snapmgr.h>
-#endif
-
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
-#	include <utils/relfilenodemap.h>
 #endif
 
 #include <groonga.h>
@@ -3880,48 +3875,6 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
-static bool
-PGrnIsValidRelationFileNodeID(Oid relationFileNodeID)
-{
-	bool valid = false;
-	Relation tableSpaces;
-	HeapScanDesc scan;
-
-	tableSpaces = heap_open(TableSpaceRelationId, AccessShareLock);
-	scan = heap_beginscan_catalog(tableSpaces, 0, NULL);
-	while (!valid)
-	{
-		HeapTuple tuple;
-		Oid relationID;
-		Relation relation;
-
-		tuple = heap_getnext(scan, ForwardScanDirection);
-
-		if (!HeapTupleIsValid(tuple))
-			break;
-
-		relationID = RelidByRelfilenode(HeapTupleGetOid(tuple),
-										relationFileNodeID);
-		if (!OidIsValid(relationID))
-			continue;
-
-		LockRelationOid(relationID, AccessShareLock);
-		relation = RelationIdGetRelation(relationID);
-		if (RelationIsValid(relation))
-		{
-			RelationClose(relation);
-			valid = true;
-		}
-		UnlockRelationOid(relationID, AccessShareLock);
-	}
-	heap_endscan(scan);
-	heap_close(tableSpaces, AccessShareLock);
-
-	return valid;
-}
-#endif
-
 static void
 PGrnRemoveUnusedTables(void)
 {
@@ -3947,7 +3900,7 @@ PGrnRemoveUnusedTables(void)
 		if (nameEnd[0] == '.')
 			continue;
 
-		if (PGrnIsValidRelationFileNodeID(relationFileNodeID))
+		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
 			continue;
 
 		for (i = 0; true; i++)
