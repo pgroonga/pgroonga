@@ -6,6 +6,7 @@
 #include <access/htup.h>
 #include <storage/buf.h>
 #include <storage/bufmgr.h>
+#include <utils/snapmgr.h>
 #include <utils/snapshot.h>
 
 bool
