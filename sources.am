@@ -7,6 +7,7 @@ SRCS =						\
 	src/pgrn_flush.c			\
 	src/pgrn_global.c			\
 	src/pgrn_groonga.c			\
+	src/pgrn_groonga_tuple_is_alive.c	\
 	src/pgrn_highlight_html.c		\
 	src/pgrn_index_status.c			\
 	src/pgrn_jsonb.c			\

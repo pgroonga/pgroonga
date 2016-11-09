@@ -41,6 +41,7 @@
 #define PGrnLogBasename					"pgroonga.log"
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"
+#define PGrnSourcesTableNamePrefixLength	(sizeof(PGrnSourcesTableNamePrefix) - 1)
 #define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"
 #define PGrnSourcesCtidColumnName		"ctid"
 #define PGrnSourcesCtidColumnNameLength	(sizeof(PGrnSourcesCtidColumnName) - 1)

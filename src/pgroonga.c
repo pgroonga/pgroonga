@@ -7,6 +7,7 @@
 #include "pgrn_ctid.h"
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
+#include "pgrn_groonga_tuple_is_alive.h"
 #include "pgrn_highlight_html.h"
 #include "pgrn_index_status.h"
 #include "pgrn_jsonb.h"
@@ -264,6 +265,12 @@ PGrnEnsureDatabase(void)
 }
 
 static void
+PGrnInitializeGroongaFunctions(void)
+{
+	PGrnInitializeGroongaTupleIsAlive();
+}
+
+static void
 PGrnFinalizeMatchSequentialSearchData(void)
 {
 	grn_obj_close(ctx, matchSequentialSearchData.textColumn);
@@ -399,6 +406,8 @@ _PG_init(void)
 	PGrnInitializeGroongaInformation();
 
 	PGrnInitializeOptions();
+
+	PGrnInitializeGroongaFunctions();
 
 	PGrnInitializeIndexStatus();
 
