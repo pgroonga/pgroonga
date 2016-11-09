@@ -30,6 +30,7 @@ script:
       rm -rf sql/jsonb
       rm -rf sql/function/flush/jsonb.sql
       rm -rf sql/reindex/analyze.sql
+      rm -rf sql/groonga-function/tuple-is-alive/
     fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - make installcheck TMP_DIR=/tmp SETUP_TMP_DIR=no
