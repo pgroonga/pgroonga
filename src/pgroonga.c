@@ -42,6 +42,7 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
+#include <utils/memutils.h>
 #include <utils/selfuncs.h>
 #include <utils/syscache.h>
 #include <utils/timestamp.h>
@@ -84,6 +85,7 @@ typedef struct PGrnBuildStateData
 	double nIndexedTuples;
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
+	MemoryContext memoryContext;
 } PGrnBuildStateData;
 
 typedef PGrnBuildStateData *PGrnBuildState;
@@ -3561,10 +3563,13 @@ PGrnBuildCallbackRaw(Relation index,
 					 void *state)
 {
 	PGrnBuildState bs = (PGrnBuildState) state;
+	MemoryContext oldMemoryContext;
 	uint32_t recordSize;
 
 	if (!tupleIsAlive)
 		return;
+
+	oldMemoryContext = MemoryContextSwitchTo(bs->memoryContext);
 
 	recordSize = PGrnInsert(index,
 							bs->sourcesTable,
@@ -3578,6 +3583,9 @@ PGrnBuildCallbackRaw(Relation index,
 		bs->maxRecordSize = recordSize;
 	}
 	bs->nIndexedTuples++;
+
+	MemoryContextSwitchTo(oldMemoryContext);
+	MemoryContextReset(bs->memoryContext);
 }
 
 #ifdef PGRN_IS_GREENPLUM
@@ -3634,6 +3642,10 @@ pgroonga_build_raw(Relation heap,
 	bs.nIndexedTuples = 0.0;
 	bs.needMaxRecordSizeUpdate = PGrnNeedMaxRecordSizeUpdate(index);
 	bs.maxRecordSize = 0;
+	bs.memoryContext =
+		AllocSetContextCreate(CurrentMemoryContext,
+							  "PGroonga index build temporay context",
+							  ALLOCSET_DEFAULT_SIZES);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -3682,6 +3694,8 @@ pgroonga_build_raw(Relation heap,
 	result = (IndexBuildResult *) palloc(sizeof(IndexBuildResult));
 	result->heap_tuples = nHeapTuples;
 	result->index_tuples = bs.nIndexedTuples;
+
+	MemoryContextDelete(bs.memoryContext);
 
 	if (bs.needMaxRecordSizeUpdate)
 	{
