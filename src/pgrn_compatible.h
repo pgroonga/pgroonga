@@ -32,6 +32,13 @@
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
 
+#ifndef ALLOCSET_DEFAULT_SIZES
+#	define ALLOCSET_DEFAULT_SIZES				\
+	ALLOCSET_DEFAULT_MINSIZE,					\
+	ALLOCSET_DEFAULT_INITSIZE,					\
+	ALLOCSET_DEFAULT_MAXSIZE
+#endif
+
 #ifdef PGRN_IS_GREENPLUM
 #	define PGrnDefineCustomIntVariable(name,			\
 									   shortDesc,		\
