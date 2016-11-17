@@ -390,6 +390,8 @@ _PG_init(void)
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga")));
 
+	grn_set_segv_handler();
+
 	on_proc_exit(PGrnOnProcExit, 0);
 
 	if (grn_ctx_init(&PGrnContext, 0))
