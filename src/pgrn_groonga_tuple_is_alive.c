@@ -17,7 +17,7 @@ sources_table_to_file_node_id(grn_ctx *ctx, grn_obj *table)
 	int name_size;
 
 	name_size = grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
-	name_end = name + name_size;
+	name_end = name + name_size - 1;
 	return strtol(name + PGrnSourcesTableNamePrefixLength, &name_end, 10);
 }
 
