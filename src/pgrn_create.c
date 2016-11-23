@@ -63,7 +63,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	{
 		flags |= GRN_OBJ_COLUMN_SCALAR;
 
-		if (PGrnIsLZ4Available || PGrnIsZLIBAvailable)
+		if (PGrnIsLZ4Available || PGrnIsZlibAvailable)
 		{
 			switch (rangeID)
 			{
@@ -74,7 +74,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 				{
 					flags |= GRN_OBJ_COMPRESS_LZ4;
 				}
-				else if (PGrnIsZLIBAvailable)
+				else if (PGrnIsZlibAvailable)
 				{
 					flags |= GRN_OBJ_COMPRESS_ZLIB;
 				}

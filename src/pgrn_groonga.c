@@ -9,7 +9,7 @@
 #include <miscadmin.h>
 
 bool PGrnIsLZ4Available;
-bool PGrnIsZLIBAvailable;
+bool PGrnIsZlibAvailable;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -27,7 +27,7 @@ PGrnInitializeGroongaInformation(void)
 
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZLIB, &grnIsSupported);
-	PGrnIsZLIBAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
+	PGrnIsZlibAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }

@@ -222,7 +222,7 @@ PGrnJSONBCreateDataColumns(Relation index,
 		{
 			flags |= GRN_OBJ_COMPRESS_LZ4;
 		}
-		else if (PGrnIsZLIBAvailable)
+		else if (PGrnIsZlibAvailable)
 		{
 			flags |= GRN_OBJ_COMPRESS_ZLIB;
 		}
