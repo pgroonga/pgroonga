@@ -63,14 +63,20 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	{
 		flags |= GRN_OBJ_COLUMN_SCALAR;
 
-		if (PGrnIsLZ4Available || PGrnIsZlibAvailable)
+		if (PGrnIsLZ4Available || PGrnIsZlibAvailable || PGrnIsZstdAvailable)
 		{
 			switch (rangeID)
 			{
 			case GRN_DB_SHORT_TEXT:
 			case GRN_DB_TEXT:
 			case GRN_DB_LONG_TEXT:
-				if (PGrnIsLZ4Available)
+				if (PGrnIsZstdAvailable)
+				{
+#ifdef GRN_OBJ_COMPRESS_ZSTD
+					flags |= GRN_OBJ_COMPRESS_ZSTD;
+#endif
+				}
+				else if (PGrnIsLZ4Available)
 				{
 					flags |= GRN_OBJ_COMPRESS_LZ4;
 				}

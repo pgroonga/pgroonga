@@ -218,7 +218,13 @@ PGrnJSONBCreateDataColumns(Relation index,
 					 jsonbData->pathsTable);
 	{
 		grn_column_flags flags = 0;
-		if (PGrnIsLZ4Available)
+		if (PGrnIsZstdAvailable)
+		{
+#ifdef GRN_OBJ_COMPRESS_ZSTD
+			flags |= GRN_OBJ_COMPRESS_ZSTD;
+#endif
+		}
+		else if (PGrnIsLZ4Available)
 		{
 			flags |= GRN_OBJ_COMPRESS_LZ4;
 		}

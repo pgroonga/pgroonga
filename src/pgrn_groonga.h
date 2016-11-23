@@ -7,6 +7,7 @@
 
 bool PGrnIsLZ4Available;
 bool PGrnIsZlibAvailable;
+bool PGrnIsZstdAvailable;
 
 void PGrnInitializeGroongaInformation(void);
 
