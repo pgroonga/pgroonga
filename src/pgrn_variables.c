@@ -73,9 +73,12 @@ PGrnPostgreSQLLoggerLog(grn_ctx *ctx, grn_log_level level,
 	}
 }
 
+#ifndef GRN_LOG_PID
+#	define GRN_LOG_PID (0)
+#endif
 static grn_logger PGrnPostgreSQLLogger = {
 	GRN_LOG_DEFAULT_LEVEL,
-	GRN_LOG_TIME | GRN_LOG_MESSAGE,
+	GRN_LOG_TIME | GRN_LOG_MESSAGE | GRN_LOG_PID,
 	NULL,
 	PGrnPostgreSQLLoggerLog,
 	NULL,

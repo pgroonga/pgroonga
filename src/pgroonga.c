@@ -385,6 +385,10 @@ _PG_init(void)
 
 	grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
 
+#ifdef GRN_LOG_PID
+	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
+#endif
+
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
