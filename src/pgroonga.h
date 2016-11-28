@@ -38,7 +38,7 @@
 #define PGRN_N_STRATEGIES PGrnPrefixRKContainStrategyV2Number
 
 /* file and table names */
-#define PGrnLogBasename					"pgroonga.log"
+#define PGrnLogPathDefault				"pgroonga.log"
 #define PGrnQueryLogPathDefault			"none"
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"

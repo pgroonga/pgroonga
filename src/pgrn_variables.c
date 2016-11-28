@@ -110,14 +110,18 @@ PGrnLogTypeAssign(int new_value, void *extra)
 static void
 PGrnLogPathAssignRaw(const char *new_value)
 {
-	if (new_value) {
-		if (PGrnIsNoneValue(new_value)) {
-			grn_default_logger_set_path(NULL);
-		} else {
-			grn_default_logger_set_path(new_value);
-		}
-	} else {
-		grn_default_logger_set_path(PGrnLogBasename);
+	if (!new_value)
+	{
+		new_value = PGrnLogPathDefault;
+	}
+
+	if (PGrnIsNoneValue(new_value))
+	{
+		grn_default_logger_set_path(NULL);
+	}
+	else
+	{
+		grn_default_logger_set_path(new_value);
 	}
 }
 
@@ -233,10 +237,10 @@ PGrnInitializeVariables(void)
 	PGrnDefineCustomStringVariable("pgroonga.log_path",
 								   "Log path for PGroonga.",
 								   "The default is "
-								   "\"${PG_DATA}/" PGrnLogBasename "\". "
+								   "\"${PG_DATA}/" PGrnLogPathDefault "\". "
 								   "Use \"none\" to disable file output.",
 								   &PGrnLogPath,
-								   NULL,
+								   PGrnLogPathDefault,
 								   PGC_USERSET,
 								   0,
 								   NULL,
