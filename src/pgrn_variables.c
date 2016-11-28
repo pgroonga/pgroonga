@@ -46,7 +46,10 @@ static struct config_enum_entry PGrnLogLevelEntries[] = {
 };
 #endif
 
+static char *PGrnQueryLogPath;
+
 static int PGrnLockTimeout;
+
 static bool PGrnEnableWAL;
 
 #ifdef PGRN_SUPPORT_ENUM_VARIABLE
@@ -142,6 +145,39 @@ PGrnLogLevelAssign(int new_value, void *extra)
 #endif
 
 static void
+PGrnQueryLogPathAssignRaw(const char *new_value)
+{
+	if (!new_value)
+	{
+		new_value = PGrnQueryLogPathDefault;
+	}
+
+	if (PGrnIsNoneValue(new_value))
+	{
+		grn_default_query_logger_set_path(NULL);
+	}
+	else
+	{
+		grn_default_query_logger_set_path(new_value);
+	}
+}
+
+#ifdef PGRN_IS_GREENPLUM
+static const char *
+PGrnQueryLogPathAssign(const char *new_value, bool doit, GucSource source)
+{
+	PGrnQueryLogPathAssignRaw(new_value);
+	return new_value;
+}
+#else
+static void
+PGrnQueryLogPathAssign(const char *new_value, void *extra)
+{
+	PGrnQueryLogPathAssignRaw(new_value);
+}
+#endif
+
+static void
 PGrnLockTimeoutAssignRaw(int new_value)
 {
 	grn_set_lock_timeout(new_value);
@@ -223,6 +259,20 @@ PGrnInitializeVariables(void)
 							 PGrnLogLevelAssign,
 							 NULL);
 #endif
+
+	PGrnDefineCustomStringVariable("pgroonga.query_log_path",
+								   "Query log path for PGroonga.",
+								   "Path must be a relative path "
+								   "from \"${PG_DATA}/\" or absolute path. "
+								   "Use \"none\" to disable file output. "
+								   "The default is disabled.",
+								   &PGrnQueryLogPath,
+								   PGrnQueryLogPathDefault,
+								   PGC_USERSET,
+								   0,
+								   NULL,
+								   PGrnQueryLogPathAssign,
+								   NULL);
 
 	PGrnDefineCustomIntVariable("pgroonga.lock_timeout",
 								"Try pgroonga.lock_timeout times "

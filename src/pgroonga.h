@@ -39,6 +39,7 @@
 
 /* file and table names */
 #define PGrnLogBasename					"pgroonga.log"
+#define PGrnQueryLogPathDefault			"none"
 #define PGrnDatabaseBasename			"pgrn"
 #define PGrnSourcesTableNamePrefix		"Sources"
 #define PGrnSourcesTableNamePrefixLength	(sizeof(PGrnSourcesTableNamePrefix) - 1)

@@ -1,0 +1,27 @@
+-- To load PGroonga
+SELECT pgroonga.command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SHOW pgroonga.query_log_path;
+ pgroonga.query_log_path 
+-------------------------
+ none
+(1 row)
+
+SET pgroonga.query_log_path = 'pgroonga.query.log';
+SHOW pgroonga.query_log_path;
+ pgroonga.query_log_path 
+-------------------------
+ pgroonga.query.log
+(1 row)
+
+SET pgroonga.query_log_path = default;
+SHOW pgroonga.query_log_path;
+ pgroonga.query_log_path 
+-------------------------
+ none
+(1 row)
+
