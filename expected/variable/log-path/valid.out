@@ -8,7 +8,7 @@ SELECT pgroonga.command('status')::json->0->0;
 SHOW pgroonga.log_path;
  pgroonga.log_path 
 -------------------
- 
+ pgroonga.log
 (1 row)
 
 SET pgroonga.log_path = 'none';
@@ -22,6 +22,6 @@ SET pgroonga.log_path = default;
 SHOW pgroonga.log_path;
  pgroonga.log_path 
 -------------------
- 
+ pgroonga.log
 (1 row)
 
