@@ -33,7 +33,7 @@ pgroonga_escape_string(PG_FUNCTION_ARGS)
 	escapedValueBuffer = &(buffers->escape.escapedValue);
 	specialCharactersBuffer = &(buffers->escape.specialCharacters);
 
-	GRN_BULK_REWIND(specialCharactersBuffer);
+	GRN_BULK_REWIND(escapedValueBuffer);
 	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
 	if (PG_NARGS() == 1)
 	{
