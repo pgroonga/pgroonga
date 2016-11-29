@@ -67,6 +67,7 @@ extern Datum PGDLLEXPORT pgroonga_match_positions_byte(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_positions_character(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_extract_keywords(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_flush(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_match_term_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_term_text_array(PG_FUNCTION_ARGS);

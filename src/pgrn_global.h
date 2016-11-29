@@ -16,6 +16,11 @@ struct PGrnBuffers
 	grn_obj walValue;
 	grn_obj maxRecordSize;
 	grn_obj walAppliedPosition;
+	struct
+	{
+		grn_obj escapedTarget;
+		grn_obj specialCharacters;
+	} escape;
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;

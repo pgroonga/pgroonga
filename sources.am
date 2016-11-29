@@ -4,6 +4,7 @@ SRCS =						\
 	src/pgrn_convert.c			\
 	src/pgrn_create.c			\
 	src/pgrn_ctid.c				\
+	src/pgrn_escape.c			\
 	src/pgrn_flush.c			\
 	src/pgrn_global.c			\
 	src/pgrn_groonga.c			\
