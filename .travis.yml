@@ -1,6 +1,7 @@
 notifications:
-  recipients:
-    - groonga-commit@lists.sourceforge.jp
+  email:
+    recipients:
+      - groonga-commit@lists.osdn.me
 dist: trusty
 language: c
 matrix:
