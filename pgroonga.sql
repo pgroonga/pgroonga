@@ -23,6 +23,13 @@ CREATE FUNCTION pgroonga.command(groongaCommand text)
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_command'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'

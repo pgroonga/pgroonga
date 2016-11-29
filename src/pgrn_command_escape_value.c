@@ -1,7 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_command_escape_value.h"
 #include "pgrn_global.h"
-#include "pgrn_groonga.h"
 
 #include <utils/builtins.h>
 
@@ -10,24 +10,17 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 PG_FUNCTION_INFO_V1(pgroonga_command_escape_value);
 
-/**
- * pgroonga.command_escape_value(value text : text
- */
-Datum
-pgroonga_command_escape_value(PG_FUNCTION_ARGS)
+void
+PGrnCommandEscapeValue(const char *value,
+					   size_t valueSize,
+					   grn_obj *escapedValue)
 {
-	text *value = PG_GETARG_TEXT_PP(0);
-	text *escapedValue;
-	grn_obj *escapedValueBuffer;
 	const char *valueCurrent;
 	const char *valueEnd;
 
-	escapedValueBuffer = &(buffers->escape.escapedValue);
-
-	GRN_BULK_REWIND(escapedValueBuffer);
-	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
-	valueCurrent = VARDATA_ANY(value);
-	valueEnd = valueCurrent + VARSIZE_ANY_EXHDR(value);
+	GRN_TEXT_PUTC(ctx, escapedValue, '"');
+	valueCurrent = value;
+	valueEnd = valueCurrent + valueSize;
 	while (valueCurrent < valueEnd)
 	{
 		int charLength = grn_charlen(ctx, valueCurrent, valueEnd);
@@ -41,26 +34,42 @@ pgroonga_command_escape_value(PG_FUNCTION_ARGS)
 			{
 			case '\\':
 			case '"':
-				GRN_TEXT_PUTC(ctx, escapedValueBuffer, '\\');
-				GRN_TEXT_PUTC(ctx, escapedValueBuffer, *valueCurrent);
+				GRN_TEXT_PUTC(ctx, escapedValue, '\\');
+				GRN_TEXT_PUTC(ctx, escapedValue, *valueCurrent);
 				break;
 			case '\n':
-				GRN_TEXT_PUTS(ctx, escapedValueBuffer, "\\n");
+				GRN_TEXT_PUTS(ctx, escapedValue, "\\n");
 				break;
 			default:
-				GRN_TEXT_PUTC(ctx, escapedValueBuffer, *valueCurrent);
+				GRN_TEXT_PUTC(ctx, escapedValue, *valueCurrent);
 				break;
 			}
 		}
 		else
 		{
-			GRN_TEXT_PUT(ctx, escapedValueBuffer, valueCurrent, charLength);
+			GRN_TEXT_PUT(ctx, escapedValue, valueCurrent, charLength);
 		}
 
 		valueCurrent += charLength;
 	}
-	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
+	GRN_TEXT_PUTC(ctx, escapedValue, '"');
+}
 
+/**
+ * pgroonga.command_escape_value(value text) : text
+ */
+Datum
+pgroonga_command_escape_value(PG_FUNCTION_ARGS)
+{
+	text *value = PG_GETARG_TEXT_PP(0);
+	text *escapedValue;
+	grn_obj *escapedValueBuffer;
+
+	escapedValueBuffer = &(buffers->escape.escapedValue);
+	GRN_BULK_REWIND(escapedValueBuffer);
+	PGrnCommandEscapeValue(VARDATA_ANY(value),
+						   VARSIZE_ANY_EXHDR(value),
+						   escapedValueBuffer);
 	escapedValue = cstring_to_text_with_len(GRN_TEXT_VALUE(escapedValueBuffer),
 											GRN_TEXT_LEN(escapedValueBuffer));
 	PG_RETURN_TEXT_P(escapedValue);

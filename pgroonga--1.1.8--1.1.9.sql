@@ -6,6 +6,13 @@ CREATE FUNCTION pgroonga.table_name(indexName cstring)
 	STABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_command'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 CREATE FUNCTION pgroonga.command_escape_value(value text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'

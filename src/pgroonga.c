@@ -2,6 +2,7 @@
 
 #include "pgrn_compatible.h"
 
+#include "pgrn_command_escape_value.h"
 #include "pgrn_convert.h"
 #include "pgrn_create.h"
 #include "pgrn_ctid.h"
@@ -1122,6 +1123,7 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 
 /**
  * pgroonga.command(groongaCommand text) : text
+ * pgroonga.command(groongaCommandName text, arguments text[]) : text
  */
 Datum
 pgroonga_command(PG_FUNCTION_ARGS)
@@ -1131,9 +1133,66 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	int flags = 0;
 	text *result;
 
-	grn_ctx_send(ctx,
-				 VARDATA_ANY(groongaCommand),
-				 VARSIZE_ANY_EXHDR(groongaCommand), 0);
+	if (PG_NARGS() == 2)
+	{
+		grn_obj *command = &(buffers->general);
+		ArrayType *arguments = PG_GETARG_ARRAYTYPE_P(1);
+		int i, n;
+
+		n = ARR_DIMS(arguments)[0];
+		if ((n % 2) != 0)
+		{
+		}
+
+		grn_obj_reinit(ctx, command, GRN_DB_TEXT, 0);
+		GRN_TEXT_PUT(ctx,
+					 command,
+					 VARDATA_ANY(groongaCommand),
+					 VARSIZE_ANY_EXHDR(groongaCommand));
+		for (i = 1; i <= n; i += 2)
+		{
+			int nameIndex = i;
+			Datum nameDatum;
+			text *name;
+			int valueIndex = i + 1;
+			Datum valueDatum;
+			text *value;
+			bool isNULL;
+
+			nameDatum = array_ref(arguments, 1, &nameIndex, -1, -1, false,
+								  'i', &isNULL);
+			if (isNULL)
+				continue;
+			valueDatum = array_ref(arguments, 1, &valueIndex, -1, -1, false,
+								   'i', &isNULL);
+			if (isNULL)
+				continue;
+
+			name = DatumGetTextPP(nameDatum);
+			value = DatumGetTextPP(valueDatum);
+
+			GRN_TEXT_PUTS(ctx, command, " --");
+			GRN_TEXT_PUT(ctx,
+						 command,
+						 VARDATA_ANY(name),
+						 VARSIZE_ANY_EXHDR(name));
+			GRN_TEXT_PUTC(ctx, command, ' ');
+			PGrnCommandEscapeValue(VARDATA_ANY(value),
+								   VARSIZE_ANY_EXHDR(value),
+								   command);
+		}
+		grn_ctx_send(ctx,
+					 GRN_TEXT_VALUE(command),
+					 GRN_TEXT_LEN(command),
+					 0);
+	}
+	else
+	{
+		grn_ctx_send(ctx,
+					 VARDATA_ANY(groongaCommand),
+					 VARSIZE_ANY_EXHDR(groongaCommand),
+					 0);
+	}
 	rc = ctx->rc;
 
 	GRN_BULK_REWIND(&(buffers->body));
