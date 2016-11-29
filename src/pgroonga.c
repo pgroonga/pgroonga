@@ -610,7 +610,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 #ifdef HAVE_INT64_TIMESTAMP
 		timestamp += usec;
 #else
-		timestamp += ((double) used) / USECS_PER_SEC;
+		timestamp += ((double) usec) / USECS_PER_SEC;
 #endif
 		if (typeID == TIMESTAMPOID)
 			PG_RETURN_TIMESTAMP(timestamp);
