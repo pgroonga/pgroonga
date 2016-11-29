@@ -18,7 +18,7 @@ struct PGrnBuffers
 	grn_obj walAppliedPosition;
 	struct
 	{
-		grn_obj escapedTarget;
+		grn_obj escapedValue;
 		grn_obj specialCharacters;
 	} escape;
 	grn_obj head;

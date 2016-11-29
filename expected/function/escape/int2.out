@@ -1,0 +1,12 @@
+SELECT pgroonga.escape(29::int2);
+ escape 
+--------
+ 29
+(1 row)
+
+SELECT pgroonga.escape(-29::int2);
+ escape 
+--------
+ -29
+(1 row)
+

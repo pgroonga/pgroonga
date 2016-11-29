@@ -1,0 +1,12 @@
+SELECT pgroonga.escape(29.2929::float4);
+         escape         
+------------------------
+ 5.463758124870918e-315
+(1 row)
+
+SELECT pgroonga.escape(-29.2929::float4);
+         escape         
+------------------------
+ 1.607373707969728e-314
+(1 row)
+

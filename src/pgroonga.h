@@ -67,7 +67,15 @@ extern Datum PGDLLEXPORT pgroonga_match_positions_byte(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_positions_character(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_extract_keywords(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_flush(PG_FUNCTION_ARGS);
-extern Datum PGDLLEXPORT pgroonga_escape(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_query(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_string(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_boolean(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_int2(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_int4(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_int8(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_float4(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_float8(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_escape_timestamptz(PG_FUNCTION_ARGS);
 
 extern Datum PGDLLEXPORT pgroonga_match_term_text(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_term_text_array(PG_FUNCTION_ARGS);
