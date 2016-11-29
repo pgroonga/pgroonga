@@ -67,6 +67,7 @@ extern Datum PGDLLEXPORT pgroonga_match_positions_byte(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_match_positions_character(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_extract_keywords(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_flush(PG_FUNCTION_ARGS);
+extern Datum PGDLLEXPORT pgroonga_command_escape_value(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_query_escape(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_escape_string(PG_FUNCTION_ARGS);
 extern Datum PGDLLEXPORT pgroonga_escape_boolean(PG_FUNCTION_ARGS);

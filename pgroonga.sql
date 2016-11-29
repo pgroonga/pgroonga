@@ -65,6 +65,13 @@ CREATE FUNCTION pgroonga.flush(indexName cstring)
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga.command_escape_value(value text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga.query_escape(query text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_query_escape'

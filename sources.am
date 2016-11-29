@@ -1,6 +1,7 @@
 SRCS =						\
 	src/pgroonga.c				\
 	src/pgrn_column_name.c			\
+	src/pgrn_command_escape_value.c		\
 	src/pgrn_convert.c			\
 	src/pgrn_create.c			\
 	src/pgrn_ctid.c				\
