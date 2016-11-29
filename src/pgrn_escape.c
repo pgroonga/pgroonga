@@ -59,7 +59,7 @@ pgroonga_escape_string(PG_FUNCTION_ARGS)
 	if (rc != GRN_SUCCESS) {
 		ereport(ERROR,
 				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: escape: value: failed to escape")));
+				 errmsg("pgroonga: escape: failed to escape")));
 	}
 	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
 
