@@ -9,7 +9,6 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PG_FUNCTION_INFO_V1(pgroonga_escape_query);
 PG_FUNCTION_INFO_V1(pgroonga_escape_string);
 PG_FUNCTION_INFO_V1(pgroonga_escape_boolean);
 PG_FUNCTION_INFO_V1(pgroonga_escape_int2);
@@ -18,35 +17,6 @@ PG_FUNCTION_INFO_V1(pgroonga_escape_int8);
 PG_FUNCTION_INFO_V1(pgroonga_escape_float4);
 PG_FUNCTION_INFO_V1(pgroonga_escape_float8);
 PG_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
-
-/**
- * pgroonga.escape_query(query text) : text
- */
-Datum
-pgroonga_escape_query(PG_FUNCTION_ARGS)
-{
-	grn_rc rc = GRN_SUCCESS;
-	text *query = PG_GETARG_TEXT_PP(0);
-	text *escapedQuery;
-	grn_obj *escapedQueryBuffer;
-
-	escapedQueryBuffer = &(buffers->escape.escapedValue);
-	GRN_BULK_REWIND(escapedQueryBuffer);
-	rc = grn_expr_syntax_escape_query(ctx,
-									  VARDATA_ANY(query),
-									  VARSIZE_ANY_EXHDR(query),
-									  escapedQueryBuffer);
-
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: escape_query: failed to escape")));
-	}
-
-	escapedQuery = cstring_to_text_with_len(GRN_TEXT_VALUE(escapedQueryBuffer),
-											GRN_TEXT_LEN(escapedQueryBuffer));
-	PG_RETURN_TEXT_P(escapedQuery);
-}
 
 /**
  * pgroonga.escape(value text, special_characters text = '"\') : text

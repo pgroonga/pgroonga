@@ -1,6 +1,6 @@
-CREATE FUNCTION pgroonga.escape_query(query text)
+CREATE FUNCTION pgroonga.query_escape(query text)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'pgroonga_escape_query'
+	AS 'MODULE_PATHNAME', 'pgroonga_query_escape'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
