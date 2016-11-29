@@ -1,3 +1,11 @@
+DROP FUNCTION pgroonga.table_name;
+CREATE FUNCTION pgroonga.table_name(indexName cstring)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_table_name'
+	LANGUAGE C
+	STABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga.command_escape_value(value text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'

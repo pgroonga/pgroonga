@@ -1074,7 +1074,7 @@ pgroonga_score(PG_FUNCTION_ARGS)
 #endif
 
 /**
- * pgroonga.table_name(indexName cstring) : cstring
+ * pgroonga.table_name(indexName cstring) : text
  */
 Datum
 pgroonga_table_name(PG_FUNCTION_ARGS)
@@ -1083,8 +1083,8 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	Datum indexOidDatum;
 	Oid indexOid;
 	Oid fileNodeOid;
-	char tableName[GRN_TABLE_MAX_KEY_SIZE];
-	char *copiedTableName;
+	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	text *tableName;
 
 	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
 	if (!OidIsValid(indexOidDatum))
@@ -1113,11 +1113,11 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 		}
 	}
 
-	snprintf(tableName, sizeof(tableName),
+	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
 			 PGrnSourcesTableNameFormat,
 			 fileNodeOid);
-	copiedTableName = pstrdup(tableName);
-	PG_RETURN_CSTRING(copiedTableName);
+	tableName = cstring_to_text(tableNameBuffer);
+	PG_RETURN_TEXT_P(tableName);
 }
 
 /**
