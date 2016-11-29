@@ -13,7 +13,7 @@ CREATE FUNCTION pgroonga.table_name(indexName cstring)
 	RETURNS cstring
 	AS 'MODULE_PATHNAME', 'pgroonga_table_name'
 	LANGUAGE C
-	VOLATILE
+	STABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.command(groongaCommand text)
@@ -27,35 +27,35 @@ CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'
 	LANGUAGE C
-	VOLATILE
+	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.highlight_html(target text, keywords text[])
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
 	LANGUAGE C
-	VOLATILE
+	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.match_positions_byte(target text, keywords text[])
 	RETURNS integer[2][]
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
 	LANGUAGE C
-	VOLATILE
+	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.match_positions_character(target text, keywords text[])
 	RETURNS integer[2][]
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
 	LANGUAGE C
-	VOLATILE
+	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.query_extract_keywords(query text)
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
 	LANGUAGE C
-	VOLATILE
+	IMMUTABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.flush(indexName cstring)
