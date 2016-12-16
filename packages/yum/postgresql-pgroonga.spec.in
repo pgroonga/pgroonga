@@ -2,7 +2,7 @@
 
 %define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:5}
 
-%define _use_msgpack %{?use_msgpack:%{use_msgpack}}%{!?use_msgpack:%{_centos_ver} >= 7}
+%define _use_msgpack %{?use_msgpack:%{use_msgpack}}%{!?use_msgpack:%{_centos_ver} >= 6}
 
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
@@ -42,7 +42,23 @@ It is based on Groonga.
 
 
 %build
+%if %{_centos_ver} == 6
+cat <<EOF > msgpack.pc
+prefix=/tmp/local
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: MessagePack
+Description: Binary-based efficient object serialization library
+Version: 0.5.7
+Libs: -L\${libdir} -lmsgpack
+Cflags: -I\${includedir}
+EOF
+%endif
+
 PATH="%{pg_bindir}:$PATH" \
+  PKG_CONFIG_PATH="${PWD}" \
   make \
 %if %{_use_msgpack}
     HAVE_MSGPACK=1 \
