@@ -127,6 +127,14 @@ struct PGrnWALData_
 #	endif
 #endif
 
+#ifdef PGRN_SUPPORT_WAL
+#	if MSGPACK_VERSION_MAJOR == 0
+#		define MSGPACK_PACKER_WRITE_LENGTH_TYPE unsigned int
+#	else
+#		define MSGPACK_PACKER_WRITE_LENGTH_TYPE size_t
+#	endif
+#endif
+
 static void
 msgpack_pack_cstr(msgpack_packer *packer, const char *string)
 {
@@ -305,7 +313,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 static int
 PGrnWALPageWriter(void *userData,
 				  const char *buffer,
-				  size_t length)
+				  MSGPACK_PACKER_WRITE_LENGTH_TYPE length)
 {
 	PGrnWALData *data = userData;
 	int written = 0;
