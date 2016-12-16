@@ -2026,7 +2026,16 @@ PGrnInsert(Relation index,
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 
 	walData = PGrnWALStart(index);
-	PGrnWALInsertStart(walData, NULL, desc->natts + 1);
+	{
+		size_t nValidAttributes = 1; /* ctid is always valid. */
+
+		for (i = 0; i < desc->natts; i++)
+		{
+			if (!isnull[i])
+				nValidAttributes++;
+		}
+		PGrnWALInsertStart(walData, NULL, nValidAttributes);
+	}
 
 	GRN_UINT64_SET(ctx, &(buffers->ctid), PGrnCtidPack(ht_ctid));
 	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
