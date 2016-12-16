@@ -88,6 +88,45 @@ struct PGrnWALData_
 };
 
 #ifdef PGRN_SUPPORT_WAL
+#	if MSGPACK_VERSION_MAJOR == 0
+#		define MSGPACK_OBJECT_FLOAT MSGPACK_OBJECT_DOUBLE
+#		define MSGPACK_OBJECT_STR   MSGPACK_OBJECT_RAW
+#		define MSGPACK_OBJECT_BIN   MSGPACK_OBJECT_RAW
+#	endif
+
+#	if MSGPACK_VERSION_MAJOR == 0
+#		define MSGPACK_OBJECT_VIA_FLOAT(object) ((object).via.dec)
+#		define MSGPACK_OBJECT_VIA_STR(object)   ((object).via.raw)
+#		define MSGPACK_OBJECT_VIA_BIN(object)   ((object).via.raw)
+#	else
+#		define MSGPACK_OBJECT_VIA_FLOAT(object) ((object).via.f64)
+#		define MSGPACK_OBJECT_VIA_STR(object)   ((object).via.str)
+#		define MSGPACK_OBJECT_VIA_BIN(object)   ((object).via.bin)
+#	endif
+#endif
+
+#ifdef PGRN_SUPPORT_WAL
+#	if MSGPACK_VERSION_MAJOR == 0
+#		define msgpack_pack_str(packer, size) \
+	msgpack_pack_raw((packer), (size))
+#		define msgpack_pack_str_body(packer, data, size) \
+	msgpack_pack_raw_body((packer), (data), (size))
+#		define msgpack_pack_bin(packer, size) \
+	msgpack_pack_raw((packer), (size))
+#		define msgpack_pack_bin_body(packer, data, size) \
+	msgpack_pack_raw_body((packer), (data), (size))
+#	endif
+
+#ifdef PGRN_SUPPORT_WAL
+#	if MSGPACK_VERSION_MAJOR == 0
+#		define MSGPACK_UNPACKER_NEXT(unpacker, unpacked) \
+	msgpack_unpacker_next((unpacker), (unpacked))
+#	else
+#		define MSGPACK_UNPACKER_NEXT(unpacker, unpacked) \
+	msgpack_unpacker_next((unpacker), (unpacked)) == MSGPACK_UNPACK_SUCCESS
+#	endif
+#endif
+
 static void
 msgpack_pack_cstr(msgpack_packer *packer, const char *string)
 {
@@ -866,9 +905,9 @@ PGrnWALApplyKeyEqual(const char *context,
 	}
 
 	nameSize = strlen(name);
-	if (key->via.str.size != nameSize)
+	if (MSGPACK_OBJECT_VIA_STR(*key).size != nameSize)
 		return false;
-	if (memcmp(key->via.str.ptr, name, nameSize) != 0)
+	if (memcmp(MSGPACK_OBJECT_VIA_STR(*key).ptr, name, nameSize) != 0)
 		return false;
 
 	return true;
@@ -887,8 +926,8 @@ PGrnWALApplyValueGetPositiveInteger(const char *context,
 						"<%#x>",
 						context ? context : "",
 						context ? ": " : "",
-						kv->key.via.str.size,
-						kv->key.via.str.ptr,
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
 						kv->val.type)));
 	}
 
@@ -910,13 +949,13 @@ PGrnWALApplyValueGetString(const char *context,
 						"<%#x>",
 						context ? context : "",
 						context ? ": " : "",
-						kv->key.via.str.size,
-						kv->key.via.str.ptr,
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
 						kv->val.type)));
 	}
 
-	*string = kv->val.via.str.ptr;
-	*stringSize = kv->val.via.str.size;
+	*string = MSGPACK_OBJECT_VIA_STR(kv->val).ptr;
+	*stringSize = MSGPACK_OBJECT_VIA_STR(kv->val).size;
 }
 
 static grn_obj *
@@ -931,8 +970,8 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 		object = NULL;
 		break;
 	case MSGPACK_OBJECT_STR:
-		object = PGrnLookupWithSize(kv->val.via.str.ptr,
-									kv->val.via.str.size,
+		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
+									MSGPACK_OBJECT_VIA_STR(kv->val).size,
 									ERROR);
 		break;
 	default:
@@ -943,8 +982,8 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 						"<%#x>",
 						context ? context : "",
 						context ? ": " : "",
-						kv->key.via.str.size,
-						kv->key.via.str.ptr,
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
 						kv->val.type)));
 		break;
 	}
@@ -969,8 +1008,8 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 						"<%#x>",
 						context ? context : "",
 						context ? ": " : "",
-						kv->key.via.str.size,
-						kv->key.via.str.ptr,
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
 						kv->val.type)));
 	}
 
@@ -991,14 +1030,14 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 							"[%u]=<%#x>",
 							context ? context : "",
 							context ? ": " : "",
-							kv->key.via.str.size,
-							kv->key.via.str.ptr,
+							MSGPACK_OBJECT_VIA_STR(kv->key).size,
+							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
 							i,
 							element->type)));
 		}
 
-		object = PGrnLookupWithSize(element->via.str.ptr,
-									element->via.str.size,
+		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(*element).ptr,
+									MSGPACK_OBJECT_VIA_STR(*element).size,
 									ERROR);
 		objectID = grn_obj_id(ctx, object);
 		GRN_RECORD_PUT(ctx, ids, objectID);
@@ -1061,13 +1100,13 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			break;
 #undef ELEMENT_VALUE
 		case MSGPACK_OBJECT_FLOAT:
-			GRN_FLOAT_PUT(ctx, value, element->via.f64);
+			GRN_FLOAT_PUT(ctx, value, MSGPACK_OBJECT_VIA_FLOAT(*element));
 			break;
 		case MSGPACK_OBJECT_STR:
 			grn_vector_add_element(ctx,
 								   value,
-								   element->via.str.ptr,
-								   element->via.str.size,
+								   MSGPACK_OBJECT_VIA_STR(*element).ptr,
+								   MSGPACK_OBJECT_VIA_STR(*element).size,
 								   0,
 								   range_id);
 			break;
@@ -1131,8 +1170,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 								GRN_COLUMN_NAME_KEY,
 								kv->val.type)));
 			}
-			key = kv->val.via.bin.ptr;
-			keySize = kv->val.via.bin.size;
+			key = MSGPACK_OBJECT_VIA_BIN(kv->val).ptr;
+			keySize = MSGPACK_OBJECT_VIA_BIN(kv->val).size;
 			currentElement++;
 		}
 	}
@@ -1159,8 +1198,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		}
 
 		column = PGrnLookupColumnWithSize(table,
-										  key->via.str.ptr,
-										  key->via.str.size,
+										  MSGPACK_OBJECT_VIA_STR(*key).ptr,
+										  MSGPACK_OBJECT_VIA_STR(*key).size,
 										  ERROR);
 		switch (value->type)
 		{
@@ -1178,13 +1217,13 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			grn_obj_reinit(ctx, walValue, GRN_DB_FLOAT, 0);
-			GRN_FLOAT_SET(ctx, walValue, value->via.f64);
+			GRN_FLOAT_SET(ctx, walValue, MSGPACK_OBJECT_VIA_FLOAT(*value));
 			break;
 		case MSGPACK_OBJECT_STR:
 			grn_obj_reinit(ctx, walValue, GRN_DB_TEXT, 0);
 			GRN_TEXT_SET(ctx, walValue,
-						 value->via.str.ptr,
-						 value->via.str.size);
+						 MSGPACK_OBJECT_VIA_STR(*value).ptr,
+						 MSGPACK_OBJECT_VIA_STR(*value).size);
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			PGrnWALApplyInsertArray(data,
@@ -1418,8 +1457,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		UnlockReleaseBuffer(buffer);
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
-		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
-			   MSGPACK_UNPACK_SUCCESS)
+		while (MSGPACK_UNPACKER_NEXT(&unpacker, &unpacked))
 		{
 			LocationIndex appliedOffset;
 
