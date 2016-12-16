@@ -859,7 +859,7 @@ PGrnWALApplyKeyEqual(const char *context,
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: WAL: apply: %s%s"
-						"key must be map: <%#x>",
+						"key must be string: <%#x>",
 						context ? context : "",
 						context ? ": " : "",
 						key->type)));
