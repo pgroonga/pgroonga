@@ -21,8 +21,8 @@ DATA =						\
 	$(shell echo pgroonga--*--*.sql)
 endif
 
-PG_CPPFLAGS = $(shell pkg-config --cflags $(PACKAGES)) $(MSGPACK_CFLAGS)
-SHLIB_LINK = $(shell pkg-config --libs $(PACKAGES)) $(MSGPACK_LIBS) -lm
+PG_CPPFLAGS = $(shell pkg-config --cflags $(PACKAGES))
+SHLIB_LINK = $(shell pkg-config --libs $(PACKAGES)) -lm
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
