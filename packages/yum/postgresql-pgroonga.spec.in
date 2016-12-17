@@ -52,7 +52,7 @@ includedir=\${prefix}/include
 Name: MessagePack
 Description: Binary-based efficient object serialization library
 Version: 0.5.7
-Libs: -L\${libdir} -lmsgpack
+Libs: -L\${libdir} -lmsgpackc
 Cflags: -I\${includedir}
 EOF
 %endif
