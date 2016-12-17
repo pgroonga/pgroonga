@@ -1,16 +1,15 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Contact: Kouhei Sutou <kou at clear-code.com>
+Upstream-Contact: Kouhei Sutou <kou@clear-code.com>
 Source: http://packages.groonga.org/source/pgroonga/
 
 Files: *
-Copyright: 2015 Kouhei Sutou <kou@clear-code.com>
+Copyright: 2015-2016 Kouhei Sutou <kou@clear-code.com>
 License: PostgreSQL
 
-Files: pgroonga.c
-       pgroonga.h
-       pgroonga_types.c
+Files: src/pgroonga.c
+       src/pgroonga.h
        pgroonga--*.sql
-Copyright: 2015 Kouhei Sutou <kou@clear-code.com>
+Copyright: 2015-2016 Kouhei Sutou <kou@clear-code.com>
            2010 Itagaki Takahiro
            2009-2010, NIPPON TELEGRAPH AND TELEPHONE CORPORATION
            1996-2010, The PostgreSQL Global Development Group
