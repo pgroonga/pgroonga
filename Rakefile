@@ -345,6 +345,7 @@ debhelper
 pkg-config
 libgroonga-dev
 postgresql-server-dev-9.4
+libmsgpack-dev
 "
         ENV
       end
