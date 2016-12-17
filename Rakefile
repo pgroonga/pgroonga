@@ -570,6 +570,7 @@ postgresql-server-dev-9.4
            "packages/debian93/changelog",
            "packages/debian94/changelog",
            "packages/debian95/changelog",
+           "packages/debian96/changelog",
            "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
