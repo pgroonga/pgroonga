@@ -44,10 +44,10 @@ It is based on Groonga.
 %build
 %if %{_centos_ver} == 6
 cat <<EOF > msgpack.pc
-prefix=/tmp/local
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
+prefix=%{_prefix}
+exec_prefix=%{_exec_prefix}
+libdir=%{_libdir}
+includedir=%{_includedir}
 
 Name: MessagePack
 Description: Binary-based efficient object serialization library
