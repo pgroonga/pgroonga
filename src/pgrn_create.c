@@ -43,14 +43,17 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	grn_obj *range;
 	grn_id rangeID;
 
-	if (data->forPrefixSearch) {
+	if (data->forPrefixSearch)
+	{
 		char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 
 		snprintf(lexiconName, sizeof(lexiconName),
 				 PGrnLexiconNameFormat, data->relNode, data->i);
 		range = PGrnLookup(lexiconName, ERROR);
 		rangeID = grn_obj_id(ctx, range);
-	} else {
+	}
+	else
+	{
 		rangeID = data->attributeTypeID;
 		range = grn_ctx_at(ctx, rangeID);
 	}
