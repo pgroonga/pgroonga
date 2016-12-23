@@ -906,7 +906,121 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 
 #ifdef PGRN_SUPPORT_SCORE
 static double
-PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
+PGrnCollectScoreScanOpaqueGetScore(Relation table,
+								   PGrnScanOpaque so,
+								   grn_id recordID)
+{
+	double score = 0.0;
+	grn_id id;
+	ItemPointerData ctid;
+
+	id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
+	if (id == GRN_ID_NIL)
+		return 0.0;
+
+	GRN_BULK_REWIND(&(buffers->ctid));
+	grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
+	ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+
+	if (!PGrnCtidIsAlive(table, &ctid))
+		return 0.0;
+
+	GRN_BULK_REWIND(&(buffers->score));
+	grn_obj_get_value(ctx, so->scoreAccessor, id, &(buffers->score));
+	if (buffers->score.header.domain == GRN_DB_FLOAT)
+	{
+		score = GRN_FLOAT_VALUE(&(buffers->score));
+	}
+	else
+	{
+		score = GRN_INT32_VALUE(&(buffers->score));
+	}
+
+	return score;
+}
+
+static double
+PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(Relation table,
+											  HeapTuple tuple,
+											  PGrnScanOpaque so)
+{
+	double score = 0.0;
+	TupleDesc desc;
+	PGrnPrimaryKeyColumn *primaryKeyColumn;
+	grn_index_datum indexDatum;
+	grn_obj *lexicon;
+	grn_id termID;
+	grn_ii_cursor *iiCursor;
+	int iiNElements = 2;
+	grn_posting *posting;
+
+	desc = RelationGetDescr(table);
+	primaryKeyColumn = slist_container(PGrnPrimaryKeyColumn,
+									   node,
+									   so->primaryKeyColumns.head.next);
+
+	{
+		unsigned int nIndexData;
+
+		nIndexData = grn_column_find_index_data(ctx,
+												primaryKeyColumn->column,
+												GRN_OP_EQUAL,
+												&indexDatum,
+												1);
+		if (nIndexData == 0)
+			return 0.0;
+	}
+
+	lexicon = grn_ctx_at(ctx, indexDatum.index->header.domain);
+	if (!lexicon)
+		return 0.0;
+
+	{
+		bool isNULL;
+		Datum primaryKeyValue;
+
+		grn_obj_reinit(ctx,
+					   &(buffers->general),
+					   primaryKeyColumn->domain,
+					   primaryKeyColumn->flags);
+		primaryKeyValue = heap_getattr(tuple,
+									   primaryKeyColumn->number,
+									   desc,
+									   &isNULL);
+		PGrnConvertFromData(primaryKeyValue,
+							primaryKeyColumn->type,
+							&(buffers->general));
+	}
+	termID = grn_table_get(ctx,
+						   lexicon,
+						   GRN_BULK_HEAD(&(buffers->general)),
+						   GRN_BULK_VSIZE(&(buffers->general)));
+	if (termID == GRN_ID_NIL)
+		return 0.0;
+
+	iiCursor = grn_ii_cursor_open(ctx,
+								  (grn_ii *)(indexDatum.index),
+								  termID,
+								  GRN_ID_NIL,
+								  GRN_ID_NIL,
+								  iiNElements,
+								  0);
+	if (!iiCursor)
+		return 0.0;
+
+	while ((posting = grn_ii_cursor_next(ctx, iiCursor)))
+	{
+		score += PGrnCollectScoreScanOpaqueGetScore(table, so, posting->rid);
+	}
+	grn_ii_cursor_close(ctx, iiCursor);
+
+	return score;
+}
+
+static double
+PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(Relation table,
+												HeapTuple tuple,
+												PGrnScanOpaque so)
 {
 	double score = 0.0;
 	TupleDesc desc;
@@ -914,15 +1028,6 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 	grn_obj *variable;
 	slist_iter iter;
 	unsigned int nPrimaryKeyColumns = 0;
-
-	if (so->dataTableID != tuple->t_tableOid)
-		return 0.0;
-
-	if (!so->scoreAccessor)
-		return 0.0;
-
-	if (slist_is_empty(&(so->primaryKeyColumns)))
-		return 0.0;
 
 	desc = RelationGetDescr(table);
 
@@ -984,43 +1089,41 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 											0, -1, GRN_CURSOR_ASCENDING);
 		while (grn_table_cursor_next(ctx, tableCursor) != GRN_ID_NIL)
 		{
+			void *key;
 			grn_id recordID;
-			grn_id id;
-			ItemPointerData ctid;
 
-			{
-				void *key;
-				grn_table_cursor_get_key(ctx, tableCursor, &key);
-				recordID = *((grn_id *) key);
-			}
+			grn_table_cursor_get_key(ctx, tableCursor, &key);
+			recordID = *((grn_id *) key);
 			grn_table_cursor_delete(ctx, tableCursor);
 
-			id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
-			if (id == GRN_ID_NIL)
-				continue;
-
-			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
-			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
-
-			if (!PGrnCtidIsAlive(table, &ctid))
-				continue;
-
-			GRN_BULK_REWIND(&(buffers->score));
-			grn_obj_get_value(ctx, so->scoreAccessor, id, &(buffers->score));
-			if (buffers->score.header.domain == GRN_DB_FLOAT)
-			{
-				score += GRN_FLOAT_VALUE(&(buffers->score));
-			}
-			else
-			{
-				score += GRN_INT32_VALUE(&(buffers->score));
-			}
+			score += PGrnCollectScoreScanOpaqueGetScore(table, so, recordID);
 		}
 		grn_obj_unlink(ctx, tableCursor);
 	}
 
 	return score;
+}
+
+static double
+PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
+{
+	if (so->dataTableID != tuple->t_tableOid)
+		return 0.0;
+
+	if (!so->scoreAccessor)
+		return 0.0;
+
+	if (slist_is_empty(&(so->primaryKeyColumns)))
+		return 0.0;
+
+	if (so->primaryKeyColumns.head.next->next)
+	{
+		return PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(table, tuple, so);
+	}
+	else
+	{
+		return PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(table, tuple, so);
+	}
 }
 
 static double
