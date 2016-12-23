@@ -123,6 +123,7 @@ typedef struct PGrnScanOpaqueData
 #ifdef PGRN_SUPPORT_SCORE
 	slist_node node;
 	slist_head primaryKeyColumns;
+	grn_obj *scoreTargetRecords;
 #endif
 } PGrnScanOpaqueData;
 
@@ -909,7 +910,6 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 {
 	double score = 0.0;
 	TupleDesc desc;
-	grn_obj *records;
 	grn_obj *expression;
 	grn_obj *variable;
 	slist_iter iter;
@@ -926,9 +926,14 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 
 	desc = RelationGetDescr(table);
 
-	records = grn_table_create(ctx, NULL, 0, NULL,
-							   GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-							   so->sourcesTable, NULL);
+	if (!so->scoreTargetRecords)
+	{
+		so->scoreTargetRecords =
+			grn_table_create(ctx, NULL, 0, NULL,
+							 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
+							 so->sourcesTable, NULL);
+	}
+
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable, expression, variable);
 
 	slist_foreach(iter, &(so->primaryKeyColumns))
@@ -966,14 +971,15 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 	grn_table_select(ctx,
 					 so->sourcesTable,
 					 expression,
-					 records,
+					 so->scoreTargetRecords,
 					 GRN_OP_OR);
 	grn_obj_close(ctx, expression);
 
 	{
 		grn_table_cursor *tableCursor;
 
-		tableCursor = grn_table_cursor_open(ctx, records,
+		tableCursor = grn_table_cursor_open(ctx,
+											so->scoreTargetRecords,
 											NULL, 0, NULL, 0,
 											0, -1, GRN_CURSOR_ASCENDING);
 		while (grn_table_cursor_next(ctx, tableCursor) != GRN_ID_NIL)
@@ -987,6 +993,8 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 				grn_table_cursor_get_key(ctx, tableCursor, &key);
 				recordID = *((grn_id *) key);
 			}
+			grn_table_cursor_delete(ctx, tableCursor);
+
 			id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
 			if (id == GRN_ID_NIL)
 				continue;
@@ -1011,8 +1019,6 @@ PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
 		}
 		grn_obj_unlink(ctx, tableCursor);
 	}
-
-	grn_obj_close(ctx, records);
 
 	return score;
 }
@@ -2243,6 +2249,7 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 #ifdef PGRN_SUPPORT_SCORE
 	slist_push_head(&PGrnScanOpaques, &(so->node));
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
+	so->scoreTargetRecords = NULL;
 #endif
 }
 
@@ -2303,6 +2310,11 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	}
 
 	PGrnPrimaryKeyColumnsFin(&(so->primaryKeyColumns));
+	if (so->scoreTargetRecords)
+	{
+		grn_obj_close(ctx, so->scoreTargetRecords);
+		so->scoreTargetRecords = NULL;
+	}
 #endif
 
 	PGrnScanOpaqueReinit(so);
