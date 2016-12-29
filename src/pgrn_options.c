@@ -24,7 +24,7 @@ static relopt_kind PGrnReloptionKind;
 
 static grn_ctx *ctx = &PGrnContext;
 
-PG_FUNCTION_INFO_V1(pgroonga_options);
+PGRN_FUNCTION_INFO_V1(pgroonga_options);
 
 static bool
 PGrnIsTokenizer(grn_obj *object)

@@ -20,7 +20,7 @@
 #include <xxhash.h>
 
 #ifdef PGRN_SUPPORT_JSONB
-PG_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
 #endif
 
 #ifdef PGRN_SUPPORT_JSONB

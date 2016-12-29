@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 
@@ -9,14 +11,14 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PG_FUNCTION_INFO_V1(pgroonga_escape_string);
-PG_FUNCTION_INFO_V1(pgroonga_escape_boolean);
-PG_FUNCTION_INFO_V1(pgroonga_escape_int2);
-PG_FUNCTION_INFO_V1(pgroonga_escape_int4);
-PG_FUNCTION_INFO_V1(pgroonga_escape_int8);
-PG_FUNCTION_INFO_V1(pgroonga_escape_float4);
-PG_FUNCTION_INFO_V1(pgroonga_escape_float8);
-PG_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_string);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_boolean);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_int2);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_int4);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_int8);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_float4);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_float8);
+PGRN_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
 
 /**
  * pgroonga.escape(value text, special_characters text = '"\') : text

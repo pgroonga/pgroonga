@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_command_escape_value.h"
 #include "pgrn_global.h"
 
@@ -8,7 +10,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PG_FUNCTION_INFO_V1(pgroonga_command_escape_value);
+PGRN_FUNCTION_INFO_V1(pgroonga_command_escape_value);
 
 void
 PGrnCommandEscapeValue(const char *value,

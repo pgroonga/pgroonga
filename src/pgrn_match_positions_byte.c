@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_match_positions_byte.h"
@@ -11,7 +13,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
 
-PG_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
 
 void
 PGrnInitializeMatchPositionsByte(void)

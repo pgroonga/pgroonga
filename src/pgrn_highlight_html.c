@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_highlight_html.h"
@@ -11,7 +13,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
 
-PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
+PGRN_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
 void
 PGrnInitializeHighlightHTML(void)

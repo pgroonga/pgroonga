@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 
@@ -8,7 +10,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PG_FUNCTION_INFO_V1(pgroonga_query_escape);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_escape);
 
 /**
  * pgroonga.query_escape(query text) : text

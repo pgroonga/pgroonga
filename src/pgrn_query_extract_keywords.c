@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn_compatible.h"
+
 #include "pgrn_global.h"
 #include "pgrn_groonga.h"
 #include "pgrn_query_extract_keywords.h"
@@ -12,7 +14,7 @@ static grn_ctx *ctx = &PGrnContext;
 static grn_obj *table = NULL;
 static grn_obj *textColumn = NULL;
 
-PG_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
 
 void
 PGrnInitializeQueryExtractKeywords(void)
