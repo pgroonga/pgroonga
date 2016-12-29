@@ -220,9 +220,7 @@ PGrnJSONBCreateDataColumns(Relation index,
 		grn_column_flags flags = 0;
 		if (PGrnIsZstdAvailable)
 		{
-#ifdef GRN_OBJ_COMPRESS_ZSTD
 			flags |= GRN_OBJ_COMPRESS_ZSTD;
-#endif
 		}
 		else if (PGrnIsLZ4Available)
 		{

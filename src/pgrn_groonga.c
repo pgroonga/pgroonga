@@ -30,13 +30,9 @@ PGrnInitializeGroongaInformation(void)
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZLIB, &grnIsSupported);
 	PGrnIsZlibAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
 
-#ifdef GRN_OBJ_COMPRESS_ZSTD
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZSTD, &grnIsSupported);
 	PGrnIsZstdAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
-#else
-	PGrnIsZstdAvailable = false;
-#endif
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }

@@ -75,9 +75,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 			case GRN_DB_LONG_TEXT:
 				if (PGrnIsZstdAvailable)
 				{
-#ifdef GRN_OBJ_COMPRESS_ZSTD
 					flags |= GRN_OBJ_COMPRESS_ZSTD;
-#endif
 				}
 				else if (PGrnIsLZ4Available)
 				{
