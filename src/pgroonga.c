@@ -148,49 +148,49 @@ static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
 #endif
 
 #ifdef PGRN_SUPPORT_SCORE
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_score);
+PGRN_FUNCTION_INFO_V1(pgroonga_score);
 #endif
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_table_name);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_command);
+PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
+PGRN_FUNCTION_INFO_V1(pgroonga_command);
 
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_term_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_term_text_array);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_term_varchar);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_term_varchar_array);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_query_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_query_text_array);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_query_varchar);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_term_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_term_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_term_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_term_varchar_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_query_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_query_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_query_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 /* v2 */
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_contain_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_contain_text);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_script_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
 
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_insert);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_beginscan);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_gettuple);
+PGRN_FUNCTION_INFO_V1(pgroonga_insert);
+PGRN_FUNCTION_INFO_V1(pgroonga_beginscan);
+PGRN_FUNCTION_INFO_V1(pgroonga_gettuple);
 #ifdef PGRN_SUPPORT_BITMAP_INDEX
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_getbitmap);
+PGRN_FUNCTION_INFO_V1(pgroonga_getbitmap);
 #endif
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_rescan);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_endscan);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_build);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_buildempty);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_bulkdelete);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_canreturn);
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_costestimate);
+PGRN_FUNCTION_INFO_V1(pgroonga_rescan);
+PGRN_FUNCTION_INFO_V1(pgroonga_endscan);
+PGRN_FUNCTION_INFO_V1(pgroonga_build);
+PGRN_FUNCTION_INFO_V1(pgroonga_buildempty);
+PGRN_FUNCTION_INFO_V1(pgroonga_bulkdelete);
+PGRN_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
+PGRN_FUNCTION_INFO_V1(pgroonga_canreturn);
+PGRN_FUNCTION_INFO_V1(pgroonga_costestimate);
 #ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
-extern PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_handler);
+PGRN_FUNCTION_INFO_V1(pgroonga_handler);
 #endif
 
 static grn_ctx *ctx = NULL;

@@ -16,6 +16,14 @@
 #	endif
 #endif
 
+#if PG_VERSION_NUM >= 90601
+#	define PGRN_FUNCTION_INFO_V1(function_name) \
+	PGDLLEXPORT PG_FUNCTION_INFO_V1(function_name)
+#else
+#	define PGRN_FUNCTION_INFO_V1(function_name) \
+	extern PGDLLEXPORT PG_FUNCTION_INFO_V1(function_name)
+#endif
+
 #if PG_VERSION_NUM >= 90600
 #	define PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #endif
