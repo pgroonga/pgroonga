@@ -147,6 +147,8 @@ typedef struct PGrnPrefixRKSequentialSearchData
 static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
 #endif
 
+extern PGDLLEXPORT void _PG_init(void);
+
 #ifdef PGRN_SUPPORT_SCORE
 PGRN_FUNCTION_INFO_V1(pgroonga_score);
 #endif
