@@ -17,6 +17,7 @@
 #include "pgrn_match_positions_character.h"
 #include "pgrn_options.h"
 #include "pgrn_pg.h"
+#include "pgrn_portable.h"
 #include "pgrn_query_extract_keywords.h"
 #include "pgrn_search.h"
 #include "pgrn_value.h"
@@ -65,15 +66,6 @@
 #ifndef WIN32
 #	include <unistd.h>
 #endif
-
-#ifdef WIN32
-typedef struct _stat pgrn_stat_buffer;
-#	define pgrn_stat(path, buffer) _stat(path, buffer)
-#else
-typedef struct stat pgrn_stat_buffer;
-#	define pgrn_stat(path, buffer) stat(path, buffer)
-#endif
-
 
 PG_MODULE_MAGIC;
 
