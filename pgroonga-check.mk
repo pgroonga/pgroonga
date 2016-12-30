@@ -1,8 +1,8 @@
 PACKAGES =
 
 MODULE_big = pgroonga-check
-include pgroonga-check-sources.mk
+include makefiles/pgroonga-check-sources.mk
 OBJS = $(SRCS:.c=.o)
 
-include pgrn-pgxs.mk
+include makefiles/pgrn-pgxs.mk
 

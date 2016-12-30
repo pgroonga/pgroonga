@@ -4,7 +4,7 @@ PACKAGES += msgpack
 endif
 
 MODULE_big = pgroonga
-include pgroonga-sources.mk
+include makefiles/pgroonga-sources.mk
 OBJS = $(SRCS:.c=.o)
 EXTENSION = pgroonga
 
@@ -25,7 +25,7 @@ ifdef HAVE_MSGPACK
 COPT += -DPGRN_HAVE_MSGPACK
 endif
 
-include pgrn-pgxs.mk
+include makefiles/pgrn-pgxs.mk
 
 all: data/pgroonga--$(PGRN_VERSION).sql
 data/pgroonga--$(PGRN_VERSION).sql: data/pgroonga.sql

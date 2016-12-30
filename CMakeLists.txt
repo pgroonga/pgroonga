@@ -66,13 +66,16 @@ include_directories(
 link_directories(
   "${PGRN_POSTGRESQL_DIR}/lib")
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/pgroonga-sources.mk PGRN_SOURCES)
+file(READ
+  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-sources.mk
+  PGRN_SOURCES)
 string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "[ \t\n]" "" PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "\\\\" ";" PGRN_SOURCES "${PGRN_SOURCES}")
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/pgroonga-check-sources.mk
+file(READ
+  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-check-sources.mk
   PGRN_CHECK_SOURCES)
 string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
