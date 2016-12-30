@@ -10,11 +10,11 @@ EXTENSION = pgroonga
 
 ifdef GP
 DATA =						\
-	pgroonga-gpdb.sql
+	data/pgroonga-gpdb.sql
 else
 DATA =						\
-	pgroonga--$(EXTENSION_VERSION).sql	\
-	$(shell echo pgroonga--*--*.sql)
+	data/pgroonga--$(PGRN_VERSION).sql	\
+	$(shell echo data/pgroonga--*--*.sql)
 endif
 
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
@@ -27,8 +27,8 @@ endif
 
 include pgrn-pgxs.mk
 
-all: pgroonga--$(EXTENSION_VERSION).sql
-pgroonga--$(EXTENSION_VERSION).sql: pgroonga.sql
+all: data/pgroonga--$(PGRN_VERSION).sql
+data/pgroonga--$(PGRN_VERSION).sql: data/pgroonga.sql
 	@cp $< $@
 
 RESULT_DIRS = $(shell find sql/* -type d | sed -e 's,^sql/,results/,')
