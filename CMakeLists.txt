@@ -19,7 +19,11 @@ set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
 set(PGRN_POSTGRESQL_VERSION "unknown"
   CACHE STRING "PostgreSQL version")
 
-set(PGRN_LIBRARY_NAME "lib${PGRN_PROJECT_ID}")
+set(PGRN_DLL_NAME "${PGRN_PROJECT_ID}")
+set(PGRN_CHECK_DLL_NAME "${PGRN_PROJECT_ID}-check")
+
+set(PGRN_LIBRARY_NAME "lib${PGRN_DLL_NAME}")
+set(PGRN_CHECK_LIBRARY_NAME "lib${PGRN_CHECK_DLL_NAME}")
 
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
@@ -62,15 +66,23 @@ include_directories(
 link_directories(
   "${PGRN_POSTGRESQL_DIR}/lib")
 
-configure_file(
-  "src/pgroonga.rc.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
-  @ONLY)
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/sources.am PGRN_SOURCES)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/pgroonga-sources.mk PGRN_SOURCES)
 string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "[ \t\n]" "" PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "\\\\" ";" PGRN_SOURCES "${PGRN_SOURCES}")
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/pgroonga-check-sources.mk
+  PGRN_CHECK_SOURCES)
+string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
+  PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
+string(REGEX REPLACE "[ \t\n]" "" PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
+string(REGEX REPLACE "\\\\" ";" PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
+
+configure_file(
+  "src/pgroonga.rc.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
+  @ONLY)
 set(PGRN_SOURCES
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
   ${PGRN_SOURCES})
@@ -80,12 +92,32 @@ set_source_files_properties(${PGRN_SOURCES}
 add_library("${PGRN_LIBRARY_NAME}" SHARED ${PGRN_SOURCES})
 set_target_properties("${PGRN_LIBRARY_NAME}"
   PROPERTIES
-  OUTPUT_NAME "${PGRN_PROJECT_ID}")
+  OUTPUT_NAME "${PGRN_DLL_NAME}")
 target_link_libraries("${PGRN_LIBRARY_NAME}"
   libgroonga
   msgpackc
   "postgres.lib")
 install(TARGETS "${PGRN_LIBRARY_NAME}"
+  DESTINATION "${PGRN_EXTENSION_DIR}")
+
+configure_file(
+  "src/pgroonga-check.rc.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-check.rc"
+  @ONLY)
+set(PGRN_CHECK_SOURCES
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-check.rc"
+  ${PGRN_CHECK_SOURCES})
+set_source_files_properties(${PGRN_CHECK_SOURCES}
+  PROPERTIES
+  COMPILE_FLAGS "/EHsc")
+add_library("${PGRN_CHECK_LIBRARY_NAME}" SHARED ${PGRN_CHECK_SOURCES})
+set_target_properties("${PGRN_CHECK_LIBRARY_NAME}"
+  PROPERTIES
+  OUTPUT_NAME "${PGRN_CHECK_DLL_NAME}")
+target_link_libraries("${PGRN_CHECK_LIBRARY_NAME}"
+  libgroonga
+  "postgres.lib")
+install(TARGETS "${PGRN_CHECK_LIBRARY_NAME}"
   DESTINATION "${PGRN_EXTENSION_DIR}")
 
 install(FILES
