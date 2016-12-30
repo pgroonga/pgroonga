@@ -1,10 +1,10 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
+#include "pgrn-compatible.h"
 
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_query_extract_keywords.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-query-extract-keywords.h"
 
 #include <catalog/pg_type.h>
 #include <utils/array.h>

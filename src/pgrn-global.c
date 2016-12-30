@@ -1,4 +1,4 @@
-#include "pgrn_global.h"
+#include "pgrn-global.h"
 
 #include <stdlib.h>
 

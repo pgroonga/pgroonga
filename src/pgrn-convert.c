@@ -1,5 +1,5 @@
-#include "pgrn_convert.h"
-#include "pgrn_global.h"
+#include "pgrn-convert.h"
+#include "pgrn-global.h"
 
 #include <catalog/pg_type.h>
 #include <utils/array.h>

@@ -1,11 +1,11 @@
 #include "pgroonga.h"
 
-#include "pgrn_column_name.h"
-#include "pgrn_create.h"
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_options.h"
-#include "pgrn_value.h"
+#include "pgrn-column-name.h"
+#include "pgrn-create.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-options.h"
+#include "pgrn-value.h"
 
 static grn_ctx *ctx = &PGrnContext;
 

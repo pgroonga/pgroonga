@@ -1,9 +1,9 @@
 #include "pgroonga.h"
 
-#include "pgrn_ctid.h"
-#include "pgrn_global.h"
-#include "pgrn_groonga_tuple_is_alive.h"
-#include "pgrn_pg.h"
+#include "pgrn-ctid.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga-tuple-is-alive.h"
+#include "pgrn-pg.h"
 
 #include <groonga/plugin.h>
 

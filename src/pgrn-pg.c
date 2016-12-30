@@ -1,8 +1,8 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
+#include "pgrn-compatible.h"
 
-#include "pgrn_pg.h"
+#include "pgrn-pg.h"
 
 #include <access/heapam.h>
 #include <access/htup_details.h>

@@ -1,11 +1,11 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
+#include "pgrn-compatible.h"
 
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_index_status.h"
-#include "pgrn_wal.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-index-status.h"
+#include "pgrn-wal.h"
 
 static bool PGrnWALEnabled = false;
 

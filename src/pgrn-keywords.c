@@ -1,8 +1,8 @@
 #include "pgroonga.h"
 
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_keywords.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-keywords.h"
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>

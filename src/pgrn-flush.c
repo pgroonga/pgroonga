@@ -1,9 +1,9 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_jsonb.h"
+#include "pgrn-compatible.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-jsonb.h"
 
 #include <storage/lock.h>
 #include <storage/lmgr.h>

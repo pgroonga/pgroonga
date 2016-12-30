@@ -1,9 +1,9 @@
 #include "pgroonga.h"
 
-#include "pgrn_column_name.h"
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_wal.h"
+#include "pgrn-column-name.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-wal.h"
 
 #include <catalog/catalog.h>
 #include <miscadmin.h>

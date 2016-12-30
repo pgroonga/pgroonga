@@ -1,6 +1,6 @@
 #include "pgroonga.h"
 
-#include "pgrn_ctid.h"
+#include "pgrn-ctid.h"
 
 #include <access/heapam.h>
 #include <access/htup.h>

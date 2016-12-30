@@ -3,8 +3,8 @@
 #include <postgres.h>
 #include <access/skey.h>
 
-#include "pgrn_create.h"
-#include "pgrn_search.h"
+#include "pgrn-create.h"
+#include "pgrn-search.h"
 
 void PGrnInitializeJSONB(void);
 void PGrnFinalizeJSONB(void);

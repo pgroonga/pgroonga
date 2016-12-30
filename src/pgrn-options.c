@@ -1,10 +1,10 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_options.h"
-#include "pgrn_value.h"
+#include "pgrn-compatible.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-options.h"
+#include "pgrn-value.h"
 
 #ifdef PGRN_SUPPORT_OPTIONS
 #	include <access/reloptions.h>

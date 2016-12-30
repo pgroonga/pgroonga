@@ -1,6 +1,6 @@
 #include "pgroonga.h"
 
-#include "pgrn_column_name.h"
+#include "pgrn-column-name.h"
 
 #include <groonga.h>
 

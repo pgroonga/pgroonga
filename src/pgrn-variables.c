@@ -1,10 +1,10 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
-#include "pgrn_global.h"
-#include "pgrn_value.h"
-#include "pgrn_variables.h"
-#include "pgrn_wal.h"
+#include "pgrn-compatible.h"
+#include "pgrn-global.h"
+#include "pgrn-value.h"
+#include "pgrn-variables.h"
+#include "pgrn-wal.h"
 
 #include <utils/guc.h>
 

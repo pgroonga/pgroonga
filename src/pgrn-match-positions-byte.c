@@ -1,11 +1,11 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
+#include "pgrn-compatible.h"
 
-#include "pgrn_global.h"
-#include "pgrn_groonga.h"
-#include "pgrn_match_positions_byte.h"
-#include "pgrn_keywords.h"
+#include "pgrn-global.h"
+#include "pgrn-groonga.h"
+#include "pgrn-match-positions-byte.h"
+#include "pgrn-keywords.h"
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>

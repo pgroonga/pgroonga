@@ -1,9 +1,9 @@
 #include "pgroonga.h"
 
-#include "pgrn_compatible.h"
+#include "pgrn-compatible.h"
 
-#include "pgrn_command_escape_value.h"
-#include "pgrn_global.h"
+#include "pgrn-command-escape-value.h"
+#include "pgrn-global.h"
 
 #include <utils/builtins.h>
 

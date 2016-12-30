@@ -1,6 +1,6 @@
 #include "pgroonga.h"
 
-#include "pgrn_portable.h"
+#include "pgrn-portable.h"
 
 #include <groonga.h>
 
