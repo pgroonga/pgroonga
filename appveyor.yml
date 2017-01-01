@@ -61,3 +61,4 @@ test_script:
       --temp-instance=..\pgsql\test
       --schedule=schedule ||
     (type regression.diffs & nonexistent_command)
+  - ruby test\run-test.rb

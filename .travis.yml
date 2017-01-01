@@ -25,6 +25,11 @@ install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
   - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION}
+  - |
+    if [ ${PG_VERSION} = "9.6" ]; then
+      rvm use 2.3.3 --install --binary --fuzzy
+      gem install test-unit
+    fi
 before_script:
   - make DEBUG=1
   - sudo make install
@@ -38,5 +43,9 @@ script:
     fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - make installcheck TMP_DIR=/tmp SETUP_TMP_DIR=no
+  - |
+    if [ ${PG_VERSION} = "9.6" ]; then
+      test/run-test.rb
+    fi
 after_failure:
   - cat regression.diffs
