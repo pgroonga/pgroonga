@@ -31,7 +31,7 @@ install:
       gem install test-unit
     fi
 before_script:
-  - make DEBUG=1
+  - make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
   - |
