@@ -3,6 +3,11 @@ clone_depth: 10
 environment:
   POSTGRESQL_VERSION: 9.6.1-1
   GROONGA_VERSION: 6.1.1
+notifications:
+  - provider: Email
+    to:
+      - groonga-commit@lists.osdn.me
+    on_build_status_changed: true
 install:
   - set PATH=C:\Ruby23-x64\bin;%PATH%
   - set PATH=C:\msys64\usr\bin;%PATH%
@@ -44,12 +49,6 @@ build_script:
       -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes
   - cmake --build . --config Debug
   - cmake --build . --config Debug --target Install
-
-notifications:
-  - provider: Email
-    to:
-      - groonga-commit@lists.osdn.me
-    on_build_status_changed: true
 
 test_script:
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
