@@ -116,7 +116,7 @@ module Helpers
     end
 
     def setup_db
-      @db_dir = @tmp_dir
+      @db_dir = File.join(@tmp_dir, "db")
       @socket_dir = File.join(@db_dir, "socket")
       @host = "127.0.0.1"
       @port = 15432
