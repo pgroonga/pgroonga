@@ -502,7 +502,7 @@ libmsgpack-dev
               "#{windows_pgroonga_source_name_base}.zip"
             if suffix
               windows_pgroonga_source_url_base =
-                "http://packages.groonga.org/tmp/#{package}"
+                "http://packages.groonga.org/tmp"
             else
               windows_pgroonga_source_url_base =
                 "http://packages.groonga.org/source/#{package}"
