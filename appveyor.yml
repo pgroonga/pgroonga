@@ -62,4 +62,5 @@ test_script:
       --temp-instance=..\pgsql\test
       --schedule=schedule ||
     (type regression.diffs & nonexistent_command)
+  - set PATH=%CD%\..\pgsql\bin;%PATH%
   - ruby test\run-test.rb
