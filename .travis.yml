@@ -24,7 +24,7 @@ sudo: required
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
-  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION}
+  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} libmsgpack-dev
   - |
     if [ ${PG_VERSION} = "9.6" ]; then
       rvm use 2.3.3 --install --binary --fuzzy
