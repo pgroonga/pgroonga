@@ -497,11 +497,16 @@ libmsgpack-dev
             extract_zip("#{relative_download_dir}/#{windows_postgresql_archive_name}",
                         ".")
 
-            windows_pgroonga_source_name_base = "#{package}-#{version}"
+            windows_pgroonga_source_name_base = archive_base_name
             windows_pgroonga_source_name =
               "#{windows_pgroonga_source_name_base}.zip"
-            windows_pgroonga_source_url_base =
-              "http://packages.groonga.org/source/#{package}"
+            if suffix
+              windows_pgroonga_source_url_base =
+                "http://packages.groonga.org/tmp/#{package}"
+            else
+              windows_pgroonga_source_url_base =
+                "http://packages.groonga.org/source/#{package}"
+            end
             windows_pgroonga_source_url =
               "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
             download(windows_pgroonga_source_url, relative_download_dir)
