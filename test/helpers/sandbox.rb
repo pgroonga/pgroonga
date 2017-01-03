@@ -1,4 +1,5 @@
 require "fileutils"
+require "rbconfig"
 require "socket"
 require "stringio"
 
@@ -116,6 +117,8 @@ module Helpers
     end
 
     def setup_db
+      dll_extension = RbConfig::CONFIG["DLEXT"]
+
       @db_dir = File.join(@tmp_dir, "db")
       @socket_dir = File.join(@db_dir, "socket")
       @host = "127.0.0.1"
@@ -130,7 +133,7 @@ module Helpers
         conf.puts("listen_addresses = '#{@host}'")
         conf.puts("port = #{@port}")
         conf.puts("unix_socket_directories = '#{@socket_dir}'")
-        conf.puts("shared_preload_libraries = 'pgroonga-check.so'")
+        conf.puts("shared_preload_libraries = 'pgroonga-check.#{dll_extension}'")
         conf.puts("pgroonga.enable_wal = yes")
       end
     end
