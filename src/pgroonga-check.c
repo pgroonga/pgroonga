@@ -122,7 +122,6 @@ PGrnCheck(grn_ctx *ctx)
 		struct dirent *entry;
 		while ((entry = readdir(dir)))
 		{
-			struct stat fileStatus;
 			char databaseDirectoryPath[MAXPGPATH];
 
 			if (strcmp(entry->d_name, ".") == 0)
