@@ -1,5 +1,4 @@
 require "fileutils"
-require "rbconfig"
 require "socket"
 require "stringio"
 
@@ -47,6 +46,17 @@ module Helpers
         raise "failed to run: #{command_line}: #{error}"
       end
       [output, error]
+    end
+
+    def dll_extension
+      case RUBY_PLATFORM
+      when /mingw|mswin|cygwin/
+        "dll"
+      when /darwin/
+        "dylib"
+      else
+        "so"
+      end
     end
 
     def psql(db, sql)
@@ -117,8 +127,6 @@ module Helpers
     end
 
     def setup_db
-      dll_extension = RbConfig::CONFIG["DLEXT"]
-
       @db_dir = File.join(@tmp_dir, "db")
       @socket_dir = File.join(@db_dir, "socket")
       @host = "127.0.0.1"
