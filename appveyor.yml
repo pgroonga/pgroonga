@@ -4,6 +4,7 @@ environment:
   POSTGRESQL_VERSION: 9.6.1-1
   GROONGA_VERSION: 6.1.1
 install:
+  - set PATH=C:\Ruby23-x64\bin;%PATH%
   - set PATH=C:\msys64\usr\bin;%PATH%
   - gem install test-unit
 build_script:
