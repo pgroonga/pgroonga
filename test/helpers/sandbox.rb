@@ -142,6 +142,8 @@ module Helpers
         conf.puts("listen_addresses = '#{@host}'")
         conf.puts("port = #{@port}")
         conf.puts("unix_socket_directories = '#{@socket_dir}'")
+        conf.puts("logging_collector = on")
+        conf.puts("log_filename = 'postgresql.log'")
         conf.puts("shared_preload_libraries = 'pgroonga-check.#{dll_extension}'")
         conf.puts("pgroonga.enable_wal = yes")
       end
