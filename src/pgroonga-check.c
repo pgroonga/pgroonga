@@ -31,9 +31,13 @@ PGrnRemoveAllRelatedFiles(const char *databaseDirectoryPath)
 	{
 		do
 		{
+			char targetPathPrefix[MAXPGPATH];
+			join_path_components(targetPathPrefix,
+								 databaseDirectoryPath,
+								 PGrnDatabaseBasename);
 			if (strncmp(data.cFileName,
-						PGrnDatabaseBasename,
-						strlen(PGrnDatabaseBasename)) == 0)
+						targetPathPrefix,
+						strlen(targetPathPrefix)) == 0)
 			{
 				unlink(data.cFileName);
 			}
@@ -102,16 +106,11 @@ PGrnCheck(grn_ctx *ctx)
 	{
 		do
 		{
-			char databaseDirectoryPath[MAXPGPATH];
-
 			if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			{
 				continue;
 			}
-			join_path_components(databaseDirectoryPath,
-								 baseDirectoryPath,
-								 data.cFileName);
-			PGrnCheckDatabaseDirectory(ctx, databaseDirectoryPath);
+			PGrnCheckDatabaseDirectory(ctx, data.cFileName);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
 	}
