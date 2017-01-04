@@ -1,4 +1,5 @@
 require "fileutils"
+require "json"
 require "socket"
 require "stringio"
 
@@ -86,6 +87,14 @@ module Helpers
 
     def run_sql(sql)
       psql(@test_db_name, sql)
+    end
+
+    def groonga(*command_line)
+      pgrn = Dir.glob("#{@db_dir}/base/*/pgrn").first
+      output, _ = run_command("groonga",
+                              pgrn,
+                              *command_line)
+      JSON.parse(output)
     end
 
     def start_postgres

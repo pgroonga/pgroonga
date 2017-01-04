@@ -93,6 +93,14 @@ PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
 		return;
 	}
 
+	grn_db_recover(ctx, db);
+	if (ctx->rc != GRN_SUCCESS)
+	{
+		grn_obj_close(ctx, db);
+		PGrnRemoveAllRelatedFiles(databaseDirectoryPath);
+		return;
+	}
+
 	grn_obj_close(ctx, db);
 }
 
