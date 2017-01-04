@@ -39,15 +39,19 @@ module Helpers
     def run_command(*args)
       pid, output_read, error_read = spawn_process(*args)
       _, status = Process.waitpid2(pid)
-      begin
-        output = output_read.readpartial(4096)
-      rescue EOFError
-        output = ""
+      output = ""
+      error = ""
+      if IO.select([output_read], nil, nil, 0)
+        begin
+          output = output_read.readpartial(4096)
+        rescue EOFError
+        end
       end
-      begin
-        error = error_read.readpartial(4096)
-      rescue EOFError
-        error = ""
+      if IO.select([error_read], nil, nil, 0)
+        begin
+          error = error_read.readpartial(4096)
+        rescue EOFError
+        end
       end
       unless status.success?
         command_line = args.join(" ")
