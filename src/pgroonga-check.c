@@ -2,6 +2,8 @@
 
 #include "pgrn-portable.h"
 
+#include <miscadmin.h>
+
 #include <groonga.h>
 
 #include <sys/types.h>
