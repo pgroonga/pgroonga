@@ -23,7 +23,9 @@ module Helpers
     end
 
     def spawn_process(*args)
-      env = {}
+      env = {
+        "LC_ALL" => "C",
+      }
       output_read, output_write = IO.pipe
       error_read, error_write = IO.pipe
       options = {
