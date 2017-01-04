@@ -144,6 +144,9 @@ _PG_init(void)
 	grn_ctx ctx_;
 	grn_ctx *ctx = &ctx_;
 
+	if (IsUnderPostmaster)
+		return;
+
 	grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
 
 	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
