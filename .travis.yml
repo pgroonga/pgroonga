@@ -32,7 +32,7 @@ install:
     fi
 before_script:
   - |
-    cat <<EOF > msgpack.pc
+    cat <<MSGPACK_PC > msgpack.pc
     prefix=/usr
     exec_prefix=${prefix}
     libdir=${prefix}/lib
@@ -43,7 +43,7 @@ before_script:
     Version: 0.5.7
     Libs: -L${libdir} -lmsgpackc
     Cflags: -I${includedir}
-    EOF
+    MSGPACK_PC
   - PKG_CONFIG_PATH=$PWD make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
