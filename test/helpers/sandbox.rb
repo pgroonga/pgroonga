@@ -39,8 +39,16 @@ module Helpers
     def run_command(*args)
       pid, output_read, error_read = spawn_process(*args)
       _, status = Process.waitpid2(pid)
-      output = output_read.read
-      error = error_read.read
+      begin
+        output = output_read.readpartial(4096)
+      rescue EOFError
+        output = ""
+      end
+      begin
+        error = error_read.readpartial(4096)
+      rescue EOFError
+        error = ""
+      end
       unless status.success?
         command_line = args.join(" ")
         message = "failed to run: #{command_line}\n"
