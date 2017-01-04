@@ -81,6 +81,16 @@ module Helpers
       @postgres_is_running = false
       run_command("pg_ctl", "start",
                   "-D", @db_dir)
+      loop do
+        begin
+          TCPSocket.open(@host, @port) do
+          end
+        rescue SystemCallError
+          sleep(0.1)
+        else
+          break
+        end
+      end
       @postgres_is_running = true
     end
 
