@@ -26,21 +26,22 @@ PGrnRemoveAllRelatedFiles(const char *databaseDirectoryPath)
 {
 #ifdef WIN32
 	WIN32_FIND_DATA data;
-	HANDLE finder = FindFirstFile(databaseDirectoryPath, &data);
+	HANDLE finder;
+	char targetPath[MAXPGPATH];
+
+	join_path_components(targetPath,
+						 databaseDirectoryPath,
+						 PGrnDatabaseBasename "*");
+	finder = FindFirstFile(targetPath, &data);
 	if (finder != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			char targetPathPrefix[MAXPGPATH];
-			join_path_components(targetPathPrefix,
+			char path[MAXPGPATH];
+			join_path_components(path,
 								 databaseDirectoryPath,
-								 PGrnDatabaseBasename);
-			if (strncmp(data.cFileName,
-						targetPathPrefix,
-						strlen(targetPathPrefix)) == 0)
-			{
-				unlink(data.cFileName);
-			}
+								 data.cFileName);
+			unlink(data.cFileName);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
 	}
@@ -96,21 +97,34 @@ PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
 static void
 PGrnCheck(grn_ctx *ctx)
 {
-	/* TODO: Support table space: "pg_tblspc/" */
 	const char *baseDirectoryPath = "base";
 
 #ifdef WIN32
 	WIN32_FIND_DATA data;
-	HANDLE finder = FindFirstFile(baseDirectoryPath, &data);
+	HANDLE finder;
+	char targetPath[MAXPGPATH];
+
+	join_path_components(targetPath,
+						 baseDirectoryPath,
+						 "*");
+	finder = FindFirstFile(targetPath, &data);
 	if (finder != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-			{
+			char databaseDirectoryPath[MAXPGPATH];
+
+			if (strcmp(data.cFileName, ".") == 0)
 				continue;
-			}
-			PGrnCheckDatabaseDirectory(ctx, data.cFileName);
+			if (strcmp(data.cFileName, "..") == 0)
+				continue;
+			if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+				continue;
+
+			join_path_components(databaseDirectoryPath,
+								 baseDirectoryPath,
+								 data.cFileName);
+			PGrnCheckDatabaseDirectory(ctx, databaseDirectoryPath);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
 	}
