@@ -43,7 +43,7 @@ PGrnRemoveAllRelatedFiles(const char *databaseDirectoryPath)
 			join_path_components(path,
 								 databaseDirectoryPath,
 								 data.cFileName);
-			unlink(data.cFileName);
+			unlink(path);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
 	}
