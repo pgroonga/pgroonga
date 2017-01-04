@@ -36,23 +36,20 @@ module Helpers
       [pid, output_read, error_read]
     end
 
+    def read_command_output(input)
+      return "" unless IO.select([input], nil, nil, 0)
+      begin
+        input.readpartial(4096).gsub(/\r\n/, "\n")
+      rescue EOFError
+        ""
+      end
+    end
+
     def run_command(*args)
       pid, output_read, error_read = spawn_process(*args)
       _, status = Process.waitpid2(pid)
-      output = ""
-      error = ""
-      if IO.select([output_read], nil, nil, 0)
-        begin
-          output = output_read.readpartial(4096)
-        rescue EOFError
-        end
-      end
-      if IO.select([error_read], nil, nil, 0)
-        begin
-          error = error_read.readpartial(4096)
-        rescue EOFError
-        end
-      end
+      output = read_command_output(output_read)
+      error = read_command_output(error_read)
       unless status.success?
         command_line = args.join(" ")
         message = "failed to run: #{command_line}\n"
