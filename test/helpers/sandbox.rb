@@ -43,7 +43,12 @@ module Helpers
       error = error_read.read
       unless status.success?
         command_line = args.join(" ")
-        raise "failed to run: #{command_line}: #{error}"
+        message = "failed to run: #{command_line}\n"
+        message << "output:\n"
+        message << output
+        message << "error:\n"
+        message << error
+        raise message
       end
       [output, error]
     end
@@ -73,33 +78,14 @@ module Helpers
     end
 
     def start_postgres
-      @postgres_pid, @postgres_output, @postgres_error =
-        spawn_process("pg_ctl", "start",
-                      "-D", @db_dir)
-      loop do
-        begin
-          TCPSocket.open(@host, @port) do
-          end
-        rescue SystemCallError
-          pid = Process.waitpid(@postgres_pid, Process::WNOHANG)
-          if pid
-            message = "failed to start postgres:\n"
-            message << "output:\n"
-            message << @postgres_output.read
-            message << "error:\n"
-            message << @postgres_error.read
-            @postgres_pid = nil
-            raise message
-          end
-          sleep(0.1)
-        else
-          break
-        end
-      end
+      @postgres_is_running = false
+      run_command("pg_ctl", "start",
+                  "-D", @db_dir)
+      @postgres_is_running = true
     end
 
     def stop_postgres
-      return if @postgres_pid.nil?
+      return unless @postgres_is_running
       run_command("pg_ctl", "stop",
                   "-D", @db_dir)
     end
