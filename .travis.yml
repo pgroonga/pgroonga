@@ -31,7 +31,20 @@ install:
       gem install test-unit
     fi
 before_script:
-  - make DEBUG=1 HAVE_MSGPACK=1
+  - |
+    cat <<EOF > msgpack.pc
+    prefix=/usr
+    exec_prefix=${prefix}
+    libdir=${prefix}/lib
+    includedir=${prefix}/include
+
+    Name: MessagePack
+    Description: Binary-based efficient object serialization library
+    Version: 0.5.7
+    Libs: -L${libdir} -lmsgpackc
+    Cflags: -I${includedir}
+    EOF
+  - PKG_CONFIG_PATH=$PWD make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
   - |
