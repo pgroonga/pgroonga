@@ -74,7 +74,7 @@ module Helpers
 
     def start_postgres
       @postgres_pid, @postgres_output, @postgres_error =
-        spawn_process("postgres",
+        spawn_process("pg_ctl", "start",
                       "-D", @db_dir)
       loop do
         begin
@@ -100,15 +100,8 @@ module Helpers
 
     def stop_postgres
       return if @postgres_pid.nil?
-      Process.kill(:TERM, @postgres_pid)
-      _, status = Process.waitpid2(@postgres_pid)
-      unless status.success?
-        puts("failed to stop postgres:")
-        puts("output:")
-        puts(@postgres_output.read)
-        puts("error:")
-        puts(@postgres_error.read)
-      end
+      run_command("pg_ctl", "stop",
+                  "-D", @db_dir)
     end
 
     def setup_tmp_dir
