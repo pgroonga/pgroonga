@@ -868,6 +868,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	LocationIndex currentOffset;
 	BlockNumber nBlocks;
 
+	if (!PGrnWALEnabled)
+		return false;
+
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
 										 &currentBlock,
 										 &currentOffset);
