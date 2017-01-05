@@ -60,5 +60,37 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
                              "SELECT * FROM memos WHERE content %% 'PGroonga';"))
       end
     end
+
+    sub_test_case "table" do
+      test "locked" do
+        run_sql("CREATE TABLE memos (content text);")
+        run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+        run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+        stop_postgres
+        lexicon = nil
+        groonga("table_list")[1][2..-1].each do |_, name,|
+          if name.start_with?("Lexicon")
+            lexicon = name
+            break
+          end
+        end
+        groonga("lock_acquire", lexicon)
+        start_postgres
+        run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+        output = <<-OUTPUT
+SET enable_seqscan = no;
+SELECT * FROM memos WHERE content %% 'PGroonga';
+      content      
+-------------------
+ PGroonga is good!
+ PGroonga is good!
+(2 rows)
+
+        OUTPUT
+        assert_equal([output, ""],
+                     run_sql("SET enable_seqscan = no;\n" +
+                             "SELECT * FROM memos WHERE content %% 'PGroonga';"))
+      end
+    end
   end
 end

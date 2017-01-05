@@ -2187,6 +2187,8 @@ pgroonga_insert_raw(Relation index,
 	grn_obj *sourcesCtidColumn;
 	uint32_t recordSize;
 
+	PGrnWALApply(index);
+
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 	recordSize = PGrnInsert(index,
