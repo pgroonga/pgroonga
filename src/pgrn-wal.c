@@ -889,7 +889,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		needToApply = (PGrnWALPageGetLastOffset(page) > currentOffset);
 		UnlockReleaseBuffer(buffer);
 		return needToApply;
-	} else {
+	}
+	else
+	{
 		return true;
 	}
 }
