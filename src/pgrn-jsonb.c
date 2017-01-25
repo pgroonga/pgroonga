@@ -177,6 +177,7 @@ PGrnJSONBCreatePathsTable(Relation index, const char *name)
 						   GRN_OBJ_TABLE_PAT_KEY,
 						   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 						   NULL,
+						   NULL,
 						   NULL);
 }
 
@@ -188,6 +189,7 @@ PGrnJSONBCreateTypesTable(Relation index, const char *name)
 						   GRN_OBJ_TABLE_PAT_KEY,
 						   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 						   NULL,
+						   NULL,
 						   NULL);
 }
 
@@ -198,6 +200,7 @@ PGrnJSONBCreateValuesTable(Relation index, const char *name)
 						   name,
 						   GRN_OBJ_TABLE_HASH_KEY,
 						   grn_ctx_at(ctx, GRN_DB_UINT64),
+						   NULL,
 						   NULL,
 						   NULL);
 }
@@ -778,33 +781,34 @@ static void
 PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 										 PGrnJSONBCreateData *jsonbData)
 {
-	const char *tokenizerName = PGRN_DEFAULT_TOKENIZER;
-	const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 	grn_table_flags flags = GRN_OBJ_TABLE_PAT_KEY;
 	grn_obj *type;
 	grn_obj *lexicon;
-	grn_obj *tokenizer;
+	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
+	grn_obj *tokenFilters = &(buffers->tokenFilters);
 
-	PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
+	GRN_BULK_REWIND(tokenFilters);
+	PGrnApplyOptionValues(data->index,
+						  &tokenizer, PGRN_DEFAULT_TOKENIZER,
+						  &normalizer, PGRN_DEFAULT_NORMALIZER,
+						  tokenFilters);
 
-	if (PGrnIsNoneValue(tokenizerName))
+	if (!tokenizer)
 		return;
 
 	snprintf(lexiconName, sizeof(lexiconName),
 			 PGrnJSONValueLexiconNameFormat,
 			 "FullTextSearch", data->relNode, data->i);
 	type = grn_ctx_at(ctx, GRN_DB_SHORT_TEXT);
-	tokenizer = PGrnLookup(tokenizerName, ERROR);
-	if (!PGrnIsNoneValue(normalizerName))
-		normalizer = PGrnLookup(normalizerName, ERROR);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
 							  flags,
 							  type,
 							  tokenizer,
-							  normalizer);
+							  normalizer,
+							  tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 
 	PGrnCreateColumn(data->index,
@@ -831,6 +835,7 @@ PGrnJSONBCreateIndexColumn(PGrnCreateData *data,
 							  lexiconName,
 							  tableType,
 							  type,
+							  NULL,
 							  NULL,
 							  NULL);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);

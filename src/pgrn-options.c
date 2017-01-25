@@ -10,14 +10,13 @@
 #	include <access/reloptions.h>
 #endif
 
-#include <groonga.h>
-
 #ifdef PGRN_SUPPORT_OPTIONS
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
 	int tokenizerOffset;
 	int normalizerOffset;
+	int tokenFiltersOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -101,6 +100,86 @@ PGrnOptionValidateNormalizer(char *name)
 						name, PGrnInspect(normalizer))));
 	}
 }
+
+static bool
+PGrnIsTokenFilter(grn_obj *object)
+{
+	if (object->header.type != GRN_PROC)
+		return false;
+
+	if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKEN_FILTER)
+		return false;
+
+	return true;
+}
+
+static void
+PGrnOptionValidateTokenFilter(const char *name, size_t nameSize, void *data)
+{
+	grn_obj *tokenFilter;
+
+	tokenFilter = grn_ctx_get(ctx, name, nameSize);
+	if (!tokenFilter)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: nonexistent token filter: <%.*s>",
+						(int)nameSize, name)));
+	}
+
+	if (!PGrnIsTokenFilter(tokenFilter))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: not token filter: <%.*s>: %s",
+						(int)nameSize, name,
+						PGrnInspect(tokenFilter))));
+	}
+}
+
+typedef void (*PGrnOptionTokenFilterNameFunction)(const char *name,
+												  size_t nameSize,
+												  void *data);
+
+static void
+PGrnOptionParseTokenFilterNames(const char *names,
+								PGrnOptionTokenFilterNameFunction function,
+								void *data)
+{
+	const char *start;
+	const char *current;
+
+	if (PGrnIsNoneValue(names))
+		return;
+
+	for (start = current = names; current[0]; current++)
+	{
+		switch (current[0])
+		{
+		case ' ':
+			start = current + 1;
+			break;
+		case ',':
+			function(start, current - start, data);
+			start = current + 1;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (current > start) {
+		function(start, current - start, data);
+	}
+}
+
+static void
+PGrnOptionValidateTokenFilters(char *names)
+{
+	PGrnOptionParseTokenFilterNames(names,
+									PGrnOptionValidateTokenFilter,
+									NULL);
+}
 #endif
 
 void
@@ -119,23 +198,98 @@ PGrnInitializeOptions(void)
 						 "Normalizer name to be used for full-text search",
 						 PGRN_DEFAULT_NORMALIZER,
 						 PGrnOptionValidateNormalizer);
+	add_string_reloption(PGrnReloptionKind,
+						 "token_filters",
+						 "Token filter names separated by \",\" "
+						 "to be used for full-text search",
+						 "",
+						 PGrnOptionValidateTokenFilters);
 #endif
 }
 
+#ifdef PGRN_SUPPORT_OPTIONS
+static void
+PGrnOptionCollectTokenFilter(const char *name,
+							 size_t nameSize,
+							 void *data)
+{
+	grn_obj *tokenFilters = data;
+	grn_obj *tokenFilter;
+
+	tokenFilter = PGrnLookupWithSize(name, nameSize, ERROR);
+	GRN_PTR_PUT(ctx, tokenFilters, tokenFilter);
+}
+#endif
+
 void
 PGrnApplyOptionValues(Relation index,
-					  const char **tokenizerName,
-					  const char **normalizerName)
+					  grn_obj **tokenizer,
+					  const char *defaultTokenizerName,
+					  grn_obj **normalizer,
+					  const char *defaultNormalizerName,
+					  grn_obj *tokenFilters)
 {
 #ifdef PGRN_SUPPORT_OPTIONS
 	PGrnOptions *options;
+	const char *tokenizerName;
+	const char *normalizerName;
+	const char *tokenFilterNames;
 
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
-		return;
+	{
+		if (defaultTokenizerName)
+			*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
+		else
+			*tokenizer = NULL;
 
-	*tokenizerName  = ((const char *) options) + options->tokenizerOffset;
-	*normalizerName = ((const char *) options) + options->normalizerOffset;
+		if (defaultNormalizerName)
+			*normalizer = PGrnLookup(defaultNormalizerName, ERROR);
+		else
+			*normalizer = NULL;
+
+		return;
+	}
+
+	tokenizerName    = ((const char *) options) + options->tokenizerOffset;
+	normalizerName   = ((const char *) options) + options->normalizerOffset;
+	tokenFilterNames = ((const char *) options) + options->tokenFiltersOffset;
+
+	if (PGrnIsExplicitNoneValue(tokenizerName))
+	{
+		*tokenizer = NULL;
+	}
+	else if (PGrnIsNoneValue(tokenizerName))
+	{
+		if (defaultTokenizerName)
+			*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
+		else
+			*tokenizer = NULL;
+	}
+	else
+	{
+		*tokenizer = PGrnLookup(tokenizerName, ERROR);
+	}
+
+	if (PGrnIsExplicitNoneValue(normalizerName))
+	{
+		*normalizer = NULL;
+	}
+	else if (PGrnIsNoneValue(normalizerName))
+	{
+		if (defaultNormalizerName)
+			*normalizer = PGrnLookup(defaultNormalizerName, ERROR);
+		else
+			*normalizer = NULL;
+	}
+	else
+	{
+		*normalizer = PGrnLookup(normalizerName, ERROR);
+	}
+
+	PGrnOptionParseTokenFilterNames(tokenFilterNames,
+									PGrnOptionCollectTokenFilter,
+									tokenFilters);
 #endif
 }
 
@@ -151,7 +305,9 @@ pgroonga_options_raw(Datum reloptions,
 		{"tokenizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenizerOffset)},
 		{"normalizer", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, normalizerOffset)}
+		 offsetof(PGrnOptions, normalizerOffset)},
+		{"token_filters", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, tokenFiltersOffset)}
 	};
 
 	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,

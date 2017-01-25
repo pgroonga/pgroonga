@@ -11,6 +11,7 @@ struct PGrnBuffers
 	grn_obj ctid;
 	grn_obj score;
 	grn_obj sourceIDs;
+	grn_obj tokenFilters;
 	grn_obj jsonbValueKeys;
 	grn_obj walPosition;
 	grn_obj walValue;

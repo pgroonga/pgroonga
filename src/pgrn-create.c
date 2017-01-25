@@ -8,6 +8,7 @@
 #include "pgrn-value.h"
 
 static grn_ctx *ctx = &PGrnContext;
+static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void
 PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
@@ -29,6 +30,7 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 	data->sourcesTable = PGrnCreateTable(data->index,
 										 sourcesTableName,
 										 GRN_OBJ_TABLE_NO_KEY,
+										 NULL,
 										 NULL,
 										 NULL,
 										 NULL);
@@ -112,7 +114,9 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
+	grn_obj *tokenFilters = &(buffers->tokenFilters);
 
+	GRN_BULK_REWIND(tokenFilters);
 	switch (data->attributeTypeID)
 	{
 	case GRN_DB_TEXT:
@@ -131,26 +135,23 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		const char *tokenizerName;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
 
-		if (data->forRegexpSearch) {
-			tokenizerName = "TokenRegexp";
-		} else {
+		if (data->forFullTextSearch)
+		{
 			tokenizerName = PGRN_DEFAULT_TOKENIZER;
 		}
-
-		PGrnApplyOptionValues(data->index, &tokenizerName, &normalizerName);
-
-		if (data->forFullTextSearch || data->forRegexpSearch)
+		else if (data->forRegexpSearch)
 		{
-			if (!PGrnIsNoneValue(tokenizerName))
-			{
-				tokenizer = PGrnLookup(tokenizerName, ERROR);
-			}
+			tokenizerName = "TokenRegexp";
+		}
+		else
+		{
+			tokenizerName = NULL;
 		}
 
-		if (!PGrnIsNoneValue(normalizerName))
-		{
-			normalizer = PGrnLookup(normalizerName, ERROR);
-		}
+		PGrnApplyOptionValues(data->index,
+							  &tokenizer, tokenizerName,
+							  &normalizer, normalizerName,
+							  tokenFilters);
 	}
 
 	snprintf(lexiconName, sizeof(lexiconName),
@@ -161,7 +162,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  flags,
 							  type,
 							  tokenizer,
-							  normalizer);
+							  normalizer,
+							  tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 }
 

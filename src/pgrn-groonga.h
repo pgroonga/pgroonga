@@ -41,14 +41,16 @@ grn_obj *PGrnCreateTable(Relation index,
 						 grn_table_flags flags,
 						 grn_obj *type,
 						 grn_obj *tokenizer,
-						 grn_obj *normalizer);
+						 grn_obj *normalizer,
+						 grn_obj *tokenFilters);
 grn_obj *PGrnCreateTableWithSize(Relation index,
 								 const char *name,
 								 size_t nameSize,
 								 grn_table_flags flags,
 								 grn_obj *type,
 								 grn_obj *tokenizer,
-								 grn_obj *normalizer);
+								 grn_obj *normalizer,
+								 grn_obj *tokenFilters);
 grn_obj *PGrnCreateColumn(Relation index,
 						  grn_obj *table,
 						  const char*name,

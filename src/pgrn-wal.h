@@ -38,7 +38,8 @@ void PGrnWALCreateTable(Relation index,
 						grn_table_flags flags,
 						grn_obj *type,
 						grn_obj *tokenizer,
-						grn_obj *normalizer);
+						grn_obj *normalizer,
+						grn_obj *tokenFilters);
 
 void PGrnWALCreateColumn(Relation index,
 						 grn_obj *table,

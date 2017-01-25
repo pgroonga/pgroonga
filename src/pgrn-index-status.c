@@ -31,6 +31,7 @@ PGrnInitializeIndexStatus(void)
 										GRN_OBJ_TABLE_HASH_KEY,
 										grn_ctx_at(ctx, GRN_DB_UINT32),
 										NULL,
+										NULL,
 										NULL);
 	}
 
