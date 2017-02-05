@@ -120,6 +120,11 @@ PGrnLogPathAssignRaw(const char *new_value)
 	{
 		grn_default_logger_set_path(new_value);
 	}
+
+	if (PGrnGroongaInitialized) {
+		grn_ctx *ctx = &PGrnContext;
+		grn_logger_reopen(ctx);
+	}
 }
 
 #ifdef PGRN_IS_GREENPLUM
@@ -160,6 +165,11 @@ PGrnQueryLogPathAssignRaw(const char *new_value)
 	else
 	{
 		grn_default_query_logger_set_path(new_value);
+	}
+
+	if (PGrnGroongaInitialized) {
+		grn_ctx *ctx = &PGrnContext;
+		grn_query_logger_reopen(ctx);
 	}
 }
 

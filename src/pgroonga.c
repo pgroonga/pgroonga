@@ -70,6 +70,7 @@
 PG_MODULE_MAGIC;
 
 static bool PGrnInitialized = false;
+bool PGrnGroongaInitialized = false;
 
 typedef struct PGrnBuildStateData
 {
@@ -314,6 +315,9 @@ PGrnOnProcExit(int code, Datum arg)
 	}
 
 	grn_fin();
+
+	PGrnGroongaInitialized = false;
+	PGrnInitialized = false;
 }
 
 static void
@@ -376,6 +380,7 @@ _PG_init(void)
 				 errmsg("pgroonga: already tried to initialize and failed")));
 
 	PGrnInitialized = true;
+	PGrnGroongaInitialized = false;
 
 	PGrnInitializeVariables();
 
@@ -396,6 +401,8 @@ _PG_init(void)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
+
+	PGrnGroongaInitialized = true;
 
 	ctx = &PGrnContext;
 

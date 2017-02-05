@@ -55,3 +55,5 @@
 #define PGrnJSONValueLexiconNameFormat	"JSONValueLexicon%s%u_%u"
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
+
+bool PGrnGroongaInitialized;
