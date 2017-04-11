@@ -28,6 +28,9 @@ def control_file(package)
 end
 
 def find_version(package)
+  env_version = ENV["VERSION"]
+  return env_version if env_version
+
   control_content = File.read(control_file(package))
   if /^default_version\s*=\s*'(.+)'$/ =~ control_content
     $1
