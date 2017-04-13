@@ -31,8 +31,8 @@ esac
 pgdg_rpm=pgdg-centos${PG_PACKAGE_VERSION}-${PG_VERSION}-3.noarch.rpm
 run wget --no-check-certificate https://yum.postgresql.org/${PG_VERSION}/redhat/rhel-${distribution_version}-${architecture}/${pgdg_rpm}
 run rpm -ivh ${pgdg_rpm}
-groonga_release_rpm=groonga-release-1.2.0-1.noarch.rpm
-groonga_release_rpm_url=http://packages.groonga.org/centos/${groonga_release_rpm}
+groonga_release_rpm=groonga-release-1.3.0-1.noarch.rpm
+groonga_release_rpm_url=https://packages.groonga.org/centos/${groonga_release_rpm}
 if [ "${distribution_version}" = "5" ]; then
   run wget ${groonga_release_rpm_url}
   run yum install -y --nogpgcheck ${groonga_release_rpm}
