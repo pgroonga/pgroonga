@@ -17,6 +17,7 @@ typedef struct PGrnOptions
 	int tokenizerOffset;
 	int normalizerOffset;
 	int tokenFiltersOffset;
+	int pluginsOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -24,6 +25,42 @@ static relopt_kind PGrnReloptionKind;
 static grn_ctx *ctx = &PGrnContext;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_options);
+
+typedef void (*PGrnOptionNameFunction)(const char *name,
+									   size_t nameSize,
+									   void *data);
+
+static void
+PGrnOptionParseNames(const char *names,
+					 PGrnOptionNameFunction function,
+					 void *data)
+{
+	const char *start;
+	const char *current;
+
+	if (PGrnIsNoneValue(names))
+		return;
+
+	for (start = current = names; current[0]; current++)
+	{
+		switch (current[0])
+		{
+		case ' ':
+			start = current + 1;
+			break;
+		case ',':
+			function(start, current - start, data);
+			start = current + 1;
+			break;
+		default:
+			break;
+		}
+	}
+
+	if (current > start) {
+		function(start, current - start, data);
+	}
+}
 
 static bool
 PGrnIsTokenizer(grn_obj *object)
@@ -137,48 +174,40 @@ PGrnOptionValidateTokenFilter(const char *name, size_t nameSize, void *data)
 	}
 }
 
-typedef void (*PGrnOptionTokenFilterNameFunction)(const char *name,
-												  size_t nameSize,
-												  void *data);
+static void
+PGrnOptionValidateTokenFilters(char *names)
+{
+	PGrnOptionParseNames(names,
+						 PGrnOptionValidateTokenFilter,
+						 NULL);
+}
 
 static void
-PGrnOptionParseTokenFilterNames(const char *names,
-								PGrnOptionTokenFilterNameFunction function,
-								void *data)
+PGrnOptionValidatePlugin(const char *name,
+						 size_t nameSize,
+						 void *data)
 {
-	const char *start;
-	const char *current;
+	char pluginName[MAXPGPATH];
 
-	if (PGrnIsNoneValue(names))
-		return;
-
-	for (start = current = names; current[0]; current++)
+	grn_strncpy(pluginName, MAXPGPATH, name, nameSize);
+	pluginName[nameSize] = '\0';
+	grn_plugin_register(ctx, pluginName);
+	if (ctx->rc != GRN_SUCCESS)
 	{
-		switch (current[0])
-		{
-		case ' ':
-			start = current + 1;
-			break;
-		case ',':
-			function(start, current - start, data);
-			start = current + 1;
-			break;
-		default:
-			break;
-		}
-	}
-
-	if (current > start) {
-		function(start, current - start, data);
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: failed to register plugin: <%.*s>: %s",
+						(int)nameSize, name,
+						ctx->errbuf)));
 	}
 }
 
 static void
-PGrnOptionValidateTokenFilters(char *names)
+PGrnOptionValidatePlugins(char *names)
 {
-	PGrnOptionParseTokenFilterNames(names,
-									PGrnOptionValidateTokenFilter,
-									NULL);
+	PGrnOptionParseNames(names,
+						 PGrnOptionValidatePlugin,
+						 NULL);
 }
 #endif
 
@@ -204,6 +233,11 @@ PGrnInitializeOptions(void)
 						 "to be used for full-text search",
 						 "",
 						 PGrnOptionValidateTokenFilters);
+	add_string_reloption(PGrnReloptionKind,
+						 "plugins",
+						 "Plugin names separated by \",\" to be installed",
+						 "",
+						 PGrnOptionValidatePlugins);
 #endif
 }
 
@@ -287,9 +321,9 @@ PGrnApplyOptionValues(Relation index,
 		*normalizer = PGrnLookup(normalizerName, ERROR);
 	}
 
-	PGrnOptionParseTokenFilterNames(tokenFilterNames,
-									PGrnOptionCollectTokenFilter,
-									tokenFilters);
+	PGrnOptionParseNames(tokenFilterNames,
+						 PGrnOptionCollectTokenFilter,
+						 tokenFilters);
 #endif
 }
 
@@ -307,7 +341,9 @@ pgroonga_options_raw(Datum reloptions,
 		{"normalizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizerOffset)},
 		{"token_filters", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, tokenFiltersOffset)}
+		 offsetof(PGrnOptions, tokenFiltersOffset)},
+		{"plugins", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, pluginsOffset)}
 	};
 
 	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,
