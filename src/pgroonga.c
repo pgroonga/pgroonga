@@ -51,10 +51,8 @@
 #include <utils/tqual.h>
 #include <utils/typcache.h>
 
-#ifdef PGRN_SUPPORT_SCORE
-#	include <lib/ilist.h>
-#	include <utils/snapmgr.h>
-#endif
+#include <lib/ilist.h>
+#include <utils/snapmgr.h>
 
 #include <groonga.h>
 
@@ -84,7 +82,6 @@ typedef struct PGrnBuildStateData
 
 typedef PGrnBuildStateData *PGrnBuildState;
 
-#ifdef PGRN_SUPPORT_SCORE
 typedef struct PGrnPrimaryKeyColumn
 {
 	slist_node node;
@@ -94,7 +91,6 @@ typedef struct PGrnPrimaryKeyColumn
 	unsigned char flags;
 	grn_obj *column;
 } PGrnPrimaryKeyColumn;
-#endif
 
 typedef struct PGrnScanOpaqueData
 {
@@ -113,11 +109,9 @@ typedef struct PGrnScanOpaqueData
 	grn_obj *scoreAccessor;
 	grn_id currentID;
 
-#ifdef PGRN_SUPPORT_SCORE
 	slist_node node;
 	slist_head primaryKeyColumns;
 	grn_obj *scoreTargetRecords;
-#endif
 } PGrnScanOpaqueData;
 
 typedef PGrnScanOpaqueData *PGrnScanOpaque;
@@ -136,15 +130,11 @@ typedef struct PGrnPrefixRKSequentialSearchData
 	grn_obj *resultTable;
 } PGrnPrefixRKSequentialSearchData;
 
-#ifdef PGRN_SUPPORT_SCORE
 static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
-#endif
 
 extern PGDLLEXPORT void _PG_init(void);
 
-#ifdef PGRN_SUPPORT_SCORE
 PGRN_FUNCTION_INFO_V1(pgroonga_score);
-#endif
 PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
 PGRN_FUNCTION_INFO_V1(pgroonga_command);
 
@@ -903,7 +893,6 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	}
 }
 
-#ifdef PGRN_SUPPORT_SCORE
 static double
 PGrnCollectScoreScanOpaqueGetScore(Relation table,
 								   PGrnScanOpaque so,
@@ -1180,7 +1169,6 @@ pgroonga_score(PG_FUNCTION_ARGS)
 
 	PG_RETURN_FLOAT8(score);
 }
-#endif
 
 /**
  * pgroonga.table_name(indexName cstring) : text
@@ -2235,7 +2223,6 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(isUnique);
 }
 
-#ifdef PGRN_SUPPORT_SCORE
 static void
 PGrnPrimaryKeyColumnsFin(slist_head *columns)
 {
@@ -2330,7 +2317,6 @@ PGrnScanOpaqueInitPrimaryKeyColumns(PGrnScanOpaque so)
 	slist_init(&(so->primaryKeyColumns));
 	PGrnPrimaryKeyColumnsInit(&(so->primaryKeyColumns), so);
 }
-#endif
 
 static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
@@ -2350,11 +2336,9 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 
-#ifdef PGRN_SUPPORT_SCORE
 	slist_push_head(&PGrnScanOpaques, &(so->node));
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
 	so->scoreTargetRecords = NULL;
-#endif
 }
 
 static void
@@ -2398,7 +2382,6 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
-#ifdef PGRN_SUPPORT_SCORE
 	slist_mutable_iter iter;
 
 	slist_foreach_modify(iter, &PGrnScanOpaques)
@@ -2419,7 +2402,6 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 		grn_obj_close(ctx, so->scoreTargetRecords);
 		so->scoreTargetRecords = NULL;
 	}
-#endif
 
 	PGrnScanOpaqueReinit(so);
 }
