@@ -109,9 +109,11 @@ typedef struct PGrnScanOpaqueData
 	grn_obj *scoreAccessor;
 	grn_id currentID;
 
-	slist_node node;
+	dlist_node node;
 	slist_head primaryKeyColumns;
 	grn_obj *scoreTargetRecords;
+
+	bool isScanEnd;
 } PGrnScanOpaqueData;
 
 typedef PGrnScanOpaqueData *PGrnScanOpaque;
@@ -130,7 +132,8 @@ typedef struct PGrnPrefixRKSequentialSearchData
 	grn_obj *resultTable;
 } PGrnPrefixRKSequentialSearchData;
 
-static slist_head PGrnScanOpaques = SLIST_STATIC_INIT(PGrnScanOpaques);
+static dlist_head PGrnScanOpaques = DLIST_STATIC_INIT(PGrnScanOpaques);
+static unsigned int PGrnNScanOpaques = 0;
 
 extern PGDLLEXPORT void _PG_init(void);
 
@@ -253,6 +256,21 @@ PGrnEnsureDatabase(void)
 	}
 }
 
+static void PGrnScanOpaqueFin(PGrnScanOpaque so);
+
+static void
+PGrnFinalizeScanOpaques(void)
+{
+	dlist_mutable_iter iter;
+
+	dlist_foreach_modify(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque so;
+		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
+		PGrnScanOpaqueFin(so);
+	}
+}
+
 static void
 PGrnInitializeGroongaFunctions(void)
 {
@@ -280,6 +298,8 @@ PGrnOnProcExit(int code, Datum arg)
 	if (ctx)
 	{
 		grn_obj *db;
+
+		PGrnFinalizeScanOpaques();
 
 		PGrnFinalizeQueryExtractKeywords();
 
@@ -1118,13 +1138,13 @@ static double
 PGrnCollectScore(Relation table, HeapTuple tuple)
 {
 	double score = 0.0;
-	slist_iter iter;
+	dlist_iter iter;
 
-	slist_foreach(iter, &PGrnScanOpaques)
+	dlist_foreach(iter, &PGrnScanOpaques)
 	{
 		PGrnScanOpaque so;
 
-		so = slist_container(PGrnScanOpaqueData, node, iter.cur);
+		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
 		score += PGrnCollectScoreScanOpaque(table, tuple, so);
 	}
 
@@ -1147,7 +1167,7 @@ pgroonga_score(PG_FUNCTION_ARGS)
 	recordType = HeapTupleHeaderGetTypMod(header);
 	desc = lookup_rowtype_tupdesc(type, recordType);
 
-	if (desc->natts > 0 && !slist_is_empty(&PGrnScanOpaques))
+	if (desc->natts > 0 && !dlist_is_empty(&PGrnScanOpaques))
 	{
 		HeapTupleData tupleData;
 		HeapTuple tuple;
@@ -2336,9 +2356,26 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 
-	slist_push_head(&PGrnScanOpaques, &(so->node));
+	if (PGrnKeepNSearchResults >= 0)
+	{
+		while (PGrnNScanOpaques > PGrnKeepNSearchResults)
+		{
+			PGrnScanOpaque oldestSo;
+
+			oldestSo = dlist_tail_element(PGrnScanOpaqueData,
+										  node,
+										  &PGrnScanOpaques);
+			if (!oldestSo->isScanEnd)
+				break;
+			PGrnScanOpaqueFin(oldestSo);
+		}
+	}
+	dlist_push_head(&PGrnScanOpaques, &(so->node));
+	PGrnNScanOpaques++;
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
 	so->scoreTargetRecords = NULL;
+
+	so->isScanEnd = false;
 }
 
 static void
@@ -2382,19 +2419,8 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
-	slist_mutable_iter iter;
-
-	slist_foreach_modify(iter, &PGrnScanOpaques)
-	{
-		PGrnScanOpaque currentSo;
-
-		currentSo = slist_container(PGrnScanOpaqueData, node, iter.cur);
-		if (currentSo == so)
-		{
-			slist_delete_current(&iter);
-			break;
-		}
-	}
+	dlist_delete(&(so->node));
+	PGrnNScanOpaques--;
 
 	PGrnPrimaryKeyColumnsFin(&(so->primaryKeyColumns));
 	if (so->scoreTargetRecords)
@@ -2404,6 +2430,8 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	}
 
 	PGrnScanOpaqueReinit(so);
+
+	pfree(so);
 }
 
 static IndexScanDesc
@@ -3709,8 +3737,14 @@ pgroonga_endscan_raw(IndexScanDesc scan)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	PGrnScanOpaqueFin(so);
-	pfree(so);
+	if (PGrnKeepNSearchResults < 0)
+	{
+		PGrnScanOpaqueFin(so);
+	}
+	else
+	{
+		so->isScanEnd = true;
+	}
 }
 
 /**

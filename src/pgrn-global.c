@@ -4,6 +4,7 @@
 
 grn_ctx PGrnContext;
 struct PGrnBuffers PGrnBuffers;
+int PGrnKeepNSearchResults = -1;
 
 static grn_ctx *ctx = &PGrnContext;
 

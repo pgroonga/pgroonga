@@ -30,6 +30,7 @@ struct PGrnBuffers
 
 extern grn_ctx PGrnContext;
 extern struct PGrnBuffers PGrnBuffers;
+extern int PGrnKeepNSearchResults;
 
 void PGrnInitializeBuffers(void);
 void PGrnFinalizeBuffers(void);
