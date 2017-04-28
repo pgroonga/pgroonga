@@ -251,7 +251,6 @@ postgresql#{postgresql_package_version}-devel
           cd(yum_dir) do
             sh("vagrant", "destroy", "--force")
             distribution_versions = {
-              "5" => ["i386", "x86_64"],
               "6" => ["i386", "x86_64"],
               "7" => ["x86_64"],
             }

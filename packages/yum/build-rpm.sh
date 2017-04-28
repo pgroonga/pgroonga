@@ -33,12 +33,7 @@ run wget --no-check-certificate https://yum.postgresql.org/${PG_VERSION}/redhat/
 run rpm -ivh ${pgdg_rpm}
 groonga_release_rpm=groonga-release-1.3.0-1.noarch.rpm
 groonga_release_rpm_url=https://packages.groonga.org/centos/${groonga_release_rpm}
-if [ "${distribution_version}" = "5" ]; then
-  run wget ${groonga_release_rpm_url}
-  run yum install -y --nogpgcheck ${groonga_release_rpm}
-else
-  run yum install -y ${groonga_release_rpm_url}
-fi
+run yum install -y ${groonga_release_rpm_url}
 
 run yum groupinstall -y "Development Tools"
 run yum install -y rpm-build rpmdevtools tar ${DEPENDED_PACKAGES}
