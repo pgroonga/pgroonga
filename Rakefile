@@ -288,6 +288,7 @@ postgresql#{postgresql_package_version}-devel
     desc "Update repositories"
     task :update do
       sh("#{groonga_source_dir}/packages/yum/update-repository.sh",
+         gpg_uid,
          "groonga",
          "#{repositories_dir}/",
          distribution)
