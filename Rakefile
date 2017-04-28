@@ -452,12 +452,24 @@ libmsgpack-dev
              "--debian-directory", "packages/debian95",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
+
+      desc "Upload package for PostgreSQL 9.6"
+      task :postgresql96 => [archive_name] do
+        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
+             "--package", package,
+             "--version", version,
+             "--source-archive", archive_name,
+             "--code-names", "zesty",
+             "--debian-directory", "packages/debian96",
+             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+      end
     end
 
     desc "Upload package"
     upload_tasks = [
       "package:ubuntu:upload:postgresql93",
       "package:ubuntu:upload:postgresql95",
+      "package:ubuntu:upload:postgresql96",
     ]
     task :upload => upload_tasks
   end
