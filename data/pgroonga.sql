@@ -656,6 +656,8 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 6 ~~,
 		OPERATOR 7 ~~*,
+		OPERATOR 8 %%, -- For backward compatibility
+		OPERATOR 9 @@, -- For backward compatibility
 		OPERATOR 12 &@,
 		OPERATOR 13 &?,
 		OPERATOR 14 &~?,
