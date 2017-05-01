@@ -9,7 +9,6 @@ run()
   fi
 }
 
-set -x
 test_names=""
 while [ $# -gt 0 ]; do
   arg="$1"
