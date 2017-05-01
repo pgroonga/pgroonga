@@ -160,7 +160,9 @@ PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
 
 PGRN_FUNCTION_INFO_V1(pgroonga_insert);
@@ -1995,10 +1997,10 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
+ * pgroonga.prefix_text_array(targets text[], prefix text) : bool
  */
 Datum
-pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
@@ -2032,10 +2034,21 @@ pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
+ * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
  */
 Datum
-pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
+{
+	return pgroonga_prefix_text_array(fcinfo);
+}
+
+/**
+ * pgroonga.prefix_rk_text_array(targets text[], prefix text) : bool
+ */
+Datum
+pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
@@ -2065,6 +2078,17 @@ pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
 	}
 
 	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
+ */
+Datum
+pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
+{
+	return pgroonga_prefix_rk_contain_text_array(fcinfo);
 }
 
 static bool

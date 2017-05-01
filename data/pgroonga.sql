@@ -383,28 +383,28 @@ CREATE OPERATOR &?> (
 	RIGHTARG = text[]
 );
 
-CREATE FUNCTION pgroonga.prefix_contain_text_array(text[], text)
+CREATE FUNCTION pgroonga.prefix_text_array(text[], text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_prefix_contain_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &^> (
-	PROCEDURE = pgroonga.prefix_contain_text_array,
+	PROCEDURE = pgroonga.prefix_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text
 );
 
-CREATE FUNCTION pgroonga.prefix_rk_contain_text_array(text[], text)
+CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_contain_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &^~> (
-	PROCEDURE = pgroonga.prefix_rk_contain_text_array,
+	PROCEDURE = pgroonga.prefix_rk_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text
 );
