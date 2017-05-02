@@ -797,7 +797,8 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 	DEFAULT
 	FOR TYPE varchar[]
 	USING pgroonga AS
-		OPERATOR 8 %% (varchar[], varchar);
+		OPERATOR 8 %% (varchar[], varchar),
+		OPERATOR 12 &@ (varchar[], varchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS

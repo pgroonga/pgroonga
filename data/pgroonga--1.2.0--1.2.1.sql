@@ -360,3 +360,8 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_ops_v2 FOR TYPE varchar[]
 	USING pgroonga AS
 		OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
 		OPERATOR 12 &@ (varchar[], varchar);
+
+-- Add v2 compatible operators to full text search ops for varchar
+ALTER OPERATOR FAMILY pgroonga.varchar_array_ops USING pgroonga
+	ADD
+		OPERATOR 12 &@ (varchar[], varchar);
