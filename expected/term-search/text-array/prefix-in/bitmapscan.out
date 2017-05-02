@@ -12,22 +12,22 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
-                QUERY PLAN                 
--------------------------------------------
+ WHERE names &^> ARRAY['gro', 'pos'];
+                     QUERY PLAN                      
+-----------------------------------------------------
  Bitmap Heap Scan on tags
-   Recheck Cond: (names &^ 'pG'::text)
+   Recheck Cond: (names &^> '{gro,pos}'::text[])
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (names &^ 'pG'::text)
+         Index Cond: (names &^> '{gro,pos}'::text[])
 (4 rows)
 
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
+ WHERE names &^> ARRAY['gro', 'pos'];
       names      
 -----------------
  {PostgreSQL,PG}
- {PGroonga,pgrn}
+ {Groonga,grn}
 (2 rows)
 
 DROP TABLE tags;

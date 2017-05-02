@@ -7,27 +7,25 @@ INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn']);
 CREATE INDEX pgrn_index ON tags
   USING pgroonga (names pgroonga.text_array_term_search_ops_v2);
 SET enable_seqscan = off;
-SET enable_indexscan = off;
-SET enable_bitmapscan = on;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
-                QUERY PLAN                 
--------------------------------------------
- Bitmap Heap Scan on tags
-   Recheck Cond: (names &^ 'pG'::text)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (names &^ 'pG'::text)
-(4 rows)
+ WHERE names &^> ARRAY['gro', 'pos'];
+                  QUERY PLAN                   
+-----------------------------------------------
+ Index Scan using pgrn_index on tags
+   Index Cond: (names &^> '{gro,pos}'::text[])
+(2 rows)
 
 SELECT names
   FROM tags
- WHERE names &^ 'pG';
+ WHERE names &^> ARRAY['gro', 'pos'];
       names      
 -----------------
+ {Groonga,grn}
  {PostgreSQL,PG}
- {PGroonga,pgrn}
 (2 rows)
 
 DROP TABLE tags;

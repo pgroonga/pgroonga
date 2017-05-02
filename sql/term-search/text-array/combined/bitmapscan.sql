@@ -23,9 +23,15 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
+EXPLAIN (COSTS OFF)
 SELECT names, pgroonga.score(tags)
   FROM tags
-  WHERE names &^> 'Groon' OR
-        readings &^~> 'posu';
+  WHERE names &^ 'Groon' OR
+        readings &^~ 'posu';
+
+SELECT names, pgroonga.score(tags)
+  FROM tags
+  WHERE names &^ 'Groon' OR
+        readings &^~ 'posu';
 
 DROP TABLE tags;

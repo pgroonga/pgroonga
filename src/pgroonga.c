@@ -198,17 +198,21 @@ PGRN_FUNCTION_INFO_V1(pgroonga_script_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_varchar);
-PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
-PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
-PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
-PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text_array);
 
 PGRN_FUNCTION_INFO_V1(pgroonga_insert);
 PGRN_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -2101,6 +2105,35 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * pgroonga.prefix_text_array(targets text[], prefix text) : bool
+ */
+Datum
+pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(prefix),
+													  VARSIZE_ANY_EXHDR(prefix),
+													  pgroonga_prefix_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
+ */
+Datum
+pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
+{
+	return pgroonga_prefix_text_array(fcinfo);
+}
+
 static bool
 pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 					   const char *prefix, unsigned int prefixSize)
@@ -2170,6 +2203,35 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 									 VARSIZE_ANY_EXHDR(prefix));
 
 	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_text_array(targets text[], prefix text) : bool
+ */
+Datum
+pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(prefix),
+													  VARSIZE_ANY_EXHDR(prefix),
+													  pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
+ */
+Datum
+pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
+{
+	return pgroonga_prefix_rk_text_array(fcinfo);
 }
 
 /**
@@ -2279,62 +2341,75 @@ pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.prefix_text_array(targets text[], prefix text) : bool
+ * pgroonga.prefix_in_text(target text, prefixes text[]) : bool
  */
 Datum
-pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
+pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 {
-	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
-	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched = false;
 
 	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  pgroonga_prefix_raw);
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   prefixes,
+												   pgroonga_prefix_raw);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
- *
- * It's deprecated since 1.2.1. Just for backward compatibility.
+ * pgroonga.prefix_in_text_array(targets text[], prefixes text[]) : bool
  */
 Datum
-pgroonga_prefix_contain_text_array(PG_FUNCTION_ARGS)
-{
-	return pgroonga_prefix_text_array(fcinfo);
-}
-
-/**
- * pgroonga.prefix_rk_text_array(targets text[], prefix text) : bool
- */
-Datum
-pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
+pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
-	text *prefix = PG_GETARG_TEXT_PP(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  pgroonga_prefix_rk_raw);
+		pgroonga_execute_binary_operator_in_string_array(targets,
+														 prefixes,
+														 pgroonga_prefix_raw);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
- *
- * It's deprecated since 1.2.1. Just for backward compatibility.
+ * pgroonga.prefix_rk_in_text(target text, prefixes text[]) : bool
  */
 Datum
-pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 {
-	return pgroonga_prefix_rk_text_array(fcinfo);
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched = false;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   prefixes,
+												   pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
 }
+
+/**
+ * pgroonga.prefix_rk_in_text_array(targets text[], prefixes text[]) : bool
+ */
+Datum
+pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string_array(targets,
+														 prefixes,
+														 pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
+}
+
 
 static bool
 PGrnNeedMaxRecordSizeUpdate(Relation index)
@@ -3155,13 +3230,34 @@ PGrnSearchBuildCondition(Relation index,
 		return PGrnJSONBBuildSearchCondition(data, key, targetColumn);
 
 	valueTypeID = attribute->atttypid;
-	switch (valueTypeID)
+	switch (key->sk_strategy)
 	{
-	case VARCHARARRAYOID:
-		valueTypeID = VARCHAROID;
+	case PGrnPrefixInStrategyV2Number:
+	case PGrnPrefixRKInStrategyV2Number:
+	case PGrnQueryInStrategyV2Number:
+	case PGrnMatchInStrategyV2Number:
+		switch (valueTypeID)
+		{
+		case VARCHAROID:
+		case VARCHARARRAYOID:
+			valueTypeID = VARCHARARRAYOID;
+			break;
+		case TEXTOID:
+		case TEXTARRAYOID:
+			valueTypeID = TEXTARRAYOID;
+			break;
+		}
 		break;
-	case TEXTARRAYOID:
-		valueTypeID = TEXTOID;
+	default:
+		switch (valueTypeID)
+		{
+		case VARCHARARRAYOID:
+			valueTypeID = VARCHAROID;
+			break;
+		case TEXTARRAYOID:
+			valueTypeID = TEXTOID;
+			break;
+		}
 		break;
 	}
 
@@ -3208,18 +3304,9 @@ PGrnSearchBuildCondition(Relation index,
 		operator = GRN_OP_REGEXP;
 		break;
 	case PGrnQueryInStrategyV2Number:
+		break;
 	case PGrnMatchInStrategyV2Number:
-		switch (attribute->atttypid)
-		{
-		case VARCHAROID:
-		case VARCHARARRAYOID:
-			valueTypeID = VARCHARARRAYOID;
-			break;
-		case TEXTOID:
-		case TEXTARRAYOID:
-			valueTypeID = TEXTARRAYOID;
-			break;
-		}
+		operator = GRN_OP_REGEXP;
 		break;
 	default:
 		ereport(ERROR,
@@ -3262,12 +3349,33 @@ PGrnSearchBuildCondition(Relation index,
 									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnPrefixRKStrategyV2Number:
-	case PGrnPrefixRKInStrategyV2Number:
 		PGrnSearchBuildConditionPrefixRK(data,
 										 targetColumn,
 										 GRN_TEXT_VALUE(&(buffers->general)),
 										 GRN_TEXT_LEN(&(buffers->general)));
 		break;
+	case PGrnPrefixRKInStrategyV2Number:
+	{
+		grn_obj *prefixes = &(buffers->general);
+		unsigned int i, n;
+
+		n = grn_vector_size(ctx, prefixes);
+		for (i = 0; i < n; i++)
+		{
+			const char *prefix;
+			unsigned int prefixSize;
+
+			prefixSize = grn_vector_get_element(ctx, prefixes, i,
+												&prefix, NULL, NULL);
+			PGrnSearchBuildConditionPrefixRK(data,
+											 targetColumn,
+											 prefix,
+											 prefixSize);
+			if (i > 0)
+				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
+		}
+		break;
+	}
 	case PGrnQueryInStrategyV2Number:
 	{
 		grn_obj *queries = &(buffers->general);
@@ -3290,6 +3398,7 @@ PGrnSearchBuildCondition(Relation index,
 		}
 		break;
 	}
+	case PGrnPrefixInStrategyV2Number:
 	case PGrnMatchInStrategyV2Number:
 	{
 		grn_obj *keywords = &(buffers->general);
@@ -3309,7 +3418,7 @@ PGrnSearchBuildCondition(Relation index,
 			PGrnSearchBuildConditionBinaryOperation(data,
 													targetColumn,
 													&keywordBuffer,
-													GRN_OP_MATCH);
+													operator);
 			if (i > 0)
 				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
 		}

@@ -1,0 +1,34 @@
+CREATE TABLE readings (
+  katakana text
+);
+INSERT INTO readings VALUES ('ポストグレスキューエル');
+INSERT INTO readings VALUES ('グルンガ');
+INSERT INTO readings VALUES ('ピージールンガ');
+INSERT INTO readings VALUES ('ピージーロジカル');
+CREATE INDEX pgrn_index ON readings
+  USING pgroonga (katakana pgroonga.text_term_search_ops_v2);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT katakana
+  FROM readings
+ WHERE katakana &^~> ARRAY['po', 'gu'];
+                      QUERY PLAN                       
+-------------------------------------------------------
+ Bitmap Heap Scan on readings
+   Recheck Cond: (katakana &^~> '{po,gu}'::text[])
+   ->  Bitmap Index Scan on pgrn_index
+         Index Cond: (katakana &^~> '{po,gu}'::text[])
+(4 rows)
+
+SELECT katakana
+  FROM readings
+ WHERE katakana &^~> ARRAY['po', 'gu'];
+        katakana        
+------------------------
+ ポストグレスキューエル
+ グルンガ
+(2 rows)
+
+DROP TABLE readings;

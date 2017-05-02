@@ -13,8 +13,13 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
+EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &^> 'pG';
+ WHERE names &^ 'pG';
+
+SELECT names
+  FROM tags
+ WHERE names &^ 'pG';
 
 DROP TABLE tags;
