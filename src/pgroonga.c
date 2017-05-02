@@ -195,10 +195,10 @@ PGRN_FUNCTION_INFO_V1(pgroonga_script_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
-PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
-PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text_array);
-PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
-PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_in_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
@@ -1419,11 +1419,10 @@ pgroonga_execute_binary_operator_text_array(ArrayType *operands1,
 	return false;
 }
 
-/* TODO: "in" will be better than "contain". */
 static bool
-pgroonga_execute_binary_operator_contain_text(text *operand1,
-											  ArrayType *operands2,
-											  PGrnBinaryOperatorTextFunction operator)
+pgroonga_execute_binary_operator_in_text(text *operand1,
+										 ArrayType *operands2,
+										 PGrnBinaryOperatorTextFunction operator)
 {
 	int i, n;
 
@@ -1449,11 +1448,10 @@ pgroonga_execute_binary_operator_contain_text(text *operand1,
 	return false;
 }
 
-/* TODO: "in" will be better than "contain". */
 static bool
-pgroonga_execute_binary_operator_contain_text_array(ArrayType *operands1,
-													ArrayType *operands2,
-													PGrnBinaryOperatorTextFunction operator)
+pgroonga_execute_binary_operator_in_text_array(ArrayType *operands1,
+											   ArrayType *operands2,
+											   PGrnBinaryOperatorTextFunction operator)
 {
 	int i, n;
 
@@ -1469,9 +1467,9 @@ pgroonga_execute_binary_operator_contain_text_array(ArrayType *operands1,
 			continue;
 
 		operand1 = DatumGetTextPP(operandDatum1);
-		if (pgroonga_execute_binary_operator_contain_text(operand1,
-														  operands2,
-														  operator))
+		if (pgroonga_execute_binary_operator_in_text(operand1,
+													 operands2,
+													 operator))
 			return true;
 	}
 
@@ -2075,69 +2073,69 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_contain_text(target text, keywords text[]) : bool
+ * pgroonga.match_in_text(target text, keywords text[]) : bool
  */
 Datum
-pgroonga_match_contain_text(PG_FUNCTION_ARGS)
+pgroonga_match_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_contain_text(target,
-													  keywords,
-													  pgroonga_match_term_raw);
+		pgroonga_execute_binary_operator_in_text(target,
+												 keywords,
+												 pgroonga_match_term_raw);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_contain_text_array(targets text[], keywords text[]) : bool
+ * pgroonga.match_in_text_array(targets text[], keywords text[]) : bool
  */
 Datum
-pgroonga_match_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_contain_text_array(targets,
-															keywords,
-															pgroonga_match_term_raw);
+		pgroonga_execute_binary_operator_in_text_array(targets,
+													   keywords,
+													   pgroonga_match_term_raw);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.query_contain_text(target text, queries text[]) : bool
+ * pgroonga.query_in_text(target text, queries text[]) : bool
  */
 Datum
-pgroonga_query_contain_text(PG_FUNCTION_ARGS)
+pgroonga_query_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	grn_bool matched;
 
-	matched = pgroonga_execute_binary_operator_contain_text(target,
-															queries,
-															pgroonga_match_query_raw);
+	matched = pgroonga_execute_binary_operator_in_text(target,
+													   queries,
+													   pgroonga_match_query_raw);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.query_contain_text_array(targets text[], queries text[]) : bool
+ * pgroonga.query_in_text_array(targets text[], queries text[]) : bool
  */
 Datum
-pgroonga_query_contain_text_array(PG_FUNCTION_ARGS)
+pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_contain_text_array(targets,
-															queries,
-															pgroonga_match_query_raw);
+		pgroonga_execute_binary_operator_in_text_array(targets,
+													   queries,
+													   pgroonga_match_query_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2194,7 +2192,7 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 Datum
 pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
 {
-	return pgroonga_prefix_rk_contain_text_array(fcinfo);
+	return pgroonga_prefix_rk_text_array(fcinfo);
 }
 
 static bool

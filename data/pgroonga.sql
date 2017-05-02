@@ -409,54 +409,54 @@ CREATE OPERATOR &` (
 	RIGHTARG = text
 );
 
-CREATE FUNCTION pgroonga.match_contain_text(text, text[])
+CREATE FUNCTION pgroonga.match_in_text(text, text[])
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_contain_text'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_in_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &@> (
-	PROCEDURE = pgroonga.match_contain_text,
+	PROCEDURE = pgroonga.match_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
 );
 
-CREATE FUNCTION pgroonga.match_contain_text_array(text[], text[])
+CREATE FUNCTION pgroonga.match_in_text_array(text[], text[])
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_contain_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_match_in_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &@> (
-	PROCEDURE = pgroonga.match_contain_text_array,
+	PROCEDURE = pgroonga.match_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
 );
 
-CREATE FUNCTION pgroonga.query_contain_text(text, text[])
+CREATE FUNCTION pgroonga.query_in_text(text, text[])
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_query_contain_text'
+	AS 'MODULE_PATHNAME', 'pgroonga_query_in_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &?> (
-	PROCEDURE = pgroonga.query_contain_text,
+	PROCEDURE = pgroonga.query_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
 );
 
-CREATE FUNCTION pgroonga.query_contain_text_array(text[], text[])
+CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_query_contain_text_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_query_in_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
 CREATE OPERATOR &?> (
-	PROCEDURE = pgroonga.query_contain_text_array,
+	PROCEDURE = pgroonga.query_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
 );
