@@ -34,8 +34,9 @@
 #define PGrnQueryInStrategyV2Number		19	/* operator &?> (query in Groonga) */
 #define PGrnPrefixInStrategyV2Number	20	/* operator &^>  (prefix search) */
 #define PGrnPrefixRKInStrategyV2Number	21	/* operator &^~> (prefix RK search) */
+#define PGrnRegexpStrategyV2Number		22	/* operator &~ (@~ in Groonga)  */
 
-#define PGRN_N_STRATEGIES PGrnPrefixRKInStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnRegexpStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

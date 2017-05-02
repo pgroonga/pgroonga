@@ -213,6 +213,8 @@ PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_regexp_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
 
 PGRN_FUNCTION_INFO_V1(pgroonga_insert);
 PGRN_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -2410,6 +2412,40 @@ pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * pgroonga.regexp_text(target text, pattern text) : bool
+ */
+Datum
+pgroonga_regexp_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	text *pattern = PG_GETARG_TEXT_PP(1);
+	grn_bool matched;
+
+	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+										VARSIZE_ANY_EXHDR(target),
+										VARDATA_ANY(pattern),
+										VARSIZE_ANY_EXHDR(pattern));
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.regexp_varchar(target varchar, pattern varchar) : bool
+ */
+Datum
+pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
+	grn_bool matched;
+
+	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+										VARSIZE_ANY_EXHDR(target),
+										VARDATA_ANY(pattern),
+										VARSIZE_ANY_EXHDR(pattern));
+	PG_RETURN_BOOL(matched);
+}
+
 
 static bool
 PGrnNeedMaxRecordSizeUpdate(Relation index)
@@ -3301,12 +3337,13 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixRKInStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
+	case PGrnRegexpStrategyV2Number:
 		operator = GRN_OP_REGEXP;
 		break;
 	case PGrnQueryInStrategyV2Number:
 		break;
 	case PGrnMatchInStrategyV2Number:
-		operator = GRN_OP_REGEXP;
+		operator = GRN_OP_MATCH;
 		break;
 	default:
 		ereport(ERROR,

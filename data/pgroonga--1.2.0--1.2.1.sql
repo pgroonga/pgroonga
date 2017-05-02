@@ -291,3 +291,53 @@ CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 		OPERATOR 17 &^~ (text[], text),
 		OPERATOR 20 &^> (text[], text[]),
 		OPERATOR 21 &^~> (text[], text[]);
+
+-- Add pgroonga.text_regexp_ops_v2.
+-- Add pgroonga.varchar_regexp_ops_v2.
+DO LANGUAGE plpgsql $$
+BEGIN
+	SELECT amstrategies FROM pg_am LIMIT 0;
+EXCEPTION
+	WHEN syntax_error THEN
+		UPDATE pg_am SET amstrategies = 22
+		 WHERE amname = 'pgroonga';
+END;
+$$;
+
+CREATE FUNCTION pgroonga.regexp_text(text, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_regexp_text'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &~ (
+	PROCEDURE = pgroonga.regexp_text,
+	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.regexp_varchar(varchar, varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_regexp_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &~ (
+	PROCEDURE = pgroonga.regexp_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE OPERATOR CLASS pgroonga.text_regexp_ops_v2 FOR TYPE text
+	USING pgroonga AS
+		OPERATOR 6 ~~,
+		OPERATOR 7 ~~*,
+		OPERATOR 10 @~,
+		OPERATOR 22 &~;
+
+CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
+	USING pgroonga AS
+		OPERATOR 10 @~,
+		OPERATOR 22 &~;
