@@ -10,8 +10,13 @@ INSERT INTO memos VALUES ('PGroonga', ARRAY['PostgreSQL', 'Groonga']);
 CREATE INDEX pgroonga_memos_index ON memos USING pgroonga (tags);
 
 SET enable_seqscan = off;
-SET enable_indexscan = on;
-SET enable_bitmapscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+
+EXPLAIN (COSTS OFF)
+SELECT title, tags
+  FROM memos
+ WHERE tags %% 'Groonga';
 
 SELECT title, tags
   FROM memos

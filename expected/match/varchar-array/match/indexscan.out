@@ -1,0 +1,31 @@
+CREATE TABLE memos (
+  title text,
+  tags varchar(1023)[]
+);
+INSERT INTO memos VALUES ('PostgreSQL', ARRAY['PostgreSQL']);
+INSERT INTO memos VALUES ('Groonga', ARRAY['Groonga']);
+INSERT INTO memos VALUES ('PGroonga', ARRAY['PostgreSQL', 'Groonga']);
+CREATE INDEX pgroonga_memos_index ON memos USING pgroonga (tags);
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT title, tags
+  FROM memos
+ WHERE tags %% 'Groonga';
+                      QUERY PLAN                      
+------------------------------------------------------
+ Index Scan using pgroonga_memos_index on memos
+   Index Cond: (tags %% 'Groonga'::character varying)
+(2 rows)
+
+SELECT title, tags
+  FROM memos
+ WHERE tags %% 'Groonga';
+  title   |         tags         
+----------+----------------------
+ Groonga  | {Groonga}
+ PGroonga | {PostgreSQL,Groonga}
+(2 rows)
+
+DROP TABLE memos;

@@ -188,6 +188,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
@@ -1846,6 +1847,24 @@ pgroonga_match_varchar(PG_FUNCTION_ARGS)
 									  VARSIZE_ANY_EXHDR(target),
 									  VARDATA_ANY(term),
 									  VARSIZE_ANY_EXHDR(term));
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.match_varchar_array(target varchar[], term varchar) : bool
+ */
+Datum
+pgroonga_match_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	VarChar *term = PG_GETARG_VARCHAR_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(term),
+													  VARSIZE_ANY_EXHDR(term),
+													  pgroonga_match_term_raw);
 	PG_RETURN_BOOL(matched);
 }
 
