@@ -45,3 +45,93 @@ CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
 		OPERATOR 20 &^> (text[], text),
 		OPERATOR 21 &^~> (text[], text);
+
+-- Add pgroonga.text_array_full_text_search_ops_v2
+CREATE FUNCTION pgroonga.match_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga.match_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.query_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.similar_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_similar_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.script_text_array(text[], text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_script_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &` (
+	PROCEDURE = pgroonga.script_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE FUNCTION pgroonga.match_contain_text_array(text[], text[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_contain_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@> (
+	PROCEDURE = pgroonga.match_contain_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text[]
+);
+
+CREATE FUNCTION pgroonga.query_contain_text_array(text[], text[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_contain_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &?> (
+	PROCEDURE = pgroonga.query_contain_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text[]
+);
+
+CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
+	FOR TYPE text[]
+	USING pgroonga AS
+		OPERATOR 12 &@ (text[], text),
+		OPERATOR 13 &? (text[], text),
+		OPERATOR 14 &~? (text[], text),
+		OPERATOR 15 &` (text[], text),
+		OPERATOR 18 &@> (text[], text[]),
+		OPERATOR 19 &?> (text[], text[]);
+

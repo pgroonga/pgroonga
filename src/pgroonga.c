@@ -141,6 +141,39 @@ PGRN_FUNCTION_INFO_V1(pgroonga_score);
 PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
 PGRN_FUNCTION_INFO_V1(pgroonga_command);
 
+/*
+ * Naming conversions:
+ *
+ *   * pgroonga_#{operation}_#{type}(operand1 #{type}, operand2 #{type})
+ *     * e.g.: pgroonga_match_text(target text, term text)
+ *     * true when #{operand1} #{operation} #{operand2} is true,
+ *       false otherwise.
+ *     * e.g.: "PGroonga is great" match "great" -> true
+ *
+ *   * pgroonga_#{operation}_#{type}_array(operands1 #{type}[],
+ *                                         operand2 #{type})
+ *     * e.g.: pgroonga_match_text_array(targets text[], term text)
+ *     * true when #{one of operands1} #{operation} #{operand2} is true,
+ *       false otherwise.
+ *     * e.g.: ["PGroonga is great", "PostgreSQL is great"] match "PGroonga"
+ *       -> true
+ *
+ *   * pgroonga_#{operation}_in_#{type}(operand1 #{type}, operands2 #{type}[])
+ *     * e.g.: pgroonga_match_in_text(target text, terms text[])
+ *     * true when #{operand1} #{operation} #{one of operands2} is true,
+ *       false otherwise.
+ *     * e.g.: "PGroonga is great" match ["PGroonga", "PostgreSQL"]
+ *       -> true
+ *
+ *   * pgroonga_#{operation}_in_#{type}_array(operands1 #{type}[],
+ *                                            operands2 #{type}[])
+ *     * e.g.: pgroonga_match_in_text_array(targets1 text[], terms2 text[])
+ *     * true when #{one of operands1} #{operation} #{one of operands2} is true,
+ *       false otherwise.
+ *     * e.g.: ["PGroonga is great", "PostgreSQL is great"] match
+ *       ["Groonga", "PostgreSQL"] -> true
+ */
+
 PGRN_FUNCTION_INFO_V1(pgroonga_match_term_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_term_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_term_varchar);
@@ -153,13 +186,19 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 /* v2 */
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_similar_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
@@ -1346,7 +1385,100 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(result);
 }
 
-static grn_bool
+typedef bool (*PGrnBinaryOperatorTextFunction)(const char *operand1,
+											   unsigned int operandSize1,
+											   const char *operand2,
+											   unsigned int operandSize2);
+
+static bool
+pgroonga_execute_binary_operator_text_array(ArrayType *operands1,
+											text *operand2,
+											PGrnBinaryOperatorTextFunction operator)
+{
+	int i, n;
+
+	n = ARR_DIMS(operands1)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum operandDatum1;
+		text *operand1;
+		bool isNULL;
+
+		operandDatum1 = array_ref(operands1, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		operand1 = DatumGetTextPP(operandDatum1);
+		if (operator(VARDATA_ANY(operand1),
+					 VARSIZE_ANY_EXHDR(operand1),
+					 VARDATA_ANY(operand2),
+					 VARSIZE_ANY_EXHDR(operand2)))
+			return true;
+	}
+
+	return false;
+}
+
+/* TODO: "in" will be better than "contain". */
+static bool
+pgroonga_execute_binary_operator_contain_text(text *operand1,
+											  ArrayType *operands2,
+											  PGrnBinaryOperatorTextFunction operator)
+{
+	int i, n;
+
+	n = ARR_DIMS(operands2)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum operandDatum2;
+		text *operand2;
+		bool isNULL;
+
+		operandDatum2 = array_ref(operands2, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		operand2 = DatumGetTextPP(operandDatum2);
+		if (operator(VARDATA_ANY(operand1),
+					 VARSIZE_ANY_EXHDR(operand1),
+					 VARDATA_ANY(operand2),
+					 VARSIZE_ANY_EXHDR(operand2)))
+			return true;
+	}
+
+	return false;
+}
+
+/* TODO: "in" will be better than "contain". */
+static bool
+pgroonga_execute_binary_operator_contain_text_array(ArrayType *operands1,
+													ArrayType *operands2,
+													PGrnBinaryOperatorTextFunction operator)
+{
+	int i, n;
+
+	n = ARR_DIMS(operands1)[0];
+	for (i = 1; i <= n; i++)
+	{
+		Datum operandDatum1;
+		text *operand1;
+		bool isNULL;
+
+		operandDatum1 = array_ref(operands1, 1, &i, -1, -1, false, 'i', &isNULL);
+		if (isNULL)
+			continue;
+
+		operand1 = DatumGetTextPP(operandDatum1);
+		if (pgroonga_execute_binary_operator_contain_text(operand1,
+														  operands2,
+														  operator))
+			return true;
+	}
+
+	return false;
+}
+
+static bool
 pgroonga_match_term_raw(const char *text, unsigned int textSize,
 						const char *term, unsigned int termSize)
 {
@@ -1391,43 +1523,14 @@ pgroonga_match_term_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 {
-	ArrayType *target = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *term = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-	grn_obj elementBuffer;
-	int i, n;
+	grn_bool matched;
 
-	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &(buffers->general), VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
-
-	GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-
-	n = ARR_DIMS(target)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum elementDatum;
-		text *element;
-		bool isNULL;
-
-		elementDatum = array_ref(target, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		element = DatumGetTextPP(elementDatum);
-		GRN_TEXT_SET(ctx, &elementBuffer,
-					 VARDATA_ANY(element), VARSIZE_ANY_EXHDR(element));
-		if (pgroonga_match_term_raw(GRN_TEXT_VALUE(&elementBuffer),
-									GRN_TEXT_LEN(&elementBuffer),
-									GRN_TEXT_VALUE(&(buffers->general)),
-									GRN_TEXT_LEN(&(buffers->general))))
-		{
-			matched = true;
-			break;
-		}
-	}
-
-	GRN_OBJ_FIN(ctx, &elementBuffer);
-
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													term,
+													pgroonga_match_term_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1490,7 +1593,7 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-static grn_bool
+static bool
 pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						 const char *query, unsigned int querySize)
 {
@@ -1500,7 +1603,7 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 		GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
 	grn_rc rc;
 	grn_obj *result;
-	bool matched = false;
+	grn_bool matched = false;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
 							  matchSequentialSearchData.table,
@@ -1576,31 +1679,12 @@ pgroonga_match_query_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *query = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-	int i, n;
+	grn_bool matched;
 
-	n = ARR_DIMS(targets)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum targetDatum;
-		text *target;
-		bool isNULL;
-
-		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   VARDATA_ANY(query),
-										   VARSIZE_ANY_EXHDR(query));
-		if (matched)
-		{
-			break;
-		}
-	}
-
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													query,
+													pgroonga_match_query_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1622,7 +1706,7 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-static grn_bool
+static bool
 pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
 						  const char *pattern, unsigned int patternSize)
 {
@@ -1697,6 +1781,23 @@ pgroonga_match_text(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.match_text_array(targets text[], term text) : bool
+ */
+Datum
+pgroonga_match_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *term = PG_GETARG_TEXT_PP(1);
+	grn_bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													term,
+													pgroonga_match_term_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga.query_text(target text, query text) : bool
  */
 Datum
@@ -1712,6 +1813,21 @@ pgroonga_query_text(PG_FUNCTION_ARGS)
 									   VARSIZE_ANY_EXHDR(query));
 
 	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.query_text_array(targets text[], query text) : bool
+ */
+Datum
+pgroonga_query_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+
+	return pgroonga_execute_binary_operator_text_array(targets,
+													   query,
+													   pgroonga_match_query_raw);
+
 }
 
 /**
@@ -1740,7 +1856,20 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(false);
 }
 
-static grn_bool
+/**
+ * pgroonga.similar_text_array(targets text[], document text) : bool
+ */
+Datum
+pgroonga_similar_text_array(PG_FUNCTION_ARGS)
+{
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: operator &~? is available only in index scan")));
+
+	PG_RETURN_BOOL(false);
+}
+
+static bool
 pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize)
 {
@@ -1749,7 +1878,7 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 	grn_rc rc;
 	grn_obj *result;
-	bool matched = false;
+	grn_bool matched = false;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
 							  matchSequentialSearchData.table,
@@ -1817,7 +1946,24 @@ pgroonga_script_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-static grn_bool
+/**
+ * pgroonga.script_text_array(targets text[], script text) : bool
+ */
+Datum
+pgroonga_script_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													script,
+													pgroonga_script_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+static bool
 pgroonga_prefix_raw(const char *text, unsigned int textSize,
 					const char *prefix, unsigned int prefixSize)
 {
@@ -1857,13 +2003,13 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-static grn_bool
+static bool
 pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 					   const char *prefix, unsigned int prefixSize)
 {
 	grn_obj *expression;
 	grn_obj *variable;
-	grn_bool matched;
+	bool matched;
 	grn_id id;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
@@ -1936,29 +2082,29 @@ pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched = GRN_FALSE;
-	int i, n;
+	bool matched;
 
-	n = ARR_DIMS(keywords)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum keywordDatum;
-		text *keyword;
-		bool isNULL;
+	matched =
+		pgroonga_execute_binary_operator_contain_text(target,
+													  keywords,
+													  pgroonga_match_term_raw);
+	PG_RETURN_BOOL(matched);
+}
 
-		keywordDatum = array_ref(keywords, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
+/**
+ * pgroonga.match_contain_text_array(targets text[], keywords text[]) : bool
+ */
+Datum
+pgroonga_match_contain_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
 
-		keyword = DatumGetTextPP(keywordDatum);
-		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  VARDATA_ANY(keyword),
-										  VARSIZE_ANY_EXHDR(keyword));
-		if (matched)
-			break;
-	}
-
+	matched =
+		pgroonga_execute_binary_operator_contain_text_array(targets,
+															keywords,
+															pgroonga_match_term_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1970,29 +2116,28 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched = GRN_FALSE;
-	int i, n;
+	grn_bool matched;
 
-	n = ARR_DIMS(queries)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum queryDatum;
-		text *query;
-		bool isNULL;
+	matched = pgroonga_execute_binary_operator_contain_text(target,
+															queries,
+															pgroonga_match_query_raw);
+	PG_RETURN_BOOL(matched);
+}
 
-		queryDatum = array_ref(queries, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
+/**
+ * pgroonga.query_contain_text_array(targets text[], queries text[]) : bool
+ */
+Datum
+pgroonga_query_contain_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
 
-		query = DatumGetTextPP(queryDatum);
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   VARDATA_ANY(query),
-										   VARSIZE_ANY_EXHDR(query));
-		if (matched)
-			break;
-	}
-
+	matched =
+		pgroonga_execute_binary_operator_contain_text_array(targets,
+															queries,
+															pgroonga_match_query_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2004,32 +2149,12 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
+	bool matched;
 
-	int i, n;
-
-	n = ARR_DIMS(targets)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum targetDatum;
-		text *target;
-		bool isNULL;
-
-		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(prefix),
-									  VARSIZE_ANY_EXHDR(prefix));
-		if (matched)
-		{
-			break;
-		}
-	}
-
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													prefix,
+													pgroonga_prefix_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2052,31 +2177,12 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
-	int i, n;
+	bool matched;
 
-	n = ARR_DIMS(targets)[0];
-	for (i = 1; i <= n; i++)
-	{
-		Datum targetDatum;
-		text *target;
-		bool isNULL;
-
-		targetDatum = array_ref(targets, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
-
-		target = DatumGetTextPP(targetDatum);
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 VARDATA_ANY(prefix),
-										 VARSIZE_ANY_EXHDR(prefix));
-		if (matched)
-		{
-			break;
-		}
-	}
-
+	matched =
+		pgroonga_execute_binary_operator_text_array(targets,
+													prefix,
+													pgroonga_prefix_rk_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2967,6 +3073,7 @@ PGrnSearchBuildCondition(Relation index,
 		switch (attribute->atttypid)
 		{
 		case TEXTOID:
+		case TEXTARRAYOID:
 			valueTypeID = TEXTARRAYOID;
 			break;
 		}
