@@ -227,3 +227,9 @@ CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2
 		OPERATOR 15 &`,
 		OPERATOR 18 &@> (varchar, varchar[]),
 		OPERATOR 19 &?> (varchar, varchar[]);
+
+-- Add v2 compatible operators to full text search ops for varchar
+ALTER OPERATOR FAMILY pgroonga.varchar_full_text_search_ops USING pgroonga
+	ADD
+		OPERATOR 12 &@ (varchar, varchar),
+		OPERATOR 13 &? (varchar, varchar);

@@ -690,7 +690,9 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 8 %%,
-		OPERATOR 9 @@;
+		OPERATOR 9 @@,
+		OPERATOR 12 &@,
+		OPERATOR 13 &?;
 
 CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
