@@ -136,3 +136,94 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
 		OPERATOR 15 &` (text[], text),
 		OPERATOR 18 &@> (text[], text[]),
 		OPERATOR 19 &?> (text[], text[]);
+
+-- Add pgroonga.varchar_full_text_search_ops_v2
+CREATE FUNCTION pgroonga.match_varchar(varchar, varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga.match_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE FUNCTION pgroonga.query_varchar(varchar, varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE FUNCTION pgroonga.similar_varchar(varchar, varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_similar_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE FUNCTION pgroonga.script_varchar(varchar, varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_script_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &` (
+	PROCEDURE = pgroonga.script_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE FUNCTION pgroonga.match_in_varchar(varchar, varchar[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_in_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@> (
+	PROCEDURE = pgroonga.match_in_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar[]
+);
+
+CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_in_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &?> (
+	PROCEDURE = pgroonga.query_in_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar[]
+);
+
+CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2
+	FOR TYPE varchar
+	USING pgroonga AS
+		OPERATOR 8 %%, -- For backward compatibility
+		OPERATOR 9 @@, -- For backward compatibility
+		OPERATOR 12 &@,
+		OPERATOR 13 &?,
+		OPERATOR 14 &~?,
+		OPERATOR 15 &`,
+		OPERATOR 18 &@> (varchar, varchar[]),
+		OPERATOR 19 &?> (varchar, varchar[]);
