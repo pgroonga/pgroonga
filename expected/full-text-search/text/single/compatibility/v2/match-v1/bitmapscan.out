@@ -10,15 +10,15 @@ CREATE INDEX grnindex ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
-EXPLAIN
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  WHERE content %% 'Groonga';
-                              QUERY PLAN                               
------------------------------------------------------------------------
- Bitmap Heap Scan on memos  (cost=0.00..4.01 rows=2 width=36)
+                    QUERY PLAN                    
+--------------------------------------------------
+ Bitmap Heap Scan on memos
    Recheck Cond: (content %% 'Groonga'::text)
-   ->  Bitmap Index Scan on grnindex  (cost=0.00..0.00 rows=1 width=0)
+   ->  Bitmap Index Scan on grnindex
          Index Cond: (content %% 'Groonga'::text)
 (4 rows)
 

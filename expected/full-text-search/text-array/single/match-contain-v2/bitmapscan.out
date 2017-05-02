@@ -18,15 +18,15 @@ CREATE INDEX pgroonga_memos_index ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
-EXPLAIN
+EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
  WHERE contents &@> Array['rdbms', 'engine'];
-                                    QUERY PLAN                                     
------------------------------------------------------------------------------------
- Bitmap Heap Scan on memos  (cost=0.00..4.01 rows=2 width=64)
+                         QUERY PLAN                          
+-------------------------------------------------------------
+ Bitmap Heap Scan on memos
    Recheck Cond: (contents &@> '{rdbms,engine}'::text[])
-   ->  Bitmap Index Scan on pgroonga_memos_index  (cost=0.00..0.00 rows=1 width=0)
+   ->  Bitmap Index Scan on pgroonga_memos_index
          Index Cond: (contents &@> '{rdbms,engine}'::text[])
 (4 rows)
 

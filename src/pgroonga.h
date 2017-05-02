@@ -30,12 +30,12 @@
 #define PGrnScriptStrategyV2Number		15	/* operator &`  (script in Groonga) */
 #define PGrnPrefixStrategyV2Number		16	/* operator &^  (prefix search) */
 #define PGrnPrefixRKStrategyV2Number	17	/* operator &^~ (prefix RK search) */
-#define PGrnMatchContainStrategyV2Number	18	/* operator &@> (@ in Groonga) */
-#define PGrnQueryContainStrategyV2Number	19	/* operator &?> (query in Groonga) */
-#define PGrnPrefixContainStrategyV2Number	20	/* operator &^>  (prefix search) */
-#define PGrnPrefixRKContainStrategyV2Number	21	/* operator &^~> (prefix RK search) */
+#define PGrnMatchInStrategyV2Number		18	/* operator &@> (@ in Groonga) */
+#define PGrnQueryInStrategyV2Number		19	/* operator &?> (query in Groonga) */
+#define PGrnPrefixInStrategyV2Number	20	/* operator &^>  (prefix search) */
+#define PGrnPrefixRKInStrategyV2Number	21	/* operator &^~> (prefix RK search) */
 
-#define PGRN_N_STRATEGIES PGrnPrefixRKContainStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnPrefixRKInStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

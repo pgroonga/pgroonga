@@ -744,7 +744,7 @@ PGrnIsQueryStrategyIndex(Relation index, int nthAttribute)
 }
 
 static bool
-PGrnIsQueryContainStrategyIndex(Relation index, int nthAttribute)
+PGrnIsQueryInStrategyIndex(Relation index, int nthAttribute)
 {
 	Oid strategyOID;
 	Oid leftType;
@@ -768,7 +768,7 @@ PGrnIsQueryContainStrategyIndex(Relation index, int nthAttribute)
 	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
 									  leftType,
 									  rightType,
-									  PGrnQueryContainStrategyV2Number);
+									  PGrnQueryInStrategyV2Number);
 	return OidIsValid(strategyOID);
 }
 
@@ -810,7 +810,7 @@ PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 	if (PGrnIsQueryStrategyIndex(index, nthAttribute))
 		return true;
 
-	if (PGrnIsQueryContainStrategyIndex(index, nthAttribute))
+	if (PGrnIsQueryInStrategyIndex(index, nthAttribute))
 		return true;
 
 	if (PGrnIsScriptStrategyIndex(index, nthAttribute))
@@ -839,7 +839,7 @@ static bool
 PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 {
 	Oid prefixStrategyOID;
-	Oid prefixContainStrategyOID;
+	Oid prefixInStrategyOID;
 	Oid leftType;
 	Oid rightType;
 
@@ -865,12 +865,12 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 	if (OidIsValid(prefixStrategyOID))
 		return true;
 
-	prefixContainStrategyOID =
+	prefixInStrategyOID =
 		get_opfamily_member(index->rd_opfamily[nthAttribute],
 							leftType,
 							rightType,
-							PGrnPrefixContainStrategyV2Number);
-	if (OidIsValid(prefixContainStrategyOID))
+							PGrnPrefixInStrategyV2Number);
+	if (OidIsValid(prefixInStrategyOID))
 		return true;
 
 	return false;
@@ -3057,17 +3057,17 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnPrefixStrategyV2Number:
-	case PGrnPrefixContainStrategyV2Number:
+	case PGrnPrefixInStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
-	case PGrnPrefixRKContainStrategyV2Number:
+	case PGrnPrefixRKInStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
 		operator = GRN_OP_REGEXP;
 		break;
-	case PGrnQueryContainStrategyV2Number:
-	case PGrnMatchContainStrategyV2Number:
+	case PGrnQueryInStrategyV2Number:
+	case PGrnMatchInStrategyV2Number:
 		switch (attribute->atttypid)
 		{
 		case TEXTOID:
@@ -3117,13 +3117,13 @@ PGrnSearchBuildCondition(Relation index,
 									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnPrefixRKStrategyV2Number:
-	case PGrnPrefixRKContainStrategyV2Number:
+	case PGrnPrefixRKInStrategyV2Number:
 		PGrnSearchBuildConditionPrefixRK(data,
 										 targetColumn,
 										 GRN_TEXT_VALUE(&(buffers->general)),
 										 GRN_TEXT_LEN(&(buffers->general)));
 		break;
-	case PGrnQueryContainStrategyV2Number:
+	case PGrnQueryInStrategyV2Number:
 	{
 		grn_obj *queries = &(buffers->general);
 		unsigned int i, n;
@@ -3145,7 +3145,7 @@ PGrnSearchBuildCondition(Relation index,
 		}
 		break;
 	}
-	case PGrnMatchContainStrategyV2Number:
+	case PGrnMatchInStrategyV2Number:
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;

@@ -14,7 +14,7 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
-EXPLAIN
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  WHERE content %% 'Groonga';

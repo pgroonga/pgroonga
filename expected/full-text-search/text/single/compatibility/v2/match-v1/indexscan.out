@@ -10,13 +10,13 @@ CREATE INDEX grnindex ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
-EXPLAIN
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  WHERE content %% 'Groonga';
-                              QUERY PLAN                               
------------------------------------------------------------------------
- Index Scan using grnindex on memos  (cost=0.00..4.01 rows=2 width=36)
+                 QUERY PLAN                 
+--------------------------------------------
+ Index Scan using grnindex on memos
    Index Cond: (content %% 'Groonga'::text)
 (2 rows)
 
