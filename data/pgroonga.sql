@@ -656,60 +656,6 @@ CREATE OPERATOR &~ (
 	RIGHTARG = varchar
 );
 
-
-CREATE FUNCTION pgroonga.insert(internal)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_insert'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.beginscan(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_beginscan'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.gettuple(internal)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_gettuple'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.getbitmap(internal)
-	RETURNS bigint
-	AS 'MODULE_PATHNAME', 'pgroonga_getbitmap'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.rescan(internal)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_rescan'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.endscan(internal)
-	RETURNS void
-	AS 'MODULE_PATHNAME', 'pgroonga_endscan'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.build(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_build'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.buildempty(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_buildempty'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.bulkdelete(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_bulkdelete'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.vacuumcleanup(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_vacuumcleanup'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.canreturn(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_canreturn'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.costestimate(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_costestimate'
-	LANGUAGE C;
-CREATE FUNCTION pgroonga.options(internal)
-	RETURNS internal
-	AS 'MODULE_PATHNAME', 'pgroonga_options'
-	LANGUAGE C;
-
 DO LANGUAGE plpgsql $$
 BEGIN
 	EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
@@ -722,6 +668,59 @@ BEGIN
 		'HANDLER pgroonga.handler';
 EXCEPTION
 	WHEN syntax_error THEN
+		CREATE FUNCTION pgroonga.insert(internal)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_insert'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.beginscan(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_beginscan'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.gettuple(internal)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_gettuple'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.getbitmap(internal)
+			RETURNS bigint
+			AS 'MODULE_PATHNAME', 'pgroonga_getbitmap'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.rescan(internal)
+			RETURNS void
+			AS 'MODULE_PATHNAME', 'pgroonga_rescan'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.endscan(internal)
+			RETURNS void
+			AS 'MODULE_PATHNAME', 'pgroonga_endscan'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.build(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_build'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.buildempty(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_buildempty'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.bulkdelete(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_bulkdelete'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.vacuumcleanup(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_vacuumcleanup'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.canreturn(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_canreturn'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.costestimate(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_costestimate'
+			LANGUAGE C;
+		CREATE FUNCTION pgroonga.options(internal)
+			RETURNS internal
+			AS 'MODULE_PATHNAME', 'pgroonga_options'
+			LANGUAGE C;
+
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
