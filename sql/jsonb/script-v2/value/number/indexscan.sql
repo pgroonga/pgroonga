@@ -14,6 +14,12 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+EXPLAIN (COSTS OFF)
+SELECT id, items
+  FROM fruits
+ WHERE items &` 'type == "number" && number <= 100'
+ ORDER BY id;
+
 SELECT id, items
   FROM fruits
  WHERE items &` 'type == "number" && number <= 100'

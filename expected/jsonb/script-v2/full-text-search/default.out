@@ -10,6 +10,19 @@ CREATE INDEX pgroonga_index ON logs
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id, record
+  FROM logs
+ WHERE record &` 'string @ "world"'
+ ORDER BY id;
+                        QUERY PLAN                        
+----------------------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Index Scan using pgroonga_index on logs
+         Index Cond: (record &` 'string @ "world"'::text)
+(4 rows)
+
 SELECT id, record
   FROM logs
  WHERE record &` 'string @ "world"'

@@ -17,6 +17,12 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+EXPLAIN (COSTS OFF)
+SELECT id, record
+  FROM logs
+ WHERE record @> '{"body": {"values": ["Hello", true, 100]}}'::jsonb
+ ORDER BY id;
+
 SELECT id, record
   FROM logs
  WHERE record @> '{"body": {"values": ["Hello", true, 100]}}'::jsonb

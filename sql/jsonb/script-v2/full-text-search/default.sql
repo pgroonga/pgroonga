@@ -14,6 +14,12 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+EXPLAIN (COSTS OFF)
+SELECT id, record
+  FROM logs
+ WHERE record &` 'string @ "world"'
+ ORDER BY id;
+
 SELECT id, record
   FROM logs
  WHERE record &` 'string @ "world"'

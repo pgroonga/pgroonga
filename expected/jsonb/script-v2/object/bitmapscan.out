@@ -10,6 +10,21 @@ CREATE INDEX pgroonga_index ON logs
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT id, record
+  FROM logs
+ WHERE record &` 'paths @ ".message" && type == "object"'
+ ORDER BY id;
+                                      QUERY PLAN                                      
+--------------------------------------------------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Bitmap Heap Scan on logs
+         Recheck Cond: (record &` 'paths @ ".message" && type == "object"'::text)
+         ->  Bitmap Index Scan on pgroonga_index
+               Index Cond: (record &` 'paths @ ".message" && type == "object"'::text)
+(6 rows)
+
 SELECT id, record
   FROM logs
  WHERE record &` 'paths @ ".message" && type == "object"'
