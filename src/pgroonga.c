@@ -4020,6 +4020,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	bool found = false;
 
 	PGrnEnsureCursorOpened(scan, direction, true);
 
@@ -4031,38 +4032,49 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 		grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
 	}
 
-	if (so->indexCursor)
+	while (!found)
 	{
-		grn_posting *posting;
-		grn_id termID;
-		grn_id id = GRN_ID_NIL;
-		posting = grn_index_cursor_next(ctx, so->indexCursor, &termID);
-		if (posting)
-			id = posting->rid;
-		so->currentID = id;
-	}
-	else
-	{
-		so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
-	}
+		if (so->indexCursor)
+		{
+			grn_posting *posting;
+			grn_id termID;
+			grn_id id = GRN_ID_NIL;
+			posting = grn_index_cursor_next(ctx, so->indexCursor, &termID);
+			if (posting)
+				id = posting->rid;
+			so->currentID = id;
+		}
+		else
+		{
+			so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
+		}
 
-	if (so->currentID == GRN_ID_NIL)
-	{
-		return false;
-	}
-	else
-	{
-		GRN_BULK_REWIND(&(buffers->ctid));
-		grn_obj_get_value(ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
-		scan->xs_ctup.t_self = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+		if (so->currentID == GRN_ID_NIL)
+			break;
+
+		{
+			ItemPointerData ctid;
+			GRN_BULK_REWIND(&(buffers->ctid));
+			grn_obj_get_value(ctx,
+							  so->ctidAccessor,
+							  so->currentID,
+							  &(buffers->ctid));
+			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			if (!ItemPointerIsValid(&ctid))
+				continue;
+
+			scan->xs_ctup.t_self = ctid;
+		}
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 		if (scan->xs_want_itup)
 			PGrnGetTupleFillIndexTuple(so, scan);
 #endif
 
-		return true;
+		found = true;
 	}
+
+	return found;
 }
 
 /**
