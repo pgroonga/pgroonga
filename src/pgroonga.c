@@ -4099,6 +4099,8 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &(buffers->ctid));
 			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			if (!ItemPointerIsValid(&ctid))
+				continue;
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
@@ -4112,6 +4114,8 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
 			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			if (!ItemPointerIsValid(&ctid))
+				continue;
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
 			nRecords++;
 		}
