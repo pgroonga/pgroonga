@@ -365,3 +365,33 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_ops_v2 FOR TYPE varchar[]
 ALTER OPERATOR FAMILY pgroonga.varchar_array_ops USING pgroonga
 	ADD
 		OPERATOR 12 &@ (varchar[], varchar);
+
+-- Add pgroonga.jsonb_ops_v2
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		FROM pg_type
+		WHERE typname = 'jsonb';
+
+	IF FOUND THEN
+		CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
+			LANGUAGE C
+			IMMUTABLE
+			STRICT;
+
+		CREATE OPERATOR &` (
+			PROCEDURE = pgroonga.script_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text
+		);
+		CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
+			FOR TYPE jsonb
+			USING pgroonga AS
+				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
+				OPERATOR 11 @>,
+				OPERATOR 15 &` (jsonb, text);
+	END IF;
+END;
+$$;

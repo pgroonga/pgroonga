@@ -21,6 +21,9 @@
 
 #ifdef PGRN_SUPPORT_JSONB
 PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+
+/* v2 */
+PGRN_FUNCTION_INFO_V1(pgroonga_script_jsonb);
 #endif
 
 #ifdef PGRN_SUPPORT_JSONB
@@ -1037,14 +1040,10 @@ PGrnJSONBDeleteValues(grn_obj *valuesTable, grn_obj *valueIDs)
 	}
 }
 
-/**
- * pgroonga.match_jsonb(jsonb, query) : bool
- */
-Datum
-pgroonga_match_jsonb(PG_FUNCTION_ARGS)
+static bool
+pgroonga_script_jsonb_raw(Jsonb *target,
+						  const char *script, unsigned int scriptSize)
 {
-	Jsonb *jsonb = PG_GETARG_JSONB(0);
-	text *query = PG_GETARG_TEXT_PP(1);
 	grn_obj valueIDs;
 	PGrnJSONBInsertData data;
 	JsonbIterator *iter;
@@ -1059,28 +1058,27 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 	GRN_PTR_INIT(&valueIDs, GRN_OBJ_VECTOR, grn_obj_id(ctx, data.valuesTable));
 	data.valueIDs = &valueIDs;
 	PGrnJSONBInsertDataInit(&data);
-	iter = JsonbIteratorInit(&(jsonb->root));
+	iter = JsonbIteratorInit(&(target->root));
 	PGrnJSONBInsertContainer(&iter, &data);
 	PGrnJSONBInsertDataFin(&data);
 
 	PG_TRY();
 	{
 		GRN_EXPR_CREATE_FOR_QUERY(ctx, tmpValuesTable, filter, dummy_variable);
-		PGrnCheck("match_jsonb: failed to create expression object");
+		PGrnCheck("jsonb_script: failed to create expression object");
 		grn_expr_parse(ctx, filter,
-					   VARDATA_ANY(query),
-					   VARSIZE_ANY_EXHDR(query),
+					   script, scriptSize,
 					   NULL, GRN_OP_MATCH, GRN_OP_AND,
 					   GRN_EXPR_SYNTAX_SCRIPT);
-		PGrnCheck("match_jsonb: failed to parse query: <%.*s>",
-				  (int)VARSIZE_ANY_EXHDR(query),
-				  VARDATA_ANY(query));
+		PGrnCheck("jsonb_script: failed to parse script: <%.*s>",
+				  (int)scriptSize,
+				  script);
 		result = grn_table_create(ctx, NULL, 0, NULL,
 								  GRN_TABLE_HASH_KEY|GRN_OBJ_WITH_SUBREC,
 								  tmpValuesTable, NULL);
-		PGrnCheck("match_jsonb: failed to create result table");
+		PGrnCheck("jsonb_script: failed to create result table");
 		grn_table_select(ctx, tmpValuesTable, filter, result, GRN_OP_OR);
-		PGrnCheck("match_jsonb: failed to select");
+		PGrnCheck("jsonb_script: failed to select");
 	}
 	PG_CATCH();
 	{
@@ -1102,6 +1100,38 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 	PGrnJSONBDeleteValues(tmpValuesTable, &valueIDs);
 	GRN_OBJ_FIN(ctx, &valueIDs);
 
+	return matched;
+}
+
+/**
+ * pgroonga.match_jsonb(jsonb, query) : bool
+ */
+Datum
+pgroonga_match_jsonb(PG_FUNCTION_ARGS)
+{
+	Jsonb *jsonb = PG_GETARG_JSONB(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched = pgroonga_script_jsonb_raw(jsonb,
+										VARDATA_ANY(script),
+										VARSIZE_ANY_EXHDR(script));
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.script_jsonb(target jsonb, script text) : bool
+ */
+Datum
+pgroonga_script_jsonb(PG_FUNCTION_ARGS)
+{
+	Jsonb *jsonb = PG_GETARG_JSONB(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched = pgroonga_script_jsonb_raw(jsonb,
+										VARDATA_ANY(script),
+										VARSIZE_ANY_EXHDR(script));
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1418,7 +1448,8 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 	subFilter = PGrnLookup("sub_filter", ERROR);
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 
-	if (key->sk_strategy == PGrnQueryStrategyNumber)
+	if (key->sk_strategy == PGrnQueryStrategyNumber ||
+		key->sk_strategy == PGrnScriptStrategyV2Number)
 	{
 		unsigned int nthCondition = 0;
 		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->general));
