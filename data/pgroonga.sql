@@ -909,7 +909,8 @@ BEGIN
 		CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
 			USING pgroonga AS
 				OPERATOR 9 @@ (jsonb, text),
-				OPERATOR 11 @>;
+				OPERATOR 11 @>,
+				OPERATOR 15 &` (jsonb, text);
 	END IF;
 END;
 $$;

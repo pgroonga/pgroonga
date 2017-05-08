@@ -395,3 +395,19 @@ BEGIN
 	END IF;
 END;
 $$;
+
+-- Add v2 compatible operators to ops for jsonb
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		FROM pg_type
+		WHERE typname = 'jsonb';
+
+	IF FOUND THEN
+		ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
+			ADD
+				OPERATOR 15 &` (jsonb, text);
+	END IF;
+END;
+$$;
+
