@@ -19,10 +19,14 @@
 
 #include <xxhash.h>
 
+#include <string.h>
+
 #ifdef PGRN_SUPPORT_JSONB
-PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_script_jsonb);
 
 /* v2 */
+PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_jsonb);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_jsonb);
 #endif
 
@@ -1041,16 +1045,26 @@ PGrnJSONBDeleteValues(grn_obj *valuesTable, grn_obj *valueIDs)
 }
 
 static bool
-pgroonga_script_jsonb_raw(Jsonb *target,
-						  const char *script, unsigned int scriptSize)
+PGrnJSONBMatchExpression(Jsonb *target,
+						 const char *term,
+						 unsigned int termSize,
+						 const char *query,
+						 unsigned int querySize,
+						 const char *script,
+						 unsigned int scriptSize,
+						 const char *logTag)
 {
 	grn_obj valueIDs;
 	PGrnJSONBInsertData data;
 	JsonbIterator *iter;
-	grn_obj *filter = NULL;
-	grn_obj *dummy_variable = NULL;
+	grn_obj *matchTarget = NULL;
+	grn_obj *condition = NULL;
+	grn_obj *dummyVariable = NULL;
 	grn_obj *result = NULL;
 	bool matched = false;
+
+	if (termSize == 0 && querySize == 0 && scriptSize == 0)
+		return false;
 
 	data.index = NULL;
 	data.pathsTable  = tmpPathsTable;
@@ -1064,28 +1078,81 @@ pgroonga_script_jsonb_raw(Jsonb *target,
 
 	PG_TRY();
 	{
-		GRN_EXPR_CREATE_FOR_QUERY(ctx, tmpValuesTable, filter, dummy_variable);
-		PGrnCheck("jsonb_script: failed to create expression object");
-		grn_expr_parse(ctx, filter,
-					   script, scriptSize,
-					   NULL, GRN_OP_MATCH, GRN_OP_AND,
-					   GRN_EXPR_SYNTAX_SCRIPT);
-		PGrnCheck("jsonb_script: failed to parse script: <%.*s>",
-				  (int)scriptSize,
-				  script);
+		GRN_EXPR_CREATE_FOR_QUERY(ctx, tmpValuesTable, condition, dummyVariable);
+		PGrnCheck("jsonb: %s: failed to create condition expression object",
+				  logTag);
+		if (termSize > 0)
+		{
+			const char *targetName = "string";
+			grn_obj *column;
+
+			column = grn_obj_column(ctx,
+									tmpValuesTable,
+									targetName,
+									strlen(targetName));
+			grn_expr_append_obj(ctx, condition, column, GRN_OP_GET_VALUE, 1);
+			grn_expr_append_const_str(ctx, condition,
+									  term, termSize,
+									  GRN_OP_PUSH, 1);
+			grn_expr_append_op(ctx, condition, GRN_OP_MATCH, 2);
+		}
+		else if (querySize > 0)
+		{
+			const char *matchColumns = "string";
+
+			GRN_EXPR_CREATE_FOR_QUERY(ctx,
+									  tmpValuesTable,
+									  matchTarget,
+									  dummyVariable);
+			PGrnCheck("jsonb: %s: "
+					  "failed to create match target expression object",
+					  logTag);
+			grn_expr_parse(ctx, matchTarget,
+						   matchColumns,
+						   strlen(matchColumns),
+						   NULL, GRN_OP_MATCH, GRN_OP_AND,
+						   GRN_EXPR_SYNTAX_SCRIPT);
+			PGrnCheck("jsonb: %s: failed to parse match columns: <%.*s>",
+					  logTag,
+					  (int)strlen(matchColumns),
+					  matchColumns);
+			grn_expr_parse(ctx, condition,
+						   query, querySize,
+						   matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+						   GRN_EXPR_SYNTAX_QUERY);
+			PGrnCheck("jsonb: %s: failed to parse query: <%.*s>",
+					  logTag,
+					  (int)querySize,
+					  query);
+		}
+		else if (scriptSize > 0)
+		{
+			grn_expr_parse(ctx, condition,
+						   script, scriptSize,
+						   NULL, GRN_OP_MATCH, GRN_OP_AND,
+						   GRN_EXPR_SYNTAX_SCRIPT);
+			PGrnCheck("jsonb: %s: failed to parse script: <%.*s>",
+					  logTag,
+					  (int)scriptSize,
+					  script);
+		}
 		result = grn_table_create(ctx, NULL, 0, NULL,
 								  GRN_TABLE_HASH_KEY|GRN_OBJ_WITH_SUBREC,
 								  tmpValuesTable, NULL);
-		PGrnCheck("jsonb_script: failed to create result table");
-		grn_table_select(ctx, tmpValuesTable, filter, result, GRN_OP_OR);
-		PGrnCheck("jsonb_script: failed to select");
+		PGrnCheck("jsonb: %s: failed to create result table",
+				  logTag);
+		grn_table_select(ctx, tmpValuesTable, condition, result, GRN_OP_OR);
+		PGrnCheck("jsonb: %s: failed to select",
+				  logTag);
 	}
 	PG_CATCH();
 	{
 		if (result)
 			grn_obj_close(ctx, result);
-		if (filter)
-			grn_obj_close(ctx, filter);
+		if (condition)
+			grn_obj_close(ctx, condition);
+		if (matchTarget)
+			grn_obj_close(ctx, matchTarget);
 		PGrnJSONBDeleteValues(tmpValuesTable, &valueIDs);
 		GRN_OBJ_FIN(ctx, &valueIDs);
 		PG_RE_THROW();
@@ -1094,8 +1161,10 @@ pgroonga_script_jsonb_raw(Jsonb *target,
 
 	matched = grn_table_size(ctx, result) > 0;
 
-	grn_obj_close(ctx, filter);
 	grn_obj_close(ctx, result);
+	grn_obj_close(ctx, condition);
+	if (matchTarget)
+		grn_obj_close(ctx, matchTarget);
 
 	PGrnJSONBDeleteValues(tmpValuesTable, &valueIDs);
 	GRN_OBJ_FIN(ctx, &valueIDs);
@@ -1104,18 +1173,59 @@ pgroonga_script_jsonb_raw(Jsonb *target,
 }
 
 /**
- * pgroonga.match_jsonb(jsonb, query) : bool
+ * pgroonga.match_script_jsonb(jsonb, query) : bool
+ */
+Datum
+pgroonga_match_script_jsonb(PG_FUNCTION_ARGS)
+{
+	Jsonb *target = PG_GETARG_JSONB(0);
+	text *script = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched = PGrnJSONBMatchExpression(target,
+									   NULL, 0,
+									   NULL, 0,
+									   VARDATA_ANY(script),
+									   VARSIZE_ANY_EXHDR(script),
+									   "script");
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.match_jsonb(target jsonb, term text) : bool
  */
 Datum
 pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *jsonb = PG_GETARG_JSONB(0);
-	text *script = PG_GETARG_TEXT_PP(1);
+	Jsonb *target = PG_GETARG_JSONB(0);
+	text *term = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched = pgroonga_script_jsonb_raw(jsonb,
-										VARDATA_ANY(script),
-										VARSIZE_ANY_EXHDR(script));
+	matched = PGrnJSONBMatchExpression(target,
+									   VARDATA_ANY(term),
+									   VARSIZE_ANY_EXHDR(term),
+									   NULL, 0,
+									   NULL, 0,
+									   "match");
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.query_jsonb(target jsonb, query text) : bool
+ */
+Datum
+pgroonga_query_jsonb(PG_FUNCTION_ARGS)
+{
+	Jsonb *target = PG_GETARG_JSONB(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched = PGrnJSONBMatchExpression(target,
+									   NULL, 0,
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query),
+									   NULL, 0,
+									   "query");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1125,13 +1235,16 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 Datum
 pgroonga_script_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *jsonb = PG_GETARG_JSONB(0);
+	Jsonb *target = PG_GETARG_JSONB(0);
 	text *script = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched = pgroonga_script_jsonb_raw(jsonb,
-										VARDATA_ANY(script),
-										VARSIZE_ANY_EXHDR(script));
+	matched = PGrnJSONBMatchExpression(target,
+									   NULL, 0,
+									   NULL, 0,
+									   VARDATA_ANY(script),
+									   VARSIZE_ANY_EXHDR(script),
+									   "script");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1242,11 +1355,11 @@ PGrnJSONBInsert(Relation index,
 
 #ifdef PGRN_SUPPORT_JSONB
 static void
-PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
-								  grn_obj *subFilter,
-								  grn_obj *targetColumn,
-								  grn_obj *filter,
-								  unsigned int *nthCondition)
+PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
+								   grn_obj *subFilter,
+								   grn_obj *targetColumn,
+								   grn_obj *filter,
+								   unsigned int *nthCondition)
 {
 	grn_expr_append_obj(ctx, data->expression,
 						subFilter, GRN_OP_PUSH, 1);
@@ -1260,6 +1373,51 @@ PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
 		grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
 
 	(*nthCondition)++;
+}
+
+static void
+PGrnSearchBuildConditionJSONMatch(PGrnSearchData *data,
+								  grn_obj *subFilter,
+								  grn_obj *targetColumn,
+								  grn_obj *term)
+{
+	unsigned int nthCondition = 0;
+
+	GRN_BULK_REWIND(&(buffers->general));
+
+	GRN_TEXT_PUTS(ctx, &(buffers->general), "string @ ");
+	grn_text_esc(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(term),
+				 GRN_TEXT_LEN(term));
+
+	PGrnSearchBuildConditionJSONScript(data,
+									   subFilter,
+									   targetColumn,
+									   &(buffers->general),
+									   &nthCondition);
+}
+
+static void
+PGrnSearchBuildConditionJSONQuery(PGrnSearchData *data,
+								  grn_obj *subFilter,
+								  grn_obj *targetColumn,
+								  grn_obj *query)
+{
+	unsigned int nthCondition = 0;
+
+	GRN_BULK_REWIND(&(buffers->general));
+
+	GRN_TEXT_PUTS(ctx, &(buffers->general), "query(\"string\", ");
+	grn_text_esc(ctx, &(buffers->general),
+				 GRN_TEXT_VALUE(query),
+				 GRN_TEXT_LEN(query));
+	GRN_TEXT_PUTS(ctx, &(buffers->general), ")");
+
+	PGrnSearchBuildConditionJSONScript(data,
+									   subFilter,
+									   targetColumn,
+									   &(buffers->general),
+									   &nthCondition);
 }
 
 static void
@@ -1282,8 +1440,8 @@ PGrnSearchBuildConditionJSONContainType(PGrnSearchData *data,
 				 GRN_TEXT_VALUE(&(buffers->path)),
 				 GRN_TEXT_LEN(&(buffers->path)));
 
-	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
-									  &(buffers->general), nthCondition);
+	PGrnSearchBuildConditionJSONScript(data, subFilter, targetColumn,
+									   &(buffers->general), nthCondition);
 }
 
 static void
@@ -1342,8 +1500,8 @@ PGrnSearchBuildConditionJSONContainValue(PGrnSearchData *data,
 				 GRN_TEXT_VALUE(&(buffers->path)),
 				 GRN_TEXT_LEN(&(buffers->path)));
 
-	PGrnSearchBuildConditionJSONQuery(data, subFilter, targetColumn,
-									  &(buffers->general), nthCondition);
+	PGrnSearchBuildConditionJSONScript(data, subFilter, targetColumn,
+									   &(buffers->general), nthCondition);
 }
 
 static void
@@ -1448,23 +1606,48 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 	subFilter = PGrnLookup("sub_filter", ERROR);
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 
-	if (key->sk_strategy == PGrnQueryStrategyNumber ||
-		key->sk_strategy == PGrnScriptStrategyV2Number)
+	switch (key->sk_strategy)
+	{
+	case PGrnQueryStrategyNumber: /* For backward compatibility */
+	case PGrnScriptStrategyV2Number:
 	{
 		unsigned int nthCondition = 0;
 		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->general));
+		PGrnSearchBuildConditionJSONScript(data,
+										   subFilter,
+										   targetColumn,
+										   &(buffers->general),
+										   &nthCondition);
+		break;
+	}
+	case PGrnMatchStrategyV2Number:
+		grn_obj_reinit(ctx, &(buffers->keyword), GRN_DB_TEXT, 0);
+		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->keyword));
+		PGrnSearchBuildConditionJSONMatch(data,
+										  subFilter,
+										  targetColumn,
+										  &(buffers->keyword));
+		break;
+	case PGrnQueryStrategyV2Number:
+		grn_obj_reinit(ctx, &(buffers->keyword), GRN_DB_TEXT, 0);
+		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->keyword));
 		PGrnSearchBuildConditionJSONQuery(data,
 										  subFilter,
 										  targetColumn,
-										  &(buffers->general),
-										  &nthCondition);
-	}
-	else
-	{
+										  &(buffers->keyword));
+		break;
+	case PGrnJSONContainStrategyNumber:
 		PGrnSearchBuildConditionJSONContain(data,
 											subFilter,
 											targetColumn,
 											DatumGetJsonb(key->sk_argument));
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: jsonb: unsupported strategy number: %d",
+						key->sk_strategy)));
+		break;
 	}
 	return true;
 #else

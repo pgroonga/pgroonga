@@ -331,6 +331,29 @@ CREATE OPERATOR &@ (
 	RIGHTARG = varchar
 );
 
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		FROM pg_type
+		WHERE typname = 'jsonb';
+
+	IF FOUND THEN
+		CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
+			LANGUAGE C
+			IMMUTABLE
+			STRICT;
+
+		CREATE OPERATOR &@ (
+			PROCEDURE = pgroonga.match_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
+
 CREATE FUNCTION pgroonga.query_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_query_text'
@@ -369,6 +392,29 @@ CREATE OPERATOR &? (
 	LEFTARG = varchar,
 	RIGHTARG = varchar
 );
+
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		FROM pg_type
+		WHERE typname = 'jsonb';
+
+	IF FOUND THEN
+		CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
+			RETURNS bool
+			AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
+			LANGUAGE C
+			IMMUTABLE
+			STRICT;
+
+		CREATE OPERATOR &? (
+			PROCEDURE = pgroonga.query_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.similar_text(text, text)
 	RETURNS bool
@@ -893,15 +939,15 @@ BEGIN
 		WHERE typname = 'jsonb';
 
 	IF FOUND THEN
-		CREATE FUNCTION pgroonga.match_query(jsonb, text)
+		CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
 			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
+			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
 			LANGUAGE C
 			IMMUTABLE
 			STRICT;
 
 		CREATE OPERATOR @@ (
-			PROCEDURE = pgroonga.match_query,
+			PROCEDURE = pgroonga.match_script_jsonb,
 			LEFTARG = jsonb,
 			RIGHTARG = text
 		);
@@ -1007,6 +1053,8 @@ BEGIN
 			USING pgroonga AS
 				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
 				OPERATOR 11 @>,
+				OPERATOR 12 &@ (jsonb, text),
+				OPERATOR 13 &? (jsonb, text),
 				OPERATOR 15 &` (jsonb, text);
 	END IF;
 END;
