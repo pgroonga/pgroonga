@@ -1,0 +1,9 @@
+/var/lib/postgresql/*/main/pgroonga.log {
+    weekly
+    missingok
+    rotate 10
+    compress
+    delaycompress
+    notifempty
+    create 600 postgres postgres
+}

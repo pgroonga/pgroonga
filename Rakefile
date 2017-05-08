@@ -230,7 +230,7 @@ postgresql#{postgresql_package_version}-devel
           spec = "#{tmp_distribution_dir}/#{rpm_package}.spec"
           spec_in = "#{yum_dir}/postgresql-pgroonga.spec.in"
           spec_in_data = File.read(spec_in)
-          spec_data = spec_in_data.gsub(/@(.+)@/) do |matched|
+          spec_data = spec_in_data.gsub(/@(.+?)@/) do |matched|
             case $1
             when "PG_VERSION"
               postgresql_version
