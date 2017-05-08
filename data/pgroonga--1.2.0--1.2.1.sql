@@ -467,6 +467,8 @@ BEGIN
 	IF FOUND THEN
 		ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
 			ADD
+				OPERATOR 12 &@ (jsonb, text),
+				OPERATOR 13 &? (jsonb, text),
 				OPERATOR 15 &` (jsonb, text);
 	END IF;
 END;

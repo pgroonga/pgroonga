@@ -956,6 +956,8 @@ BEGIN
 			USING pgroonga AS
 				OPERATOR 9 @@ (jsonb, text),
 				OPERATOR 11 @>,
+				OPERATOR 12 &@ (jsonb, text),
+				OPERATOR 13 &? (jsonb, text),
 				OPERATOR 15 &` (jsonb, text);
 	END IF;
 END;
