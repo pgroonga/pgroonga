@@ -473,3 +473,11 @@ BEGIN
 	END IF;
 END;
 $$;
+
+-- Add v2 compatible operators to regexp ops for text and varchar
+ALTER OPERATOR FAMILY pgroonga.text_regexp_ops USING pgroonga
+	ADD
+		OPERATOR 22 &~ (text, text);
+ALTER OPERATOR FAMILY pgroonga.varchar_regexp_ops USING pgroonga
+	ADD
+		OPERATOR 22 &~ (varchar, varchar);
