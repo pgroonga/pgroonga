@@ -1,0 +1,27 @@
+-- To load PGroonga
+SELECT pgroonga.command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SHOW pgroonga.match_escalation_threshold;
+ pgroonga.match_escalation_threshold 
+-------------------------------------
+ 0
+(1 row)
+
+SET pgroonga.match_escalation_threshold = -1;
+SHOW pgroonga.match_escalation_threshold;
+ pgroonga.match_escalation_threshold 
+-------------------------------------
+ -1
+(1 row)
+
+SET pgroonga.match_escalation_threshold = default;
+SHOW pgroonga.match_escalation_threshold;
+ pgroonga.match_escalation_threshold 
+-------------------------------------
+ 0
+(1 row)
+

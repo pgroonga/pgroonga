@@ -167,7 +167,8 @@ PGrnQueryLogPathAssignRaw(const char *new_value)
 		grn_default_query_logger_set_path(new_value);
 	}
 
-	if (PGrnGroongaInitialized) {
+	if (PGrnGroongaInitialized)
+	{
 		grn_ctx *ctx = &PGrnContext;
 		grn_query_logger_reopen(ctx);
 	}
@@ -221,6 +222,31 @@ PGrnEnableWALAssign(bool new_value, void *extra)
 		PGrnWALDisable();
 	}
 }
+
+static void
+PGrnMatchEscalationThresholdAssignRaw(int new_value)
+{
+	if (!PGrnGroongaInitialized)
+		return;
+
+	grn_set_default_match_escalation_threshold(new_value);
+	grn_ctx_set_match_escalation_threshold(&PGrnContext, new_value);
+}
+
+#ifdef PGRN_IS_GREENPLUM
+static bool
+PGrnMatchEscalationThresholdAssign(int new_value, bool doit, GucSource source)
+{
+	PGrnMatchEscalationThresholdAssignRaw(new_value);
+	return true;
+}
+#else
+static void
+PGrnMatchEscalationThresholdAssign(int new_value, void *extra)
+{
+	PGrnMatchEscalationThresholdAssignRaw(new_value);
+}
+#endif
 
 void
 PGrnInitializeVariables(void)
@@ -327,6 +353,25 @@ PGrnInitializeVariables(void)
 								0,
 								NULL,
 								NULL,
+								NULL);
+
+	PGrnDefineCustomIntVariable("pgroonga.match_escalation_threshold",
+								"The threshold number of matched records "
+								"for determining whether "
+								"loose search is used automatically. "
+								"-1 disables the auto loose search.",
+								"The default is 0. "
+								"It means that the number of matched records "
+								"is equal or less than 0, loose search is "
+								"used automtaically.",
+								&PGrnMatchEscalationThreshold,
+								grn_get_default_match_escalation_threshold(),
+								-1,
+								INT_MAX,
+								PGC_USERSET,
+								0,
+								NULL,
+								PGrnMatchEscalationThresholdAssign,
 								NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");

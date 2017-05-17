@@ -461,6 +461,8 @@ _PG_init(void)
 
 	on_proc_exit(PGrnOnProcExit, 0);
 
+	grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
+
 	if (grn_ctx_init(&PGrnContext, 0))
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
