@@ -342,7 +342,7 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
 		OPERATOR 10 @~,
 		OPERATOR 22 &~;
 
--- Add pgroonga.varchar_array_ops_v2.
+-- Add pgroonga.varchar_array_term_search_ops_v2.
 CREATE FUNCTION pgroonga.match_varchar_array(varchar[], varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_array'
@@ -356,7 +356,8 @@ CREATE OPERATOR &@ (
 	RIGHTARG = varchar
 );
 
-CREATE OPERATOR CLASS pgroonga.varchar_array_ops_v2 FOR TYPE varchar[]
+CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
+	FOR TYPE varchar[]
 	USING pgroonga AS
 		OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
 		OPERATOR 12 &@ (varchar[], varchar);
