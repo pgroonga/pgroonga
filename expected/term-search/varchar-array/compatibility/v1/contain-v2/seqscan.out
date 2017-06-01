@@ -12,7 +12,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT title, tags
   FROM memos
- WHERE tags &@ 'Groonga';
+ WHERE tags &> 'Groonga';
   title   |         tags         
 ----------+----------------------
  Groonga  | {Groonga}

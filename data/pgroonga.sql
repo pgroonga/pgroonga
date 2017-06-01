@@ -318,15 +318,15 @@ CREATE OPERATOR &@ (
 	RIGHTARG = varchar
 );
 
-CREATE FUNCTION pgroonga.match_varchar_array(varchar[], varchar)
+CREATE FUNCTION pgroonga.contain_varchar_array(varchar[], varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &@ (
-	PROCEDURE = pgroonga.match_varchar_array,
+CREATE OPERATOR &> (
+	PROCEDURE = pgroonga.contain_varchar_array,
 	LEFTARG = varchar[],
 	RIGHTARG = varchar
 );
@@ -793,7 +793,7 @@ EXCEPTION
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
-			22,		-- amstrategies
+			23,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
@@ -866,7 +866,7 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 	FOR TYPE varchar[]
 	USING pgroonga AS
 		OPERATOR 8 %% (varchar[], varchar),
-		OPERATOR 12 &@ (varchar[], varchar);
+		OPERATOR 23 &> (varchar[], varchar);
 
 CREATE OPERATOR CLASS pgroonga.bool_ops DEFAULT FOR TYPE bool
 	USING pgroonga AS
@@ -1038,7 +1038,7 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
 	FOR TYPE varchar[]
 	USING pgroonga AS
 		OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
-		OPERATOR 12 &@ (varchar[], varchar);
+		OPERATOR 23 &> (varchar[], varchar);
 
 CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
 	USING pgroonga AS

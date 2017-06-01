@@ -188,7 +188,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar);
-PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
@@ -1595,6 +1595,28 @@ pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+static bool
+pgroonga_equal_raw(const char *text1, unsigned int text1Size,
+				   const char *text2, unsigned int text2Size)
+{
+	grn_bool matched;
+	grn_obj text1Buffer;
+	grn_obj text2Buffer;
+
+	GRN_TEXT_INIT(&text1Buffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &text1Buffer, text1, text1Size);
+
+	GRN_TEXT_INIT(&text2Buffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_SET(ctx, &text2Buffer, text2, text2Size);
+
+	matched = grn_operator_exec_match(ctx, &text1Buffer, &text2Buffer);
+
+	GRN_OBJ_FIN(ctx, &text1Buffer);
+	GRN_OBJ_FIN(ctx, &text2Buffer);
+
+	return matched;
+}
+
 /**
  * pgroonga.match_term(target varchar, term varchar) : bool
  */
@@ -1606,8 +1628,8 @@ pgroonga_match_term_varchar(PG_FUNCTION_ARGS)
 	grn_bool matched;
 
 	matched =
-		pgroonga_match_term_raw(VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target),
-								VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
+		pgroonga_equal_raw(VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target),
+						   VARDATA_ANY(term), VARSIZE_ANY_EXHDR(term));
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1625,7 +1647,7 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 		pgroonga_execute_binary_operator_string_array(targets,
 													  VARDATA_ANY(term),
 													  VARSIZE_ANY_EXHDR(term),
-													  pgroonga_match_term_raw);
+													  pgroonga_equal_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1853,10 +1875,10 @@ pgroonga_match_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_varchar_array(target varchar[], term varchar) : bool
+ * pgroonga.contain_varchar_array(target varchar[], term varchar) : bool
  */
 Datum
-pgroonga_match_varchar_array(PG_FUNCTION_ARGS)
+pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
@@ -1866,7 +1888,7 @@ pgroonga_match_varchar_array(PG_FUNCTION_ARGS)
 		pgroonga_execute_binary_operator_string_array(targets,
 													  VARDATA_ANY(term),
 													  VARSIZE_ANY_EXHDR(term),
-													  pgroonga_match_term_raw);
+													  pgroonga_equal_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3364,6 +3386,9 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnQueryInStrategyV2Number:
 		break;
 	case PGrnMatchInStrategyV2Number:
+		operator = GRN_OP_MATCH;
+		break;
+	case PGrnContainStrategyV2Number:
 		operator = GRN_OP_MATCH;
 		break;
 	default:

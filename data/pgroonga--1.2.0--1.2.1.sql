@@ -299,7 +299,7 @@ BEGIN
 	SELECT amstrategies FROM pg_am LIMIT 0;
 EXCEPTION
 	WHEN syntax_error THEN
-		UPDATE pg_am SET amstrategies = 22
+		UPDATE pg_am SET amstrategies = 23
 		 WHERE amname = 'pgroonga';
 END;
 $$;
@@ -343,15 +343,15 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
 		OPERATOR 22 &~;
 
 -- Add pgroonga.varchar_array_term_search_ops_v2.
-CREATE FUNCTION pgroonga.match_varchar_array(varchar[], varchar)
+CREATE FUNCTION pgroonga.contain_varchar_array(varchar[], varchar)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_array'
+	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &@ (
-	PROCEDURE = pgroonga.match_varchar_array,
+CREATE OPERATOR &> (
+	PROCEDURE = pgroonga.contain_varchar_array,
 	LEFTARG = varchar[],
 	RIGHTARG = varchar
 );
@@ -360,12 +360,12 @@ CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
 	FOR TYPE varchar[]
 	USING pgroonga AS
 		OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
-		OPERATOR 12 &@ (varchar[], varchar);
+		OPERATOR 23 &> (varchar[], varchar);
 
 -- Add v2 compatible operators to full text search ops for varchar
 ALTER OPERATOR FAMILY pgroonga.varchar_array_ops USING pgroonga
 	ADD
-		OPERATOR 12 &@ (varchar[], varchar);
+		OPERATOR 23 &> (varchar[], varchar);
 
 -- Rename "pgroonga_match_jsonb" to "pgroonga_match_script_jsonb"
 DO LANGUAGE plpgsql $$

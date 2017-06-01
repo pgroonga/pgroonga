@@ -13,16 +13,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT title, tags
   FROM memos
- WHERE tags &@ 'Groonga';
+ WHERE tags &> 'Groonga';
                       QUERY PLAN                      
 ------------------------------------------------------
  Index Scan using pgroonga_memos_index on memos
-   Index Cond: (tags &@ 'Groonga'::character varying)
+   Index Cond: (tags &> 'Groonga'::character varying)
 (2 rows)
 
 SELECT title, tags
   FROM memos
- WHERE tags &@ 'Groonga';
+ WHERE tags &> 'Groonga';
   title   |         tags         
 ----------+----------------------
  Groonga  | {Groonga}

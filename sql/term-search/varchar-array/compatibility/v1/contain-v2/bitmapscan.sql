@@ -2,33 +2,25 @@ CREATE TABLE memos (
   title text,
   tags varchar(1023)[]
 );
+
 INSERT INTO memos VALUES ('PostgreSQL', ARRAY['PostgreSQL']);
 INSERT INTO memos VALUES ('Groonga', ARRAY['Groonga']);
 INSERT INTO memos VALUES ('PGroonga', ARRAY['PostgreSQL', 'Groonga']);
+
 CREATE INDEX pgroonga_memos_index ON memos
   USING pgroonga (tags pgroonga.varchar_array_ops);
+
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+
 EXPLAIN (COSTS OFF)
 SELECT title, tags
   FROM memos
- WHERE tags &@ 'Groonga';
-                         QUERY PLAN                         
-------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (tags &@ 'Groonga'::character varying)
-   ->  Bitmap Index Scan on pgroonga_memos_index
-         Index Cond: (tags &@ 'Groonga'::character varying)
-(4 rows)
+ WHERE tags &> 'Groonga';
 
 SELECT title, tags
   FROM memos
- WHERE tags &@ 'Groonga';
-  title   |         tags         
-----------+----------------------
- Groonga  | {Groonga}
- PGroonga | {PostgreSQL,Groonga}
-(2 rows)
+ WHERE tags &> 'Groonga';
 
 DROP TABLE memos;
