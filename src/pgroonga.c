@@ -187,10 +187,12 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 /* v2 */
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text_array);
@@ -1875,6 +1877,17 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.match_contain_text(targets text[], term text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
+ */
+Datum
+pgroonga_match_containt_text(PG_FUNCTION_ARGS)
+{
+	return pgroonga_match_text_array(fcinfo);
+}
+
+/**
  * pgroonga.match_varchar(target varchar, term varchar) : bool
  */
 Datum
@@ -1943,6 +1956,17 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
 													  VARSIZE_ANY_EXHDR(query),
 													  pgroonga_match_query_raw);
 	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.query_contain_array(targets text[], query text) : bool
+ *
+ * It's deprecated since 1.2.1. Just for backward compatibility.
+ */
+Datum
+pgroonga_query_containt_text(PG_FUNCTION_ARGS)
+{
+	return pgroonga_query_text_array(fcinfo);
 }
 
 /**
