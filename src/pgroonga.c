@@ -1882,7 +1882,7 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
 Datum
-pgroonga_match_containt_text(PG_FUNCTION_ARGS)
+pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 {
 	return pgroonga_match_text_array(fcinfo);
 }
@@ -1964,7 +1964,7 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
 Datum
-pgroonga_query_containt_text(PG_FUNCTION_ARGS)
+pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 {
 	return pgroonga_query_text_array(fcinfo);
 }
