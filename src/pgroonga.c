@@ -784,7 +784,17 @@ PGrnIsQueryInStrategyIndex(Relation index, int nthAttribute)
 									  leftType,
 									  rightType,
 									  PGrnQueryInStrategyV2Number);
-	return OidIsValid(strategyOID);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryInStrategyV2DeprecatedNumber);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	return false;
 }
 
 static bool
@@ -877,6 +887,13 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 											leftType,
 											rightType,
 											PGrnPrefixStrategyV2Number);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnPrefixStrategyV2DeprecatedNumber);
 	if (OidIsValid(prefixStrategyOID))
 		return true;
 
@@ -3314,7 +3331,9 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixInStrategyV2Number:
 	case PGrnPrefixRKInStrategyV2Number:
 	case PGrnQueryInStrategyV2Number:
+	case PGrnQueryInStrategyV2DeprecatedNumber:
 	case PGrnMatchInStrategyV2Number:
+	case PGrnMatchInStrategyV2DeprecatedNumber:
 		switch (valueTypeID)
 		{
 		case VARCHAROID:
@@ -3373,10 +3392,12 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnScriptStrategyV2Number:
 		break;
 	case PGrnPrefixStrategyV2Number:
+	case PGrnPrefixStrategyV2DeprecatedNumber:
 	case PGrnPrefixInStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
+	case PGrnPrefixRKStrategyV2DeprecatedNumber:
 	case PGrnPrefixRKInStrategyV2Number:
 		break;
 	case PGrnRegexpStrategyNumber:
@@ -3384,8 +3405,10 @@ PGrnSearchBuildCondition(Relation index,
 		operator = GRN_OP_REGEXP;
 		break;
 	case PGrnQueryInStrategyV2Number:
+	case PGrnQueryInStrategyV2DeprecatedNumber:
 		break;
 	case PGrnMatchInStrategyV2Number:
+	case PGrnMatchInStrategyV2DeprecatedNumber:
 		operator = GRN_OP_MATCH;
 		break;
 	case PGrnContainStrategyV2Number:
@@ -3432,6 +3455,7 @@ PGrnSearchBuildCondition(Relation index,
 									   GRN_TEXT_LEN(&(buffers->general)));
 		break;
 	case PGrnPrefixRKStrategyV2Number:
+	case PGrnPrefixRKStrategyV2DeprecatedNumber:
 		PGrnSearchBuildConditionPrefixRK(data,
 										 targetColumn,
 										 GRN_TEXT_VALUE(&(buffers->general)),
@@ -3460,6 +3484,7 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	}
 	case PGrnQueryInStrategyV2Number:
+	case PGrnQueryInStrategyV2DeprecatedNumber:
 	{
 		grn_obj *queries = &(buffers->general);
 		unsigned int i, n;
@@ -3483,6 +3508,7 @@ PGrnSearchBuildCondition(Relation index,
 	}
 	case PGrnPrefixInStrategyV2Number:
 	case PGrnMatchInStrategyV2Number:
+	case PGrnMatchInStrategyV2DeprecatedNumber:
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;

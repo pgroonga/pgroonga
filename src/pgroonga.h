@@ -30,14 +30,22 @@
 #define PGrnScriptStrategyV2Number		15	/* operator &`  (script in Groonga) */
 #define PGrnPrefixStrategyV2Number		16	/* operator &^  (prefix search) */
 #define PGrnPrefixRKStrategyV2Number	17	/* operator &^~ (prefix RK search) */
-#define PGrnMatchInStrategyV2Number		18	/* operator &@> (@ in Groonga) */
-#define PGrnQueryInStrategyV2Number		19	/* operator &?> (query in Groonga) */
-#define PGrnPrefixInStrategyV2Number	20	/* operator &^>  (prefix search) */
-#define PGrnPrefixRKInStrategyV2Number	21	/* operator &^~> (prefix RK search) */
+#define PGrnMatchInStrategyV2Number		18	/* operator &@| (multiple conditions of @ in Groonga) */
+#define PGrnQueryInStrategyV2Number		19	/* operator &?| (multiple conditions of query in Groonga) */
+#define PGrnPrefixInStrategyV2Number	20	/* operator &^| (multiple conditions of prefix search) */
+#define PGrnPrefixRKInStrategyV2Number	21	/* operator &^~| (multiple conditions of prefix RK search) */
 #define PGrnRegexpStrategyV2Number		22	/* operator &~ (@~ in Groonga) */
 #define PGrnContainStrategyV2Number		23	/* operator &> (@ for vector in Groonga) */
+/* operator &^> (prefix search against text[]). Deprecated since 1.2.1. */
+#define PGrnPrefixStrategyV2DeprecatedNumber	24
+/* operator &^~> (prefix RK search against text[]). Deprecated since 1.2.1. */
+#define PGrnPrefixRKStrategyV2DeprecatedNumber	25
+/* operator &@> (multiple conditions of @ in Groonga). Deprecated since 1.2.1. */
+#define PGrnMatchInStrategyV2DeprecatedNumber	26
+/* operator &?> (multiple conditions of query in Groonga). Deprecated since 1.2.1. */
+#define PGrnQueryInStrategyV2DeprecatedNumber	27
 
-#define PGRN_N_STRATEGIES PGrnContainStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnQueryInStrategyV2DeprecatedNumber
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

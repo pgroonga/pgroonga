@@ -16,10 +16,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &^> ARRAY['gro', 'pos'];
+ WHERE names &^| ARRAY['gro', 'pos'];
 
 SELECT names
   FROM tags
- WHERE names &^> ARRAY['gro', 'pos'];
+ WHERE names &^| ARRAY['gro', 'pos'];
 
 DROP TABLE tags;

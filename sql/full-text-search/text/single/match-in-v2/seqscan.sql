@@ -13,6 +13,6 @@ SET enable_bitmapscan = off;
 
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine'];
+ WHERE content &@| Array['rdbms', 'engine'];
 
 DROP TABLE memos;

@@ -13,16 +13,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine']::varchar[];
+ WHERE content &@| Array['rdbms', 'engine']::varchar[];
                             QUERY PLAN                             
 -------------------------------------------------------------------
  Index Scan using pgrn_index on memos
-   Index Cond: (content &@> '{rdbms,engine}'::character varying[])
+   Index Cond: (content &@| '{rdbms,engine}'::character varying[])
 (2 rows)
 
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine']::varchar[];
+ WHERE content &@| Array['rdbms', 'engine']::varchar[];
  id |                 content                  
 ----+------------------------------------------
   1 | PostgreSQL is a RDBMS.

@@ -17,10 +17,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine']::varchar[];
+ WHERE content &@| Array['rdbms', 'engine']::varchar[];
 
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine']::varchar[];
+ WHERE content &@| Array['rdbms', 'engine']::varchar[];
 
 DROP TABLE memos;

@@ -12,18 +12,18 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~> ARRAY['po', 'gu'];
+ WHERE katakanas &^~| ARRAY['po', 'gu'];
                        QUERY PLAN                       
 --------------------------------------------------------
  Bitmap Heap Scan on readings
-   Recheck Cond: (katakanas &^~> '{po,gu}'::text[])
+   Recheck Cond: (katakanas &^~| '{po,gu}'::text[])
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (katakanas &^~> '{po,gu}'::text[])
+         Index Cond: (katakanas &^~| '{po,gu}'::text[])
 (4 rows)
 
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~> ARRAY['po', 'gu'];
+ WHERE katakanas &^~| ARRAY['po', 'gu'];
              katakanas             
 -----------------------------------
  {ポストグレスキューエル,ポスグレ}

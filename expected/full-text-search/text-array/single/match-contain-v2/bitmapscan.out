@@ -21,18 +21,18 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &@> Array['rdbms', 'engine'];
+ WHERE contents &@| Array['rdbms', 'engine'];
                          QUERY PLAN                          
 -------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (contents &@> '{rdbms,engine}'::text[])
+   Recheck Cond: (contents &@| '{rdbms,engine}'::text[])
    ->  Bitmap Index Scan on pgroonga_memos_index
-         Index Cond: (contents &@> '{rdbms,engine}'::text[])
+         Index Cond: (contents &@| '{rdbms,engine}'::text[])
 (4 rows)
 
 SELECT title, contents
   FROM memos
- WHERE contents &@> Array['rdbms', 'engine'];
+ WHERE contents &@| Array['rdbms', 'engine'];
    title    |                                         contents                                          
 ------------+-------------------------------------------------------------------------------------------
  PostgreSQL | {"PostgreSQL is an OSS RDBMS","PostgreSQL has partial full-text search support"}

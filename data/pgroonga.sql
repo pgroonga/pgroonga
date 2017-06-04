@@ -481,6 +481,13 @@ CREATE OPERATOR &^ (
 	RIGHTARG = text
 );
 
+/* Deprecated since 1.2.1. */
+CREATE OPERATOR &^> (
+	PROCEDURE = pgroonga.prefix_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
 CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text'
@@ -502,6 +509,13 @@ CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
 	STRICT;
 
 CREATE OPERATOR &^~ (
+	PROCEDURE = pgroonga.prefix_rk_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+/* Deprecated since 1.2.1. */
+CREATE OPERATOR &^~> (
 	PROCEDURE = pgroonga.prefix_rk_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text
@@ -576,7 +590,14 @@ CREATE FUNCTION pgroonga.match_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
+/* Deprecated since 1.2.1. */
 CREATE OPERATOR &@> (
+	PROCEDURE = pgroonga.match_in_text,
+	LEFTARG = text,
+	RIGHTARG = text[]
+);
+
+CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga.match_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
@@ -589,7 +610,7 @@ CREATE FUNCTION pgroonga.match_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &@> (
+CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga.match_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
@@ -602,7 +623,7 @@ CREATE FUNCTION pgroonga.match_in_varchar(varchar, varchar[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &@> (
+CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga.match_in_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar[]
@@ -615,7 +636,14 @@ CREATE FUNCTION pgroonga.query_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
+/* Deprecated since 1.2.1. */
 CREATE OPERATOR &?> (
+	PROCEDURE = pgroonga.query_in_text,
+	LEFTARG = text,
+	RIGHTARG = text[]
+);
+
+CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga.query_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
@@ -628,7 +656,7 @@ CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &?> (
+CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga.query_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
@@ -641,7 +669,7 @@ CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &?> (
+CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga.query_in_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar[]
@@ -654,7 +682,7 @@ CREATE FUNCTION pgroonga.prefix_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &^> (
+CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga.prefix_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
@@ -667,7 +695,7 @@ CREATE FUNCTION pgroonga.prefix_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &^> (
+CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga.prefix_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
@@ -680,7 +708,7 @@ CREATE FUNCTION pgroonga.prefix_rk_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &^~> (
+CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga.prefix_rk_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
@@ -693,7 +721,7 @@ CREATE FUNCTION pgroonga.prefix_rk_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR &^~> (
+CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga.prefix_rk_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
@@ -793,7 +821,7 @@ EXCEPTION
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
-			23,		-- amstrategies
+			25,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
@@ -986,8 +1014,10 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 		OPERATOR 13 &?,
 		OPERATOR 14 &~?,
 		OPERATOR 15 &`,
-		OPERATOR 18 &@> (text, text[]),
-		OPERATOR 19 &?> (text, text[]);
+		OPERATOR 18 &@| (text, text[]),
+		OPERATOR 19 &?| (text, text[]),
+		OPERATOR 26 &@> (text, text[]), -- For backward compatibility
+		OPERATOR 27 &?> (text, text[]); -- For backward compatibility
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
 	FOR TYPE text[]
@@ -998,22 +1028,24 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
 		OPERATOR 13 &? (text[], text),
 		OPERATOR 14 &~? (text[], text),
 		OPERATOR 15 &` (text[], text),
-		OPERATOR 18 &@> (text[], text[]),
-		OPERATOR 19 &?> (text[], text[]);
+		OPERATOR 18 &@| (text[], text[]),
+		OPERATOR 19 &?| (text[], text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 16 &^,
 		OPERATOR 17 &^~,
-		OPERATOR 20 &^> (text, text[]),
-		OPERATOR 21 &^~> (text, text[]);
+		OPERATOR 20 &^| (text, text[]),
+		OPERATOR 21 &^~| (text, text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
 		OPERATOR 16 &^ (text[], text),
 		OPERATOR 17 &^~ (text[], text),
-		OPERATOR 20 &^> (text[], text[]),
-		OPERATOR 21 &^~> (text[], text[]);
+		OPERATOR 20 &^| (text[], text[]),
+		OPERATOR 21 &^~| (text[], text[]),
+		OPERATOR 24 &^> (text[], text), -- For backward compatibility
+		OPERATOR 25 &^~> (text[], text); -- For backward compatibility
 
 CREATE OPERATOR CLASS pgroonga.text_regexp_ops_v2 FOR TYPE text
 	USING pgroonga AS
@@ -1031,8 +1063,8 @@ CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2
 		OPERATOR 13 &?,
 		OPERATOR 14 &~?,
 		OPERATOR 15 &`,
-		OPERATOR 18 &@> (varchar, varchar[]),
-		OPERATOR 19 &?> (varchar, varchar[]);
+		OPERATOR 18 &@| (varchar, varchar[]),
+		OPERATOR 19 &?| (varchar, varchar[]);
 
 CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
 	FOR TYPE varchar[]

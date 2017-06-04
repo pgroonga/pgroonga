@@ -13,16 +13,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT katakana
   FROM readings
- WHERE katakana &^~> ARRAY['po', 'gu'];
+ WHERE katakana &^~| ARRAY['po', 'gu'];
                    QUERY PLAN                    
 -------------------------------------------------
  Index Scan using pgrn_index on readings
-   Index Cond: (katakana &^~> '{po,gu}'::text[])
+   Index Cond: (katakana &^~| '{po,gu}'::text[])
 (2 rows)
 
 SELECT katakana
   FROM readings
- WHERE katakana &^~> ARRAY['po', 'gu'];
+ WHERE katakana &^~| ARRAY['po', 'gu'];
         katakana        
 ------------------------
  ポストグレスキューエル

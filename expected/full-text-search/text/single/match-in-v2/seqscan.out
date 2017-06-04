@@ -10,7 +10,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT id, content
   FROM memos
- WHERE content &@> Array['rdbms', 'engine'];
+ WHERE content &@| Array['rdbms', 'engine'];
  id |                 content                  
 ----+------------------------------------------
   1 | PostgreSQL is a RDBMS.

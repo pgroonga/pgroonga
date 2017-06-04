@@ -16,10 +16,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~> ARRAY['po', 'gu'];
+ WHERE katakanas &^~| ARRAY['po', 'gu'];
 
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~> ARRAY['po', 'gu'];
+ WHERE katakanas &^~| ARRAY['po', 'gu'];
 
 DROP TABLE readings;

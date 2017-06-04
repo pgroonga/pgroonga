@@ -13,6 +13,6 @@ SET enable_bitmapscan = off;
 
 SELECT name
   FROM tags
- WHERE name &^> ARRAY['gro', 'pos'];
+ WHERE name &^| ARRAY['gro', 'pos'];
 
 DROP TABLE tags;

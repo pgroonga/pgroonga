@@ -9,7 +9,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT katakanas
   FROM readings
- WHERE katakanas &^~> ARRAY['po', 'gu'];
+ WHERE katakanas &^~| ARRAY['po', 'gu'];
              katakanas             
 -----------------------------------
  {ポストグレスキューエル,ポスグレ}

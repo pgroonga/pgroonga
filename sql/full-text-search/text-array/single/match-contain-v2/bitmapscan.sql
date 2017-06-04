@@ -25,10 +25,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &@> Array['rdbms', 'engine'];
+ WHERE contents &@| Array['rdbms', 'engine'];
 
 SELECT title, contents
   FROM memos
- WHERE contents &@> Array['rdbms', 'engine'];
+ WHERE contents &@| Array['rdbms', 'engine'];
 
 DROP TABLE memos;

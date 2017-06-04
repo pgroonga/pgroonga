@@ -9,7 +9,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT names
   FROM tags
- WHERE names &^> ARRAY['gro', 'pos'];
+ WHERE names &^| ARRAY['gro', 'pos'];
       names      
 -----------------
  {PostgreSQL,PG}

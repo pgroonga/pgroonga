@@ -13,16 +13,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &^> ARRAY['gro', 'pos'];
+ WHERE name &^| ARRAY['gro', 'pos'];
                   QUERY PLAN                  
 ----------------------------------------------
  Index Scan using pgrn_index on tags
-   Index Cond: (name &^> '{gro,pos}'::text[])
+   Index Cond: (name &^| '{gro,pos}'::text[])
 (2 rows)
 
 SELECT name
   FROM tags
- WHERE name &^> ARRAY['gro', 'pos'];
+ WHERE name &^| ARRAY['gro', 'pos'];
     name    
 ------------
  Groonga
