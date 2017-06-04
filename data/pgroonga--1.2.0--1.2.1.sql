@@ -2,8 +2,8 @@
 DROP OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 USING pgroonga;
 DROP OPERATOR &@> (text, text[]);
 DROP OPERATOR &?> (text, text[]);
-DROP FUNCTION pgroonga.match_contain_text(text[], text);
-DROP FUNCTION pgroonga.query_contain_text(text[], text);
+DROP FUNCTION pgroonga.match_contain_text(text, text[]);
+DROP FUNCTION pgroonga.query_contain_text(text, text[]);
 
 CREATE FUNCTION pgroonga.match_in_text(text, text[])
 	RETURNS bool
