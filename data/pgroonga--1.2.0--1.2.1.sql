@@ -370,7 +370,7 @@ BEGIN
 	SELECT amstrategies FROM pg_am LIMIT 0;
 EXCEPTION
 	WHEN syntax_error THEN
-		UPDATE pg_am SET amstrategies = 25
+		UPDATE pg_am SET amstrategies = 27
 		 WHERE amname = 'pgroonga';
 END;
 $$;

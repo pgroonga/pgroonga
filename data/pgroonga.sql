@@ -821,7 +821,7 @@ EXCEPTION
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
-			25,		-- amstrategies
+			27,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
