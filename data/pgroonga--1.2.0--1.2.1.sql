@@ -1,3 +1,14 @@
+-- Update amstrategies for old PostgreSQL
+DO LANGUAGE plpgsql $$
+BEGIN
+	SELECT amstrategies FROM pg_am LIMIT 0;
+EXCEPTION
+	WHEN syntax_error THEN
+		UPDATE pg_am SET amstrategies = 27
+		 WHERE amname = 'pgroonga';
+END;
+$$;
+
 -- Update pgroonga.text_full_text_search_ops_v2
 DROP OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 USING pgroonga;
 DROP OPERATOR &@> (text, text[]);
@@ -365,16 +376,6 @@ CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 
 -- Add pgroonga.text_regexp_ops_v2.
 -- Add pgroonga.varchar_regexp_ops_v2.
-DO LANGUAGE plpgsql $$
-BEGIN
-	SELECT amstrategies FROM pg_am LIMIT 0;
-EXCEPTION
-	WHEN syntax_error THEN
-		UPDATE pg_am SET amstrategies = 27
-		 WHERE amname = 'pgroonga';
-END;
-$$;
-
 CREATE FUNCTION pgroonga.regexp_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_regexp_text'
