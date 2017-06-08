@@ -115,11 +115,6 @@ file windows_archive_name => dist_files do
   rm_rf(groonga_base_name)
   sh("unzip", groonga_archive_name)
   rm(groonga_archive_name)
-  cd("#{groonga_base_name}/vendor") do
-    ruby("download_lz4.rb")
-    ruby("download_mecab.rb")
-    ruby("download_message_pack.rb")
-  end
   mkdir_p("#{archive_base_name}/vendor")
   mv(groonga_base_name, "#{archive_base_name}/vendor/groonga")
   rm_f(windows_archive_name)
