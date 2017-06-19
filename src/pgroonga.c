@@ -1497,6 +1497,9 @@ pgroonga_execute_binary_operator_in_string(const char *operand1,
 {
 	int i, n;
 
+	if (ARR_NDIM(operands2) == 0)
+		return false;
+
 	n = ARR_DIMS(operands2)[0];
 	for (i = 1; i <= n; i++)
 	{
