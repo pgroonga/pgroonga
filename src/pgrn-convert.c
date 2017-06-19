@@ -14,6 +14,9 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 	ArrayType *value = DatumGetArrayTypeP(datum);
 	int i, n;
 
+	if (ARR_NDIM(value) == 0)
+		return;
+
 	n = ARR_DIMS(value)[0];
 	for (i = 1; i <= n; i++)
 	{
