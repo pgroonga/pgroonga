@@ -4,6 +4,7 @@ CREATE TABLE tags (
 INSERT INTO tags VALUES (ARRAY['PostgreSQL', 'PG']);
 INSERT INTO tags VALUES (ARRAY['Groonga', 'grn']);
 INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn']);
+INSERT INTO tags VALUES (ARRAY[]::text[]);
 CREATE INDEX pgrn_index ON tags
   USING pgroonga (names pgroonga.text_array_term_search_ops_v2);
 SET enable_seqscan = off;

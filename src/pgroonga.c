@@ -1531,6 +1531,9 @@ pgroonga_execute_binary_operator_in_string_array(ArrayType *operands1,
 {
 	int i, n;
 
+	if (ARR_NDIM(operands1) == 0)
+		return false;
+
 	n = ARR_DIMS(operands1)[0];
 	for (i = 1; i <= n; i++)
 	{
