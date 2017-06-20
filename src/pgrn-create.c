@@ -152,6 +152,11 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  &tokenizer, tokenizerName,
 							  &normalizer, normalizerName,
 							  tokenFilters);
+
+		if (data->forPrefixSearch)
+		{
+			tokenizer = NULL;
+		}
 	}
 
 	snprintf(lexiconName, sizeof(lexiconName),
