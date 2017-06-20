@@ -35,12 +35,19 @@ before_script:
   - sudo make install
 script:
   - |
-    if [ ${PG_VERSION} = "9.3" ]; then
-      rm -rf sql/jsonb
-      rm -rf sql/function/flush/jsonb.sql
-      rm -rf sql/reindex/analyze.sql
-      rm -rf sql/groonga-function/tuple-is-alive/
-    fi
+    case ${PG_VERSION} in
+      9.3)
+        rm -rf sql/jsonb
+        rm -rf sql/function/flush/jsonb.sql
+        rm -rf sql/reindex/analyze.sql
+        rm -rf sql/groonga-function/tuple-is-alive/
+        rm -rf sql/groonga-function/tuple-is-alive/
+        rm -rf sql/term-search/text/options/tokenizer/ignored.sql
+        ;;
+      9.4)
+        rm -rf sql/term-search/text/options/tokenizer/ignored.sql
+        ;;
+    esac
   - sudo -u postgres -H mkdir -p /tmp/space
   - make installcheck TMP_DIR=/tmp SETUP_TMP_DIR=no
   - |
