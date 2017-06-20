@@ -7,3 +7,5 @@ CREATE INDEX pgrn_index ON tags
   WITH (tokenizer = "TokenDelimit");
 
 SELECT pgroonga.command('table_list')::json#>>'{1,2,6}';
+
+DROP TABLE tags;

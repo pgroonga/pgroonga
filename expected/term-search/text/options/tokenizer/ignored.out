@@ -10,3 +10,4 @@ SELECT pgroonga.command('table_list')::json#>>'{1,2,6}';
  
 (1 row)
 
+DROP TABLE tags;
