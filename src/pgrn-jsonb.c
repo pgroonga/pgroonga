@@ -1329,6 +1329,9 @@ PGrnJSONBInsert(Relation index,
 	unsigned int nthValue = 0;
 	Jsonb *jsonb;
 
+	if (isnull[nthValue])
+		return recordSize;
+
 	data.index = index;
 	data.pathsTable  = PGrnJSONBLookupPathsTable(index, nthValue, ERROR);
 	data.valuesTable = PGrnJSONBLookupValuesTable(index, nthValue, ERROR);
