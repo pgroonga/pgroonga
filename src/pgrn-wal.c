@@ -537,7 +537,7 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 		msgpack_pack_uint64(packer, *((uint64_t *)(value)));
 		break;
 	case GRN_DB_FLOAT:
-		msgpack_pack_double(packer, *((float_t *)(value)));
+		msgpack_pack_double(packer, *((double *)(value)));
 		break;
 	case GRN_DB_TIME:
 		msgpack_pack_int64(packer, *((int64_t *)(value)));
