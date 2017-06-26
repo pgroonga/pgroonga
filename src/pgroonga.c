@@ -140,6 +140,7 @@ extern PGDLLEXPORT void _PG_init(void);
 PGRN_FUNCTION_INFO_V1(pgroonga_score);
 PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
 PGRN_FUNCTION_INFO_V1(pgroonga_command);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_expand);
 
 /*
  * Naming conversions:
@@ -1224,6 +1225,16 @@ PGrnCollectScore(Relation table, HeapTuple tuple)
 	}
 
 	return score;
+}
+/**
+* pgroonga.query_expand(term text) : text
+*/
+Datum
+pgroonga_query_expand(PG_FUNCTION_ARGS)
+{
+  text *term = PG_GETARG_TEXT_PP(0);
+  
+  PG_RETURN_TEXT_P(term);
 }
 
 /**
