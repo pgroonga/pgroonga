@@ -1,6 +1,6 @@
 SELECT pgroonga.query_expand('Groonga');
- full_text_sarch_engine
-------------------------
+ query_expand 
+--------------
  Groonga
- Senna
- (2 row)
+(1 row)
+
