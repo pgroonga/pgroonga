@@ -1,0 +1,6 @@
+SELECT pgroonga.query_expand('Groonga');
+ query_expand 
+--------------
+ Groonga
+(1 row)
+
