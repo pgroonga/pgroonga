@@ -2,13 +2,6 @@ SET search_path = public;
 
 CREATE SCHEMA pgroonga;
 
-CREATE FUNCTION pgroonga.query_expand(term text)
-	RETURNS text
-	AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
-	LANGUAGE C
-	STABLE
-	STRICT;
-
 CREATE FUNCTION pgroonga.score("row" record)
 	RETURNS float8
 	AS 'MODULE_PATHNAME', 'pgroonga_score'
@@ -35,6 +28,13 @@ CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
 	AS 'MODULE_PATHNAME', 'pgroonga_command'
 	LANGUAGE C
 	VOLATILE
+	STRICT;
+
+CREATE FUNCTION pgroonga.query_expand(term text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
+	LANGUAGE C
+	STABLE
 	STRICT;
 
 CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])

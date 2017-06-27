@@ -1227,17 +1227,6 @@ PGrnCollectScore(Relation table, HeapTuple tuple)
 	return score;
 }
 /**
-* pgroonga.query_expand(term text) : text
-*/
-Datum
-pgroonga_query_expand(PG_FUNCTION_ARGS)
-{
-  text *term = PG_GETARG_TEXT_PP(0);
-  
-  PG_RETURN_TEXT_P(term);
-}
-
-/**
  * pgroonga.score(row record) : float8
  */
 Datum
@@ -1428,6 +1417,17 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
 	PG_RETURN_TEXT_P(result);
+}
+
+/**
+* pgroonga.query_expand(term text) : text
+*/
+Datum
+pgroonga_query_expand(PG_FUNCTION_ARGS)
+{
+  text *term = PG_GETARG_TEXT_PP(0);
+
+  PG_RETURN_TEXT_P(term);
 }
 
 static void
