@@ -19,6 +19,7 @@ SRCS =						\
 	src/pgrn-options.c			\
 	src/pgrn-pg.c				\
 	src/pgrn-query-escape.c			\
+	src/pgrn-query-expand.c			\
 	src/pgrn-query-extract-keywords.c	\
 	src/pgrn-snippet-html.c			\
 	src/pgrn-value.c			\
