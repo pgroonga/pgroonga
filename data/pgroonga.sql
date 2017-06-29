@@ -30,7 +30,10 @@ CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
 	VOLATILE
 	STRICT;
 
-CREATE FUNCTION pgroonga.query_expand(term text)
+CREATE FUNCTION pgroonga.query_expand(tableName cstring,
+				      termColumnName text,
+				      synonymsColumnName text,
+				      term text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
 	LANGUAGE C
