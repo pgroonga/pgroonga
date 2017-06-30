@@ -11,3 +11,4 @@ SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms',
  Ruby (((Mroonga) OR (Groonga MySQL)) OR ((PGroonga) OR (Groonga PostgreSQL)))
 (1 row)
 
+DROP TABLE synonyms;

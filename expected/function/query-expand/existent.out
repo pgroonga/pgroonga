@@ -9,3 +9,4 @@ SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
  ((Groonga) OR (Senna))
 (1 row)
 
+DROP TABLE synonyms;

@@ -8,3 +8,4 @@ SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
  Groonga
 (1 row)
 
+DROP TABLE synonyms;

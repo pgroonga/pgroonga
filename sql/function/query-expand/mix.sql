@@ -8,3 +8,5 @@ INSERT INTO synonyms VALUES ('PGroonga', ARRAY['PGroonga', 'Groonga PostgreSQL']
 
 SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms',
                              'Ruby (Mroonga OR PGroonga)');
+
+DROP TABLE synonyms;
