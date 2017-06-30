@@ -5,11 +5,13 @@
 #include "pgrn-global.h"
 #include "pgrn-query-expand.h"
 
+#include <access/heapam.h>
 #include <access/relscan.h>
 #include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
+#include <utils/lsyscache.h>
 #include <utils/rel.h>
 #include <utils/snapmgr.h>
 
@@ -21,7 +23,7 @@
 typedef struct {
 	Relation table;
 	Relation index;
-	AttrNumber indexAttributeNumber;
+	AttrNumber termAttributeNumber;
 	Form_pg_attribute synonymsAttribute;
 	Snapshot snapshot;
 	IndexScanDesc scan;
@@ -41,10 +43,12 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	grn_rc rc = GRN_END_OF_DATA;
 	grn_obj *term;
 	grn_obj *expandedTerm;
+	text *termText;
+	Oid opNo = TextEqualOperator;
+	RegProcedure opFunctionID;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
-	int nOrderBys = 0;
-	text *termText;
+	HeapScanDesc heapScan = NULL;
 	HeapTuple tuple;
 	Datum synonymsDatum;
 	bool isNULL;
@@ -52,81 +56,89 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	term = args[0];
 	expandedTerm = args[1];
 
-	if (!currentData.scan)
-	{
-		currentData.scan = index_beginscan(currentData.table,
-										   currentData.index,
-										   currentData.snapshot,
-										   nKeys,
-										   nOrderBys);
-	}
 	termText = cstring_to_text_with_len(GRN_TEXT_VALUE(term),
 										GRN_TEXT_LEN(term));
+	opFunctionID = get_opcode(opNo);
+	if (currentData.index)
 	{
-		Oid opNo = TextEqualOperator;
 		Oid opFamily;
 		int opStrategy;
-		RegProcedure opFunctionID;
 
 		opFamily =
-			currentData.index->rd_opfamily[currentData.indexAttributeNumber - 1];
+			currentData.index->rd_opfamily[currentData.termAttributeNumber - 1];
 		opStrategy = get_op_opfamily_strategy(opNo, opFamily);
-		opFunctionID = get_opcode(opNo);
 		ScanKeyInit(&(scanKeys[0]),
-					currentData.indexAttributeNumber,
+					currentData.termAttributeNumber,
 					opStrategy,
 					opFunctionID,
 					PointerGetDatum(termText));
 		index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
 		tuple = index_getnext(currentData.scan, ForwardScanDirection);
-		if (!tuple)
-			goto exit;
+	}
+	else
+	{
+		ScanKeyInit(&(scanKeys[0]),
+					currentData.termAttributeNumber,
+					InvalidStrategy,
+					opFunctionID,
+					PointerGetDatum(termText));
+		heapScan = heap_beginscan(currentData.table,
+								  currentData.snapshot,
+								  nKeys,
+								  scanKeys);
+		tuple = heap_getnext(heapScan, ForwardScanDirection);
+	}
 
-		synonymsDatum = heap_getattr(tuple,
-									 currentData.synonymsAttribute->attnum,
-									 RelationGetDescr(currentData.table),
-									 &isNULL);
-		if (isNULL)
-			goto exit;
+	if (!tuple)
+		goto exit;
 
+	synonymsDatum = heap_getattr(tuple,
+								 currentData.synonymsAttribute->attnum,
+								 RelationGetDescr(currentData.table),
+								 &isNULL);
+	if (isNULL)
+		goto exit;
+
+	{
+		ArrayType *synonymsArray;
+		int i, n;
+
+		synonymsArray = DatumGetArrayTypeP(synonymsDatum);
+		n = ARR_DIMS(synonymsArray)[0];
+		if (n > 1)
+			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+		for (i = 1; i <= n; i++)
 		{
-			ArrayType *synonymsArray;
-			int i, n;
+			Datum synonymDatum;
+			bool isNULL;
+			text *synonym;
 
-			synonymsArray = DatumGetArrayTypeP(synonymsDatum);
-			n = ARR_DIMS(synonymsArray)[0];
+			synonymDatum = array_ref(synonymsArray, 1, &i, -1,
+									 currentData.synonymsAttribute->attlen,
+									 currentData.synonymsAttribute->attbyval,
+									 currentData.synonymsAttribute->attalign,
+									 &isNULL);
+			synonym = DatumGetTextP(synonymDatum);
+			if (i > 1)
+				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
 			if (n > 1)
 				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-			for (i = 1; i <= n; i++)
-			{
-				Datum synonymDatum;
-				bool isNULL;
-				text *synonym;
-
-				synonymDatum = array_ref(synonymsArray, 1, &i, -1,
-										 currentData.synonymsAttribute->attlen,
-										 currentData.synonymsAttribute->attbyval,
-										 currentData.synonymsAttribute->attalign,
-										 &isNULL);
-				synonym = DatumGetTextP(synonymDatum);
-				if (i > 1)
-					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
-				if (n > 1)
-					GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-				GRN_TEXT_PUT(ctx, expandedTerm,
-							 VARDATA_ANY(synonym),
-							 VARSIZE_ANY_EXHDR(synonym));
-				if (n > 1)
-					GRN_TEXT_PUTC(ctx, expandedTerm, ')');
-		}
+			GRN_TEXT_PUT(ctx, expandedTerm,
+						 VARDATA_ANY(synonym),
+						 VARSIZE_ANY_EXHDR(synonym));
 			if (n > 1)
 				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
-
-			rc = GRN_SUCCESS;
 		}
+		if (n > 1)
+			GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+
+		rc = GRN_SUCCESS;
 	}
 
 exit:
+	if (heapScan)
+		heap_endscan(heapScan);
+
 	{
 		grn_obj *rc_object;
 
@@ -232,6 +244,48 @@ PGrnFindTargetIndex(Relation table,
 	return index;
 }
 
+static AttrNumber
+PGrnFindTermAttributeNumber(const char *tableName,
+							Relation table,
+							const char *columnName,
+							size_t columnNameSize)
+{
+	TupleDesc desc;
+	int i;
+
+	desc = RelationGetDescr(table);
+	for (i = 1; i <= desc->natts; i++)
+	{
+		Form_pg_attribute attribute = desc->attrs[i - 1];
+
+		if (strlen(attribute->attname.data) != columnNameSize)
+			continue;
+		if (strncmp(attribute->attname.data, columnName, columnNameSize) != 0)
+			continue;
+
+		if (attribute->atttypid != TEXTOID)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_NAME),
+					 errmsg("pgroonga: query_expand: "
+							"term column isn't text type: <%s>.<%.*s>",
+							tableName,
+							(int)columnNameSize, columnName)));
+		}
+
+		return attribute->attnum;
+	}
+
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_NAME),
+			 errmsg("pgroonga: query_expand: "
+					"term column doesn't exist: <%s>.<%.*s>",
+					tableName,
+					(int)columnNameSize, columnName)));
+
+	return InvalidAttrNumber;
+}
+
 /**
  * pgroonga.query_expand(tableName cstring,
  *                       termColumnName text,
@@ -270,19 +324,16 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		PGrnFindTargetIndex(currentData.table,
 							VARDATA_ANY(termColumnName),
 							VARSIZE_ANY_EXHDR(termColumnName),
-							&(currentData.indexAttributeNumber));
+							&(currentData.termAttributeNumber));
 	if (!currentData.index)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: query_expand: "
-						"index for term column doesn't exist: <%s>.<%.*s>",
-						DatumGetCString(tableNameDatum),
-						(int)VARSIZE_ANY_EXHDR(termColumnName),
-						VARDATA_ANY(termColumnName))));
-	}
+		currentData.termAttributeNumber =
+			PGrnFindTermAttributeNumber(DatumGetCString(tableNameDatum),
+										currentData.table,
+										VARDATA_ANY(termColumnName),
+										VARSIZE_ANY_EXHDR(termColumnName));
 
 	currentData.snapshot = GetActiveSnapshot();
+	if (currentData.index)
 	{
 		int nKeys = 1;
 		int nOrderBys = 0;
@@ -301,8 +352,11 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 											 PGRN_EXPANDER_NAME,
 											 PGRN_EXPANDER_NAME_LENGTH),
 								 &expandedQuery);
-	index_endscan(currentData.scan);
-	index_close(currentData.index, NoLock);
+	if (currentData.index)
+	{
+		index_endscan(currentData.scan);
+		index_close(currentData.index, NoLock);
+	}
 
 	RelationClose(currentData.table);
 
