@@ -3,7 +3,6 @@ CREATE TABLE synonyms (
   synonyms text[]
 );
 CREATE INDEX synonyms_term_index ON synonyms USING hash (term);
-WARNING:  hash indexes are not WAL-logged and their use is discouraged
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
 SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
       query_expand      
