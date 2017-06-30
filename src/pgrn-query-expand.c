@@ -6,6 +6,7 @@
 #include "pgrn-query-expand.h"
 
 #include <access/relscan.h>
+#include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
@@ -20,6 +21,7 @@
 typedef struct {
 	Relation table;
 	Relation index;
+	AttrNumber indexAttributeNumber;
 	Form_pg_attribute synonymsAttribute;
 	Snapshot snapshot;
 	IndexScanDesc scan;
@@ -60,57 +62,68 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	}
 	termText = cstring_to_text_with_len(GRN_TEXT_VALUE(term),
 										GRN_TEXT_LEN(term));
-	ScanKeyInit(&(scanKeys[0]),
-				1,
-				BTEqualStrategyNumber,
-				67, // F_TEXTEQ
-				PointerGetDatum(termText));
-	index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
-	tuple = index_getnext(currentData.scan, ForwardScanDirection);
-	if (!tuple)
-		goto exit;
-
-	synonymsDatum = heap_getattr(tuple,
-								 currentData.synonymsAttribute->attnum,
-								 RelationGetDescr(currentData.table),
-								 &isNULL);
-	if (isNULL)
-		goto exit;
-
 	{
-		ArrayType *synonymsArray;
-		int i, n;
+		Oid opNo = TextEqualOperator;
+		Oid opFamily;
+		int opStrategy;
+		RegProcedure opFunctionID;
 
-		synonymsArray = DatumGetArrayTypeP(synonymsDatum);
-		n = ARR_DIMS(synonymsArray)[0];
-		if (n > 1)
-			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-		for (i = 1; i <= n; i++)
-		{
-			Datum synonymDatum;
-			bool isNULL;
-			text *synonym;
+		opFamily =
+			currentData.index->rd_opfamily[currentData.indexAttributeNumber - 1];
+		opStrategy = get_op_opfamily_strategy(opNo, opFamily);
+		opFunctionID = get_opcode(opNo);
+		ScanKeyInit(&(scanKeys[0]),
+					currentData.indexAttributeNumber,
+					opStrategy,
+					opFunctionID,
+					PointerGetDatum(termText));
+		index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
+		tuple = index_getnext(currentData.scan, ForwardScanDirection);
+		if (!tuple)
+			goto exit;
 
-			synonymDatum = array_ref(synonymsArray, 1, &i, -1,
-									 currentData.synonymsAttribute->attlen,
-									 currentData.synonymsAttribute->attbyval,
-									 currentData.synonymsAttribute->attalign,
+		synonymsDatum = heap_getattr(tuple,
+									 currentData.synonymsAttribute->attnum,
+									 RelationGetDescr(currentData.table),
 									 &isNULL);
-			synonym = DatumGetTextP(synonymDatum);
-			if (i > 1)
-				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+		if (isNULL)
+			goto exit;
+
+		{
+			ArrayType *synonymsArray;
+			int i, n;
+
+			synonymsArray = DatumGetArrayTypeP(synonymsDatum);
+			n = ARR_DIMS(synonymsArray)[0];
 			if (n > 1)
 				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-			GRN_TEXT_PUT(ctx, expandedTerm,
-						 VARDATA_ANY(synonym),
-						 VARSIZE_ANY_EXHDR(synonym));
+			for (i = 1; i <= n; i++)
+			{
+				Datum synonymDatum;
+				bool isNULL;
+				text *synonym;
+
+				synonymDatum = array_ref(synonymsArray, 1, &i, -1,
+										 currentData.synonymsAttribute->attlen,
+										 currentData.synonymsAttribute->attbyval,
+										 currentData.synonymsAttribute->attalign,
+										 &isNULL);
+				synonym = DatumGetTextP(synonymDatum);
+				if (i > 1)
+					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+				if (n > 1)
+					GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+				GRN_TEXT_PUT(ctx, expandedTerm,
+							 VARDATA_ANY(synonym),
+							 VARSIZE_ANY_EXHDR(synonym));
+				if (n > 1)
+					GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+		}
 			if (n > 1)
 				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
-		}
-		if (n > 1)
-			GRN_TEXT_PUTC(ctx, expandedTerm, ')');
 
-		rc = GRN_SUCCESS;
+			rc = GRN_SUCCESS;
+		}
 	}
 
 exit:
@@ -181,7 +194,8 @@ PGrnFindSynonymsAttribute(const char *tableName,
 static Relation
 PGrnFindTargetIndex(Relation table,
 					const char *columnName,
-					size_t columnNameSize)
+					size_t columnNameSize,
+					AttrNumber *indexAttributeNumber)
 {
 	Relation index = InvalidRelation;
 	List *indexOIDList;
@@ -201,6 +215,7 @@ PGrnFindTargetIndex(Relation table,
 			if (strlen(name) == columnNameSize &&
 				memcmp(name, columnName, columnNameSize) == 0)
 			{
+				*indexAttributeNumber = i;
 				isTargetIndex = true;
 				break;
 			}
@@ -251,9 +266,11 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 								  VARDATA_ANY(synonymsColumnName),
 								  VARSIZE_ANY_EXHDR(synonymsColumnName));
 
-	currentData.index = PGrnFindTargetIndex(currentData.table,
-											VARDATA_ANY(termColumnName),
-											VARSIZE_ANY_EXHDR(termColumnName));
+	currentData.index =
+		PGrnFindTargetIndex(currentData.table,
+							VARDATA_ANY(termColumnName),
+							VARSIZE_ANY_EXHDR(termColumnName),
+							&(currentData.indexAttributeNumber));
 	if (!currentData.index)
 	{
 		ereport(ERROR,
