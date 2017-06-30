@@ -50,8 +50,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	int nKeys = 1;
 	HeapScanDesc heapScan = NULL;
 	HeapTuple tuple;
-	Datum synonymsDatum;
-	bool isNULL;
+	int ith_synonyms = 0;
 
 	term = args[0];
 	expandedTerm = args[1];
@@ -73,7 +72,6 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					opFunctionID,
 					PointerGetDatum(termText));
 		index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
-		tuple = index_getnext(currentData.scan, ForwardScanDirection);
 	}
 	else
 	{
@@ -86,27 +84,40 @@ func_query_expander_postgresql(grn_ctx *ctx,
 								  currentData.snapshot,
 								  nKeys,
 								  scanKeys);
-		tuple = heap_getnext(heapScan, ForwardScanDirection);
 	}
 
-	if (!tuple)
-		goto exit;
-
-	synonymsDatum = heap_getattr(tuple,
-								 currentData.synonymsAttribute->attnum,
-								 RelationGetDescr(currentData.table),
-								 &isNULL);
-	if (isNULL)
-		goto exit;
-
+	while (true)
 	{
+		Datum synonymsDatum;
+		bool isNULL;
 		ArrayType *synonymsArray;
 		int i, n;
 
+		if (currentData.index)
+			tuple = index_getnext(currentData.scan, ForwardScanDirection);
+		else
+			tuple = heap_getnext(heapScan, ForwardScanDirection);
+
+		if (!tuple)
+			break;
+
+		synonymsDatum = heap_getattr(tuple,
+									 currentData.synonymsAttribute->attnum,
+									 RelationGetDescr(currentData.table),
+									 &isNULL);
+		if (isNULL)
+			continue;
+
 		synonymsArray = DatumGetArrayTypeP(synonymsDatum);
 		n = ARR_DIMS(synonymsArray)[0];
-		if (n > 1)
+		if (n == 0)
+			continue;
+
+		if (ith_synonyms == 0)
 			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+		else
+			GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+
 		for (i = 1; i <= n; i++)
 		{
 			Datum synonymDatum;
@@ -121,21 +132,20 @@ func_query_expander_postgresql(grn_ctx *ctx,
 			synonym = DatumGetTextP(synonymDatum);
 			if (i > 1)
 				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
-			if (n > 1)
-				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
 			GRN_TEXT_PUT(ctx, expandedTerm,
 						 VARDATA_ANY(synonym),
 						 VARSIZE_ANY_EXHDR(synonym));
-			if (n > 1)
-				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
-		}
-		if (n > 1)
 			GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+		}
+
+		ith_synonyms++;
 
 		rc = GRN_SUCCESS;
 	}
+	if (ith_synonyms > 0)
+		GRN_TEXT_PUTC(ctx, expandedTerm, ')');
 
-exit:
 	if (heapScan)
 		heap_endscan(heapScan);
 
