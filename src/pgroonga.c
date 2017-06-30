@@ -18,6 +18,7 @@
 #include "pgrn-options.h"
 #include "pgrn-pg.h"
 #include "pgrn-portable.h"
+#include "pgrn-query-expand.h"
 #include "pgrn-query-extract-keywords.h"
 #include "pgrn-search.h"
 #include "pgrn-value.h"
@@ -498,6 +499,8 @@ _PG_init(void)
 
 	PGrnInitializeMatchPositionsByte();
 	PGrnInitializeMatchPositionsCharacter();
+
+	PGrnInitializeQueryExpand();
 
 	PGrnInitializeQueryExtractKeywords();
 }
