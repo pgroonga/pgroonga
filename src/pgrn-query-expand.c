@@ -137,9 +137,10 @@ PGrnInitializeQueryExpand(void)
 }
 
 static Form_pg_attribute
-PGrnFindTargetAttribute(Relation table,
-						const char *columnName,
-						size_t columnNameSize)
+PGrnFindSynonymsAttribute(const char *tableName,
+						  Relation table,
+						  const char *columnName,
+						  size_t columnNameSize)
 {
 	TupleDesc desc;
 	int i;
@@ -149,12 +150,30 @@ PGrnFindTargetAttribute(Relation table,
 	{
 		Form_pg_attribute attribute = desc->attrs[i - 1];
 
-		if (strlen(attribute->attname.data) == columnNameSize &&
-			strncmp(attribute->attname.data, columnName, columnNameSize) == 0)
+		if (strlen(attribute->attname.data) != columnNameSize)
+			continue;
+		if (strncmp(attribute->attname.data, columnName, columnNameSize) != 0)
+			continue;
+
+		if (attribute->atttypid != TEXTARRAYOID)
 		{
-			return attribute;
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_NAME),
+					 errmsg("pgroonga: query_expand: "
+							"synonyms column isn't text[] type: <%s>.<%.*s>",
+							tableName,
+							(int)columnNameSize, columnName)));
 		}
+
+		return attribute;
 	}
+
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_NAME),
+			 errmsg("pgroonga: query_expand: "
+					"synonyms column doesn't exist: <%s>.<%.*s>",
+					tableName,
+					(int)columnNameSize, columnName)));
 
 	return NULL;
 }
@@ -227,19 +246,10 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	currentData.table = RelationIdGetRelation(tableOID);
 
 	currentData.synonymsAttribute =
-		PGrnFindTargetAttribute(currentData.table,
-								VARDATA_ANY(synonymsColumnName),
-								VARSIZE_ANY_EXHDR(synonymsColumnName));
-	if (!currentData.synonymsAttribute)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: query_expand: "
-						"synonyms column doesn't exist: <%s>.<%.*s>",
-						DatumGetCString(tableNameDatum),
-						(int)VARSIZE_ANY_EXHDR(synonymsColumnName),
-						VARDATA_ANY(synonymsColumnName))));
-	}
+		PGrnFindSynonymsAttribute(DatumGetCString(tableNameDatum),
+								  currentData.table,
+								  VARDATA_ANY(synonymsColumnName),
+								  VARSIZE_ANY_EXHDR(synonymsColumnName));
 
 	currentData.index = PGrnFindTargetIndex(currentData.table,
 											VARDATA_ANY(termColumnName),
