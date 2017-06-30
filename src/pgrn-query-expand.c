@@ -3,6 +3,7 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-global.h"
+#include "pgrn-query-expand.h"
 
 #include <access/relscan.h>
 #include <catalog/pg_type.h>
@@ -66,11 +67,17 @@ func_query_expander_postgresql(grn_ctx *ctx,
 				PointerGetDatum(termText));
 	index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
 	tuple = index_getnext(currentData.scan, ForwardScanDirection);
+	if (!tuple)
+		goto exit;
+
 	synonymsDatum = heap_getattr(tuple,
 								 currentData.synonymsAttribute->attnum,
 								 RelationGetDescr(currentData.table),
 								 &isNULL);
-	if (!isNULL) {
+	if (isNULL)
+		goto exit;
+
+	{
 		ArrayType *synonymsArray;
 		int i, n;
 
@@ -106,6 +113,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		rc = GRN_SUCCESS;
 	}
 
+exit:
 	{
 		grn_obj *rc_object;
 
