@@ -1,4 +1,4 @@
-CREATE TABLE synonyms (
+CREATE UNLOGGED TABLE synonyms (
   term text,
   synonyms text[]
 );
