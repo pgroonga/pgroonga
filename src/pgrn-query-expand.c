@@ -22,11 +22,12 @@
 
 typedef struct {
 	Relation table;
-	Relation index;
 	AttrNumber termAttributeNumber;
 	Form_pg_attribute synonymsAttribute;
 	Snapshot snapshot;
 	IndexScanDesc scan;
+	StrategyNumber scanStrategy;
+	RegProcedure scanProcedure;
 } PGrnQueryExpandData;
 
 static grn_ctx *ctx = &PGrnContext;
@@ -44,8 +45,6 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	grn_obj *term;
 	grn_obj *expandedTerm;
 	text *termText;
-	Oid opNo = TextEqualOperator;
-	RegProcedure opFunctionID;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
 	HeapScanDesc heapScan = NULL;
@@ -57,19 +56,12 @@ func_query_expander_postgresql(grn_ctx *ctx,
 
 	termText = cstring_to_text_with_len(GRN_TEXT_VALUE(term),
 										GRN_TEXT_LEN(term));
-	opFunctionID = get_opcode(opNo);
-	if (currentData.index)
+	if (currentData.scan)
 	{
-		Oid opFamily;
-		int opStrategy;
-
-		opFamily =
-			currentData.index->rd_opfamily[currentData.termAttributeNumber - 1];
-		opStrategy = get_op_opfamily_strategy(opNo, opFamily);
 		ScanKeyInit(&(scanKeys[0]),
 					currentData.termAttributeNumber,
-					opStrategy,
-					opFunctionID,
+					currentData.scanStrategy,
+					currentData.scanProcedure,
 					PointerGetDatum(termText));
 		index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
 	}
@@ -78,7 +70,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		ScanKeyInit(&(scanKeys[0]),
 					currentData.termAttributeNumber,
 					InvalidStrategy,
-					opFunctionID,
+					currentData.scanProcedure,
 					PointerGetDatum(termText));
 		heapScan = heap_beginscan(currentData.table,
 								  currentData.snapshot,
@@ -93,7 +85,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		ArrayType *synonymsArray;
 		int i, n;
 
-		if (currentData.index)
+		if (currentData.scan)
 			tuple = index_getnext(currentData.scan, ForwardScanDirection);
 		else
 			tuple = heap_getnext(heapScan, ForwardScanDirection);
@@ -217,7 +209,9 @@ static Relation
 PGrnFindTargetIndex(Relation table,
 					const char *columnName,
 					size_t columnNameSize,
-					AttrNumber *indexAttributeNumber)
+					Oid opNo,
+					AttrNumber *indexAttributeNumber,
+					StrategyNumber *strategy)
 {
 	Relation index = InvalidRelation;
 	List *indexOIDList;
@@ -234,13 +228,22 @@ PGrnFindTargetIndex(Relation table,
 		for (i = 1; i <= index->rd_att->natts; i++)
 		{
 			const char *name = index->rd_att->attrs[i - 1]->attname.data;
-			if (strlen(name) == columnNameSize &&
-				memcmp(name, columnName, columnNameSize) == 0)
-			{
-				*indexAttributeNumber = i;
-				isTargetIndex = true;
-				break;
-			}
+			Oid opFamily;
+
+			if (strlen(name) != columnNameSize)
+				continue;
+
+			if (memcmp(name, columnName, columnNameSize) != 0)
+				continue;
+
+			opFamily = index->rd_opfamily[i - 1];
+			*strategy = get_op_opfamily_strategy(opNo, opFamily);
+			if (*strategy == InvalidStrategy)
+				continue;
+
+			*indexAttributeNumber = i;
+			isTargetIndex = true;
+			break;
 		}
 
 		if (isTargetIndex)
@@ -311,6 +314,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	text *query = PG_GETARG_TEXT_PP(3);
 	Datum tableOIDDatum;
 	Oid tableOID;
+	Relation index;
+	Oid opNo = TextEqualOperator;
 	grn_obj expandedQuery;
 
 	tableOIDDatum = DirectFunctionCall1(regclassin, tableNameDatum);
@@ -330,12 +335,13 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 								  VARDATA_ANY(synonymsColumnName),
 								  VARSIZE_ANY_EXHDR(synonymsColumnName));
 
-	currentData.index =
-		PGrnFindTargetIndex(currentData.table,
-							VARDATA_ANY(termColumnName),
-							VARSIZE_ANY_EXHDR(termColumnName),
-							&(currentData.termAttributeNumber));
-	if (!currentData.index)
+	index = PGrnFindTargetIndex(currentData.table,
+								VARDATA_ANY(termColumnName),
+								VARSIZE_ANY_EXHDR(termColumnName),
+								opNo,
+								&(currentData.termAttributeNumber),
+								&(currentData.scanStrategy));
+	if (!index)
 		currentData.termAttributeNumber =
 			PGrnFindTermAttributeNumber(DatumGetCString(tableNameDatum),
 										currentData.table,
@@ -343,16 +349,23 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 										VARSIZE_ANY_EXHDR(termColumnName));
 
 	currentData.snapshot = GetActiveSnapshot();
-	if (currentData.index)
+	if (index)
 	{
 		int nKeys = 1;
 		int nOrderBys = 0;
 		currentData.scan = index_beginscan(currentData.table,
-										   currentData.index,
+										   index,
 										   currentData.snapshot,
 										   nKeys,
 										   nOrderBys);
 	}
+	else
+	{
+		currentData.scan = NULL;
+	}
+
+	currentData.scanProcedure = get_opcode(opNo);
+
 	GRN_TEXT_INIT(&expandedQuery, 0);
 	grn_expr_syntax_expand_query(ctx,
 								 VARDATA_ANY(query),
@@ -362,10 +375,10 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 											 PGRN_EXPANDER_NAME,
 											 PGRN_EXPANDER_NAME_LENGTH),
 								 &expandedQuery);
-	if (currentData.index)
+	if (currentData.scan)
 	{
 		index_endscan(currentData.scan);
-		index_close(currentData.index, NoLock);
+		index_close(index, NoLock);
 	}
 
 	RelationClose(currentData.table);
