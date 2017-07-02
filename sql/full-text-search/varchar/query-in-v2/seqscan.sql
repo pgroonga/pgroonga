@@ -13,6 +13,6 @@ SET enable_bitmapscan = off;
 
 SELECT id, content
   FROM memos
- WHERE content &?| Array['rdbms', 'groonga engine']::varchar[];
+ WHERE content &@~| Array['rdbms', 'groonga engine']::varchar[];
 
 DROP TABLE memos;

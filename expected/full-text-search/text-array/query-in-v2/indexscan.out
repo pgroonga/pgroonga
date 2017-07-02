@@ -21,16 +21,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &?| Array['rdbms', 'groonga engine'];
-                           QUERY PLAN                            
------------------------------------------------------------------
+ WHERE contents &@~| Array['rdbms', 'groonga engine'];
+                            QUERY PLAN                            
+------------------------------------------------------------------
  Index Scan using pgroonga_memos_index on memos
-   Index Cond: (contents &?| '{rdbms,"groonga engine"}'::text[])
+   Index Cond: (contents &@~| '{rdbms,"groonga engine"}'::text[])
 (2 rows)
 
 SELECT title, contents
   FROM memos
- WHERE contents &?| Array['rdbms', 'groonga engine'];
+ WHERE contents &@~| Array['rdbms', 'groonga engine'];
    title    |                                         contents                                          
 ------------+-------------------------------------------------------------------------------------------
  Groonga    | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}

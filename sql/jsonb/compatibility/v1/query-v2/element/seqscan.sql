@@ -13,7 +13,7 @@ SET enable_bitmapscan = off;
 
 SELECT id, items
   FROM fruits
- WHERE items &? 'banana OR peach'
+ WHERE items &@~ 'banana OR peach'
  ORDER BY id;
 
 DROP TABLE fruits;

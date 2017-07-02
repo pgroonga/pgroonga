@@ -371,7 +371,14 @@ CREATE FUNCTION pgroonga.query_text(text, text)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_text,
+	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga.query_text,
 	LEFTARG = text,
 	RIGHTARG = text
@@ -384,7 +391,14 @@ CREATE FUNCTION pgroonga.query_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga.query_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text
@@ -397,7 +411,14 @@ CREATE FUNCTION pgroonga.query_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga.query_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar
@@ -417,7 +438,14 @@ BEGIN
 			IMMUTABLE
 			STRICT;
 
+		-- Deprecated since 1.2.2.
 		CREATE OPERATOR &? (
+			PROCEDURE = pgroonga.query_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text
+		);
+
+		CREATE OPERATOR &@~ (
 			PROCEDURE = pgroonga.query_jsonb,
 			LEFTARG = jsonb,
 			RIGHTARG = text
@@ -433,7 +461,14 @@ CREATE FUNCTION pgroonga.similar_text(text, text)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_text,
+	LEFTARG = text,
+	RIGHTARG = text
+);
+
+CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga.similar_text,
 	LEFTARG = text,
 	RIGHTARG = text
@@ -446,7 +481,14 @@ CREATE FUNCTION pgroonga.similar_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text
+);
+
+CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga.similar_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text
@@ -459,7 +501,14 @@ CREATE FUNCTION pgroonga.similar_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
+	PROCEDURE = pgroonga.similar_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar
+);
+
+CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga.similar_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar
@@ -653,7 +702,14 @@ CREATE OPERATOR &?> (
 	RIGHTARG = text[]
 );
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
+	PROCEDURE = pgroonga.query_in_text,
+	LEFTARG = text,
+	RIGHTARG = text[]
+);
+
+CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga.query_in_text,
 	LEFTARG = text,
 	RIGHTARG = text[]
@@ -666,7 +722,14 @@ CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
+	PROCEDURE = pgroonga.query_in_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text[]
+);
+
+CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga.query_in_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text[]
@@ -679,7 +742,14 @@ CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
 	IMMUTABLE
 	STRICT;
 
+-- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
+	PROCEDURE = pgroonga.query_in_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar[]
+);
+
+CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga.query_in_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar[]
@@ -873,7 +943,8 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops DEFAULT FOR TYPE text
 		OPERATOR 8 %%,
 		OPERATOR 9 @@,
 		OPERATOR 12 &@,
-		OPERATOR 13 &?;
+		OPERATOR 13 &?, -- For backward compatibility
+		OPERATOR 28 &@~;
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 	DEFAULT
@@ -882,14 +953,16 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops
 		OPERATOR 8 %% (text[], text),
 		OPERATOR 9 @@ (text[], text),
 		OPERATOR 12 &@ (text[], text),
-		OPERATOR 13 &? (text[], text);
+		OPERATOR 13 &? (text[], text), -- For backward compatibility
+		OPERATOR 28 &@~ (text[], text);
 
 CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 8 %%,
 		OPERATOR 9 @@,
 		OPERATOR 12 &@,
-		OPERATOR 13 &?;
+		OPERATOR 13 &?, -- For backward compatibility
+		OPERATOR 28 &@~;
 
 CREATE OPERATOR CLASS pgroonga.varchar_ops DEFAULT FOR TYPE varchar
 	USING pgroonga AS
@@ -995,8 +1068,9 @@ BEGIN
 				OPERATOR 9 @@ (jsonb, text),
 				OPERATOR 11 @>,
 				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text),
-				OPERATOR 15 &` (jsonb, text);
+				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+				OPERATOR 15 &` (jsonb, text),
+				OPERATOR 28 &@~ (jsonb, text);
 	END IF;
 END;
 $$;
@@ -1021,13 +1095,16 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
 		OPERATOR 8 %%, -- For backward compatibility
 		OPERATOR 9 @@, -- For backward compatibility
 		OPERATOR 12 &@,
-		OPERATOR 13 &?,
-		OPERATOR 14 &~?,
+		OPERATOR 13 &?, -- For backward compatibility
+		OPERATOR 14 &~?, -- For backward compatibility
 		OPERATOR 15 &`,
 		OPERATOR 18 &@| (text, text[]),
-		OPERATOR 19 &?| (text, text[]),
+		OPERATOR 19 &?| (text, text[]), -- For backward compatibility
 		OPERATOR 26 &@> (text, text[]), -- For backward compatibility
-		OPERATOR 27 &?> (text, text[]); -- For backward compatibility
+		OPERATOR 27 &?> (text, text[]), -- For backward compatibility
+		OPERATOR 28 &@~,
+		OPERATOR 29 &@*,
+		OPERATOR 30 &@~| (text, text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
 	FOR TYPE text[]
@@ -1035,11 +1112,14 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2
 		OPERATOR 8 %% (text[], text), -- For backward compatibility
 		OPERATOR 9 @@ (text[], text), -- For backward compatibility
 		OPERATOR 12 &@ (text[], text),
-		OPERATOR 13 &? (text[], text),
-		OPERATOR 14 &~? (text[], text),
+		OPERATOR 13 &? (text[], text), -- For backward compatibility
+		OPERATOR 14 &~? (text[], text), -- For backward compatibility
 		OPERATOR 15 &` (text[], text),
 		OPERATOR 18 &@| (text[], text[]),
-		OPERATOR 19 &?| (text[], text[]);
+		OPERATOR 19 &?| (text[], text[]), -- For backward compatibility
+		OPERATOR 28 &@~ (text[], text),
+		OPERATOR 29 &@* (text[], text),
+		OPERATOR 30 &@~| (text[], text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
@@ -1075,11 +1155,14 @@ CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2
 		OPERATOR 8 %%, -- For backward compatibility
 		OPERATOR 9 @@, -- For backward compatibility
 		OPERATOR 12 &@,
-		OPERATOR 13 &?,
-		OPERATOR 14 &~?,
+		OPERATOR 13 &?, -- For backward compatibility
+		OPERATOR 14 &~?, -- For backward compatibility
 		OPERATOR 15 &`,
 		OPERATOR 18 &@| (varchar, varchar[]),
-		OPERATOR 19 &?| (varchar, varchar[]);
+		OPERATOR 19 &?| (varchar, varchar[]), -- For backward compatibility
+		OPERATOR 28 &@~,
+		OPERATOR 29 &@*,
+		OPERATOR 30 &@~| (varchar, varchar[]);
 
 CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
 	FOR TYPE varchar[]
@@ -1105,8 +1188,9 @@ BEGIN
 				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
 				OPERATOR 11 @>,
 				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text),
-				OPERATOR 15 &` (jsonb, text);
+				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+				OPERATOR 15 &` (jsonb, text),
+				OPERATOR 28 &@~ (jsonb, text);
 	END IF;
 END;
 $$;

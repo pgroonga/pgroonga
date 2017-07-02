@@ -17,12 +17,12 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, items
   FROM fruits
- WHERE items &? 'banana OR peach'
+ WHERE items &@~ 'banana OR peach'
  ORDER BY id;
 
 SELECT id, items
   FROM fruits
- WHERE items &? 'banana OR peach'
+ WHERE items &@~ 'banana OR peach'
  ORDER BY id;
 
 DROP TABLE fruits;

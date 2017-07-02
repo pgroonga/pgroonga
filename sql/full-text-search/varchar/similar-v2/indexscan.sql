@@ -14,8 +14,13 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &~? 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
+
+SELECT id, content
+  FROM memos
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
 
 DROP TABLE memos;

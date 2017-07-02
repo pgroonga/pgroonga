@@ -13,16 +13,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &?> Array['rdbms', 'groonga engine'];
+ WHERE content &?| Array['rdbms', 'groonga engine'];
                            QUERY PLAN                           
 ----------------------------------------------------------------
  Index Scan using pgrn_index on memos
-   Index Cond: (content &?> '{rdbms,"groonga engine"}'::text[])
+   Index Cond: (content &?| '{rdbms,"groonga engine"}'::text[])
 (2 rows)
 
 SELECT id, content
   FROM memos
- WHERE content &?> Array['rdbms', 'groonga engine'];
+ WHERE content &?| Array['rdbms', 'groonga engine'];
  id |                 content                  
 ----+------------------------------------------
   2 | Groonga is fast full text search engine.

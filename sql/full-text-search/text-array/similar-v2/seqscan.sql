@@ -24,6 +24,6 @@ SET enable_bitmapscan = off;
 
 SELECT title, contents
   FROM memos
- WHERE contents &~? 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE contents &@* 'Mroonga is a MySQL plugin that uses Groonga.';
 
 DROP TABLE memos;

@@ -24,6 +24,6 @@ SET enable_bitmapscan = off;
 
 SELECT title, contents
   FROM memos
- WHERE contents &?| Array['rdbms', 'groonga engine'];
+ WHERE contents &@~| Array['rdbms', 'groonga engine'];
 
 DROP TABLE memos;

@@ -17,10 +17,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &?| Array['rdbms', 'groonga engine'];
+ WHERE content &@~| Array['rdbms', 'groonga engine'];
 
 SELECT id, content
   FROM memos
- WHERE content &?| Array['rdbms', 'groonga engine'];
+ WHERE content &@~| Array['rdbms', 'groonga engine'];
 
 DROP TABLE memos;

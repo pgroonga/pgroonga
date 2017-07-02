@@ -17,10 +17,10 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &? 'rdbms OR engine';
+ WHERE content &@~ 'rdbms OR engine';
 
 SELECT id, content
   FROM memos
- WHERE content &? 'rdbms OR engine';
+ WHERE content &@~ 'rdbms OR engine';
 
 DROP TABLE memos;

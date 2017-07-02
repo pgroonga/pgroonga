@@ -10,9 +10,21 @@ CREATE INDEX grnindex ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &~? 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
+                                       QUERY PLAN                                       
+----------------------------------------------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::text)
+   ->  Bitmap Index Scan on grnindex
+         Index Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::text)
+(4 rows)
+
+SELECT id, content
+  FROM memos
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
  id |                        content                        
 ----+-------------------------------------------------------
   3 | PGroonga is a PostgreSQL extension that uses Groonga.

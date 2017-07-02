@@ -14,21 +14,21 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT id, items
   FROM fruits
- WHERE items &? 'apple OR banana'
+ WHERE items &@~ 'apple OR banana'
  ORDER BY id;
-                          QUERY PLAN                          
---------------------------------------------------------------
+                          QUERY PLAN                           
+---------------------------------------------------------------
  Sort
    Sort Key: id
    ->  Bitmap Heap Scan on fruits
-         Recheck Cond: (items &? 'apple OR banana'::text)
+         Recheck Cond: (items &@~ 'apple OR banana'::text)
          ->  Bitmap Index Scan on pgroonga_index
-               Index Cond: (items &? 'apple OR banana'::text)
+               Index Cond: (items &@~ 'apple OR banana'::text)
 (6 rows)
 
 SELECT id, items
   FROM fruits
- WHERE items &? 'apple OR banana'
+ WHERE items &@~ 'apple OR banana'
  ORDER BY id;
  id |       items        
 ----+--------------------

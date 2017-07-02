@@ -1632,6 +1632,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 										  &(buffers->keyword));
 		break;
 	case PGrnQueryStrategyV2Number:
+	case PGrnQueryStrategyV2DeprecatedNumber:
 		grn_obj_reinit(ctx, &(buffers->keyword), GRN_DB_TEXT, 0);
 		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->keyword));
 		PGrnSearchBuildConditionJSONQuery(data,

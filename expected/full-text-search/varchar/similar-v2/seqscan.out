@@ -12,6 +12,6 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SELECT id, content
   FROM memos
- WHERE content &~? 'Mroonga is a MySQL plugin that uses Groonga.';
-ERROR:  pgroonga: operator &~? is available only in index scan
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
+ERROR:  pgroonga: similar search is available only in index scan
 DROP TABLE memos;

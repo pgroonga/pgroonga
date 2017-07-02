@@ -10,9 +10,21 @@ CREATE INDEX grnindex ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &? 'rdbms OR engine';
+ WHERE content &@~ 'rdbms OR engine';
+                               QUERY PLAN                               
+------------------------------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@~ 'rdbms OR engine'::character varying)
+   ->  Bitmap Index Scan on grnindex
+         Index Cond: (content &@~ 'rdbms OR engine'::character varying)
+(4 rows)
+
+SELECT id, content
+  FROM memos
+ WHERE content &@~ 'rdbms OR engine';
  id |                 content                  
 ----+------------------------------------------
   1 | PostgreSQL is a RDBMS.

@@ -759,6 +759,13 @@ PGrnIsQueryStrategyIndex(Relation index, int nthAttribute)
 	if (OidIsValid(strategyOID))
 		return true;
 
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryStrategyV2DeprecatedNumber);
+	if (OidIsValid(strategyOID))
+		return true;
+
 	return false;
 }
 
@@ -795,6 +802,13 @@ PGrnIsQueryInStrategyIndex(Relation index, int nthAttribute)
 									  leftType,
 									  rightType,
 									  PGrnQueryInStrategyV2DeprecatedNumber);
+	if (OidIsValid(strategyOID))
+		return true;
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  leftType,
+									  rightType,
+									  PGrnQueryInStrategyV2Deprecated2Number);
 	if (OidIsValid(strategyOID))
 		return true;
 
@@ -1995,7 +2009,7 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: operator &~? is available only in index scan")));
+			 errmsg("pgroonga: similar search available only in index scan")));
 
 	PG_RETURN_BOOL(false);
 }
@@ -2008,7 +2022,7 @@ pgroonga_similar_text_array(PG_FUNCTION_ARGS)
 {
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: operator &~? is available only in index scan")));
+			 errmsg("pgroonga: similar search is available only in index scan")));
 
 	PG_RETURN_BOOL(false);
 }
@@ -2021,7 +2035,7 @@ pgroonga_similar_varchar(PG_FUNCTION_ARGS)
 {
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: operator &~? is available only in index scan")));
+			 errmsg("pgroonga: similar search is available only in index scan")));
 
 	PG_RETURN_BOOL(false);
 }
@@ -3366,6 +3380,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixRKInStrategyV2Number:
 	case PGrnQueryInStrategyV2Number:
 	case PGrnQueryInStrategyV2DeprecatedNumber:
+	case PGrnQueryInStrategyV2Deprecated2Number:
 	case PGrnMatchInStrategyV2Number:
 	case PGrnMatchInStrategyV2DeprecatedNumber:
 		switch (valueTypeID)
@@ -3419,8 +3434,10 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
+	case PGrnQueryStrategyV2DeprecatedNumber:
 		break;
 	case PGrnSimilarStrategyV2Number:
+	case PGrnSimilarStrategyV2DeprecatedNumber:
 		operator = GRN_OP_SIMILAR;
 		break;
 	case PGrnScriptStrategyV2Number:
@@ -3440,6 +3457,7 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	case PGrnQueryInStrategyV2Number:
 	case PGrnQueryInStrategyV2DeprecatedNumber:
+	case PGrnQueryInStrategyV2Deprecated2Number:
 		break;
 	case PGrnMatchInStrategyV2Number:
 	case PGrnMatchInStrategyV2DeprecatedNumber:
@@ -3477,6 +3495,7 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
+	case PGrnQueryStrategyV2DeprecatedNumber:
 		PGrnSearchBuildConditionQuery(data,
 									  targetColumn,
 									  GRN_TEXT_VALUE(&(buffers->general)),
@@ -3519,6 +3538,7 @@ PGrnSearchBuildCondition(Relation index,
 	}
 	case PGrnQueryInStrategyV2Number:
 	case PGrnQueryInStrategyV2DeprecatedNumber:
+	case PGrnQueryInStrategyV2Deprecated2Number:
 	{
 		grn_obj *queries = &(buffers->general);
 		unsigned int i, n;

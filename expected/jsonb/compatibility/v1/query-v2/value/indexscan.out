@@ -14,19 +14,19 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, items
   FROM fruits
- WHERE items &? 'apple OR banana'
+ WHERE items &@~ 'apple OR banana'
  ORDER BY id;
-                       QUERY PLAN                       
---------------------------------------------------------
+                       QUERY PLAN                        
+---------------------------------------------------------
  Sort
    Sort Key: id
    ->  Index Scan using pgroonga_index on fruits
-         Index Cond: (items &? 'apple OR banana'::text)
+         Index Cond: (items &@~ 'apple OR banana'::text)
 (4 rows)
 
 SELECT id, items
   FROM fruits
- WHERE items &? 'apple OR banana'
+ WHERE items &@~ 'apple OR banana'
  ORDER BY id;
  id |       items        
 ----+--------------------

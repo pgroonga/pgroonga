@@ -21,18 +21,18 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &~? 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE contents &@* 'Mroonga is a MySQL plugin that uses Groonga.';
                                        QUERY PLAN                                        
 -----------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (contents &~? 'Mroonga is a MySQL plugin that uses Groonga.'::text)
+   Recheck Cond: (contents &@* 'Mroonga is a MySQL plugin that uses Groonga.'::text)
    ->  Bitmap Index Scan on pgroonga_memos_index
-         Index Cond: (contents &~? 'Mroonga is a MySQL plugin that uses Groonga.'::text)
+         Index Cond: (contents &@* 'Mroonga is a MySQL plugin that uses Groonga.'::text)
 (4 rows)
 
 SELECT title, contents
   FROM memos
- WHERE contents &~? 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE contents &@* 'Mroonga is a MySQL plugin that uses Groonga.';
   title   |                                                         contents                                                         
 ----------+--------------------------------------------------------------------------------------------------------------------------
  Groonga  | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}
