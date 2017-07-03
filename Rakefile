@@ -105,12 +105,12 @@ file windows_archive_name => dist_files do
     groonga_archive_name = "#{groonga_base_name}.zip"
     sh("curl",
        "-O",
-       "http://packages.groonga.org/tmp/#{groonga_archive_name}")
+       "https://packages.groonga.org/tmp/#{groonga_archive_name}")
   else
     groonga_archive_name = "#{groonga_base_name}.zip"
     sh("curl",
        "-O",
-       "http://packages.groonga.org/source/groonga/#{groonga_archive_name}")
+       "https://packages.groonga.org/source/groonga/#{groonga_archive_name}")
   end
   rm_rf(groonga_base_name)
   sh("unzip", groonga_archive_name)
@@ -514,10 +514,10 @@ libmsgpack-dev
               "#{windows_pgroonga_source_name_base}.zip"
             if suffix
               windows_pgroonga_source_url_base =
-                "http://packages.groonga.org/tmp"
+                "https://packages.groonga.org/tmp"
             else
               windows_pgroonga_source_url_base =
-                "http://packages.groonga.org/source/#{package}"
+                "https://packages.groonga.org/source/#{package}"
             end
             windows_pgroonga_source_url =
               "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
