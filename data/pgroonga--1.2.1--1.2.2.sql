@@ -16,6 +16,17 @@ ALTER OPERATOR FAMILY pgroonga.text_term_search_ops_v2 USING pgroonga
 		OPERATOR 4 >= (text, text),
 		OPERATOR 5 > (text, text);
 
+-- Update amstrategies for old PostgreSQL
+DO LANGUAGE plpgsql $$
+BEGIN
+	SELECT amstrategies FROM pg_am LIMIT 0;
+EXCEPTION
+	WHEN syntax_error THEN
+		UPDATE pg_am SET amstrategies = 30
+		 WHERE amname = 'pgroonga';
+END;
+$$;
+
 -- &? -> &@~
 -- &~? -> &@*
 -- &?| -> &@~|
