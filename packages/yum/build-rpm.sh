@@ -74,6 +74,9 @@ if grep -q -E 'Requires:\s+msgpack' rpmbuild/SPECS/${PACKAGE}.spec; then
   run yum install -y msgpack-devel
 fi
 
+(cd $(echo /usr/pgsql-*)/include/server && \
+  run ln -s postgresql-*-pg_config.h pg_config.h)
+
 run rpmbuild -ba ${rpmbuild_options} rpmbuild/SPECS/${PACKAGE}.spec
 
 run mv rpmbuild/RPMS/*/* "${rpm_dir}/"
