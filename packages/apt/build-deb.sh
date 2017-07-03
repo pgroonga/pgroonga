@@ -13,8 +13,6 @@ run()
 
 . /vagrant/env.sh
 
-run sudo sed -i'' -e 's/httpredir/ftp.jp/g' /etc/apt/sources.list
-
 run sudo apt-get update
 run sudo apt-get install -y lsb-release
 
