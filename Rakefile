@@ -327,42 +327,48 @@ postgresql#{postgresql_package_version}-devel
       "amd64",
     ]
     rsync_path = rsync_base_path
-    debian_dir = "#{packages_dir}/debian94"
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
 
     directory repositories_dir
 
-    env_sh = "#{apt_dir}/env.sh"
-    file env_sh => __FILE__ do
-      File.open(env_sh, "w") do |file|
-        file.puts(<<-ENV)
-PACKAGE=#{package}
-VERSION=#{version}
-DEPENDED_PACKAGES="
-debhelper
-pkg-config
-libgroonga-dev
-postgresql-server-dev-9.4
-libmsgpack-dev
-"
-        ENV
-      end
-    end
-
     desc "Build DEB packages"
-    task :build => [archive_name, env_sh, repositories_dir] do
+    task :build => [archive_name, repositories_dir] do
       tmp_dir = "#{apt_dir}/tmp"
       rm_rf(tmp_dir)
       mkdir_p(tmp_dir)
       cp(archive_name, tmp_dir)
-      cp_r(debian_dir, "#{tmp_dir}/debian")
+      absolute_packages_dir = File.expand_path(packages_dir)
 
       cd(apt_dir) do
         sh("vagrant", "destroy", "--force")
         code_names.each do |code_name|
           architectures.each do |arch|
             next if code_name == "stretch" and arch == "i386"
+
+            if code_name == "jessie"
+              postgresql_version = "9.4"
+            else
+              postgresql_version = "9.6"
+            end
+            short_postgresql_version = postgresql_version.delete(".")
+            debian_dir = "debian#{short_postgresql_version}"
+            cp_r("#{absolute_packages_dir}/#{debian_dir}", "debian")
+
+            File.open("env.sh", "w") do |file|
+              file.puts(<<-ENV)
+PACKAGE=#{package}
+VERSION=#{version}
+DEPENDED_PACKAGES="
+debhelper
+pkg-config
+libgroonga-dev
+postgresql-server-dev-#{postgresql_version}
+libmsgpack-dev
+"
+              ENV
+            end
+
             id = "#{distribution}-#{code_name}-#{arch}"
             sh("vagrant", "up", id)
             sh("vagrant", "destroy", "--force", id)
