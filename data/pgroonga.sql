@@ -33,7 +33,7 @@ CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
 CREATE FUNCTION pgroonga.query_expand(tableName cstring,
 				      termColumnName text,
 				      synonymsColumnName text,
-				      term text)
+				      query text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
 	LANGUAGE C
