@@ -11,7 +11,7 @@ run()
   fi
 }
 
-. /vagrant/env.sh
+. /vagrant/tmp/env.sh
 
 run sudo apt-get update
 run sudo apt-get install -y lsb-release
