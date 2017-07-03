@@ -353,7 +353,7 @@ postgresql#{postgresql_package_version}-devel
             end
             short_postgresql_version = postgresql_version.delete(".")
             debian_dir = "debian#{short_postgresql_version}"
-            cp_r("#{absolute_packages_dir}/#{debian_dir}", "debian")
+            cp_r("#{absolute_packages_dir}/#{debian_dir}", "tmp/debian")
 
             File.open("env.sh", "w") do |file|
               file.puts(<<-ENV)
