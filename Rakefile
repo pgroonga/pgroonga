@@ -320,6 +320,7 @@ postgresql#{postgresql_package_version}-devel
     distribution = "debian"
     code_names = [
       "jessie",
+      "stretch",
     ]
     architectures = [
       "i386",
@@ -361,6 +362,7 @@ libmsgpack-dev
         sh("vagrant", "destroy", "--force")
         code_names.each do |code_name|
           architectures.each do |arch|
+            next if code_name == "stretch" and arch == "i386"
             id = "#{distribution}-#{code_name}-#{arch}"
             sh("vagrant", "up", id)
             sh("vagrant", "destroy", "--force", id)
