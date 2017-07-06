@@ -2,6 +2,7 @@
 
 #include <postgres.h>
 #include <fmgr.h>
+#include <utils/rel.h>
 
 /* Default values */
 #ifndef PGRN_DEFAULT_TOKENIZER
@@ -73,3 +74,4 @@
 #define PGrnIndexColumnName				"index"
 
 extern bool PGrnGroongaInitialized;
+bool PGrnIndexIsPGroonga(Relation index);

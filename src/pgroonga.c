@@ -5013,3 +5013,17 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(routine);
 }
 #endif
+
+#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
+bool
+PGrnIndexIsPGroonga(Relation index)
+{
+	return index->rd_amroutine->ambuild == pgroonga_build_raw;
+}
+#else
+bool
+PGrnIndexIsPGroonga(Relation index)
+{
+	return false;
+}
+#endif

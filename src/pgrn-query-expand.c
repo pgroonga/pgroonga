@@ -206,22 +206,23 @@ PGrnFindSynonymsAttribute(const char *tableName,
 }
 
 static Relation
-PGrnFindTargetIndex(Relation table,
-					const char *columnName,
-					size_t columnNameSize,
-					Oid opNo,
-					AttrNumber *indexAttributeNumber,
-					StrategyNumber *strategy)
+PGrnFindTermIndex(Relation table,
+				  const char *columnName,
+				  size_t columnNameSize,
+				  Oid opNo,
+				  AttrNumber *indexAttributeNumber,
+				  StrategyNumber *indexStrategy)
 {
-	Relation index = InvalidRelation;
+	Relation termIndex = InvalidRelation;
+	Relation preferedIndex = InvalidRelation;
 	List *indexOIDList;
 	ListCell *cell;
 
 	indexOIDList = RelationGetIndexList(table);
 	foreach(cell, indexOIDList)
 	{
+		Relation index = InvalidRelation;
 		Oid indexOID = lfirst_oid(cell);
-		bool isTargetIndex = false;
 		int i;
 
 		index = index_open(indexOID, NoLock);
@@ -229,6 +230,7 @@ PGrnFindTargetIndex(Relation table,
 		{
 			const char *name = index->rd_att->attrs[i - 1]->attname.data;
 			Oid opFamily;
+			StrategyNumber strategy;
 
 			if (strlen(name) != columnNameSize)
 				continue;
@@ -237,24 +239,49 @@ PGrnFindTargetIndex(Relation table,
 				continue;
 
 			opFamily = index->rd_opfamily[i - 1];
-			*strategy = get_op_opfamily_strategy(opNo, opFamily);
-			if (*strategy == InvalidStrategy)
+			strategy = get_op_opfamily_strategy(opNo, opFamily);
+			if (strategy == InvalidStrategy)
 				continue;
 
-			*indexAttributeNumber = i;
-			isTargetIndex = true;
+			if (PGrnIndexIsPGroonga(index))
+			{
+				preferedIndex = index;
+				*indexStrategy = strategy;
+				*indexAttributeNumber = i;
+				break;
+			}
+
+			if (!RelationIsValid(termIndex))
+			{
+				termIndex = index;
+				*indexStrategy = strategy;
+				*indexAttributeNumber = i;
+			}
+
 			break;
 		}
 
-		if (isTargetIndex)
+		if (RelationIsValid(preferedIndex))
 			break;
+
+		if (termIndex == index)
+			continue;
 
 		index_close(index, NoLock);
 		index = InvalidRelation;
 	}
 	list_free(indexOIDList);
 
-	return index;
+	if (RelationIsValid(preferedIndex))
+	{
+		if (RelationIsValid(termIndex) && termIndex != preferedIndex)
+			index_close(termIndex, NoLock);
+		return preferedIndex;
+	}
+	else
+	{
+		return termIndex;
+	}
 }
 
 static AttrNumber
@@ -335,12 +362,12 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 								  VARDATA_ANY(synonymsColumnName),
 								  VARSIZE_ANY_EXHDR(synonymsColumnName));
 
-	index = PGrnFindTargetIndex(currentData.table,
-								VARDATA_ANY(termColumnName),
-								VARSIZE_ANY_EXHDR(termColumnName),
-								opNo,
-								&(currentData.termAttributeNumber),
-								&(currentData.scanStrategy));
+	index = PGrnFindTermIndex(currentData.table,
+							  VARDATA_ANY(termColumnName),
+							  VARSIZE_ANY_EXHDR(termColumnName),
+							  opNo,
+							  &(currentData.termAttributeNumber),
+							  &(currentData.scanStrategy));
 	if (!index)
 		currentData.termAttributeNumber =
 			PGrnFindTermAttributeNumber(DatumGetCString(tableNameDatum),
