@@ -33,10 +33,14 @@ done
 
 DEBUG=1 HAVE_MSGPACK=1 run make -j$(nproc) > /dev/null
 run make install > /dev/null
+launcher="--launcher=$(pwd)/test/short-pgappname"
 if [ -n "${test_names}" ]; then
-  make installcheck REGRESS="${test_names}"
+  make installcheck \
+       EXTRA_REGRESS_OPTS="${launcher}" \
+       REGRESS="${test_names}"
 else
-  make installcheck
+  make installcheck \
+       EXTRA_REGRESS_OPTS="${launcher}"
 fi
 if [ $? != 0 ]; then
   cat regression.diffs
