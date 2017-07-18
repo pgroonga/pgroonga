@@ -40,6 +40,9 @@
 #include <optimizer/clauses.h>
 #include <optimizer/cost.h>
 #include <postmaster/bgworker.h>
+#ifdef PGRN_SUPPORT_LOGICAL_REPLICATION
+#	include <replication/worker_internal.h>
+#endif
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <utils/array.h>
@@ -437,7 +440,7 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 void
 _PG_init(void)
 {
-	if (MyBgworkerEntry)
+	if (MyBgworkerEntry && !MyLogicalRepWorker)
 		return;
 
 	if (PGrnInitialized)
