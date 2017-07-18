@@ -437,10 +437,24 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 						 NULL);
 }
 
+static bool
+PGrnNeedInitialize(void)
+{
+#ifdef PGRN_SUPPORT_LOGICAL_REPLICATION
+	if (MyLogicalRepWorker)
+		return true;
+#endif
+
+	if (MyBgworkerEntry)
+		return false;
+
+	return true;
+}
+
 void
 _PG_init(void)
 {
-	if (MyBgworkerEntry && !MyLogicalRepWorker)
+	if (!PGrnNeedInitialize())
 		return;
 
 	if (PGrnInitialized)
