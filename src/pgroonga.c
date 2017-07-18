@@ -2684,7 +2684,12 @@ pgroonga_insert_raw(Relation index,
 					bool *isnull,
 					ItemPointer ctid,
 					Relation heap,
-					IndexUniqueCheck checkUnique)
+					IndexUniqueCheck checkUnique
+#ifdef PGRN_AM_INSERT_HAVE_INDEX_INFO
+					,
+					struct IndexInfo *indexInfo
+#endif
+	)
 {
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
@@ -2726,7 +2731,12 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 								   isnull,
 								   ctid,
 								   heap,
-								   uniqueCheck);
+								   uniqueCheck
+#ifdef PGRN_AM_INSERT_HAVE_INDEX_INFO
+								   ,
+								   NULL
+#endif
+		);
 
 	PG_RETURN_BOOL(isUnique);
 }
@@ -4927,7 +4937,12 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 						  Cost *indexStartupCost,
 						  Cost *indexTotalCost,
 						  Selectivity *indexSelectivity,
-						  double *indexCorrelation)
+						  double *indexCorrelation
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+						  ,
+						  double *indexPages
+#endif
+	)
 {
 	PGrnCostEstimateUpdateSelectivity(path);
 	*indexSelectivity = clauselist_selectivity(root,
@@ -4939,6 +4954,9 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 	*indexStartupCost = 0.0; /* TODO */
 	*indexTotalCost = 0.0; /* TODO */
 	*indexCorrelation = 0.0;
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+	*indexPages = 0.0; /* TODO */
+#endif
 }
 
 /**
@@ -4954,6 +4972,9 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 	Cost *indexTotalCost = (Cost *) PG_GETARG_POINTER(4);
 	Selectivity *indexSelectivity = (Selectivity *) PG_GETARG_POINTER(5);
 	double *indexCorrelation = (double *) PG_GETARG_POINTER(6);
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+	double indexPages;
+#endif
 
 	pgroonga_costestimate_raw(root,
 							  path,
@@ -4961,7 +4982,12 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 							  indexStartupCost,
 							  indexTotalCost,
 							  indexSelectivity,
-							  indexCorrelation);
+							  indexCorrelation
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+							  ,
+							  &indexPages
+#endif
+		);
 
 	PG_RETURN_VOID();
 }
@@ -4991,6 +5017,9 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amstorage = false;
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_PARALLEL
+	routine->amcanparallel = false;
+#endif
 	routine->amkeytype = 0;
 
 	routine->aminsert = pgroonga_insert_raw;
@@ -5009,6 +5038,16 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amcostestimate = pgroonga_costestimate_raw;
 	routine->amoptions = pgroonga_options_raw;
 	routine->amvalidate = pgroonga_validate_raw;
+
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_ESTIMATE_PARALLEL_SCAN
+	routine->amestimateparallelscan = NULL;
+#endif
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_INIT_PARALLEL_SCAN
+	routine->aminitparallelscan = NULL;
+#endif
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_RESCAN
+	routine->amparallelrescan = NULL;
+#endif
 
 	PG_RETURN_POINTER(routine);
 }
