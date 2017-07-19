@@ -15,15 +15,12 @@ INSERT INTO memos
             ARRAY['PGroonga is an OSS PostgreSQL extension',
                   'PGroonga adds full full-text search support based on Groonga to PostgreSQL']);
 
-CREATE INDEX pgroonga_memos_index ON memos
-  USING pgroonga (contents pgroonga.text_array_full_text_search_ops_v2);
-
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
 SELECT title, contents
   FROM memos
- WHERE contents &@* 'Mroonga is a MySQL plugin that uses Groonga.';
+ WHERE contents &@* 'Mroonga: A MySQL plugin that uses Groonga';
 
 DROP TABLE memos;
