@@ -2821,7 +2821,7 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 				primaryKeyColumn->type =
 					desc->attrs[primaryKeyNumber - 1]->atttypid;
 				primaryKeyColumn->domain = PGrnGetType(primaryKeyIndex,
-													   primaryKeyNumber - 1,
+													   i,
 													   &(primaryKeyColumn->flags));
 				primaryKeyColumn->column = grn_obj_column(ctx,
 														  so->sourcesTable,
