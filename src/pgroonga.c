@@ -203,9 +203,13 @@ PGRN_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_contain_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_contain_text);
@@ -217,8 +221,12 @@ PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_regexp_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
 
@@ -2229,6 +2237,42 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.prefix_varchar(target varchar, prefix varchar) : bool
+ */
+Datum
+pgroonga_prefix_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+								  VARSIZE_ANY_EXHDR(target),
+								  VARDATA_ANY(prefix),
+								  VARSIZE_ANY_EXHDR(prefix));
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_varchar_array(targets varchar[], prefix varchar) : bool
+ */
+Datum
+pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(prefix),
+													  VARSIZE_ANY_EXHDR(prefix),
+													  pgroonga_prefix_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
  *
  * It's deprecated since 1.2.1. Just for backward compatibility.
@@ -2318,6 +2362,42 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(prefix),
+													  VARSIZE_ANY_EXHDR(prefix),
+													  pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_varchar(target varchar, prefix varchar) : bool
+ */
+Datum
+pgroonga_prefix_rk_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
+	bool matched = false;
+
+	matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+									 VARSIZE_ANY_EXHDR(target),
+									 VARDATA_ANY(prefix),
+									 VARSIZE_ANY_EXHDR(prefix));
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_varchar_array(targets varchar[], prefix varchar) : bool
+ */
+Datum
+pgroonga_prefix_rk_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
 	bool matched;
 
 	matched =
@@ -2503,6 +2583,41 @@ pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.prefix_in_varchar(target varchar, prefixes varchar[]) : bool
+ */
+Datum
+pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched = false;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   prefixes,
+												   pgroonga_prefix_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ */
+Datum
+pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string_array(targets,
+														 prefixes,
+														 pgroonga_prefix_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga.prefix_rk_in_text(target text, prefixes text[]) : bool
  */
 Datum
@@ -2525,6 +2640,41 @@ pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
  */
 Datum
 pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string_array(targets,
+														 prefixes,
+														 pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_in_varchar(target varchar, prefixes varchar[]) : bool
+ */
+Datum
+pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched = false;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   prefixes,
+												   pgroonga_prefix_rk_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga.prefix_rk_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ */
+Datum
+pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
