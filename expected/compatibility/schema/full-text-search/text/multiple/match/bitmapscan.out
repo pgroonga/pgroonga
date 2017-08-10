@@ -1,0 +1,34 @@
+CREATE TABLE memos (
+  id integer,
+  title text,
+  content text
+);
+INSERT INTO memos
+     VALUES (1, 'PostgreSQL', 'is a RDBMS.');
+INSERT INTO memos
+     VALUES (2, 'Groonga', 'is fast full text search engine.');
+INSERT INTO memos
+     VALUES (3, 'PGroonga', 'is a PostgreSQL extension that uses Groonga.');
+CREATE INDEX grnindex ON memos
+  USING pgroonga (title pgroonga.text_full_text_search_ops_v2,
+                  content pgroonga.text_full_text_search_ops_v2);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+SELECT id, title, content
+  FROM memos
+ WHERE title %% 'Groonga';
+ id |  title  |             content              
+----+---------+----------------------------------
+  2 | Groonga | is fast full text search engine.
+(1 row)
+
+SELECT id, title, content
+  FROM memos
+ WHERE content %% 'Groonga';
+ id |  title   |                   content                    
+----+----------+----------------------------------------------
+  3 | PGroonga | is a PostgreSQL extension that uses Groonga.
+(1 row)
+
+DROP TABLE memos;

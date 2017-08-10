@@ -1,0 +1,19 @@
+CREATE TABLE logs (
+  id int,
+  record jsonb
+);
+
+INSERT INTO logs VALUES (1, '{"message": {"code": 100, "content": "hello"}}');
+INSERT INTO logs VALUES (1, '{"message": "hello"}');
+INSERT INTO logs VALUES (1, '{"message": ["hello", "world"]}');
+
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+
+SELECT id, record
+  FROM logs
+ WHERE record &` 'paths @ ".message" && type == "object"'
+ ORDER BY id;
+
+DROP TABLE logs;

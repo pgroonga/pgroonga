@@ -1,0 +1,34 @@
+CREATE TABLE logs (
+  created_at timestamp with time zone
+);
+INSERT INTO logs VALUES ('2015-02-14 10:44:10+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:09+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:02+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:04+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:01+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:05+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:07+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:06+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:03+09:00');
+INSERT INTO logs VALUES ('2015-02-14 10:44:08+09:00');
+CREATE INDEX pgroonga_index ON logs
+  USING pgroonga (created_at pgroonga.timestamptz_ops);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+SELECT created_at
+  FROM logs
+ WHERE created_at BETWEEN '2015-02-14 10:44:03+09:00' AND '2015-02-14 10:44:09+09:00'
+ ORDER BY created_at ASC;
+          created_at          
+------------------------------
+ Fri Feb 13 17:44:03 2015 PST
+ Fri Feb 13 17:44:04 2015 PST
+ Fri Feb 13 17:44:05 2015 PST
+ Fri Feb 13 17:44:06 2015 PST
+ Fri Feb 13 17:44:07 2015 PST
+ Fri Feb 13 17:44:08 2015 PST
+ Fri Feb 13 17:44:09 2015 PST
+(7 rows)
+
+DROP TABLE logs;

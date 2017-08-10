@@ -56,6 +56,12 @@ prepare-regress:
 	@sed -e "s,@TMP_DIR@,$(TMP_DIR),g"	\
 	  expected/vacuum/tablespace.out.in >	\
 	  expected/vacuum/tablespace.out
+	@sed -e "s,@TMP_DIR@,$(TMP_DIR),g"			\
+	  sql/compatibility/schema/vacuum/tablespace.sql.in >	\
+	  sql/compatibility/schema/vacuum/tablespace.sql
+	@sed -e "s,@TMP_DIR@,$(TMP_DIR),g"				\
+	  expected/compatibility/schema/vacuum/tablespace.out.in >	\
+	  expected/compatibility/schema/vacuum/tablespace.out
 
 $(RESULT_DIRS) $(EXPECTED_DIRS):
 	@mkdir -p $@

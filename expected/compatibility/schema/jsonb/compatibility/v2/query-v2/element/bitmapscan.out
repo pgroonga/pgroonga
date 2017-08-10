@@ -1,0 +1,38 @@
+CREATE TABLE fruits (
+  id int,
+  items jsonb
+);
+INSERT INTO fruits VALUES (1, '["apple"]');
+INSERT INTO fruits VALUES (2, '["banana", "apple"]');
+INSERT INTO fruits VALUES (3, '["peach"]');
+CREATE INDEX pgroonga_index ON fruits
+  USING pgroonga (items pgroonga.jsonb_ops_v2);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT id, items
+  FROM fruits
+ WHERE items &? 'banana OR peach'
+ ORDER BY id;
+                          QUERY PLAN                          
+--------------------------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Bitmap Heap Scan on fruits
+         Recheck Cond: (items &? 'banana OR peach'::text)
+         ->  Bitmap Index Scan on pgroonga_index
+               Index Cond: (items &? 'banana OR peach'::text)
+(6 rows)
+
+SELECT id, items
+  FROM fruits
+ WHERE items &? 'banana OR peach'
+ ORDER BY id;
+ id |        items        
+----+---------------------
+  2 | ["banana", "apple"]
+  3 | ["peach"]
+(2 rows)
+
+DROP TABLE fruits;

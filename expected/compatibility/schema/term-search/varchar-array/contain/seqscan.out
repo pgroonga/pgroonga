@@ -1,0 +1,23 @@
+CREATE TABLE memos (
+  title text,
+  tags varchar(1023)[]
+);
+INSERT INTO memos VALUES ('PostgreSQL', ARRAY['PostgreSQL']);
+INSERT INTO memos VALUES ('Groonga', ARRAY['Groonga']);
+INSERT INTO memos VALUES ('PGroonga', ARRAY['PostgreSQL', 'Groonga']);
+CREATE INDEX pgroonga_memos_index ON memos USING pgroonga (tags);
+ERROR:  data type character varying[] has no default operator class for access method "pgroonga"
+HINT:  You must specify an operator class for the index or define a default operator class for the data type.
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+SELECT title, tags
+  FROM memos
+ WHERE tags %% 'Groonga';
+  title   |         tags         
+----------+----------------------
+ Groonga  | {Groonga}
+ PGroonga | {PostgreSQL,Groonga}
+(2 rows)
+
+DROP TABLE memos;
