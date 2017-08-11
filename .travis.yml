@@ -37,15 +37,22 @@ script:
   - |
     case ${PG_VERSION} in
       9.3)
-        rm -rf sql/jsonb
-        rm -rf sql/function/flush/jsonb.sql
-        rm -rf sql/reindex/analyze.sql
-        rm -rf sql/groonga-function/tuple-is-alive/
-        rm -rf sql/groonga-function/tuple-is-alive/
-        rm -rf sql/term-search/text/options/tokenizer/ignored.sql
+        for path in jsonb/ \
+                    function/flush/jsonb.sql \
+                    reindex/analyze.sql \
+                    groonga-function/tuple-is-alive/ \
+                    groonga-function/tuple-is-alive/ \
+                    term-search/text/options/tokenizer/ignored.sql \
+            do \
+          rm -rf sql/$path
+          rm -rf sql/compatibility/schema/$path
+        done
         ;;
       9.4)
-        rm -rf sql/term-search/text/options/tokenizer/ignored.sql
+        for path in term-search/text/options/tokenizer/ignored.sql do
+          rm -rf sql/$path
+          rm -rf sql/compatibility/schema/$path
+        done
         ;;
     esac
   - sudo -u postgres -H mkdir -p /tmp/space

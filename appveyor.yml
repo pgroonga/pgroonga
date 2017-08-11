@@ -55,6 +55,7 @@ build_script:
 test_script:
   # TODO: Remove me when Groonga bundles libstemmer
   - rm sql/full-text-search/text/options/token-filters/custom.sql
+  - rm sql/compatibility/schema/full-text-search/text/options/token-filters/custom.sql
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
