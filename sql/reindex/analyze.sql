@@ -9,12 +9,12 @@ INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groon
 
 CREATE INDEX pgrn_index ON memos USING pgroonga (content);
 
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT oid
                            FROM pg_class
                           WHERE relname = 'pgrn_index'))::jsonb->1;
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT relfilenode
                            FROM pg_class
@@ -24,12 +24,12 @@ REINDEX INDEX pgrn_index;
 
 ANALYZE;
 
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT oid
                            FROM pg_class
                           WHERE relname = 'pgrn_index'))::jsonb->1;
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT relfilenode
                            FROM pg_class

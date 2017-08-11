@@ -21,19 +21,19 @@ INSERT INTO tag_readings VALUES ('PGroonga', 'ピージールンガ');
 INSERT INTO tag_readings VALUES ('pglogical', 'ピージーロジカル');
 
 CREATE INDEX pgrn_tags_index ON tags
-  USING pgroonga (name pgroonga.text_term_search_ops_v2);
+  USING pgroonga (name pgroonga_text_term_search_ops_v2);
 CREATE INDEX pgrn_tag_readings_index ON tag_readings
-  USING pgroonga (tag_name, katakana pgroonga.text_term_search_ops_v2);
+  USING pgroonga (tag_name, katakana pgroonga_text_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-SELECT name, pgroonga.score(tags)
+SELECT name, pgroonga_score(tags)
   FROM tags
   WHERE name &^ 'Groon'
 UNION
-SELECT tag_name, pgroonga.score(tag_readings)
+SELECT tag_name, pgroonga_score(tag_readings)
   FROM tag_readings
   WHERE katakana &^~ 'posu';
 

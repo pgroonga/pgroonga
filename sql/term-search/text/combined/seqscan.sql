@@ -24,11 +24,11 @@ SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
-SELECT name, pgroonga.score(tags)
+SELECT name, pgroonga_score(tags)
   FROM tags
   WHERE name &^ 'Groon'
 UNION
-SELECT tag_name, pgroonga.score(tag_readings)
+SELECT tag_name, pgroonga_score(tag_readings)
   FROM tag_readings
   WHERE katakana &^~ 'posu';
 

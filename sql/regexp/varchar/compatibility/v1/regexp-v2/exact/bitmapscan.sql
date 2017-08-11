@@ -8,7 +8,7 @@ INSERT INTO memos VALUES (2, 'Groonga');
 INSERT INTO memos VALUES (3, 'PGroonga');
 
 CREATE INDEX grnindex ON memos
-  USING pgroonga (content pgroonga.varchar_regexp_ops);
+  USING pgroonga (content pgroonga_varchar_regexp_ops);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

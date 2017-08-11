@@ -1,4 +1,4 @@
-SELECT unnest(pgroonga.snippet_html(
+SELECT unnest(pgroonga_snippet_html(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||

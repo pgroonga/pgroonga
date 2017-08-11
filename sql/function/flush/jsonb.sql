@@ -9,6 +9,6 @@ INSERT INTO logs VALUES (3, '{"message": "Good-by World"}');
 
 CREATE INDEX pgroonga_index ON logs USING pgroonga (record);
 
-SELECT pgroonga.flush('pgroonga_index');
+SELECT pgroonga_flush('pgroonga_index');
 
 DROP TABLE logs;

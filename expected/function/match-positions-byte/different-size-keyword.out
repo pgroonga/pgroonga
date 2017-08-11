@@ -1,8 +1,8 @@
-SELECT pgroonga.match_positions_byte(
+SELECT pgroonga_match_positions_byte(
   '100㍉メートル',
   ARRAY['ミリ']);
- match_positions_byte 
-----------------------
+ pgroonga_match_positions_byte 
+-------------------------------
  {{3,3}}
 (1 row)
 

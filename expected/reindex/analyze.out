@@ -6,7 +6,7 @@ INSERT INTO memos VALUES (1, 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES (2, 'Groonga is fast full text search engine.');
 INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groonga.');
 CREATE INDEX pgrn_index ON memos USING pgroonga (content);
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT oid
                            FROM pg_class
@@ -16,7 +16,7 @@ SELECT pgroonga.command(
  true
 (1 row)
 
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT relfilenode
                            FROM pg_class
@@ -28,7 +28,7 @@ SELECT pgroonga.command(
 
 REINDEX INDEX pgrn_index;
 ANALYZE;
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT oid
                            FROM pg_class
@@ -38,7 +38,7 @@ SELECT pgroonga.command(
  false
 (1 row)
 
-SELECT pgroonga.command(
+SELECT pgroonga_command(
          'object_exist ' ||
            'Sources' || (SELECT relfilenode
                            FROM pg_class

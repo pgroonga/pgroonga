@@ -3,6 +3,6 @@ CREATE TABLE synonyms (
   synonym text
 );
 
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonym', 'Groonga');
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonym', 'Groonga');
 
 DROP TABLE synonyms;

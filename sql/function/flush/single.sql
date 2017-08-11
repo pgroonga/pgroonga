@@ -9,6 +9,6 @@ INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groon
 
 CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
 
-SELECT pgroonga.flush('pgroonga_index');
+SELECT pgroonga_flush('pgroonga_index');
 
 DROP TABLE memos;

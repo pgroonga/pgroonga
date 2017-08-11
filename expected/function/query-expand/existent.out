@@ -3,8 +3,8 @@ CREATE TABLE synonyms (
   synonyms text[]
 );
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
-      query_expand      
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'Groonga');
+ pgroonga_query_expand  
 ------------------------
  ((Groonga) OR (Senna))
 (1 row)

@@ -7,6 +7,6 @@ CREATE INDEX pgrn_index ON memos
  USING pgroonga (content)
   WITH (plugins = 'query_expanders/tsv');
 
-SELECT pgroonga.command('object_exist QueryExpanderTSV')::json->>1;
+SELECT pgroonga_command('object_exist QueryExpanderTSV')::json->>1;
 
 DROP TABLE memos;

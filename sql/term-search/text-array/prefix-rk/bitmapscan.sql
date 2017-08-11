@@ -7,7 +7,7 @@ INSERT INTO readings VALUES (ARRAY['グルンガ', 'グルン']);
 INSERT INTO readings VALUES (ARRAY['ピージールンガ', 'ピーグルン']);
 
 CREATE INDEX pgrn_index ON readings
-  USING pgroonga (katakanas pgroonga.text_array_term_search_ops_v2);
+  USING pgroonga (katakanas pgroonga_text_array_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

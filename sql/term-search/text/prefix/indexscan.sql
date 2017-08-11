@@ -8,7 +8,7 @@ INSERT INTO tags VALUES ('PGroonga');
 INSERT INTO tags VALUES ('pglogical');
 
 CREATE INDEX pgrn_index ON tags
-  USING pgroonga (name pgroonga.text_term_search_ops_v2);
+  USING pgroonga (name pgroonga_text_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;

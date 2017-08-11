@@ -3,7 +3,7 @@ CREATE TABLE logs (
 );
 
 CREATE INDEX pgroonga_index ON logs
-  USING pgroonga (record pgroonga.jsonb_ops_v2);
+  USING pgroonga (record pgroonga_jsonb_ops_v2);
 
 INSERT INTO logs VALUES (NULL);
 

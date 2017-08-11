@@ -2,9 +2,9 @@ CREATE TABLE synonyms (
   term text PRIMARY KEY,
   synonyms text[]
 );
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
- query_expand 
---------------
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'Groonga');
+ pgroonga_query_expand 
+-----------------------
  Groonga
 (1 row)
 

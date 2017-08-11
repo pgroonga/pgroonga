@@ -8,7 +8,7 @@ INSERT INTO memos VALUES (2, 'a');
 INSERT INTO memos VALUES (3, 'ab');
 
 CREATE INDEX grnindex ON memos
- USING pgroonga (content pgroonga.text_full_text_search_ops_v2);
+ USING pgroonga (content pgroonga_text_full_text_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

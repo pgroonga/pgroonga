@@ -8,10 +8,10 @@ INSERT INTO memos VALUES ('PGroonga is a PostgreSQL extension that uses Groonga.
 
 CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
 
-SELECT pgroonga.command('select',
+SELECT pgroonga_command('select',
                         ARRAY[
                           'table',
-                          pgroonga.table_name('pgroonga_index'),
+                          pgroonga_table_name('pgroonga_index'),
                           'output_columns',
                           '_id, content'
                         ])::json->>1

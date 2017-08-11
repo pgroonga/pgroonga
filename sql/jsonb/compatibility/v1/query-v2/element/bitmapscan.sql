@@ -8,7 +8,7 @@ INSERT INTO fruits VALUES (2, '["banana", "apple"]');
 INSERT INTO fruits VALUES (3, '["peach"]');
 
 CREATE INDEX pgroonga_index ON fruits
-  USING pgroonga (items pgroonga.jsonb_ops);
+  USING pgroonga (items pgroonga_jsonb_ops);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

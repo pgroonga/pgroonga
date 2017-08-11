@@ -1,1 +1,1 @@
-SELECT pgroonga.flush('pgroonga_index');
+SELECT pgroonga_flush('pgroonga_index');

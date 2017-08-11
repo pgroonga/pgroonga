@@ -10,7 +10,8 @@ INSERT INTO logs VALUES (4, '{"key": true}');
 INSERT INTO logs VALUES (5, '{"key": []}');
 INSERT INTO logs VALUES (6, '[{}]');
 
-CREATE INDEX pgroonga_index ON logs USING pgroonga (record);
+CREATE INDEX pgroonga_index ON logs
+  USING pgroonga (record pgroonga_jsonb_ops);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;

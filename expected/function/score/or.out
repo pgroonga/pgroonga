@@ -9,13 +9,13 @@ CREATE INDEX grnindex ON memos USING pgroonga (id, content);
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
-SELECT id, content, pgroonga.score(memos)
+SELECT id, content, pgroonga_score(memos)
   FROM memos
  WHERE content %% 'PGroonga' OR content %% 'Groonga';
- id |                        content                        | score 
-----+-------------------------------------------------------+-------
-  2 | Groonga is fast full text search engine.              |     1
-  3 | PGroonga is a PostgreSQL extension that uses Groonga. |     2
+ id |                        content                        | pgroonga_score 
+----+-------------------------------------------------------+----------------
+  2 | Groonga is fast full text search engine.              |              1
+  3 | PGroonga is a PostgreSQL extension that uses Groonga. |              2
 (2 rows)
 
 DROP TABLE memos;

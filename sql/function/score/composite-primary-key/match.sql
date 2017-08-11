@@ -18,7 +18,7 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-SELECT created_date, slug, content, pgroonga.score(memos)
+SELECT created_date, slug, content, pgroonga_score(memos)
   FROM memos
  WHERE content %% 'Groonga';
 

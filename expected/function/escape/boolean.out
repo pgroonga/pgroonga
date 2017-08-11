@@ -1,12 +1,12 @@
-SELECT pgroonga.escape(true);
- escape 
---------
+SELECT pgroonga_escape(true);
+ pgroonga_escape 
+-----------------
  true
 (1 row)
 
-SELECT pgroonga.escape(false);
- escape 
---------
+SELECT pgroonga_escape(false);
+ pgroonga_escape 
+-----------------
  false
 (1 row)
 

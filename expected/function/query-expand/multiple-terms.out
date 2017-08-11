@@ -5,8 +5,8 @@ CREATE TABLE synonyms (
 CREATE INDEX synonyms_term_index ON synonyms (term);
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Mroonga', 'PGroonga', 'Rroonga']);
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
-                          query_expand                          
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'Groonga');
+                     pgroonga_query_expand                      
 ----------------------------------------------------------------
  ((Mroonga) OR (PGroonga) OR (Rroonga) OR (Groonga) OR (Senna))
 (1 row)

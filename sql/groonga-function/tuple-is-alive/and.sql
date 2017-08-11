@@ -13,8 +13,8 @@ UPDATE memos
  SET content = 'Mroonga is a MySQL storage engine that uses Groonga.'
  WHERE id = 3;
 
-SELECT pgroonga.command('select ' ||
-                        pgroonga.table_name('pgroonga_index') ||
+SELECT pgroonga_command('select ' ||
+                        pgroonga_table_name('pgroonga_index') ||
                         ' --match_columns content'
                         ' --query Groonga'
                         ' --filter "pgroonga_tuple_is_alive(ctid)"'

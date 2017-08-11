@@ -8,7 +8,7 @@ INSERT INTO logs VALUES (2, '{"message": "This is a pen"}');
 INSERT INTO logs VALUES (3, '{"message": "Good-by World"}');
 
 CREATE INDEX pgroonga_index ON logs
-  USING pgroonga (record pgroonga.jsonb_ops_v2);
+  USING pgroonga (record pgroonga_jsonb_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;

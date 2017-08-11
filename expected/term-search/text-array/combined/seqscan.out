@@ -15,14 +15,14 @@ INSERT INTO tags VALUES (3,
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
-SELECT names, pgroonga.score(tags)
+SELECT names, pgroonga_score(tags)
   FROM tags
   WHERE names &^ 'Groon' OR
         readings &^~ 'posu';
-      names      | score 
------------------+-------
- {PostgreSQL,PG} |     0
- {Groonga,grn}   |     0
+      names      | pgroonga_score 
+-----------------+----------------
+ {PostgreSQL,PG} |              0
+ {Groonga,grn}   |              0
 (2 rows)
 
 DROP TABLE tags;

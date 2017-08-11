@@ -4,7 +4,7 @@ CREATE TABLE memos (
 );
 
 CREATE INDEX pgroonga_index ON memos
- USING pgroonga (id pgroonga.text_term_search_ops_v2,
+ USING pgroonga (id pgroonga_text_term_search_ops_v2,
                  content);
 
 INSERT INTO memos VALUES ('a', 'PostgreSQL is a RDBMS.');
@@ -15,7 +15,7 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-SELECT id, content, pgroonga.score(memos)
+SELECT id, content, pgroonga_score(memos)
   FROM memos
  WHERE content &@~ 'PGroonga OR Groonga';
 

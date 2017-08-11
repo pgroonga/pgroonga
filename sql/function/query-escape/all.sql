@@ -1,1 +1,1 @@
-SELECT pgroonga.query_escape('a+B-c< >あいう~*()"\\'':');
+SELECT pgroonga_query_escape('a+B-c< >あいう~*()"\\'':');

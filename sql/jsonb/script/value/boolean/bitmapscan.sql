@@ -7,7 +7,8 @@ INSERT INTO fruits VALUES (1, '{"apple":  true}');
 INSERT INTO fruits VALUES (2, '{"banana": false}');
 INSERT INTO fruits VALUES (3, '{"peach":  true}');
 
-CREATE INDEX pgroonga_index ON fruits USING pgroonga (items);
+CREATE INDEX pgroonga_index ON fruits
+  USING pgroonga (items pgroonga_jsonb_ops);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

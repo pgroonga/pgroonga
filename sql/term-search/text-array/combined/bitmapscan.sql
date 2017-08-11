@@ -16,20 +16,20 @@ INSERT INTO tags VALUES (3,
 
 CREATE INDEX pgrn_tags_index ON tags
   USING pgroonga (id,
-                  names pgroonga.text_array_term_search_ops_v2,
-                  readings pgroonga.text_array_term_search_ops_v2);
+                  names pgroonga_text_array_term_search_ops_v2,
+                  readings pgroonga_text_array_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
 EXPLAIN (COSTS OFF)
-SELECT names, pgroonga.score(tags)
+SELECT names, pgroonga_score(tags)
   FROM tags
   WHERE names &^ 'Groon' OR
         readings &^~ 'posu';
 
-SELECT names, pgroonga.score(tags)
+SELECT names, pgroonga_score(tags)
   FROM tags
   WHERE names &^ 'Groon' OR
         readings &^~ 'posu';

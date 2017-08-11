@@ -5,6 +5,6 @@ CREATE TABLE synonyms (
 
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
 
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'Groonga');
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'Groonga');
 
 DROP TABLE synonyms;

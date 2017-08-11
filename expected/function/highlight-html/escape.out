@@ -1,8 +1,8 @@
-SELECT pgroonga.highlight_html(
+SELECT pgroonga_highlight_html(
   '<p>Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index.</p>',
   ARRAY['Groonga']);
-                                                         highlight_html                                                          
+                                                     pgroonga_highlight_html                                                     
 ---------------------------------------------------------------------------------------------------------------------------------
  &lt;p&gt;<span class="keyword">Groonga</span> is a fast and accurate full text search engine based on inverted index.&lt;/p&gt;
 (1 row)

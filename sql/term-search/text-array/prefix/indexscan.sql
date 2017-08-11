@@ -8,7 +8,7 @@ INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn']);
 INSERT INTO tags VALUES (ARRAY[]::text[]);
 
 CREATE INDEX pgrn_index ON tags
-  USING pgroonga (names pgroonga.text_array_term_search_ops_v2);
+  USING pgroonga (names pgroonga_text_array_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;

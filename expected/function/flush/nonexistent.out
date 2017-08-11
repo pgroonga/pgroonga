@@ -1,2 +1,2 @@
-SELECT pgroonga.flush('pgroonga_index');
+SELECT pgroonga_flush('pgroonga_index');
 ERROR:  relation "pgroonga_index" does not exist

@@ -1,4 +1,4 @@
-SELECT pgroonga.highlight_html(
+SELECT pgroonga_highlight_html(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||

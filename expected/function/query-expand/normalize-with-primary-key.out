@@ -3,11 +3,11 @@ CREATE TABLE synonyms (
   synonyms text[]
 );
 CREATE INDEX synonyms_term_index ON synonyms
-  USING pgroonga (term pgroonga.text_term_search_ops_v2);
+  USING pgroonga (term pgroonga_text_term_search_ops_v2);
 INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
 INSERT INTO synonyms VALUES ('GROONGA', ARRAY['"Full text search"']);
-SELECT pgroonga.query_expand('synonyms', 'term', 'synonyms', 'groonga');
-                  query_expand                  
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'groonga');
+             pgroonga_query_expand              
 ------------------------------------------------
  ((Groonga) OR (Senna) OR ("Full text search"))
 (1 row)

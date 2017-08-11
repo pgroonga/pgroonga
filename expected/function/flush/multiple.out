@@ -10,9 +10,9 @@ INSERT INTO memos
 INSERT INTO memos
      VALUES (3, 'PGroonga', 'is a PostgreSQL extension that uses Groonga.');
 CREATE INDEX pgroonga_index ON memos USING pgroonga (title, content);
-SELECT pgroonga.flush('pgroonga_index');
- flush 
--------
+SELECT pgroonga_flush('pgroonga_index');
+ pgroonga_flush 
+----------------
  t
 (1 row)
 

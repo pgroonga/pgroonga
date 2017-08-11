@@ -1,5 +1,5 @@
 -- To load PGroonga
-SELECT pgroonga.command('status')::json->0->0;
+SELECT pgroonga_command('status')::json->0->0;
 
 SHOW pgroonga.log_level;
 SET pgroonga.log_level = 'none';

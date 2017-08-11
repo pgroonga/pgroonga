@@ -8,7 +8,7 @@ INSERT INTO readings VALUES ('ピージールンガ');
 INSERT INTO readings VALUES ('ピージーロジカル');
 
 CREATE INDEX pgrn_index ON readings
-  USING pgroonga (katakana pgroonga.text_term_search_ops_v2);
+  USING pgroonga (katakana pgroonga_text_term_search_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = off;

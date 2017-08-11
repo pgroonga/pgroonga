@@ -1,1 +1,1 @@
-SELECT pgroonga.query_extract_keywords('Groonga');
+SELECT pgroonga_query_extract_keywords('Groonga');

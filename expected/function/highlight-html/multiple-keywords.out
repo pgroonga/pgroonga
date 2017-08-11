@@ -1,4 +1,4 @@
-SELECT pgroonga.highlight_html(
+SELECT pgroonga_highlight_html(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||
@@ -12,7 +12,7 @@ SELECT pgroonga.highlight_html(
   'queries. Due to this advantage, Groonga can cover weakness of ' ||
   'row-oriented systems.',
   ARRAY['fast', 'PostgreSQL']);
-                                                                                                                                                                        highlight_html                                                                                                                                                                        
+                                                                                                                                                                   pgroonga_highlight_html                                                                                                                                                                    
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Groonga is a <span class="keyword">fast</span> and accurate full text search engine based on inverted index. One of the characteristics of Groonga is that a newly registered document instantly appears in search results. Also, Groonga allows updates without read locks. These characteristics result in superior performance on real-time applications.+
                                                                                                                                                                                                                                                                                                                                                              +

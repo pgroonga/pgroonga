@@ -1,6 +1,6 @@
-SELECT pgroonga.command_escape_value('a+B-c" \\あ\nいう');
-  command_escape_value   
--------------------------
+SELECT pgroonga_command_escape_value('a+B-c" \\あ\nいう');
+ pgroonga_command_escape_value 
+-------------------------------
  "a+B-c\" \\\\あ\\nいう"
 (1 row)
 

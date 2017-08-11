@@ -1,4 +1,4 @@
-SELECT pgroonga.match_positions_character(
+SELECT pgroonga_match_positions_character(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||
@@ -12,7 +12,7 @@ SELECT pgroonga.match_positions_character(
   'queries. Due to this advantage, Groonga can cover weakness of ' ||
   'row-oriented systems.',
   ARRAY['Groonga']);
-        match_positions_character        
+   pgroonga_match_positions_character    
 -----------------------------------------
  {{0,7},{110,7},{197,7},{319,9},{553,7}}
 (1 row)

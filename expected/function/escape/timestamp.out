@@ -1,12 +1,12 @@
-SELECT pgroonga.escape(TIMESTAMP '2016-11-29 01:23:45');
-   escape   
-------------
+SELECT pgroonga_escape(TIMESTAMP '2016-11-29 01:23:45');
+ pgroonga_escape 
+-----------------
  1480382625
 (1 row)
 
-SELECT pgroonga.escape(TIMESTAMP '2016-11-29 01:23:45+09');
-   escape   
-------------
+SELECT pgroonga_escape(TIMESTAMP '2016-11-29 01:23:45+09');
+ pgroonga_escape 
+-----------------
  1480382625
 (1 row)
 

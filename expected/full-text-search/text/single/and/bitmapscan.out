@@ -11,7 +11,7 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SELECT id, content
   FROM memos
- WHERE content %% 'PGroonga' AND content %% 'Groonga';
+ WHERE content &@ 'PGroonga' AND content &@ 'Groonga';
  id |                        content                        
 ----+-------------------------------------------------------
   3 | PGroonga is a PostgreSQL extension that uses Groonga.

@@ -1,4 +1,4 @@
-SELECT pgroonga.match_positions_byte(
+SELECT pgroonga_match_positions_byte(
   'Groonga is a fast and accurate full text search engine based on ' ||
   'inverted index. One of the characteristics of Groonga is that a ' ||
   'newly registered document instantly appears in search results. ' ||
@@ -12,8 +12,8 @@ SELECT pgroonga.match_positions_byte(
   'queries. Due to this advantage, Groonga can cover weakness of ' ||
   'row-oriented systems.',
   ARRAY['fast', 'PostgreSQL']);
- match_positions_byte 
-----------------------
+ pgroonga_match_positions_byte 
+-------------------------------
  {{13,4},{455,10}}
 (1 row)
 

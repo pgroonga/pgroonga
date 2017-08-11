@@ -11,7 +11,7 @@ INSERT INTO logs
      VALUES (3, '{"body": {"values": [100, "Hello", true, "World"]}}');
 
 CREATE INDEX pgroonga_index ON logs
-  USING pgroonga (record pgroonga.jsonb_ops_v2);
+  USING pgroonga (record pgroonga_jsonb_ops_v2);
 
 SET enable_seqscan = off;
 SET enable_indexscan = on;
