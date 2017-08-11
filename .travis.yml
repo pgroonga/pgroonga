@@ -69,4 +69,4 @@ script:
     fi
 after_failure:
   - cat regression.diffs
-  - sudo find /var/lib/postgres
+  - ps axuwww | grep post
