@@ -69,4 +69,5 @@ script:
     fi
 after_failure:
   - cat regression.diffs
-  - ps axuwww | grep post
+  - sudo du -ahc /var/ramfs/postgresql/
+  - sudo cat /var/ramfs/postgresql/${PG_VERSION}/main/base/pgroogna.log
