@@ -42,14 +42,15 @@ script:
                     reindex/analyze.sql \
                     groonga-function/tuple-is-alive/ \
                     groonga-function/tuple-is-alive/ \
-                    term-search/text/options/tokenizer/ignored.sql \
-            do \
-          rm -rf sql/$path
-          rm -rf sql/compatibility/schema/$path
+                    term-search/text/options/tokenizer/ignored.sql
+        do
+          rm -rf sql/${path}
+          rm -rf sql/compatibility/schema/${path}
         done
         ;;
       9.4)
-        for path in term-search/text/options/tokenizer/ignored.sql do
+        for path in term-search/text/options/tokenizer/ignored.sql
+        do
           rm -rf sql/$path
           rm -rf sql/compatibility/schema/$path
         done
