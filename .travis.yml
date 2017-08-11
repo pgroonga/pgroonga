@@ -57,10 +57,16 @@ script:
         ;;
     esac
   - sudo -u postgres -H mkdir -p /tmp/space
-  - make installcheck TMP_DIR=/tmp SETUP_TMP_DIR=no
+  - |
+    PG_REGRESS_DIFF_OPTS="-u --color=always" \
+      make installcheck \
+        TMP_DIR=/tmp \
+        SETUP_TMP_DIR=no \
+        EXTRA_REGRESS_OPTS="--launcher=$(pwd)/test/short-pgappname"
   - |
     if [ ${PG_VERSION} = "9.6" ]; then
       test/run-test.rb
     fi
 after_failure:
   - cat regression.diffs
+  - sudo find /var/lib/postgres
