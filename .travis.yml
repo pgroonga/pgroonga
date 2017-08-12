@@ -45,8 +45,8 @@ script:
                     term-search/text/options/tokenizer/ignored.sql
         do
           rm -rf sql/${path}
-          rm -rf sql/compatibility/schema/${path}
         done
+        rm -rf sql/compatibility
         ;;
       9.4)
         for path in term-search/text/options/tokenizer/ignored.sql
