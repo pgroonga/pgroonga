@@ -61,7 +61,7 @@ script:
     (for i in $(seq 2)
      do
        sleep 10
-       psql -d contrib_regression_pgroonga -c VACUUM -a
+       psql -d contrib_regression -c VACUUM -a
      done) &
     PG_REGRESS_DIFF_OPTS="-u" \
       make installcheck \
