@@ -58,11 +58,6 @@ script:
     esac
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
-    (for i in $(seq 24)
-     do
-       sleep 5
-       psql -d contrib_regression -c VACUUM
-     done) &
     PG_REGRESS_DIFF_OPTS="-u" \
       make installcheck \
         TMP_DIR=/tmp \
