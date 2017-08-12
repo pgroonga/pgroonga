@@ -55,11 +55,14 @@ build_script:
 test_script:
   # TODO: Remove me when Groonga bundles libstemmer
   - rm sql/full-text-search/text/options/token-filters/custom.sql
+  # Reduce tests to reduce test time
+  - rm -rf sql/compatibility
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
       sed -e 's,\.sql$,,g' > schedule
   - ps: Set-Culture ja-JP
+  - set PG_REGRESS_DIFF_OPTS=-u
   - ..\pgsql\bin\pg_regress
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
