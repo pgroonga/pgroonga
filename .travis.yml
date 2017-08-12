@@ -61,9 +61,7 @@ script:
     (for i in $(seq 24)
      do
        sleep 5
-       df -h | grep ramfs
        psql -d contrib_regression -c VACUUM
-       df -h | grep ramfs
      done) &
     PG_REGRESS_DIFF_OPTS="-u" \
       make installcheck \
