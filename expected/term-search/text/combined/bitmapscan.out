@@ -23,17 +23,20 @@ CREATE INDEX pgrn_tag_readings_index ON tag_readings
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
-SELECT name, pgroonga_score(tags)
+SELECT * FROM (
+  SELECT name, pgroonga_score(tags) AS score
   FROM tags
   WHERE name &^ 'Groon'
-UNION
-SELECT tag_name, pgroonga_score(tag_readings)
+  UNION
+  SELECT tag_name AS name, pgroonga_score(tag_readings) AS score
   FROM tag_readings
-  WHERE katakana &^~ 'posu';
-    name    | pgroonga_score 
-------------+----------------
- PostgreSQL |              1
- Groonga    |              1
+  WHERE katakana &^~ 'posu'
+) AS candidates
+ORDER BY name;
+    name    | score 
+------------+-------
+ Groonga    |     1
+ PostgreSQL |     1
 (2 rows)
 
 DROP TABLE tag_readings;

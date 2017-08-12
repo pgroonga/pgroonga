@@ -29,13 +29,16 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-SELECT name, pgroonga_score(tags)
+SELECT * FROM (
+  SELECT name, pgroonga_score(tags) AS score
   FROM tags
   WHERE name &^ 'Groon'
-UNION
-SELECT tag_name, pgroonga_score(tag_readings)
+  UNION
+  SELECT tag_name AS name, pgroonga_score(tag_readings) AS score
   FROM tag_readings
-  WHERE katakana &^~ 'posu';
+  WHERE katakana &^~ 'posu'
+) AS candidates
+ORDER BY name;
 
 DROP TABLE tag_readings;
 DROP TABLE tags;

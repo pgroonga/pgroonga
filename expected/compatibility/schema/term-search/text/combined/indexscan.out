@@ -32,8 +32,8 @@ SELECT tag_name, pgroonga.score(tag_readings)
   WHERE katakana &^~ 'posu';
     name    | score 
 ------------+-------
- PostgreSQL |     1
  Groonga    |     1
+ PostgreSQL |     1
 (2 rows)
 
 DROP TABLE tag_readings;
