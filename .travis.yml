@@ -58,7 +58,7 @@ script:
     esac
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
-    (for i in $(seq 120)
+    (for i in $(seq 600)
      do
        sleep 1
        df -h | grep ramfs
