@@ -58,11 +58,11 @@ script:
     esac
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
-    (for i in $(seq 2)
+    (for i in $(seq 24)
      do
        sleep 5
        df -h | grep ramfs
-       psql -d contrib_regression -c VACUUM -a
+       psql -d contrib_regression -c VACUUM
        df -h | grep ramfs
      done) &
     PG_REGRESS_DIFF_OPTS="-u" \
