@@ -19,11 +19,10 @@ ALTER OPERATOR FAMILY pgroonga.text_term_search_ops_v2 USING pgroonga
 -- Update amstrategies for old PostgreSQL
 DO LANGUAGE plpgsql $$
 BEGIN
-	SELECT amstrategies FROM pg_am LIMIT 0;
+	UPDATE pg_am SET amstrategies = 30
+	 WHERE amname = 'pgroonga';
 EXCEPTION
-	WHEN syntax_error THEN
-		UPDATE pg_am SET amstrategies = 30
-		 WHERE amname = 'pgroonga';
+	WHEN undefined_column THEN -- Ignore
 END;
 $$;
 
