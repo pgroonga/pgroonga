@@ -1329,8 +1329,6 @@ $$;
 
 -- For backward compatibility
 
-SET search_path = public;
-
 CREATE SCHEMA pgroonga;
 
 CREATE FUNCTION pgroonga.score("row" record)
@@ -1527,30 +1525,35 @@ CREATE FUNCTION pgroonga.match_term(target varchar[], term varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.%% (
-	PROCEDURE = pgroonga.match_term,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.%% (
+			PROCEDURE = pgroonga.match_term,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.%% (
-	PROCEDURE = pgroonga.match_term,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.%% (
+			PROCEDURE = pgroonga.match_term,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.%% (
-	PROCEDURE = pgroonga.match_term,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+		CREATE OPERATOR public.%% (
+			PROCEDURE = pgroonga.match_term,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
 
-CREATE OPERATOR pgroonga.%% (
-	PROCEDURE = pgroonga.match_term,
-	LEFTARG = varchar[],
-	RIGHTARG = varchar
-);
-
+		CREATE OPERATOR public.%% (
+			PROCEDURE = pgroonga.match_term,
+			LEFTARG = varchar[],
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_query(text, text)
 	RETURNS bool
@@ -1573,24 +1576,29 @@ CREATE FUNCTION pgroonga.match_query(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.@@ (
-	PROCEDURE = pgroonga.match_query,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.@@ (
+			PROCEDURE = pgroonga.match_query,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.@@ (
-	PROCEDURE = pgroonga.match_query,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.@@ (
+			PROCEDURE = pgroonga.match_query,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.@@ (
-	PROCEDURE = pgroonga.match_query,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
-
+		CREATE OPERATOR public.@@ (
+			PROCEDURE = pgroonga.match_query,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_regexp(text, text)
 	RETURNS bool
@@ -1606,18 +1614,23 @@ CREATE FUNCTION pgroonga.match_regexp(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.@~ (
-	PROCEDURE = pgroonga.match_regexp,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.@~ (
+			PROCEDURE = pgroonga.match_regexp,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.@~ (
-	PROCEDURE = pgroonga.match_regexp,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
-
+		CREATE OPERATOR public.@~ (
+			PROCEDURE = pgroonga.match_regexp,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 /* v2 */
 CREATE FUNCTION pgroonga.match_text(text, text)
@@ -1627,11 +1640,17 @@ CREATE FUNCTION pgroonga.match_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&@ (
-	PROCEDURE = pgroonga.match_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@ (
+			PROCEDURE = pgroonga.match_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_text_array(text[], text)
 	RETURNS bool
@@ -1640,11 +1659,17 @@ CREATE FUNCTION pgroonga.match_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&@ (
-	PROCEDURE = pgroonga.match_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@ (
+			PROCEDURE = pgroonga.match_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_varchar(varchar, varchar)
 	RETURNS bool
@@ -1653,11 +1678,17 @@ CREATE FUNCTION pgroonga.match_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&@ (
-	PROCEDURE = pgroonga.match_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@ (
+			PROCEDURE = pgroonga.match_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.contain_varchar_array(varchar[], varchar)
 	RETURNS bool
@@ -1666,11 +1697,17 @@ CREATE FUNCTION pgroonga.contain_varchar_array(varchar[], varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&> (
-	PROCEDURE = pgroonga.contain_varchar_array,
-	LEFTARG = varchar[],
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&> (
+			PROCEDURE = pgroonga.contain_varchar_array,
+			LEFTARG = varchar[],
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
@@ -1686,11 +1723,13 @@ BEGIN
 			IMMUTABLE
 			STRICT;
 
-		CREATE OPERATOR pgroonga.&@ (
-			PROCEDURE = pgroonga.match_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+		IF current_schema() <> 'public' THEN
+			CREATE OPERATOR public.&@ (
+				PROCEDURE = pgroonga.match_jsonb,
+				LEFTARG = jsonb,
+				RIGHTARG = text
+			);
+		END IF;
 	END IF;
 END;
 $$;
@@ -1702,18 +1741,24 @@ CREATE FUNCTION pgroonga.query_text(text, text)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&? (
-	PROCEDURE = pgroonga.query_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&? (
+			PROCEDURE = pgroonga.query_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.&@~ (
-	PROCEDURE = pgroonga.query_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.&@~ (
+			PROCEDURE = pgroonga.query_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.query_text_array(text[], text)
 	RETURNS bool
@@ -1722,18 +1767,24 @@ CREATE FUNCTION pgroonga.query_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&? (
-	PROCEDURE = pgroonga.query_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&? (
+			PROCEDURE = pgroonga.query_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.&@~ (
-	PROCEDURE = pgroonga.query_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.&@~ (
+			PROCEDURE = pgroonga.query_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.query_varchar(varchar, varchar)
 	RETURNS bool
@@ -1742,18 +1793,24 @@ CREATE FUNCTION pgroonga.query_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&? (
-	PROCEDURE = pgroonga.query_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&? (
+			PROCEDURE = pgroonga.query_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
 
-CREATE OPERATOR pgroonga.&@~ (
-	PROCEDURE = pgroonga.query_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+		CREATE OPERATOR public.&@~ (
+			PROCEDURE = pgroonga.query_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
@@ -1769,18 +1826,20 @@ BEGIN
 			IMMUTABLE
 			STRICT;
 
-		-- Deprecated since 1.2.2.
-		CREATE OPERATOR pgroonga.&? (
-			PROCEDURE = pgroonga.query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+		IF current_schema() <> 'public' THEN
+			-- Deprecated since 1.2.2.
+			CREATE OPERATOR public.&? (
+				PROCEDURE = pgroonga.query_jsonb,
+				LEFTARG = jsonb,
+				RIGHTARG = text
+			);
 
-		CREATE OPERATOR pgroonga.&@~ (
-			PROCEDURE = pgroonga.query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+			CREATE OPERATOR public.&@~ (
+				PROCEDURE = pgroonga.query_jsonb,
+				LEFTARG = jsonb,
+				RIGHTARG = text
+			);
+		END IF;
 	END IF;
 END;
 $$;
@@ -1792,18 +1851,24 @@ CREATE FUNCTION pgroonga.similar_text(text, text)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&~? (
-	PROCEDURE = pgroonga.similar_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&~? (
+			PROCEDURE = pgroonga.similar_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.&@* (
-	PROCEDURE = pgroonga.similar_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.&@* (
+			PROCEDURE = pgroonga.similar_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.similar_text_array(text[], text)
 	RETURNS bool
@@ -1812,18 +1877,24 @@ CREATE FUNCTION pgroonga.similar_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&~? (
-	PROCEDURE = pgroonga.similar_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&~? (
+			PROCEDURE = pgroonga.similar_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-CREATE OPERATOR pgroonga.&@* (
-	PROCEDURE = pgroonga.similar_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		CREATE OPERATOR public.&@* (
+			PROCEDURE = pgroonga.similar_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.similar_varchar(varchar, varchar)
 	RETURNS bool
@@ -1832,18 +1903,24 @@ CREATE FUNCTION pgroonga.similar_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&~? (
-	PROCEDURE = pgroonga.similar_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&~? (
+			PROCEDURE = pgroonga.similar_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
 
-CREATE OPERATOR pgroonga.&@* (
-	PROCEDURE = pgroonga.similar_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+		CREATE OPERATOR public.&@* (
+			PROCEDURE = pgroonga.similar_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_text(text, text)
 	RETURNS bool
@@ -1852,11 +1929,17 @@ CREATE FUNCTION pgroonga.prefix_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^ (
-	PROCEDURE = pgroonga.prefix_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^ (
+			PROCEDURE = pgroonga.prefix_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_text_array(text[], text)
 	RETURNS bool
@@ -1865,18 +1948,24 @@ CREATE FUNCTION pgroonga.prefix_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^ (
-	PROCEDURE = pgroonga.prefix_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^ (
+			PROCEDURE = pgroonga.prefix_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-/* Deprecated since 1.2.1. */
-CREATE OPERATOR pgroonga.&^> (
-	PROCEDURE = pgroonga.prefix_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		/* Deprecated since 1.2.1. */
+		CREATE OPERATOR public.&^> (
+			PROCEDURE = pgroonga.prefix_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 	RETURNS bool
@@ -1885,11 +1974,17 @@ CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^~ (
-	PROCEDURE = pgroonga.prefix_rk_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^~ (
+			PROCEDURE = pgroonga.prefix_rk_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
 	RETURNS bool
@@ -1898,18 +1993,24 @@ CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^~ (
-	PROCEDURE = pgroonga.prefix_rk_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^~ (
+			PROCEDURE = pgroonga.prefix_rk_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
 
-/* Deprecated since 1.2.1. */
-CREATE OPERATOR pgroonga.&^~> (
-	PROCEDURE = pgroonga.prefix_rk_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+		/* Deprecated since 1.2.1. */
+		CREATE OPERATOR public.&^~> (
+			PROCEDURE = pgroonga.prefix_rk_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.script_text(text, text)
 	RETURNS bool
@@ -1918,11 +2019,17 @@ CREATE FUNCTION pgroonga.script_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&` (
-	PROCEDURE = pgroonga.script_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&` (
+			PROCEDURE = pgroonga.script_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.script_text_array(text[], text)
 	RETURNS bool
@@ -1931,11 +2038,17 @@ CREATE FUNCTION pgroonga.script_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&` (
-	PROCEDURE = pgroonga.script_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&` (
+			PROCEDURE = pgroonga.script_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.script_varchar(varchar, varchar)
 	RETURNS bool
@@ -1944,11 +2057,17 @@ CREATE FUNCTION pgroonga.script_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&` (
-	PROCEDURE = pgroonga.script_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&` (
+			PROCEDURE = pgroonga.script_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
@@ -1964,11 +2083,13 @@ BEGIN
 			IMMUTABLE
 			STRICT;
 
-		CREATE OPERATOR pgroonga.&` (
-			PROCEDURE = pgroonga.script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+		IF current_schema() <> 'public' THEN
+			CREATE OPERATOR public.&` (
+				PROCEDURE = pgroonga.script_jsonb,
+				LEFTARG = jsonb,
+				RIGHTARG = text
+			);
+		END IF;
 	END IF;
 END;
 $$;
@@ -1980,18 +2101,24 @@ CREATE FUNCTION pgroonga.match_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-/* Deprecated since 1.2.1. */
-CREATE OPERATOR pgroonga.&@> (
-	PROCEDURE = pgroonga.match_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		/* Deprecated since 1.2.1. */
+		CREATE OPERATOR public.&@> (
+			PROCEDURE = pgroonga.match_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
 
-CREATE OPERATOR pgroonga.&@| (
-	PROCEDURE = pgroonga.match_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+		CREATE OPERATOR public.&@| (
+			PROCEDURE = pgroonga.match_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_in_text_array(text[], text[])
 	RETURNS bool
@@ -2000,11 +2127,17 @@ CREATE FUNCTION pgroonga.match_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&@| (
-	PROCEDURE = pgroonga.match_in_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@| (
+			PROCEDURE = pgroonga.match_in_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.match_in_varchar(varchar, varchar[])
 	RETURNS bool
@@ -2013,11 +2146,17 @@ CREATE FUNCTION pgroonga.match_in_varchar(varchar, varchar[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&@| (
-	PROCEDURE = pgroonga.match_in_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@| (
+			PROCEDURE = pgroonga.match_in_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.query_in_text(text, text[])
 	RETURNS bool
@@ -2026,25 +2165,31 @@ CREATE FUNCTION pgroonga.query_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-/* Deprecated since 1.2.1. */
-CREATE OPERATOR pgroonga.&?> (
-	PROCEDURE = pgroonga.query_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		/* Deprecated since 1.2.1. */
+		CREATE OPERATOR public.&?> (
+			PROCEDURE = pgroonga.query_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&?| (
-	PROCEDURE = pgroonga.query_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&?| (
+			PROCEDURE = pgroonga.query_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
 
-CREATE OPERATOR pgroonga.&@~| (
-	PROCEDURE = pgroonga.query_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+		CREATE OPERATOR public.&@~| (
+			PROCEDURE = pgroonga.query_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 	RETURNS bool
@@ -2053,18 +2198,24 @@ CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&?| (
-	PROCEDURE = pgroonga.query_in_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&?| (
+			PROCEDURE = pgroonga.query_in_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text[]
+		);
 
-CREATE OPERATOR pgroonga.&@~| (
-	PROCEDURE = pgroonga.query_in_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text[]
-);
+		CREATE OPERATOR public.&@~| (
+			PROCEDURE = pgroonga.query_in_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
 	RETURNS bool
@@ -2073,18 +2224,24 @@ CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
 	IMMUTABLE
 	STRICT;
 
--- Deprecated since 1.2.2.
-CREATE OPERATOR pgroonga.&?| (
-	PROCEDURE = pgroonga.query_in_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&?| (
+			PROCEDURE = pgroonga.query_in_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar[]
+		);
 
-CREATE OPERATOR pgroonga.&@~| (
-	PROCEDURE = pgroonga.query_in_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar[]
-);
+		CREATE OPERATOR public.&@~| (
+			PROCEDURE = pgroonga.query_in_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_in_text(text, text[])
 	RETURNS bool
@@ -2093,11 +2250,17 @@ CREATE FUNCTION pgroonga.prefix_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^| (
-	PROCEDURE = pgroonga.prefix_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^| (
+			PROCEDURE = pgroonga.prefix_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_in_text_array(text[], text[])
 	RETURNS bool
@@ -2106,11 +2269,17 @@ CREATE FUNCTION pgroonga.prefix_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^| (
-	PROCEDURE = pgroonga.prefix_in_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^| (
+			PROCEDURE = pgroonga.prefix_in_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_rk_in_text(text, text[])
 	RETURNS bool
@@ -2119,11 +2288,17 @@ CREATE FUNCTION pgroonga.prefix_rk_in_text(text, text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^~| (
-	PROCEDURE = pgroonga.prefix_rk_in_text,
-	LEFTARG = text,
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^~| (
+			PROCEDURE = pgroonga.prefix_rk_in_text,
+			LEFTARG = text,
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.prefix_rk_in_text_array(text[], text[])
 	RETURNS bool
@@ -2132,11 +2307,17 @@ CREATE FUNCTION pgroonga.prefix_rk_in_text_array(text[], text[])
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&^~| (
-	PROCEDURE = pgroonga.prefix_rk_in_text_array,
-	LEFTARG = text[],
-	RIGHTARG = text[]
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&^~| (
+			PROCEDURE = pgroonga.prefix_rk_in_text_array,
+			LEFTARG = text[],
+			RIGHTARG = text[]
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.regexp_text(text, text)
 	RETURNS bool
@@ -2145,11 +2326,17 @@ CREATE FUNCTION pgroonga.regexp_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&~ (
-	PROCEDURE = pgroonga.regexp_text,
-	LEFTARG = text,
-	RIGHTARG = text
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&~ (
+			PROCEDURE = pgroonga.regexp_text,
+			LEFTARG = text,
+			RIGHTARG = text
+		);
+	END IF;
+END;
+$$;
 
 CREATE FUNCTION pgroonga.regexp_varchar(varchar, varchar)
 	RETURNS bool
@@ -2158,11 +2345,17 @@ CREATE FUNCTION pgroonga.regexp_varchar(varchar, varchar)
 	IMMUTABLE
 	STRICT;
 
-CREATE OPERATOR pgroonga.&~ (
-	PROCEDURE = pgroonga.regexp_varchar,
-	LEFTARG = varchar,
-	RIGHTARG = varchar
-);
+DO LANGUAGE plpgsql $$
+BEGIN
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&~ (
+			PROCEDURE = pgroonga.regexp_varchar,
+			LEFTARG = varchar,
+			RIGHTARG = varchar
+		);
+	END IF;
+END;
+$$;
 
 
 /* v1 */
@@ -2285,11 +2478,13 @@ BEGIN
 			IMMUTABLE
 			STRICT;
 
-		CREATE OPERATOR pgroonga.@@ (
-			PROCEDURE = pgroonga.match_script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+		IF current_schema() <> 'public' THEN
+			CREATE OPERATOR public.@@ (
+				PROCEDURE = pgroonga.match_script_jsonb,
+				LEFTARG = jsonb,
+				RIGHTARG = text
+			);
+		END IF;
 
 		CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
 			USING pgroonga AS
