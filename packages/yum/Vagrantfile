@@ -16,15 +16,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     },
     {
       :id => "centos-6-i386",
-      :box => "bento/centos-6.7-i386",
+      :box => "bento/centos-6.9-i386",
     },
     {
       :id => "centos-6-x86_64",
-      :box => "bento/centos-6.7",
+      :box => "bento/centos-6.9",
     },
     {
       :id => "centos-7-x86_64",
-      :box => "bento/centos-7.2",
+      :box => "bento/centos-7.3",
     },
   ]
 
