@@ -452,7 +452,7 @@ libmsgpack-dev
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "xenial,yakkety",
+             "--code-names", "xenial",
              "--debian-directory", "packages/debian95",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
