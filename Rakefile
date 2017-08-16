@@ -3,10 +3,10 @@
 require "open-uri"
 require "octokit"
 
-latest_groonga_version = "7.0.4"
+latest_groonga_version = "7.0.5"
 windows_postgresql_versions = [
-  "9.5.7-1",
-  "9.6.3-2",
+  "9.5.8-1",
+  "9.6.4-1",
 ]
 
 package = "pgroonga"
