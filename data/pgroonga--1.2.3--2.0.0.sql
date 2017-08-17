@@ -1097,39 +1097,21 @@ EXCEPTION
 			AS 'MODULE_PATHNAME', 'pgroonga_options'
 			LANGUAGE C;
 
-		DELETE FROM pg_am WHERE amname = 'pgroonga';
-		INSERT INTO pg_am VALUES(
-			'pgroonga',	-- amname
-			30,		-- amstrategies
-			0,		-- amsupport
-			true,		-- amcanorder
-			true,		-- amcanorderbyop
-			true,		-- amcanbackward
-			true,		-- amcanunique
-			true,		-- amcanmulticol
-			true,		-- amoptionalkey
-			true,		-- amsearcharray
-			false,		-- amsearchnulls
-			false,		-- amstorage
-			true,		-- amclusterable
-			false,		-- ampredlocks
-			0,		-- amkeytype
-			'pgroonga_insert',	-- aminsert
-			'pgroonga_beginscan',	-- ambeginscan
-			'pgroonga_gettuple',	-- amgettuple
-			'pgroonga_getbitmap',	-- amgetbitmap
-			'pgroonga_rescan',	-- amrescan
-			'pgroonga_endscan',	-- amendscan
-			0,		-- ammarkpos,
-			0,		-- amrestrpos,
-			'pgroonga_build',	-- ambuild
-			'pgroonga_buildempty',	-- ambuildempty
-			'pgroonga_bulkdelete',	-- ambulkdelete
-			'pgroonga_vacuumcleanup',	-- amvacuumcleanup
-			'pgroonga_canreturn',		-- amcanreturn
-			'pgroonga_costestimate',	-- amcostestimate
-			'pgroonga_options'	-- amoptions
-		);
+		UPDATE pg_catalog.pg_am
+		   SET aminsert = 'pgroonga_insert',
+		       ambeginscan = 'pgroonga_beginscan',
+		       amgettuple = 'pgroonga_gettuple',
+		       amgetbitmap = 'pgroonga_getbitmap',
+		       amrescan = 'pgroonga_rescan',
+		       amendscan = 'pgroonga_endscan',
+		       ambuild = 'pgroonga_build',
+		       ambuildempty = 'pgroonga_buildempty',
+		       ambulkdelete = 'pgroonga_bulkdelete',
+		       amvacuumcleanup = 'pgroonga_vacuumcleanup',
+		       amcanreturn = 'pgroonga_canreturn',
+		       amcostestimate = 'pgroonga_costestimate',
+		       amoptions = 'pgroonga_options'
+		 WHERE amname = 'pgroonga';
 END;
 $$;
 
