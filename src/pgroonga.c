@@ -3166,14 +3166,41 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   grn_obj *targetColumn,
 						   Form_pg_attribute attribute)
 {
+	ArrayType *values;
+	int n_dimensions;
 	grn_id domain;
 	unsigned char flags = 0;
-	ArrayType *values;
 	int i, n;
+
+	values = DatumGetArrayTypeP(key->sk_argument);
+	n_dimensions = ARR_NDIM(values);
+	switch (n_dimensions)
+	{
+	case 0 :
+		grn_obj_reinit(ctx, &(buffers->general), GRN_DB_BOOL, 0);
+		GRN_BOOL_SET(ctx, &(buffers->general), GRN_FALSE);
+		grn_expr_append_const(ctx,
+							  data->expression,
+							  &(buffers->general),
+							  GRN_OP_PUSH,
+							  0);
+		PGrnCheck("ANY: failed to push false value");
+		return true;
+		break;
+	case 1 :
+		/* OK */
+		break;
+	default :
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: IN: "
+						"2 or more dimensions array isn't supported yet: %d",
+						n_dimensions)));
+		break;
+	}
 
 	domain = PGrnPGTypeToGrnType(attribute->atttypid, &flags);
 	grn_obj_reinit(ctx, &(buffers->general), domain, flags);
-	values = DatumGetArrayTypeP(key->sk_argument);
 	n = ARR_DIMS(values)[0];
 
 	grn_expr_append_obj(ctx, data->expression,

@@ -1,0 +1,30 @@
+CREATE TABLE ids (
+  id integer
+);
+INSERT INTO ids VALUES (1);
+INSERT INTO ids VALUES (2);
+INSERT INTO ids VALUES (3);
+CREATE INDEX pgroonga_index ON ids USING pgroonga (id);
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id
+  FROM ids
+ WHERE id = ANY(ARRAY[]::integer[])
+ ORDER BY id ASC;
+                 QUERY PLAN                  
+---------------------------------------------
+ Index Only Scan using pgroonga_index on ids
+   Index Cond: (id = ANY ('{}'::integer[]))
+(2 rows)
+
+SELECT id
+  FROM ids
+ WHERE id = ANY(ARRAY[]::integer[])
+ ORDER BY id ASC;
+ id 
+----
+(0 rows)
+
+DROP TABLE ids;
