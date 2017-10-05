@@ -1,0 +1,7 @@
+CREATE TABLE synonyms (
+  term text PRIMARY KEY,
+  synonym int
+);
+SELECT pgroonga_query_expand('synonyms', 'term', 'synonym', 'PGroonga');
+ERROR:  pgroonga: query_expand: synonyms column isn't text type nor text[] type: <synonyms>.<synonym>
+DROP TABLE synonyms;

@@ -82,8 +82,6 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	{
 		Datum synonymsDatum;
 		bool isNULL;
-		ArrayType *synonymsArray;
-		int i, n;
 
 		if (currentData.scan)
 			tuple = index_getnext(currentData.scan, ForwardScanDirection);
@@ -100,35 +98,57 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		if (isNULL)
 			continue;
 
-		synonymsArray = DatumGetArrayTypeP(synonymsDatum);
-		n = ARR_DIMS(synonymsArray)[0];
-		if (n == 0)
-			continue;
-
-		if (ith_synonyms == 0)
-			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-		else
-			GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
-
-		for (i = 1; i <= n; i++)
+		if (currentData.synonymsAttribute->atttypid == TEXTOID)
 		{
-			Datum synonymDatum;
-			bool isNULL;
 			text *synonym;
+			synonym = DatumGetTextP(synonymsDatum);
 
-			synonymDatum = array_ref(synonymsArray, 1, &i, -1,
-									 currentData.synonymsAttribute->attlen,
-									 currentData.synonymsAttribute->attbyval,
-									 currentData.synonymsAttribute->attalign,
-									 &isNULL);
-			synonym = DatumGetTextP(synonymDatum);
-			if (i > 1)
+			if (ith_synonyms == 0)
+				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+			else
 				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+
 			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
 			GRN_TEXT_PUT(ctx, expandedTerm,
 						 VARDATA_ANY(synonym),
 						 VARSIZE_ANY_EXHDR(synonym));
 			GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+		}
+		else
+		{
+			ArrayType *synonymsArray;
+			int i, n;
+
+			synonymsArray = DatumGetArrayTypeP(synonymsDatum);
+			n = ARR_DIMS(synonymsArray)[0];
+			if (n == 0)
+				continue;
+
+			if (ith_synonyms == 0)
+				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+			else
+				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+
+			for (i = 1; i <= n; i++)
+			{
+				Datum synonymDatum;
+				bool isNULL;
+				text *synonym;
+
+				synonymDatum = array_ref(synonymsArray, 1, &i, -1,
+										 currentData.synonymsAttribute->attlen,
+										 currentData.synonymsAttribute->attbyval,
+										 currentData.synonymsAttribute->attalign,
+										 &isNULL);
+				synonym = DatumGetTextP(synonymDatum);
+				if (i > 1)
+					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
+				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
+				GRN_TEXT_PUT(ctx, expandedTerm,
+							 VARDATA_ANY(synonym),
+							 VARSIZE_ANY_EXHDR(synonym));
+				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+			}
 		}
 
 		ith_synonyms++;
@@ -182,12 +202,14 @@ PGrnFindSynonymsAttribute(const char *tableName,
 		if (strncmp(attribute->attname.data, columnName, columnNameSize) != 0)
 			continue;
 
-		if (attribute->atttypid != TEXTARRAYOID)
+		if (!(attribute->atttypid == TEXTOID ||
+			  attribute->atttypid == TEXTARRAYOID))
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_NAME),
 					 errmsg("pgroonga: query_expand: "
-							"synonyms column isn't text[] type: <%s>.<%.*s>",
+							"synonyms column isn't text type nor text[] type: "
+							"<%s>.<%.*s>",
 							tableName,
 							(int)columnNameSize, columnName)));
 		}
