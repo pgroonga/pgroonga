@@ -42,7 +42,10 @@ PGrnSnipCreate(ArrayType *keywords)
 	{
 		int i, n;
 
-		n = ARR_DIMS(keywords)[0];
+		if (ARR_NDIM(keywords) == 0)
+			n = 0;
+		else
+			n = ARR_DIMS(keywords)[0];
 		for (i = 1; i <= n; i++)
 		{
 			Datum keywordDatum;

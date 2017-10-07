@@ -1370,10 +1370,10 @@ pgroonga_command(PG_FUNCTION_ARGS)
 		ArrayType *arguments = PG_GETARG_ARRAYTYPE_P(1);
 		int i, n;
 
-		n = ARR_DIMS(arguments)[0];
-		if ((n % 2) != 0)
-		{
-		}
+		if (ARR_NDIM(arguments) == 0)
+			n = 0;
+		else
+			n = ARR_DIMS(arguments)[0];
 
 		grn_obj_reinit(ctx, command, GRN_DB_TEXT, 0);
 		GRN_TEXT_PUT(ctx,

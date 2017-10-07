@@ -120,6 +120,9 @@ func_query_expander_postgresql(grn_ctx *ctx,
 			int i, n;
 
 			synonymsArray = DatumGetArrayTypeP(synonymsDatum);
+			if (ARR_NDIM(synonymsArray) == 0)
+				continue;
+
 			n = ARR_DIMS(synonymsArray)[0];
 			if (n == 0)
 				continue;
