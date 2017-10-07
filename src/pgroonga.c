@@ -5011,7 +5011,7 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 }
 
 static void
-PGrnCostEstimateUpdateSelectivity(IndexPath *path)
+PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 {
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index;
@@ -5032,6 +5032,7 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 		Oid rightType;
 		Node *leftNode;
 		Node *rightNode;
+		Node *estimatedRightNode;
 		Var *var;
 		int nthAttribute = InvalidAttrNumber;
 		Oid opFamily = InvalidOid;
@@ -5053,7 +5054,9 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 
 		if (!IsA(leftNode, Var))
 			continue;
-		if (!IsA(rightNode, Const))
+
+		estimatedRightNode = estimate_expression_value(root, rightNode);
+		if (!IsA(estimatedRightNode, Const))
 			continue;
 
 		var = (Var *) leftNode;
@@ -5083,7 +5086,7 @@ PGrnCostEstimateUpdateSelectivity(IndexPath *path)
 		key.sk_flags = 0;
 		key.sk_attno = nthAttribute;
 		key.sk_strategy = strategy;
-		key.sk_argument = ((Const *) rightNode)->constvalue;
+		key.sk_argument = ((Const *) estimatedRightNode)->constvalue;
 		PGrnSearchDataInit(&data, sourcesTable);
 		if (PGrnSearchBuildCondition(index, &key, &data))
 		{
@@ -5138,7 +5141,7 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 #endif
 	)
 {
-	PGrnCostEstimateUpdateSelectivity(path);
+	PGrnCostEstimateUpdateSelectivity(root, path);
 	*indexSelectivity = clauselist_selectivity(root,
 											   path->indexquals,
 											   path->indexinfo->rel->relid,
