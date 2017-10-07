@@ -82,6 +82,9 @@ string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
 string(REGEX REPLACE "[ \t\n]" "" PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
 string(REGEX REPLACE "\\\\" ";" PGRN_CHECK_SOURCES "${PGRN_CHECK_SOURCES}")
 
+set_source_files_properties(${PGRN_SOURCES}
+  PROPERTIES
+  COMPILE_FLAGS "/EHsc")
 configure_file(
   "src/pgroonga.rc.in"
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
@@ -89,9 +92,6 @@ configure_file(
 set(PGRN_SOURCES
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
   ${PGRN_SOURCES})
-set_source_files_properties(${PGRN_SOURCES}
-  PROPERTIES
-  COMPILE_FLAGS "/EHsc")
 add_library("${PGRN_LIBRARY_NAME}" SHARED ${PGRN_SOURCES})
 set_target_properties("${PGRN_LIBRARY_NAME}"
   PROPERTIES
@@ -103,6 +103,9 @@ target_link_libraries("${PGRN_LIBRARY_NAME}"
 install(TARGETS "${PGRN_LIBRARY_NAME}"
   DESTINATION "${PGRN_EXTENSION_DIR}")
 
+set_source_files_properties(${PGRN_CHECK_SOURCES}
+  PROPERTIES
+  COMPILE_FLAGS "/EHsc")
 configure_file(
   "src/pgroonga-check.rc.in"
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-check.rc"
@@ -110,9 +113,6 @@ configure_file(
 set(PGRN_CHECK_SOURCES
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-check.rc"
   ${PGRN_CHECK_SOURCES})
-set_source_files_properties(${PGRN_CHECK_SOURCES}
-  PROPERTIES
-  COMPILE_FLAGS "/EHsc")
 add_library("${PGRN_CHECK_LIBRARY_NAME}" SHARED ${PGRN_CHECK_SOURCES})
 set_target_properties("${PGRN_CHECK_LIBRARY_NAME}"
   PROPERTIES
