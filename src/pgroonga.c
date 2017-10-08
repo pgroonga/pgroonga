@@ -4870,18 +4870,59 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
+static bool
+PGrnIsCreatingFileNodeID(grn_id id, Oid fileNodeID)
+{
+	grn_obj *object;
+	const char *path;
+	char pgPath[MAXPGPATH];
+	const char *lastDirSeparator;
+	pgrn_stat_buffer status;
+
+	object = grn_ctx_at(ctx, id);
+	if (!object)
+		return false;
+
+	path = grn_obj_path(ctx, object);
+	if (!path)
+		return false;
+
+	lastDirSeparator = last_dir_separator(path);
+	if (lastDirSeparator)
+	{
+		char baseDir[MAXPGPATH];
+		char pgBaseName[MAXPGPATH];
+
+		snprintf(baseDir, sizeof(baseDir),
+				 "%.*s",
+				 (int)(lastDirSeparator - path),
+				 path);
+		snprintf(pgBaseName, sizeof(pgBaseName), "%u", fileNodeID);
+		join_path_components(pgPath,
+							 baseDir,
+							 pgBaseName);
+	}
+	else
+	{
+		snprintf(pgPath, sizeof(pgPath), "%u", fileNodeID);
+	}
+
+	return pgrn_stat(pgPath, &status) == 0;
+}
+
 static void
 PGrnRemoveUnusedTables(void)
 {
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
+	grn_id id;
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
 								   NULL, 0,
 								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
-	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
+	while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 	{
 		char *name;
 		char *nameEnd;
@@ -4896,6 +4937,9 @@ PGrnRemoveUnusedTables(void)
 			continue;
 
 		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
+			continue;
+
+		if (PGrnIsCreatingFileNodeID(id, relationFileNodeID))
 			continue;
 
 		for (i = 0; true; i++)
