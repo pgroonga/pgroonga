@@ -76,3 +76,5 @@ void PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
 void PGrnRemoveColumns(grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);
+
+void PGrnRenameTable(grn_obj *table, const char *newName);

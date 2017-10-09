@@ -23,12 +23,12 @@ PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
 {
-	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
+	char buildingSourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(sourcesTableName, sizeof(sourcesTableName),
-			 PGrnSourcesTableNameFormat, data->relNode);
+	snprintf(buildingSourcesTableName, sizeof(buildingSourcesTableName),
+			 PGrnBuildingSourcesTableNameFormat, data->relNode);
 	data->sourcesTable = PGrnCreateTable(data->index,
-										 sourcesTableName,
+										 buildingSourcesTableName,
 										 GRN_OBJ_TABLE_NO_KEY,
 										 NULL,
 										 NULL,
@@ -36,6 +36,16 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 										 NULL);
 
 	PGrnCreateSourcesCtidColumn(data);
+}
+
+void
+PGrnCreateSourcesTableFinish(PGrnCreateData *data)
+{
+	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
+
+	snprintf(sourcesTableName, sizeof(sourcesTableName),
+			 PGrnSourcesTableNameFormat, data->relNode);
+	PGrnRenameTable(data->sourcesTable, sourcesTableName);
 }
 
 void

@@ -465,3 +465,12 @@ PGrnRemoveColumns(grn_obj *table)
 
 	grn_hash_close(ctx, columns);
 }
+
+void
+PGrnRenameTable(grn_obj *table, const char *newName)
+{
+	grn_table_rename(ctx, table, newName, strlen(newName));
+	PGrnCheck("failed to rename table: <%s> -> <%s>",
+			  PGrnInspectName(table),
+			  newName);
+}

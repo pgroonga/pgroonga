@@ -58,6 +58,9 @@
 #define PGrnLogPathDefault				"pgroonga.log"
 #define PGrnQueryLogPathDefault			"none"
 #define PGrnDatabaseBasename			"pgrn"
+#define PGrnBuildingSourcesTableNamePrefix	"BuildingSources"
+#define PGrnBuildingSourcesTableNamePrefixLength	(sizeof(PGrnBuildingSourcesTableNamePrefix) - 1)
+#define PGrnBuildingSourcesTableNameFormat	PGrnBuildingSourcesTableNamePrefix "%u"
 #define PGrnSourcesTableNamePrefix		"Sources"
 #define PGrnSourcesTableNamePrefixLength	(sizeof(PGrnSourcesTableNamePrefix) - 1)
 #define PGrnSourcesTableNameFormat		PGrnSourcesTableNamePrefix "%u"

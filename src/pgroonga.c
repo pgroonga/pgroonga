@@ -955,46 +955,35 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
  * PGrnCreate
  */
 static void
-PGrnCreate(Relation index,
-		   grn_obj **sourcesTable,
-		   grn_obj **sourcesCtidColumn,
-		   grn_obj *supplementaryTables,
-		   grn_obj *lexicons)
+PGrnCreate(PGrnCreateData *data)
 {
-	PGrnCreateData data;
+	PGrnCreateSourcesTable(data);
 
-	data.index = index;
-	data.desc = RelationGetDescr(index);
-	data.relNode = index->rd_node.relNode;
-	data.supplementaryTables = supplementaryTables;
-	data.lexicons = lexicons;
-
-	PGrnCreateSourcesTable(&data);
-	*sourcesTable = data.sourcesTable;
-	*sourcesCtidColumn = data.sourcesCtidColumn;
-
-	for (data.i = 0; data.i < data.desc->natts; data.i++)
+	for (data->i = 0; data->i < data->desc->natts; data->i++)
 	{
 		Form_pg_attribute attribute;
 
-		attribute = data.desc->attrs[data.i];
+		attribute = data->desc->attrs[data->i];
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
-			data.forFullTextSearch = false;
-			data.forRegexpSearch = false;
-			data.forPrefixSearch = false;
-			PGrnJSONBCreate(&data);
+			data->forFullTextSearch = false;
+			data->forRegexpSearch = false;
+			data->forPrefixSearch = false;
+			PGrnJSONBCreate(data);
 		}
 		else
 		{
-			data.forFullTextSearch = PGrnIsForFullTextSearchIndex(index, data.i);
-			data.forRegexpSearch = PGrnIsForRegexpSearchIndex(index, data.i);
-			data.forPrefixSearch = PGrnIsForPrefixSearchIndex(index, data.i);
-			data.attributeTypeID = PGrnGetType(index, data.i,
-											   &(data.attributeFlags));
-			PGrnCreateLexicon(&data);
-			PGrnCreateDataColumn(&data);
-			PGrnCreateIndexColumn(&data);
+			data->forFullTextSearch =
+				PGrnIsForFullTextSearchIndex(data->index, data->i);
+			data->forRegexpSearch =
+				PGrnIsForRegexpSearchIndex(data->index, data->i);
+			data->forPrefixSearch =
+				PGrnIsForPrefixSearchIndex(data->index, data->i);
+			data->attributeTypeID =
+				PGrnGetType(data->index, data->i, &(data->attributeFlags));
+			PGrnCreateLexicon(data);
+			PGrnCreateDataColumn(data);
+			PGrnCreateIndexColumn(data);
 		}
 	}
 }
@@ -4601,6 +4590,7 @@ pgroonga_build_raw(Relation heap,
 {
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
+	PGrnCreateData data;
 	PGrnBuildStateData bs;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
@@ -4609,6 +4599,9 @@ pgroonga_build_raw(Relation heap,
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("pgroonga: unique index isn't supported")));
+
+	data.sourcesTable = NULL;
+	data.sourcesCtidColumn = NULL;
 
 	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
@@ -4623,14 +4616,18 @@ pgroonga_build_raw(Relation heap,
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index,
-				   &(bs.sourcesTable),
-				   &(bs.sourcesCtidColumn),
-				   &supplementaryTables,
-				   &lexicons);
+		data.index = index;
+		data.supplementaryTables = &supplementaryTables;
+		data.lexicons = &lexicons;
+		data.desc = RelationGetDescr(index);
+		data.relNode = index->rd_node.relNode;
+		PGrnCreate(&data);
+		bs.sourcesTable = data.sourcesTable;
+		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
 		PGrnSetSources(index, bs.sourcesTable);
+		PGrnCreateSourcesTableFinish(&data);
 	}
 	PG_CATCH();
 	{
@@ -4654,8 +4651,8 @@ pgroonga_build_raw(Relation heap,
 		}
 		GRN_OBJ_FIN(ctx, &supplementaryTables);
 
-		if (bs.sourcesTable)
-			grn_obj_remove(ctx, bs.sourcesTable);
+		if (data.sourcesTable)
+			grn_obj_remove(ctx, data.sourcesTable);
 
 		PG_RE_THROW();
 	}
@@ -4696,8 +4693,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 static void
 pgroonga_buildempty_raw(Relation index)
 {
-	grn_obj *sourcesTable = NULL;
-	grn_obj *sourcesCtidColumn = NULL;
+	PGrnCreateData data;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
@@ -4705,12 +4701,16 @@ pgroonga_buildempty_raw(Relation index)
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-		PGrnCreate(index,
-				   &sourcesTable,
-				   &sourcesCtidColumn,
-				   &supplementaryTables,
-				   &lexicons);
-		PGrnSetSources(index, sourcesTable);
+		data.index = index;
+		data.sourcesTable = NULL;
+		data.sourcesCtidColumn = NULL;
+		data.supplementaryTables = &supplementaryTables;
+		data.lexicons = &lexicons;
+		data.desc = RelationGetDescr(index);
+		data.relNode = index->rd_node.relNode;
+		PGrnCreate(&data);
+		PGrnSetSources(index, data.sourcesTable);
+		PGrnCreateSourcesTableFinish(&data);
 	}
 	PG_CATCH();
 	{
@@ -4734,8 +4734,8 @@ pgroonga_buildempty_raw(Relation index)
 		}
 		GRN_OBJ_FIN(ctx, &supplementaryTables);
 
-		if (sourcesTable)
-			grn_obj_remove(ctx, sourcesTable);
+		if (data.sourcesTable)
+			grn_obj_remove(ctx, data.sourcesTable);
 
 		PG_RE_THROW();
 	}
@@ -4870,59 +4870,18 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
-static bool
-PGrnIsCreatingFileNodeID(grn_id id, Oid fileNodeID)
-{
-	grn_obj *object;
-	const char *path;
-	char pgPath[MAXPGPATH];
-	const char *lastDirSeparator;
-	pgrn_stat_buffer status;
-
-	object = grn_ctx_at(ctx, id);
-	if (!object)
-		return false;
-
-	path = grn_obj_path(ctx, object);
-	if (!path)
-		return false;
-
-	lastDirSeparator = last_dir_separator(path);
-	if (lastDirSeparator)
-	{
-		char baseDir[MAXPGPATH];
-		char pgBaseName[MAXPGPATH];
-
-		snprintf(baseDir, sizeof(baseDir),
-				 "%.*s",
-				 (int)(lastDirSeparator - path),
-				 path);
-		snprintf(pgBaseName, sizeof(pgBaseName), "%u", fileNodeID);
-		join_path_components(pgPath,
-							 baseDir,
-							 pgBaseName);
-	}
-	else
-	{
-		snprintf(pgPath, sizeof(pgPath), "%u", fileNodeID);
-	}
-
-	return pgrn_stat(pgPath, &status) == 0;
-}
-
 static void
 PGrnRemoveUnusedTables(void)
 {
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
-	grn_id id;
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
 								   NULL, 0,
 								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
-	while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
+	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
 	{
 		char *name;
 		char *nameEnd;
@@ -4937,9 +4896,6 @@ PGrnRemoveUnusedTables(void)
 			continue;
 
 		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
-			continue;
-
-		if (PGrnIsCreatingFileNodeID(id, relationFileNodeID))
 			continue;
 
 		for (i = 0; true; i++)

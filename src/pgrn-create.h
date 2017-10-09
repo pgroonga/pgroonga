@@ -12,9 +12,9 @@ typedef struct PGrnCreateData
 	grn_obj *sourcesCtidColumn;
 	grn_obj *supplementaryTables;
 	grn_obj *lexicons;
-	unsigned int i;
 	TupleDesc desc;
 	Oid relNode;
+	unsigned int i;
 	bool forFullTextSearch;
 	bool forRegexpSearch;
 	bool forPrefixSearch;
@@ -24,6 +24,7 @@ typedef struct PGrnCreateData
 
 void PGrnCreateSourcesCtidColumn(PGrnCreateData *data);
 void PGrnCreateSourcesTable(PGrnCreateData *data);
+void PGrnCreateSourcesTableFinish(PGrnCreateData *data);
 void PGrnCreateLexicon(PGrnCreateData *data);
 void PGrnCreateDataColumn(PGrnCreateData *data);
 void PGrnCreateIndexColumn(PGrnCreateData *data);
