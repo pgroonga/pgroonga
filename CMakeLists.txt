@@ -75,6 +75,14 @@ string(REGEX REPLACE "[ \t\n]" "" PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "\\\\" ";" PGRN_SOURCES "${PGRN_SOURCES}")
 
 file(READ
+  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-headers.mk
+  PGRN_HEADERS)
+string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
+  PGRN_HEADERS "${PGRN_HEADERS}")
+string(REGEX REPLACE "[ \t\n]" "" PGRN_HEADERS "${PGRN_HEADERS}")
+string(REGEX REPLACE "\\\\" ";" PGRN_HEADERS "${PGRN_HEADERS}")
+
+file(READ
   ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-check-sources.mk
   PGRN_CHECK_SOURCES)
 string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
@@ -91,6 +99,7 @@ configure_file(
   @ONLY)
 set(PGRN_SOURCES
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga.rc"
+  ${PGRN_HEADERS}
   ${PGRN_SOURCES})
 add_library("${PGRN_LIBRARY_NAME}" SHARED ${PGRN_SOURCES})
 set_target_properties("${PGRN_LIBRARY_NAME}"

@@ -5,7 +5,9 @@ endif
 
 MODULE_big = pgroonga
 include makefiles/pgroonga-sources.mk
+include makefiles/pgroonga-headers.mk
 OBJS = $(SRCS:.c=.o)
+$(OBJS): $(HEADERS)
 EXTENSION = pgroonga
 
 ifdef GP
