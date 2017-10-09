@@ -392,6 +392,27 @@ PGrnIndexColumnSetSourceIDs(Relation index,
 }
 
 void
+PGrnRenameTable(Relation index, grn_obj *table, const char *newName)
+{
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+	int nameSize;
+	size_t newNameSize;
+
+	nameSize = grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
+	newNameSize = strlen(newName);
+	grn_table_rename(ctx, table, newName, strlen(newName));
+	PGrnCheck("failed to rename table: <%s> -> <%s>",
+			  PGrnInspectName(table),
+			  newName);
+
+	PGrnWALRenameTable(index,
+					   name,
+					   nameSize,
+					   newName,
+					   newNameSize);
+}
+
+void
 PGrnRemoveObject(const char *name)
 {
 	PGrnRemoveObjectWithSize(name, strlen(name));
@@ -464,13 +485,4 @@ PGrnRemoveColumns(grn_obj *table)
 	} GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
-}
-
-void
-PGrnRenameTable(grn_obj *table, const char *newName)
-{
-	grn_table_rename(ctx, table, newName, strlen(newName));
-	PGrnCheck("failed to rename table: <%s> -> <%s>",
-			  PGrnInspectName(table),
-			  newName);
 }

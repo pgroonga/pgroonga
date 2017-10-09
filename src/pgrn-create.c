@@ -45,7 +45,7 @@ PGrnCreateSourcesTableFinish(PGrnCreateData *data)
 
 	snprintf(sourcesTableName, sizeof(sourcesTableName),
 			 PGrnSourcesTableNameFormat, data->relNode);
-	PGrnRenameTable(data->sourcesTable, sourcesTableName);
+	PGrnRenameTable(data->index, data->sourcesTable, sourcesTableName);
 }
 
 void

@@ -70,11 +70,13 @@ void PGrnIndexColumnSetSourceIDs(Relation index,
 								 grn_obj *indexColumn,
 								 grn_obj *sourceIDs);
 
+void PGrnRenameTable(Relation index,
+					 grn_obj *table,
+					 const char *newName);
+
 void PGrnRemoveObject(const char *name);
 void PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
 
 void PGrnRemoveColumns(grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);
-
-void PGrnRenameTable(grn_obj *table, const char *newName);

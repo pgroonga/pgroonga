@@ -52,4 +52,10 @@ void PGrnWALSetSourceIDs(Relation index,
 						 grn_obj *column,
 						 grn_obj *sourceIDs);
 
+void PGrnWALRenameTable(Relation index,
+						const char *name,
+						size_t nameSize,
+						const char *newName,
+						size_t newNameSize);
+
 void PGrnWALApply(Relation index);

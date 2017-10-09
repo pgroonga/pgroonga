@@ -47,7 +47,8 @@ typedef enum {
 	PGRN_WAL_ACTION_INSERT,
 	PGRN_WAL_ACTION_CREATE_TABLE,
 	PGRN_WAL_ACTION_CREATE_COLUMN,
-	PGRN_WAL_ACTION_SET_SOURCES
+	PGRN_WAL_ACTION_SET_SOURCES,
+	PGRN_WAL_ACTION_RENAME_TABLE
 } PGrnWALAction;
 
 #define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
@@ -870,6 +871,40 @@ PGrnWALSetSourceIDs(Relation index,
 #endif
 }
 
+void
+PGrnWALRenameTable(Relation index,
+				   const char *name,
+				   size_t nameSize,
+				   const char *newName,
+				   size_t newNameSize)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 3;
+
+	data = PGrnWALStart(index);
+	if (!data)
+		return;
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_RENAME_TABLE);
+
+	msgpack_pack_cstr(packer, "name");
+	msgpack_pack_str(packer, nameSize);
+	msgpack_pack_str_body(packer, name, nameSize);
+
+	msgpack_pack_cstr(packer, "new_name");
+	msgpack_pack_str(packer, newNameSize);
+	msgpack_pack_str_body(packer, newName, newNameSize);
+
+	PGrnWALFinish(data);
+#endif
+}
+
 #ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	Relation index;
@@ -1461,6 +1496,35 @@ PGrnWALApplySetSources(PGrnWALApplyData *data,
 }
 
 static void
+PGrnWALApplyRenameTable(PGrnWALApplyData *data,
+						msgpack_object_map *map,
+						uint32_t currentElement)
+{
+	const char *context = "rename table";
+	grn_obj *table = NULL;
+	const char *newName = NULL;
+	size_t newNameSize = 0;
+	uint32_t i;
+
+	for (i = currentElement; i < map->size; i++)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[i]);
+		if (PGrnWALApplyKeyEqual(context, &(kv->key), "name"))
+		{
+			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+		}
+		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "new_name"))
+		{
+			PGrnWALApplyValueGetString(context, kv, &newName, &newNameSize);
+		}
+	}
+
+	grn_table_rename(ctx, table, newName, newNameSize);
+}
+
+static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	const char *context = NULL;
@@ -1503,6 +1567,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		break;
 	case PGRN_WAL_ACTION_SET_SOURCES:
 		PGrnWALApplySetSources(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_RENAME_TABLE:
+		PGrnWALApplyRenameTable(data, map, currentElement);
 		break;
 	default:
 		ereport(ERROR,
