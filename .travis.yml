@@ -6,18 +6,28 @@ dist: trusty
 language: c
 matrix:
   include:
-    - env: PG_VERSION=9.3
+    - env:
+        PG_VERSION: 9.3
       addons:
         postgresql: "9.3"
-    - env: PG_VERSION=9.4
+    - env:
+        PG_VERSION: 9.4
       addons:
         postgresql: "9.4"
-    - env: PG_VERSION=9.5
+    - env:
+        PG_VERSION: 9.5
       addons:
         postgresql: "9.5"
-    - env: PG_VERSION=9.6
+    - env:
+        PG_VERSION: 9.6
+        WAL_SUPPORTED: "yes"
       addons:
         postgresql: "9.6"
+    - env:
+        PG_VERSION: 10.0
+        WAL_SUPPORTED: "yes"
+      addons:
+        postgresql: "10.0"
 sudo: required
 # env:
 #   - GROONGA_MASTER=yes
@@ -26,7 +36,7 @@ install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} libmsgpack-dev groonga-token-filter-stem
   - |
-    if [ ${PG_VERSION} = "9.6" ]; then
+    if [ "${WAL_SUPPORTED}" = "yes" ]; then
       rvm use 2.3.3 --install --binary --fuzzy
       gem install test-unit
     fi
@@ -69,7 +79,7 @@ script:
         SETUP_TMP_DIR=no \
         EXTRA_REGRESS_OPTS="--launcher=$(pwd)/test/short-pgappname"
   - |
-    if [ ${PG_VERSION} = "9.6" ]; then
+    if [ "${WAL_SUPPORTED}" = "yes" ]; then
       test/run-test.rb
     fi
 after_failure:

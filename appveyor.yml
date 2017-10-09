@@ -1,8 +1,8 @@
 version: "{build}"
 clone_depth: 10
 environment:
-  POSTGRESQL_VERSION: 9.6.2-3
-  GROONGA_VERSION: 6.1.1
+  POSTGRESQL_VERSION: 10.0-1
+  GROONGA_VERSION: 7.0.7
 notifications:
   - provider: Email
     to:
