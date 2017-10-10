@@ -5,10 +5,10 @@ environment:
   matrix:
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.5.8-1
+      POSTGRESQL_VERSION: 9.5.9-1
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.6.4-1
+      POSTGRESQL_VERSION: 9.6.9-1
     - VS_VERSION: 12
       ARCH: amd64
       POSTGRESQL_VERSION: 10.0-1
