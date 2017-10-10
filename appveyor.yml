@@ -9,9 +9,11 @@ environment:
     - VS_VERSION: 12
       ARCH: amd64
       POSTGRESQL_VERSION: 9.6.9-1
+      WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: amd64
       POSTGRESQL_VERSION: 10.0-1
+      WAL_SUPPORTED: "yes"
 notifications:
   - provider: Email
     to:
@@ -83,7 +85,9 @@ test_script:
       --bindir=..\pgsql\bin
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
-      --schedule=schedule ||
+      --schedule=schedule
+      --launcher=test/short-pgappname.bat ||
     (type regression.diffs & nonexistent_command)
   - set PATH=%CD%\..\pgsql\bin;%PATH%
-  - ruby test\run-test.rb
+  - if "%WAL_SUPPORTED%" == "yes"
+       ruby test\run-test.rb
