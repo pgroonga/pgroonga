@@ -86,7 +86,7 @@ test_script:
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
       --schedule=schedule
-      --launcher=test/short-pgappname.bat ||
+      --launcher=test\short-pgappname.bat ||
     (type regression.diffs & nonexistent_command)
   - set PATH=%CD%\..\pgsql\bin;%PATH%
   - if "%WAL_SUPPORTED%" == "yes"
