@@ -190,12 +190,17 @@ namespace :package do
       "94",
       "95",
       "96",
+      "10",
     ]
     namespace :build do
       postgresql_package_versions.each do |postgresql_package_version|
         rpm_package = "postgresql#{postgresql_package_version}-#{package}"
 
-        postgresql_version = postgresql_package_version.scan(/(.)/).join(".")
+        if postgresql_package_version.start_with?("9")
+          postgresql_version = postgresql_package_version.scan(/(.)/).join(".")
+        else
+          postgresql_version = postgresql_package_version
+        end
         desc "Build RPM packages for PostgreSQL #{postgresql_version}"
         task postgresql_package_version => [archive_name, repositories_dir] do
           tmp_dir = "#{yum_dir}/tmp"
