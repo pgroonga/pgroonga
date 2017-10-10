@@ -41,7 +41,10 @@
 #include <optimizer/cost.h>
 #include <postmaster/bgworker.h>
 #ifdef PGRN_SUPPORT_LOGICAL_REPLICATION
-#	include <replication/worker_internal.h>
+/* #	include <replication/worker_internal.h> */
+/* TODO: Use more clever way to support workers. */
+typedef struct LogicalRepWorker LogicalRepWorker;
+extern PGDLLIMPORT LogicalRepWorker *MyLogicalRepWorker;
 #endif
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
