@@ -1,8 +1,17 @@
 version: "{build}"
 clone_depth: 10
 environment:
-  POSTGRESQL_VERSION: 10.0-1
   GROONGA_VERSION: 7.0.7
+  matrix:
+    - VS_VERSION: 12
+      ARCH: amd64
+      POSTGRESQL_VERSION: 9.5.8-1
+    - VS_VERSION: 12
+      ARCH: amd64
+      POSTGRESQL_VERSION: 9.6.4-1
+    - VS_VERSION: 12
+      ARCH: amd64
+      POSTGRESQL_VERSION: 10.0-1
 notifications:
   - provider: Email
     to:
@@ -42,7 +51,14 @@ build_script:
   # - ruby download_lz4.rb
   # - cd ..\..\..
 
-  - cmake . -G "Visual Studio 12 2013 Win64"
+  - set CMAKE_GENERATOR_NAME=Visual Studio %VS_VERSION%
+  - if "%VS_VERSION%" == "12"
+      set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% 2013
+  - if "%VS_VERSION%" == "14"
+      set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% 2015
+  - if "%ARCH%" == "amd64"
+      set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% Win64
+  - cmake . -G "%CMAKE_GENERATOR_NAME%"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
       -DGRN_LOCK_TIMEOUT=900000
       -DGRN_WITH_MRUBY=yes
