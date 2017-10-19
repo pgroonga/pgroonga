@@ -195,25 +195,33 @@ CREATE FUNCTION pgroonga_match_term(target varchar[], term varchar)
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga_match_term,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga_match_term,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga_match_term,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga_match_term,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 
@@ -241,19 +249,25 @@ CREATE FUNCTION pgroonga_match_query(varchar, varchar)
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga_match_query,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga_match_query,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga_match_query,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 
@@ -274,13 +288,17 @@ CREATE FUNCTION pgroonga_match_regexp(varchar, varchar)
 CREATE OPERATOR @~ (
 	PROCEDURE = pgroonga_match_regexp,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR @~ (
 	PROCEDURE = pgroonga_match_regexp,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 
@@ -295,7 +313,9 @@ CREATE FUNCTION pgroonga_match_text(text, text)
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_match_text_array(text[], text)
@@ -308,7 +328,9 @@ CREATE FUNCTION pgroonga_match_text_array(text[], text)
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_match_varchar(varchar, varchar)
@@ -321,7 +343,9 @@ CREATE FUNCTION pgroonga_match_varchar(varchar, varchar)
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
@@ -334,7 +358,9 @@ CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
 CREATE OPERATOR &> (
 	PROCEDURE = pgroonga_contain_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 DO LANGUAGE plpgsql $$
@@ -354,7 +380,9 @@ BEGIN
 		CREATE OPERATOR &@ (
 			PROCEDURE = pgroonga_match_jsonb,
 			LEFTARG = jsonb,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -371,13 +399,17 @@ CREATE FUNCTION pgroonga_query_text(text, text)
 CREATE OPERATOR &? (
 	PROCEDURE = pgroonga_query_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_query_text_array(text[], text)
@@ -391,13 +423,17 @@ CREATE FUNCTION pgroonga_query_text_array(text[], text)
 CREATE OPERATOR &? (
 	PROCEDURE = pgroonga_query_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_query_varchar(varchar, varchar)
@@ -411,13 +447,17 @@ CREATE FUNCTION pgroonga_query_varchar(varchar, varchar)
 CREATE OPERATOR &? (
 	PROCEDURE = pgroonga_query_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 DO LANGUAGE plpgsql $$
@@ -438,13 +478,17 @@ BEGIN
 		CREATE OPERATOR &? (
 			PROCEDURE = pgroonga_query_jsonb,
 			LEFTARG = jsonb,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR &@~ (
 			PROCEDURE = pgroonga_query_jsonb,
 			LEFTARG = jsonb,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -461,13 +505,17 @@ CREATE FUNCTION pgroonga_similar_text(text, text)
 CREATE OPERATOR &~? (
 	PROCEDURE = pgroonga_similar_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga_similar_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_similar_text_array(text[], text)
@@ -481,13 +529,17 @@ CREATE FUNCTION pgroonga_similar_text_array(text[], text)
 CREATE OPERATOR &~? (
 	PROCEDURE = pgroonga_similar_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga_similar_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_similar_varchar(varchar, varchar)
@@ -501,13 +553,17 @@ CREATE FUNCTION pgroonga_similar_varchar(varchar, varchar)
 CREATE OPERATOR &~? (
 	PROCEDURE = pgroonga_similar_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga_similar_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_text(text, text)
@@ -520,7 +576,9 @@ CREATE FUNCTION pgroonga_prefix_text(text, text)
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_text_array(text[], text)
@@ -533,14 +591,18 @@ CREATE FUNCTION pgroonga_prefix_text_array(text[], text)
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &^> (
 	PROCEDURE = pgroonga_prefix_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_varchar(varchar, varchar)
@@ -553,7 +615,9 @@ CREATE FUNCTION pgroonga_prefix_varchar(varchar, varchar)
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_varchar_array(varchar[], varchar)
@@ -566,14 +630,18 @@ CREATE FUNCTION pgroonga_prefix_varchar_array(varchar[], varchar)
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &^> (
 	PROCEDURE = pgroonga_prefix_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_text(text, text)
@@ -586,7 +654,9 @@ CREATE FUNCTION pgroonga_prefix_rk_text(text, text)
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_text_array(text[], text)
@@ -599,14 +669,18 @@ CREATE FUNCTION pgroonga_prefix_rk_text_array(text[], text)
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &^~> (
 	PROCEDURE = pgroonga_prefix_rk_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_varchar(varchar, varchar)
@@ -619,7 +693,9 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar(varchar, varchar)
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_varchar_array(varchar[], varchar)
@@ -632,14 +708,18 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar_array(varchar[], varchar)
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &^~> (
 	PROCEDURE = pgroonga_prefix_rk_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_script_text(text, text)
@@ -652,7 +732,9 @@ CREATE FUNCTION pgroonga_script_text(text, text)
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_script_text_array(text[], text)
@@ -665,7 +747,9 @@ CREATE FUNCTION pgroonga_script_text_array(text[], text)
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_script_varchar(varchar, varchar)
@@ -678,7 +762,9 @@ CREATE FUNCTION pgroonga_script_varchar(varchar, varchar)
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 DO LANGUAGE plpgsql $$
@@ -698,7 +784,9 @@ BEGIN
 		CREATE OPERATOR &` (
 			PROCEDURE = pgroonga_script_jsonb,
 			LEFTARG = jsonb,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -715,13 +803,17 @@ CREATE FUNCTION pgroonga_match_in_text(text, text[])
 CREATE OPERATOR &@> (
 	PROCEDURE = pgroonga_match_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga_match_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_match_in_text_array(text[], text[])
@@ -734,7 +826,9 @@ CREATE FUNCTION pgroonga_match_in_text_array(text[], text[])
 CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga_match_in_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_match_in_varchar(varchar, varchar[])
@@ -747,7 +841,9 @@ CREATE FUNCTION pgroonga_match_in_varchar(varchar, varchar[])
 CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga_match_in_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_query_in_text(text, text[])
@@ -761,20 +857,26 @@ CREATE FUNCTION pgroonga_query_in_text(text, text[])
 CREATE OPERATOR &?> (
 	PROCEDURE = pgroonga_query_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga_query_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga_query_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_query_in_text_array(text[], text[])
@@ -788,13 +890,17 @@ CREATE FUNCTION pgroonga_query_in_text_array(text[], text[])
 CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga_query_in_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga_query_in_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_query_in_varchar(varchar, varchar[])
@@ -808,13 +914,17 @@ CREATE FUNCTION pgroonga_query_in_varchar(varchar, varchar[])
 CREATE OPERATOR &?| (
 	PROCEDURE = pgroonga_query_in_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE OPERATOR &@~| (
 	PROCEDURE = pgroonga_query_in_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_in_text(text, text[])
@@ -827,7 +937,9 @@ CREATE FUNCTION pgroonga_prefix_in_text(text, text[])
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_in_text_array(text[], text[])
@@ -840,7 +952,9 @@ CREATE FUNCTION pgroonga_prefix_in_text_array(text[], text[])
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_in_varchar(varchar, varchar[])
@@ -853,7 +967,9 @@ CREATE FUNCTION pgroonga_prefix_in_varchar(varchar, varchar[])
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_in_varchar_array(varchar[], varchar[])
@@ -866,7 +982,9 @@ CREATE FUNCTION pgroonga_prefix_in_varchar_array(varchar[], varchar[])
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_in_text(text, text[])
@@ -879,7 +997,9 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text(text, text[])
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_text,
 	LEFTARG = text,
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_in_text_array(text[], text[])
@@ -892,7 +1012,9 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text_array(text[], text[])
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_text_array,
 	LEFTARG = text[],
-	RIGHTARG = text[]
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_in_varchar(varchar, varchar[])
@@ -905,7 +1027,9 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar(varchar, varchar[])
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_prefix_rk_in_varchar_array(varchar[], varchar[])
@@ -918,7 +1042,9 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar_array(varchar[], varchar[])
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_varchar_array,
 	LEFTARG = varchar[],
-	RIGHTARG = varchar[]
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_regexp_text(text, text)
@@ -931,7 +1057,9 @@ CREATE FUNCTION pgroonga_regexp_text(text, text)
 CREATE OPERATOR &~ (
 	PROCEDURE = pgroonga_regexp_text,
 	LEFTARG = text,
-	RIGHTARG = text
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 CREATE FUNCTION pgroonga_regexp_varchar(varchar, varchar)
@@ -944,7 +1072,9 @@ CREATE FUNCTION pgroonga_regexp_varchar(varchar, varchar)
 CREATE OPERATOR &~ (
 	PROCEDURE = pgroonga_regexp_varchar,
 	LEFTARG = varchar,
-	RIGHTARG = varchar
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
 );
 
 DO LANGUAGE plpgsql $$
@@ -1172,7 +1302,9 @@ BEGIN
 		CREATE OPERATOR @@ (
 			PROCEDURE = pgroonga_match_script_jsonb,
 			LEFTARG = jsonb,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR CLASS pgroonga_jsonb_ops FOR TYPE jsonb
@@ -1531,25 +1663,33 @@ BEGIN
 		CREATE OPERATOR public.%% (
 			PROCEDURE = pgroonga.match_term,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.%% (
 			PROCEDURE = pgroonga.match_term,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.%% (
 			PROCEDURE = pgroonga.match_term,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.%% (
 			PROCEDURE = pgroonga.match_term,
 			LEFTARG = varchar[],
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1582,19 +1722,25 @@ BEGIN
 		CREATE OPERATOR public.@@ (
 			PROCEDURE = pgroonga.match_query,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.@@ (
 			PROCEDURE = pgroonga.match_query,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.@@ (
 			PROCEDURE = pgroonga.match_query,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1620,13 +1766,17 @@ BEGIN
 		CREATE OPERATOR public.@~ (
 			PROCEDURE = pgroonga.match_regexp,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.@~ (
 			PROCEDURE = pgroonga.match_regexp,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1646,7 +1796,9 @@ BEGIN
 		CREATE OPERATOR public.&@ (
 			PROCEDURE = pgroonga.match_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1665,7 +1817,9 @@ BEGIN
 		CREATE OPERATOR public.&@ (
 			PROCEDURE = pgroonga.match_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1684,7 +1838,9 @@ BEGIN
 		CREATE OPERATOR public.&@ (
 			PROCEDURE = pgroonga.match_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1703,7 +1859,9 @@ BEGIN
 		CREATE OPERATOR public.&> (
 			PROCEDURE = pgroonga.contain_varchar_array,
 			LEFTARG = varchar[],
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1727,7 +1885,9 @@ BEGIN
 			CREATE OPERATOR public.&@ (
 				PROCEDURE = pgroonga.match_jsonb,
 				LEFTARG = jsonb,
-				RIGHTARG = text
+				RIGHTARG = text,
+				RESTRICT = contsel,
+				JOIN = contjoinsel
 			);
 		END IF;
 	END IF;
@@ -1748,13 +1908,17 @@ BEGIN
 		CREATE OPERATOR public.&? (
 			PROCEDURE = pgroonga.query_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~ (
 			PROCEDURE = pgroonga.query_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1774,13 +1938,17 @@ BEGIN
 		CREATE OPERATOR public.&? (
 			PROCEDURE = pgroonga.query_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~ (
 			PROCEDURE = pgroonga.query_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1800,13 +1968,17 @@ BEGIN
 		CREATE OPERATOR public.&? (
 			PROCEDURE = pgroonga.query_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~ (
 			PROCEDURE = pgroonga.query_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1831,13 +2003,17 @@ BEGIN
 			CREATE OPERATOR public.&? (
 				PROCEDURE = pgroonga.query_jsonb,
 				LEFTARG = jsonb,
-				RIGHTARG = text
+				RIGHTARG = text,
+				RESTRICT = contsel,
+				JOIN = contjoinsel
 			);
 
 			CREATE OPERATOR public.&@~ (
 				PROCEDURE = pgroonga.query_jsonb,
 				LEFTARG = jsonb,
-				RIGHTARG = text
+				RIGHTARG = text,
+				RESTRICT = contsel,
+				JOIN = contjoinsel
 			);
 		END IF;
 	END IF;
@@ -1858,13 +2034,17 @@ BEGIN
 		CREATE OPERATOR public.&~? (
 			PROCEDURE = pgroonga.similar_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@* (
 			PROCEDURE = pgroonga.similar_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1884,13 +2064,17 @@ BEGIN
 		CREATE OPERATOR public.&~? (
 			PROCEDURE = pgroonga.similar_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@* (
 			PROCEDURE = pgroonga.similar_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1910,13 +2094,17 @@ BEGIN
 		CREATE OPERATOR public.&~? (
 			PROCEDURE = pgroonga.similar_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@* (
 			PROCEDURE = pgroonga.similar_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1935,7 +2123,9 @@ BEGIN
 		CREATE OPERATOR public.&^ (
 			PROCEDURE = pgroonga.prefix_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1954,14 +2144,18 @@ BEGIN
 		CREATE OPERATOR public.&^ (
 			PROCEDURE = pgroonga.prefix_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		/* Deprecated since 1.2.1. */
 		CREATE OPERATOR public.&^> (
 			PROCEDURE = pgroonga.prefix_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1980,7 +2174,9 @@ BEGIN
 		CREATE OPERATOR public.&^~ (
 			PROCEDURE = pgroonga.prefix_rk_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -1999,14 +2195,18 @@ BEGIN
 		CREATE OPERATOR public.&^~ (
 			PROCEDURE = pgroonga.prefix_rk_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		/* Deprecated since 1.2.1. */
 		CREATE OPERATOR public.&^~> (
 			PROCEDURE = pgroonga.prefix_rk_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2025,7 +2225,9 @@ BEGIN
 		CREATE OPERATOR public.&` (
 			PROCEDURE = pgroonga.script_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2044,7 +2246,9 @@ BEGIN
 		CREATE OPERATOR public.&` (
 			PROCEDURE = pgroonga.script_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2063,7 +2267,9 @@ BEGIN
 		CREATE OPERATOR public.&` (
 			PROCEDURE = pgroonga.script_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2087,7 +2293,9 @@ BEGIN
 			CREATE OPERATOR public.&` (
 				PROCEDURE = pgroonga.script_jsonb,
 				LEFTARG = jsonb,
-				RIGHTARG = text
+				RIGHTARG = text,
+				RESTRICT = contsel,
+				JOIN = contjoinsel
 			);
 		END IF;
 	END IF;
@@ -2108,13 +2316,17 @@ BEGIN
 		CREATE OPERATOR public.&@> (
 			PROCEDURE = pgroonga.match_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@| (
 			PROCEDURE = pgroonga.match_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2133,7 +2345,9 @@ BEGIN
 		CREATE OPERATOR public.&@| (
 			PROCEDURE = pgroonga.match_in_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2152,7 +2366,9 @@ BEGIN
 		CREATE OPERATOR public.&@| (
 			PROCEDURE = pgroonga.match_in_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar[]
+			RIGHTARG = varchar[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2172,20 +2388,26 @@ BEGIN
 		CREATE OPERATOR public.&?> (
 			PROCEDURE = pgroonga.query_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		-- Deprecated since 1.2.2.
 		CREATE OPERATOR public.&?| (
 			PROCEDURE = pgroonga.query_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~| (
 			PROCEDURE = pgroonga.query_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2205,13 +2427,17 @@ BEGIN
 		CREATE OPERATOR public.&?| (
 			PROCEDURE = pgroonga.query_in_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~| (
 			PROCEDURE = pgroonga.query_in_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2231,13 +2457,17 @@ BEGIN
 		CREATE OPERATOR public.&?| (
 			PROCEDURE = pgroonga.query_in_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar[]
+			RIGHTARG = varchar[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 
 		CREATE OPERATOR public.&@~| (
 			PROCEDURE = pgroonga.query_in_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar[]
+			RIGHTARG = varchar[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2256,7 +2486,9 @@ BEGIN
 		CREATE OPERATOR public.&^| (
 			PROCEDURE = pgroonga.prefix_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2275,7 +2507,9 @@ BEGIN
 		CREATE OPERATOR public.&^| (
 			PROCEDURE = pgroonga.prefix_in_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2294,7 +2528,9 @@ BEGIN
 		CREATE OPERATOR public.&^~| (
 			PROCEDURE = pgroonga.prefix_rk_in_text,
 			LEFTARG = text,
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2313,7 +2549,9 @@ BEGIN
 		CREATE OPERATOR public.&^~| (
 			PROCEDURE = pgroonga.prefix_rk_in_text_array,
 			LEFTARG = text[],
-			RIGHTARG = text[]
+			RIGHTARG = text[],
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2332,7 +2570,9 @@ BEGIN
 		CREATE OPERATOR public.&~ (
 			PROCEDURE = pgroonga.regexp_text,
 			LEFTARG = text,
-			RIGHTARG = text
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2351,7 +2591,9 @@ BEGIN
 		CREATE OPERATOR public.&~ (
 			PROCEDURE = pgroonga.regexp_varchar,
 			LEFTARG = varchar,
-			RIGHTARG = varchar
+			RIGHTARG = varchar,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
 		);
 	END IF;
 END;
@@ -2482,7 +2724,9 @@ BEGIN
 			CREATE OPERATOR public.@@ (
 				PROCEDURE = pgroonga.match_script_jsonb,
 				LEFTARG = jsonb,
-				RIGHTARG = text
+				RIGHTARG = text,
+				RESTRICT = contsel,
+				JOIN = contjoinsel
 			);
 		END IF;
 
