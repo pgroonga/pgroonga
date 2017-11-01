@@ -469,7 +469,7 @@ libmsgpack-dev
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "zesty",
+             "--code-names", "zesty,artful",
              "--debian-directory", "packages/debian96",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
