@@ -25,4 +25,5 @@ SRCS =						\
 	src/pgrn-value.c			\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\
+	src/pgrn-normalize.c				\
 	vendor/xxHash/xxhash.c

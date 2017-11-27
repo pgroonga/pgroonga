@@ -1,0 +1,12 @@
+SELECT pgroonga_normalize('aBcDe 123');
+ pgroonga_normalize 
+--------------------
+ abcde 123
+(1 row)
+
+SELECT pgroonga_normalize('aBcDe 123', 'NormalizerAuto');
+ pgroonga_normalize 
+--------------------
+ abcde 123
+(1 row)
+
