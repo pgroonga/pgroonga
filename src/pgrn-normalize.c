@@ -19,7 +19,7 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 	text *normalizerName;
 	grn_obj *normalizer;
 	grn_obj *string;
-	unsigned int length_in_bytes;
+	unsigned int lengthInBytes;
 	const char *normalized;
 	text *ret;
 
@@ -47,10 +47,10 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 	grn_string_get_normalized(ctx,
 							  string,
 							  &normalized,
-							  &length_in_bytes,
+							  &lengthInBytes,
 							  NULL);
 
-	ret = cstring_to_text_with_len(normalized, length_in_bytes);
+	ret = cstring_to_text_with_len(normalized, lengthInBytes);
 
 	grn_obj_unlink(ctx, string);
 
