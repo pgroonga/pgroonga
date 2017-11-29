@@ -42,10 +42,8 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 							 VARSIZE_ANY_EXHDR(target),
 							 normalizer,
 							 0);
-	if (!string)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				errmsg("pgroonga: failed to open string")));
+
+	PGrnCheck("pgroonga: failed to open string");
 
 	grn_string_get_normalized(ctx,
 							  string,
