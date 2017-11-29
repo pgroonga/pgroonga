@@ -25,12 +25,15 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 
 	target = PG_GETARG_TEXT_PP(0);
 
-	if (PG_NARGS() == 2) {
+	if (PG_NARGS() == 2)
+	{
 		normalizerName = PG_GETARG_TEXT_PP(1);
 		normalizer = PGrnLookupWithSize(VARDATA_ANY(normalizerName),
 										VARSIZE_ANY_EXHDR(normalizerName),
 										ERROR);
-	} else {
+	}
+	else
+	{
 		normalizer = PGrnLookup(PGRN_DEFAULT_NORMALIZER, ERROR);
 	}
 
