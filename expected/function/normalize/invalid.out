@@ -1,2 +1,2 @@
-SELECT pgroonga_normalize('aBcDe 123', 'NonExistent');
-ERROR:  pgroonga: object isn't found: <NonExistent>
+SELECT pgroonga_normalize('aBcDe 123', 'Nonexistent');
+ERROR:  pgroonga: object isn't found: <Nonexistent>

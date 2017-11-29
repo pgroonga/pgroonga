@@ -1,1 +1,1 @@
-SELECT pgroonga_normalize('aBcDe 123', 'NonExistent');
+SELECT pgroonga_normalize('aBcDe 123', 'Nonexistent');
