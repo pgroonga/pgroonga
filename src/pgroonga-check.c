@@ -105,7 +105,7 @@ PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
 }
 
 static void
-PGrnCheck(grn_ctx *ctx)
+PGrnCheckAllDatabases(grn_ctx *ctx)
 {
 	const char *baseDirectoryPath = "base";
 
@@ -187,7 +187,7 @@ _PG_init(void)
 
 	GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
 
-	PGrnCheck(ctx);
+	PGrnCheckAllDatabases(ctx);
 
 	grn_ctx_fin(ctx);
 
