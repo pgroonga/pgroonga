@@ -43,7 +43,7 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 							 normalizer,
 							 0);
 
-	PGrnCheck("pgroonga: failed to open string");
+	PGrnCheck("normalize: failed to open normalized string");
 
 	grn_string_get_normalized(ctx,
 							  string,
