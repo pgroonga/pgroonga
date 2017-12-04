@@ -12,20 +12,29 @@ static void
 PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 {
 	ArrayType *value = DatumGetArrayTypeP(datum);
-	int i, n;
+	ArrayMetaState state;
+	ArrayIterator iterator;
+	Datum elementDatum;
+	bool isNULL;
 
 	if (ARR_NDIM(value) == 0)
 		return;
 
-	n = ARR_DIMS(value)[0];
-	for (i = 1; i <= n; i++)
+	state.element_type = ARR_ELEMTYPE(value);
+	state.typlen = -1;
+	state.typbyval = false;
+	state.typalign = 'i';
+	state.typdelim = '\0';
+	state.typioparam = InvalidOid;
+	state.typiofunc = InvalidOid;
+	memset(&(state.proc), 0, sizeof(FmgrInfo));
+
+	iterator = array_create_iterator(value, 0, &state);
+	while (array_iterate(iterator, &elementDatum, &isNULL))
 	{
 		int weight = 0;
-		Datum elementDatum;
 		VarChar *element;
-		bool isNULL;
 
-		elementDatum = array_ref(value, 1, &i, -1, -1, false, 'i', &isNULL);
 		if (isNULL)
 			continue;
 
@@ -49,6 +58,7 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 			break;
 		}
 	}
+	array_free_iterator(iterator);
 }
 
 void
