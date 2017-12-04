@@ -1,3 +1,7 @@
+#include "pgroonga.h"
+
+#include "pgrn-compatible.h"
+
 #include "pgrn-convert.h"
 #include "pgrn-global.h"
 
@@ -12,7 +16,6 @@ static void
 PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 {
 	ArrayType *value = DatumGetArrayTypeP(datum);
-	ArrayMetaState state;
 	ArrayIterator iterator;
 	Datum elementDatum;
 	bool isNULL;
@@ -20,16 +23,7 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 	if (ARR_NDIM(value) == 0)
 		return;
 
-	state.element_type = ARR_ELEMTYPE(value);
-	state.typlen = -1;
-	state.typbyval = false;
-	state.typalign = 'i';
-	state.typdelim = '\0';
-	state.typioparam = InvalidOid;
-	state.typiofunc = InvalidOid;
-	memset(&(state.proc), 0, sizeof(FmgrInfo));
-
-	iterator = array_create_iterator(value, 0, &state);
+	iterator = pgrn_array_create_iterator(value, 0);
 	while (array_iterate(iterator, &elementDatum, &isNULL))
 	{
 		int weight = 0;

@@ -159,3 +159,11 @@
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_RESCAN
 #	define PGRN_SUPPORT_LOGICAL_REPLICATION
 #endif
+
+#if PG_VERSION_NUM >= 90500
+#	define pgrn_array_create_iterator(array, slide_ndim)	\
+	array_create_iterator(array, slide_ndim, NULL)
+#else
+#	define pgrn_array_create_iterator(array, slide_ndim)	\
+	array_create_iterator(array, slide_ndim)
+#endif
