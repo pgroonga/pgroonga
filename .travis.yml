@@ -1,7 +1,7 @@
 notifications:
   email:
     recipients:
-      - groonga-commit@lists.osdn.me
+      - pgroonga@ml.commit-email.info
 dist: trusty
 language: c
 matrix:
