@@ -162,6 +162,20 @@ CREATE FUNCTION pgroonga_escape(value timestamptz)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_normalize(value text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_normalize(value text, normalizerName text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)
