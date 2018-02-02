@@ -82,10 +82,33 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	case TIMESTAMPTZOID:
 	{
 		Timestamp value = DatumGetTimestamp(datum);
-		pg_time_t unixTime;
+		pg_time_t unixTimeLocal;
 		int32 usec;
 
-		unixTime = timestamptz_to_time_t(value);
+		if (typeID == TIMESTAMPTZOID)
+		{
+			/* TODO: Support not localtime time zone. */
+			unixTimeLocal = timestamptz_to_time_t(value);
+		}
+		else
+		{
+			pg_time_t unixTimeUTC;
+			struct pg_tm *pgTimeUTC;
+			struct tm timeUTC;
+
+			unixTimeUTC = timestamptz_to_time_t(value);
+			pgTimeUTC = pg_gmtime(&unixTimeUTC);
+			timeUTC.tm_sec   = pgTimeUTC->tm_sec;
+			timeUTC.tm_min   = pgTimeUTC->tm_min;
+			timeUTC.tm_hour  = pgTimeUTC->tm_hour;
+			timeUTC.tm_mday  = pgTimeUTC->tm_mday;
+			timeUTC.tm_mon   = pgTimeUTC->tm_mon;
+			timeUTC.tm_year  = pgTimeUTC->tm_year;
+			timeUTC.tm_wday  = pgTimeUTC->tm_wday;
+			timeUTC.tm_yday  = pgTimeUTC->tm_yday;
+			timeUTC.tm_isdst = pgTimeUTC->tm_isdst;
+			unixTimeLocal = mktime(&timeUTC);
+		}
 #ifdef HAVE_INT64_TIMESTAMP
 		usec = value % USECS_PER_SEC;
 #else
@@ -99,7 +122,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 			}
 		}
 #endif
-		GRN_TIME_SET(ctx, buffer, GRN_TIME_PACK(unixTime, usec));
+		GRN_TIME_SET(ctx, buffer, GRN_TIME_PACK(unixTimeLocal, usec));
 		break;
 	}
 	case TEXTOID:
