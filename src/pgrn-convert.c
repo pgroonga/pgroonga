@@ -85,29 +85,16 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 		pg_time_t unixTimeLocal;
 		int32 usec;
 
-		if (typeID == TIMESTAMPTZOID)
+		if (typeID == TIMESTAMPOID)
 		{
-			/* TODO: Support not localtime time zone. */
-			unixTimeLocal = timestamptz_to_time_t(value);
+			long int gmtOffset = 0;
+			pg_get_timezone_offset(session_timezone, &gmtOffset);
+			unixTimeLocal = timestamptz_to_time_t(value) + gmtOffset;
 		}
 		else
 		{
-			pg_time_t unixTimeUTC;
-			struct pg_tm *pgTimeUTC;
-			struct tm timeUTC;
-
-			unixTimeUTC = timestamptz_to_time_t(value);
-			pgTimeUTC = pg_gmtime(&unixTimeUTC);
-			timeUTC.tm_sec   = pgTimeUTC->tm_sec;
-			timeUTC.tm_min   = pgTimeUTC->tm_min;
-			timeUTC.tm_hour  = pgTimeUTC->tm_hour;
-			timeUTC.tm_mday  = pgTimeUTC->tm_mday;
-			timeUTC.tm_mon   = pgTimeUTC->tm_mon;
-			timeUTC.tm_year  = pgTimeUTC->tm_year;
-			timeUTC.tm_wday  = pgTimeUTC->tm_wday;
-			timeUTC.tm_yday  = pgTimeUTC->tm_yday;
-			timeUTC.tm_isdst = pgTimeUTC->tm_isdst;
-			unixTimeLocal = mktime(&timeUTC);
+			/* TODO: Support not localtime time zone. */
+			unixTimeLocal = timestamptz_to_time_t(value);
 		}
 #ifdef HAVE_INT64_TIMESTAMP
 		usec = value % USECS_PER_SEC;
