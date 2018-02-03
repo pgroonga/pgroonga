@@ -7,7 +7,9 @@
 #include <access/heapam.h>
 #include <access/htup_details.h>
 #include <catalog/pg_tablespace.h>
+#include <pgtime.h>
 #include <storage/lmgr.h>
+#include <utils/datetime.h>
 #include <utils/rel.h>
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 #	include <utils/relfilenodemap.h>
@@ -75,4 +77,19 @@ PGrnPGIsValidFileNodeID(Oid fileNodeID)
 #else
 	return true;
 #endif
+}
+
+long int
+PGrnPGGetSessionTimezoneOffset(void)
+{
+#ifdef WIN32
+	struct pg_tm tm;
+	fsec_t fsec;
+	int timezoneOffset = 0;
+	GetCurrentTimeUsec(&tm, &fsec, &timezoneOffset);
+#else
+	long int timezoneOffset = 0;
+	pg_get_timezone_offset(session_timezone, &timezoneOffset);
+#endif
+	return timezoneOffset;
 }

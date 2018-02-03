@@ -705,9 +705,9 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		grnTime = GRN_TIME_VALUE(value);
 		GRN_TIME_UNPACK(grnTime, sec, usec);
 		if (typeID == TIMESTAMPOID) {
-			long int gmtOffset = 0;
-			pg_get_timezone_offset(session_timezone, &gmtOffset);
-			unixTimeUTC = sec + gmtOffset;
+			long int timezoneOffset;
+			timezoneOffset = PGrnPGGetSessionTimezoneOffset();
+			unixTimeUTC = sec + timezoneOffset;
 		}
 		else
 		{

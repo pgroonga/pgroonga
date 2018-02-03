@@ -8,3 +8,4 @@ Relation PGrnPGResolveFileNodeID(Oid fileNodeID,
 								 Oid *reationID,
 								 LOCKMODE lockMode);
 bool PGrnPGIsValidFileNodeID(Oid fileNodeID);
+long int PGrnPGGetSessionTimezoneOffset(void);
