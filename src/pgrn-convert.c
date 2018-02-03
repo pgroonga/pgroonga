@@ -4,6 +4,7 @@
 
 #include "pgrn-convert.h"
 #include "pgrn-global.h"
+#include "pgrn-pg.h"
 
 #include <catalog/pg_type.h>
 #include <utils/array.h>
