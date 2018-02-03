@@ -664,9 +664,6 @@ PGrnWALInsertColumn(PGrnWALData *data,
 
 	nameSize = grn_column_name(ctx, column, name, GRN_TABLE_MAX_KEY_SIZE);
 
-	if (!data)
-		return;
-
 	PGrnWALInsertColumnStart(data, name, nameSize);
 
 	switch (value->header.type)
