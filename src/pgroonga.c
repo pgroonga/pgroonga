@@ -2806,7 +2806,7 @@ PGrnInsert(Relation index,
 			if (!isnull[i])
 				nValidAttributes++;
 		}
-		PGrnWALInsertStart(walData, NULL, nValidAttributes);
+		PGrnWALInsertStart(walData, sourcesTable, nValidAttributes);
 	}
 
 	GRN_UINT64_SET(ctx, &(buffers->ctid), PGrnCtidPack(ht_ctid));

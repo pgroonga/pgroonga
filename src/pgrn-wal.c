@@ -1211,6 +1211,23 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			case GRN_DB_UINT64:
 				GRN_UINT64_PUT(ctx, value, ELEMENT_VALUE);
 				break;
+			default:
+				{
+					grn_obj key;
+					if (element->type == MSGPACK_OBJECT_POSITIVE_INTEGER)
+					{
+						GRN_INT64_INIT(&key, 0);
+						GRN_INT64_SET(ctx, &key, element->via.i64);
+					}
+					else
+					{
+						GRN_UINT64_INIT(&key, 0);
+						GRN_UINT64_SET(ctx, &key, element->via.u64);
+					}
+					grn_obj_cast(ctx, &key, value, GRN_FALSE);
+					GRN_OBJ_FIN(ctx, &key);
+				}
+				break;
 			}
 			break;
 #undef ELEMENT_VALUE

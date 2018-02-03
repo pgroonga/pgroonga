@@ -1275,7 +1275,7 @@ PGrnJSONBInsertRecord(Relation index,
 	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 
 	walData = PGrnWALStart(index);
-	PGrnWALInsertStart(walData, NULL, desc->natts + 1);
+	PGrnWALInsertStart(walData, sourcesTable, desc->natts + 1);
 
 	GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
 	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);

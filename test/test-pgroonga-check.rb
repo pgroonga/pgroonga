@@ -27,6 +27,34 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
                      run_sql("SET enable_seqscan = no;\n" +
                              "SELECT * FROM memos WHERE content %% 'PGroonga';"))
       end
+
+      sub_test_case "jsonb" do
+        test "default" do
+          run_sql("CREATE TABLE memos (record jsonb);")
+          run_sql("CREATE INDEX memos_content ON memos " +
+                  "USING pgroonga (record);")
+          run_sql("INSERT INTO memos VALUES " +
+                  "('{\"content\": \"PGroonga is good!\"}');")
+          stop_postgres
+          File.open(File.join(@test_db_dir, "pgrn"), "w") do |pgrn|
+            pgrn.puts("Broken")
+          end
+          start_postgres
+          output = <<-OUTPUT
+SET enable_seqscan = no;
+SELECT * FROM memos WHERE record &@ 'PGroonga';
+              record              
+----------------------------------
+ {"content": "PGroonga is good!"}
+(1 row)
+
+          OUTPUT
+          assert_equal([output, ""],
+                       run_sql("SET enable_seqscan = no;\n" +
+                               "SELECT * FROM memos " +
+                               "WHERE record &@ 'PGroonga';"))
+        end
+      end
     end
 
     sub_test_case "index" do
