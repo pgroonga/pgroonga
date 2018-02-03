@@ -82,14 +82,14 @@ PGrnPGIsValidFileNodeID(Oid fileNodeID)
 long int
 PGrnPGGetSessionTimezoneOffset(void)
 {
-#ifdef WIN32
+/* #ifdef WIN32 */
 	struct pg_tm tm;
 	fsec_t fsec;
 	int timezoneOffset = 0;
 	GetCurrentTimeUsec(&tm, &fsec, &timezoneOffset);
-#else
-	long int timezoneOffset = 0;
-	pg_get_timezone_offset(session_timezone, &timezoneOffset);
-#endif
+/* #else */
+/* 	long int timezoneOffset = 0; */
+/* 	pg_get_timezone_offset(session_timezone, &timezoneOffset); */
+/* #endif */
 	return timezoneOffset;
 }
