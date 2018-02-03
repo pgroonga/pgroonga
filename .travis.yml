@@ -49,6 +49,7 @@ script:
       9.3)
         for path in jsonb/ \
                     function/flush/jsonb.sql \
+                    full-text-search/jsonb/ \
                     reindex/analyze.sql \
                     groonga-function/tuple-is-alive/ \
                     groonga-function/tuple-is-alive/ \

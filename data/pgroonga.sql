@@ -1455,6 +1455,12 @@ BEGIN
 				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
 				OPERATOR 15 &` (jsonb, text),
 				OPERATOR 28 &@~ (jsonb, text);
+
+		CREATE OPERATOR CLASS pgroonga_jsonb_full_text_search_ops_v2
+			FOR TYPE jsonb
+			USING pgroonga AS
+				OPERATOR 12 &@ (jsonb, text),
+				OPERATOR 28 &@~ (jsonb, text);
 	END IF;
 END;
 $$;

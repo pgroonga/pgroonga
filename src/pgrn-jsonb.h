@@ -48,12 +48,14 @@ uint32_t PGrnJSONBInsert(Relation index,
 						 uint64_t packedCtid);
 
 bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
+								   Relation index,
 								   ScanKey key,
 								   grn_obj *targetColumn);
 
 typedef struct
 {
 	bool isJSONBAttribute;
+	bool isForFullTextSearchOnly;
 	Relation index;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesValuesColumn;

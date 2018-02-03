@@ -3451,7 +3451,7 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
 }
 
-static void
+void
 PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 							  grn_obj *targetColumn,
 							  const char *query,
@@ -3535,7 +3535,7 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 	}
 }
 
-static void
+void
 PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_obj *targetColumn,
 										grn_obj *value,
@@ -3576,7 +3576,7 @@ PGrnSearchBuildCondition(Relation index,
 		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
-		return PGrnJSONBBuildSearchCondition(data, key, targetColumn);
+		return PGrnJSONBBuildSearchCondition(data, index, key, targetColumn);
 
 	valueTypeID = attribute->atttypid;
 	switch (key->sk_strategy)

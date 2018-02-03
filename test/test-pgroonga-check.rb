@@ -54,6 +54,33 @@ SELECT * FROM memos WHERE record &@ 'PGroonga';
                                "SELECT * FROM memos " +
                                "WHERE record &@ 'PGroonga';"))
         end
+
+        test "full text search" do
+          run_sql("CREATE TABLE memos (record jsonb);")
+          run_sql("CREATE INDEX memos_content ON memos " +
+                  "USING pgroonga " +
+                  "(record pgroonga_jsonb_full_text_search_ops_v2);")
+          run_sql("INSERT INTO memos VALUES " +
+                  "('{\"content\": \"PGroonga is good!\"}');")
+          stop_postgres
+          File.open(File.join(@test_db_dir, "pgrn"), "w") do |pgrn|
+            pgrn.puts("Broken")
+          end
+          start_postgres
+          output = <<-OUTPUT
+SET enable_seqscan = no;
+SELECT * FROM memos WHERE record &@ 'PGroonga';
+              record              
+----------------------------------
+ {"content": "PGroonga is good!"}
+(1 row)
+
+          OUTPUT
+          assert_equal([output, ""],
+                       run_sql("SET enable_seqscan = no;\n" +
+                               "SELECT * FROM memos " +
+                               "WHERE record &@ 'PGroonga';"))
+        end
       end
     end
 

@@ -11,6 +11,7 @@
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
+#include <utils/lsyscache.h>
 #ifdef PGRN_SUPPORT_JSONB
 #	include <utils/jsonb.h>
 #endif
@@ -41,6 +42,7 @@ typedef struct
 typedef struct PGrnJSONBInsertData
 {
 	Relation index;
+	bool isForFullTextSearchOnly;
 	grn_obj *pathsTable;
 	grn_obj *valuesTable;
 	grn_obj *pathColumn;
@@ -350,6 +352,12 @@ PGrnJSONIteratorTokenName(JsonbIteratorToken token)
 static void
 PGrnJSONBInsertDataInit(PGrnJSONBInsertData *data)
 {
+	if (data->isForFullTextSearchOnly)
+	{
+		GRN_TEXT_INIT(&(data->value), GRN_OBJ_VECTOR);
+		return;
+	}
+
 	data->pathColumn =
 		PGrnLookupColumn(data->valuesTable, "path", ERROR);
 	data->pathsColumn =
@@ -379,6 +387,12 @@ PGrnJSONBInsertDataInit(PGrnJSONBInsertData *data)
 static void
 PGrnJSONBInsertDataFin(PGrnJSONBInsertData *data)
 {
+	if (data->isForFullTextSearchOnly)
+	{
+		GRN_OBJ_FIN(ctx, &(data->value));
+		return;
+	}
+
 	GRN_OBJ_FIN(ctx, &(data->type));
 	GRN_OBJ_FIN(ctx, &(data->value));
 	GRN_OBJ_FIN(ctx, &(data->paths));
@@ -719,6 +733,73 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 		}
 	}
 }
+
+static void
+PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
+										  PGrnJSONBInsertData *data);
+
+static void
+PGrnJSONBInsertValueForFullTextSearch(JsonbIterator **iter,
+									  JsonbValue *value,
+									  PGrnJSONBInsertData *data)
+{
+	switch (value->type)
+	{
+	case jbvNull:
+		break;
+	case jbvString:
+		grn_vector_add_element(ctx,
+							   &(data->value),
+							   value->val.string.val,
+							   value->val.string.len,
+							   0,
+							   GRN_DB_TEXT);
+		break;
+	case jbvNumeric:
+	case jbvBool:
+		break;
+	case jbvArray:
+		PGrnJSONBInsertContainerForFullTextSearch(iter, data);
+		break;
+	case jbvObject:
+		PGrnJSONBInsertContainerForFullTextSearch(iter, data);
+		break;
+	case jbvBinary:
+		PGrnJSONBInsertContainerForFullTextSearch(iter, data);
+		break;
+	}
+}
+
+static void
+PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
+										  PGrnJSONBInsertData *data)
+{
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	while ((token = JsonbIteratorNext(iter, &value, false)) != WJB_DONE) {
+		switch (token)
+		{
+		case WJB_KEY:
+			break;
+		case WJB_VALUE:
+		case WJB_ELEM:
+			PGrnJSONBInsertValueForFullTextSearch(iter, &value, data);
+			break;
+		case WJB_BEGIN_ARRAY:
+		case WJB_END_ARRAY:
+		case WJB_BEGIN_OBJECT:
+		case WJB_END_OBJECT:
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_SYSTEM_ERROR),
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
+							token)));
+			break;
+		}
+	}
+}
 #endif
 
 void
@@ -904,12 +985,25 @@ PGrnAttributeIsJSONB(Oid id)
 #endif
 }
 
+#ifdef PGRN_SUPPORT_JSONB
+static bool
+PGrnJSONBIsForFullTextSearchOnly(Relation index, unsigned int nthAttribute)
+{
+	Oid strategyOID;
+
+	strategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+									  JSONBOID,
+									  TEXTOID,
+									  PGrnScriptStrategyV2Number);
+	return !OidIsValid(strategyOID);
+
+}
+#endif
+
 void
 PGrnJSONBCreate(PGrnCreateData *data)
 {
 #ifdef PGRN_SUPPORT_JSONB
-	PGrnJSONBCreateData jsonbData;
-
 	if (data->desc->natts != 1)
 	{
 		ereport(ERROR,
@@ -919,12 +1013,25 @@ PGrnJSONBCreate(PGrnCreateData *data)
 						data->index->rd_rel->relname.data)));
 	}
 
-	PGrnJSONBCreateTables(data, &jsonbData);
-	PGrnJSONBCreateDataColumns(data->index, &jsonbData);
-	PGrnJSONBCreateIndexColumns(data, &jsonbData);
-	data->attributeTypeID = grn_obj_id(ctx, jsonbData.valuesTable);
-	data->attributeFlags = GRN_OBJ_VECTOR;
-	PGrnCreateDataColumn(data);
+	if (PGrnJSONBIsForFullTextSearchOnly(data->index, data->i))
+	{
+		data->forFullTextSearch = true;
+		data->attributeTypeID = GRN_DB_TEXT;
+		data->attributeFlags = GRN_OBJ_VECTOR;
+		PGrnCreateLexicon(data);
+		PGrnCreateDataColumn(data);
+		PGrnCreateIndexColumn(data);
+	}
+	else
+	{
+		PGrnJSONBCreateData jsonbData;
+		PGrnJSONBCreateTables(data, &jsonbData);
+		PGrnJSONBCreateDataColumns(data->index, &jsonbData);
+		PGrnJSONBCreateIndexColumns(data, &jsonbData);
+		data->attributeTypeID = grn_obj_id(ctx, jsonbData.valuesTable);
+		data->attributeFlags = GRN_OBJ_VECTOR;
+		PGrnCreateDataColumn(data);
+	}
 #endif
 }
 
@@ -1014,14 +1121,21 @@ grn_obj *
 PGrnJSONBSetSource(Relation index, unsigned int i)
 {
 #ifdef PGRN_SUPPORT_JSONB
-	grn_obj *jsonValuesTable;
 	grn_obj *indexColumn;
 
-	jsonValuesTable = PGrnJSONBLookupValuesTable(index, i, ERROR);
-	PGrnJSONBSetSources(index, jsonValuesTable, i);
-	indexColumn = PGrnLookupColumn(jsonValuesTable,
-								   PGrnIndexColumnName,
-								   ERROR);
+	if (PGrnJSONBIsForFullTextSearchOnly(index, i))
+	{
+		indexColumn = PGrnLookupIndexColumn(index, i, ERROR);
+	}
+	else
+	{
+		grn_obj *jsonValuesTable;
+		jsonValuesTable = PGrnJSONBLookupValuesTable(index, i, ERROR);
+		PGrnJSONBSetSources(index, jsonValuesTable, i);
+		indexColumn = PGrnLookupColumn(jsonValuesTable,
+									   PGrnIndexColumnName,
+									   ERROR);
+	}
 
 	return indexColumn;
 #else
@@ -1067,6 +1181,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 		return false;
 
 	data.index = NULL;
+	data.isForFullTextSearchOnly = false;
 	data.pathsTable  = tmpPathsTable;
 	data.valuesTable = tmpValuesTable;
 	GRN_PTR_INIT(&valueIDs, GRN_OBJ_VECTOR, grn_obj_id(ctx, data.valuesTable));
@@ -1255,7 +1370,10 @@ PGrnJSONBInsertJSONB(PGrnJSONBInsertData *data,
 	JsonbIterator *iter;
 
 	iter = JsonbIteratorInit(&(jsonb->root));
-	PGrnJSONBInsertContainer(&iter, data);
+	if (data->isForFullTextSearchOnly)
+		PGrnJSONBInsertContainerForFullTextSearch(&iter, data);
+	else
+		PGrnJSONBInsertContainer(&iter, data);
 }
 
 static void
@@ -1284,30 +1402,44 @@ PGrnJSONBInsertRecord(Relation index,
 	attribute = desc->attrs[0];
 	attributeName = &(attribute->attname);
 	column = PGrnLookupColumn(sourcesTable, attributeName->data, ERROR);
-	grn_obj_set_value(ctx, column, id, data->valueIDs, GRN_OBJ_SET);
+	if (data->isForFullTextSearchOnly)
+		grn_obj_set_value(ctx, column, id, &(data->value), GRN_OBJ_SET);
+	else
+		grn_obj_set_value(ctx, column, id, data->valueIDs, GRN_OBJ_SET);
 	PGrnCheck("failed to set column value: <%s>", attributeName->data);
 
 	if (walData)
 	{
-		grn_obj *valueKeys = &(buffers->jsonbValueKeys);
-		size_t i, nValueIDs;
-
-		GRN_BULK_REWIND(valueKeys);
-		nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
-		for (i = 0; i < nValueIDs; i++)
+		if (data->isForFullTextSearchOnly)
 		{
-			grn_id valueID;
-			uint64_t key;
-
-			valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
-			grn_table_get_key(ctx,
-							  data->valuesTable,
-							  valueID,
-							  &key,
-							  sizeof(uint64_t));
-			GRN_UINT64_PUT(ctx, valueKeys, key);
+			PGrnWALInsertColumn(walData, column, &(data->value));
 		}
-		PGrnWALInsertColumn(walData, column, valueKeys);
+		else
+		{
+			grn_obj *valueKeys = &(buffers->jsonbValueKeys);
+			size_t i, nValueIDs;
+
+			GRN_BULK_REWIND(valueKeys);
+			nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
+			for (i = 0; i < nValueIDs; i++)
+			{
+				grn_id valueID;
+				uint64_t key;
+
+				valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
+				grn_table_get_key(ctx,
+								  data->valuesTable,
+								  valueID,
+								  &key,
+								  sizeof(uint64_t));
+				printf("value ID: %u: %lu\n", valueID, key);
+				GRN_UINT64_PUT(ctx, valueKeys, key);
+			}
+			printf("insert column\n");
+			grn_p(ctx, column);
+			grn_p(ctx, valueKeys);
+			PGrnWALInsertColumn(walData, column, valueKeys);
+		}
 	}
 
 	PGrnWALInsertFinish(walData);
@@ -1326,22 +1458,27 @@ PGrnJSONBInsert(Relation index,
 	uint32_t recordSize = 0; /* always 0 */
 #ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBInsertData data;
-	unsigned int nthValue = 0;
+	unsigned int nthAttribute = 0;
 	Jsonb *jsonb;
 
-	if (isnull[nthValue])
+	if (isnull[nthAttribute])
 		return recordSize;
 
 	data.index = index;
-	data.pathsTable  = PGrnJSONBLookupPathsTable(index, nthValue, ERROR);
-	data.valuesTable = PGrnJSONBLookupValuesTable(index, nthValue, ERROR);
-	data.valueIDs = &(buffers->general);
-	grn_obj_reinit(ctx, data.valueIDs,
-				   grn_obj_id(ctx, data.valuesTable),
-				   GRN_OBJ_VECTOR);
+	data.isForFullTextSearchOnly =
+		PGrnJSONBIsForFullTextSearchOnly(index, nthAttribute);
+	if (!data.isForFullTextSearchOnly)
+	{
+		data.pathsTable  = PGrnJSONBLookupPathsTable(index, nthAttribute, ERROR);
+		data.valuesTable = PGrnJSONBLookupValuesTable(index, nthAttribute, ERROR);
+		data.valueIDs = &(buffers->general);
+		grn_obj_reinit(ctx, data.valueIDs,
+					   grn_obj_id(ctx, data.valuesTable),
+					   GRN_OBJ_VECTOR);
+	}
 	PGrnJSONBInsertDataInit(&data);
 
-	jsonb = DatumGetJsonb(values[nthValue]);
+	jsonb = DatumGetJsonb(values[nthAttribute]);
 	PGrnJSONBInsertJSONB(&data, jsonb);
 
 	PGrnJSONBInsertRecord(index,
@@ -1600,10 +1737,12 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 
 bool
 PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
+							  Relation index,
 							  ScanKey key,
 							  grn_obj *targetColumn)
 {
 #ifdef PGRN_SUPPORT_JSONB
+	unsigned int nthAttribute = 0;
 	grn_obj *subFilter;
 
 	subFilter = PGrnLookup("sub_filter", ERROR);
@@ -1626,19 +1765,39 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 	case PGrnMatchStrategyV2Number:
 		grn_obj_reinit(ctx, &(buffers->keyword), GRN_DB_TEXT, 0);
 		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->keyword));
-		PGrnSearchBuildConditionJSONMatch(data,
-										  subFilter,
-										  targetColumn,
-										  &(buffers->keyword));
+		if (PGrnJSONBIsForFullTextSearchOnly(index, nthAttribute))
+		{
+			PGrnSearchBuildConditionBinaryOperation(data,
+													targetColumn,
+													&(buffers->keyword),
+													GRN_OP_MATCH);
+		}
+		else
+		{
+			PGrnSearchBuildConditionJSONMatch(data,
+											  subFilter,
+											  targetColumn,
+											  &(buffers->keyword));
+		}
 		break;
 	case PGrnQueryStrategyV2Number:
 	case PGrnQueryStrategyV2DeprecatedNumber:
 		grn_obj_reinit(ctx, &(buffers->keyword), GRN_DB_TEXT, 0);
 		PGrnConvertFromData(key->sk_argument, TEXTOID, &(buffers->keyword));
-		PGrnSearchBuildConditionJSONQuery(data,
-										  subFilter,
+		if (PGrnJSONBIsForFullTextSearchOnly(index, nthAttribute))
+		{
+			PGrnSearchBuildConditionQuery(data,
 										  targetColumn,
-										  &(buffers->keyword));
+										  GRN_TEXT_VALUE(&(buffers->keyword)),
+										  GRN_TEXT_LEN(&(buffers->keyword)));
+		}
+		else
+		{
+			PGrnSearchBuildConditionJSONQuery(data,
+											  subFilter,
+											  targetColumn,
+											  &(buffers->keyword));
+		}
 		break;
 	case PGrnJSONContainStrategyNumber:
 		PGrnSearchBuildConditionJSONContain(data,
@@ -1749,14 +1908,20 @@ PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 {
 #ifdef PGRN_SUPPORT_JSONB
 	Relation index = data->index;
+	unsigned int nthAttribute = 0;
 	TupleDesc desc;
 	Form_pg_attribute attribute;
 	grn_id valuesTableID;
 
 	desc = RelationGetDescr(index);
-	attribute = desc->attrs[0];
+	attribute = desc->attrs[nthAttribute];
 	data->isJSONBAttribute = PGrnAttributeIsJSONB(attribute->atttypid);
 	if (!data->isJSONBAttribute)
+		return;
+
+	data->isForFullTextSearchOnly =
+		PGrnJSONBIsForFullTextSearchOnly(index, nthAttribute);
+	if (data->isForFullTextSearchOnly)
 		return;
 
 	data->sourcesValuesColumn = PGrnLookupColumn(data->sourcesTable,
@@ -1784,6 +1949,9 @@ PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data)
 	if (!data->isJSONBAttribute)
 		return;
 
+	if (data->isForFullTextSearchOnly)
+		return;
+
 	GRN_BULK_REWIND(&(data->values));
 	grn_obj_get_value(ctx,
 					  data->sourcesValuesColumn,
@@ -1801,6 +1969,9 @@ PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 {
 #ifdef PGRN_SUPPORT_JSONB
 	if (!data->isJSONBAttribute)
+		return;
+
+	if (data->isForFullTextSearchOnly)
 		return;
 
 	PGrnJSONValuesDeleteBulk(data->valuesTable,
