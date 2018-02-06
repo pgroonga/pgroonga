@@ -55,7 +55,7 @@ script:
                     regexp/text/options/ \
                     groonga-function/tuple-is-alive/ \
                     groonga-function/tuple-is-alive/ \
-                    term-search/text/options/ \
+                    term-search/text/options/
         do
           rm -rf sql/${path}
         done
@@ -64,7 +64,7 @@ script:
       9.4)
         for path in full-text-search/text/options/normalizer/ \
                     regexp/text/options/ \
-                    term-search/text/options/ \
+                    term-search/text/options/
         do
           rm -rf sql/$path
           rm -rf sql/compatibility/schema/$path
