@@ -879,6 +879,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 
 	GRN_BULK_REWIND(tokenFilters);
 	PGrnApplyOptionValues(data->index,
+						  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 						  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 						  &normalizer, PGRN_DEFAULT_NORMALIZER,
 						  tokenFilters);

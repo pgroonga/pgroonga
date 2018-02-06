@@ -18,6 +18,9 @@ typedef struct PGrnOptions
 	int normalizerOffset;
 	int tokenFiltersOffset;
 	int pluginsOffset;
+	int fullTextSearchNormalizerOffset;
+	int regexpSearchNormalizerOffset;
+	int prefixSearchNormalizerOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -224,7 +227,7 @@ PGrnInitializeOptions(void)
 						 PGrnOptionValidateTokenizer);
 	add_string_reloption(PGrnReloptionKind,
 						 "normalizer",
-						 "Normalizer name to be used for full-text search",
+						 "Normalizer name to be used as fallback",
 						 PGRN_DEFAULT_NORMALIZER,
 						 PGrnOptionValidateNormalizer);
 	add_string_reloption(PGrnReloptionKind,
@@ -238,6 +241,21 @@ PGrnInitializeOptions(void)
 						 "Plugin names separated by \",\" to be installed",
 						 "",
 						 PGrnOptionValidatePlugins);
+	add_string_reloption(PGrnReloptionKind,
+						 "full_text_search_normalizer",
+						 "Normalizer name to be used for full-text search",
+						 NULL,
+						 PGrnOptionValidateNormalizer);
+	add_string_reloption(PGrnReloptionKind,
+						 "regexp_search_normalizer",
+						 "Normalizer name to be used for regexp search",
+						 NULL,
+						 PGrnOptionValidateNormalizer);
+	add_string_reloption(PGrnReloptionKind,
+						 "prefix_search_normalizer",
+						 "Normalizer name to be used for prefix search",
+						 NULL,
+						 PGrnOptionValidateNormalizer);
 #endif
 }
 
@@ -257,6 +275,7 @@ PGrnOptionCollectTokenFilter(const char *name,
 
 void
 PGrnApplyOptionValues(Relation index,
+					  PGrnOptionUseCase useCase,
 					  grn_obj **tokenizer,
 					  const char *defaultTokenizerName,
 					  grn_obj **normalizer,
@@ -286,23 +305,57 @@ PGrnApplyOptionValues(Relation index,
 	}
 
 	tokenizerName    = ((const char *) options) + options->tokenizerOffset;
-	normalizerName   = ((const char *) options) + options->normalizerOffset;
 	tokenFilterNames = ((const char *) options) + options->tokenFiltersOffset;
 
-	if (PGrnIsExplicitNoneValue(tokenizerName))
+	if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
 	{
 		*tokenizer = NULL;
 	}
-	else if (PGrnIsNoneValue(tokenizerName))
-	{
-		if (defaultTokenizerName)
-			*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
-		else
-			*tokenizer = NULL;
-	}
 	else
 	{
-		*tokenizer = PGrnLookup(tokenizerName, ERROR);
+		if (PGrnIsExplicitNoneValue(tokenizerName))
+		{
+			*tokenizer = NULL;
+		}
+		else if (PGrnIsNoneValue(tokenizerName))
+		{
+			if (defaultTokenizerName)
+				*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
+			else
+				*tokenizer = NULL;
+		}
+		else
+		{
+			*tokenizer = PGrnLookup(tokenizerName, ERROR);
+		}
+	}
+
+	normalizerName = ((const char *) options) + options->normalizerOffset;
+	switch (useCase)
+	{
+	case PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH:
+		if (options->fullTextSearchNormalizerOffset != 0)
+		{
+			normalizerName =
+				((const char *) options) + options->fullTextSearchNormalizerOffset;
+		}
+		break;
+	case PGRN_OPTION_USE_CASE_REGEXP_SEARCH:
+		if (options->regexpSearchNormalizerOffset != 0)
+		{
+			normalizerName =
+				((const char *) options) + options->regexpSearchNormalizerOffset;
+		}
+		break;
+	case PGRN_OPTION_USE_CASE_PREFIX_SEARCH:
+		if (options->prefixSearchNormalizerOffset != 0)
+		{
+			normalizerName =
+				((const char *) options) + options->prefixSearchNormalizerOffset;
+		}
+		break;
+	default:
+		break;
 	}
 
 	if (PGrnIsExplicitNoneValue(normalizerName))
@@ -343,7 +396,13 @@ pgroonga_options_raw(Datum reloptions,
 		{"token_filters", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenFiltersOffset)},
 		{"plugins", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, pluginsOffset)}
+		 offsetof(PGrnOptions, pluginsOffset)},
+		{"full_text_search_normalizer", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, fullTextSearchNormalizerOffset)},
+		{"regexp_search_normalizer", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, regexpSearchNormalizerOffset)},
+		{"prefix_search_normalizer", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, prefixSearchNormalizerOffset)}
 	};
 
 	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,

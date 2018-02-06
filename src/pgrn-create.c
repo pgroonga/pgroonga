@@ -142,31 +142,31 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		data->forRegexpSearch ||
 		data->forPrefixSearch)
 	{
-		const char *tokenizerName;
+		const char *tokenizerName = NULL;
 		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
+		PGrnOptionUseCase useCase = PGRN_OPTION_USE_CASE_UNKNOWN;
 
 		if (data->forFullTextSearch)
 		{
 			tokenizerName = PGRN_DEFAULT_TOKENIZER;
+			useCase = PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH;
 		}
 		else if (data->forRegexpSearch)
 		{
 			tokenizerName = "TokenRegexp";
+			useCase = PGRN_OPTION_USE_CASE_REGEXP_SEARCH;
 		}
-		else
+		else if (data->forPrefixSearch)
 		{
 			tokenizerName = NULL;
+			useCase = PGRN_OPTION_USE_CASE_PREFIX_SEARCH;
 		}
 
 		PGrnApplyOptionValues(data->index,
+							  useCase,
 							  &tokenizer, tokenizerName,
 							  &normalizer, normalizerName,
 							  tokenFilters);
-
-		if (data->forPrefixSearch)
-		{
-			tokenizer = NULL;
-		}
 	}
 
 	snprintf(lexiconName, sizeof(lexiconName),
