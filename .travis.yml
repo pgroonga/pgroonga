@@ -50,17 +50,21 @@ script:
         for path in jsonb/ \
                     function/flush/jsonb.sql \
                     full-text-search/jsonb/ \
+                    full-text-search/text/options/normalizer/ \
                     reindex/analyze.sql \
+                    regexp/text/options/ \
                     groonga-function/tuple-is-alive/ \
                     groonga-function/tuple-is-alive/ \
-                    term-search/text/options/tokenizer/ignored.sql
+                    term-search/text/options/ \
         do
           rm -rf sql/${path}
         done
         rm -rf sql/compatibility
         ;;
       9.4)
-        for path in term-search/text/options/tokenizer/ignored.sql
+        for path in full-text-search/text/options/normalizer/ \
+                    regexp/text/options/ \
+                    term-search/text/options/
         do
           rm -rf sql/$path
           rm -rf sql/compatibility/schema/$path
