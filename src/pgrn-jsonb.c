@@ -1433,12 +1433,8 @@ PGrnJSONBInsertRecord(Relation index,
 								  valueID,
 								  &key,
 								  sizeof(uint64_t));
-				printf("value ID: %u: %lu\n", valueID, key);
 				GRN_UINT64_PUT(ctx, valueKeys, key);
 			}
-			printf("insert column\n");
-			grn_p(ctx, column);
-			grn_p(ctx, valueKeys);
 			PGrnWALInsertColumn(walData, column, valueKeys);
 		}
 	}
