@@ -25,9 +25,9 @@ case "${distribution}" in
 deb http://packages.groonga.org/debian/ ${code_name} main
 deb-src http://packages.groonga.org/debian/ ${code_name} main
 EOF
-    run apt update --allow-insecure-repositories
-    run apt install -y --allow-unauthenticated groonga-keyring
-    run apt update
+    run sudo apt update --allow-insecure-repositories
+    run sudo apt install -y --allow-unauthenticated groonga-keyring
+    run sudo apt update
     ;;
   ubuntu)
     component=universe
