@@ -4895,16 +4895,18 @@ PGrnRemoveUnusedTables(void)
 								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
 	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
 	{
-		char *name;
-		char *nameEnd;
+		void *key;
+		char name[GRN_TABLE_MAX_KEY_SIZE];
+		char *idEnd = NULL;
 		int nameSize;
 		Oid relationFileNodeID;
 		unsigned int i;
 
-		nameSize = grn_table_cursor_get_key(ctx, cursor, (void **)&name);
-		nameEnd = name + nameSize;
-		relationFileNodeID = strtol(name + strlen(min), &nameEnd, 10);
-		if (nameEnd[0] == '.')
+		nameSize = grn_table_cursor_get_key(ctx, cursor, &key);
+		memcpy(name, key, nameSize);
+		name[nameSize] = '\0';
+		relationFileNodeID = strtol(name + strlen(min), &idEnd, 10);
+		if (idEnd[0] == '.')
 			continue;
 
 		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
