@@ -388,6 +388,9 @@ PGrnIndexColumnSetSourceIDs(Relation index,
 							grn_obj *sourceIDs)
 {
 	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
+	PGrnCheck("failed to set sources: <%s>: <%s>",
+			  PGrnInspectName(indexColumn),
+			  PGrnInspect(sourceIDs));
 	PGrnWALSetSourceIDs(index, indexColumn, sourceIDs);
 }
 
