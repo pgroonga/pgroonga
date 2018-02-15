@@ -18,7 +18,7 @@ PGrnInitializeBuffers(void)
 	GRN_TEXT_INIT(&(PGrnBuffers.pattern), 0);
 	GRN_UINT64_INIT(&(PGrnBuffers.ctid), 0);
 	GRN_FLOAT_INIT(&(PGrnBuffers.score), 0);
-	GRN_RECORD_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_UINT32_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR);
 	GRN_PTR_INIT(&(PGrnBuffers.tokenFilters), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT64_INIT(&(PGrnBuffers.jsonbValueKeys), GRN_OBJ_VECTOR);
 	GRN_UINT64_INIT(&(PGrnBuffers.walPosition), 0);

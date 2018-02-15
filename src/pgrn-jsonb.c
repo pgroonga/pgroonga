@@ -1091,11 +1091,11 @@ PGrnJSONBSetSources(Relation index,
 		GRN_BULK_REWIND(sourceIDs);
 
 		source = PGrnLookupColumn(jsonValuesTable, "path", ERROR);
-		GRN_RECORD_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
+		GRN_UINT32_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
 		grn_obj_unlink(ctx, source);
 
 		source = PGrnLookupColumn(jsonValuesTable, "paths", ERROR);
-		GRN_RECORD_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
+		GRN_UINT32_PUT(ctx, sourceIDs, grn_obj_id(ctx, source));
 		grn_obj_unlink(ctx, source);
 
 		indexColumn = PGrnLookupColumn(jsonPathsTable, PGrnIndexColumnName,

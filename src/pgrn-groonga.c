@@ -377,7 +377,7 @@ PGrnIndexColumnSetSource(Relation index,
 	GRN_BULK_REWIND(&(buffers->sourceIDs));
 
 	sourceID = grn_obj_id(ctx, source);
-	GRN_RECORD_PUT(ctx, &(buffers->sourceIDs), sourceID);
+	GRN_UINT32_PUT(ctx, &(buffers->sourceIDs), sourceID);
 
 	PGrnIndexColumnSetSourceIDs(index, indexColumn, &(buffers->sourceIDs));
 }
