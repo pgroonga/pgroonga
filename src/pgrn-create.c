@@ -194,7 +194,13 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 	lexicon = PGrnLookup(lexiconName, ERROR);
 
 	if (data->forFullTextSearch || data->forRegexpSearch)
+	{
 		flags |= GRN_OBJ_WITH_POSITION;
+		if (data->attributeFlags & GRN_OBJ_VECTOR)
+		{
+			flags |= GRN_OBJ_WITH_SECTION;
+		}
+	}
 	PGrnCreateColumn(data->index,
 					 lexicon,
 					 PGrnIndexColumnName,
