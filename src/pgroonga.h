@@ -76,5 +76,10 @@
 #define PGrnLexiconNameFormat			"Lexicon%u_%u"
 #define PGrnIndexColumnName				"index"
 
+#define PGRN_EXPR_QUERY_PARSE_FLAGS				\
+	(GRN_EXPR_SYNTAX_QUERY |					\
+	 GRN_EXPR_ALLOW_LEADING_NOT |				\
+	 GRN_EXPR_QUERY_NO_SYNTAX_ERROR)
+
 extern bool PGrnGroongaInitialized;
 bool PGrnIndexIsPGroonga(Relation index);

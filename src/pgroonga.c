@@ -1726,8 +1726,7 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 {
 	grn_obj *expression;
 	grn_obj *variable;
-	grn_expr_flags flags =
-		GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	grn_rc rc;
 	grn_obj *result;
 	grn_bool matched = false;
@@ -3459,7 +3458,7 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 {
 	grn_rc rc;
 	grn_obj *matchTarget, *matchTargetVariable;
-	grn_expr_flags flags = GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
 							  matchTarget, matchTargetVariable);

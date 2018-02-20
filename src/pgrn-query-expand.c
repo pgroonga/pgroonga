@@ -422,7 +422,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	grn_expr_syntax_expand_query(ctx,
 								 VARDATA_ANY(query),
 								 VARSIZE_ANY_EXHDR(query),
-								 GRN_EXPR_SYNTAX_QUERY,
+								 PGRN_EXPR_QUERY_PARSE_FLAGS,
 								 grn_ctx_get(ctx,
 											 PGRN_EXPANDER_NAME,
 											 PGRN_EXPANDER_NAME_LENGTH),

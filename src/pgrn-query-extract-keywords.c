@@ -52,8 +52,7 @@ PGrnQueryExtractKeywords(text *query)
 {
 	grn_obj *expression;
 	grn_obj *variable;
-	grn_expr_flags flags =
-		GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT;
+	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	grn_rc rc;
 	ArrayType *keywords;
 
