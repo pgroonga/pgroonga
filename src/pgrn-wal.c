@@ -33,7 +33,7 @@ PGrnWALDisable(void)
 #	include <storage/bufpage.h>
 #	include <storage/lmgr.h>
 #	include <storage/lockdefs.h>
-#	include <utils/fmgrprotos.h>
+#	include <utils/builtins.h>
 
 #	include <msgpack.h>
 #endif
