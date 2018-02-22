@@ -5267,12 +5267,16 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 bool
 PGrnIndexIsPGroonga(Relation index)
 {
+	if (!index->rd_amroutine)
+		return false;
 	return index->rd_amroutine->aminsert == pgroonga_insert_raw;
 }
 #else
 bool
 PGrnIndexIsPGroonga(Relation index)
 {
+	if (!index->rd_aminfo)
+		return false;
 	return index->rd_aminfo->aminsert.fn_addr == pgroonga_insert;
 }
 #endif
