@@ -1,0 +1,2 @@
+SELECT pgroonga_wal_apply('nonexistent');
+ERROR:  relation "nonexistent" does not exist

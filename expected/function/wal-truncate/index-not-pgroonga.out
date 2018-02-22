@@ -1,0 +1,7 @@
+CREATE TABLE memos (
+  id integer
+);
+CREATE INDEX index ON memos (id);
+SELECT pgroonga_wal_truncate('index');
+ERROR:  pgroonga: wal_truncate: not PGroonga index: <index>
+DROP TABLE memos;

@@ -1726,7 +1726,7 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: unknown index name: <%s>",
+				 errmsg("pgroonga: wal_apply: unknown index name: <%s>",
 						DatumGetCString(indexNameDatum))));
 	}
 
@@ -1737,7 +1737,7 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: not PGroonga index: <%s>",
+					 errmsg("pgroonga: wal_apply: not PGroonga index: <%s>",
 							DatumGetCString(indexNameDatum))));
 		}
 		nAppliedOperations = PGrnWALApply(index);
@@ -1752,7 +1752,7 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL isn't supported")));
+			 errmsg("pgroonga: WAL: not supported")));
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
@@ -1815,7 +1815,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL isn't supported")));
+			 errmsg("pgroonga: WAL: not supported")));
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
@@ -1897,7 +1897,7 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: unknown index name: <%s>",
+				 errmsg("pgroonga: wal_truncate: unknown index name: <%s>",
 						DatumGetCString(indexNameDatum))));
 	}
 
@@ -1908,7 +1908,7 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: not PGroonga index: <%s>",
+					 errmsg("pgroonga: wal_truncate: not PGroonga index: <%s>",
 							DatumGetCString(indexNameDatum))));
 		}
 		nTruncatedBlocks = PGrnWALTruncate(index);
@@ -1923,7 +1923,7 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL isn't supported")));
+			 errmsg("pgroonga: WAL: not supported")));
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }
@@ -1977,7 +1977,7 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL isn't supported")));
+			 errmsg("pgroonga: WAL: not supported")));
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }
