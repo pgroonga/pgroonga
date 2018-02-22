@@ -1,0 +1,20 @@
+CREATE TABLE memos (
+  content text
+);
+INSERT INTO memos VALUES ('Groonga is fast!');
+SET pgroonga.writable = false;
+CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+ERROR:  pgroonga: can't create an index while pgroonga.writable is false
+SET pgroonga.writable = true;
+CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+SELECT pgroonga_command('select',
+			ARRAY[
+			  'table', pgroonga_table_name('pgrn_index'),
+			  'output_columns', '_id, content'
+			])::jsonb->>1;
+                                    ?column?                                    
+--------------------------------------------------------------------------------
+ [[[1], [["_id", "UInt32"], ["content", "LongText"]], [1, "Groonga is fast!"]]]
+(1 row)
+
+DROP TABLE memos;

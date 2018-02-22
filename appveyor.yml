@@ -80,6 +80,7 @@ test_script:
   - if not "%WAL_SUPPORTED%" == "yes" (
        rm -rf sql/function/wal-apply/
        rm -rf sql/function/wal-truncate/
+       rm -rf sql/variable/writable/wal-*
     )
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |

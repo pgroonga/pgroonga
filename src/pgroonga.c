@@ -24,6 +24,7 @@
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
+#include "pgrn-writable.h"
 
 #ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #	include <access/amapi.h>
@@ -515,6 +516,8 @@ _PG_init(void)
 	PGrnInitializeGroongaFunctions();
 
 	PGrnInitializeIndexStatus();
+
+	PGrnInitializeWritable();
 
 	PGrnInitializeMatchSequentialSearchData();
 	PGrnInitializePrefixRKSequentialSearchData();
@@ -2862,6 +2865,15 @@ pgroonga_insert_raw(Relation index,
 	grn_obj *sourcesCtidColumn;
 	uint32_t recordSize;
 
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: "
+						"can't insert a record "
+						"while pgroonga.writable is false")));
+	}
+
 	PGrnWALApply(index);
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -4335,7 +4347,9 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 
 	PGrnEnsureCursorOpened(scan, direction, true);
 
-	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL)
+	if (scan->kill_prior_tuple &&
+		so->currentID != GRN_ID_NIL &&
+		PGrnIsWritable())
 	{
 		grn_id recordID;
 
@@ -4606,6 +4620,15 @@ pgroonga_build_raw(Relation heap,
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: "
+						"can't create an index "
+						"while pgroonga.writable is false")));
+	}
+
 	if (indexInfo->ii_Unique)
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -4708,6 +4731,15 @@ pgroonga_buildempty_raw(Relation index)
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: "
+						"can't create an empty index "
+						"while pgroonga.writable is false")));
+	}
+
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
@@ -4795,6 +4827,15 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: "
+						"can't delete bulk records "
+						"while pgroonga.writable is false")));
+	}
 
 	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
 
@@ -4901,6 +4942,9 @@ PGrnRemoveUnusedTables(void)
 		Oid relationFileNodeID;
 		unsigned int i;
 
+		if (!PGrnIsWritable())
+			break;
+
 		nameSize = grn_table_cursor_get_key(ctx, cursor, &key);
 		memcpy(name, key, nameSize);
 		name[nameSize] = '\0';
@@ -4956,6 +5000,9 @@ static IndexBulkDeleteResult *
 pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 						   IndexBulkDeleteResult *stats)
 {
+	if (!PGrnIsWritable())
+		return stats;
+
 	if (!stats)
 	{
 		grn_obj *sourcesTable;

@@ -5,6 +5,7 @@
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
+#include "pgrn-writable.h"
 
 #include <utils/guc.h>
 
@@ -51,6 +52,8 @@ static char *PGrnQueryLogPath;
 static int PGrnLockTimeout;
 
 static bool PGrnEnableWAL;
+
+static bool PGrnWritable;
 
 #ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
@@ -248,6 +251,12 @@ PGrnMatchEscalationThresholdAssign(int new_value, void *extra)
 }
 #endif
 
+static void
+PGrnWritableAssign(bool newValue, void *extra)
+{
+	PGrnSetWritable(newValue);
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -373,6 +382,19 @@ PGrnInitializeVariables(void)
 								NULL,
 								PGrnMatchEscalationThresholdAssign,
 								NULL);
+
+	DefineCustomBoolVariable("pgroonga.writable",
+							 "Whether PGroonga related data are changable "
+							 "or not.",
+							 "The default is true. "
+							 "Normally, you don't need to use this variable.",
+							 &PGrnWritable,
+							 PGrnIsWritable(),
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnWritableAssign,
+							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

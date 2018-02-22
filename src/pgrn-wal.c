@@ -6,6 +6,7 @@
 #include "pgrn-groonga.h"
 #include "pgrn-index-status.h"
 #include "pgrn-wal.h"
+#include "pgrn-writable.h"
 
 static bool PGrnWALEnabled = false;
 
@@ -968,12 +969,11 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		page = BufferGetPage(buffer);
 		needToApply = (PGrnWALPageGetLastOffset(page) > currentOffset);
 		UnlockReleaseBuffer(buffer);
-		return needToApply;
+		if (!needToApply)
+			return false;
 	}
-	else
-	{
-		return true;
-	}
+
+	return PGrnIsWritable();
 }
 
 static bool
@@ -1711,6 +1711,15 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	Oid indexOid;
 	Relation index;
 
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: wal_apply: "
+						"can't apply WAL "
+						"while pgroonga.writable is false")));
+	}
+
 	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
 	indexOid = DatumGetObjectId(indexOidDatum);
 	if (!OidIsValid(indexOid))
@@ -1760,6 +1769,15 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	Relation indexes;
 	HeapScanDesc scan;
 	HeapTuple indexTuple;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: wal_apply: "
+						"can't apply WAL "
+						"while pgroonga.writable is false")));
+	}
 
 	indexes = heap_open(IndexRelationId, lock);
 	scan = heap_beginscan_catalog(indexes, 0, NULL);

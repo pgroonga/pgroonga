@@ -23,5 +23,6 @@ HEADERS =					\
 	src/pgrn-value.h			\
 	src/pgrn-variables.h			\
 	src/pgrn-wal.h				\
+	src/pgrn-writable.h			\
 	src/pgroonga.h				\
 	vendor/xxHash/xxhash.h
