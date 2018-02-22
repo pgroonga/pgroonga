@@ -1320,14 +1320,14 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	text *tableName;
 
 	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
-	if (!OidIsValid(indexOidDatum))
+	indexOid = DatumGetObjectId(indexOidDatum);
+	if (!OidIsValid(indexOid))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_NAME),
 				 errmsg("pgroonga: unknown index name: <%s>",
 						DatumGetCString(indexNameDatum))));
 	}
-	indexOid = DatumGetObjectId(indexOidDatum);
 
 	{
 		HeapTuple tuple;
