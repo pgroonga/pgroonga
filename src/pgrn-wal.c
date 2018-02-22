@@ -1774,7 +1774,6 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 		PG_END_TRY();
 		RelationClose(index);
 	}
-	printf("done\n");
 	heap_endscan(scan);
 	heap_close(indexes, lock);
 #else
