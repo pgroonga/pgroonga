@@ -74,6 +74,7 @@ script:
   - |
     if [ "${WAL_SUPPORTED}" != "yes" ]; then
       rm -rf sql/function/wal-apply/
+      rm -rf sql/function/wal-truncate/
     fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - |

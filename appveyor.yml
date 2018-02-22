@@ -77,8 +77,10 @@ test_script:
   - rm sql/full-text-search/text/options/token-filters/custom.sql
   # Reduce tests to reduce test time
   - rm -rf sql/compatibility
-  - if not "%WAL_SUPPORTED%" == "yes"
+  - if not "%WAL_SUPPORTED%" == "yes" (
        rm -rf sql/function/wal-apply/
+       rm -rf sql/function/wal-truncate/
+    )
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
@@ -93,5 +95,6 @@ test_script:
       --launcher=test\short-pgappname.bat ||
     (type regression.diffs & nonexistent_command)
   - set PATH=%CD%\..\pgsql\bin;%PATH%
-  - if "%WAL_SUPPORTED%" == "yes"
+  - if "%WAL_SUPPORTED%" == "yes" (
        ruby test\run-test.rb
+    )
