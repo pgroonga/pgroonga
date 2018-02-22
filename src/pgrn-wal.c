@@ -29,6 +29,9 @@ PGrnWALDisable(void)
 
 #ifdef PGRN_SUPPORT_WAL
 #	include <access/generic_xlog.h>
+#	include <access/heapam.h>
+#	include <access/htup_details.h>
+#	include <miscadmin.h>
 #	include <storage/bufmgr.h>
 #	include <storage/bufpage.h>
 #	include <storage/lmgr.h>
@@ -38,7 +41,8 @@ PGrnWALDisable(void)
 #	include <msgpack.h>
 #endif
 
-PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply);
+PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_index);
+PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
 
 #ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;
@@ -1680,7 +1684,7 @@ PGrnWALApply(Relation index)
  * pgroonga_wal_apply(indexName cstring) : bigint
  */
 Datum
-pgroonga_wal_apply(PG_FUNCTION_ARGS)
+pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 {
 	int64_t nAppliedOperations = 0;
 #ifdef PGRN_SUPPORT_WAL
@@ -1718,6 +1722,61 @@ pgroonga_wal_apply(PG_FUNCTION_ARGS)
 	}
 	PG_END_TRY();
 	RelationClose(index);
+#else
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: WAL isn't supported")));
+#endif
+	PG_RETURN_INT64(nAppliedOperations);
+}
+
+/**
+ * pgroonga_wal_apply() : bigint
+ */
+Datum
+pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
+{
+	int64_t nAppliedOperations = 0;
+#ifdef PGRN_SUPPORT_WAL
+	LOCKMODE lock = AccessShareLock;
+	Relation indexes;
+	HeapScanDesc scan;
+	HeapTuple indexTuple;
+
+	indexes = heap_open(IndexRelationId, lock);
+	scan = heap_beginscan_catalog(indexes, 0, NULL);
+	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
+	{
+		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
+		Relation index;
+
+		if (!pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+			continue;
+
+		index = RelationIdGetRelation(indexForm->indexrelid);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		PG_TRY();
+		{
+			nAppliedOperations += PGrnWALApply(index);
+		}
+		PG_CATCH();
+		{
+			RelationClose(index);
+			heap_endscan(scan);
+			heap_close(indexes, lock);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		RelationClose(index);
+	}
+	printf("done\n");
+	heap_endscan(scan);
+	heap_close(indexes, lock);
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),

@@ -22,9 +22,16 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION pgroonga_wal_apply()
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_apply_all'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga_wal_apply(indexName cstring)
 	RETURNS bigint
-	AS 'MODULE_PATHNAME', 'pgroonga_wal_apply'
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_apply_index'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
