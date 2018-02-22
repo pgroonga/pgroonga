@@ -31,6 +31,26 @@ SELECT pgroonga_wal_truncate();
 INSERT INTO memos VALUES ('PostgreSQL is a good RDBMS!');
 INSERT INTO tags VALUES ('PostgreSQL');
 
+SELECT pgroonga_command('delete',
+                        ARRAY[
+                          'table', 'IndexStatuses',
+                          'key', 'pgrn_memos_index'::regclass::oid::text
+                        ])::jsonb->>1;
+SELECT pgroonga_command('delete',
+                        ARRAY[
+                          'table', 'IndexStatuses',
+                          'key', 'pgrn_tags_index'::regclass::oid::text
+                        ])::jsonb->>1;
+
+SELECT pgroonga_command('truncate',
+                        ARRAY[
+                          'table', pgroonga_table_name('pgrn_memos_index')
+                        ])::jsonb->>1;
+SELECT pgroonga_command('truncate',
+                        ARRAY[
+                          'table', pgroonga_table_name('pgrn_tags_index')
+                        ])::jsonb->>1;
+
 SELECT pgroonga_wal_apply();
 
 SELECT pgroonga_command('select',

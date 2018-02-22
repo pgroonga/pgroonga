@@ -21,10 +21,29 @@ SELECT pgroonga_wal_truncate('pgrn_index');
 (1 row)
 
 INSERT INTO memos VALUES ('PostgreSQL is a good RDBMS!');
+SELECT pgroonga_command('delete',
+                        ARRAY[
+                          'table', 'IndexStatuses',
+                          'key', 'pgrn_index'::regclass::oid::text
+                        ])::jsonb->>1;
+ ?column? 
+----------
+ true
+(1 row)
+
+SELECT pgroonga_command('truncate',
+                        ARRAY[
+                          'table', pgroonga_table_name('pgrn_index')
+                        ])::jsonb->>1;
+ ?column? 
+----------
+ true
+(1 row)
+
 SELECT pgroonga_wal_apply('pgrn_index');
  pgroonga_wal_apply 
 --------------------
-                  0
+                  1
 (1 row)
 
 SELECT pgroonga_command('select',
