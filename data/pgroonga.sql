@@ -176,6 +176,20 @@ CREATE FUNCTION pgroonga_wal_apply(indexName cstring)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_wal_truncate()
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_truncate_all'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_wal_truncate(indexName cstring)
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_truncate_index'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

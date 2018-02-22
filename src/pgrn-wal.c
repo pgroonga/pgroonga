@@ -43,6 +43,8 @@ PGrnWALDisable(void)
 
 PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_index);
 PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
+PGRN_FUNCTION_INFO_V1(pgroonga_wal_truncate_index);
+PGRN_FUNCTION_INFO_V1(pgroonga_wal_truncate_all);
 
 #ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;
@@ -1782,4 +1784,174 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 			 errmsg("pgroonga: WAL isn't supported")));
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
+}
+
+#ifdef PGRN_SUPPORT_WAL
+static int64_t
+PGrnWALTruncate(Relation index)
+{
+	int64_t nTruncatedBlocks = 0;
+	BlockNumber i;
+	BlockNumber nBlocks;
+	GenericXLogState *state;
+
+	LockRelation(index, RowExclusiveLock);
+	nBlocks = RelationGetNumberOfBlocks(index);
+	if (nBlocks == 0)
+	{
+		UnlockRelation(index, RowExclusiveLock);
+		return 0;
+	}
+
+	state = GenericXLogStart(index);
+
+	{
+		Buffer buffer;
+		Page page;
+		PGrnWALMetaPageSpecial *pageSpecial;
+
+		LockRelationForExtension(index, ExclusiveLock);
+		buffer = ReadBuffer(index, PGRN_WAL_META_PAGE_BLOCK_NUMBER);
+		LockBuffer(buffer, BUFFER_LOCK_EXCLUSIVE);
+		UnlockRelationForExtension(index, ExclusiveLock);
+
+		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
+		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
+		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
+
+		UnlockReleaseBuffer(buffer);
+	}
+
+	for (i = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1; i < nBlocks; i++)
+	{
+		Buffer buffer;
+		Page page;
+
+		LockRelationForExtension(index, ExclusiveLock);
+		buffer = ReadBuffer(index, i);
+		LockBuffer(buffer, BUFFER_LOCK_EXCLUSIVE);
+		UnlockRelationForExtension(index, ExclusiveLock);
+
+		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
+		PageInit(page, BLCKSZ, 0);
+
+		UnlockReleaseBuffer(buffer);
+
+		nTruncatedBlocks++;
+	}
+
+	PGrnIndexStatusSetWALAppliedPosition(index,
+										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
+										 0);
+
+	GenericXLogFinish(state);
+
+	UnlockRelation(index, RowExclusiveLock);
+
+	return nTruncatedBlocks;
+}
+#endif
+
+/**
+ * pgroonga_wal_truncate(indexName cstring) : bigint
+ */
+Datum
+pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
+{
+	int64_t nTruncatedBlocks = 0;
+#ifdef PGRN_SUPPORT_WAL
+	Datum indexNameDatum = PG_GETARG_DATUM(0);
+	Datum indexOidDatum;
+	Oid indexOid;
+	Relation index;
+
+	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
+	indexOid = DatumGetObjectId(indexOidDatum);
+	if (!OidIsValid(indexOid))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: unknown index name: <%s>",
+						DatumGetCString(indexNameDatum))));
+	}
+
+	index = RelationIdGetRelation(indexOid);
+	PG_TRY();
+	{
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_NAME),
+					 errmsg("pgroonga: not PGroonga index: <%s>",
+							DatumGetCString(indexNameDatum))));
+		}
+		nTruncatedBlocks = PGrnWALTruncate(index);
+	}
+	PG_CATCH();
+	{
+		RelationClose(index);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+	RelationClose(index);
+#else
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: WAL isn't supported")));
+#endif
+	PG_RETURN_INT64(nTruncatedBlocks);
+}
+
+/**
+ * pgroonga_wal_truncate() : bigint
+ */
+Datum
+pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
+{
+	int64_t nTruncatedBlocks = 0;
+#ifdef PGRN_SUPPORT_WAL
+	LOCKMODE lock = AccessShareLock;
+	Relation indexes;
+	HeapScanDesc scan;
+	HeapTuple indexTuple;
+
+	indexes = heap_open(IndexRelationId, lock);
+	scan = heap_beginscan_catalog(indexes, 0, NULL);
+	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
+	{
+		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
+		Relation index;
+
+		if (!pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+			continue;
+
+		index = RelationIdGetRelation(indexForm->indexrelid);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		PG_TRY();
+		{
+			nTruncatedBlocks += PGrnWALTruncate(index);
+		}
+		PG_CATCH();
+		{
+			RelationClose(index);
+			heap_endscan(scan);
+			heap_close(indexes, lock);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		RelationClose(index);
+	}
+	heap_endscan(scan);
+	heap_close(indexes, lock);
+#else
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: WAL isn't supported")));
+#endif
+	PG_RETURN_INT64(nTruncatedBlocks);
 }
