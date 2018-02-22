@@ -176,6 +176,24 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 #define PGRN_WAL_META_PAGE_BLOCK_NUMBER 0
 
 #ifdef PGRN_SUPPORT_WAL
+static Buffer
+PGrnWALReadLockedBuffer(Relation index,
+						BlockNumber blockNumber,
+						int bufferLockMode)
+{
+	LOCKMODE lockMode = ExclusiveLock;
+	Buffer buffer;
+
+	if (blockNumber == P_NEW)
+		LockRelationForExtension(index, lockMode);
+	buffer = ReadBuffer(index, blockNumber);
+	LockBuffer(buffer, bufferLockMode);
+	if (blockNumber == P_NEW)
+		UnlockRelationForExtension(index, lockMode);
+
+	return buffer;
+}
+
 static void
 PGrnWALDataInitNUsedPages(PGrnWALData *data)
 {
@@ -187,11 +205,10 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 {
 	if (RelationGetNumberOfBlocks(data->index) == 0)
 	{
-		LockRelationForExtension(data->index, ExclusiveLock);
-		data->meta.buffer = ReadBuffer(data->index, P_NEW);
-		LockBuffer(data->meta.buffer, BUFFER_LOCK_EXCLUSIVE);
-		UnlockRelationForExtension(data->index, ExclusiveLock);
-
+		data->meta.buffer =
+			PGrnWALReadLockedBuffer(data->index,
+									P_NEW,
+									BUFFER_LOCK_EXCLUSIVE);
 		data->meta.page = GenericXLogRegisterBuffer(data->state,
 													data->meta.buffer,
 													GENERIC_XLOG_FULL_IMAGE);
@@ -204,10 +221,10 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 	}
 	else
 	{
-		data->meta.buffer = ReadBuffer(data->index,
-									   PGRN_WAL_META_PAGE_BLOCK_NUMBER);
-		LockBuffer(data->meta.buffer, BUFFER_LOCK_EXCLUSIVE);
-
+		data->meta.buffer =
+			PGrnWALReadLockedBuffer(data->index,
+									PGRN_WAL_META_PAGE_BLOCK_NUMBER,
+									BUFFER_LOCK_EXCLUSIVE);
 		data->meta.page = GenericXLogRegisterBuffer(data->state,
 													data->meta.buffer,
 													0);
@@ -293,13 +310,11 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 	meta = data->meta.pageSpecial;
 	if (RelationGetNumberOfBlocks(data->index) <= meta->next)
 	{
-		LockRelationForExtension(data->index, ExclusiveLock);
-		data->current.buffer = ReadBuffer(data->index, P_NEW);
-		LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
-		UnlockRelationForExtension(data->index, ExclusiveLock);
-
+		data->current.buffer =
+			PGrnWALReadLockedBuffer(data->index,
+									P_NEW,
+									BUFFER_LOCK_EXCLUSIVE);
 		meta->next = BufferGetBlockNumber(data->current.buffer);
-
 		data->current.page =
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
@@ -308,9 +323,10 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 	}
 	else
 	{
-		data->current.buffer = ReadBuffer(data->index, meta->next);
-		LockBuffer(data->current.buffer, BUFFER_LOCK_EXCLUSIVE);
-
+		data->current.buffer =
+			PGrnWALReadLockedBuffer(data->index,
+									meta->next,
+									BUFFER_LOCK_EXCLUSIVE);
 		data->current.page =
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
@@ -946,8 +962,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		Page page;
 		bool needToApply;
 
-		buffer = ReadBuffer(data->index, currentBlock);
-		LockBuffer(buffer, BUFFER_LOCK_SHARE);
+		buffer = PGrnWALReadLockedBuffer(data->index,
+										 currentBlock,
+										 BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
 		needToApply = (PGrnWALPageGetLastOffset(page) > currentOffset);
 		UnlockReleaseBuffer(buffer);
@@ -1627,8 +1644,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		Page page;
 		size_t dataSize;
 
-		buffer = ReadBuffer(data->index, i);
-		LockBuffer(buffer, BUFFER_LOCK_SHARE);
+		buffer = PGrnWALReadLockedBuffer(data->index, i, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
 		dataSize = PGrnWALPageGetLastOffset(page) - dataOffset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
@@ -1810,15 +1826,12 @@ PGrnWALTruncate(Relation index)
 		Page page;
 		PGrnWALMetaPageSpecial *pageSpecial;
 
-		LockRelationForExtension(index, ExclusiveLock);
-		buffer = ReadBuffer(index, PGRN_WAL_META_PAGE_BLOCK_NUMBER);
-		LockBuffer(buffer, BUFFER_LOCK_EXCLUSIVE);
-		UnlockRelationForExtension(index, ExclusiveLock);
-
+		buffer = PGrnWALReadLockedBuffer(index,
+										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
+										 BUFFER_LOCK_EXCLUSIVE);
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
 		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
-
 		UnlockReleaseBuffer(buffer);
 	}
 
@@ -1827,14 +1840,9 @@ PGrnWALTruncate(Relation index)
 		Buffer buffer;
 		Page page;
 
-		LockRelationForExtension(index, ExclusiveLock);
-		buffer = ReadBuffer(index, i);
-		LockBuffer(buffer, BUFFER_LOCK_EXCLUSIVE);
-		UnlockRelationForExtension(index, ExclusiveLock);
-
+		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(page, BLCKSZ, 0);
-
 		UnlockReleaseBuffer(buffer);
 
 		nTruncatedBlocks++;
