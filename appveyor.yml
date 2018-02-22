@@ -77,6 +77,8 @@ test_script:
   - rm sql/full-text-search/text/options/token-filters/custom.sql
   # Reduce tests to reduce test time
   - rm -rf sql/compatibility
+  - if "%WAL_SUPPORTED%" != "yes"
+       rm -rf sql/function/wal-apply/
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |

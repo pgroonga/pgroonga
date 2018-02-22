@@ -21,3 +21,10 @@ BEGIN
 	END IF;
 END;
 $$;
+
+CREATE FUNCTION pgroonga_wal_apply(indexName cstring)
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_apply'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;

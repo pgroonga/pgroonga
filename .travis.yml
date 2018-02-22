@@ -71,6 +71,10 @@ script:
         done
         ;;
     esac
+  - |
+    if [ "${WAL_SUPPORTED}" != "yes" ]; then
+      rm -rf sql/function/wal-apply/
+    fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
     # (for i in $(seq 600)

@@ -162,6 +162,12 @@ CREATE FUNCTION pgroonga_escape(value timestamptz)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_wal_apply(indexName cstring)
+	RETURNS bigint
+	AS 'MODULE_PATHNAME', 'pgroonga_wal_apply'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

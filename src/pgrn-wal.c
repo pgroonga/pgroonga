@@ -33,9 +33,12 @@ PGrnWALDisable(void)
 #	include <storage/bufpage.h>
 #	include <storage/lmgr.h>
 #	include <storage/lockdefs.h>
+#	include <utils/fmgrprotos.h>
 
 #	include <msgpack.h>
 #endif
+
+PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply);
 
 #ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;
@@ -1594,9 +1597,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 	}
 }
 
-static void
+static int64_t
 PGrnWALApplyConsume(PGrnWALApplyData *data)
 {
+	int64_t nAppliedOperations = 0;
 	BlockNumber i;
 	BlockNumber startBlock;
 	LocationIndex dataOffset;
@@ -1639,30 +1643,85 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			PGrnIndexStatusSetWALAppliedPosition(data->index,
 												 i,
 												 appliedOffset);
+			nAppliedOperations++;
 		}
 		dataOffset = 0;
 	}
 	msgpack_unpacked_destroy(&unpacked);
 	msgpack_unpacker_destroy(&unpacker);
+
+	return nAppliedOperations;
 }
 #endif
 
-void
+int64_t
 PGrnWALApply(Relation index)
 {
+	int64_t nAppliedOperations = 0;
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALApplyData data;
 
 	data.index = index;
 	if (!PGrnWALApplyNeeded(&data))
-		return;
+		return 0;
 
 	LockRelation(index, RowExclusiveLock);
 	PGrnIndexStatusGetWALAppliedPosition(data.index,
 										 &(data.current.block),
 										 &(data.current.offset));
 	data.sources = NULL;
-	PGrnWALApplyConsume(&data);
+	nAppliedOperations = PGrnWALApplyConsume(&data);
 	UnlockRelation(index, RowExclusiveLock);
 #endif
+	return nAppliedOperations;
+}
+
+/**
+ * pgroonga_wal_apply(indexName cstring) : bigint
+ */
+Datum
+pgroonga_wal_apply(PG_FUNCTION_ARGS)
+{
+	int64_t nAppliedOperations = 0;
+#ifdef PGRN_SUPPORT_WAL
+	Datum indexNameDatum = PG_GETARG_DATUM(0);
+	Datum indexOidDatum;
+	Oid indexOid;
+	Relation index;
+
+	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
+	indexOid = DatumGetObjectId(indexOidDatum);
+	if (!OidIsValid(indexOid))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: unknown index name: <%s>",
+						DatumGetCString(indexNameDatum))));
+	}
+
+	index = RelationIdGetRelation(indexOid);
+	PG_TRY();
+	{
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_NAME),
+					 errmsg("pgroonga: not PGroonga index: <%s>",
+							DatumGetCString(indexNameDatum))));
+		}
+		nAppliedOperations = PGrnWALApply(index);
+	}
+	PG_CATCH();
+	{
+		RelationClose(index);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+	RelationClose(index);
+#else
+	ereport(ERROR,
+			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+			 errmsg("pgroonga: WAL isn't supported")));
+#endif
+	PG_RETURN_INT64(nAppliedOperations);
 }
