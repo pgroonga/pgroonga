@@ -8,6 +8,7 @@
 extern bool PGrnIsLZ4Available;
 extern bool PGrnIsZlibAvailable;
 extern bool PGrnIsZstdAvailable;
+extern bool PGrnIsVectorCompressionAvailable;
 
 void PGrnInitializeGroongaInformation(void);
 

@@ -54,6 +54,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	grn_column_flags flags = 0;
 	grn_obj *range;
 	grn_id rangeID;
+	bool compressable;
 
 	if (data->forPrefixSearch)
 	{
@@ -73,32 +74,35 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	if (data->attributeFlags & GRN_OBJ_VECTOR)
 	{
 		flags |= GRN_OBJ_COLUMN_VECTOR;
+		compressable = PGrnIsVectorCompressionAvailable;
 	}
 	else
 	{
 		flags |= GRN_OBJ_COLUMN_SCALAR;
+		compressable = true;
+	}
 
-		if (PGrnIsLZ4Available || PGrnIsZlibAvailable || PGrnIsZstdAvailable)
+	if (compressable &&
+		(PGrnIsLZ4Available || PGrnIsZlibAvailable || PGrnIsZstdAvailable))
+	{
+		switch (rangeID)
 		{
-			switch (rangeID)
+		case GRN_DB_SHORT_TEXT:
+		case GRN_DB_TEXT:
+		case GRN_DB_LONG_TEXT:
+			if (PGrnIsZstdAvailable)
 			{
-			case GRN_DB_SHORT_TEXT:
-			case GRN_DB_TEXT:
-			case GRN_DB_LONG_TEXT:
-				if (PGrnIsZstdAvailable)
-				{
-					flags |= GRN_OBJ_COMPRESS_ZSTD;
-				}
-				else if (PGrnIsLZ4Available)
-				{
-					flags |= GRN_OBJ_COMPRESS_LZ4;
-				}
-				else if (PGrnIsZlibAvailable)
-				{
-					flags |= GRN_OBJ_COMPRESS_ZLIB;
-				}
-				break;
+				flags |= GRN_OBJ_COMPRESS_ZSTD;
 			}
+			else if (PGrnIsLZ4Available)
+			{
+				flags |= GRN_OBJ_COMPRESS_LZ4;
+			}
+			else if (PGrnIsZlibAvailable)
+			{
+				flags |= GRN_OBJ_COMPRESS_ZLIB;
+			}
+			break;
 		}
 	}
 
