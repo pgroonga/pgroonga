@@ -8,14 +8,14 @@ SET pgroonga.writable = false;
 SELECT pgroonga_wal_truncate('pgrn_index');
  pgroonga_wal_truncate 
 -----------------------
-                     1
+                     2
 (1 row)
 
 SET pgroonga.writable = true;
 SELECT pgroonga_wal_truncate('pgrn_index');
  pgroonga_wal_truncate 
 -----------------------
-                     1
+                     2
 (1 row)
 
 DROP TABLE memos;
