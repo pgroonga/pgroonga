@@ -55,6 +55,8 @@ static bool PGrnEnableWAL;
 
 static bool PGrnWritable;
 
+static char *PGrnLibgroongaVersion;
+
 #ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx, grn_log_level level,
@@ -395,6 +397,18 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnWritableAssign,
 							 NULL);
+
+	PGrnDefineCustomStringVariable("pgroonga.libgroonga_version",
+								   "The used libgroonga version.",
+								   "It's runtime version "
+								   "not compile time version.",
+								   &PGrnLibgroongaVersion,
+								   grn_get_version(),
+								   PGC_INTERNAL,
+								   0,
+								   NULL,
+								   NULL,
+								   NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

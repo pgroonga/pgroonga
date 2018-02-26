@@ -1,0 +1,9 @@
+-- To load PGroonga
+SELECT pgroonga_command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
+SET pgroonga.libgroonga_version = '8.0.2';
+ERROR:  parameter "pgroonga.libgroonga_version" cannot be changed
