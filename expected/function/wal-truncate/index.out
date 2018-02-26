@@ -17,7 +17,7 @@ SELECT pgroonga_command('truncate',
 SELECT pgroonga_wal_truncate('pgrn_index');
  pgroonga_wal_truncate 
 -----------------------
-                     1
+                     2
 (1 row)
 
 INSERT INTO memos VALUES ('PostgreSQL is a good RDBMS!');

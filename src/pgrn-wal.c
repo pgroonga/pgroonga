@@ -1851,6 +1851,8 @@ PGrnWALTruncate(Relation index)
 		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
 		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
 		UnlockReleaseBuffer(buffer);
+
+		nTruncatedBlocks++;
 	}
 
 	for (i = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1; i < nBlocks; i++)
@@ -1859,6 +1861,11 @@ PGrnWALTruncate(Relation index)
 		Page page;
 
 		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
+		if (nTruncatedBlocks >= MAX_GENERIC_XLOG_PAGES)
+		{
+			GenericXLogFinish(state);
+			state = GenericXLogStart(index);
+		}
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(page, BLCKSZ, 0);
 		UnlockReleaseBuffer(buffer);
