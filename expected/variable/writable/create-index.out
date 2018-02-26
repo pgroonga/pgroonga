@@ -1,3 +1,10 @@
+-- To load PGroonga
+SELECT pgroonga_command('status')::json->0->0;
+ ?column? 
+----------
+ 0
+(1 row)
+
 CREATE TABLE memos (
   content text
 );

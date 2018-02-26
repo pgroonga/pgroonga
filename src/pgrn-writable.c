@@ -5,20 +5,10 @@
 
 static grn_ctx *ctx = &PGrnContext;
 
-static bool PGrnPendingWritableExist = false;
-static bool PGrnPendingWritable = true;
-
 #define KEY "pgroonga_writable"
 #define KEY_SIZE (sizeof(KEY) - 1)
 #define FALSE_VALUE "false"
 #define FALSE_VALUE_SIZE (sizeof(FALSE_VALUE) - 1)
-
-void
-PGrnInitializeWritable(void)
-{
-	if (PGrnPendingWritableExist)
-		PGrnSetWritable(PGrnPendingWritable);
-}
 
 bool
 PGrnIsWritable(void)
@@ -26,7 +16,8 @@ PGrnIsWritable(void)
 	const char *value = NULL;
 	uint32_t valueSize = 0;
 
-	if (!PGrnGroongaInitialized) {
+	if (!PGrnGroongaInitialized)
+	{
 		return true;
 	}
 
@@ -37,16 +28,13 @@ PGrnIsWritable(void)
 void
 PGrnSetWritable(bool newWritable)
 {
-	if (PGrnGroongaInitialized)
+	if (!PGrnGroongaInitialized)
 	{
-		if (newWritable)
-			grn_config_delete(ctx, KEY, KEY_SIZE);
-		else
-			grn_config_set(ctx, KEY, KEY_SIZE, FALSE_VALUE, FALSE_VALUE_SIZE);
+		return;
 	}
+
+	if (newWritable)
+		grn_config_delete(ctx, KEY, KEY_SIZE);
 	else
-	{
-		PGrnPendingWritable = newWritable;
-		PGrnPendingWritableExist = true;
-	}
+		grn_config_set(ctx, KEY, KEY_SIZE, FALSE_VALUE, FALSE_VALUE_SIZE);
 }

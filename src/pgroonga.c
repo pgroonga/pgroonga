@@ -517,8 +517,6 @@ _PG_init(void)
 
 	PGrnInitializeIndexStatus();
 
-	PGrnInitializeWritable();
-
 	PGrnInitializeMatchSequentialSearchData();
 	PGrnInitializePrefixRKSequentialSearchData();
 
