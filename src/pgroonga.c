@@ -4867,19 +4867,25 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
+			uint64 packedCtid;
 			ItemPointerData	ctid;
 
 			CHECK_FOR_INTERRUPTS();
 
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
-			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			ctid = PGrnCtidUnpack(packedCtid);
 			if (callback(&ctid, callbackState))
 			{
 				jsonbData.id = id;
 				PGrnJSONBBulkDeleteRecord(&jsonbData);
 
 				grn_table_cursor_delete(ctx, cursor);
+				PGrnWALDelete(index,
+							  sourcesTable,
+							  (const char *) &packedCtid,
+							  sizeof(uint64));
 
 				nRemovedTuples += 1;
 			}

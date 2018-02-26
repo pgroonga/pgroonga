@@ -58,7 +58,8 @@ typedef enum {
 	PGRN_WAL_ACTION_CREATE_TABLE,
 	PGRN_WAL_ACTION_CREATE_COLUMN,
 	PGRN_WAL_ACTION_SET_SOURCES,
-	PGRN_WAL_ACTION_RENAME_TABLE
+	PGRN_WAL_ACTION_RENAME_TABLE,
+	PGRN_WAL_ACTION_DELETE
 } PGrnWALAction;
 
 #define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
@@ -928,6 +929,38 @@ PGrnWALRenameTable(Relation index,
 #endif
 }
 
+void
+PGrnWALDelete(Relation index,
+			  grn_obj *table,
+			  const char *key,
+			  size_t keySize)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 3;
+
+	data = PGrnWALStart(index);
+	if (!data)
+		return;
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_DELETE);
+
+	msgpack_pack_cstr(packer, "table");
+	msgpack_pack_grn_obj(packer, table);
+
+	msgpack_pack_cstr(packer, "key");
+	msgpack_pack_bin(packer, keySize);
+	msgpack_pack_bin_body(packer, key, keySize);
+
+	PGrnWALFinish(data);
+#endif
+}
+
 #ifdef PGRN_SUPPORT_WAL
 typedef struct {
 	Relation index;
@@ -1046,6 +1079,30 @@ PGrnWALApplyValueGetString(const char *context,
 
 	*string = MSGPACK_OBJECT_VIA_STR(kv->val).ptr;
 	*stringSize = MSGPACK_OBJECT_VIA_STR(kv->val).size;
+}
+
+static void
+PGrnWALApplyValueGetBinary(const char *context,
+						   msgpack_object_kv *kv,
+						   const char **binary,
+						   size_t *binarySize)
+{
+	if (kv->val.type != MSGPACK_OBJECT_BIN)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: WAL: apply: %s%s"
+						"%.*s value must be binary: "
+						"<%#x>",
+						context ? context : "",
+						context ? ": " : "",
+						MSGPACK_OBJECT_VIA_BIN(kv->key).size,
+						MSGPACK_OBJECT_VIA_BIN(kv->key).ptr,
+						kv->val.type)));
+	}
+
+	*binary = MSGPACK_OBJECT_VIA_BIN(kv->val).ptr;
+	*binarySize = MSGPACK_OBJECT_VIA_BIN(kv->val).size;
 }
 
 static grn_obj *
@@ -1317,19 +1374,7 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		kv = &(map->ptr[currentElement]);
 		if (PGrnWALApplyKeyEqual(context, &(kv->key), GRN_COLUMN_NAME_KEY))
 		{
-			if (kv->val.type != MSGPACK_OBJECT_BIN)
-			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: WAL: apply: %s: "
-								"%s value must be binary: "
-								"<%#x>",
-								context,
-								GRN_COLUMN_NAME_KEY,
-								kv->val.type)));
-			}
-			key = MSGPACK_OBJECT_VIA_BIN(kv->val).ptr;
-			keySize = MSGPACK_OBJECT_VIA_BIN(kv->val).size;
+			PGrnWALApplyValueGetBinary(context, kv, &key, &keySize);
 			currentElement++;
 		}
 	}
@@ -1565,6 +1610,58 @@ PGrnWALApplyRenameTable(PGrnWALApplyData *data,
 }
 
 static void
+PGrnWALApplyDelete(PGrnWALApplyData *data,
+				   msgpack_object_map *map,
+				   uint32_t currentElement)
+{
+	const char *context = "delete";
+	grn_obj *table = NULL;
+	const char *key = NULL;
+	size_t keySize = 0;
+	uint32_t i;
+
+	for (i = currentElement; i < map->size; i++)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[i]);
+		if (PGrnWALApplyKeyEqual(context, &(kv->key), "table"))
+		{
+			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+		}
+		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "key"))
+		{
+			PGrnWALApplyValueGetBinary(context, kv, &key, &keySize);
+			currentElement++;
+		}
+	}
+
+	if (table->header.type == GRN_TABLE_NO_KEY)
+	{
+		const uint64 packedCtid = *((uint64 *)key);
+		grn_obj *ctidColumn = grn_obj_column(ctx, table, "ctid", strlen("ctid"));
+		grn_obj ctidValue;
+		GRN_UINT64_INIT(&ctidValue, 0);
+		GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+		{
+			GRN_BULK_REWIND(&ctidValue);
+			grn_obj_get_value(ctx, ctidColumn, id, &ctidValue);
+			if (packedCtid == GRN_UINT64_VALUE(&ctidValue))
+			{
+				grn_table_cursor_delete(ctx, cursor);
+				break;
+			}
+		} GRN_TABLE_EACH_END(ctx, cursor);
+		GRN_OBJ_FIN(ctx, &ctidValue);
+		grn_obj_unlink(ctx, ctidColumn);
+	}
+	else
+	{
+		grn_table_delete(ctx, table, key, keySize);
+	}
+}
+
+static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	const char *context = NULL;
@@ -1610,6 +1707,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		break;
 	case PGRN_WAL_ACTION_RENAME_TABLE:
 		PGrnWALApplyRenameTable(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_DELETE:
+		PGrnWALApplyDelete(data, map, currentElement);
 		break;
 	default:
 		ereport(ERROR,

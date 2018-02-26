@@ -1844,11 +1844,12 @@ PGrnJSONValuesUpdateDeletedID(grn_obj *jsonValuesTable,
 }
 
 static void
-PGrnJSONValuesDeleteBulk(grn_obj *jsonValuesTable,
-						 grn_obj *jsonValuesIndexColumn,
-						 grn_obj *valueMin,
-						 grn_obj *valueMax)
+PGrnJSONValuesDeleteBulk(PGrnJSONBBulkDeleteData *data)
 {
+	grn_obj *jsonValuesTable = data->valuesTable;
+	grn_obj *jsonValuesIndexColumn = data->valuesIndexColumn;
+	grn_obj *valueMin = &(data->valueMin);
+	grn_obj *valueMax = &(data->valueMax);
 	char minKey[GRN_TABLE_MAX_KEY_SIZE];
 	char maxKey[GRN_TABLE_MAX_KEY_SIZE];
 	unsigned int minKeySize;
@@ -1893,7 +1894,16 @@ PGrnJSONValuesDeleteBulk(grn_obj *jsonValuesTable,
 		}
 
 		if (!haveReference)
+		{
+			void *key;
+			int keySize;
+			keySize = grn_table_cursor_get_key(ctx, tableCursor, &key);
+			PGrnWALDelete(data->index,
+						  jsonValuesTable,
+						  key,
+						  keySize);
 			grn_table_cursor_delete(ctx, tableCursor);
+		}
 	}
 
 	grn_table_cursor_close(ctx, tableCursor);
@@ -1971,10 +1981,7 @@ PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 	if (data->isForFullTextSearchOnly)
 		return;
 
-	PGrnJSONValuesDeleteBulk(data->valuesTable,
-							 data->valuesIndexColumn,
-							 &(data->valueMin),
-							 &(data->valueMax));
+	PGrnJSONValuesDeleteBulk(data);
 
 	GRN_OBJ_FIN(ctx, &(data->values));
 	grn_obj_unlink(ctx, data->sourcesValuesColumn);

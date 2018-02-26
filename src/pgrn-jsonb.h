@@ -5,6 +5,7 @@
 
 #include "pgrn-create.h"
 #include "pgrn-search.h"
+#include "pgrn-wal.h"
 
 void PGrnInitializeJSONB(void);
 void PGrnFinalizeJSONB(void);
