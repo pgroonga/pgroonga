@@ -11,16 +11,6 @@ static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void
-PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
-{
-	data->sourcesCtidColumn = PGrnCreateColumn(data->index,
-											   data->sourcesTable,
-											   PGrnSourcesCtidColumnName,
-											   GRN_OBJ_COLUMN_SCALAR,
-											   grn_ctx_at(ctx, GRN_DB_UINT64));
-}
-
-void
 PGrnCreateSourcesTable(PGrnCreateData *data)
 {
 	char buildingSourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
@@ -29,13 +19,11 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 			 PGrnBuildingSourcesTableNameFormat, data->relNode);
 	data->sourcesTable = PGrnCreateTable(data->index,
 										 buildingSourcesTableName,
-										 GRN_OBJ_TABLE_NO_KEY,
-										 NULL,
+										 GRN_OBJ_TABLE_HASH_KEY,
+										 grn_ctx_at(ctx, GRN_DB_UINT64),
 										 NULL,
 										 NULL,
 										 NULL);
-
-	PGrnCreateSourcesCtidColumn(data);
 }
 
 void

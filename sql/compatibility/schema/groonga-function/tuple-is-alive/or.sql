@@ -16,7 +16,7 @@ UPDATE memos
 
 SELECT pgroonga.command('select ' ||
                         pgroonga.table_name('pgroonga_index') ||
-                        ' --filter "pgroonga_tuple_is_alive(ctid)"'
+                        ' --filter "pgroonga_tuple_is_alive(_key)"'
                         ' --output_columns content')::json->>1
     AS body;
 

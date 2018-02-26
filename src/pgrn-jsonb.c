@@ -1391,14 +1391,29 @@ PGrnJSONBInsertRecord(Relation index,
 	NameData *attributeName;
 	grn_obj *column;
 
-	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-
 	walData = PGrnWALStart(index);
-	PGrnWALInsertStart(walData, sourcesTable, desc->natts + 1);
+	if (sourcesCtidColumn)
+	{
+		id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
 
-	GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
-	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
-	PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
+		PGrnWALInsertStart(walData, sourcesTable, desc->natts + 1);
+
+		GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
+		grn_obj_set_value(ctx,
+						  sourcesCtidColumn,
+						  id,
+						  &(buffers->ctid),
+						  GRN_OBJ_SET);
+		PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
+	}
+	else
+	{
+		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64), NULL);
+		PGrnWALInsertStart(walData, sourcesTable, desc->natts);
+		PGrnWALInsertKeyRaw(walData,
+							&packedCtid,
+							sizeof(uint64));
+	}
 
 	attribute = desc->attrs[0];
 	attributeName = &(attribute->attname);

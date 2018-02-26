@@ -9,7 +9,6 @@ typedef struct PGrnCreateData
 {
 	Relation index;
 	grn_obj *sourcesTable;
-	grn_obj *sourcesCtidColumn;
 	grn_obj *supplementaryTables;
 	grn_obj *lexicons;
 	TupleDesc desc;
@@ -22,7 +21,6 @@ typedef struct PGrnCreateData
 	unsigned char attributeFlags;
 } PGrnCreateData;
 
-void PGrnCreateSourcesCtidColumn(PGrnCreateData *data);
 void PGrnCreateSourcesTable(PGrnCreateData *data);
 void PGrnCreateSourcesTableFinish(PGrnCreateData *data);
 void PGrnCreateLexicon(PGrnCreateData *data);

@@ -137,6 +137,8 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
   Relation pg_index;
   Oid pg_index_id;
   LOCKMODE lock_mode = AccessShareLock;
+  const char *ctid_column_name;
+  size_t ctid_column_name_length;
 
   switch (op)
   {
@@ -145,6 +147,17 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 	  break;
   default:
 	  return GRN_FUNCTION_NOT_IMPLEMENTED;
+  }
+
+  if (table->header.type == GRN_TABLE_NO_KEY)
+  {
+	  ctid_column_name = PGrnSourcesCtidColumnName;
+	  ctid_column_name_length = PGrnSourcesCtidColumnNameLength;
+  }
+  else
+  {
+	  ctid_column_name = GRN_COLUMN_NAME_KEY;
+	  ctid_column_name_length = GRN_COLUMN_NAME_KEY_LEN;
   }
 
   file_node_id = sources_table_to_file_node_id(ctx, table);
@@ -159,7 +172,10 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 	  GRN_UINT64_INIT(&packed_ctid, 0);
 	  if (op == GRN_OP_AND)
 	  {
-		  ctid_accessor = grn_obj_column(ctx, res, "ctid", strlen("ctid"));
+		  ctid_accessor = grn_obj_column(ctx,
+										 res,
+										 ctid_column_name,
+										 ctid_column_name_length);
 		  GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
 		  {
 			  ItemPointerData ctid;
@@ -176,7 +192,10 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 	  {
 		  grn_posting posting;
 
-		  ctid_accessor = grn_obj_column(ctx, table, "ctid", strlen("ctid"));
+		  ctid_accessor = grn_obj_column(ctx,
+										 table,
+										 ctid_column_name,
+										 ctid_column_name_length);
 		  memset(&posting, 0, sizeof(grn_posting));
 		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
 		  {

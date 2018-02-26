@@ -50,7 +50,7 @@ SET pgroonga.writable = true;
 SELECT pgroonga_wal_apply('pgrn_index');
  pgroonga_wal_apply 
 --------------------
-                  8
+                  7
 (1 row)
 
 SELECT pgroonga_command('select',

@@ -80,7 +80,6 @@ bool PGrnGroongaInitialized = false;
 typedef struct PGrnBuildStateData
 {
 	grn_obj	*sourcesTable;
-	grn_obj	*sourcesCtidColumn;
 	double nIndexedTuples;
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
@@ -2782,6 +2781,7 @@ PGrnInsert(Relation index,
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
 	PGrnWALData *walData;
+	uint64 packedCtid = PGrnCtidPack(ht_ctid);
 	unsigned int i;
 	uint32_t recordSize = 0;
 
@@ -2795,8 +2795,6 @@ PGrnInsert(Relation index,
 							   PGrnCtidPack(ht_ctid));
 	}
 
-	id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-
 	walData = PGrnWALStart(index);
 	{
 		size_t nValidAttributes = 1; /* ctid is always valid. */
@@ -2809,9 +2807,22 @@ PGrnInsert(Relation index,
 		PGrnWALInsertStart(walData, sourcesTable, nValidAttributes);
 	}
 
-	GRN_UINT64_SET(ctx, &(buffers->ctid), PGrnCtidPack(ht_ctid));
-	grn_obj_set_value(ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
-	PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
+	if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
+		GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
+		grn_obj_set_value(ctx,
+						  sourcesCtidColumn,
+						  id,
+						  &(buffers->ctid),
+						  GRN_OBJ_SET);
+		PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
+	}
+	else
+	{
+		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64), NULL);
+		PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
+	}
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -2860,7 +2871,7 @@ pgroonga_insert_raw(Relation index,
 	)
 {
 	grn_obj *sourcesTable;
-	grn_obj *sourcesCtidColumn;
+	grn_obj *sourcesCtidColumn = NULL;
 	uint32_t recordSize;
 
 	if (!PGrnIsWritable())
@@ -2875,7 +2886,10 @@ pgroonga_insert_raw(Relation index,
 	PGrnWALApply(index);
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+	if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+	}
 	recordSize = PGrnInsert(index,
 							sourcesTable,
 							sourcesCtidColumn,
@@ -3019,7 +3033,14 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->index = index;
 	so->dataTableID = index->rd_index->indrelid;
 	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	so->sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		so->sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+	}
+	else
+	{
+		so->sourcesCtidColumn = NULL;
+	}
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
 	so->searched = NULL;
@@ -3980,9 +4001,18 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	so->tableCursor = grn_table_cursor_open(ctx, table,
 											NULL, 0, NULL, 0,
 											offset, limit, flags);
-	so->ctidAccessor = grn_obj_column(ctx, table,
-									  PGrnSourcesCtidColumnName,
-									  PGrnSourcesCtidColumnNameLength);
+	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		so->ctidAccessor = grn_obj_column(ctx, table,
+										  PGrnSourcesCtidColumnName,
+										  PGrnSourcesCtidColumnNameLength);
+	}
+	else
+	{
+		so->ctidAccessor = grn_obj_column(ctx, table,
+										  GRN_COLUMN_NAME_KEY,
+										  GRN_COLUMN_NAME_KEY_LEN);
+	}
 	if (so->searched)
 	{
 		so->scoreAccessor = grn_obj_column(ctx, so->searched,
@@ -4174,9 +4204,18 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 											indexCursorMin,
 											indexCursorMax,
 											indexCursorFlags);
-	so->ctidAccessor = grn_obj_column(ctx, so->sourcesTable,
-									  PGrnSourcesCtidColumnName,
-									  PGrnSourcesCtidColumnNameLength);
+	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		so->ctidAccessor = grn_obj_column(ctx, so->sourcesTable,
+										  PGrnSourcesCtidColumnName,
+										  PGrnSourcesCtidColumnNameLength);
+	}
+	else
+	{
+		so->ctidAccessor = grn_obj_column(ctx, so->sourcesTable,
+										  GRN_COLUMN_NAME_KEY,
+										  GRN_COLUMN_NAME_KEY_LEN);
+	}
 }
 
 static bool
@@ -4557,7 +4596,7 @@ PGrnBuildCallbackRaw(Relation index,
 
 	recordSize = PGrnInsert(index,
 							bs->sourcesTable,
-							bs->sourcesCtidColumn,
+							NULL,
 							values,
 							isnull,
 							ctid);
@@ -4633,7 +4672,6 @@ pgroonga_build_raw(Relation heap,
 				 errmsg("pgroonga: unique index isn't supported")));
 
 	data.sourcesTable = NULL;
-	data.sourcesCtidColumn = NULL;
 
 	bs.sourcesTable = NULL;
 	bs.nIndexedTuples = 0.0;
@@ -4655,7 +4693,6 @@ pgroonga_build_raw(Relation heap,
 		data.relNode = index->rd_node.relNode;
 		PGrnCreate(&data);
 		bs.sourcesTable = data.sourcesTable;
-		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
 		PGrnSetSources(index, bs.sourcesTable);
@@ -4744,7 +4781,6 @@ pgroonga_buildempty_raw(Relation index)
 	{
 		data.index = index;
 		data.sourcesTable = NULL;
-		data.sourcesCtidColumn = NULL;
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
 		data.desc = RelationGetDescr(index);
@@ -4856,10 +4892,13 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	PG_TRY();
 	{
 		grn_id id;
-		grn_obj *sourcesCtidColumn;
+		grn_obj *sourcesCtidColumn = NULL;
 		PGrnJSONBBulkDeleteData jsonbData;
 
-		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+		if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+		{
+			sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
+		}
 
 		jsonbData.index = index;
 		jsonbData.sourcesTable = sourcesTable;
@@ -4872,9 +4911,18 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 
 			CHECK_FOR_INTERRUPTS();
 
-			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
-			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			if (sourcesCtidColumn)
+			{
+				GRN_BULK_REWIND(&(buffers->ctid));
+				grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
+				packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			}
+			else
+			{
+				void *key;
+				grn_table_cursor_get_key(ctx, cursor, &key);
+				packedCtid = *((uint64 *) key);
+			}
 			ctid = PGrnCtidUnpack(packedCtid);
 			if (callback(&ctid, callbackState))
 			{
