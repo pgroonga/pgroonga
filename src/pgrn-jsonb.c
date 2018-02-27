@@ -1392,12 +1392,10 @@ PGrnJSONBInsertRecord(Relation index,
 	grn_obj *column;
 
 	walData = PGrnWALStart(index);
+	PGrnWALInsertStart(walData, sourcesTable, desc->natts + 1);
 	if (sourcesCtidColumn)
 	{
 		id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-
-		PGrnWALInsertStart(walData, sourcesTable, desc->natts + 1);
-
 		GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
 		grn_obj_set_value(ctx,
 						  sourcesCtidColumn,
@@ -1409,7 +1407,6 @@ PGrnJSONBInsertRecord(Relation index,
 	else
 	{
 		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64), NULL);
-		PGrnWALInsertStart(walData, sourcesTable, desc->natts);
 		PGrnWALInsertKeyRaw(walData,
 							&packedCtid,
 							sizeof(uint64));
