@@ -73,7 +73,11 @@ SELECT pgroonga_wal_apply('pgrn_index');
 SELECT pgroonga_command('select',
                         ARRAY[
                           'table', pgroonga_table_name('pgrn_index'),
-                          'output_columns', '_id, record.path'
+                          'columns[record_paths].stage', 'output',
+                          'columns[record_paths].flags', 'COLUMN_VECTOR',
+                          'columns[record_paths].type', 'ShortText',
+                          'columns[record_paths].value', 'record.path._key',
+                          'output_columns', '_id, record_paths'
                         ])::jsonb->>1;
 
 DROP TABLE logs;
