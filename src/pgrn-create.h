@@ -9,6 +9,7 @@ typedef struct PGrnCreateData
 {
 	Relation index;
 	grn_obj *sourcesTable;
+	grn_obj *sourcesCtidColumn;
 	grn_obj *supplementaryTables;
 	grn_obj *lexicons;
 	TupleDesc desc;

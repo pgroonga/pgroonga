@@ -80,6 +80,7 @@ bool PGrnGroongaInitialized = false;
 typedef struct PGrnBuildStateData
 {
 	grn_obj	*sourcesTable;
+	grn_obj	*sourcesCtidColumn;
 	double nIndexedTuples;
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
@@ -4596,7 +4597,7 @@ PGrnBuildCallbackRaw(Relation index,
 
 	recordSize = PGrnInsert(index,
 							bs->sourcesTable,
-							NULL,
+							bs->sourcesCtidColumn,
 							values,
 							isnull,
 							ctid);
@@ -4674,6 +4675,7 @@ pgroonga_build_raw(Relation heap,
 	data.sourcesTable = NULL;
 
 	bs.sourcesTable = NULL;
+	bs.sourcesCtidColumn = NULL;
 	bs.nIndexedTuples = 0.0;
 	bs.needMaxRecordSizeUpdate = PGrnNeedMaxRecordSizeUpdate(index);
 	bs.maxRecordSize = 0;
@@ -4693,6 +4695,7 @@ pgroonga_build_raw(Relation heap,
 		data.relNode = index->rd_node.relNode;
 		PGrnCreate(&data);
 		bs.sourcesTable = data.sourcesTable;
+		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
 										 PGrnBuildCallback, &bs);
 		PGrnSetSources(index, bs.sourcesTable);
@@ -4781,6 +4784,7 @@ pgroonga_buildempty_raw(Relation index)
 	{
 		data.index = index;
 		data.sourcesTable = NULL;
+		data.sourcesCtidColumn = NULL;
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
 		data.desc = RelationGetDescr(index);

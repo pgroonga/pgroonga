@@ -74,7 +74,7 @@ SELECT pgroonga_command('table_remove',
 SELECT pgroonga_wal_apply();
  pgroonga_wal_apply 
 --------------------
-                 16
+                 18
 (1 row)
 
 SELECT pgroonga_command('select',
