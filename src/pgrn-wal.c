@@ -1680,69 +1680,93 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 	{
 		const char *message =
 			"pgroonga: WAL: apply: record must be map";
+		BlockNumber currentBlock;
+		LocationIndex currentOffset;
 
+		PGrnIndexStatusGetWALAppliedPosition(data->index,
+											 &currentBlock,
+											 &currentOffset);
 		switch (object->type)
 		{
 		case MSGPACK_OBJECT_NIL:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <nil>", message)));
+					 errmsg("%s: <%u><%u>: <nil>",
+							message,
+							currentBlock,
+							currentOffset)));
 			break;
 		case MSGPACK_OBJECT_BOOLEAN:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <boolean>: <%s>",
+					 errmsg("%s: <%u><%u>: <boolean>: <%s>",
 							message,
+							currentBlock,
+							currentOffset,
 							object->via.boolean ? "true" : "false")));
 			break;
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <positive-integer>: <%" PRId64 ">",
+					 errmsg("%s: <%u><%u>: <positive-integer>: <%" PRId64 ">",
 							message,
+							currentBlock,
+							currentOffset,
 							object->via.i64)));
 			break;
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <negative-integer>: <%" PRIu64 ">",
+					 errmsg("%s: <%u><%u>: <negative-integer>: <%" PRIu64 ">",
 							message,
+							currentBlock,
+							currentOffset,
 							object->via.u64)));
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <float>: <%g>",
+					 errmsg("%s: <%u><%u>: <float>: <%g>",
 							message,
+							currentBlock,
+							currentOffset,
 							MSGPACK_OBJECT_VIA_FLOAT(*object))));
 			break;
 		case MSGPACK_OBJECT_STR:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <string>: <%.*s>",
+					 errmsg("%s: <%u><%u>: <string>: <%.*s>",
 							message,
+							currentBlock,
+							currentOffset,
 							(int) MSGPACK_OBJECT_VIA_STR(*object).size,
 							MSGPACK_OBJECT_VIA_STR(*object).ptr)));
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <array>: <%u>",
+					 errmsg("%s: <%u><%u>: <array>: <%u>",
 							message,
+							currentBlock,
+							currentOffset,
 							object->via.array.size)));
 			break;
 		case MSGPACK_OBJECT_BIN:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <binary>: <%u>",
+					 errmsg("%s: <%u><%u>: <binary>: <%u>",
 							message,
+							currentBlock,
+							currentOffset,
 							MSGPACK_OBJECT_VIA_BIN(*object).size)));
 			break;
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%#x>",
+					 errmsg("%s: <%u><%u>: <%#x>",
 							message,
+							currentBlock,
+							currentOffset,
 							object->type)));
 			break;
 		}
