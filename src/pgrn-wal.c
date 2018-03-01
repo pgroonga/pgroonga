@@ -1751,7 +1751,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 							currentOffset,
 							object->via.array.size)));
 			break;
-#ifndef MSGPACK_OBJECT_RAW
+#if MSGPACK_VERSION_MAJOR != 0
 		case MSGPACK_OBJECT_BIN:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
