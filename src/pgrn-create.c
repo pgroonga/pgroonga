@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn-alias.h"
 #include "pgrn-column-name.h"
 #include "pgrn-create.h"
 #include "pgrn-global.h"
@@ -59,6 +60,7 @@ PGrnCreateSourcesTableFinish(PGrnCreateData *data)
 	snprintf(sourcesTableName, sizeof(sourcesTableName),
 			 PGrnSourcesTableNameFormat, data->relNode);
 	PGrnRenameTable(data->index, data->sourcesTable, sourcesTableName);
+	PGrnAliasAdd(data->index);
 }
 
 void

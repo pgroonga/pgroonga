@@ -1,4 +1,5 @@
 HEADERS =					\
+	src/pgrn-alias.h			\
 	src/pgrn-column-name.h			\
 	src/pgrn-command-escape-value.h		\
 	src/pgrn-compatible.h			\

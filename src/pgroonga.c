@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 
+#include "pgrn-alias.h"
 #include "pgrn-command-escape-value.h"
 #include "pgrn-convert.h"
 #include "pgrn-create.h"
@@ -514,6 +515,8 @@ _PG_init(void)
 	PGrnInitializeOptions();
 
 	PGrnInitializeGroongaFunctions();
+
+	PGrnInitializeAlias();
 
 	PGrnInitializeIndexStatus();
 
@@ -5030,6 +5033,7 @@ PGrnRemoveUnusedTables(void)
 			snprintf(tableName, sizeof(tableName),
 					 PGrnSourcesTableNameFormat, relationFileNodeID);
 			PGrnRemoveObject(tableName);
+			PGrnAliasDeleteRaw(relationFileNodeID);
 		}
 
 		for (i = 0; true; i++)
