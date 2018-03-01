@@ -44,6 +44,7 @@ PGrnWALDisable(void)
 #	include <storage/bufpage.h>
 #	include <storage/lmgr.h>
 #	include <storage/lockdefs.h>
+#	include <utils/acl.h>
 #	include <utils/builtins.h>
 
 #	include <msgpack.h>
