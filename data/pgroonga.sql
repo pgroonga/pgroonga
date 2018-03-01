@@ -192,7 +192,7 @@ CREATE FUNCTION pgroonga_wal_truncate(indexName cstring)
 
 CREATE FUNCTION pgroonga_is_writable()
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_set_writable'
+	AS 'MODULE_PATHNAME', 'pgroonga_is_writable'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;

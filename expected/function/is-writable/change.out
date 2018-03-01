@@ -7,7 +7,7 @@ SELECT pgroonga_is_writable();
 SELECT pgroonga_set_writable(false);
  pgroonga_set_writable 
 -----------------------
- f
+ t
 (1 row)
 
 SELECT pgroonga_is_writable();
