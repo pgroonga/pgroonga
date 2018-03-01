@@ -1,34 +1,31 @@
 CREATE TABLE memos (
   content text
 );
+
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+
 INSERT INTO memos VALUES ('Groonga is fast!');
 DELETE FROM memos;
-SET pgroonga.writable = false;
+
+SELECT pgroonga_set_writable(false);
+
 VACUUM memos;
-ERROR:  pgroonga: can't delete bulk records while pgroonga.writable is false
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),
 			  'output_columns', '_id, content'
 			])::jsonb->>1;
-                                    ?column?                                    
---------------------------------------------------------------------------------
- [[[1], [["_id", "UInt32"], ["content", "LongText"]], [1, "Groonga is fast!"]]]
-(1 row)
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
+
 INSERT INTO memos VALUES ('PGroonga is fast!');
 DELETE FROM memos;
+
 VACUUM memos;
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),
 			  'output_columns', '_id, content'
 			])::jsonb->>1;
-                       ?column?                        
--------------------------------------------------------
- [[[0], [["_id", "UInt32"], ["content", "LongText"]]]]
-(1 row)
 
 DROP TABLE memos;

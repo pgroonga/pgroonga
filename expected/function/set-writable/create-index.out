@@ -1,23 +1,22 @@
 CREATE TABLE memos (
   content text
 );
-CREATE INDEX pgrn_index ON memos USING PGroonga (content);
-SET pgroonga.writable = false;
 INSERT INTO memos VALUES ('Groonga is fast!');
-ERROR:  pgroonga: can't insert a record while pgroonga.writable is false
-SELECT * FROM memos;
- content 
----------
-(0 rows)
-
-SET pgroonga.writable = true;
-INSERT INTO memos VALUES ('Groonga is fast!');
-SELECT * FROM memos;
-     content      
-------------------
- Groonga is fast!
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
 (1 row)
 
+CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+ERROR:  pgroonga: can't create an index while pgroonga.writable is false
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
+CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),

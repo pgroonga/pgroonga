@@ -1,19 +1,33 @@
--- To load PGroonga
-SELECT pgroonga_command('status')::json->0->0;
- ?column? 
-----------
- 0
-(1 row)
-
 CREATE TABLE memos (
   content text
 );
+CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
+(1 row)
+
 INSERT INTO memos VALUES ('Groonga is fast!');
-SET pgroonga.writable = false;
-CREATE INDEX pgrn_index ON memos USING PGroonga (content);
-ERROR:  pgroonga: can't create an index while pgroonga.writable is false
-SET pgroonga.writable = true;
-CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+ERROR:  pgroonga: can't insert a record while pgroonga.writable is false
+SELECT * FROM memos;
+ content 
+---------
+(0 rows)
+
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
+INSERT INTO memos VALUES ('Groonga is fast!');
+SELECT * FROM memos;
+     content      
+------------------
+ Groonga is fast!
+(1 row)
+
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),

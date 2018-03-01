@@ -190,6 +190,20 @@ CREATE FUNCTION pgroonga_wal_truncate(indexName cstring)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_is_writable()
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_set_writable'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_set_writable(newWritable bool)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_set_writable'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

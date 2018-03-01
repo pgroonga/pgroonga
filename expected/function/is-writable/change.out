@@ -1,0 +1,30 @@
+SELECT pgroonga_is_writable();
+ pgroonga_is_writable 
+----------------------
+ t
+(1 row)
+
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
+SELECT pgroonga_is_writable();
+ pgroonga_is_writable 
+----------------------
+ f
+(1 row)
+
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
+SELECT pgroonga_is_writable();
+ pgroonga_is_writable 
+----------------------
+ t
+(1 row)
+

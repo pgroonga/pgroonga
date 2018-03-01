@@ -34,7 +34,12 @@ SELECT pgroonga_command('table_remove',
  true
 (1 row)
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
+(1 row)
+
 SELECT pgroonga_wal_apply('pgrn_index');
 ERROR:  pgroonga: wal_apply: can't apply WAL while pgroonga.writable is false
 SELECT pgroonga_command('object_exist',
@@ -46,7 +51,12 @@ SELECT pgroonga_command('object_exist',
  false
 (1 row)
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
 SELECT pgroonga_wal_apply('pgrn_index');
  pgroonga_wal_apply 
 --------------------

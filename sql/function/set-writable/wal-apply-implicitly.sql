@@ -1,11 +1,15 @@
 SET pgroonga.enable_wal = true;
+
 CREATE TABLE memos (
   content text
 );
+
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+
 CREATE TABLE pgroonga_wal (
   applied_position bigint
 );
+
 INSERT INTO pgroonga_wal (
   SELECT (pgroonga_command(
     'select',
@@ -15,7 +19,9 @@ INSERT INTO pgroonga_wal (
                 'pgrn_index'::regclass::oid::text,
       'output_columns', 'wal_applied_position'
      ])::jsonb->1->0->2->>0)::bigint);
+
 INSERT INTO memos VALUES ('Groonga is fast!');
+
 SELECT pgroonga_command('load',
                         ARRAY[
                           'table', 'IndexStatuses',
@@ -26,32 +32,19 @@ SELECT pgroonga_command('load',
                              (SELECT applied_position FROM pgroonga_wal) ||
                             '}]'
                         ])::jsonb->>1;
- ?column? 
-----------
- 1
-(1 row)
-
 SELECT pgroonga_command('truncate',
                         ARRAY[
                           'table', pgroonga_table_name('pgrn_index')
                         ])::jsonb->>1;
- ?column? 
-----------
- true
-(1 row)
 
 SET enable_seqscan = false;
-SET pgroonga.writable = false;
-SELECT * FROM memos WHERE content &@~ 'Groonga';
- content 
----------
-(0 rows)
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(false);
+
 SELECT * FROM memos WHERE content &@~ 'Groonga';
-     content      
-------------------
- Groonga is fast!
-(1 row)
+
+SELECT pgroonga_set_writable(true);
+
+SELECT * FROM memos WHERE content &@~ 'Groonga';
 
 DROP TABLE memos;

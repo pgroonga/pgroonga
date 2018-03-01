@@ -4,7 +4,12 @@ CREATE TABLE memos (
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 INSERT INTO memos VALUES ('Groonga is fast!');
 DELETE FROM memos;
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
+(1 row)
+
 SET enable_seqscan = false;
 SET enable_indexscan = true;
 SET enable_bitmapscan = false;
@@ -23,7 +28,12 @@ SELECT pgroonga_command('select',
  [[[1], [["_id", "UInt32"], ["content", "LongText"]], [1, "Groonga is fast!"]]]
 (1 row)
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
 SELECT * FROM memos WHERE content &@~ 'Groonga';
  content 
 ---------

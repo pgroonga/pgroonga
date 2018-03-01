@@ -10,7 +10,12 @@ CREATE TABLE pgrn_index_oids (
 );
 INSERT INTO pgrn_index_oids (SELECT 'pgrn_index2'::regclass::oid);
 DROP INDEX pgrn_index2;
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
+(1 row)
+
 VACUUM memos;
 ERROR:  pgroonga: can't delete bulk records while pgroonga.writable is false
 SELECT pgroonga_command('object_exist',
@@ -22,7 +27,12 @@ SELECT pgroonga_command('object_exist',
  true
 (1 row)
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
+(1 row)
+
 INSERT INTO memos VALUES ('PGroonga is fast!');
 DELETE FROM memos;
 VACUUM memos;

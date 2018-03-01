@@ -4,13 +4,13 @@ CREATE TABLE memos (
 
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
 
 INSERT INTO memos VALUES ('Groonga is fast!');
 
 SELECT * FROM memos;
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
 
 INSERT INTO memos VALUES ('Groonga is fast!');
 

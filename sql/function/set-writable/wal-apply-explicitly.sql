@@ -24,7 +24,7 @@ SELECT pgroonga_command('table_remove',
                           'name', pgroonga_table_name('pgrn_index')
                         ])::jsonb->>1;
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
 
 SELECT pgroonga_wal_apply('pgrn_index');
 SELECT pgroonga_command('object_exist',
@@ -32,7 +32,7 @@ SELECT pgroonga_command('object_exist',
 			  'name', pgroonga_table_name('pgrn_index')
 			])::jsonb->>1;
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
 
 SELECT pgroonga_wal_apply('pgrn_index');
 SELECT pgroonga_command('select',

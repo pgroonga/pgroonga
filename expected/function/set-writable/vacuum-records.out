@@ -3,15 +3,15 @@ CREATE TABLE memos (
 );
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 INSERT INTO memos VALUES ('Groonga is fast!');
-SET pgroonga.writable = false;
-UPDATE memos SET content = 'PGroonga is fast!';
-ERROR:  pgroonga: can't insert a record while pgroonga.writable is false
-SELECT * FROM memos;
-     content      
-------------------
- Groonga is fast!
+DELETE FROM memos;
+SELECT pgroonga_set_writable(false);
+ pgroonga_set_writable 
+-----------------------
+ t
 (1 row)
 
+VACUUM memos;
+ERROR:  pgroonga: can't delete bulk records while pgroonga.writable is false
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),
@@ -22,22 +22,23 @@ SELECT pgroonga_command('select',
  [[[1], [["_id", "UInt32"], ["content", "LongText"]], [1, "Groonga is fast!"]]]
 (1 row)
 
-SET pgroonga.writable = true;
-UPDATE memos SET content = 'PGroonga is fast!';
-SELECT * FROM memos;
-      content      
--------------------
- PGroonga is fast!
+SELECT pgroonga_set_writable(true);
+ pgroonga_set_writable 
+-----------------------
+ f
 (1 row)
 
+INSERT INTO memos VALUES ('PGroonga is fast!');
+DELETE FROM memos;
+VACUUM memos;
 SELECT pgroonga_command('select',
 			ARRAY[
 			  'table', pgroonga_table_name('pgrn_index'),
 			  'output_columns', '_id, content'
 			])::jsonb->>1;
-                                                 ?column?                                                 
-----------------------------------------------------------------------------------------------------------
- [[[2], [["_id", "UInt32"], ["content", "LongText"]], [1, "Groonga is fast!"], [2, "PGroonga is fast!"]]]
+                       ?column?                        
+-------------------------------------------------------
+ [[[0], [["_id", "UInt32"], ["content", "LongText"]]]]
 (1 row)
 
 DROP TABLE memos;

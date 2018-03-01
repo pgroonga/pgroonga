@@ -8,11 +8,11 @@ INSERT INTO memos VALUES ('Groonga is fast!');
 
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
 
 SELECT pgroonga_wal_truncate('pgrn_index');
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
 
 SELECT pgroonga_wal_truncate('pgrn_index');
 

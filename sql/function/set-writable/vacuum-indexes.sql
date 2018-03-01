@@ -15,7 +15,7 @@ INSERT INTO pgrn_index_oids (SELECT 'pgrn_index2'::regclass::oid);
 
 DROP INDEX pgrn_index2;
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
 
 VACUUM memos;
 SELECT pgroonga_command('object_exist',
@@ -23,7 +23,7 @@ SELECT pgroonga_command('object_exist',
                           'name', 'Sources' || (SELECT oid FROM pgrn_index_oids)
                         ])::jsonb->>1;
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
 
 INSERT INTO memos VALUES ('PGroonga is fast!');
 DELETE FROM memos;

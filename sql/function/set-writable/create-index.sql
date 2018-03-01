@@ -1,17 +1,14 @@
--- To load PGroonga
-SELECT pgroonga_command('status')::json->0->0;
-
 CREATE TABLE memos (
   content text
 );
 
 INSERT INTO memos VALUES ('Groonga is fast!');
 
-SET pgroonga.writable = false;
+SELECT pgroonga_set_writable(false);
 
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 
-SET pgroonga.writable = true;
+SELECT pgroonga_set_writable(true);
 
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 
