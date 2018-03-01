@@ -1698,7 +1698,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <positive-integer>: <%ld" PRId64 ">",
+					 errmsg("%s: <positive-integer>: <%" PRId64 ">",
 							message,
 							object->via.i64)));
 			break;
