@@ -8,6 +8,13 @@
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
+#ifdef WIN32
+#	define PRId64 "I64d"
+#	define PRIu64 "I64u"
+#else
+#	include <inttypes.h>
+#endif
+
 static bool PGrnWALEnabled = false;
 
 bool
@@ -1671,10 +1678,74 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 
 	if (object->type != MSGPACK_OBJECT_MAP)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: record must be map: <%#x>",
-						object->type)));
+		const char *message =
+			"pgroonga: WAL: apply: record must be map";
+
+		switch (object->type)
+		{
+		case MSGPACK_OBJECT_NIL:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <nil>", message)));
+			break;
+		case MSGPACK_OBJECT_BOOLEAN:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <boolean>: <%s>",
+							message,
+							object->via.boolean ? "true" : "false")));
+			break;
+		case MSGPACK_OBJECT_POSITIVE_INTEGER:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <positive-integer>: <%ld" PRId64 ">",
+							message,
+							object->via.i64)));
+			break;
+		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <negative-integer>: <%" PRIu64 ">",
+							message,
+							object->via.u64)));
+			break;
+		case MSGPACK_OBJECT_FLOAT:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <float>: <%g>",
+							message,
+							MSGPACK_OBJECT_VIA_FLOAT(*object))));
+			break;
+		case MSGPACK_OBJECT_STR:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <string>: <%.*s>",
+							message,
+							(int) MSGPACK_OBJECT_VIA_STR(*object).size,
+							MSGPACK_OBJECT_VIA_STR(*object).ptr)));
+			break;
+		case MSGPACK_OBJECT_ARRAY:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <array>: <%u>",
+							message,
+							object->via.array.size)));
+			break;
+		case MSGPACK_OBJECT_BIN:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <binary>: <%u>",
+							message,
+							MSGPACK_OBJECT_VIA_BIN(*object).size)));
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("%s: <%#x>",
+							message,
+							object->type)));
+			break;
+		}
 	}
 
 	map = &(object->via.map);
