@@ -10,7 +10,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-void
+static void
 PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
 {
 	data->sourcesCtidColumn = PGrnCreateColumn(data->index,
@@ -19,7 +19,6 @@ PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
 											   GRN_OBJ_COLUMN_SCALAR,
 											   grn_ctx_at(ctx, GRN_DB_UINT64));
 }
-
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
