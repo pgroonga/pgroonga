@@ -4393,9 +4393,21 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 		PGrnIsWritable())
 	{
 		grn_id recordID;
+		uint64 packedCtid;
 
 		recordID = PGrnScanOpaqueResolveID(so);
+		GRN_BULK_REWIND(&(buffers->ctid));
+		grn_obj_get_value(ctx,
+						  so->ctidAccessor,
+						  so->currentID,
+						  &(buffers->ctid));
+		packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 		grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
+
+		PGrnWALDelete(so->index,
+					  so->sourcesTable,
+					  (const char *) &packedCtid,
+					  sizeof(uint64));
 	}
 
 	while (!found)
