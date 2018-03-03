@@ -1013,6 +1013,21 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		if (!needToApply)
 			return false;
 	}
+	else
+	{
+		Buffer buffer;
+		Page page;
+		bool needToApply;
+
+		buffer = PGrnWALReadLockedBuffer(data->index,
+										 currentBlock,
+										 BUFFER_LOCK_SHARE);
+		page = BufferGetPage(buffer);
+		needToApply = (PGrnWALPageGetLastOffset(page) > 0);
+		UnlockReleaseBuffer(buffer);
+		if (!needToApply)
+			return false;
+	}
 
 	return PGrnIsWritable();
 }
@@ -1850,6 +1865,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			   PGrnWALPageGetData(page) + dataOffset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
+		if (dataSize == 0)
+			break;
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
 		while (MSGPACK_UNPACKER_NEXT(&unpacker, &unpacked))
