@@ -992,6 +992,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
 										 &currentBlock,
 										 &currentOffset);
+	if (currentBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
+		currentBlock++;
 
 	nBlocks = RelationGetNumberOfBlocks(data->index);
 	if (currentBlock >= nBlocks)
