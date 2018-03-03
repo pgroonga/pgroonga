@@ -57,7 +57,7 @@ CREATE FUNCTION pgroonga_is_writable()
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga_set_writable()
+CREATE FUNCTION pgroonga_set_writable(newWritable bool)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_set_writable'
 	LANGUAGE C
