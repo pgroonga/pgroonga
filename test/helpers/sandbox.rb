@@ -82,6 +82,7 @@ module Helpers
                   "--port", @port.to_s,
                   "--dbname", db,
                   "--echo-all",
+                  "--no-psqlrc",
                   "--command", sql)
     end
 
