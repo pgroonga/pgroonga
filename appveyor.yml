@@ -1,18 +1,18 @@
 version: "{build}"
 clone_depth: 10
 environment:
-  GROONGA_VERSION: 7.0.7
+  GROONGA_VERSION: 8.0.0
   matrix:
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.5.9-1
+      POSTGRESQL_VERSION: 9.5.12-1
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.6.5-1
+      POSTGRESQL_VERSION: 9.6.8-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 10.0-1
+      POSTGRESQL_VERSION: 10.3-1
       WAL_SUPPORTED: "yes"
 notifications:
   - provider: Email
