@@ -605,27 +605,8 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 {
 	TupleDesc desc = RelationGetDescr(index);
 	Form_pg_attribute attr;
-	int32 maxLength;
 
 	attr = desc->attrs[n];
-	switch (attr->atttypid)
-	{
-	case VARCHAROID:
-	case VARCHARARRAYOID:
-		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
-		if (maxLength > 4096)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"4097bytes over size varchar isn't supported: %d",
-							maxLength)));
-		}
-		break;
-	default:
-		break;
-	}
-
 	return PGrnPGTypeToGrnType(attr->atttypid, flags);
 }
 
@@ -967,6 +948,38 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 	return false;
 }
 
+static void
+PGrnCreateCheckType(PGrnCreateData *data)
+{
+	TupleDesc desc = RelationGetDescr(data->index);
+	Form_pg_attribute attr;
+	int32 maxLength;
+
+	attr = desc->attrs[data->i];
+	if (data->forFullTextSearch)
+		return;
+	if (data->forRegexpSearch)
+		return;
+
+	switch (attr->atttypid)
+	{
+	case VARCHAROID:
+	case VARCHARARRAYOID:
+		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
+		if (maxLength > 4096)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("pgroonga: "
+							"4097bytes over size varchar isn't supported: %d",
+							maxLength)));
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 /**
  * PGrnCreate
  */
@@ -997,6 +1010,7 @@ PGrnCreate(PGrnCreateData *data)
 				PGrnIsForPrefixSearchIndex(data->index, data->i);
 			data->attributeTypeID =
 				PGrnGetType(data->index, data->i, &(data->attributeFlags));
+			PGrnCreateCheckType(data);
 			PGrnCreateLexicon(data);
 			PGrnCreateDataColumn(data);
 			PGrnCreateIndexColumn(data);

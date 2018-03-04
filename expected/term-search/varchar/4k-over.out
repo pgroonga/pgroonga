@@ -1,0 +1,6 @@
+CREATE TABLE memos (
+  content varchar(4097)
+);
+CREATE INDEX pgrn_index ON memos USING pgroonga (content);
+ERROR:  pgroonga: 4097bytes over size varchar isn't supported: 16392
+DROP TABLE memos;
