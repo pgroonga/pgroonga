@@ -17,6 +17,7 @@ SRCS =						\
 	src/pgrn-keywords.c			\
 	src/pgrn-match-positions-byte.c		\
 	src/pgrn-match-positions-character.c	\
+	src/pgrn-normalize.c			\
 	src/pgrn-options.c			\
 	src/pgrn-pg.c				\
 	src/pgrn-query-escape.c			\

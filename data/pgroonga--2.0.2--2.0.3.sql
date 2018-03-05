@@ -63,3 +63,17 @@ CREATE FUNCTION pgroonga_set_writable(newWritable bool)
 	LANGUAGE C
 	VOLATILE
 	STRICT;
+
+CREATE FUNCTION pgroonga_normalize(value text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_normalize(value text, normalizerName text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
