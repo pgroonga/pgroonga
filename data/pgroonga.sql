@@ -204,14 +204,14 @@ CREATE FUNCTION pgroonga_set_writable(newWritable bool)
 	VOLATILE
 	STRICT;
 
-CREATE FUNCTION pgroonga_normalize(value text)
+CREATE FUNCTION pgroonga_normalize(target text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga_normalize(value text, normalizerName text)
+CREATE FUNCTION pgroonga_normalize(target text, normalizerName text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
 	LANGUAGE C
