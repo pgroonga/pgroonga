@@ -1,6 +1,12 @@
-SELECT pgroonga_normalize('aBcDe 123', 'NormalizerAuto');
+SELECT pgroonga_command('plugin_register normalizers/mysql')::json->1;
+ ?column? 
+----------
+ true
+(1 row)
+
+SELECT pgroonga_normalize('aBcDe 123', 'NormalizerMySQLGeneralCI');
  pgroonga_normalize 
 --------------------
- abcde 123
+ ABCDE 123
 (1 row)
 
