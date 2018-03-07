@@ -155,6 +155,7 @@ PGrnAliasAdd(Relation index)
 		grn_obj_set_value(ctx, column, id, newValue, GRN_OBJ_SET);
 		PGrnCheck("alias: failed to set entry: <%s>(%u) -> <%s>",
 				  old, id, new);
+		grn_db_touch(ctx, grn_ctx_db(ctx));
 	}
 }
 
@@ -174,6 +175,8 @@ PGrnAliasDeleteRaw(Oid indexFileNodeID)
 
 	grn_table_delete(ctx, table, old, strlen(old));
 	PGrnCheck("alias: failed to delete entry: <%s>", old);
+
+	grn_db_touch(ctx, grn_ctx_db(ctx));
 }
 
 void
