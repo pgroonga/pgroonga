@@ -129,6 +129,8 @@ PGrnAliasAdd(Relation index)
 	char old[GRN_TABLE_MAX_KEY_SIZE];
 	char new[GRN_TABLE_MAX_KEY_SIZE];
 	grn_id id;
+	PGrnWALData *walData = NULL;
+	size_t nColumns = 2;
 
 	table = PGrnAliasLookupTable();
 	column = PGrnAliasLookupColumn();
@@ -145,6 +147,10 @@ PGrnAliasAdd(Relation index)
 						old)));
 	}
 
+	walData = PGrnWALStart(index);
+	PGrnWALInsertStart(walData, table, nColumns);
+	PGrnWALInsertKeyRaw(walData, old, strlen(old));
+
 	{
 		grn_obj *newValue = &(buffers->general);
 		grn_obj_reinit(ctx,
@@ -156,6 +162,9 @@ PGrnAliasAdd(Relation index)
 		PGrnCheck("alias: failed to set entry: <%s>(%u) -> <%s>",
 				  old, id, new);
 		grn_db_touch(ctx, grn_ctx_db(ctx));
+
+		PGrnWALInsertColumn(walData, column, newValue);
+		PGrnWALFinish(walData);
 	}
 }
 
