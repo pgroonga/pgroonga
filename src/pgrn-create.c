@@ -60,7 +60,8 @@ PGrnCreateSourcesTableFinish(PGrnCreateData *data)
 	snprintf(sourcesTableName, sizeof(sourcesTableName),
 			 PGrnSourcesTableNameFormat, data->relNode);
 	PGrnRenameTable(data->index, data->sourcesTable, sourcesTableName);
-	PGrnAliasAdd(data->index);
+	if (!data->sourcesCtidColumn)
+		PGrnAliasAdd(data->index);
 }
 
 void
