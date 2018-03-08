@@ -25,16 +25,20 @@ case "${distribution}" in
 deb http://packages.groonga.org/debian/ ${code_name} main
 deb-src http://packages.groonga.org/debian/ ${code_name} main
 EOF
-    run sudo apt update --allow-insecure-repositories
+    if [ "${code_name}" = "jessie" ]; then
+      run sudo apt update
+    else
+      run sudo apt update --allow-insecure-repositories
+    fi
     run sudo apt install -y --allow-unauthenticated groonga-keyring
     run sudo apt update
     ;;
   ubuntu)
     component=universe
-    run sudo apt-get -y install software-properties-common
+    run sudo apt -y install software-properties-common
     run sudo add-apt-repository -y universe
     run sudo add-apt-repository -y ppa:groonga/ppa
-    run sudo apt-get update
+    run sudo apt update
     ;;
 esac
 

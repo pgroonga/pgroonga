@@ -357,8 +357,6 @@ postgresql#{postgresql_package_version}-devel
         sh("vagrant", "destroy", "--force")
         code_names.each do |code_name|
           architectures.each do |arch|
-            next if code_name == "stretch" and arch == "i386"
-
             if code_name == "jessie"
               postgresql_version = "9.4"
             else
@@ -480,7 +478,7 @@ libmsgpack-dev
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "zesty,artful",
+             "--code-names", "artful",
              "--debian-directory", "packages/debian96",
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
