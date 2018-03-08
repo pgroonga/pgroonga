@@ -13,7 +13,10 @@ windows_postgresql_versions = [
 package = "pgroonga"
 package_label = "PGroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
-gpg_uid = "45499429"
+gpg_uids = [
+  "45499429",
+  "2701F317CFCCCB975CADE9C2624CF77434839225",
+]
 groonga_source_dir_candidates = [
   "../groonga.clean",
   "../groonga",
@@ -280,19 +283,23 @@ postgresql#{postgresql_package_version}-devel
 
     desc "Sign packages"
     task :sign do
-      sh("#{groonga_source_dir}/packages/yum/sign-rpm.sh",
-         gpg_uid,
-         "#{repositories_dir}/",
-         distribution)
+      gpg_uids.each do |gpg_uid|
+        sh("#{groonga_source_dir}/packages/yum/sign-rpm.sh",
+           gpg_uid,
+           "#{repositories_dir}/",
+           distribution)
+      end
     end
 
     desc "Update repositories"
     task :update do
-      sh("#{groonga_source_dir}/packages/yum/update-repository.sh",
-         gpg_uid,
-         "groonga",
-         "#{repositories_dir}/",
-         distribution)
+      gpg_uids.each do |gpg_uid|
+        sh("#{groonga_source_dir}/packages/yum/update-repository.sh",
+           gpg_uid,
+           "groonga",
+           "#{repositories_dir}/",
+           distribution)
+      end
     end
 
     desc "Download repositories"
@@ -386,10 +393,12 @@ libmsgpack-dev
 
     desc "Sign packages"
     task :sign do
-      sh("#{groonga_source_dir}/packages/apt/sign-packages.sh",
-         gpg_uid,
-         "#{repositories_dir}/",
-         code_names.join(" "))
+      gpg_uids.each do |gpg_uid|
+        sh("#{groonga_source_dir}/packages/apt/sign-packages.sh",
+           gpg_uid,
+           "#{repositories_dir}/",
+           code_names.join(" "))
+      end
     end
 
     namespace :repository do
@@ -404,10 +413,12 @@ libmsgpack-dev
 
       desc "Sign repositories"
       task :sign do
-        sh("#{groonga_source_dir}/packages/apt/sign-repository.sh",
-           gpg_uid,
-           "#{repositories_dir}/",
-           code_names.join(" "))
+        gpg_uids.each do |gpg_uid|
+          sh("#{groonga_source_dir}/packages/apt/sign-repository.sh",
+             gpg_uid,
+             "#{repositories_dir}/",
+             code_names.join(" "))
+        end
       end
     end
 
