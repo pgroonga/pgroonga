@@ -146,6 +146,8 @@ static unsigned int PGrnNScanOpaques = 0;
 extern PGDLLEXPORT void _PG_init(void);
 
 PGRN_FUNCTION_INFO_V1(pgroonga_score);
+PGRN_FUNCTION_INFO_V1(pgroonga_score_row);
+PGRN_FUNCTION_INFO_V1(pgroonga_score_ctid);
 PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
 PGRN_FUNCTION_INFO_V1(pgroonga_command);
 
@@ -1049,9 +1051,9 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 }
 
 static double
-PGrnCollectScoreScanOpaqueGetScore(Relation table,
-								   PGrnScanOpaque so,
-								   grn_id recordID)
+PGrnCollectScoreGetScore(Relation table,
+						 PGrnScanOpaque so,
+						 grn_id recordID)
 {
 	double score = 0.0;
 	grn_id id;
@@ -1083,9 +1085,9 @@ PGrnCollectScoreScanOpaqueGetScore(Relation table,
 }
 
 static double
-PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(Relation table,
-											  HeapTuple tuple,
-											  PGrnScanOpaque so)
+PGrnCollectScoreOneColumnPrimaryKey(Relation table,
+									HeapTuple tuple,
+									PGrnScanOpaque so)
 {
 	double score = 0.0;
 	TupleDesc desc;
@@ -1153,7 +1155,7 @@ PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(Relation table,
 
 	while ((posting = grn_ii_cursor_next(ctx, iiCursor)))
 	{
-		score += PGrnCollectScoreScanOpaqueGetScore(table, so, posting->rid);
+		score += PGrnCollectScoreGetScore(table, so, posting->rid);
 	}
 	grn_ii_cursor_close(ctx, iiCursor);
 
@@ -1161,9 +1163,9 @@ PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(Relation table,
 }
 
 static double
-PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(Relation table,
-												HeapTuple tuple,
-												PGrnScanOpaque so)
+PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
+									  HeapTuple tuple,
+									  PGrnScanOpaque so)
 {
 	double score = 0.0;
 	TupleDesc desc;
@@ -1239,7 +1241,7 @@ PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(Relation table,
 			recordID = *((grn_id *) key);
 			grn_table_cursor_delete(ctx, tableCursor);
 
-			score += PGrnCollectScoreScanOpaqueGetScore(table, so, recordID);
+			score += PGrnCollectScoreGetScore(table, so, recordID);
 		}
 		grn_obj_unlink(ctx, tableCursor);
 	}
@@ -1247,26 +1249,19 @@ PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(Relation table,
 	return score;
 }
 
-static double
-PGrnCollectScoreScanOpaque(Relation table, HeapTuple tuple, PGrnScanOpaque so)
+static bool
+PGrnCollectScoreIsTarget(PGrnScanOpaque so, Oid tableOid)
 {
-	if (so->dataTableID != tuple->t_tableOid)
-		return 0.0;
+	if (so->dataTableID != tableOid)
+		return false;
 
 	if (!so->scoreAccessor)
-		return 0.0;
+		return false;
 
 	if (slist_is_empty(&(so->primaryKeyColumns)))
-		return 0.0;
+		return false;
 
-	if (so->primaryKeyColumns.head.next->next)
-	{
-		return PGrnCollectScoreScanOpaqueMultiColumnPrimaryKey(table, tuple, so);
-	}
-	else
-	{
-		return PGrnCollectScoreScanOpaqueOneColumnPrimaryKey(table, tuple, so);
-	}
+	return true;
 }
 
 static double
@@ -1280,16 +1275,38 @@ PGrnCollectScore(Relation table, HeapTuple tuple)
 		PGrnScanOpaque so;
 
 		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
-		score += PGrnCollectScoreScanOpaque(table, tuple, so);
+		if (!PGrnCollectScoreIsTarget(so, tuple->t_tableOid))
+			continue;
+
+		if (so->primaryKeyColumns.head.next->next)
+		{
+			score += PGrnCollectScoreMultiColumnPrimaryKey(table, tuple, so);
+		}
+		else
+		{
+			score += PGrnCollectScoreOneColumnPrimaryKey(table, tuple, so);
+		}
 	}
 
 	return score;
 }
+
 /**
- * pgroonga.score(row record) : float8
+ * pgroonga_score(row record) : float8
+ *
+ * It's deprecated since 2.0.4. Just for backward compatibility.
  */
 Datum
 pgroonga_score(PG_FUNCTION_ARGS)
+{
+	return pgroonga_score_row(fcinfo);
+}
+
+/**
+ * pgroonga_score(row record) : float8
+ */
+Datum
+pgroonga_score_row(PG_FUNCTION_ARGS)
 {
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(0);
 	Oid	type;
@@ -1310,6 +1327,15 @@ pgroonga_score(PG_FUNCTION_ARGS)
 		tupleData.t_len = HeapTupleHeaderGetDatumLength(header);
 		tupleData.t_tableOid = desc->attrs[0]->attrelid;
 		tupleData.t_data = header;
+		if (PG_NARGS() == 2)
+		{
+			ItemPointer ctid = (ItemPointer) PG_GETARG_POINTER(1);
+			tupleData.t_self = *ctid;
+		}
+		else
+		{
+			ItemPointerSetInvalid(&(tupleData.t_self));
+		}
 		tuple = &tupleData;
 
 		table = RelationIdGetRelation(tuple->t_tableOid);
@@ -1320,6 +1346,64 @@ pgroonga_score(PG_FUNCTION_ARGS)
 	}
 
 	ReleaseTupleDesc(desc);
+
+	PG_RETURN_FLOAT8(score);
+}
+
+static double
+PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
+{
+	const uint64 packedCtid = PGrnCtidPack(ctid);
+	double score = 0.0;
+	grn_id sourceID;
+	grn_id searchedID;
+
+	sourceID = grn_table_get(ctx, so->sourcesTable, &packedCtid, sizeof(uint64));
+	if (sourceID == GRN_ID_NIL)
+		return 0.0;
+
+	searchedID = grn_table_get(ctx, so->searched, &sourceID, sizeof(grn_id));
+	if (searchedID == GRN_ID_NIL)
+		return 0.0;
+
+	GRN_BULK_REWIND(&(buffers->score));
+	grn_obj_get_value(ctx, so->scoreAccessor, searchedID, &(buffers->score));
+	if (buffers->score.header.domain == GRN_DB_FLOAT)
+	{
+		score = GRN_FLOAT_VALUE(&(buffers->score));
+	}
+	else
+	{
+		score = GRN_INT32_VALUE(&(buffers->score));
+	}
+
+	return score;
+}
+
+/**
+ * pgroonga_score_ctid(tableoid oid, ctid tid) : float8
+ */
+Datum
+pgroonga_score_ctid(PG_FUNCTION_ARGS)
+{
+	Oid tableOid = PG_GETARG_OID(0);
+	ItemPointer ctid = (ItemPointer) PG_GETARG_POINTER(1);
+	double score = 0.0;
+	dlist_iter iter;
+
+	dlist_foreach(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque so;
+
+		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
+		if (!PGrnCollectScoreIsTarget(so, tableOid))
+			continue;
+
+		if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
+			continue;
+
+		score += PGrnCollectScoreCtid(so, ctid);
+	}
 
 	PG_RETURN_FLOAT8(score);
 }

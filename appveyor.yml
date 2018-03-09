@@ -83,6 +83,8 @@ test_script:
        rm -rf sql/function/wal-truncate/
        rm -rf sql/function/set-writable/wal-*
     )
+  # TODO: Remove me when Groonga 8.0.1 has been released.
+  - rm -rf sql/function/score/ctid/
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |

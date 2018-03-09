@@ -77,6 +77,8 @@ script:
       rm -rf sql/function/wal-truncate/
       rm -rf sql/function/set-writable/
     fi
+  # TODO: Remove me when Groonga 8.0.1 has been released.
+  - rm -rf sql/function/score/ctid/
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
     # (for i in $(seq 600)
