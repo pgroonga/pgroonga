@@ -99,6 +99,7 @@ typedef struct PGrnScanOpaqueData
 	Oid dataTableID;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
+	grn_obj *ctidResolveTable;
 	grn_obj minBorderValue;
 	grn_obj maxBorderValue;
 	grn_obj *searched;
@@ -1246,9 +1247,6 @@ PGrnCollectScoreIsTarget(PGrnScanOpaque so, Oid tableOid)
 	if (!so->scoreAccessor)
 		return false;
 
-	if (slist_is_empty(&(so->primaryKeyColumns)))
-		return false;
-
 	return true;
 }
 
@@ -1260,10 +1258,12 @@ PGrnCollectScore(Relation table, HeapTuple tuple)
 
 	dlist_foreach(iter, &PGrnScanOpaques)
 	{
-		PGrnScanOpaque so;
+		PGrnScanOpaque so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
 
-		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
 		if (!PGrnCollectScoreIsTarget(so, tuple->t_tableOid))
+			continue;
+
+		if (slist_is_empty(&(so->primaryKeyColumns)))
 			continue;
 
 		if (so->primaryKeyColumns.head.next->next)
@@ -1338,15 +1338,101 @@ pgroonga_score_row(PG_FUNCTION_ARGS)
 	PG_RETURN_FLOAT8(score);
 }
 
+static void
+PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
+{
+	Snapshot snapshot;
+	Relation table;
+	grn_obj *sourceRecord;
+
+	snapshot = GetActiveSnapshot();
+
+	table = RelationIdGetRelation(so->dataTableID);
+
+	sourceRecord = &(buffers->general);
+	grn_obj_reinit(ctx, sourceRecord, grn_obj_id(ctx, so->sourcesTable), 0);
+
+	so->ctidResolveTable = grn_table_create(ctx,
+											NULL, 0,
+											NULL,
+											GRN_OBJ_TABLE_HASH_KEY,
+											grn_ctx_at(ctx, GRN_DB_UINT64),
+											so->sourcesTable);
+	GRN_TABLE_EACH_BEGIN(ctx, so->searched, cursor, id)
+	{
+		void *key;
+		grn_id sourceID;
+		uint64 packedCtid;
+		ItemPointerData ctid;
+		ItemPointerData resolvedCtid;
+		uint64 resolvedPackedCtid;
+		grn_id resolvedID;
+
+		grn_table_cursor_get_key(ctx, cursor, &key);
+		sourceID = *((grn_id *) key);
+
+		grn_table_get_key(ctx,
+						  so->sourcesTable,
+						  sourceID,
+						  &packedCtid,
+						  sizeof(uint64));
+		ctid = PGrnCtidUnpack(packedCtid);
+		resolvedCtid = ctid;
+		heap_get_latest_tid(table, snapshot, &resolvedCtid);
+		if (ItemPointerEquals(&ctid, &resolvedCtid))
+			continue;
+
+		resolvedPackedCtid = PGrnCtidPack(&resolvedCtid);
+		resolvedID = grn_table_add(ctx,
+								   so->ctidResolveTable,
+								   &resolvedPackedCtid,
+								   sizeof(uint64),
+								   NULL);
+		GRN_RECORD_SET(ctx, sourceRecord, sourceID);
+		grn_obj_set_value(ctx,
+						  so->ctidResolveTable,
+						  resolvedID,
+						  sourceRecord,
+						  GRN_OBJ_SET);
+	}
+	GRN_TABLE_EACH_END(ctx, cursor);
+
+	RelationClose(table);
+}
+
 static double
 PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 {
 	const uint64 packedCtid = PGrnCtidPack(ctid);
 	double score = 0.0;
+	grn_id resolveID;
 	grn_id sourceID;
 	grn_id searchedID;
 
-	sourceID = grn_table_get(ctx, so->sourcesTable, &packedCtid, sizeof(uint64));
+	if (!so->ctidResolveTable)
+		PGrnScanOpaqueCreateCtidResolveTable(so);
+
+	resolveID = grn_table_get(ctx,
+							  so->ctidResolveTable,
+							  &packedCtid,
+							  sizeof(uint64));
+	if (resolveID == GRN_ID_NIL)
+	{
+		sourceID = grn_table_get(ctx,
+								 so->sourcesTable,
+								 &packedCtid,
+								 sizeof(uint64));
+	}
+	else
+	{
+		GRN_BULK_REWIND(&(buffers->general));
+		grn_obj_get_value(ctx,
+						  so->ctidResolveTable,
+						  resolveID,
+						  &(buffers->general));
+		sourceID = GRN_RECORD_VALUE(&(buffers->general));
+	}
+
 	if (sourceID == GRN_ID_NIL)
 		return 0.0;
 
@@ -3131,6 +3217,7 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	{
 		so->sourcesCtidColumn = NULL;
 	}
+	so->ctidResolveTable = NULL;
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
 	so->searched = NULL;
@@ -3190,6 +3277,11 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 	}
 	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
 	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
+	if (so->ctidResolveTable)
+	{
+		grn_obj_close(ctx, so->ctidResolveTable);
+		so->ctidResolveTable = NULL;
+	}
 	if (so->sorted)
 	{
 		grn_obj_close(ctx, so->sorted);
