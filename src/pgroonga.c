@@ -684,7 +684,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		if (typeID == TIMESTAMPOID) {
 			long int timezoneOffset;
 			timezoneOffset = PGrnPGGetSessionTimezoneOffset();
-			unixTimeUTC = sec - timezoneOffset;
+			unixTimeUTC = sec + timezoneOffset;
 		}
 		else
 		{
