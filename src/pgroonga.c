@@ -41,13 +41,6 @@
 #include <miscadmin.h>
 #include <optimizer/clauses.h>
 #include <optimizer/cost.h>
-#include <postmaster/bgworker.h>
-#ifdef PGRN_SUPPORT_LOGICAL_REPLICATION
-/* #	include <replication/worker_internal.h> */
-/* TODO: Use more clever way to support workers. */
-typedef struct LogicalRepWorker LogicalRepWorker;
-extern PGDLLIMPORT LogicalRepWorker *MyLogicalRepWorker;
-#endif
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <utils/array.h>
@@ -295,41 +288,6 @@ PGrnGetEncoding(void)
 	}
 }
 
-static void
-PGrnEnsureDatabase(void)
-{
-	char *databasePath;
-	char path[MAXPGPATH];
-	grn_obj	*db;
-	pgrn_stat_buffer file_status;
-
-	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
-	databasePath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
-	join_path_components(path,
-						 databasePath,
-						 PGrnDatabaseBasename);
-	pfree(databasePath);
-
-	if (pgrn_stat(path, &file_status) == 0)
-	{
-		db = grn_db_open(ctx, path);
-		if (!db)
-			ereport(ERROR,
-					(errcode(ERRCODE_IO_ERROR),
-					 errmsg("pgroonga: failed to open database: <%s>: %s",
-							path, ctx->errbuf)));
-	}
-	else
-	{
-		db = grn_db_create(ctx, path, NULL);
-		if (!db)
-			ereport(ERROR,
-					(errcode(ERRCODE_IO_ERROR),
-					 errmsg("pgroonga: failed to create database: <%s>: %s",
-							path, ctx->errbuf)));
-	}
-}
-
 static void PGrnScanOpaqueFin(PGrnScanOpaque so);
 
 static void
@@ -375,25 +333,27 @@ PGrnOnProcExit(int code, Datum arg)
 
 		PGrnFinalizeScanOpaques();
 
-		PGrnFinalizeQueryExtractKeywords();
-
-		PGrnFinalizeMatchPositionsByte();
-		PGrnFinalizeMatchPositionsCharacter();
-
-		PGrnFinalizeHighlightHTML();
-
-		PGrnFinalizeKeywords();
-
-		PGrnFinalizeJSONB();
-
-		PGrnFinalizeMatchSequentialSearchData();
-		PGrnFinalizePrefixRKSequentialSearchData();
-
-		PGrnFinalizeBuffers();
-
 		db = grn_ctx_db(ctx);
 		if (db)
+		{
+			PGrnFinalizeQueryExtractKeywords();
+
+			PGrnFinalizeMatchPositionsByte();
+			PGrnFinalizeMatchPositionsCharacter();
+
+			PGrnFinalizeHighlightHTML();
+
+			PGrnFinalizeKeywords();
+
+			PGrnFinalizeJSONB();
+
+			PGrnFinalizeMatchSequentialSearchData();
+			PGrnFinalizePrefixRKSequentialSearchData();
+
 			grn_obj_close(ctx, db);
+		}
+
+		PGrnFinalizeBuffers();
 
 		grn_ctx_fin(ctx);
 	}
@@ -452,26 +412,78 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 						 NULL);
 }
 
-static bool
-PGrnNeedInitialize(void)
+static void
+PGrnInitializeDatabase(void)
 {
-#ifdef PGRN_SUPPORT_LOGICAL_REPLICATION
-	if (MyLogicalRepWorker)
-		return true;
-#endif
+	PGrnInitializeGroongaFunctions();
 
-	if (MyBgworkerEntry)
-		return false;
+	PGrnInitializeAlias();
 
-	return true;
+	PGrnInitializeIndexStatus();
+
+	PGrnInitializeMatchSequentialSearchData();
+	PGrnInitializePrefixRKSequentialSearchData();
+
+	PGrnInitializeJSONB();
+
+	PGrnInitializeKeywords();
+
+	PGrnInitializeHighlightHTML();
+
+	PGrnInitializeMatchPositionsByte();
+	PGrnInitializeMatchPositionsCharacter();
+
+	PGrnInitializeQueryExpand();
+
+	PGrnInitializeQueryExtractKeywords();
+}
+
+void
+PGrnEnsureDatabase(void)
+{
+	char *databasePath;
+	char path[MAXPGPATH];
+	grn_obj	*db;
+	pgrn_stat_buffer file_status;
+
+	if (grn_ctx_db(ctx))
+		return;
+
+	if (!OidIsValid(MyDatabaseId))
+		return;
+
+	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
+	databasePath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
+	join_path_components(path,
+						 databasePath,
+						 PGrnDatabaseBasename);
+	pfree(databasePath);
+
+	if (pgrn_stat(path, &file_status) == 0)
+	{
+		db = grn_db_open(ctx, path);
+		if (!db)
+			ereport(ERROR,
+					(errcode(ERRCODE_IO_ERROR),
+					 errmsg("pgroonga: failed to open database: <%s>: %s",
+							path, ctx->errbuf)));
+	}
+	else
+	{
+		db = grn_db_create(ctx, path, NULL);
+		if (!db)
+			ereport(ERROR,
+					(errcode(ERRCODE_IO_ERROR),
+					 errmsg("pgroonga: failed to create database: <%s>: %s",
+							path, ctx->errbuf)));
+	}
+
+	PGrnInitializeDatabase();
 }
 
 void
 _PG_init(void)
 {
-	if (!PGrnNeedInitialize())
-		return;
-
 	if (PGrnInitialized)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
@@ -510,33 +522,11 @@ _PG_init(void)
 
 	PGrnInitializeBuffers();
 
-	PGrnEnsureDatabase();
-
 	PGrnInitializeGroongaInformation();
 
 	PGrnInitializeOptions();
 
-	PGrnInitializeGroongaFunctions();
-
-	PGrnInitializeAlias();
-
-	PGrnInitializeIndexStatus();
-
-	PGrnInitializeMatchSequentialSearchData();
-	PGrnInitializePrefixRKSequentialSearchData();
-
-	PGrnInitializeJSONB();
-
-	PGrnInitializeKeywords();
-
-	PGrnInitializeHighlightHTML();
-
-	PGrnInitializeMatchPositionsByte();
-	PGrnInitializeMatchPositionsCharacter();
-
-	PGrnInitializeQueryExpand();
-
-	PGrnInitializeQueryExtractKeywords();
+	PGrnEnsureDatabase();
 }
 
 static grn_id

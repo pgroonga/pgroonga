@@ -127,7 +127,9 @@ PGrnLookupWithSize(const char *name,
 				   size_t nameSize,
 				   int errorLevel)
 {
-	grn_obj *object = grn_ctx_get(ctx, name, nameSize);
+	grn_obj *object;
+	PGrnEnsureDatabase();
+	object = grn_ctx_get(ctx, name, nameSize);
 	if (!object)
 		ereport(errorLevel,
 				(errcode(ERRCODE_INVALID_NAME),

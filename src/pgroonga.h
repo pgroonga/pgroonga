@@ -82,4 +82,5 @@
 	 GRN_EXPR_QUERY_NO_SYNTAX_ERROR)
 
 extern bool PGrnGroongaInitialized;
+void PGrnEnsureDatabase(void);
 bool PGrnIndexIsPGroonga(Relation index);

@@ -85,6 +85,9 @@ PGrnOptionValidateTokenizer(char *name)
 	if (PGrnIsNoneValue(name))
 		return;
 
+	if (strcmp(name, PGRN_DEFAULT_TOKENIZER) == 0)
+		return;
+
 	tokenizer = grn_ctx_get(ctx, name, -1);
 	if (!tokenizer)
 	{
@@ -121,6 +124,9 @@ PGrnOptionValidateNormalizer(char *name)
 	grn_obj *normalizer;
 
 	if (PGrnIsNoneValue(name))
+		return;
+
+	if (strcmp(name, PGRN_DEFAULT_NORMALIZER) == 0)
 		return;
 
 	normalizer = grn_ctx_get(ctx, name, -1);
