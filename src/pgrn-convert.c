@@ -88,9 +88,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 
 		if (typeID == TIMESTAMPOID)
 		{
-			long int timezoneOffset;
-			timezoneOffset = PGrnPGGetSessionTimezoneOffset();
-			unixTimeLocal = timestamptz_to_time_t(value) - timezoneOffset;
+			unixTimeLocal = PGrnPGTimestampToLocalTime(value);
 		}
 		else
 		{

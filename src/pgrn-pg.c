@@ -79,7 +79,7 @@ PGrnPGIsValidFileNodeID(Oid fileNodeID)
 #endif
 }
 
-long int
+int
 PGrnPGGetSessionTimezoneOffset(void)
 {
 	struct pg_tm tm;
@@ -87,4 +87,52 @@ PGrnPGGetSessionTimezoneOffset(void)
 	int timezoneOffset = 0;
 	GetCurrentTimeUsec(&tm, &fsec, &timezoneOffset);
 	return timezoneOffset;
+}
+
+pg_time_t
+PGrnPGTimestampToLocalTime(Timestamp timestamp)
+{
+	struct pg_tm tm;
+	fsec_t fsec;
+	int offset = 0;
+
+	if (timestamp2tm(timestamp,
+					 &offset,
+					 &tm,
+					 &fsec,
+					 NULL,
+					 NULL) != 0)
+	{
+		offset = PGrnPGGetSessionTimezoneOffset();
+	}
+
+	return timestamptz_to_time_t(timestamp) - offset;
+}
+
+Timestamp
+PGrnPGLocalTimeToTimestamp(pg_time_t unixTimeLocal)
+{
+	pg_time_t unixTimeUTC;
+	int sessionOffset;
+	struct pg_tm tm;
+	fsec_t fsec;
+	int offset;
+	Timestamp timestampMayDifferentSummaryTime;
+
+	sessionOffset = PGrnPGGetSessionTimezoneOffset();
+	timestampMayDifferentSummaryTime =
+		time_t_to_timestamptz(unixTimeLocal + sessionOffset);
+	/* TODO: This logic will be broken 1 hour around summer time change point. */
+	if (timestamp2tm(timestampMayDifferentSummaryTime,
+					 &offset,
+					 &tm,
+					 &fsec,
+					 NULL,
+					 NULL) != 0)
+	{
+		offset = sessionOffset;
+	}
+	unixTimeUTC = unixTimeLocal + offset;
+
+	return time_t_to_timestamptz(unixTimeUTC);
 }

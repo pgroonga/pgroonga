@@ -676,22 +676,20 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		int64 grnTime;
 		int64 sec;
 		int64 usec;
-		pg_time_t unixTimeUTC;
 		TimestampTz timestamp;
 
 		grnTime = GRN_TIME_VALUE(value);
 		GRN_TIME_UNPACK(grnTime, sec, usec);
-		if (typeID == TIMESTAMPOID) {
-			long int timezoneOffset;
-			timezoneOffset = PGrnPGGetSessionTimezoneOffset();
-			unixTimeUTC = sec + timezoneOffset;
+		if (typeID == TIMESTAMPOID)
+		{
+			timestamp = PGrnPGLocalTimeToTimestamp(sec);
 		}
 		else
 		{
 			/* TODO: Support not localtime time zone. */
-			unixTimeUTC = sec;
+			pg_time_t unixTimeUTC = sec;
+			timestamp = time_t_to_timestamptz(unixTimeUTC);
 		}
-		timestamp = time_t_to_timestamptz(unixTimeUTC);
 #ifdef HAVE_INT64_TIMESTAMP
 		timestamp += usec;
 #else
