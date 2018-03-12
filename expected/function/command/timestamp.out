@@ -9,7 +9,7 @@ SELECT pgroonga_command('select',
     AS body;
                       body                      
 ------------------------------------------------
- [[[1],[["created_at","Time"]],[1517500800.0]]]
+ [[[1],[["created_at","Time"]],[1517554800.0]]]
 (1 row)
 
 DROP TABLE memos;
