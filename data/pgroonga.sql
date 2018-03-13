@@ -1,3 +1,10 @@
+CREATE TYPE pgroonga_full_text_search_condition AS (
+  query text,
+  weigths int[],
+  indexName text
+);
+
+
 CREATE FUNCTION pgroonga_score("row" record)
 	RETURNS float8
 	AS 'MODULE_PATHNAME', 'pgroonga_score_row'
@@ -373,10 +380,26 @@ CREATE FUNCTION pgroonga_match_text(text, text)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_match_text_condition
+	(target text, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text,
 	LEFTARG = text,
 	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_text_condition,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_full_text_search_condition,
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
@@ -1208,7 +1231,7 @@ EXCEPTION
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
-			30,		-- amstrategies
+			31,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
@@ -1412,7 +1435,8 @@ CREATE OPERATOR CLASS pgroonga_text_full_text_search_ops_v2
 		OPERATOR 27 &?> (text, text[]), -- For backward compatibility
 		OPERATOR 28 &@~,
 		OPERATOR 29 &@*,
-		OPERATOR 30 &@~| (text, text[]);
+		OPERATOR 30 &@~| (text, text[]),
+		OPERATOR 31 &@ (text, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_text_array_full_text_search_ops_v2
 	DEFAULT FOR TYPE text[]

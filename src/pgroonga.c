@@ -7,6 +7,7 @@
 #include "pgrn-convert.h"
 #include "pgrn-create.h"
 #include "pgrn-ctid.h"
+#include "pgrn-full-text-search-condition.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-groonga-tuple-is-alive.h"
@@ -190,6 +191,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_regexp_varchar);
 
 /* v2 */
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_text_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
@@ -2099,6 +2101,58 @@ pgroonga_match_text(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga.match_text_condition(target text,
+ *                               condition pgroonga_match_condition) : bool
+ */
+Datum
+pgroonga_match_text_condition(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *term;
+	ArrayType *weights;
+	bool needMatch = true;
+	bool matched = false;
+
+	PGrnFullTextSearchConditionDeconstruct(header, &term, &weights, NULL);
+	if (weights && ARR_NDIM(weights) == 1 && ARR_DIMS(weights)[0] > 0)
+	{
+		int i = 1;
+		Datum datum;
+		bool isNULL;
+		int16 typeLength;
+		bool byValue;
+		char align;
+
+		get_typlenbyvalalign(ARR_ELEMTYPE(weights),
+							 &typeLength,
+							 &byValue,
+							 &align);
+		datum = array_ref(weights,
+						  1,
+						  &i,
+						  -1,
+						  typeLength,
+						  byValue,
+						  align,
+						  &isNULL);
+		needMatch = (!isNULL &&
+					 ARR_ELEMTYPE(weights) == INT4OID &&
+					 DatumGetInt32(datum) != 0);
+	}
+
+	if (term && needMatch)
+	{
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(term),
+										  VARSIZE_ANY_EXHDR(term));
+	}
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga.match_text_array(targets text[], term text) : bool
  */
 Datum
@@ -3474,6 +3528,163 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	return true;
 }
 
+static bool
+PGrnSearchBuildConditionMatchCondition(PGrnSearchData *data,
+									   ScanKey key,
+									   grn_obj *targetColumn,
+									   Form_pg_attribute attribute)
+{
+	grn_index_datum indexData;
+	unsigned int nIndexData;
+	char indexName[GRN_TABLE_MAX_KEY_SIZE];
+	HeapTupleHeader header;
+	text *term;
+	ArrayType *weights;
+
+	nIndexData = grn_column_find_index_data(ctx,
+											targetColumn,
+											GRN_OP_MATCH,
+											&indexData,
+											1);
+	if (nIndexData == 0)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_SYSTEM_ERROR),
+				 errmsg("pgroonga: match-condition: "
+						"index doesn't exist for target column: <%s>",
+						PGrnInspectName(targetColumn))));
+		return false;
+	}
+
+	{
+		int nameSize;
+		nameSize = grn_obj_name(ctx,
+								indexData.index,
+								indexName,
+								GRN_TABLE_MAX_KEY_SIZE);
+		indexName[nameSize] = '\0';
+	}
+
+	header = DatumGetHeapTupleHeader(key->sk_argument);
+	PGrnFullTextSearchConditionDeconstruct(header, &term, &weights, NULL);
+	if (!term)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: match-condition: query must not NULL")));
+		return false;
+	}
+
+	if (weights)
+	{
+		grn_obj *matchTarget, *matchTargetVariable;
+		ArrayIterator iterator;
+		int i;
+		Datum datum;
+		bool isNULL;
+
+		if (ARR_NDIM(weights) == 0)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: match-condition: "
+							"weights must not empty array")));
+			return false;
+		}
+
+		GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
+								  matchTarget, matchTargetVariable);
+		GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
+
+		iterator = pgrn_array_create_iterator(weights, 0);
+		for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
+		{
+			int32 weight;
+
+			if (isNULL)
+				weight = 1;
+			else
+				weight = DatumGetInt32(datum);
+
+			grn_expr_append_obj(ctx,
+								matchTarget,
+								indexData.index,
+								GRN_OP_PUSH,
+								1);
+			PGrnCheck("match-condition: failed to push index: <%s>[%d]",
+					  indexName, i);
+			grn_expr_append_const_int(ctx, matchTarget, i, GRN_OP_PUSH, 1);
+			PGrnCheck("match-condition: "
+					  "failed to push section of index: <%s>[%d]",
+					  indexName, i);
+			grn_expr_append_op(ctx, matchTarget, GRN_OP_GET_MEMBER, 2);
+			PGrnCheck("match-condition: "
+					  "failed to push get-member operator: <%s>[%d]",
+					  indexName, i);
+			if (weight != 1)
+			{
+				grn_expr_append_const_int(ctx,
+										  matchTarget,
+										  weight,
+										  GRN_OP_PUSH,
+										  1);
+				PGrnCheck("match-condition: "
+						  "failed to push weight: <%s>[%d] * <%d>",
+						  indexName, i, weight);
+				grn_expr_append_op(ctx, matchTarget, GRN_OP_STAR, 2);
+				PGrnCheck("match-condition: "
+						  "failed to push star operator for weight: "
+						  "<%s>[%d] * <%d>",
+						  indexName, i, weight);
+			}
+
+			if (i > 0)
+			{
+				grn_expr_append_op(ctx, matchTarget, GRN_OP_OR, 2);
+				PGrnCheck("match-condition: "
+						  "failed to push OR operator: <%s>[%d]",
+						  indexName, i);
+			}
+		}
+		array_free_iterator(iterator);
+
+		grn_expr_append_obj(ctx,
+							data->expression,
+							matchTarget,
+							GRN_OP_PUSH,
+							1);
+		PGrnCheck("match-condition: failed to push match columns: <%s>",
+				  indexName);
+	}
+	else
+	{
+		grn_expr_append_obj(ctx,
+							data->expression,
+							targetColumn,
+							GRN_OP_PUSH,
+							1);
+		PGrnCheck("match-condition: failed to push column to be matched: <%s>",
+				  PGrnInspectName(targetColumn));
+	}
+
+	grn_expr_append_const_str(ctx,
+							  data->expression,
+							  VARDATA_ANY(term),
+							  VARSIZE_ANY_EXHDR(term),
+							  GRN_OP_PUSH,
+							  1);
+	PGrnCheck("match-condition: failed to push query: <%.*s>",
+			  (int) VARSIZE_ANY_EXHDR(term),
+			  VARDATA_ANY(term));
+	grn_expr_append_op(ctx,
+						data->expression,
+					   GRN_OP_MATCH,
+					   1);
+	PGrnCheck("match-condition: failed to push MATCH operator");
+
+	return true;
+}
+
 static void
 PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 									   grn_obj *targetColumn,
@@ -3801,6 +4012,14 @@ PGrnSearchBuildCondition(Relation index,
 
 	if (PGrnSearchIsInCondition(key))
 		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
+
+	if (key->sk_strategy == PGrnMatchConditionStrategyV2Number)
+	{
+		return PGrnSearchBuildConditionMatchCondition(data,
+													  key,
+													  targetColumn,
+													  attribute);
+	}
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
 		return PGrnJSONBBuildSearchCondition(data, index, key, targetColumn);
