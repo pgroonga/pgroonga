@@ -1315,15 +1315,7 @@ pgroonga_score_row(PG_FUNCTION_ARGS)
 		tupleData.t_len = HeapTupleHeaderGetDatumLength(header);
 		tupleData.t_tableOid = desc->attrs[0]->attrelid;
 		tupleData.t_data = header;
-		if (PG_NARGS() == 2)
-		{
-			ItemPointer ctid = (ItemPointer) PG_GETARG_POINTER(1);
-			tupleData.t_self = *ctid;
-		}
-		else
-		{
-			ItemPointerSetInvalid(&(tupleData.t_self));
-		}
+		ItemPointerSetInvalid(&(tupleData.t_self));
 		tuple = &tupleData;
 
 		table = RelationIdGetRelation(tuple->t_tableOid);
