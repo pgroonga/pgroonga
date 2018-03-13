@@ -1434,14 +1434,7 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 							  so->ctidResolveTable,
 							  &packedCtid,
 							  sizeof(uint64));
-	if (resolveID == GRN_ID_NIL)
-	{
-		sourceID = grn_table_get(ctx,
-								 so->sourcesTable,
-								 &packedCtid,
-								 sizeof(uint64));
-	}
-	else
+	if (resolveID != GRN_ID_NIL)
 	{
 		GRN_BULK_REWIND(&(buffers->general));
 		grn_obj_get_value(ctx,
@@ -1449,6 +1442,13 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 						  resolveID,
 						  &(buffers->general));
 		sourceID = GRN_RECORD_VALUE(&(buffers->general));
+	}
+	else if (so->sourcesTable != GRN_TABLE_NO_KEY)
+	{
+		sourceID = grn_table_get(ctx,
+								 so->sourcesTable,
+								 &packedCtid,
+								 sizeof(uint64));
 	}
 
 	if (sourceID == GRN_ID_NIL)
