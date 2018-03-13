@@ -1336,6 +1336,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 	Snapshot snapshot;
 	Relation table;
 	grn_obj *sourceRecord;
+	grn_column_cache *sourcesCtidColumnCache = NULL;
 
 	snapshot = GetActiveSnapshot();
 
@@ -1343,6 +1344,10 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 
 	sourceRecord = &(buffers->general);
 	grn_obj_reinit(ctx, sourceRecord, grn_obj_id(ctx, so->sourcesTable), 0);
+
+	if (so->sourcesCtidColumn)
+		sourcesCtidColumnCache =
+			grn_column_cache_open(ctx, so->sourcesCtidColumn);
 
 	so->ctidResolveTable = grn_table_create(ctx,
 											NULL, 0,
@@ -1363,16 +1368,34 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		grn_table_cursor_get_key(ctx, cursor, &key);
 		sourceID = *((grn_id *) key);
 
-		grn_table_get_key(ctx,
-						  so->sourcesTable,
-						  sourceID,
-						  &packedCtid,
-						  sizeof(uint64));
+		if (sourcesCtidColumnCache)
+		{
+			void *ctidColumnValue;
+			size_t ctidColumnValueSize;
+			ctidColumnValue = grn_column_cache_ref(ctx,
+												   sourcesCtidColumnCache,
+												   sourceID,
+												   &ctidColumnValueSize);
+			if (ctidColumnValueSize != sizeof(uint64))
+				continue;
+			packedCtid = *((uint64 *) ctidColumnValue);
+		}
+		else
+		{
+			grn_table_get_key(ctx,
+							  so->sourcesTable,
+							  sourceID,
+							  &packedCtid,
+							  sizeof(uint64));
+		}
 		ctid = PGrnCtidUnpack(packedCtid);
 		resolvedCtid = ctid;
 		heap_get_latest_tid(table, snapshot, &resolvedCtid);
-		if (ItemPointerEquals(&ctid, &resolvedCtid))
+		if (!sourcesCtidColumnCache &&
+			ItemPointerEquals(&ctid, &resolvedCtid))
+		{
 			continue;
+		}
 
 		resolvedPackedCtid = PGrnCtidPack(&resolvedCtid);
 		resolvedID = grn_table_add(ctx,
@@ -1388,6 +1411,9 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 						  GRN_OBJ_SET);
 	}
 	GRN_TABLE_EACH_END(ctx, cursor);
+
+	if (sourcesCtidColumnCache)
+		grn_column_cache_close(ctx, sourcesCtidColumnCache);
 
 	RelationClose(table);
 }
@@ -1463,9 +1489,6 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 
 		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
 		if (!PGrnCollectScoreIsTarget(so, tableOid))
-			continue;
-
-		if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
 			continue;
 
 		score += PGrnCollectScoreCtid(so, ctid);
