@@ -12,30 +12,15 @@
 bool
 PGrnCtidIsAlive(Relation table, ItemPointer ctid)
 {
-	Buffer buffer;
-	HeapTupleData tuple;
 	Snapshot snapshot;
 	ItemPointerData realCtid;
-	bool allDead;
 	bool found;
-	bool isAlive = false;
 
-	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
-	snapshot = RegisterSnapshot(GetLatestSnapshot());
+	snapshot = GetActiveSnapshot();
 	realCtid = *ctid;
-	found = heap_hot_search_buffer(&realCtid, table, buffer, snapshot, &tuple,
-								   &allDead, true);
-	if (found) {
-		uint64 packedTupleCtid;
+	found = heap_hot_search(&realCtid, table, snapshot, NULL);
 
-		packedTupleCtid = PGrnCtidPack(&(tuple.t_self));
-		isAlive = (packedTupleCtid == PGrnCtidPack(ctid) ||
-				   packedTupleCtid == PGrnCtidPack(&realCtid));
-	}
-	UnregisterSnapshot(snapshot);
-	ReleaseBuffer(buffer);
-
-	return isAlive;
+	return found;
 }
 
 uint64
