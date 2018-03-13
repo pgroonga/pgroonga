@@ -1443,7 +1443,7 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 						  &(buffers->general));
 		sourceID = GRN_RECORD_VALUE(&(buffers->general));
 	}
-	else if (so->sourcesTable != GRN_TABLE_NO_KEY)
+	else if (so->sourcesTable->header.type != GRN_TABLE_NO_KEY)
 	{
 		sourceID = grn_table_get(ctx,
 								 so->sourcesTable,
