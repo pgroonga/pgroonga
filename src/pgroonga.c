@@ -49,6 +49,7 @@
 #include <utils/lsyscache.h>
 #include <utils/memutils.h>
 #include <utils/selfuncs.h>
+#include <utils/snapmgr.h>
 #include <utils/syscache.h>
 #include <utils/timestamp.h>
 #include <utils/tqual.h>
