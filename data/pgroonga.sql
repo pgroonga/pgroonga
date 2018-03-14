@@ -380,14 +380,6 @@ CREATE FUNCTION pgroonga_match_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga_match_text_condition
-	(target text, condition pgroonga_full_text_search_condition)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_text_condition'
-	LANGUAGE C
-	IMMUTABLE
-	STRICT;
-
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text,
 	LEFTARG = text,
@@ -395,6 +387,14 @@ CREATE OPERATOR &@ (
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
+
+CREATE FUNCTION pgroonga_match_text_condition
+	(target text, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_condition,
@@ -411,14 +411,6 @@ CREATE FUNCTION pgroonga_match_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga_match_text_array_condition
-	(target text[], condition pgroonga_full_text_search_condition)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array_condition'
-	LANGUAGE C
-	IMMUTABLE
-	STRICT;
-
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array,
 	LEFTARG = text[],
@@ -426,6 +418,14 @@ CREATE OPERATOR &@ (
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
+
+CREATE FUNCTION pgroonga_match_text_array_condition
+	(target text[], condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array_condition,
@@ -497,14 +497,6 @@ CREATE FUNCTION pgroonga_query_text(text, text)
 	IMMUTABLE
 	STRICT;
 
-CREATE FUNCTION pgroonga_query_text_condition
-	(target text, condition pgroonga_full_text_search_condition)
-	RETURNS bool
-	AS 'MODULE_PATHNAME', 'pgroonga_query_text_condition'
-	LANGUAGE C
-	IMMUTABLE
-	STRICT;
-
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
 	PROCEDURE = pgroonga_query_text,
@@ -521,6 +513,14 @@ CREATE OPERATOR &@~ (
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
+
+CREATE FUNCTION pgroonga_query_text_condition
+	(target text, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_condition,
