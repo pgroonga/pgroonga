@@ -203,6 +203,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_query_text_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_varchar);
@@ -2369,7 +2370,7 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.query_varchar(target varchar, term varchar) : bool
+ * pgroonga_query_varchar(target varchar, term varchar) : bool
  */
 Datum
 pgroonga_query_varchar(PG_FUNCTION_ARGS)
@@ -2377,6 +2378,37 @@ pgroonga_query_varchar(PG_FUNCTION_ARGS)
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *query = PG_GETARG_VARCHAR_PP(1);
 	grn_bool matched;
+
+	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+									   VARSIZE_ANY_EXHDR(target),
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query));
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_query_varchar_condition(target varchar,
+ *                                  condition pgroonga_full_text_search_condition) : bool
+ */
+Datum
+pgroonga_query_varchar_condition(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *query;
+	grn_obj *isTargets;
+	bool matched = false;
+
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
+
+	if (!query)
+		PG_RETURN_BOOL(false);
+
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
+		PG_RETURN_BOOL(false);
 
 	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
 									   VARSIZE_ANY_EXHDR(target),
