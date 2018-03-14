@@ -450,6 +450,22 @@ CREATE OPERATOR &@ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_match_varchar_condition
+	(target varchar, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_varchar_condition,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
@@ -1558,7 +1574,8 @@ CREATE OPERATOR CLASS pgroonga_varchar_full_text_search_ops_v2
 		OPERATOR 19 &?| (varchar, varchar[]), -- For backward compatibility
 		OPERATOR 28 &@~,
 		OPERATOR 29 &@*,
-		OPERATOR 30 &@~| (varchar, varchar[]);
+		OPERATOR 30 &@~| (varchar, varchar[]),
+		OPERATOR 31 &@ (varchar, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_varchar_array_term_search_ops_v2
 	DEFAULT FOR TYPE varchar[]
