@@ -200,6 +200,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text_array);
@@ -1698,6 +1699,7 @@ pgroonga_execute_binary_operator_string_array(ArrayType *operands1,
 	bool matched = false;
 	ArrayIterator iterator;
 	int i;
+	int nTargets = 0;
 	Datum operandDatum1;
 	bool isNULL;
 
@@ -1705,12 +1707,14 @@ pgroonga_execute_binary_operator_string_array(ArrayType *operands1,
 		return false;
 
 	iterator = pgrn_array_create_iterator(operands1, 0);
+	if (isTargets)
+		nTargets = GRN_BULK_VSIZE(isTargets) / sizeof(grn_bool);
 	for (i = 0; array_iterate(iterator, &operandDatum1, &isNULL); i++)
 	{
 		const char *operand1 = NULL;
 		unsigned int operandSize1 = 0;
 
-		if (isTargets && !GRN_BOOL_VALUE_AT(isTargets, i))
+		if (nTargets > i && !GRN_BOOL_VALUE_AT(isTargets, i))
 			continue;
 
 		if (isNULL)
@@ -2125,42 +2129,18 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *term;
-	ArrayType *weights;
-	bool needMatch = true;
+	grn_obj *isTargets;
 	bool matched = false;
 
-	PGrnFullTextSearchConditionDeconstruct(header, &term, &weights, NULL);
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionDeconstruct(header, &term, NULL, NULL, isTargets);
 
 	if (!term)
 		PG_RETURN_BOOL(false);
 
-	if (weights && ARR_NDIM(weights) == 1 && ARR_DIMS(weights)[0] > 0)
-	{
-		int i = 1;
-		Datum datum;
-		bool isNULL;
-		int16 typeLength;
-		bool byValue;
-		char align;
-
-		get_typlenbyvalalign(ARR_ELEMTYPE(weights),
-							 &typeLength,
-							 &byValue,
-							 &align);
-		datum = array_ref(weights,
-						  1,
-						  &i,
-						  -1,
-						  typeLength,
-						  byValue,
-						  align,
-						  &isNULL);
-		needMatch = (!isNULL &&
-					 ARR_ELEMTYPE(weights) == INT4OID &&
-					 DatumGetInt32(datum) != 0);
-	}
-
-	if (!needMatch)
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
 	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
@@ -2191,7 +2171,7 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_text_array_condition(targets text[],
+ * pgroonga_match_text_array_condition(targets text[],
  *                                     condition pgroonga_match_condition) : bool
  */
 Datum
@@ -2200,38 +2180,16 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *term;
-	ArrayType *weights;
-	grn_obj *isTargets = NULL;
+	grn_obj *isTargets;
 	bool matched = false;
 
-	PGrnFullTextSearchConditionDeconstruct(header, &term, &weights, NULL);
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionDeconstruct(header, &term, NULL, NULL, isTargets);
 
 	if (!term)
 		PG_RETURN_BOOL(false);
-
-	if (weights && ARR_NDIM(weights) == 1)
-	{
-		ArrayIterator iterator;
-		int i;
-		Datum datum;
-		bool isNULL;
-
-		isTargets = &(buffers->general);
-		grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
-
-		iterator = pgrn_array_create_iterator(weights, 0);
-		for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
-		{
-			if (isNULL)
-			{
-				GRN_BOOL_PUT(ctx, isTargets, GRN_TRUE);
-				continue;
-			}
-
-			GRN_BOOL_PUT(ctx, isTargets, (DatumGetInt32(datum) != 0));
-		}
-		array_free_iterator(iterator);
-	}
 
 	matched =
 		pgroonga_execute_binary_operator_string_array(targets,
@@ -2307,42 +2265,18 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *query;
-	ArrayType *weights;
-	bool needMatch = true;
+	grn_obj *isTargets;
 	bool matched = false;
 
-	PGrnFullTextSearchConditionDeconstruct(header, &query, &weights, NULL);
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
 
 	if (!query)
 		PG_RETURN_BOOL(false);
 
-	if (weights && ARR_NDIM(weights) == 1 && ARR_DIMS(weights)[0] > 0)
-	{
-		int i = 1;
-		Datum datum;
-		bool isNULL;
-		int16 typeLength;
-		bool byValue;
-		char align;
-
-		get_typlenbyvalalign(ARR_ELEMTYPE(weights),
-							 &typeLength,
-							 &byValue,
-							 &align);
-		datum = array_ref(weights,
-						  1,
-						  &i,
-						  -1,
-						  typeLength,
-						  byValue,
-						  align,
-						  &isNULL);
-		needMatch = (!isNULL &&
-					 ARR_ELEMTYPE(weights) == INT4OID &&
-					 DatumGetInt32(datum) != 0);
-	}
-
-	if (!needMatch)
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
 	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
@@ -2354,7 +2288,7 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.query_text_array(targets text[], query text) : bool
+ * pgroonga_query_text_array(targets text[], query text) : bool
  */
 Datum
 pgroonga_query_text_array(PG_FUNCTION_ARGS)
@@ -2369,6 +2303,36 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
 													  VARSIZE_ANY_EXHDR(query),
 													  pgroonga_match_query_raw,
 													  NULL);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_query_text_array_condition(targets text[],
+ *                                     condition pgroonga_match_condition) : bool
+ */
+Datum
+pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *query;
+	grn_obj *isTargets;
+	bool matched = false;
+
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
+
+	if (!query)
+		PG_RETURN_BOOL(false);
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(query),
+													  VARSIZE_ANY_EXHDR(query),
+													  pgroonga_match_query_raw,
+													  isTargets);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3705,7 +3669,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	}
 
 	header = DatumGetHeapTupleHeader(key->sk_argument);
-	PGrnFullTextSearchConditionDeconstruct(header, query, &weights, NULL);
+	PGrnFullTextSearchConditionDeconstruct(header, query, &weights, NULL, NULL);
 	if (!query)
 	{
 		ereport(ERROR,

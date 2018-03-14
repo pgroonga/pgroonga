@@ -3,15 +3,20 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-full-text-search-condition.h"
+#include "pgrn-global.h"
 
 #include <access/htup_details.h>
+#include <utils/array.h>
 #include <utils/typcache.h>
+
+static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 									   text **query,
 									   ArrayType **weights,
-									   text **indexName)
+									   text **indexName,
+									   grn_obj *isTargets)
 {
 	Oid type;
 	int32 typmod;
@@ -20,6 +25,7 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 	char *rawData;
 	long offset = 0;
 	int i;
+	ArrayType *weightsLocal = NULL;
 
 	type = HeapTupleHeaderGetTypeId(header);
 	typmod = HeapTupleHeaderGetTypMod(header);
@@ -75,8 +81,9 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 				*query = DatumGetTextPP(datum);
 			break;
 		case PGRN_FULL_TEXT_SEARCH_CONDITION_WEIGHTS_INDEX:
+			weightsLocal = DatumGetArrayTypeP(datum);
 			if (weights)
-				*weights = DatumGetArrayTypeP(datum);
+				*weights = weightsLocal;
 			break;
 		case PGRN_FULL_TEXT_SEARCH_CONDITION_INDEX_NAME_INDEX:
 			if (indexName)
@@ -92,4 +99,25 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 	}
 
 	ReleaseTupleDesc(desc);
+
+	if (isTargets && weightsLocal && ARR_NDIM(weightsLocal) == 1)
+	{
+		ArrayIterator iterator;
+		int i;
+		Datum datum;
+		bool isNULL;
+
+		iterator = pgrn_array_create_iterator(weightsLocal, 0);
+		for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
+		{
+			if (isNULL)
+			{
+				GRN_BOOL_PUT(ctx, isTargets, GRN_TRUE);
+				continue;
+			}
+
+			GRN_BOOL_PUT(ctx, isTargets, (DatumGetInt32(datum) != 0));
+		}
+		array_free_iterator(iterator);
+	}
 }
