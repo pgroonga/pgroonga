@@ -1,6 +1,8 @@
 #pragma once
 
 #include <postgres.h>
+#include <utils/array.h>
+#include <utils/htup.h>
 
 #define PGRN_FULL_TEXT_SEARCH_CONDITION_QUERY_INDEX 0
 #define PGRN_FULL_TEXT_SEARCH_CONDITION_WEIGHTS_INDEX 1
