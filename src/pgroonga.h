@@ -48,12 +48,13 @@
 #define PGrnMatchInStrategyV2DeprecatedNumber	26
 /* operator &?> (multiple conditions of query in Groonga). Deprecated since 1.2.1. */
 #define PGrnQueryInStrategyV2DeprecatedNumber	27
-#define PGrnQueryStrategyV2Number	28	/* operator &?  (query in Groonga) */
-#define PGrnSimilarStrategyV2Number	29	/* operator &~? (similar search) */
-#define PGrnQueryInStrategyV2Number	30	/* operator &?| (multiple conditions of query in Groonga) */
+#define PGrnQueryStrategyV2Number	28	/* operator &@~  (query in Groonga) */
+#define PGrnSimilarStrategyV2Number	29	/* operator &@* (similar search) */
+#define PGrnQueryInStrategyV2Number	30	/* operator &@~| (multiple conditions of query in Groonga) */
 #define PGrnMatchConditionStrategyV2Number	31	/* operator &@ with pgroonga_match_condition */
+#define PGrnQueryConditionStrategyV2Number	32	/* operator &@~ with pgroonga_match_condition */
 
-#define PGRN_N_STRATEGIES PGrnMatchConditionStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnQueryConditionStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"
