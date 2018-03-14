@@ -411,10 +411,26 @@ CREATE FUNCTION pgroonga_match_text_array(text[], text)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_match_text_array_condition
+	(target text[], condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array,
 	LEFTARG = text[],
 	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_text_array_condition,
+	LEFTARG = text[],
+	RIGHTARG = pgroonga_full_text_search_condition,
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
@@ -1451,7 +1467,8 @@ CREATE OPERATOR CLASS pgroonga_text_array_full_text_search_ops_v2
 		OPERATOR 19 &?| (text[], text[]), -- For backward compatibility
 		OPERATOR 28 &@~ (text[], text),
 		OPERATOR 29 &@* (text[], text),
-		OPERATOR 30 &@~| (text[], text[]);
+		OPERATOR 30 &@~| (text[], text[]),
+		OPERATOR 31 &@ (text[], pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_text_term_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
