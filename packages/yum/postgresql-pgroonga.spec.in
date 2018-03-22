@@ -18,8 +18,8 @@ Summary:	Fast full-text search plugin for PostgreSQL based on Groonga
 
 Group:		Applications/Text
 License:	PostgreSQL
-URL:		http://pgroonga.github.io/
-Source0:	http://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
+URL:		https://pgroonga.github.io/
+Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
