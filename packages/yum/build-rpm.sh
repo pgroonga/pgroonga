@@ -35,7 +35,7 @@ else
 fi
 run wget --no-check-certificate https://yum.postgresql.org/${PG_VERSION}/redhat/rhel-${distribution_version}-${architecture}/${pgdg_rpm}
 run rpm -ivh ${pgdg_rpm}
-groonga_release_rpm=groonga-release-1.3.0-1.noarch.rpm
+groonga_release_rpm=groonga-release-1.4.0-1.noarch.rpm
 groonga_release_rpm_url=https://packages.groonga.org/centos/${groonga_release_rpm}
 run yum install -y ${groonga_release_rpm_url}
 
