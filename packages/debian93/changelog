@@ -1,3 +1,9 @@
+pgroonga (2.0.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Kouhei Sutou <kou@clear-code.com>  Thu, 22 Mar 2018 00:00:00 +0900
+
 pgroonga (2.0.3-1) unstable; urgency=low
 
   * New upstream release.
