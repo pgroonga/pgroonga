@@ -311,8 +311,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 	if (!BufferIsInvalid(data->current.buffer))
 		return;
 
-	if (RelationGetNumberOfBlocks(data->index) <= data->meta.pageSpecial->next &&
-		data->nUsedPages == MAX_GENERIC_XLOG_PAGES)
+	if (data->nUsedPages == MAX_GENERIC_XLOG_PAGES)
 	{
 		PGrnWALDataRestart(data);
 	}
