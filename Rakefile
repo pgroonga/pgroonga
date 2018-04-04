@@ -80,6 +80,24 @@ def export_source(base_name)
      "tar xf -")
 end
 
+def prepare_debian_dir(source, destination, variables)
+  cp_r(source, destination)
+  control_path = "#{destination}/control"
+  control_in_path = "#{control_path}.in"
+  control_in_data = File.read(control_in_path)
+  control_data = control_in_data.gsub(/@(.+?)@/) do |matched|
+    variables[$1] || matched
+  end
+  File.open(control_path, "w") do |control|
+    control.print(control_data)
+  end
+  rm_f(control_in_path)
+end
+
+debian_variables = {
+  "GROONGA_VERSION" => latest_groonga_version
+}
+
 version = find_version(package)
 
 archive_base_name = "#{package}-#{version}"
@@ -244,6 +262,8 @@ postgresql#{postgresql_package_version}-devel
               rpm_package
             when "VERSION"
               version
+            when "GROONGA_VERSION"
+              latest_groonga_version
             else
               matched
             end
@@ -363,9 +383,12 @@ postgresql#{postgresql_package_version}-devel
               postgresql_version = "9.6"
             end
             short_postgresql_version = postgresql_version.delete(".")
-            debian_dir = "debian#{short_postgresql_version}"
+
             rm_rf("tmp/debian")
-            cp_r("#{absolute_packages_dir}/#{debian_dir}", "tmp/debian")
+            debian_dir = "debian#{short_postgresql_version}"
+            prepare_debian_dir("#{absolute_packages_dir}/#{debian_dir}",
+                               "tmp/debian",
+                               debian_variables)
 
             File.open("tmp/env.sh", "w") do |file|
               file.puts(<<-ENV)
@@ -450,36 +473,54 @@ libmsgpack-dev
 
   namespace :ubuntu do
     namespace :upload do
+      tmp_dir = "packages/ubuntu/tmp"
+      tmp_debian_dir = "#{tmp_dir}/debian"
+
       desc "Upload package for PostgreSQL 9.3"
       task :postgresql93 => [archive_name] do
+        rm_rf(tmp_dir)
+        mkdir_p(tmp_dir)
+        prepare_debian_dir("packages/debian93",
+                           tmp_debian_dir,
+                           debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
              "--code-names", "trusty",
-             "--debian-directory", "packages/debian93",
+             "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
       desc "Upload package for PostgreSQL 9.5"
       task :postgresql95 => [archive_name] do
+        rm_rf(tmp_dir)
+        mkdir_p(tmp_dir)
+        prepare_debian_dir("packages/debian95",
+                           tmp_debian_dir,
+                           debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
              "--code-names", "xenial",
-             "--debian-directory", "packages/debian95",
+             "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
       desc "Upload package for PostgreSQL 9.6"
       task :postgresql96 => [archive_name] do
+        rm_rf(tmp_dir)
+        mkdir_p(tmp_dir)
+        prepare_debian_dir("packages/debian96",
+                           tmp_debian_dir,
+                           debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
              "--code-names", "artful",
-             "--debian-directory", "packages/debian96",
+             "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
     end

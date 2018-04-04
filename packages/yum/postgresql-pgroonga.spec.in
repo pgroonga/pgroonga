@@ -27,7 +27,7 @@ BuildRequires:	groonga-devel
 BuildRequires:	msgpack-devel
 %endif
 BuildRequires:	postgresql%{pg_package_version}-devel
-Requires:	groonga-libs >= 6.1.1
+Requires:	groonga-libs >= @GROONGA_VERSION@
 %if %{_use_msgpack}
 Requires:	msgpack
 %endif

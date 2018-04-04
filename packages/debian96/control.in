@@ -16,7 +16,7 @@ Architecture: any
 Depends:
   ${misc:Depends},
   ${shlibs:Depends},
-  libgroonga0 (>= 6.1.1),
+  libgroonga0 (>= @GROONGA_VERSION@),
   postgresql-9.6,
   libmsgpackc2
 Description: Fast full-text search plugin for PostgreSQL based on Groonga
