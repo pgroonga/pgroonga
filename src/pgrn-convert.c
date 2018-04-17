@@ -31,7 +31,14 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 		VarChar *element;
 
 		if (isNULL)
+		{
+			grn_vector_add_element(ctx, buffer,
+								   NULL,
+								   0,
+								   weight,
+								   buffer->header.domain);
 			continue;
+		}
 
 		switch (typeID)
 		{
