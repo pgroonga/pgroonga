@@ -16,19 +16,19 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ROW('PostgreSQL', ARRAY[5, 2], 'pgrn_index');
-                                                   QUERY PLAN                                                   
-----------------------------------------------------------------------------------------------------------------
+       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition;
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], 'pgrn_index'::text))
+   Recheck Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], 'pgrn_index'::text))
+         Index Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
 (4 rows)
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ROW('PostgreSQL', ARRAY[5, 2], 'pgrn_index');
+       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition;
  id |   title    |                        content                        | pgroonga_score 
 ----+------------+-------------------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                                |              7

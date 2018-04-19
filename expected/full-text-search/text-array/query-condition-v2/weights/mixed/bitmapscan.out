@@ -16,19 +16,23 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
-                                                           QUERY PLAN                                                            
----------------------------------------------------------------------------------------------------------------------------------
+       ('Groonga OR RDMBS -PGroonga',
+        ARRAY[5, 0],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+                                                                              QUERY PLAN                                                                              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDBMS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text))
+   Recheck Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDMBS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDBMS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text))
+         Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDMBS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
 (4 rows)
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
+       ('Groonga OR RDBMS -PGroonga',
+        ARRAY[5, 0],
+        'pgrn_index')::pgroonga_full_text_search_condition;
  id |  title  |                 content                  | pgroonga_score 
 ----+---------+------------------------------------------+----------------
   2 | Groonga | Groonga is fast full text search engine. |              5

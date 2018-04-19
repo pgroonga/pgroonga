@@ -13,18 +13,18 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ROW('Groonga', ARRAY[5], 'pgrn_index');
-                                         QUERY PLAN                                          
----------------------------------------------------------------------------------------------
+ WHERE content &@ ('Groonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (content &@ ROW('Groonga'::text, '{5}'::integer[], 'pgrn_index'::text))
+   Recheck Cond: (content &@ ROW('Groonga'::text, '{5}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (content &@ ROW('Groonga'::text, '{5}'::integer[], 'pgrn_index'::text))
+         Index Cond: (content &@ ROW('Groonga'::text, '{5}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
 (4 rows)
 
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ROW('Groonga', ARRAY[5], 'pgrn_index');
+ WHERE content &@ ('Groonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
  id |                        content                        | pgroonga_score 
 ----+-------------------------------------------------------+----------------
   2 | Groonga is fast full text search engine.              |              5

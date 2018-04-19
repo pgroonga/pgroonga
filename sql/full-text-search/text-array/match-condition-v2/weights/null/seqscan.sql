@@ -20,11 +20,11 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ROW('PostgreSQL', NULL, 'pgrn_index');
+       ('PostgreSQL', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ROW('PostgreSQL', NULL, 'pgrn_index');
+       ('PostgreSQL', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
 
 DROP TABLE memos;
