@@ -17,6 +17,23 @@ END;
 $$;
 
 
+CREATE FUNCTION pgroonga_match_varchar_condition_with_scorers
+	(target varchar,
+	 condition pgroonga_full_text_search_condition_with_scorers)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_condition_with_scorers'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_varchar_condition_with_scorers,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition_with_scorers,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_query_varchar_condition_with_scorers
 	(target varchar,
 	 condition pgroonga_full_text_search_condition_with_scorers)
@@ -29,6 +46,23 @@ CREATE FUNCTION pgroonga_query_varchar_condition_with_scorers
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_varchar_condition_with_scorers,
 	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition_with_scorers,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_match_text_array_condition_with_scorers
+	(target text[],
+	 condition pgroonga_full_text_search_condition_with_scorers)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array_condition_with_scorers'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_text_array_condition_with_scorers,
+	LEFTARG = text[],
 	RIGHTARG = pgroonga_full_text_search_condition_with_scorers,
 	RESTRICT = contsel,
 	JOIN = contjoinsel
@@ -55,6 +89,7 @@ CREATE OPERATOR &@~ (
 ALTER OPERATOR FAMILY pgroonga_varchar_full_text_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 32 &@~ (varchar, pgroonga_full_text_search_condition),
+		OPERATOR 33 &@ (varchar, pgroonga_full_text_search_condition_with_scorers),
 		OPERATOR 34 &@~ (varchar, pgroonga_full_text_search_condition_with_scorers);
 
 ALTER OPERATOR FAMILY pgroonga_text_array_full_text_search_ops_v2 USING pgroonga

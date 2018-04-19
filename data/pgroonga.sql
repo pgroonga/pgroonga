@@ -489,6 +489,23 @@ CREATE OPERATOR &@ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_match_varchar_condition_with_scorers
+	(target varchar,
+	 condition pgroonga_full_text_search_condition_with_scorers)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_varchar_condition_with_scorers'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_varchar_condition_with_scorers,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition_with_scorers,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
@@ -1652,6 +1669,7 @@ CREATE OPERATOR CLASS pgroonga_varchar_full_text_search_ops_v2
 		OPERATOR 30 &@~| (varchar, varchar[]),
 		OPERATOR 31 &@ (varchar, pgroonga_full_text_search_condition),
 		OPERATOR 32 &@~ (varchar, pgroonga_full_text_search_condition),
+		OPERATOR 33 &@ (varchar, pgroonga_full_text_search_condition_with_scorers),
 		OPERATOR 34 &@~ (varchar, pgroonga_full_text_search_condition_with_scorers);
 
 CREATE OPERATOR CLASS pgroonga_varchar_array_term_search_ops_v2
