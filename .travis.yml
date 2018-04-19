@@ -30,8 +30,8 @@ matrix:
     #     postgresql: "10.0"
 sudo: required
 install:
-  - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | GROONGA_MASTER=yes sh
-#  - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
+  # - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | GROONGA_MASTER=yes sh
+  - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - sudo apt-get update -qq
   - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} libmsgpack-dev groonga-token-filter-stem groonga-normalizer-mysql
   - |
