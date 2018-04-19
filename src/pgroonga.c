@@ -202,6 +202,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar_condition_with_scorers);
 PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_condition);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_text_condition_with_scorers);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition_with_scorers);
@@ -2383,6 +2384,44 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
 
 	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
+
+	if (!query)
+		PG_RETURN_BOOL(false);
+
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
+		PG_RETURN_BOOL(false);
+
+	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+									   VARSIZE_ANY_EXHDR(target),
+									   VARDATA_ANY(query),
+									   VARSIZE_ANY_EXHDR(query));
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_query_text_condition_with_scorers(
+ *   target text,
+ *   condition pgroonga_match_condition_with_scorers) : bool
+ */
+Datum
+pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *query;
+	grn_obj *isTargets;
+	bool matched = false;
+
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+													  &query,
+													  NULL,
+													  NULL,
+													  NULL,
+													  isTargets);
 
 	if (!query)
 		PG_RETURN_BOOL(false);
