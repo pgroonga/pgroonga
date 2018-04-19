@@ -16,13 +16,13 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR search OR fast OR RDBMS -PGroonga',
-           ARRAY[5, 2],
-           ARRAY[
-             'scorer_tf_idf($index)',
-             'scorer_tf_at_most($index, 0.25)'
-           ],
-           'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+       ('Groonga OR search OR fast OR RDBMS -PGroonga',
+        ARRAY[5, 2],
+        ARRAY[
+          'scorer_tf_idf($index)',
+          'scorer_tf_at_most($index, 0.25)'
+        ],
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
                                                                                                                                 QUERY PLAN                                                                                                                                
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
@@ -34,13 +34,13 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR search OR fast OR RDBMS -PGroonga',
-           ARRAY[5, 2],
-           ARRAY[
-             'scorer_tf_idf($index)',
-             'scorer_tf_at_most($index, 0.25)'
-           ],
-           'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+       ('Groonga OR search OR fast OR RDBMS -PGroonga',
+        ARRAY[5, 2],
+        ARRAY[
+          'scorer_tf_idf($index)',
+          'scorer_tf_at_most($index, 0.25)'
+        ],
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
  id |   title    |                 content                  | pgroonga_score 
 ----+------------+------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                   |            0.5

@@ -20,23 +20,23 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR search OR fast OR RDBMS -PGroonga',
-           ARRAY[5, 2],
-           ARRAY[
-             'scorer_tf_idf($index)',
-             'scorer_tf_at_most($index, 0.25)'
-           ],
-           'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+       ('Groonga OR search OR fast OR RDBMS -PGroonga',
+        ARRAY[5, 2],
+        ARRAY[
+          'scorer_tf_idf($index)',
+          'scorer_tf_at_most($index, 0.25)'
+        ],
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ROW('Groonga OR search OR fast OR RDBMS -PGroonga',
-           ARRAY[5, 2],
-           ARRAY[
-             'scorer_tf_idf($index)',
-             'scorer_tf_at_most($index, 0.25)'
-           ],
-           'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+       ('Groonga OR search OR fast OR RDBMS -PGroonga',
+        ARRAY[5, 2],
+        ARRAY[
+          'scorer_tf_idf($index)',
+          'scorer_tf_at_most($index, 0.25)'
+        ],
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
 
 DROP TABLE memos;
