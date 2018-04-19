@@ -410,6 +410,23 @@ CREATE OPERATOR &@ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_match_text_condition_with_scorers
+	(target text,
+	 condition pgroonga_full_text_search_condition_with_scorers)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_text_condition_with_scorers'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_text_condition_with_scorers,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_full_text_search_condition_with_scorers,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_match_text_array(text[], text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
@@ -1609,6 +1626,7 @@ CREATE OPERATOR CLASS pgroonga_text_full_text_search_ops_v2
 		OPERATOR 30 &@~| (text, text[]),
 		OPERATOR 31 &@ (text, pgroonga_full_text_search_condition),
 		OPERATOR 32 &@~ (text, pgroonga_full_text_search_condition),
+		OPERATOR 33 &@ (text, pgroonga_full_text_search_condition_with_scorers),
 		OPERATOR 34 &@~ (text, pgroonga_full_text_search_condition_with_scorers);
 
 CREATE OPERATOR CLASS pgroonga_text_array_full_text_search_ops_v2
