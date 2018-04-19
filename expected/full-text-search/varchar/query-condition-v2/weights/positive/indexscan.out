@@ -13,20 +13,20 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ('Groonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
-                                                         QUERY PLAN                                                         
-----------------------------------------------------------------------------------------------------------------------------
+ WHERE content &@~ ('Groonga OR PostgreSQL -PGroonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
  Index Scan using pgrn_index on memos
-   Index Cond: (content &@ ROW('Groonga'::text, '{5}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+   Index Cond: (content &@~ ROW('Groonga OR PostgreSQL -PGroonga'::text, '{5}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
 (2 rows)
 
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ('Groonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
- id |                        content                        | pgroonga_score 
-----+-------------------------------------------------------+----------------
-  2 | Groonga is fast full text search engine.              |              5
-  3 | PGroonga is a PostgreSQL extension that uses Groonga. |              5
+ WHERE content &@~ ('Groonga OR PostgreSQL -PGroonga', ARRAY[5], 'pgrn_index')::pgroonga_full_text_search_condition;
+ id |                 content                  | pgroonga_score 
+----+------------------------------------------+----------------
+  2 | Groonga is fast full text search engine. |              5
+  1 | PostgreSQL is a RDBMS.                   |              5
 (2 rows)
 
 DROP TABLE memos;
