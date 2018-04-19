@@ -32,6 +32,11 @@ CREATE OPERATOR &@~ (
 	JOIN = contjoinsel
 );
 
+
+ALTER OPERATOR FAMILY pgroonga_varchar_full_text_search_ops_v2 USING pgroonga
+	ADD
+		OPERATOR 32 &@~ (varchar, pgroonga_full_text_search_condition);
+
 ALTER OPERATOR FAMILY pgroonga_text_array_full_text_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 33 &@ (text[], pgroonga_full_text_search_condition_with_scorers),
