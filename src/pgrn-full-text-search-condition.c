@@ -11,12 +11,17 @@
 
 static grn_ctx *ctx = &PGrnContext;
 
-void
-PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
-									   text **query,
-									   ArrayType **weights,
-									   text **indexName,
-									   grn_obj *isTargets)
+static void
+PGrnFullTextSearchConditionDeconstructGeneric(HeapTupleHeader header,
+											  int queryIndex,
+											  text **query,
+											  int weightsIndex,
+											  ArrayType **weights,
+											  int scorersIndex,
+											  ArrayType **scorers,
+											  int indexNameIndex,
+											  text **indexName,
+											  grn_obj *isTargets)
 {
 	Oid type;
 	int32 typmod;
@@ -48,22 +53,25 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 
 		if (isNULL)
 		{
-			switch (i)
+			if (i == queryIndex)
 			{
-			case PGRN_FULL_TEXT_SEARCH_CONDITION_QUERY_INDEX:
 				if (query)
 					*query = NULL;
-				break;
-			case PGRN_FULL_TEXT_SEARCH_CONDITION_WEIGHTS_INDEX:
+			}
+			else if (i == weightsIndex)
+			{
 				if (weights)
 					*weights = NULL;
-				break;
-			case PGRN_FULL_TEXT_SEARCH_CONDITION_INDEX_NAME_INDEX:
+			}
+			else if (i == scorersIndex)
+			{
+				if (scorers)
+					*scorers = NULL;
+			}
+			else if (i == indexNameIndex)
+			{
 				if (indexName)
 					*indexName = NULL;
-				break;
-			default:
-				break;
 			}
 			continue;
 		}
@@ -74,23 +82,26 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 								   rawData + offset);
 		datum = fetchatt(attribute, rawData + offset);
 
-		switch (i)
+		if (i == queryIndex)
 		{
-		case PGRN_FULL_TEXT_SEARCH_CONDITION_QUERY_INDEX:
 			if (query)
 				*query = DatumGetTextPP(datum);
-			break;
-		case PGRN_FULL_TEXT_SEARCH_CONDITION_WEIGHTS_INDEX:
+		}
+		else if (i == weightsIndex)
+		{
 			weightsLocal = DatumGetArrayTypeP(datum);
 			if (weights)
 				*weights = weightsLocal;
-			break;
-		case PGRN_FULL_TEXT_SEARCH_CONDITION_INDEX_NAME_INDEX:
+		}
+		else if (i == scorersIndex)
+		{
+			if (scorers)
+				*scorers = DatumGetArrayTypeP(datum);
+		}
+		else if (i == indexNameIndex)
+		{
 			if (indexName)
 				*indexName = DatumGetTextPP(datum);
-			break;
-		default:
-			break;
 		}
 
 		offset = att_addlength_pointer(offset,
@@ -120,4 +131,35 @@ PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
 		}
 		array_free_iterator(iterator);
 	}
+}
+
+void
+PGrnFullTextSearchConditionDeconstruct(HeapTupleHeader header,
+									   text **query,
+									   ArrayType **weights,
+									   text **indexName,
+									   grn_obj *isTargets)
+{
+	PGrnFullTextSearchConditionDeconstructGeneric(header,
+												  0, query,
+												  1, weights,
+												  -1, NULL,
+												  2, indexName,
+												  isTargets);
+}
+
+void
+PGrnFullTextSearchConditionWithScorersDeconstruct(HeapTupleHeader header,
+												  text **query,
+												  ArrayType **weights,
+												  ArrayType **scorers,
+												  text **indexName,
+												  grn_obj *isTargets)
+{
+	PGrnFullTextSearchConditionDeconstructGeneric(header,
+												  0, query,
+												  1, weights,
+												  2, scorers,
+												  3, indexName,
+												  isTargets);
 }

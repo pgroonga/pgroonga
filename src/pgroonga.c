@@ -202,6 +202,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_query_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition);
+PGRN_FUNCTION_INFO_V1(pgroonga_query_text_array_condition_with_scorers);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_varchar_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_similar_text);
@@ -2370,6 +2371,42 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_query_text_array_condition_with_scorers(
+ *   targets text[],
+ *   condition pgroonga_match_condition_with_scorers) : bool
+ */
+Datum
+pgroonga_query_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *query;
+	grn_obj *isTargets;
+	bool matched = false;
+
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+													  &query,
+													  NULL,
+													  NULL,
+													  NULL,
+													  isTargets);
+
+	if (!query)
+		PG_RETURN_BOOL(false);
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(query),
+													  VARSIZE_ANY_EXHDR(query),
+													  pgroonga_match_query_raw,
+													  isTargets);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga_query_varchar(target varchar, term varchar) : bool
  */
 Datum
@@ -3692,6 +3729,184 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	return true;
 }
 
+static void
+PGrnStringSubstituteIndex(const char *text,
+						  unsigned int textSize,
+						  grn_obj *output,
+						  const char *indexName,
+						  int section)
+{
+	const char variable[] = "$index";
+	const size_t variableSize = sizeof(variable) - 1;
+	const char *current = text;
+	const char *end = current + textSize;
+
+	while (current < end)
+	{
+		if (current[0] == '$' &&
+			(end - current) >= variableSize &&
+			memcmp(current, variable, variableSize) == 0)
+		{
+			grn_text_printf(ctx, output, "%s[%d]", indexName, section);
+			current += variableSize;
+			continue;
+		}
+
+		GRN_TEXT_PUTC(ctx, output, current[0]);
+		current++;
+	}
+}
+
+static bool
+PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
+														  grn_obj *matchColumns,
+														  grn_index_datum *indexData,
+														  ArrayType *weights,
+														  ArrayType *scorers,
+														  const char *tag)
+{
+	char indexName[GRN_TABLE_MAX_KEY_SIZE];
+	ArrayIterator weightsIterator = NULL;
+	ArrayIterator scorersIterator = NULL;
+	int section;
+	int nMatchColumns = 0;
+	grn_obj *substitutedScorer = &(buffers->general);
+
+	{
+		int nameSize;
+		nameSize = grn_obj_name(ctx,
+								indexData->index,
+								indexName,
+								GRN_TABLE_MAX_KEY_SIZE);
+		indexName[nameSize] = '\0';
+	}
+
+	if (weights)
+		weightsIterator = pgrn_array_create_iterator(weights, 0);
+	if (scorers)
+		scorersIterator = pgrn_array_create_iterator(scorers, 0);
+
+	section = -1;
+	grn_obj_reinit(ctx, substitutedScorer, GRN_DB_TEXT, 0);
+	while (true)
+	{
+		Datum weightDatum;
+		bool weightIsNULL = true;
+		Datum scorerDatum;
+		bool scorerIsNULL = true;
+		int32 weight = 1;
+		text *scorer = NULL;
+
+		section++;
+
+		if (weightsIterator)
+		{
+			if (!array_iterate(weightsIterator, &weightDatum, &weightIsNULL))
+			{
+				array_free_iterator(weightsIterator);
+				weightsIterator = NULL;
+			}
+		}
+		if (scorersIterator)
+		{
+			if (!array_iterate(scorersIterator, &scorerDatum, &scorerIsNULL))
+			{
+				array_free_iterator(scorersIterator);
+				scorersIterator = NULL;
+			}
+		}
+
+		if (!weightsIterator && !scorersIterator)
+			break;
+
+		if (!weightIsNULL)
+			weight = DatumGetInt32(weightDatum);
+		if (!scorerIsNULL)
+			scorer = DatumGetTextPP(scorerDatum);
+
+		if (weight == 0)
+			continue;
+
+		if (scorer)
+		{
+			GRN_BULK_REWIND(substitutedScorer);
+			PGrnStringSubstituteIndex(VARDATA_ANY(scorer),
+									  VARSIZE_ANY_EXHDR(scorer),
+									  substitutedScorer,
+									  indexName,
+									  section);
+			grn_expr_parse(ctx,
+						   matchColumns,
+						   GRN_TEXT_VALUE(substitutedScorer),
+						   GRN_TEXT_LEN(substitutedScorer),
+						   NULL,
+						   GRN_OP_MATCH,
+						   GRN_OP_AND,
+						   GRN_EXPR_SYNTAX_SCRIPT);
+			PGrnCheck("%s: failed to parse scorer: <%s>[%d]: <%.*s>",
+					  tag,
+					  indexName, section,
+					  (int)VARSIZE_ANY_EXHDR(scorer),
+					  VARDATA_ANY(scorer));
+		}
+		else
+		{
+			grn_expr_append_obj(ctx,
+								matchColumns,
+								indexData->index,
+								GRN_OP_PUSH,
+								1);
+			PGrnCheck("%s: failed to push index: <%s>[%d]",
+					  tag,
+					  indexName, section);
+			grn_expr_append_const_int(ctx,
+									  matchColumns,
+									  section,
+									  GRN_OP_PUSH,
+									  1);
+			PGrnCheck("%s: failed to push section of index: <%s>[%d]",
+					  tag,
+					  indexName, section);
+			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
+			PGrnCheck("%s: failed to push get-member operator: <%s>[%d]",
+					  tag,
+					  indexName, section);
+		}
+		if (weight != 1)
+		{
+			grn_expr_append_const_int(ctx,
+									  matchColumns,
+									  weight,
+									  GRN_OP_PUSH,
+									  1);
+			PGrnCheck("%s: failed to push weight: <%s>[%d] * <%d>",
+					  tag,
+					  indexName, section, weight);
+			grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
+			PGrnCheck("%s: failed to push star operator for weight: "
+					  "<%s>[%d] * <%d>",
+					  tag,
+					  indexName, section, weight);
+		}
+
+		if (nMatchColumns > 0)
+		{
+			grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
+			PGrnCheck("%s: failed to push OR operator: <%s>[%d]",
+					  tag,
+					  indexName, section);
+		}
+
+		nMatchColumns++;
+	}
+	if (weightsIterator)
+		array_free_iterator(weightsIterator);
+	if (scorersIterator)
+		array_free_iterator(scorersIterator);
+
+	return true;
+}
+
 static bool
 PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 										 ScanKey key,
@@ -3703,9 +3918,9 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 {
 	grn_index_datum indexData;
 	unsigned int nIndexData;
-	char indexName[GRN_TABLE_MAX_KEY_SIZE];
 	HeapTupleHeader header;
-	ArrayType *weights;
+	ArrayType *weights = NULL;
+	ArrayType *scorers = NULL;
 
 	nIndexData = grn_column_find_index_data(ctx,
 											targetColumn,
@@ -3723,17 +3938,25 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 		return false;
 	}
 
+	header = DatumGetHeapTupleHeader(key->sk_argument);
+	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number)
 	{
-		int nameSize;
-		nameSize = grn_obj_name(ctx,
-								indexData.index,
-								indexName,
-								GRN_TABLE_MAX_KEY_SIZE);
-		indexName[nameSize] = '\0';
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   query,
+											   &weights,
+											   NULL,
+											   NULL);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  query,
+														  &weights,
+														  &scorers,
+														  NULL,
+														  NULL);
 	}
 
-	header = DatumGetHeapTupleHeader(key->sk_argument);
-	PGrnFullTextSearchConditionDeconstruct(header, query, &weights, NULL, NULL);
 	if (!query)
 	{
 		ereport(ERROR,
@@ -3743,22 +3966,23 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 		return false;
 	}
 
-	if (weights)
+	if (!weights && !scorers)
+	{
+		*matchTarget = targetColumn;
+		return true;
+	}
+
+	if (weights && ARR_NDIM(weights) == 0)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: %s: weights must not empty array",
+						tag)));
+		return false;
+	}
+
 	{
 		grn_obj *matchColumns, *matchColumnsVariable;
-		ArrayIterator iterator;
-		int i;
-		Datum datum;
-		bool isNULL;
-
-		if (ARR_NDIM(weights) == 0)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: %s: weights must not empty array",
-							tag)));
-			return false;
-		}
 
 		GRN_EXPR_CREATE_FOR_QUERY(ctx,
 								  data->sourcesTable,
@@ -3766,67 +3990,18 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 								  matchColumnsVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchColumns);
 
-		iterator = pgrn_array_create_iterator(weights, 0);
-		for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
-		{
-			int32 weight;
-
-			if (isNULL)
-				weight = 1;
-			else
-				weight = DatumGetInt32(datum);
-
-			grn_expr_append_obj(ctx,
-								matchColumns,
-								indexData.index,
-								GRN_OP_PUSH,
-								1);
-			PGrnCheck("%s: failed to push index: <%s>[%d]",
-					  tag,
-					  indexName, i);
-			grn_expr_append_const_int(ctx, matchColumns, i, GRN_OP_PUSH, 1);
-			PGrnCheck("%s: failed to push section of index: <%s>[%d]",
-					  tag,
-					  indexName, i);
-			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
-			PGrnCheck("%s: failed to push get-member operator: <%s>[%d]",
-					  tag,
-					  indexName, i);
-			if (weight != 1)
-			{
-				grn_expr_append_const_int(ctx,
-										  matchColumns,
-										  weight,
-										  GRN_OP_PUSH,
-										  1);
-				PGrnCheck("%s: failed to push weight: <%s>[%d] * <%d>",
-						  tag,
-						  indexName, i, weight);
-				grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
-				PGrnCheck("%s: failed to push star operator for weight: "
-						  "<%s>[%d] * <%d>",
-						  tag,
-						  indexName, i, weight);
-			}
-
-			if (i > 0)
-			{
-				grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
-				PGrnCheck("%s: failed to push OR operator: <%s>[%d]",
-						  tag,
-						  indexName, i);
-			}
-		}
-		array_free_iterator(iterator);
+		if (!PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
+				data,
+				matchColumns,
+				&indexData,
+				weights,
+				scorers,
+				tag))
+			return false;
 
 		*matchTarget = matchColumns;
+		return true;
 	}
-	else
-	{
-		*matchTarget = targetColumn;
-	}
-
-	return true;
 }
 
 static bool
@@ -4260,7 +4435,8 @@ PGrnSearchBuildCondition(Relation index,
 													  attribute);
 	}
 
-	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
+		key->sk_strategy == PGrnQueryConditionWithScorersStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionQueryCondition(data,
 													  key,

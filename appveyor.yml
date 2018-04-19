@@ -40,20 +40,20 @@ build_script:
 
   # Groonga
   #   Released version:
-  - curl -O http://packages.groonga.org/source/groonga/groonga-%GROONGA_VERSION%.zip
-  - 7z x groonga-%GROONGA_VERSION%.zip > nul
-  - mv groonga-%GROONGA_VERSION% vendor\groonga
+  # - curl -O http://packages.groonga.org/source/groonga/groonga-%GROONGA_VERSION%.zip
+  # - 7z x groonga-%GROONGA_VERSION%.zip > nul
+  # - mv groonga-%GROONGA_VERSION% vendor\groonga
   #   Unreleased version:
-  # - git clone --depth 1
-  #     https://github.com/groonga/groonga.git
-  #     vendor\groonga
-  # - cd vendor\groonga
-  # - git submodule update --init
-  # - cd vendor
-  # - ruby download_mecab.rb
-  # - ruby download_message_pack.rb
-  # - ruby download_lz4.rb
-  # - cd ..\..\..
+  - git clone --depth 1
+      https://github.com/groonga/groonga.git
+      vendor\groonga
+  - cd vendor\groonga
+  - git submodule update --init
+  - cd vendor
+  - ruby download_mecab.rb
+  - ruby download_message_pack.rb
+  - ruby download_lz4.rb
+  - cd ..\..\..
 
   - set CMAKE_GENERATOR_NAME=Visual Studio %VS_VERSION%
   - if "%VS_VERSION%" == "12"

@@ -51,10 +51,16 @@
 #define PGrnQueryStrategyV2Number	28	/* operator &@~  (query in Groonga) */
 #define PGrnSimilarStrategyV2Number	29	/* operator &@* (similar search) */
 #define PGrnQueryInStrategyV2Number	30	/* operator &@~| (multiple conditions of query in Groonga) */
-#define PGrnMatchConditionStrategyV2Number	31	/* operator &@ with pgroonga_match_condition */
-#define PGrnQueryConditionStrategyV2Number	32	/* operator &@~ with pgroonga_match_condition */
+/* operator &@ with pgroonga_match_condition */
+#define PGrnMatchConditionStrategyV2Number	31
+/* operator &@~ with pgroonga_match_condition */
+#define PGrnQueryConditionStrategyV2Number	32
+/* operator &@ with pgroonga_match_condition_with_scorers */
+#define PGrnMatchConditionWithScorersStrategyV2Number	33
+/* operator &@~ with pgroonga_match_condition_with_scorers */
+#define PGrnQueryConditionWithScorersStrategyV2Number	34
 
-#define PGRN_N_STRATEGIES PGrnQueryConditionStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnQueryConditionWithScorersStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"
