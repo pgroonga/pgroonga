@@ -20,15 +20,11 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDMBS -PGroonga',
-        ARRAY[5, 0],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDBMS -PGroonga',
-        ARRAY[5, 0],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
 
 DROP TABLE memos;

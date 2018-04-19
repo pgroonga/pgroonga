@@ -17,10 +17,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ('Groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE content &@ ROW('Groonga', NULL, 'pgrn_index');
 
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ('Groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE content &@ ROW('Groonga', NULL, 'pgrn_index');
 
 DROP TABLE memos;

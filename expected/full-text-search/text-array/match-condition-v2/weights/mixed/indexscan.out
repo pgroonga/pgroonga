@@ -16,17 +16,17 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 0], 'pgrn_index')::pgroonga_full_text_search_condition;
-                                                                  QUERY PLAN                                                                   
------------------------------------------------------------------------------------------------------------------------------------------------
+       ROW('PostgreSQL', ARRAY[5, 0], 'pgrn_index');
+                                                QUERY PLAN                                                
+----------------------------------------------------------------------------------------------------------
  Index Scan using pgrn_index on memos
-   Index Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,0}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+   Index Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,0}'::integer[], 'pgrn_index'::text))
 (2 rows)
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 0], 'pgrn_index')::pgroonga_full_text_search_condition;
+       ROW('PostgreSQL', ARRAY[5, 0], 'pgrn_index');
  id |   title    |        content         | pgroonga_score 
 ----+------------+------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS. |              5

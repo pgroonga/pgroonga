@@ -16,23 +16,19 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDMBS -PGroonga',
-        NULL,
-        'pgrn_index')::pgroonga_full_text_search_condition;
-                                                                            QUERY PLAN                                                                             
--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+       ROW('Groonga OR RDBMS -PGroonga', NULL, 'pgrn_index');
+                                                          QUERY PLAN                                                          
+------------------------------------------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDMBS -PGroonga'::text, NULL::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+   Recheck Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDBMS -PGroonga'::text, NULL::integer[], 'pgrn_index'::text))
    ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDMBS -PGroonga'::text, NULL::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+         Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDBMS -PGroonga'::text, NULL::integer[], 'pgrn_index'::text))
 (4 rows)
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDBMS -PGroonga',
-        NULL,
-        'pgrn_index')::pgroonga_full_text_search_condition;
+       ROW('Groonga OR RDBMS -PGroonga', NULL, 'pgrn_index');
  id |   title    |                 content                  | pgroonga_score 
 ----+------------+------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                   |              1

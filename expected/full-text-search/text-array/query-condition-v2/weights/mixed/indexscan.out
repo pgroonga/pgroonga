@@ -16,21 +16,17 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDMBS -PGroonga',
-        ARRAY[5, 0],
-        'pgrn_index')::pgroonga_full_text_search_condition;
-                                                                           QUERY PLAN                                                                           
-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
  Index Scan using pgrn_index on memos
-   Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDMBS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+   Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR RDBMS -PGroonga'::text, '{5,0}'::integer[], 'pgrn_index'::text))
 (2 rows)
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDBMS -PGroonga',
-        ARRAY[5, 0],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+       ROW('Groonga OR RDBMS -PGroonga', ARRAY[5, 0], 'pgrn_index');
  id |  title  |                 content                  | pgroonga_score 
 ----+---------+------------------------------------------+----------------
   2 | Groonga | Groonga is fast full text search engine. |              5
