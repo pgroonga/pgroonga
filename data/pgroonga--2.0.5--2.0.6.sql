@@ -34,4 +34,5 @@ CREATE OPERATOR &@~ (
 
 ALTER OPERATOR FAMILY pgroonga_text_array_full_text_search_ops_v2 USING pgroonga
 	ADD
+		OPERATOR 33 &@ (text[], pgroonga_full_text_search_condition_with_scorers),
 		OPERATOR 34 &@~ (text[], pgroonga_full_text_search_condition_with_scorers);

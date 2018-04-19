@@ -195,6 +195,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_match_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array_condition);
+PGRN_FUNCTION_INFO_V1(pgroonga_match_text_array_condition_with_scorers);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_match_varchar_condition);
 PGRN_FUNCTION_INFO_V1(pgroonga_contain_varchar_array);
@@ -2205,6 +2206,43 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_match_text_array_condition_with_scorers(
+ *   targets text[],
+ *   condition pgroonga_match_condition_with_scorers) : bool
+ */
+Datum
+pgroonga_match_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	text *term;
+	grn_obj *isTargets;
+	bool matched = false;
+
+	isTargets = &(buffers->general);
+	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+
+	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+													  &term,
+													  NULL,
+													  NULL,
+													  NULL,
+													  isTargets);
+
+	if (!term)
+		PG_RETURN_BOOL(false);
+
+	matched =
+		pgroonga_execute_binary_operator_string_array(targets,
+													  VARDATA_ANY(term),
+													  VARSIZE_ANY_EXHDR(term),
+													  pgroonga_match_term_raw,
+													  isTargets);
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga_match_varchar(target varchar, term varchar) : bool
  */
 Datum
@@ -3939,7 +3977,8 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	}
 
 	header = DatumGetHeapTupleHeader(key->sk_argument);
-	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
+		key->sk_strategy == PGrnMatchConditionStrategyV2Number)
 	{
 		PGrnFullTextSearchConditionDeconstruct(header,
 											   query,
@@ -4427,7 +4466,8 @@ PGrnSearchBuildCondition(Relation index,
 	if (PGrnSearchIsInCondition(key))
 		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 
-	if (key->sk_strategy == PGrnMatchConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnMatchConditionStrategyV2Number ||
+		key->sk_strategy == PGrnMatchConditionWithScorersStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionMatchCondition(data,
 													  key,
