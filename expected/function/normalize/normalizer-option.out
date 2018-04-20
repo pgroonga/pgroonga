@@ -1,12 +1,6 @@
-SELECT pgroonga_command('plugin_register normalizers/mysql')::json->1;
- ?column? 
-----------
- true
-(1 row)
-
-SELECT pgroonga_normalize('aBcDe 123', 'NormalizerMySQLGeneralCI');
+SELECT pgroonga_normalize('ЛИЦЕНЗИЯ', 'NormalizerNFKC100');
  pgroonga_normalize 
 --------------------
- ABCDE 123
+ лицензия
 (1 row)
 
