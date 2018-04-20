@@ -41,7 +41,7 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
         'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
  id |   title    |                 content                  | pgroonga_score 
 ----+------------+------------------------------------------+----------------
-  2 | Groonga    | Groonga is fast full text search engine. |           6.75
+  2 | Groonga    | Groonga is fast full text search engine. |            6.5
   1 | PostgreSQL | PostgreSQL is a RDBMS.                   |            0.5
 (2 rows)
 
