@@ -44,7 +44,7 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
  id |   title    |                 content                  | pgroonga_score 
 ----+------------+------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                   |            0.5
-  2 | Groonga    | Groonga is fast full text search engine. |           2.75
+  2 | Groonga    | Groonga is fast full text search engine. |            6.5
 (2 rows)
 
 DROP TABLE memos;
