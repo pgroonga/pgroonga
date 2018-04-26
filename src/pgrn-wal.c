@@ -1273,9 +1273,21 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 						grn_id range_id)
 {
 	const char *context = "insert: array";
+	grn_obj *range;
+	grn_id element_domain_id;
 	uint32_t i;
 
-	grn_obj_reinit(ctx, value, range_id, GRN_OBJ_VECTOR);
+	range = grn_ctx_at(ctx, range_id);
+	if (grn_obj_is_lexicon(ctx, range))
+	{
+		element_domain_id = range->header.domain;
+	}
+	else
+	{
+		element_domain_id = range_id;
+	}
+	grn_obj_reinit(ctx, value, element_domain_id, GRN_OBJ_VECTOR);
+
 	for (i = 0; i < array->size; i++)
 	{
 		msgpack_object *element;
@@ -1292,7 +1304,7 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			(element->type == MSGPACK_OBJECT_POSITIVE_INTEGER ? \
 			 element->via.u64 :									\
 			 element->via.i64)
-			switch (range_id)
+			switch (element_domain_id)
 			{
 			case GRN_DB_INT8:
 				GRN_INT8_PUT(ctx, value, ELEMENT_VALUE);
@@ -1347,7 +1359,7 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 								   MSGPACK_OBJECT_VIA_STR(*element).ptr,
 								   MSGPACK_OBJECT_VIA_STR(*element).size,
 								   0,
-								   range_id);
+								   element_domain_id);
 			break;
 		default:
 			ereport(ERROR,

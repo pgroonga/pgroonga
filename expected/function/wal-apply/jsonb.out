@@ -127,9 +127,9 @@ SELECT pgroonga_command('select',
                           'columns[record_paths].value', 'record.path._key',
                           'output_columns', '_id, record_paths'
                         ])::jsonb->>1;
-                                                   ?column?                                                    
----------------------------------------------------------------------------------------------------------------
- [[[2], [["_id", "UInt32"], ["record_paths", "ShortText"]], [1, [".[\"message\"]"]], [2, [".[\"message\"]"]]]]
+                                                        ?column?                                                         
+-------------------------------------------------------------------------------------------------------------------------
+ [[[2], [["_id", "UInt32"], ["record_paths", "ShortText"]], [1, [".", ".[\"message\"]"]], [2, [".", ".[\"message\"]"]]]]
 (1 row)
 
 DROP TABLE logs;
