@@ -365,6 +365,8 @@ PGrnOnProcExit(int code, Datum arg)
 			PGrnFinalizeMatchSequentialSearchData();
 			PGrnFinalizePrefixRKSequentialSearchData();
 
+			PGrnFinalizeOptions();
+
 			grn_obj_close(ctx, db);
 		}
 

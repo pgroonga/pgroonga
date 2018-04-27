@@ -13,6 +13,7 @@ typedef enum {
 } PGrnOptionUseCase;
 
 void PGrnInitializeOptions(void);
+void PGrnFinalizeOptions(void);
 
 void PGrnApplyOptionValues(Relation index,
 						   PGrnOptionUseCase useCase,

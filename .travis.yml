@@ -51,6 +51,7 @@ script:
                     function/flush/jsonb.sql \
                     full-text-search/jsonb/ \
                     full-text-search/text/options/normalizer/ \
+                    full-text-search/text/options/tokenizer/ \
                     reindex/analyze.sql \
                     regexp/text/options/ \
                     groonga-function/tuple-is-alive/ \
@@ -63,6 +64,7 @@ script:
         ;;
       9.4)
         for path in full-text-search/text/options/normalizer/ \
+                    full-text-search/text/options/tokenizer/ \
                     regexp/text/options/ \
                     term-search/text/options/
         do

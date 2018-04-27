@@ -26,6 +26,8 @@ typedef struct PGrnOptions
 static relopt_kind PGrnReloptionKind;
 
 static grn_ctx *ctx = &PGrnContext;
+static struct PGrnBuffers *buffers = &PGrnBuffers;
+static grn_obj *lexicon = NULL;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_options);
 
@@ -65,22 +67,27 @@ PGrnOptionParseNames(const char *names,
 	}
 }
 
-static bool
-PGrnIsTokenizer(grn_obj *object)
+static void
+PGrnOptionEnsureLexicon(const char *context)
 {
-	if (object->header.type != GRN_PROC)
-		return false;
+	if (lexicon)
+		grn_obj_close(ctx, lexicon);
 
-	if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKENIZER)
-		return false;
-
-	return true;
+	lexicon = grn_table_create(ctx,
+							   NULL, 0,
+							   NULL,
+							   GRN_TABLE_PAT_KEY,
+							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
+							   NULL);
+	PGrnCheck("options: %s: failed to create a temporary lexicon",
+			  context);
 }
 
 static void
 PGrnOptionValidateTokenizer(char *name)
 {
-	grn_obj *tokenizer;
+	grn_obj *tokenizer_name = &(buffers->general);
+	grn_rc rc;
 
 	if (PGrnIsNoneValue(name))
 		return;
@@ -88,21 +95,19 @@ PGrnOptionValidateTokenizer(char *name)
 	if (strcmp(name, PGRN_DEFAULT_TOKENIZER) == 0)
 		return;
 
-	tokenizer = grn_ctx_get(ctx, name, -1);
-	if (!tokenizer)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: nonexistent tokenizer: <%s>",
-						name)));
-	}
+	PGrnOptionEnsureLexicon("tokenizer");
 
-	if (!PGrnIsTokenizer(tokenizer))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: not tokenizer: <%s>: %s",
-						name, PGrnInspect(tokenizer))));
+	grn_obj_reinit(ctx, tokenizer_name, GRN_DB_TEXT, 0);
+	GRN_TEXT_SETS(ctx, tokenizer_name, name);
+	rc = grn_obj_set_info(ctx,
+						  lexicon,
+						  GRN_INFO_DEFAULT_TOKENIZER,
+						  tokenizer_name);
+	if (rc != GRN_SUCCESS) {
+		(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+		 errmsg("pgroonga: invalid tokenizer: <%s>: %s",
+				name,
+				ctx->errbuf));
 	}
 }
 
@@ -223,6 +228,7 @@ PGrnOptionValidatePlugins(char *names)
 void
 PGrnInitializeOptions(void)
 {
+	lexicon = NULL;
 #ifdef PGRN_SUPPORT_OPTIONS
 	PGrnReloptionKind = add_reloption_kind();
 
@@ -263,6 +269,15 @@ PGrnInitializeOptions(void)
 						 NULL,
 						 PGrnOptionValidateNormalizer);
 #endif
+}
+
+void
+PGrnFinalizeOptions(void)
+{
+	if (lexicon)
+	{
+		grn_obj_close(ctx, lexicon);
+	}
 }
 
 #ifdef PGRN_SUPPORT_OPTIONS
@@ -332,7 +347,8 @@ PGrnApplyOptionValues(Relation index,
 		}
 		else
 		{
-			*tokenizer = PGrnLookup(tokenizerName, ERROR);
+			*tokenizer = &(buffers->tokenizer);
+			GRN_TEXT_SETS(ctx, *tokenizer, tokenizerName);
 		}
 	}
 
