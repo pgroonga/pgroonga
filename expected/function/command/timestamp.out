@@ -9,7 +9,29 @@ SELECT pgroonga_command('select',
     AS body;
                       body                      
 ------------------------------------------------
- [[[1],[["created_at","Time"]],[1517500800.0]]]
+ [[[1],[["created_at","Time"]],[1517558400.0]]]
+(1 row)
+
+SET enable_seqscan = off;
+SET enable_bitmapscan = off;
+SET enable_indexscan = on;
+SET enable_indexonlyscan = on;
+EXPLAIN (COSTS OFF)
+SELECT *
+  FROM memos
+ WHERE created_at >= '2018-02-02';
+                                      QUERY PLAN                                       
+---------------------------------------------------------------------------------------
+ Index Only Scan using pgroonga_index on memos
+   Index Cond: (created_at >= 'Fri Feb 02 00:00:00 2018'::timestamp without time zone)
+(2 rows)
+
+SELECT *
+  FROM memos
+ WHERE created_at >= '2018-02-02';
+        created_at        
+--------------------------
+ Fri Feb 02 00:00:00 2018
 (1 row)
 
 DROP TABLE memos;

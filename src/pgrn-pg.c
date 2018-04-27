@@ -106,7 +106,7 @@ PGrnPGTimestampToLocalTime(Timestamp timestamp)
 		offset = PGrnPGGetSessionTimezoneOffset();
 	}
 
-	return timestamptz_to_time_t(timestamp) - offset;
+	return timestamptz_to_time_t(timestamp) + offset;
 }
 
 Timestamp
@@ -132,7 +132,7 @@ PGrnPGLocalTimeToTimestamp(pg_time_t unixTimeLocal)
 	{
 		offset = sessionOffset;
 	}
-	unixTimeUTC = unixTimeLocal + offset;
+	unixTimeUTC = unixTimeLocal - offset;
 
 	return time_t_to_timestamptz(unixTimeUTC);
 }

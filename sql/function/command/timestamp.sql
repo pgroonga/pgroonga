@@ -11,4 +11,18 @@ SELECT pgroonga_command('select',
                               'output_columns', 'created_at'])::json->>1
     AS body;
 
+SET enable_seqscan = off;
+SET enable_bitmapscan = off;
+SET enable_indexscan = on;
+SET enable_indexonlyscan = on;
+
+EXPLAIN (COSTS OFF)
+SELECT *
+  FROM memos
+ WHERE created_at >= '2018-02-02';
+
+SELECT *
+  FROM memos
+ WHERE created_at >= '2018-02-02';
+
 DROP TABLE memos;
