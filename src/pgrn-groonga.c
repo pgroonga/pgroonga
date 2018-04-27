@@ -11,8 +11,6 @@
 bool PGrnIsLZ4Available;
 bool PGrnIsZlibAvailable;
 bool PGrnIsZstdAvailable;
-bool PGrnIsVectorCompressionAvailable;
-bool PGrnIsAccessorAliasAvailable;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -35,17 +33,6 @@ PGrnInitializeGroongaInformation(void)
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZSTD, &grnIsSupported);
 	PGrnIsZstdAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
-
-	{
-		const char *libgroonga_version;
-		libgroonga_version = grn_get_version();
-		PGrnIsVectorCompressionAvailable =
-			(atoi(libgroonga_version) >= 8 &&
-			 (strcmp(libgroonga_version, "8.0.0") != 0));
-		PGrnIsAccessorAliasAvailable =
-			(atoi(libgroonga_version) >= 8 &&
-			 (strcmp(libgroonga_version, "8.0.0") != 0));
-	}
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }

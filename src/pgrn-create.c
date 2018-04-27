@@ -11,16 +11,6 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-static void
-PGrnCreateSourcesCtidColumn(PGrnCreateData *data)
-{
-	data->sourcesCtidColumn = PGrnCreateColumn(data->index,
-											   data->sourcesTable,
-											   PGrnSourcesCtidColumnName,
-											   GRN_OBJ_COLUMN_SCALAR,
-											   grn_ctx_at(ctx, GRN_DB_UINT64));
-}
-
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
 {
@@ -28,28 +18,14 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 
 	snprintf(buildingSourcesTableName, sizeof(buildingSourcesTableName),
 			 PGrnBuildingSourcesTableNameFormat, data->relNode);
-	if (PGrnIsAccessorAliasAvailable)
-	{
-		data->sourcesTable = PGrnCreateTable(data->index,
-											 buildingSourcesTableName,
-											 GRN_OBJ_TABLE_HASH_KEY,
-											 grn_ctx_at(ctx, GRN_DB_UINT64),
-											 NULL,
-											 NULL,
-											 NULL);
-		data->sourcesCtidColumn = NULL;
-	}
-	else
-	{
-		data->sourcesTable = PGrnCreateTable(data->index,
-											 buildingSourcesTableName,
-											 GRN_OBJ_TABLE_NO_KEY,
-											 NULL,
-											 NULL,
-											 NULL,
-											 NULL);
-		PGrnCreateSourcesCtidColumn(data);
-	}
+	data->sourcesTable = PGrnCreateTable(data->index,
+										 buildingSourcesTableName,
+										 GRN_OBJ_TABLE_HASH_KEY,
+										 grn_ctx_at(ctx, GRN_DB_UINT64),
+										 NULL,
+										 NULL,
+										 NULL);
+	data->sourcesCtidColumn = NULL;
 }
 
 void
@@ -90,13 +66,12 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	if (data->attributeFlags & GRN_OBJ_VECTOR)
 	{
 		flags |= GRN_OBJ_COLUMN_VECTOR;
-		compressable = PGrnIsVectorCompressionAvailable;
 	}
 	else
 	{
 		flags |= GRN_OBJ_COLUMN_SCALAR;
-		compressable = true;
 	}
+	compressable = true;
 
 	if (compressable &&
 		(PGrnIsLZ4Available || PGrnIsZlibAvailable || PGrnIsZstdAvailable))
