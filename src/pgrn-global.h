@@ -12,6 +12,7 @@ struct PGrnBuffers
 	grn_obj score;
 	grn_obj sourceIDs;
 	grn_obj tokenizer;
+	grn_obj normalizer;
 	grn_obj tokenFilters;
 	grn_obj jsonbValueKeys;
 	grn_obj walPosition;

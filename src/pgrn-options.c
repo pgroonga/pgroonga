@@ -86,7 +86,7 @@ PGrnOptionEnsureLexicon(const char *context)
 static void
 PGrnOptionValidateTokenizer(char *name)
 {
-	grn_obj *tokenizer_name = &(buffers->general);
+	grn_obj *tokenizer_name = &(buffers->tokenizer);
 	grn_rc rc;
 
 	if (PGrnIsNoneValue(name))
@@ -97,7 +97,6 @@ PGrnOptionValidateTokenizer(char *name)
 
 	PGrnOptionEnsureLexicon("tokenizer");
 
-	grn_obj_reinit(ctx, tokenizer_name, GRN_DB_TEXT, 0);
 	GRN_TEXT_SETS(ctx, tokenizer_name, name);
 	rc = grn_obj_set_info(ctx,
 						  lexicon,
@@ -111,22 +110,11 @@ PGrnOptionValidateTokenizer(char *name)
 	}
 }
 
-static bool
-PGrnIsNormalizer(grn_obj *object)
-{
-	if (object->header.type != GRN_PROC)
-		return false;
-
-  if (grn_proc_get_type(ctx, object) != GRN_PROC_NORMALIZER)
-	  return false;
-
-  return true;
-}
-
 static void
 PGrnOptionValidateNormalizer(char *name)
 {
-	grn_obj *normalizer;
+	grn_obj *normalizer_name = &(buffers->normalizer);
+	grn_rc rc;
 
 	if (PGrnIsNoneValue(name))
 		return;
@@ -134,21 +122,18 @@ PGrnOptionValidateNormalizer(char *name)
 	if (strcmp(name, PGRN_DEFAULT_NORMALIZER) == 0)
 		return;
 
-	normalizer = grn_ctx_get(ctx, name, -1);
-	if (!normalizer)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: nonexistent normalizer: <%s>",
-						name)));
-	}
+	PGrnOptionEnsureLexicon("normalizer");
 
-	if (!PGrnIsNormalizer(normalizer))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: not normalizer: <%s>: %s",
-						name, PGrnInspect(normalizer))));
+	GRN_TEXT_SETS(ctx, normalizer_name, name);
+	rc = grn_obj_set_info(ctx,
+						  lexicon,
+						  GRN_INFO_NORMALIZER,
+						  normalizer_name);
+	if (rc != GRN_SUCCESS) {
+		(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+		 errmsg("pgroonga: invalid normalizer: <%s>: %s",
+				name,
+				ctx->errbuf));
 	}
 }
 
@@ -393,7 +378,8 @@ PGrnApplyOptionValues(Relation index,
 	}
 	else
 	{
-		*normalizer = PGrnLookup(normalizerName, ERROR);
+		*normalizer = &(buffers->normalizer);
+		GRN_TEXT_SETS(ctx, *normalizer, normalizerName);
 	}
 
 	PGrnOptionParseNames(tokenFilterNames,

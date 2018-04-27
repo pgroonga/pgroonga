@@ -2,12 +2,11 @@ CREATE TABLE memos (
   tags text
 );
 
-INSERT INTO memos VALUES ('PGroonga is fast');
+INSERT INTO memos VALUES ('グルンガ');
 
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (tags)
-  WITH (tokenizer = 'TokenNgram("n", 3)',
-        normalizer = '');
+  WITH (normalizer = 'NormalizerNFKC100("unify_kana", true)');
 
 SELECT jsonb_pretty(
   pgroonga_command('select',
