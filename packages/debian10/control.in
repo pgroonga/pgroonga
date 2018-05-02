@@ -3,12 +3,12 @@ Section: database
 Priority: optional
 Maintainer: PGroonga Project <packages@groonga.org>
 Build-Depends:
-  debhelper (>= 9),
+  debhelper (>= 11.1),
   pkg-config,
   libgroonga-dev,
   postgresql-server-dev-10,
   libmsgpack-dev
-Standards-Version: 3.9.3
+Standards-Version: 4.1.4
 Homepage: http://pgroonga.github.io/
 
 Package: postgresql-10-pgroonga
