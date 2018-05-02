@@ -525,7 +525,7 @@ libmsgpack-dev
       end
 
       desc "Upload package for PostgreSQL 10"
-      task :postgresql96 => [archive_name] do
+      task :postgresql10 => [archive_name] do
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
         prepare_debian_dir("packages/debian10",
