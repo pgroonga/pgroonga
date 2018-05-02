@@ -773,6 +773,9 @@ PGrnWALCreateTable(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 7;
 
+	if (!name)
+		return;
+
 	data = PGrnWALStart(index);
 	if (!data)
 		return;
@@ -833,6 +836,9 @@ PGrnWALCreateColumn(Relation index,
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 5;
+
+	if (!name)
+		return;
 
 	data = PGrnWALStart(index);
 	if (!data)

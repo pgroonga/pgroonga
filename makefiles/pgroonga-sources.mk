@@ -25,6 +25,7 @@ SRCS =						\
 	src/pgrn-query-expand.c			\
 	src/pgrn-query-extract-keywords.c	\
 	src/pgrn-snippet-html.c			\
+	src/pgrn-sequential-search.c		\
 	src/pgrn-value.c			\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\

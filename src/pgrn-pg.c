@@ -9,11 +9,81 @@
 #include <catalog/pg_tablespace.h>
 #include <pgtime.h>
 #include <storage/lmgr.h>
+#include <utils/builtins.h>
 #include <utils/datetime.h>
 #include <utils/rel.h>
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 #	include <utils/relfilenodemap.h>
 #endif
+#include <utils/syscache.h>
+
+Oid
+PGrnPGIndexNameToID(const char *name)
+{
+	Datum indexIDDatum;
+	Oid indexID;
+
+	indexIDDatum = DirectFunctionCall1(regclassin, CStringGetDatum(name));
+	indexID = DatumGetObjectId(indexIDDatum);
+	if (!OidIsValid(indexID))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: unknown index name: <%s>",
+						name)));
+	}
+
+	return indexID;
+}
+
+Relation
+PGrnPGResolveIndexName(const char *name)
+{
+	Oid indexID;
+	indexID = PGrnPGIndexNameToID(name);
+	return PGrnPGResolveIndexID(indexID);
+}
+
+Relation
+PGrnPGResolveIndexID(Oid id)
+{
+	Relation index;
+
+	index = RelationIdGetRelation(id);
+	if (!RelationIsValid(index))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: unknown index ID: <%u>",
+						id)));
+	}
+
+	return index;
+}
+
+Oid
+PGrnPGIndexIDToFileNodeID(Oid indexID)
+{
+	Oid fileNodeID;
+	HeapTuple tuple;
+	Form_pg_class indexClass;
+
+	tuple = SearchSysCache1(RELOID, indexID);
+	if (!HeapTupleIsValid(tuple))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_NAME),
+				 errmsg("pgroonga: "
+						"failed to find file node ID for index: <%u>",
+						indexID)));
+	}
+
+	indexClass = (Form_pg_class) GETSTRUCT(tuple);
+	fileNodeID = indexClass->relfilenode;
+	ReleaseSysCache(tuple);
+
+	return fileNodeID;
+}
 
 Relation
 PGrnPGResolveFileNodeID(Oid fileNodeID,

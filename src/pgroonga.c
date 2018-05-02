@@ -23,6 +23,7 @@
 #include "pgrn-query-expand.h"
 #include "pgrn-query-extract-keywords.h"
 #include "pgrn-search.h"
+#include "pgrn-sequential-search.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
@@ -50,7 +51,6 @@
 #include <utils/memutils.h>
 #include <utils/selfuncs.h>
 #include <utils/snapmgr.h>
-#include <utils/syscache.h>
 #include <utils/timestamp.h>
 #include <utils/tqual.h>
 #include <utils/typcache.h>
@@ -121,13 +121,6 @@ typedef struct PGrnScanOpaqueData
 } PGrnScanOpaqueData;
 
 typedef PGrnScanOpaqueData *PGrnScanOpaque;
-
-typedef struct PGrnMatchSequentialSearchData
-{
-	grn_obj *table;
-	grn_obj *textColumn;
-	grn_id recordID;
-} PGrnMatchSequentialSearchData;
 
 typedef struct PGrnPrefixRKSequentialSearchData
 {
@@ -265,7 +258,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_handler);
 
 static grn_ctx *ctx = NULL;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
-static PGrnMatchSequentialSearchData matchSequentialSearchData;
+static PGrnSequentialSearchData sequentialSearchData;
 static PGrnPrefixRKSequentialSearchData prefixRKSequentialSearchData;
 
 static uint32_t
@@ -325,10 +318,9 @@ PGrnInitializeGroongaFunctions(void)
 }
 
 static void
-PGrnFinalizeMatchSequentialSearchData(void)
+PGrnFinalizeSequentialSearchData(void)
 {
-	grn_obj_close(ctx, matchSequentialSearchData.textColumn);
-	grn_obj_close(ctx, matchSequentialSearchData.table);
+	PGrnSequentialSearchDataFinalize(&sequentialSearchData);
 }
 
 static void
@@ -362,7 +354,7 @@ PGrnOnProcExit(int code, Datum arg)
 
 			PGrnFinalizeJSONB();
 
-			PGrnFinalizeMatchSequentialSearchData();
+			PGrnFinalizeSequentialSearchData();
 			PGrnFinalizePrefixRKSequentialSearchData();
 
 			PGrnFinalizeOptions();
@@ -382,25 +374,9 @@ PGrnOnProcExit(int code, Datum arg)
 }
 
 static void
-PGrnInitializeMatchSequentialSearchData(void)
+PGrnInitializeSequentialSearchData(void)
 {
-	matchSequentialSearchData.table = grn_table_create(ctx,
-													   NULL, 0,
-													   NULL,
-													   GRN_OBJ_TABLE_NO_KEY,
-													   NULL, NULL);
-	matchSequentialSearchData.textColumn =
-		grn_column_create(ctx,
-						  matchSequentialSearchData.table,
-						  "text", strlen("text"),
-						  NULL,
-						  GRN_OBJ_COLUMN_SCALAR,
-						  grn_ctx_at(ctx, GRN_DB_TEXT));
-	matchSequentialSearchData.recordID =
-		grn_table_add(ctx,
-					  matchSequentialSearchData.table,
-					  NULL, 0,
-					  NULL);
+	PGrnSequentialSearchDataInitialize(&sequentialSearchData);
 }
 
 static void
@@ -438,7 +414,7 @@ PGrnInitializeDatabase(void)
 
 	PGrnInitializeIndexStatus();
 
-	PGrnInitializeMatchSequentialSearchData();
+	PGrnInitializeSequentialSearchData();
 	PGrnInitializePrefixRKSequentialSearchData();
 
 	PGrnInitializeJSONB();
@@ -1519,43 +1495,18 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 Datum
 pgroonga_table_name(PG_FUNCTION_ARGS)
 {
-	Datum indexNameDatum = PG_GETARG_DATUM(0);
-	Datum indexOidDatum;
-	Oid indexOid;
-	Oid fileNodeOid;
+	const char *indexName = PG_GETARG_CSTRING(0);
+	Oid indexID;
+	Oid fileNodeID;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName;
 
-	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
-	indexOid = DatumGetObjectId(indexOidDatum);
-	if (!OidIsValid(indexOid))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: unknown index name: <%s>",
-						DatumGetCString(indexNameDatum))));
-	}
-
-	{
-		HeapTuple tuple;
-		tuple = SearchSysCache1(RELOID, indexOid);
-		if (!HeapTupleIsValid(tuple)) {
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: "
-							"failed to find file node ID from index name: <%s>",
-							DatumGetCString(indexNameDatum))));
-		}
-		{
-			Form_pg_class indexClass = (Form_pg_class) GETSTRUCT(tuple);
-			fileNodeOid = indexClass->relfilenode;
-			ReleaseSysCache(tuple);
-		}
-	}
+	indexID = PGrnPGIndexNameToID(indexName);
+	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
 	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
 			 PGrnSourcesTableNameFormat,
-			 fileNodeOid);
+			 fileNodeID);
 	tableName = cstring_to_text(tableNameBuffer);
 	PG_RETURN_TEXT_P(tableName);
 }
@@ -1942,62 +1893,25 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 }
 
 static bool
+pgroonga_match_query_raw_full(const char *target, unsigned int targetSize,
+							  const char *query, unsigned int querySize,
+							  const char *indexName, unsigned int indexNameSize)
+{
+	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
+									target, targetSize,
+									indexName, indexNameSize);
+	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
+									 query, querySize);
+	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+}
+
+static bool
 pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						 const char *query, unsigned int querySize)
 {
-	grn_obj *expression;
-	grn_obj *variable;
-	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
-	grn_rc rc;
-	grn_obj *result;
-	grn_bool matched = false;
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  matchSequentialSearchData.table,
-							  expression,
-							  variable);
-	if (!expression)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: failed to create expression: %s",
-						ctx->errbuf)));
-	}
-
-	rc = grn_expr_parse(ctx,
-						expression,
-						query, querySize,
-						matchSequentialSearchData.textColumn,
-						GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
-		grn_obj_close(ctx, expression);
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						message)));
-	}
-
-	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
-	grn_obj_set_value(ctx,
-					  matchSequentialSearchData.textColumn,
-					  matchSequentialSearchData.recordID,
-					  &(buffers->general),
-					  GRN_OBJ_SET);
-	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
-
-	result = grn_expr_exec(ctx, expression, 0);
-	GRN_OBJ_IS_TRUE(ctx, result, matched);
-
-	grn_obj_close(ctx, expression);
-
-	return matched;
+	return pgroonga_match_query_raw_full(target, targetSize,
+										 query, querySize,
+										 NULL, 0);
 }
 
 /**
@@ -2014,7 +1928,6 @@ pgroonga_match_query_text(PG_FUNCTION_ARGS)
 									   VARSIZE_ANY_EXHDR(target),
 									   VARDATA_ANY(query),
 									   VARSIZE_ANY_EXHDR(query));
-
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2418,13 +2331,20 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *query;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
 	grn_obj *isTargets;
 	bool matched = false;
 
 	isTargets = &(buffers->general);
 	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
 
-	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
+	PGrnFullTextSearchConditionDeconstruct(header,
+										   &query,
+										   NULL,
+										   &indexName,
+										   isTargets);
 
 	if (!query)
 		PG_RETURN_BOOL(false);
@@ -2432,10 +2352,18 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query));
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	matched = pgroonga_match_query_raw_full(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(query),
+											VARSIZE_ANY_EXHDR(query),
+											indexNameData,
+											indexNameSize);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2451,6 +2379,9 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *query;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
 	grn_obj *isTargets;
 	bool matched = false;
 
@@ -2461,7 +2392,7 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 													  &query,
 													  NULL,
 													  NULL,
-													  NULL,
+													  &indexName,
 													  isTargets);
 
 	if (!query)
@@ -2470,10 +2401,18 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query));
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	matched = pgroonga_match_query_raw_full(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(query),
+											VARSIZE_ANY_EXHDR(query),
+											indexNameData,
+											indexNameSize);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2701,62 +2640,25 @@ pgroonga_similar_varchar(PG_FUNCTION_ARGS)
 }
 
 static bool
+pgroonga_script_raw_full(const char *target, unsigned int targetSize,
+						 const char *script, unsigned int scriptSize,
+						 const char *indexName, unsigned int indexNameSize)
+{
+	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
+									target, targetSize,
+									indexName, indexNameSize);
+	PGrnSequentialSearchDataSetScript(&sequentialSearchData,
+									  script, scriptSize);
+	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+}
+
+static bool
 pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize)
 {
-	grn_obj *expression;
-	grn_obj *variable;
-	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
-	grn_rc rc;
-	grn_obj *result;
-	grn_bool matched = false;
-
-	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  matchSequentialSearchData.table,
-							  expression,
-							  variable);
-	if (!expression)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: failed to create expression: %s",
-						ctx->errbuf)));
-	}
-
-	rc = grn_expr_parse(ctx,
-						expression,
-						script, scriptSize,
-						matchSequentialSearchData.textColumn,
-						GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
-		grn_obj_close(ctx, expression);
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						message)));
-	}
-
-	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
-	GRN_TEXT_SET(ctx, &(buffers->general), target, targetSize);
-	grn_obj_set_value(ctx,
-					  matchSequentialSearchData.textColumn,
-					  matchSequentialSearchData.recordID,
-					  &(buffers->general),
-					  GRN_OBJ_SET);
-	GRN_RECORD_SET(ctx, variable, matchSequentialSearchData.recordID);
-
-	result = grn_expr_exec(ctx, expression, 0);
-	GRN_OBJ_IS_TRUE(ctx, result, matched);
-
-	grn_obj_close(ctx, expression);
-
-	return matched;
+	return pgroonga_script_raw_full(target, targetSize,
+									script, scriptSize,
+									NULL, 0);
 }
 
 /**
