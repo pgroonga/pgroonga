@@ -1,0 +1,41 @@
+CREATE TABLE memos (
+  title text,
+  content text
+);
+INSERT INTO memos VALUES ('ひらがな', 'りんご');
+INSERT INTO memos VALUES ('カタカナ', 'リンゴ');
+CREATE INDEX pgrn_index ON memos
+ USING pgroonga ((ARRAY[title, content])
+                 pgroonga_text_array_full_text_search_ops_v2)
+  WITH (normalizer = 'NormalizerNFKC100("unify_kana", true)');
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT title, content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE ARRAY[title, content] &@~
+       ('りんご',
+        ARRAY[5, 2],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (ARRAY[title, content] &@~ ROW('りんご'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+   ->  Bitmap Index Scan on pgrn_index
+         Index Cond: (ARRAY[title, content] &@~ ROW('りんご'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+(4 rows)
+
+SELECT title, content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE ARRAY[title, content] &@~
+       ('りんご',
+        ARRAY[5, 2],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+  title   | content | pgroonga_score 
+----------+---------+----------------
+ ひらがな | りんご  |              2
+ カタカナ | リンゴ  |              2
+(2 rows)
+
+DROP TABLE memos;
