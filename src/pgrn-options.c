@@ -11,6 +11,10 @@
 #endif
 
 #ifdef PGRN_SUPPORT_OPTIONS
+static const char *PGRN_LEXICON_TYPE_HASH_TABLE = "hash_table";
+static const char *PGRN_LEXICON_TYPE_PATRICIA_TRIE = "patricia_trie";
+static const char *PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE = "double_array_trie";
+
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
@@ -21,6 +25,7 @@ typedef struct PGrnOptions
 	int fullTextSearchNormalizerOffset;
 	int regexpSearchNormalizerOffset;
 	int prefixSearchNormalizerOffset;
+	int lexiconTypeOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -103,10 +108,11 @@ PGrnOptionValidateTokenizer(char *name)
 						  GRN_INFO_DEFAULT_TOKENIZER,
 						  tokenizer_name);
 	if (rc != GRN_SUCCESS) {
-		(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-		 errmsg("pgroonga: invalid tokenizer: <%s>: %s",
-				name,
-				ctx->errbuf));
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: invalid tokenizer: <%s>: %s",
+						name,
+						ctx->errbuf)));
 	}
 }
 
@@ -130,10 +136,11 @@ PGrnOptionValidateNormalizer(char *name)
 						  GRN_INFO_NORMALIZER,
 						  normalizer_name);
 	if (rc != GRN_SUCCESS) {
-		(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-		 errmsg("pgroonga: invalid normalizer: <%s>: %s",
-				name,
-				ctx->errbuf));
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: invalid normalizer: <%s>: %s",
+						name,
+						ctx->errbuf)));
 	}
 }
 
@@ -208,6 +215,32 @@ PGrnOptionValidatePlugins(char *names)
 						 PGrnOptionValidatePlugin,
 						 NULL);
 }
+
+static void
+PGrnOptionValidateLexiconType(char *name)
+{
+	if (!name)
+		return;
+
+	if (strcmp(name, PGRN_LEXICON_TYPE_HASH_TABLE) == 0)
+		return;
+
+	if (strcmp(name, PGRN_LEXICON_TYPE_PATRICIA_TRIE) == 0)
+		return;
+
+	if (strcmp(name, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) == 0)
+		return;
+
+	ereport(ERROR,
+			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+			 errmsg("pgroonga: invalid lexicon type: <%s>: "
+					"available types: "
+					"[%s, %s, %s]",
+					name,
+					PGRN_LEXICON_TYPE_HASH_TABLE,
+					PGRN_LEXICON_TYPE_PATRICIA_TRIE,
+					PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE)));
+}
 #endif
 
 void
@@ -253,6 +286,11 @@ PGrnInitializeOptions(void)
 						 "Normalizer name to be used for prefix search",
 						 NULL,
 						 PGrnOptionValidateNormalizer);
+	add_string_reloption(PGrnReloptionKind,
+						 "lexicon_type",
+						 "Lexicon type to be used for lexicon",
+						 NULL,
+						 PGrnOptionValidateLexiconType);
 #endif
 }
 
@@ -286,13 +324,17 @@ PGrnApplyOptionValues(Relation index,
 					  const char *defaultTokenizerName,
 					  grn_obj **normalizer,
 					  const char *defaultNormalizerName,
-					  grn_obj *tokenFilters)
+					  grn_obj *tokenFilters,
+					  grn_table_flags *lexiconType)
 {
 #ifdef PGRN_SUPPORT_OPTIONS
 	PGrnOptions *options;
 	const char *tokenizerName;
 	const char *normalizerName;
 	const char *tokenFilterNames;
+	const char *lexiconTypeName;
+
+	*lexiconType = GRN_TABLE_PAT_KEY;
 
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
@@ -385,6 +427,23 @@ PGrnApplyOptionValues(Relation index,
 	PGrnOptionParseNames(tokenFilterNames,
 						 PGrnOptionCollectTokenFilter,
 						 tokenFilters);
+
+	lexiconTypeName = GET_STRING_RELOPTION(options, lexiconTypeOffset);
+	if (lexiconTypeName)
+	{
+		if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_HASH_TABLE) == 0)
+		{
+			*lexiconType = GRN_TABLE_HASH_KEY;
+		}
+		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_PATRICIA_TRIE) == 0)
+		{
+			*lexiconType = GRN_TABLE_PAT_KEY;
+		}
+		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) == 0)
+		{
+			*lexiconType = GRN_TABLE_DAT_KEY;
+		}
+	}
 #endif
 }
 
@@ -410,14 +469,21 @@ pgroonga_options_raw(Datum reloptions,
 		{"regexp_search_normalizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, regexpSearchNormalizerOffset)},
 		{"prefix_search_normalizer", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, prefixSearchNormalizerOffset)}
+		 offsetof(PGrnOptions, prefixSearchNormalizerOffset)},
+		{"lexicon_type", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, lexiconTypeOffset)}
 	};
 
 	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,
 							  &nOptions);
 	grnOptions = allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
-	fillRelOptions(grnOptions, sizeof(PGrnOptions), options, nOptions,
-				   validate, optionsMap, lengthof(optionsMap));
+	fillRelOptions(grnOptions,
+				   sizeof(PGrnOptions),
+				   options,
+				   nOptions,
+				   validate,
+				   optionsMap,
+				   lengthof(optionsMap));
 	pfree(options);
 
 	return (bytea *) grnOptions;

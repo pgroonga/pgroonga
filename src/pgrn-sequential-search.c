@@ -96,6 +96,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
 	grn_obj *tokenFilters = &(buffers->tokenFilters);
+	grn_table_flags flags;
 
 	if (data->indexOID == indexOID)
 		return;
@@ -106,12 +107,13 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 						  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 						  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 						  &normalizer, PGRN_DEFAULT_NORMALIZER,
-						  tokenFilters);
+						  tokenFilters,
+						  &flags);
 	RelationClose(index);
 
 	data->lexicon = PGrnCreateTable(InvalidRelation,
 									NULL,
-									GRN_OBJ_TABLE_PAT_KEY,
+									flags,
 									grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 									tokenizer,
 									normalizer,
