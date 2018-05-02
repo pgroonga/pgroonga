@@ -201,6 +201,39 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 }
 
 void
+PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
+									 const char *term,
+									 unsigned int termSize)
+{
+	if (PGrnSequentialSearchDataPrepareExpression(data,
+												  term,
+												  termSize,
+												  PGRN_SEQUENTIAL_SEARCH_MATCH_TERM))
+	{
+		return;
+	}
+
+	grn_expr_append_obj(ctx,
+						data->expression,
+						data->textColumn,
+						GRN_OP_GET_VALUE,
+						1);
+	PGrnCheck("match-term: append match target text column");
+	grn_expr_append_const_str(ctx,
+							  data->expression,
+							  term,
+							  termSize,
+							  GRN_OP_PUSH,
+							  1);
+	PGrnCheck("match-term: append term to be matched");
+	grn_expr_append_op(ctx,
+					   data->expression,
+					   GRN_OP_MATCH,
+					   2);
+	PGrnCheck("match-term: append match operator");
+}
+
+void
 PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
 								 unsigned int querySize)

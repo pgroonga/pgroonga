@@ -1,0 +1,37 @@
+CREATE TABLE memos (
+  content text
+);
+INSERT INTO memos VALUES ('090-1234-5678');
+INSERT INTO memos VALUES ('(090)1234-5678');
+CREATE INDEX pgrn_index ON memos
+ USING pgroonga (content pgroonga_text_full_text_search_ops_v2)
+  WITH (tokenizer = 'TokenNgram("loose_symbol", true)');
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE content &@
+       ('090-12345678',
+        ARRAY[5],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on memos
+   Filter: (content &@ ROW('090-12345678'::text, '{5}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+(2 rows)
+
+SELECT content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE content &@
+       ('090-12345678',
+        ARRAY[5],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+    content     | pgroonga_score 
+----------------+----------------
+ 090-1234-5678  |              0
+ (090)1234-5678 |              0
+(2 rows)
+
+DROP TABLE memos;

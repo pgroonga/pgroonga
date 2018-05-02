@@ -1778,25 +1778,25 @@ pgroonga_execute_binary_operator_in_string_array(ArrayType *operands1,
 }
 
 static bool
-pgroonga_match_term_raw(const char *text, unsigned int textSize,
+pgroonga_match_term_raw_full(const char *target, unsigned int targetSize,
+							 const char *term, unsigned int termSize,
+							 const char *indexName, unsigned int indexNameSize)
+{
+	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
+									target, targetSize,
+									indexName, indexNameSize);
+	PGrnSequentialSearchDataSetMatchTerm(&sequentialSearchData,
+										 term, termSize);
+	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+}
+
+static bool
+pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 						const char *term, unsigned int termSize)
 {
-	grn_bool matched;
-	grn_obj targetBuffer;
-	grn_obj termBuffer;
-
-	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
-
-	GRN_TEXT_INIT(&termBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &termBuffer, term, termSize);
-
-	matched = grn_operator_exec_match(ctx, &targetBuffer, &termBuffer);
-
-	GRN_OBJ_FIN(ctx, &targetBuffer);
-	GRN_OBJ_FIN(ctx, &termBuffer);
-
-	return matched;
+	return pgroonga_match_term_raw_full(target, targetSize,
+										term, termSize,
+										NULL, 0);
 }
 
 /**
@@ -2052,13 +2052,20 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *term;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
 	grn_obj *isTargets;
 	bool matched = false;
 
 	isTargets = &(buffers->general);
 	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
 
-	PGrnFullTextSearchConditionDeconstruct(header, &term, NULL, NULL, isTargets);
+	PGrnFullTextSearchConditionDeconstruct(header,
+										   &term,
+										   NULL,
+										   &indexName,
+										   isTargets);
 
 	if (!term)
 		PG_RETURN_BOOL(false);
@@ -2066,10 +2073,18 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term));
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	matched = pgroonga_match_term_raw_full(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(term),
+										   VARSIZE_ANY_EXHDR(term),
+										   indexNameData,
+										   indexNameSize);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2085,6 +2100,9 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	text *term;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
 	grn_obj *isTargets;
 	bool matched = false;
 
@@ -2095,7 +2113,7 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 													  &term,
 													  NULL,
 													  NULL,
-													  NULL,
+													  &indexName,
 													  isTargets);
 
 	if (!term)
@@ -2104,10 +2122,18 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
 		PG_RETURN_BOOL(false);
 
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term));
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	matched = pgroonga_match_term_raw_full(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(term),
+										   VARSIZE_ANY_EXHDR(term),
+										   indexNameData,
+										   indexNameSize);
 
 	PG_RETURN_BOOL(matched);
 }
