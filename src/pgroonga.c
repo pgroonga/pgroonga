@@ -2058,8 +2058,8 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header,
 										   &term,
@@ -2106,8 +2106,8 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &term,
@@ -2170,8 +2170,8 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header, &term, NULL, NULL, isTargets);
 
@@ -2202,8 +2202,8 @@ pgroonga_match_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &term,
@@ -2255,8 +2255,8 @@ pgroonga_match_varchar_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header, &term, NULL, NULL, isTargets);
 
@@ -2287,8 +2287,8 @@ pgroonga_match_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &term,
@@ -2363,8 +2363,8 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header,
 										   &query,
@@ -2411,8 +2411,8 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &query,
@@ -2475,8 +2475,8 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
 
@@ -2506,8 +2506,8 @@ pgroonga_query_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &query,
@@ -2558,8 +2558,8 @@ pgroonga_query_varchar_condition(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionDeconstruct(header, &query, NULL, NULL, isTargets);
 
@@ -2590,8 +2590,8 @@ pgroonga_query_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->general);
-	grn_obj_reinit(ctx, isTargets, GRN_DB_BOOL, GRN_OBJ_VECTOR);
+	isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(isTargets);
 
 	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
 													  &query,

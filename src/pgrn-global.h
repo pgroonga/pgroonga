@@ -19,6 +19,7 @@ struct PGrnBuffers
 	grn_obj walValue;
 	grn_obj maxRecordSize;
 	grn_obj walAppliedPosition;
+	grn_obj isTargets;
 	struct
 	{
 		grn_obj escapedValue;

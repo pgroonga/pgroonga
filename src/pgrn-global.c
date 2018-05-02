@@ -27,6 +27,7 @@ PGrnInitializeBuffers(void)
 	GRN_VOID_INIT(&(PGrnBuffers.walValue));
 	GRN_UINT32_INIT(&(PGrnBuffers.maxRecordSize), 0);
 	GRN_UINT64_INIT(&(PGrnBuffers.walAppliedPosition), 0);
+	GRN_BOOL_INIT(&(PGrnBuffers.isTargets), GRN_OBJ_VECTOR);
 	GRN_TEXT_INIT(&(PGrnBuffers.escape.escapedValue), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.escape.specialCharacters), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.head), 0);
@@ -53,6 +54,7 @@ PGrnFinalizeBuffers(void)
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walValue));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.maxRecordSize));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walAppliedPosition));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.isTargets));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.escape.escapedValue));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.escape.specialCharacters));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.head));

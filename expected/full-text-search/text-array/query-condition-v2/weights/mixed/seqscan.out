@@ -31,10 +31,9 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
        ('Groonga OR RDBMS -PGroonga',
         ARRAY[5, 0],
         'pgrn_index')::pgroonga_full_text_search_condition;
- id |   title    |                 content                  | pgroonga_score 
-----+------------+------------------------------------------+----------------
-  1 | PostgreSQL | PostgreSQL is a RDBMS.                   |              0
-  2 | Groonga    | Groonga is fast full text search engine. |              0
-(2 rows)
+ id |  title  |                 content                  | pgroonga_score 
+----+---------+------------------------------------------+----------------
+  2 | Groonga | Groonga is fast full text search engine. |              0
+(1 row)
 
 DROP TABLE memos;
