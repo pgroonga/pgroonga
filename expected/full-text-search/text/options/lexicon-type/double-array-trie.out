@@ -15,7 +15,7 @@ SELECT *
 (1 row)
 
 SELECT entry->>3 AS flags
-  FROM jsonb_array_elements((pgroonga_command('table_list')::jsonb#>'{1}') - 0)
+  FROM json_array_elements(pgroonga_command('table_list')::json#>'{1}')
        AS entry
  WHERE entry->>1 = 'Lexicon' || 'pgrn_index'::regclass::oid || '_0';
           flags           
