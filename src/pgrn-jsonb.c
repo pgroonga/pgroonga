@@ -870,7 +870,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 										 PGrnJSONBCreateData *jsonbData)
 {
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_table_flags flags;
+	grn_table_flags flags = 0;
 	grn_obj *type;
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;

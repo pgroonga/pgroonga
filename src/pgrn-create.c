@@ -114,7 +114,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 {
 	grn_id typeID = GRN_ID_NIL;
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_table_flags flags;
+	grn_table_flags flags = 0;
 	grn_obj *type;
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
@@ -163,6 +163,10 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  &normalizer, normalizerName,
 							  tokenFilters,
 							  &flags);
+	}
+	else
+	{
+		flags |= GRN_OBJ_TABLE_PAT_KEY;
 	}
 
 	snprintf(lexiconName, sizeof(lexiconName),

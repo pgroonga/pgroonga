@@ -334,8 +334,6 @@ PGrnApplyOptionValues(Relation index,
 	const char *tokenFilterNames;
 	const char *lexiconTypeName;
 
-	*lexiconType = GRN_TABLE_PAT_KEY;
-
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
 	{
@@ -433,16 +431,20 @@ PGrnApplyOptionValues(Relation index,
 	{
 		if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_HASH_TABLE) == 0)
 		{
-			*lexiconType = GRN_TABLE_HASH_KEY;
+			*lexiconType |= GRN_OBJ_TABLE_HASH_KEY;
 		}
 		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_PATRICIA_TRIE) == 0)
 		{
-			*lexiconType = GRN_TABLE_PAT_KEY;
+			*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 		}
 		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) == 0)
 		{
-			*lexiconType = GRN_TABLE_DAT_KEY;
+			*lexiconType |= GRN_OBJ_TABLE_DAT_KEY;
 		}
+	}
+	else
+	{
+		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 	}
 #endif
 }

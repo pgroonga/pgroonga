@@ -96,7 +96,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
 	grn_obj *tokenFilters = &(buffers->tokenFilters);
-	grn_table_flags flags;
+	grn_table_flags flags = 0;
 
 	if (data->indexOID == indexOID)
 		return;
