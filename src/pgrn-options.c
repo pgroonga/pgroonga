@@ -347,6 +347,8 @@ PGrnApplyOptionValues(Relation index,
 		else
 			*normalizer = NULL;
 
+		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+
 		return;
 	}
 
