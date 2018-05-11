@@ -1794,12 +1794,34 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 						const char *term, unsigned int termSize,
 						const char *indexName, unsigned int indexNameSize)
 {
-	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
-									target, targetSize,
-									indexName, indexNameSize);
-	PGrnSequentialSearchDataSetMatchTerm(&sequentialSearchData,
-										 term, termSize);
-	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+	if (PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchDataPrepare(&sequentialSearchData,
+										target, targetSize,
+										indexName, indexNameSize);
+		PGrnSequentialSearchDataSetMatchTerm(&sequentialSearchData,
+											 term, termSize);
+		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+	}
+	else
+	{
+		grn_bool matched;
+		grn_obj targetBuffer;
+		grn_obj termBuffer;
+
+		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &targetBuffer, target, targetSize);
+
+		GRN_TEXT_INIT(&termBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &termBuffer, term, termSize);
+
+		matched = grn_operator_exec_match(ctx, &targetBuffer, &termBuffer);
+
+		GRN_OBJ_FIN(ctx, &targetBuffer);
+		GRN_OBJ_FIN(ctx, &termBuffer);
+
+		return matched;
+	}
 }
 
 /**

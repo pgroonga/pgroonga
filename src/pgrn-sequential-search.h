@@ -23,6 +23,7 @@ typedef struct PGrnSequentialSearchData
 	PGrnSequentialSearchType type;
 	uint64_t expressionHash;
 	grn_obj *expression;
+	grn_obj *variable;
 } PGrnSequentialSearchData;
 
 void

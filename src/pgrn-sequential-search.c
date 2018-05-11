@@ -44,6 +44,7 @@ PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data)
 	data->type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
 	data->expressionHash = 0;
 	data->expression = NULL;
+	data->variable = NULL;
 }
 
 void
@@ -157,7 +158,10 @@ PGrnSequentialSearchDataPrepare(PGrnSequentialSearchData *data,
 					  text,
 					  GRN_OBJ_SET);
 
-	PGrnSequentialSearchDataExecuteSetIndex(data, indexOID);
+	if (PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchDataExecuteSetIndex(data, indexOID);
+	}
 }
 
 static bool
@@ -166,7 +170,6 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 										  unsigned int expressionDataSize,
 										  PGrnSequentialSearchType type)
 {
-	grn_obj *variable;
 	uint64_t expressionHash;
 
 	if (data->type != type)
@@ -188,7 +191,7 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
 							  data->table,
 							  data->expression,
-							  variable);
+							  data->variable);
 	if (!data->expression)
 	{
 		ereport(ERROR,
@@ -314,19 +317,30 @@ PGrnSequentialSearchDataExecute(PGrnSequentialSearchData *data)
 {
 	bool matched = false;
 
-	grn_table_select(ctx,
-					 data->table,
-					 data->expression,
-					 data->matched,
-					 GRN_OP_OR);
-
-	if (grn_table_size(ctx, data->matched) == 1)
+	if (PGrnIsTemporaryIndexSearchAvailable)
 	{
-		matched = true;
-		grn_table_delete(ctx,
+		grn_table_select(ctx,
+						 data->table,
+						 data->expression,
 						 data->matched,
-						 &(data->recordID),
-						 sizeof(grn_id));
+						 GRN_OP_OR);
+
+		if (grn_table_size(ctx, data->matched) == 1)
+		{
+			matched = true;
+			grn_table_delete(ctx,
+							 data->matched,
+							 &(data->recordID),
+							 sizeof(grn_id));
+		}
+	}
+	else
+	{
+		grn_obj *result;
+
+		GRN_RECORD_SET(ctx, data->variable, data->recordID);
+		result = grn_expr_exec(ctx, data->expression, 0);
+		GRN_OBJ_IS_TRUE(ctx, result, matched);
 	}
 
 	return matched;

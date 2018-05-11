@@ -11,6 +11,7 @@
 bool PGrnIsLZ4Available;
 bool PGrnIsZlibAvailable;
 bool PGrnIsZstdAvailable;
+bool PGrnIsTemporaryIndexSearchAvailable;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -33,6 +34,14 @@ PGrnInitializeGroongaInformation(void)
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZSTD, &grnIsSupported);
 	PGrnIsZstdAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
+
+	{
+		const char *libgroonga_version;
+		libgroonga_version = grn_get_version();
+		PGrnIsTemporaryIndexSearchAvailable =
+			(atoi(libgroonga_version) >= 8 &&
+			 (strcmp(libgroonga_version, "8.0.3") >= 0));
+	}
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }
