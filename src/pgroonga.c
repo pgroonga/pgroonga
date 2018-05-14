@@ -1794,7 +1794,7 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 						const char *term, unsigned int termSize,
 						const char *indexName, unsigned int indexNameSize)
 {
-	if (PGrnIsTemporaryIndexSearchAvailable)
+	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
 		PGrnSequentialSearchDataPrepare(&sequentialSearchData,
 										target, targetSize,
