@@ -669,6 +669,7 @@ libmsgpack-dev
            "packages/debian94/changelog",
            "packages/debian95/changelog",
            "packages/debian96/changelog",
+           "packages/debian10/changelog",
            "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
