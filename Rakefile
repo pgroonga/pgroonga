@@ -359,6 +359,10 @@ postgresql#{postgresql_package_version}-devel
       "i386",
       "amd64",
     ]
+    postgresql_versions = [
+      "10",
+      :system,
+    ]
     rsync_path = rsync_base_path
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
@@ -376,37 +380,49 @@ postgresql#{postgresql_package_version}-devel
       cd(apt_dir) do
         sh("vagrant", "destroy", "--force")
         code_names.each do |code_name|
-          architectures.each do |arch|
-            if code_name == "jessie"
-              postgresql_version = "9.4"
-            else
-              postgresql_version = "9.6"
-            end
-            short_postgresql_version = postgresql_version.delete(".")
+          postgresql_versions.each do |postgresql_version|
+            next if postgresql_version != :system and code_name == "jessie"
+            architectures.each do |arch|
+              use_system_postgresql = (postgresql_version == :system)
+              if use_system_postgresql
+                if code_name == "jessie"
+                  postgresql_version = "9.4"
+                else
+                  postgresql_version = "9.6"
+                end
+              end
+              short_postgresql_version = postgresql_version.delete(".")
 
-            rm_rf("tmp/debian")
-            debian_dir = "debian#{short_postgresql_version}"
-            prepare_debian_dir("#{absolute_packages_dir}/#{debian_dir}",
-                               "tmp/debian",
-                               debian_variables)
+              rm_rf("tmp/debian")
+              debian_dir = "debian#{short_postgresql_version}"
+              prepare_debian_dir("#{absolute_packages_dir}/#{debian_dir}",
+                                 "tmp/debian",
+                                 debian_variables)
 
-            File.open("tmp/env.sh", "w") do |file|
-              file.puts(<<-ENV)
+              File.open("tmp/env.sh", "w") do |file|
+                file.puts(<<-ENV)
 PACKAGE=#{package}
 VERSION=#{version}
+USE_SYSTEM_POSTGRESQL=#{use_system_postgresql}
 DEPENDED_PACKAGES="
 debhelper
 pkg-config
 libgroonga-dev
-postgresql-server-dev-#{postgresql_version}
 libmsgpack-dev
 "
-              ENV
-            end
+SYSTEM_POSTGRESQL_DEPENDED_PACKAGES="
+postgresql-server-dev-#{postgresql_version}
+"
+OFFICIAL_POSTGRESQL_DEPENDED_PACKAGES="
+postgresql-server-dev-#{postgresql_version}
+"
+                ENV
+              end
 
-            id = "#{distribution}-#{code_name}-#{arch}"
-            sh("vagrant", "up", id)
-            sh("vagrant", "destroy", "--force", id)
+              id = "#{distribution}-#{code_name}-#{arch}"
+              sh("vagrant", "up", id)
+              sh("vagrant", "destroy", "--force", id)
+            end
           end
         end
       end

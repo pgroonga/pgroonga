@@ -30,19 +30,31 @@ EOF
     else
       run sudo apt update --allow-insecure-repositories
     fi
-    run sudo apt install -y --allow-unauthenticated groonga-keyring
+    run sudo apt install -V -y --allow-unauthenticated groonga-keyring
     run sudo apt update
     ;;
   ubuntu)
     component=universe
-    run sudo apt -y install software-properties-common
+    run sudo apt install -V -y software-properties-common
     run sudo add-apt-repository -y universe
     run sudo add-apt-repository -y ppa:groonga/ppa
     run sudo apt update
     ;;
 esac
 
-run sudo apt-get install -V -y build-essential devscripts ${DEPENDED_PACKAGES}
+run sudo apt install -V -y build-essential devscripts ${DEPENDED_PACKAGES}
+
+if [ ${USE_SYSTEM_POSTGRESQL} = "true" ]; then
+  run sudo apt install -V -y ${SYSTEM_POSTGRESQL_DEPENDED_PACKAGES}
+else
+  run cat <<EOF | run sudo tee /etc/apt/sources.list.d/pgdg.list
+deb http://apt.postgresql.org/pub/repos/apt/ ${code_name}-pgdg main
+EOF
+  run wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+    run sudo apt-key add -
+  run sudo apt update
+  run sudo apt install -V -y ${OFFICIAL_POSTGRESQL_DEPENDED_PACKAGES}
+fi
 
 run mkdir -p build
 run cp /vagrant/tmp/${PACKAGE}-${VERSION}.tar.gz \
