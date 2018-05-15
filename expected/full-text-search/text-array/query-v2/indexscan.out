@@ -21,16 +21,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &@~ 'rdbms OR engine';
-                      QUERY PLAN                      
-------------------------------------------------------
+ WHERE contents &@~ 'rdbms oss OR engine';
+                        QUERY PLAN                        
+----------------------------------------------------------
  Index Scan using pgroonga_memos_index on memos
-   Index Cond: (contents &@~ 'rdbms OR engine'::text)
+   Index Cond: (contents &@~ 'rdbms oss OR engine'::text)
 (2 rows)
 
 SELECT title, contents
   FROM memos
- WHERE contents &@~ 'rdbms OR engine';
+ WHERE contents &@~ 'rdbms oss OR engine';
    title    |                                         contents                                          
 ------------+-------------------------------------------------------------------------------------------
  PostgreSQL | {"PostgreSQL is an OSS RDBMS","PostgreSQL has partial full-text search support"}
