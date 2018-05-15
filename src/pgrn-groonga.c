@@ -40,7 +40,7 @@ PGrnInitializeGroongaInformation(void)
 		libgroonga_version = grn_get_version();
 		PGrnIsTemporaryIndexSearchAvailable =
 			(atoi(libgroonga_version) >= 8 &&
-			 (strcmp(libgroonga_version, "8.0.3") >= 0));
+			 (strcmp(libgroonga_version, "8.0.2") > 0));
 	}
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
