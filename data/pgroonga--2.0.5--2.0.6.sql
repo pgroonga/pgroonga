@@ -68,6 +68,22 @@ CREATE OPERATOR &@ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_query_varchar_condition
+	(target varchar, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_varchar_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE OPERATOR &@~ (
+	PROCEDURE = pgroonga_query_varchar_condition,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_query_varchar_condition_with_scorers
 	(target varchar,
 	 condition pgroonga_full_text_search_condition_with_scorers)
