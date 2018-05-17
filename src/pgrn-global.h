@@ -15,6 +15,8 @@ struct PGrnBuffers
 	grn_obj normalizer;
 	grn_obj tokenFilters;
 	grn_obj jsonbValueKeys;
+	grn_obj text;
+	grn_obj texts;
 	grn_obj walPosition;
 	grn_obj walValue;
 	grn_obj maxRecordSize;
