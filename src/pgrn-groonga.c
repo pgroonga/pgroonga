@@ -379,6 +379,14 @@ PGrnCreateColumnWithSize(Relation	index,
 }
 
 void
+PGrnIndexColumnClearSources(Relation index,
+							grn_obj *indexColumn)
+{
+	GRN_BULK_REWIND(&(buffers->sourceIDs));
+	PGrnIndexColumnSetSourceIDs(index, indexColumn, &(buffers->sourceIDs));
+}
+
+void
 PGrnIndexColumnSetSource(Relation index,
 						 grn_obj *indexColumn,
 						 grn_obj *source)

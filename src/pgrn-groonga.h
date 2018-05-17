@@ -64,6 +64,8 @@ grn_obj *PGrnCreateColumnWithSize(Relation index,
 								  grn_column_flags flags,
 								  grn_obj *type);
 
+void PGrnIndexColumnClearSources(Relation index,
+								 grn_obj *indexColumn);
 void PGrnIndexColumnSetSource(Relation index,
 							  grn_obj *indexColumn,
 							  grn_obj *source);
