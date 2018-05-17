@@ -4,6 +4,8 @@
 
 #include <groonga.h>
 
+#include <utils/array.h>
+
 typedef enum  {
 	PGRN_SEQUENTIAL_SEARCH_UNKNOWN,
 	PGRN_SEQUENTIAL_SEARCH_MATCH_TERM,
@@ -15,10 +17,12 @@ typedef struct PGrnSequentialSearchData
 {
 	grn_obj *table;
 	grn_obj *textColumn;
+	grn_obj *textsColumn;
 	grn_id recordID;
 	Oid indexOID;
 	grn_obj *lexicon;
 	grn_obj *indexColumn;
+	grn_obj *indexColumnSource;
 	grn_obj *matched;
 	PGrnSequentialSearchType type;
 	uint64_t expressionHash;
@@ -31,11 +35,17 @@ PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data);
 void
 PGrnSequentialSearchDataFinalize(PGrnSequentialSearchData *data);
 void
-PGrnSequentialSearchDataPrepare(PGrnSequentialSearchData *data,
-								const char *target,
-								unsigned int targetSize,
-								const char *indexName,
-								unsigned int indexNameSize);
+PGrnSequentialSearchDataPrepareText(PGrnSequentialSearchData *data,
+									const char *target,
+									unsigned int targetSize,
+									const char *indexName,
+									unsigned int indexNameSize);
+void
+PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
+									 ArrayType *targets,
+									 grn_obj *isTargets,
+									 const char *indexName,
+									 unsigned int indexNameSize);
 void
 PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 									 const char *term,

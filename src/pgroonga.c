@@ -1658,10 +1658,10 @@ pgroonga_execute_binary_operator_string_array(ArrayType *operands1,
 		if (isNULL)
 			continue;
 
-		PGrnDatumExtractString(operandDatum1,
-							   ARR_ELEMTYPE(operands1),
-							   &operand1,
-							   &operandSize1);
+		PGrnPGDatumExtractString(operandDatum1,
+								 ARR_ELEMTYPE(operands1),
+								 &operand1,
+								 &operandSize1);
 		if (!operand1)
 			continue;
 
@@ -1769,9 +1769,9 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 {
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
-		PGrnSequentialSearchDataPrepare(&sequentialSearchData,
-										target, targetSize,
-										indexName, indexNameSize);
+		PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
+											target, targetSize,
+											indexName, indexNameSize);
 		PGrnSequentialSearchDataSetMatchTerm(&sequentialSearchData,
 											 term, termSize);
 		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
@@ -1906,9 +1906,30 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						 const char *query, unsigned int querySize,
 						 const char *indexName, unsigned int indexNameSize)
 {
-	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
-									target, targetSize,
-									indexName, indexNameSize);
+	PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
+										target, targetSize,
+										indexName, indexNameSize);
+	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
+									 query, querySize);
+	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+}
+
+static bool
+pgroonga_match_query_string_array_raw(ArrayType *targets,
+									  grn_obj *isTargets,
+									  const char *query,
+									  unsigned int querySize,
+									  const char *indexName,
+									  unsigned int indexNameSize)
+{
+	if (ARR_NDIM(targets) == 0)
+		return false;
+
+	PGrnSequentialSearchDataPrepareTexts(&sequentialSearchData,
+										 targets,
+										 isTargets,
+										 indexName,
+										 indexNameSize);
 	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
 									 query, querySize);
 	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
@@ -1943,14 +1964,12 @@ pgroonga_match_query_text_array(PG_FUNCTION_ARGS)
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(query),
-													  VARSIZE_ANY_EXHDR(query),
-													  NULL,
-													  0,
-													  pgroonga_match_query_raw,
-													  NULL);
+	matched = pgroonga_match_query_string_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2526,14 +2545,12 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(query),
-													  VARSIZE_ANY_EXHDR(query),
-													  NULL,
-													  0,
-													  pgroonga_match_query_raw,
-													  NULL);
+	matched = pgroonga_match_query_string_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2571,14 +2588,12 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
 	}
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(query),
-													  VARSIZE_ANY_EXHDR(query),
-													  indexNameData,
-													  indexNameSize,
-													  pgroonga_match_query_raw,
-													  isTargets);
+	matched = pgroonga_match_query_string_array_raw(targets,
+													isTargets,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													indexNameData,
+													indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2618,14 +2633,12 @@ pgroonga_query_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
 	}
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(query),
-													  VARSIZE_ANY_EXHDR(query),
-													  indexNameData,
-													  indexNameSize,
-													  pgroonga_match_query_raw,
-													  isTargets);
+	matched = pgroonga_match_query_string_array_raw(targets,
+													isTargets,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													indexNameData,
+													indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2786,9 +2799,9 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *script, unsigned int scriptSize,
 					const char *indexName, unsigned int indexNameSize)
 {
-	PGrnSequentialSearchDataPrepare(&sequentialSearchData,
-									target, targetSize,
-									indexName, indexNameSize);
+	PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
+										target, targetSize,
+										indexName, indexNameSize);
 	PGrnSequentialSearchDataSetScript(&sequentialSearchData,
 									  script, scriptSize);
 	return PGrnSequentialSearchDataExecute(&sequentialSearchData);

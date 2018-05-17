@@ -25,10 +25,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT title, contents
   FROM memos
- WHERE contents &@~ 'rdbms oss OR engine';
+ WHERE contents &@~ 'oss search partial';
 
 SELECT title, contents
   FROM memos
- WHERE contents &@~ 'rdbms oss OR engine';
+ WHERE contents &@~ 'oss search partial';
 
 DROP TABLE memos;
