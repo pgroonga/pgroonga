@@ -16,3 +16,7 @@ bool PGrnPGIsValidFileNodeID(Oid fileNodeID);
 int PGrnPGGetSessionTimezoneOffset(void);
 pg_time_t PGrnPGTimestampToLocalTime(Timestamp timestamp);
 Timestamp PGrnPGLocalTimeToTimestamp(pg_time_t unixTimeLocal);
+void PGrnPGDatumExtractString(Datum datum,
+							  Oid type,
+							  const char **string,
+							  unsigned int *size);

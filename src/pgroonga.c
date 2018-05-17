@@ -1618,33 +1618,6 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(result);
 }
 
-static void
-PGrnDatumExtractString(Datum datum,
-					   Oid type,
-					   const char **string,
-					   unsigned int *size)
-{
-	switch (type)
-	{
-	case VARCHAROID:
-	{
-		VarChar *varCharData = DatumGetVarCharPP(datum);
-		*string = VARDATA_ANY(varCharData);
-		*size = VARSIZE_ANY_EXHDR(varCharData);
-		break;
-	}
-	case TEXTOID:
-	{
-		text *textData = DatumGetTextPP(datum);
-		*string = VARDATA_ANY(textData);
-		*size = VARSIZE_ANY_EXHDR(textData);
-		break;
-	}
-	default:
-		break;
-	}
-}
-
 typedef bool (*PGrnBinaryOperatorStringFunction)(const char *operand1,
 												 unsigned int operandSize1,
 												 const char *operand2,
@@ -1730,10 +1703,10 @@ pgroonga_execute_binary_operator_in_string(const char *operand1,
 		if (isNULL)
 			continue;
 
-		PGrnDatumExtractString(operandDatum2,
-							   ARR_ELEMTYPE(operands2),
-							   &operand2,
-							   &operandSize2);
+		PGrnPGDatumExtractString(operandDatum2,
+								 ARR_ELEMTYPE(operands2),
+								 &operand2,
+								 &operandSize2);
 		if (!operand2)
 			continue;
 
@@ -1770,10 +1743,10 @@ pgroonga_execute_binary_operator_in_string_array(ArrayType *operands1,
 		if (isNULL)
 			continue;
 
-		PGrnDatumExtractString(operandDatum1,
-							   ARR_ELEMTYPE(operands1),
-							   &operand1,
-							   &operandSize1);
+		PGrnPGDatumExtractString(operandDatum1,
+								 ARR_ELEMTYPE(operands1),
+								 &operand1,
+								 &operandSize1);
 		if (!operand1)
 			continue;
 

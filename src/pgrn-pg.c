@@ -7,6 +7,7 @@
 #include <access/heapam.h>
 #include <access/htup_details.h>
 #include <catalog/pg_tablespace.h>
+#include <catalog/pg_type.h>
 #include <pgtime.h>
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
@@ -205,4 +206,31 @@ PGrnPGLocalTimeToTimestamp(pg_time_t unixTimeLocal)
 	unixTimeUTC = unixTimeLocal - offset;
 
 	return time_t_to_timestamptz(unixTimeUTC);
+}
+
+void
+PGrnPGDatumExtractString(Datum datum,
+						 Oid type,
+						 const char **string,
+						 unsigned int *size)
+{
+	switch (type)
+	{
+	case VARCHAROID:
+	{
+		VarChar *varCharData = DatumGetVarCharPP(datum);
+		*string = VARDATA_ANY(varCharData);
+		*size = VARSIZE_ANY_EXHDR(varCharData);
+		break;
+	}
+	case TEXTOID:
+	{
+		text *textData = DatumGetTextPP(datum);
+		*string = VARDATA_ANY(textData);
+		*size = VARSIZE_ANY_EXHDR(textData);
+		break;
+	}
+	default:
+		break;
+	}
 }
