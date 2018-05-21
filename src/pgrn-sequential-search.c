@@ -52,6 +52,7 @@ PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data)
 	data->expressionHash = 0;
 	data->expression = NULL;
 	data->variable = NULL;
+	data->useIndex = false;
 }
 
 void
@@ -106,6 +107,7 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 	}
 
 	data->indexColumnSource = NULL;
+	data->useIndex = false;
 }
 
 static void
@@ -113,6 +115,10 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 										Oid indexOID,
 										grn_obj *source)
 {
+	data->useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
+					  (OidIsValid(indexOID) ||
+					   source == data->textsColumn));
+
 	if (data->indexOID != indexOID)
 	{
 		Relation index;
@@ -172,9 +178,16 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 
 	if (data->indexColumnSource != source)
 	{
-		PGrnIndexColumnSetSource(InvalidRelation,
-								 data->indexColumn,
-								 source);
+		if (data->useIndex)
+		{
+			PGrnIndexColumnSetSource(InvalidRelation,
+									 data->indexColumn,
+									 source);
+		}
+		else
+		{
+			PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
+		}
 		data->indexColumnSource = source;
 	}
 }
@@ -435,7 +448,7 @@ PGrnSequentialSearchDataExecute(PGrnSequentialSearchData *data)
 {
 	bool matched = false;
 
-	if (PGrnIsTemporaryIndexSearchAvailable)
+	if (data->useIndex)
 	{
 		grn_table_select(ctx,
 						 data->table,
