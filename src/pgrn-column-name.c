@@ -8,7 +8,7 @@
 #include <mb/pg_wchar.h>
 
 static const char *ENCODED_CHARACTER_FORMAT = "@%05x";
-static const int ENCODED_CHARACTER_LENGTH = 5;
+static const int ENCODED_CHARACTER_LENGTH = 6;
 
 static bool
 PGrnColumnNameIsUsableCharacterASCII(char character)
