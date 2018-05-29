@@ -14,6 +14,11 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content @@ 'rdbms OR engine';
+
 SELECT id, content
   FROM memos
  WHERE content @@ 'rdbms OR engine';

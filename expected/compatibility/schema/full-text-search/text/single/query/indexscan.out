@@ -10,6 +10,16 @@ CREATE INDEX grnindex ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content @@ 'rdbms OR engine';
+                     QUERY PLAN                     
+----------------------------------------------------
+ Index Scan using grnindex on memos
+   Index Cond: (content @@ 'rdbms OR engine'::text)
+(2 rows)
+
 SELECT id, content
   FROM memos
  WHERE content @@ 'rdbms OR engine';
