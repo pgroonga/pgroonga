@@ -12,11 +12,18 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 
+#include <xxhash.h>
+
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_highlighter *highlighter = NULL;
 static Oid indexOID = InvalidOid;
 static grn_obj *lexicon = NULL;
+static XXH64_state_t *hashState = NULL;
+static uint64_t hashStateSeed = 0;
+static XXH64_hash_t keywordsHash = 0;
+static const char *keywordsHashDelimiter = "\0";
+static const size_t keywordsHashDelimiterSize = 1;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
@@ -24,6 +31,7 @@ void
 PGrnInitializeHighlightHTML(void)
 {
 	highlighter = grn_highlighter_open(ctx);
+	hashState = XXH64_createState();
 }
 
 void
@@ -41,6 +49,12 @@ PGrnFinalizeHighlightHTML(void)
 	{
 		grn_obj_close(ctx, lexicon);
 		lexicon = NULL;
+	}
+
+	if (hashState)
+	{
+		XXH64_freeState(hashState);
+		hashState = NULL;
 	}
 }
 
@@ -62,34 +76,113 @@ PGrnHighlightHTML(text *target)
 }
 
 static void
+PGrnHighlightHTMLClearKeywords(void)
+{
+#ifdef GROONGA_8_0_4
+	grn_highlighter_clear_keywords(ctx, highlighter);
+#else
+	grn_highlighter_close(ctx, highlighter);
+	highlighter = grn_highlighter_open(ctx);
+#endif
+}
+
+static void
 PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 {
-	int i, n;
-
-	if (ARR_NDIM(keywords) == 0)
+	if (ARR_NDIM(keywords) != 1)
 	{
-		n = 0;
-	}
-	else
-	{
-		n = ARR_DIMS(keywords)[0];
+		if (keywordsHash != 0) {
+			PGrnHighlightHTMLClearKeywords();
+			keywordsHash = 0;
+		}
+		return;
 	}
 
-	for (i = 1; i <= n; i++)
+	if (keywordsHash == 0)
 	{
-		Datum keywordDatum;
-		text *keyword;
+		ArrayIterator iterator;
+		Datum datum;
 		bool isNULL;
 
-		keywordDatum = array_ref(keywords, 1, &i, -1, -1, false, 'i', &isNULL);
-		if (isNULL)
-			continue;
+		PGrnHighlightHTMLClearKeywords();
+		XXH64_reset(hashState, hashStateSeed);
+		iterator = pgrn_array_create_iterator(keywords, 0);
+		while (array_iterate(iterator, &datum, &isNULL))
+		{
+			text *keyword;
 
-		keyword = DatumGetTextPP(keywordDatum);
-		grn_highlighter_add_keyword(ctx,
-									highlighter,
-									VARDATA_ANY(keyword),
-									VARSIZE_ANY_EXHDR(keyword));
+			if (isNULL)
+				continue;
+
+			keyword = DatumGetTextPP(datum);
+			grn_highlighter_add_keyword(ctx,
+										highlighter,
+										VARDATA_ANY(keyword),
+										VARSIZE_ANY_EXHDR(keyword));
+			XXH64_update(hashState,
+						 VARDATA_ANY(keyword),
+						 VARSIZE_ANY_EXHDR(keyword));
+			XXH64_update(hashState,
+						 keywordsHashDelimiter,
+						 keywordsHashDelimiterSize);
+		}
+		array_free_iterator(iterator);
+		keywordsHash = XXH64_digest(hashState);
+		return;
+	}
+
+	{
+		ArrayIterator iterator;
+		Datum datum;
+		bool isNULL;
+		XXH64_hash_t newKeywordsHash;
+
+		XXH64_reset(hashState, hashStateSeed);
+		iterator = pgrn_array_create_iterator(keywords, 0);
+		while (array_iterate(iterator, &datum, &isNULL))
+		{
+			text *keyword;
+
+			if (isNULL)
+				continue;
+
+			keyword = DatumGetTextPP(datum);
+			XXH64_update(hashState,
+						 VARDATA_ANY(keyword),
+						 VARSIZE_ANY_EXHDR(keyword));
+			XXH64_update(hashState,
+						 keywordsHashDelimiter,
+						 keywordsHashDelimiterSize);
+		}
+		array_free_iterator(iterator);
+		newKeywordsHash = XXH64_digest(hashState);
+		if (keywordsHash == newKeywordsHash)
+			return;
+
+		keywordsHash = newKeywordsHash;
+	}
+
+	{
+		ArrayIterator iterator;
+		Datum datum;
+		bool isNULL;
+
+		PGrnHighlightHTMLClearKeywords();
+		iterator = pgrn_array_create_iterator(keywords, 0);
+		while (array_iterate(iterator, &datum, &isNULL))
+		{
+			text *keyword;
+
+			if (isNULL)
+				continue;
+
+			keyword = DatumGetTextPP(datum);
+			grn_highlighter_add_keyword(ctx,
+										highlighter,
+										VARDATA_ANY(keyword),
+										VARSIZE_ANY_EXHDR(keyword));
+		}
+		array_free_iterator(iterator);
 	}
 }
 
