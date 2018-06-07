@@ -83,6 +83,7 @@ PGrnHighlightHTMLClearKeywords(void)
 #else
 	grn_highlighter_close(ctx, highlighter);
 	highlighter = grn_highlighter_open(ctx);
+	indexOID = InvalidOid;
 #endif
 }
 
