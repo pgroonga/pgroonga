@@ -6385,6 +6385,7 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 			else
 			{
 				info->norm_selec = (double) estimatedSize / (double) nRecords;
+				path->path.rows = (double) estimatedSize;
 			}
 		}
 		else
