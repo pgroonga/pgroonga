@@ -6374,7 +6374,7 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 
 			nRecords = grn_table_size(ctx, sourcesTable);
 			if (estimatedSize > nRecords)
-				estimatedSize = nRecords;
+				estimatedSize = nRecords - 1;
 			if (estimatedSize == nRecords)
 			{
 				/* TODO: estimatedSize == nRecords means
