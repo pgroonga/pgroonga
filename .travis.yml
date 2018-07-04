@@ -28,6 +28,12 @@ matrix:
     #     WAL_SUPPORTED: "yes"
     #   addons:
     #     postgresql: "10.0"
+    - env:
+        PG_VERSION: 9.6
+        WAL_SUPPORTED: "yes"
+        GROONGA_MASTER: "yes"
+      addons:
+        postgresql: "9.6"
 sudo: required
 install:
   - sudo apt-get update -qq
