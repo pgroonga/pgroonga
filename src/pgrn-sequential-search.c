@@ -115,9 +115,16 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 										Oid indexOID,
 										grn_obj *source)
 {
+	grn_column_flags column_flags =
+		GRN_OBJ_COLUMN_INDEX |
+		GRN_OBJ_WITH_POSITION;
+
 	data->useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
 					  (OidIsValid(indexOID) ||
 					   source == data->textsColumn));
+
+	if (grn_obj_is_vector_column(ctx, source))
+		column_flags |= GRN_OBJ_WITH_SECTION;
 
 	if (data->indexOID != indexOID)
 	{
@@ -125,7 +132,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizer = NULL;
 		grn_obj *tokenFilters = &(buffers->tokenFilters);
-		grn_table_flags flags = 0;
+		grn_table_flags table_flags = 0;
 
 		index = PGrnPGResolveIndexID(indexOID);
 		GRN_BULK_REWIND(tokenFilters);
@@ -134,12 +141,12 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 							  &normalizer, PGRN_DEFAULT_NORMALIZER,
 							  tokenFilters,
-							  &flags);
+							  &table_flags);
 		RelationClose(index);
 
 		data->lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
-										flags,
+										table_flags,
 										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 										tokenizer,
 										normalizer,
@@ -148,7 +155,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
 							 "index",
-							 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION,
+							 column_flags,
 							 data->table);
 		data->indexOID = indexOID;
 	}
@@ -157,13 +164,13 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	{
 		grn_obj *tokenizer;
 		grn_obj *normalizer;
-		grn_table_flags flags = GRN_OBJ_TABLE_PAT_KEY;
+		grn_table_flags table_flags = GRN_OBJ_TABLE_PAT_KEY;
 
 		tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
 		normalizer = PGrnLookup(PGRN_DEFAULT_NORMALIZER, ERROR);
 		data->lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
-										flags,
+										table_flags,
 										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 										tokenizer,
 										normalizer,
@@ -172,7 +179,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
 							 "index",
-							 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION,
+							 column_flags,
 							 data->table);
 	}
 
