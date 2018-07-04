@@ -23,11 +23,16 @@ matrix:
         WAL_SUPPORTED: "yes"
       addons:
         postgresql: "9.6"
-    # - env:
-    #     PG_VERSION: 10.0
-    #     WAL_SUPPORTED: "yes"
-    #   addons:
-    #     postgresql: "10.0"
+    - env:
+        PG_VERSION: 10
+        WAL_SUPPORTED: "yes"
+        PGPORT: 5433
+      addons:
+        postgresql: "10"
+        apt:
+          packages:
+            - postgresql-10
+            - postgresql-client-10
     - env:
         PG_VERSION: 9.6
         WAL_SUPPORTED: "yes"
