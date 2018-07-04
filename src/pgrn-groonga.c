@@ -52,7 +52,11 @@ PGrnInspect(grn_obj *object)
 	grn_obj *buffer = &(PGrnBuffers.inspect);
 
 	GRN_BULK_REWIND(buffer);
-	grn_inspect(ctx, buffer, object);
+	{
+		grn_rc rc = ctx->rc;
+		grn_inspect(ctx, buffer, object);
+		ctx->rc = rc;
+	}
 	GRN_TEXT_PUTC(ctx, buffer, '\0');
 	return GRN_TEXT_VALUE(buffer);
 }
@@ -63,8 +67,13 @@ PGrnInspectName(grn_obj *object)
 	static char name[GRN_TABLE_MAX_KEY_SIZE];
 	int nameSize;
 
-	nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
-	name[nameSize] = '\0';
+	{
+		grn_rc rc = ctx->rc;
+		nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+		name[nameSize] = '\0';
+		ctx->rc = rc;
+	}
+
 	return name;
 }
 
