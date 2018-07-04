@@ -43,6 +43,8 @@ else
   make installcheck \
        EXTRA_REGRESS_OPTS="${launcher}"
 fi
-if [ $? != 0 ]; then
+success=$?
+if [ $success != 0 ]; then
   cat regression.diffs
 fi
+exit $success
