@@ -394,7 +394,7 @@ CREATE FUNCTION pgroonga_match_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text,
@@ -411,7 +411,7 @@ CREATE FUNCTION pgroonga_match_text_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_condition,
@@ -429,7 +429,7 @@ CREATE FUNCTION pgroonga_match_text_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_condition_with_scorers,
@@ -445,7 +445,7 @@ CREATE FUNCTION pgroonga_match_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array,
@@ -462,7 +462,7 @@ CREATE FUNCTION pgroonga_match_text_array_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array_condition,
@@ -480,7 +480,7 @@ CREATE FUNCTION pgroonga_match_text_array_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_text_array_condition_with_scorers,
@@ -496,7 +496,7 @@ CREATE FUNCTION pgroonga_match_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_varchar,
@@ -513,7 +513,7 @@ CREATE FUNCTION pgroonga_match_varchar_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_varchar_condition,
@@ -531,7 +531,7 @@ CREATE FUNCTION pgroonga_match_varchar_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@ (
 	PROCEDURE = pgroonga_match_varchar_condition_with_scorers,
@@ -547,7 +547,7 @@ CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &> (
 	PROCEDURE = pgroonga_contain_varchar_array,
@@ -588,7 +588,7 @@ CREATE FUNCTION pgroonga_query_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
@@ -614,7 +614,7 @@ CREATE FUNCTION pgroonga_query_text_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_condition,
@@ -632,7 +632,7 @@ CREATE FUNCTION pgroonga_query_text_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_condition_with_scorers,
@@ -648,7 +648,7 @@ CREATE FUNCTION pgroonga_query_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
@@ -674,7 +674,7 @@ CREATE FUNCTION pgroonga_query_text_array_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_array_condition,
@@ -692,7 +692,7 @@ CREATE FUNCTION pgroonga_query_text_array_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_text_array_condition_with_scorers,
@@ -708,7 +708,7 @@ CREATE FUNCTION pgroonga_query_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &? (
@@ -734,7 +734,7 @@ CREATE FUNCTION pgroonga_query_varchar_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_varchar_condition,
@@ -752,7 +752,7 @@ CREATE FUNCTION pgroonga_query_varchar_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@~ (
 	PROCEDURE = pgroonga_query_varchar_condition_with_scorers,
@@ -775,7 +775,7 @@ BEGIN
 			LANGUAGE C
 			IMMUTABLE
 			STRICT
-			COST 100;
+			COST 200;
 
 		-- Deprecated since 1.2.2.
 		CREATE OPERATOR &? (
@@ -803,7 +803,7 @@ CREATE FUNCTION pgroonga_similar_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
@@ -828,7 +828,7 @@ CREATE FUNCTION pgroonga_similar_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
@@ -853,7 +853,7 @@ CREATE FUNCTION pgroonga_similar_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
@@ -878,7 +878,7 @@ CREATE FUNCTION pgroonga_prefix_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_text,
@@ -894,7 +894,7 @@ CREATE FUNCTION pgroonga_prefix_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_text_array,
@@ -919,7 +919,7 @@ CREATE FUNCTION pgroonga_prefix_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar,
@@ -935,7 +935,7 @@ CREATE FUNCTION pgroonga_prefix_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar_array,
@@ -960,7 +960,7 @@ CREATE FUNCTION pgroonga_prefix_rk_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_text,
@@ -976,7 +976,7 @@ CREATE FUNCTION pgroonga_prefix_rk_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_text_array,
@@ -1001,7 +1001,7 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_varchar,
@@ -1017,7 +1017,7 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~ (
 	PROCEDURE = pgroonga_prefix_rk_varchar_array,
@@ -1042,7 +1042,7 @@ CREATE FUNCTION pgroonga_script_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_text,
@@ -1058,7 +1058,7 @@ CREATE FUNCTION pgroonga_script_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_text_array,
@@ -1074,7 +1074,7 @@ CREATE FUNCTION pgroonga_script_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &` (
 	PROCEDURE = pgroonga_script_varchar,
@@ -1097,7 +1097,7 @@ BEGIN
 			LANGUAGE C
 			IMMUTABLE
 			STRICT
-			COST 100;
+			COST 200;
 
 		CREATE OPERATOR &` (
 			PROCEDURE = pgroonga_script_jsonb,
@@ -1116,7 +1116,7 @@ CREATE FUNCTION pgroonga_match_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &@> (
@@ -1141,7 +1141,7 @@ CREATE FUNCTION pgroonga_match_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga_match_in_text_array,
@@ -1157,7 +1157,7 @@ CREATE FUNCTION pgroonga_match_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &@| (
 	PROCEDURE = pgroonga_match_in_varchar,
@@ -1173,7 +1173,7 @@ CREATE FUNCTION pgroonga_query_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 /* Deprecated since 1.2.1. */
 CREATE OPERATOR &?> (
@@ -1207,7 +1207,7 @@ CREATE FUNCTION pgroonga_query_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
@@ -1232,7 +1232,7 @@ CREATE FUNCTION pgroonga_query_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &?| (
@@ -1257,7 +1257,7 @@ CREATE FUNCTION pgroonga_prefix_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_text,
@@ -1273,7 +1273,7 @@ CREATE FUNCTION pgroonga_prefix_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_text_array,
@@ -1289,7 +1289,7 @@ CREATE FUNCTION pgroonga_prefix_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_varchar,
@@ -1305,7 +1305,7 @@ CREATE FUNCTION pgroonga_prefix_in_varchar_array(varchar[], varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^| (
 	PROCEDURE = pgroonga_prefix_in_varchar_array,
@@ -1321,7 +1321,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_text,
@@ -1337,7 +1337,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_text_array,
@@ -1353,7 +1353,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_varchar,
@@ -1369,7 +1369,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar_array(varchar[], varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &^~| (
 	PROCEDURE = pgroonga_prefix_rk_in_varchar_array,
@@ -1385,7 +1385,7 @@ CREATE FUNCTION pgroonga_regexp_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &~ (
 	PROCEDURE = pgroonga_regexp_text,
@@ -1401,7 +1401,7 @@ CREATE FUNCTION pgroonga_regexp_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 100;
+	COST 200;
 
 CREATE OPERATOR &~ (
 	PROCEDURE = pgroonga_regexp_varchar,
