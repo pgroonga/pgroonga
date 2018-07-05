@@ -5135,7 +5135,7 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	if (!table)
 		table = so->sourcesTable;
 
-	if (dir == BackwardScanDirection)
+	if (ScanDirectionIsBackward(dir))
 		flags |= GRN_CURSOR_DESCENDING;
 	else
 		flags |= GRN_CURSOR_ASCENDING;
@@ -5322,7 +5322,7 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 
 	PGrnFillBorder(scan, &min, &minSize, &max, &maxSize, &flags);
 
-	if (dir == BackwardScanDirection)
+	if (ScanDirectionIsBackward(dir))
 		flags |= GRN_CURSOR_DESCENDING;
 	else
 		flags |= GRN_CURSOR_ASCENDING;
@@ -6385,7 +6385,7 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 			else
 			{
 				info->norm_selec = (double) estimatedSize / (double) nRecords;
-				path->path.rows = (double) estimatedSize;
+				/* path->path.rows = (double) estimatedSize; */
 			}
 		}
 		else
