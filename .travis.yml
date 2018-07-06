@@ -103,6 +103,7 @@ script:
         EXTRA_REGRESS_OPTS="--launcher=$(pwd)/test/short-pgappname"
   - |
     if [ "${WAL_SUPPORTED}" = "yes" ]; then
+      find / -name 'initdb'
       test/run-test.rb
     fi
 after_failure:
