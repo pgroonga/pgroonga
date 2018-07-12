@@ -28,6 +28,11 @@ if [ -n "${pg_version}" ]; then
   make > /dev/null
   sudo make install > /dev/null
   cd ..
+  if [ "${PGROONGA_MASTER}" = "yes" ]; then
+    rm -rf pgroonga
+  else
+    rm -rf pgroonga-*
+  fi
 
   psql -U postgres -d template1 -c 'CREATE EXTENSION pgroonga;'
 fi
