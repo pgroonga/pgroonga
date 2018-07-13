@@ -25,7 +25,7 @@ if [ -n "${pg_version}" ]; then
     rm pgroonga-*.tar.gz
     cd pgroonga-*/
   fi
-  make > /dev/null
+  make HAVE_MSGPACK=1 > /dev/null
   sudo make install > /dev/null
   cd ..
   if [ "${PGROONGA_MASTER}" = "yes" ]; then
