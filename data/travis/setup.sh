@@ -12,7 +12,7 @@ pg_version=$(ruby -r yaml \
   .travis.yml)
 
 if [ -n "${pg_version}" ]; then
-  sudo apt-get install -qq -y postgresql-server-dev-${pg_version}
+  sudo apt-get install -qq -y postgresql-server-dev-${pg_version} libmsgpack-dev
 
   if [ "${PGROONGA_MASTER}" = "yes" ]; then
     git clone --quiet --recursive --depth 1 \
