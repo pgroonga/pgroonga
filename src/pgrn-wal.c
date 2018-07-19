@@ -2108,11 +2108,11 @@ PGrnWALTruncate(Relation index)
 
 	GenericXLogFinish(state);
 
-	UnlockRelation(index, RowExclusiveLock);
-
 	PGrnIndexStatusSetWALAppliedPosition(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
 										 0);
+
+	UnlockRelation(index, RowExclusiveLock);
 
 	return nTruncatedBlocks;
 }
