@@ -1,5 +1,12 @@
 #pragma once
 
+#ifdef WIN32
+#	define PRId64 "I64d"
+#	define PRIu64 "I64u"
+#else
+#	include <inttypes.h>
+#endif
+
 #ifdef GP_VERSION
 #	define PGRN_IS_GREENPLUM
 #endif

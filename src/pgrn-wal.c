@@ -8,13 +8,6 @@
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
-#ifdef WIN32
-#	define PRId64 "I64d"
-#	define PRIu64 "I64u"
-#else
-#	include <inttypes.h>
-#endif
-
 static bool PGrnWALEnabled = false;
 
 bool

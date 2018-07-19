@@ -3554,52 +3554,82 @@ PGrnInsert(Relation index,
 		PGrnWALInsertStart(walData, sourcesTable, nValidAttributes);
 	}
 
-	if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	PG_TRY();
 	{
-		id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-		GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
-		grn_obj_set_value(ctx,
-						  sourcesCtidColumn,
-						  id,
-						  &(buffers->ctid),
-						  GRN_OBJ_SET);
-		PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
-	}
-	else
-	{
-		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64), NULL);
-		PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
-	}
-
-	for (i = 0; i < desc->natts; i++)
-	{
-		grn_obj *dataColumn;
-		Form_pg_attribute attribute = desc->attrs[i];
-		NameData *name;
-		grn_id domain;
-		unsigned char flags;
-		grn_obj *buffer;
-
-		name = &(attribute->attname);
-		if (isnull[i])
-			continue;
-
-		dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
-		buffer = &(buffers->general);
-		domain = PGrnGetType(index, i, &flags);
-		grn_obj_reinit(ctx, buffer, domain, flags);
-		PGrnConvertFromData(values[i], attribute->atttypid, buffer);
-		grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-		recordSize += GRN_BULK_VSIZE(buffer);
-		PGrnWALInsertColumn(walData, dataColumn, buffer);
-		grn_obj_unlink(ctx, dataColumn);
-		if (!PGrnCheck("failed to set column value")) {
-			continue;
+		if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+		{
+			id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
+			PGrnCheck("failed to add a record");
+			if (id == GRN_ID_NIL)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INTERNAL_ERROR),
+						 errmsg("pgroonga: failed to add a record")));
+			}
+			GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
+			grn_obj_set_value(ctx,
+							  sourcesCtidColumn,
+							  id,
+							  &(buffers->ctid),
+							  GRN_OBJ_SET);
+			PGrnCheck("failed to set ctid value: <%u>: <%" PRIu64 ">",
+					  id,
+					  packedCtid);
+			PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
 		}
-	}
+		else
+		{
+			id = grn_table_add(ctx,
+							   sourcesTable,
+							   &packedCtid,
+							   sizeof(uint64),
+							   NULL);
+			PGrnCheck("failed to add a record: <%" PRIu64 ">",
+					  packedCtid);
+			if (id == GRN_ID_NIL)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INTERNAL_ERROR),
+						 errmsg("pgroonga: "
+								"failed to add a record: <%" PRIu64 ">",
+								packedCtid)));
+			}
+			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
+		}
 
-	PGrnWALInsertFinish(walData);
-	PGrnWALFinish(walData);
+		for (i = 0; i < desc->natts; i++)
+		{
+			grn_obj *dataColumn;
+			Form_pg_attribute attribute = desc->attrs[i];
+			NameData *name;
+			grn_id domain;
+			unsigned char flags;
+			grn_obj *buffer;
+
+			name = &(attribute->attname);
+			if (isnull[i])
+				continue;
+
+			dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
+			buffer = &(buffers->general);
+			domain = PGrnGetType(index, i, &flags);
+			grn_obj_reinit(ctx, buffer, domain, flags);
+			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
+			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
+			recordSize += GRN_BULK_VSIZE(buffer);
+			PGrnWALInsertColumn(walData, dataColumn, buffer);
+			PGrnCheck("failed to set column value");
+		}
+
+		PGrnWALInsertFinish(walData);
+		PGrnWALFinish(walData);
+	}
+	PG_CATCH();
+	{
+		PGrnWALAbort(walData);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
 
 	return recordSize;
 }
