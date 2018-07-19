@@ -399,7 +399,7 @@ PGrnWALStart(Relation index)
 	if (!RelationIsValid(index))
 		return NULL;
 
-	LockRelation(index, RowExclusiveLock);
+	LockRelation(index, ShareUpdateExclusiveLock);
 
 	data = palloc(sizeof(PGrnWALData));
 
@@ -432,7 +432,7 @@ PGrnWALFinish(PGrnWALData *data)
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
 
-	UnlockRelation(data->index, RowExclusiveLock);
+	UnlockRelation(data->index, ShareUpdateExclusiveLock);
 
 	pfree(data);
 #endif
@@ -453,7 +453,7 @@ PGrnWALAbort(PGrnWALData *data)
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
 
-	UnlockRelation(data->index, RowExclusiveLock);
+	UnlockRelation(data->index, ShareUpdateExclusiveLock);
 
 	pfree(data);
 #endif
@@ -1920,13 +1920,13 @@ PGrnWALApply(Relation index)
 	if (!PGrnWALApplyNeeded(&data))
 		return 0;
 
-	LockRelation(index, RowExclusiveLock);
+	LockRelation(index, ShareUpdateExclusiveLock);
 	PGrnIndexStatusGetWALAppliedPosition(data.index,
 										 &(data.current.block),
 										 &(data.current.offset));
 	data.sources = NULL;
 	nAppliedOperations = PGrnWALApplyConsume(&data);
-	UnlockRelation(index, RowExclusiveLock);
+	UnlockRelation(index, ShareUpdateExclusiveLock);
 #endif
 	return nAppliedOperations;
 }
@@ -2062,11 +2062,11 @@ PGrnWALTruncate(Relation index)
 	BlockNumber nBlocks;
 	GenericXLogState *state;
 
-	LockRelation(index, RowExclusiveLock);
+	LockRelation(index, ShareUpdateExclusiveLock);
 	nBlocks = RelationGetNumberOfBlocks(index);
 	if (nBlocks == 0)
 	{
-		UnlockRelation(index, RowExclusiveLock);
+		UnlockRelation(index, ShareUpdateExclusiveLock);
 		return 0;
 	}
 
@@ -2112,7 +2112,7 @@ PGrnWALTruncate(Relation index)
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
 										 0);
 
-	UnlockRelation(index, RowExclusiveLock);
+	UnlockRelation(index, ShareUpdateExclusiveLock);
 
 	return nTruncatedBlocks;
 }
