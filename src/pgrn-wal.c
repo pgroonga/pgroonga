@@ -1915,7 +1915,7 @@ PGrnWALApply(Relation index)
 	PGrnWALApplyData data;
 
 	if (!PGrnWALEnabled)
-		return nAppliedOperations;
+		return false;
 
 	LockRelation(index, RowExclusiveLock);
 	data.index = index;
