@@ -991,6 +991,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	LocationIndex currentOffset;
 	BlockNumber nBlocks;
 
+	if (!PGrnWALEnabled)
+		return false;
+
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
 										 &currentBlock,
 										 &currentOffset);
@@ -1914,19 +1917,16 @@ PGrnWALApply(Relation index)
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALApplyData data;
 
-	if (!PGrnWALEnabled)
-		return false;
+	data.index = index;
+	if (!PGrnWALApplyNeeded(&data))
+		return 0;
 
 	LockRelation(index, RowExclusiveLock);
-	data.index = index;
-	if (PGrnWALApplyNeeded(&data))
-	{
-		PGrnIndexStatusGetWALAppliedPosition(data.index,
-											 &(data.current.block),
-											 &(data.current.offset));
-		data.sources = NULL;
-		nAppliedOperations = PGrnWALApplyConsume(&data);
-	}
+	PGrnIndexStatusGetWALAppliedPosition(data.index,
+										 &(data.current.block),
+										 &(data.current.offset));
+	data.sources = NULL;
+	nAppliedOperations = PGrnWALApplyConsume(&data);
 	UnlockRelation(index, RowExclusiveLock);
 #endif
 	return nAppliedOperations;
@@ -2109,11 +2109,11 @@ PGrnWALTruncate(Relation index)
 
 	GenericXLogFinish(state);
 
+	UnlockRelation(index, RowExclusiveLock);
+
 	PGrnIndexStatusSetWALAppliedPosition(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
 										 0);
-
-	UnlockRelation(index, RowExclusiveLock);
 
 	return nTruncatedBlocks;
 }
