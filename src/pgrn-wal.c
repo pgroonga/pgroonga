@@ -406,6 +406,8 @@ PGrnWALStart(Relation index)
 	if (!RelationIsValid(index))
 		return NULL;
 
+	LockRelation(index, RowExclusiveLock);
+
 	data = palloc(sizeof(PGrnWALData));
 
 	data->index = index;
@@ -437,6 +439,8 @@ PGrnWALFinish(PGrnWALData *data)
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
 
+	UnlockRelation(data->index, RowExclusiveLock);
+
 	pfree(data);
 #endif
 }
@@ -455,6 +459,8 @@ PGrnWALAbort(PGrnWALData *data)
 		UnlockReleaseBuffer(data->current.buffer);
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
+
+	UnlockRelation(data->index, RowExclusiveLock);
 
 	pfree(data);
 #endif
