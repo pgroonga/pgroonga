@@ -3,6 +3,7 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-alias.h"
+#include "pgrn-auto-close.h"
 #include "pgrn-command-escape-value.h"
 #include "pgrn-convert.h"
 #include "pgrn-create.h"
@@ -343,6 +344,8 @@ PGrnOnProcExit(int code, Datum arg)
 		db = grn_ctx_db(ctx);
 		if (db)
 		{
+			PGrnFinalizeAutoClose();
+
 			PGrnFinalizeQueryExtractKeywords();
 
 			PGrnFinalizeMatchPositionsByte();
@@ -429,6 +432,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeQueryExpand();
 
 	PGrnInitializeQueryExtractKeywords();
+
+	PGrnInitializeAutoClose();
 }
 
 void
@@ -5018,6 +5023,8 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		Relation index = scan->indexRelation;
 		ScanKey key = &(scan->keyData[i]);
 
+		PGrnAutoCloseUseIndex(index);
+
 		if (!PGrnSearchBuildCondition(index, key, data))
 			continue;
 
@@ -5855,6 +5862,8 @@ pgroonga_build_raw(Relation heap,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("pgroonga: unique index isn't supported")));
 
+	PGrnAutoCloseUseIndex(index);
+
 	data.sourcesTable = NULL;
 
 	bs.sourcesTable = NULL;
@@ -5960,6 +5969,8 @@ pgroonga_buildempty_raw(Relation index)
 						"can't create an empty index "
 						"while pgroonga.writable is false")));
 	}
+
+	PGrnAutoCloseUseIndex(index);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);

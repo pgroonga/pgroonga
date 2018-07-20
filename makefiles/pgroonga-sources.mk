@@ -1,6 +1,7 @@
 SRCS =						\
 	src/pgroonga.c				\
 	src/pgrn-alias.c			\
+	src/pgrn-auto-close.c			\
 	src/pgrn-column-name.c			\
 	src/pgrn-command-escape-value.c		\
 	src/pgrn-convert.c			\
