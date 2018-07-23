@@ -80,8 +80,10 @@
 #define PGrnJSONValuesTableNameFormat	PGrnJSONValuesTableNamePrefix "%u_%u"
 #define PGrnJSONTypesTableNamePrefix	"JSONTypes"
 #define PGrnJSONTypesTableNameFormat	PGrnJSONTypesTableNamePrefix "%u_%u"
-#define PGrnJSONValueLexiconNameFormat	"JSONValueLexicon%s%u_%u"
-#define PGrnLexiconNameFormat			"Lexicon%u_%u"
+#define PGrnJSONValueLexiconNamePrefix	"JSONValueLexicon"
+#define PGrnJSONValueLexiconNameFormat	PGrnJSONValueLexiconNamePrefix "%s%u_%u"
+#define PGrnLexiconNamePrefix			"Lexicon"
+#define PGrnLexiconNameFormat			PGrnLexiconNamePrefix "%u_%u"
 #define PGrnIndexColumnName				"index"
 
 #define PGRN_EXPR_QUERY_PARSE_FLAGS				\

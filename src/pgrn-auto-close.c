@@ -29,16 +29,55 @@ PGrnFinalizeAutoClose(void)
 static void
 PGrnAutoCloseCloseUnusedObjects(Oid nodeID)
 {
-	char name[GRN_TABLE_MAX_KEY_SIZE];
-	grn_obj *table;
+	char *prefixes[] = {
+		PGrnLexiconNamePrefix "%u_",
+		PGrnJSONValueLexiconNamePrefix "FullTextSearch%u_",
+		PGrnJSONValueLexiconNamePrefix "String%u_",
+		PGrnJSONValueLexiconNamePrefix "Number%u_",
+		PGrnJSONValueLexiconNamePrefix "Boolean%u_",
+		PGrnJSONValueLexiconNamePrefix "Size%u_",
+		PGrnJSONTypesTableNamePrefix "%u_",
+		PGrnJSONValuesTableNamePrefix "%u_",
+		PGrnJSONPathsTableNamePrefix "%u_",
+		PGrnBuildingSourcesTableNamePrefix "%u",
+		PGrnSourcesTableNamePrefix "%u",
+	};
+	size_t i;
+	const size_t n_prefixes = sizeof(prefixes) / sizeof(*prefixes);
+	grn_obj *db;
 
-	/* TODO: Close lexicons, building sources and JSON related objects. */
-	snprintf(name, sizeof(name),
-			 PGrnSourcesTableNameFormat,
-			 nodeID);
-	table = grn_ctx_get(ctx, name, strlen(name));
-	if (table) {
-		grn_obj_close(ctx, table);
+	db = grn_ctx_db(ctx);
+	for (i = 0; i < n_prefixes; i++)
+	{
+		char prefix[GRN_TABLE_MAX_KEY_SIZE];
+
+		snprintf(prefix, sizeof(prefix),
+				 prefixes[i], nodeID);
+		GRN_TABLE_EACH_BEGIN_MIN(ctx,
+								 db,
+								 cursor,
+								 id,
+								 prefix,
+								 strlen(prefix),
+								 GRN_CURSOR_PREFIX | GRN_CURSOR_DESCENDING)
+		{
+			void *key;
+			const char *name;
+			int name_size;
+			grn_obj *object;
+
+			if (!grn_ctx_is_opened(ctx, id))
+				continue;
+
+			name_size = grn_table_cursor_get_key(ctx, cursor, &key);
+			name = key;
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"pgroonga: auto-close: <%.*s>",
+					name_size, name);
+
+			object = grn_ctx_at(ctx, id);
+			grn_obj_close(ctx, object);
+		} GRN_TABLE_EACH_END(ctx, cursor);
 	}
 }
 
