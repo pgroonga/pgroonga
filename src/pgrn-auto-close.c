@@ -4,25 +4,25 @@
 #include "pgrn-global.h"
 
 static grn_ctx *ctx = &PGrnContext;
-static grn_hash *openedIndexes = NULL;
+static grn_hash *usingIndexes = NULL;
 
 void
 PGrnInitializeAutoClose(void)
 {
-	openedIndexes = grn_hash_create(ctx,
-									NULL,
-									sizeof(Oid),
-									sizeof(Oid),
-									0);
+	usingIndexes = grn_hash_create(ctx,
+								   NULL,
+								   sizeof(Oid),
+								   sizeof(Oid),
+								   0);
 }
 
 void
 PGrnFinalizeAutoClose(void)
 {
-	if (openedIndexes)
+	if (usingIndexes)
 	{
-		grn_hash_close(ctx, openedIndexes);
-		openedIndexes = NULL;
+		grn_hash_close(ctx, usingIndexes);
+		usingIndexes = NULL;
 	}
 }
 
@@ -48,18 +48,18 @@ PGrnAutoCloseUseIndex(Relation index)
 	grn_id id;
 	void *value;
 
-	if (!openedIndexes)
+	if (!usingIndexes)
 		return;
 
 	id = grn_hash_get(ctx,
-					  openedIndexes,
+					  usingIndexes,
 					  &(index->rd_id),
 					  sizeof(index->rd_id),
 					  &value);
 	if (id == GRN_ID_NIL)
 	{
 		id = grn_hash_add(ctx,
-						  openedIndexes,
+						  usingIndexes,
 						  &(index->rd_id),
 						  sizeof(index->rd_id),
 						  &value,
