@@ -3523,6 +3523,36 @@ PGrnUpdateMaxRecordSize(Relation index,
 }
 
 static uint32_t
+PGrnComputeSize(grn_obj *buffer)
+{
+	switch (buffer->header.type)
+	{
+	case GRN_BULK:
+		return GRN_BULK_VSIZE(buffer);
+	case GRN_UVECTOR:
+	{
+		const unsigned int element_size = grn_uvector_element_size(ctx, buffer);
+		const unsigned int n_elements = grn_uvector_size(ctx, buffer);
+		return element_size * n_elements;
+	}
+	case GRN_VECTOR:
+	{
+		uint32_t size = 0;
+		unsigned int i;
+		const unsigned int n = grn_vector_size(ctx, buffer);
+		for (i = 0; i < n; i++)
+		{
+			const char *value;
+			size += grn_vector_get_element(ctx, buffer, i, &value, NULL, NULL);
+		}
+		return size;
+	}
+	default:
+		return 0;
+	}
+}
+
+static uint32_t
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
 		   grn_obj *sourcesCtidColumn,
@@ -3621,7 +3651,7 @@ PGrnInsert(Relation index,
 			grn_obj_reinit(ctx, buffer, domain, flags);
 			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			recordSize += GRN_BULK_VSIZE(buffer);
+			recordSize += PGrnComputeSize(buffer);
 			PGrnWALInsertColumn(walData, dataColumn, buffer);
 			PGrnCheck("failed to set column value");
 		}
