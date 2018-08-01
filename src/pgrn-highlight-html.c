@@ -78,13 +78,7 @@ PGrnHighlightHTML(text *target)
 static void
 PGrnHighlightHTMLClearKeywords(void)
 {
-#ifdef GROONGA_8_0_4
 	grn_highlighter_clear_keywords(ctx, highlighter);
-#else
-	grn_highlighter_close(ctx, highlighter);
-	highlighter = grn_highlighter_open(ctx);
-	indexOID = InvalidOid;
-#endif
 }
 
 static void
