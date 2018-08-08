@@ -352,7 +352,6 @@ postgresql#{postgresql_package_version}-devel
   namespace :apt do
     distribution = "debian"
     code_names = [
-      "jessie",
       "stretch",
     ]
     architectures = [
