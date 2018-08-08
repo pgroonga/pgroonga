@@ -3,8 +3,12 @@
 #ifdef WIN32
 #	define PRId64 "I64d"
 #	define PRIu64 "I64u"
+#	define PGRN_PRIdSIZE "Id"
+#	define PGRN_PRIuSIZE "Iu"
 #else
 #	include <inttypes.h>
+#	define PGRN_PRIdSIZE "zd"
+#	define PGRN_PRIuSIZE "zu"
 #endif
 
 #ifdef GP_VERSION

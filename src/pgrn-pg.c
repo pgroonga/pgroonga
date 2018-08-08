@@ -62,6 +62,24 @@ PGrnPGResolveIndexID(Oid id)
 	return index;
 }
 
+const char *
+PGrnPGGetRelationNameByID(Oid id, char *buffer)
+{
+	Relation relation;
+
+	relation = RelationIdGetRelation(id);
+	if (!RelationIsValid(index))
+	{
+		snprintf(buffer, NAMEDATALEN, "<invalid>(%u)", id);
+		return buffer;
+	}
+
+	strncpy(buffer, relation->rd_rel->relname.data, NAMEDATALEN);
+	RelationClose(relation);
+
+	return buffer;
+}
+
 Oid
 PGrnPGIndexIDToFileNodeID(Oid indexID)
 {

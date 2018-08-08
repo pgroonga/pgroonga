@@ -8,6 +8,7 @@
 Oid PGrnPGIndexNameToID(const char *name);
 Relation PGrnPGResolveIndexName(const char *name);
 Relation PGrnPGResolveIndexID(Oid id);
+const char *PGrnPGGetRelationNameByID(Oid id, char *buffer);
 Oid PGrnPGIndexIDToFileNodeID(Oid indexID);
 Relation PGrnPGResolveFileNodeID(Oid fileNodeID,
 								 Oid *reationID,

@@ -1238,11 +1238,37 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 static bool
 PGrnCollectScoreIsTarget(PGrnScanOpaque so, Oid tableOid)
 {
+	NameData soTableName;
+
 	if (so->dataTableID != tableOid)
+	{
+		NameData tableName;
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"pgroonga: [score][target][no] different table: "
+				"<%s>(%u) != <%s>(%u)",
+				PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+				so->dataTableID,
+				PGrnPGGetRelationNameByID(tableOid, tableName.data),
+				tableOid);
 		return false;
+	}
 
 	if (!so->scoreAccessor)
+	{
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"pgroonga: [score][target][no] no score accessor: <%s>(%u)",
+				PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+				so->dataTableID);
 		return false;
+	}
+
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
+			"pgroonga: [score][target][yes] <%s>(%u)",
+			PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+			so->dataTableID);
 
 	return true;
 }
@@ -1330,6 +1356,7 @@ pgroonga_score_row(PG_FUNCTION_ARGS)
 static void
 PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 {
+	const char *tag = "pgroonga: [ctid-resolve-table][create]";
 	Snapshot snapshot;
 	Relation table;
 	grn_obj *sourceRecord;
@@ -1338,6 +1365,13 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 	snapshot = GetActiveSnapshot();
 
 	table = RelationIdGetRelation(so->dataTableID);
+
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
+			"%s[start] <%s>(%u)",
+			tag,
+			table->rd_rel->relname.data,
+			so->dataTableID);
 
 	sourceRecord = &(buffers->general);
 	grn_obj_reinit(ctx, sourceRecord, grn_obj_id(ctx, so->sourcesTable), 0);
@@ -1374,7 +1408,19 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 												   sourceID,
 												   &ctidColumnValueSize);
 			if (ctidColumnValueSize != sizeof(uint64))
+			{
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[ignore] <%s>(%u): <%u>: "
+						"<%" PGRN_PRIuSIZE "> != <%" PGRN_PRIuSIZE ">",
+						tag,
+						table->rd_rel->relname.data,
+						so->dataTableID,
+						sourceID,
+						ctidColumnValueSize,
+						sizeof(uint64));
 				continue;
+			}
 			packedCtid = *((uint64 *) ctidColumnValue);
 		}
 		else
@@ -1391,6 +1437,16 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		if (!sourcesCtidColumnCache &&
 			ItemPointerEquals(&ctid, &resolvedCtid))
 		{
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[ignore][not-hot] <%s>(%u): <%u>: <(%u,%u),%u>",
+					tag,
+					table->rd_rel->relname.data,
+					so->dataTableID,
+					sourceID,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid);
 			continue;
 		}
 
@@ -1406,11 +1462,31 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 						  resolvedID,
 						  sourceRecord,
 						  GRN_OBJ_SET);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"%s[add] <%s>(%u): <%u>: <(%u,%u),%u> -> <(%u,%u),%u>",
+				tag,
+				table->rd_rel->relname.data,
+				so->dataTableID,
+				sourceID,
+				ctid.ip_blkid.bi_hi,
+				ctid.ip_blkid.bi_lo,
+				ctid.ip_posid,
+				resolvedCtid.ip_blkid.bi_hi,
+				resolvedCtid.ip_blkid.bi_lo,
+				resolvedCtid.ip_posid);
 	}
 	GRN_TABLE_EACH_END(ctx, cursor);
 
 	if (sourcesCtidColumnCache)
 		grn_column_cache_close(ctx, sourcesCtidColumnCache);
+
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
+			"%s[end] <%s>(%u)",
+			tag,
+			table->rd_rel->relname.data,
+			so->dataTableID);
 
 	RelationClose(table);
 }
@@ -1418,6 +1494,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 static double
 PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 {
+	const char *tag = "pgroonga: [score][ctid][collect]";
 	const uint64 packedCtid = PGrnCtidPack(ctid);
 	double score = 0.0;
 	grn_id resolveID;
@@ -1449,11 +1526,36 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 	}
 
 	if (sourceID == GRN_ID_NIL)
+	{
+		NameData soTableName;
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"%s[no-record] <%s>(%u):<(%u,%u),%u>",
+				tag,
+				PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+				so->dataTableID,
+				ctid->ip_blkid.bi_hi,
+				ctid->ip_blkid.bi_lo,
+				ctid->ip_posid);
 		return 0.0;
+	}
 
 	searchedID = grn_table_get(ctx, so->searched, &sourceID, sizeof(grn_id));
 	if (searchedID == GRN_ID_NIL)
+	{
+		NameData soTableName;
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"%s[not-match] <%s>(%u):<(%u,%u),%u>:<%u>",
+				tag,
+				PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+				so->dataTableID,
+				ctid->ip_blkid.bi_hi,
+				ctid->ip_blkid.bi_lo,
+				ctid->ip_posid,
+				sourceID);
 		return 0.0;
+	}
 
 	GRN_BULK_REWIND(&(buffers->score));
 	grn_obj_get_value(ctx, so->scoreAccessor, searchedID, &(buffers->score));
@@ -1464,6 +1566,22 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 	else
 	{
 		score = GRN_INT32_VALUE(&(buffers->score));
+	}
+
+	{
+		NameData soTableName;
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"%s[found] <%s>(%u):<(%u,%u),%u>: <%u> -> <%u>: <%f>",
+				tag,
+				PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+				so->dataTableID,
+				ctid->ip_blkid.bi_hi,
+				ctid->ip_blkid.bi_lo,
+				ctid->ip_posid,
+				sourceID,
+				searchedID,
+				score);
 	}
 
 	return score;
@@ -1489,6 +1607,19 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 			continue;
 
 		score += PGrnCollectScoreCtid(so, ctid);
+	}
+
+	{
+		NameData tableName;
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"pgroonga: [score][ctid] <%s>(%u):<(%u,%u),%u>: <%f>",
+				PGrnPGGetRelationNameByID(tableOid, tableName.data),
+				tableOid,
+				ctid->ip_blkid.bi_hi,
+				ctid->ip_blkid.bi_lo,
+				ctid->ip_posid,
+				score);
 	}
 
 	PG_RETURN_FLOAT8(score);
