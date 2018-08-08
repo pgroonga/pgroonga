@@ -523,22 +523,6 @@ postgresql-server-dev-#{postgresql_version}
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
-      desc "Upload package for PostgreSQL 9.6"
-      task :postgresql96 => [archive_name] do
-        rm_rf(tmp_dir)
-        mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/debian96",
-                           tmp_debian_dir,
-                           debian_variables)
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--code-names", "artful",
-             "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
-      end
-
       desc "Upload package for PostgreSQL 10"
       task :postgresql10 => [archive_name] do
         rm_rf(tmp_dir)
@@ -560,7 +544,6 @@ postgresql-server-dev-#{postgresql_version}
     upload_tasks = [
       "package:ubuntu:upload:postgresql93",
       "package:ubuntu:upload:postgresql95",
-      "package:ubuntu:upload:postgresql96",
       "package:ubuntu:upload:postgresql10",
     ]
     task :upload => upload_tasks
