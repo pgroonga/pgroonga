@@ -384,11 +384,7 @@ postgresql#{postgresql_package_version}-devel
             architectures.each do |arch|
               use_system_postgresql = (postgresql_version == :system)
               if use_system_postgresql
-                if code_name == "jessie"
-                  postgresql_version = "9.4"
-                else
-                  postgresql_version = "9.6"
-                end
+                postgresql_version = "9.6"
               end
               short_postgresql_version = postgresql_version.delete(".")
 
