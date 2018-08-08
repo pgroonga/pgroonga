@@ -68,7 +68,7 @@ PGrnPGGetRelationNameByID(Oid id, char *buffer)
 	Relation relation;
 
 	relation = RelationIdGetRelation(id);
-	if (!RelationIsValid(index))
+	if (!RelationIsValid(relation))
 	{
 		snprintf(buffer, NAMEDATALEN, "<invalid>(%u)", id);
 		return buffer;
