@@ -660,7 +660,6 @@ postgresql-server-dev-#{postgresql_version}
            env_value("NEW_RELEASE_DATE"),
            "README.md",
            "packages/debian93/changelog",
-           "packages/debian94/changelog",
            "packages/debian95/changelog",
            "packages/debian96/changelog",
            "packages/debian10/changelog",
