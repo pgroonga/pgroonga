@@ -5,14 +5,14 @@ environment:
   matrix:
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.5.13-1
+      POSTGRESQL_VERSION: 9.5.14-1
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.6.9-1
+      POSTGRESQL_VERSION: 9.6.10-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 10.4-1
+      POSTGRESQL_VERSION: 10.5-1
       WAL_SUPPORTED: "yes"
 notifications:
   - provider: Email
