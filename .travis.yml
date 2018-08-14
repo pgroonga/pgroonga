@@ -1,7 +1,6 @@
 notifications:
-  email:
-    recipients:
-      - pgroonga@ml.commit-email.info
+  webhooks:
+    - https://webhook.commit-email.info/
 dist: trusty
 language: c
 matrix:
