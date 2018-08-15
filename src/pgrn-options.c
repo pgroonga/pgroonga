@@ -89,7 +89,7 @@ PGrnOptionEnsureLexicon(const char *context)
 }
 
 static void
-PGrnOptionValidateTokenizer(char *name)
+PGrnOptionValidateTokenizer(PGrnStringOptionValue name)
 {
 	grn_obj *tokenizer_name = &(buffers->tokenizer);
 	grn_rc rc;
@@ -117,7 +117,7 @@ PGrnOptionValidateTokenizer(char *name)
 }
 
 static void
-PGrnOptionValidateNormalizer(char *name)
+PGrnOptionValidateNormalizer(PGrnStringOptionValue name)
 {
 	grn_obj *normalizer_name = &(buffers->normalizer);
 	grn_rc rc;
@@ -181,7 +181,7 @@ PGrnOptionValidateTokenFilter(const char *name, size_t nameSize, void *data)
 }
 
 static void
-PGrnOptionValidateTokenFilters(char *names)
+PGrnOptionValidateTokenFilters(PGrnStringOptionValue names)
 {
 	PGrnOptionParseNames(names,
 						 PGrnOptionValidateTokenFilter,
@@ -209,7 +209,7 @@ PGrnOptionValidatePlugin(const char *name,
 }
 
 static void
-PGrnOptionValidatePlugins(char *names)
+PGrnOptionValidatePlugins(PGrnStringOptionValue names)
 {
 	PGrnOptionParseNames(names,
 						 PGrnOptionValidatePlugin,
@@ -217,7 +217,7 @@ PGrnOptionValidatePlugins(char *names)
 }
 
 static void
-PGrnOptionValidateLexiconType(char *name)
+PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 {
 	if (!name)
 		return;

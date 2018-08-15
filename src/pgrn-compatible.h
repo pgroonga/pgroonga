@@ -55,6 +55,12 @@
 #	define DatumGetJsonbP(datum) DatumGetJsonb((datum))
 #endif
 
+#if PG_VERSION_NUM >= 110000
+typedef const char *PGrnStringOptionValue;
+#else
+typedef char *PGrnStringOptionValue;
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
