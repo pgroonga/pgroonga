@@ -596,7 +596,7 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	TupleDesc desc = RelationGetDescr(index);
 	Form_pg_attribute attr;
 
-	attr = desc->attrs[n];
+	attr = TupleDescAttr(desc, n);
 	return PGrnPGTypeToGrnType(attr->atttypid, flags);
 }
 
@@ -943,7 +943,7 @@ PGrnCreateCheckType(PGrnCreateData *data)
 	Form_pg_attribute attr;
 	int32 maxLength;
 
-	attr = desc->attrs[data->i];
+	attr = TupleDescAttr(desc, data->i);
 	if (data->forFullTextSearch)
 		return;
 	if (data->forRegexpSearch)
@@ -980,7 +980,7 @@ PGrnCreate(PGrnCreateData *data)
 	{
 		Form_pg_attribute attribute;
 
-		attribute = data->desc->attrs[data->i];
+		attribute = TupleDescAttr(data->desc, data->i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
 			data->forFullTextSearch = false;
@@ -1015,7 +1015,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name = &(attribute->attname);
 		grn_obj *source;
 		grn_obj *indexColumn;
@@ -1336,7 +1336,7 @@ pgroonga_score_row(PG_FUNCTION_ARGS)
 		Relation table;
 
 		tupleData.t_len = HeapTupleHeaderGetDatumLength(header);
-		tupleData.t_tableOid = desc->attrs[0]->attrelid;
+		tupleData.t_tableOid = TupleDescAttr(desc, 0)->attrelid;
 		tupleData.t_data = header;
 		ItemPointerSetInvalid(&(tupleData.t_self));
 		tuple = &tupleData;
@@ -3616,7 +3616,7 @@ PGrnNeedMaxRecordSizeUpdate(Relation index)
 	{
 		Form_pg_attribute attribute;
 
-		attribute = desc->attrs[i];
+		attribute = TupleDescAttr(desc, i);
 		switch (attribute->atttypid)
 		{
 		case VARCHAROID:
@@ -3698,7 +3698,8 @@ PGrnInsert(Relation index,
 	unsigned int i;
 	uint32_t recordSize = 0;
 
-	if (desc->natts == 1 && PGrnAttributeIsJSONB(desc->attrs[0]->atttypid))
+	if (desc->natts == 1 &&
+		PGrnAttributeIsJSONB(TupleDescAttr(desc, 0)->atttypid))
 	{
 		return PGrnJSONBInsert(index,
 							   sourcesTable,
@@ -3766,7 +3767,7 @@ PGrnInsert(Relation index,
 		for (i = 0; i < desc->natts; i++)
 		{
 			grn_obj *dataColumn;
-			Form_pg_attribute attribute = desc->attrs[i];
+			Form_pg_attribute attribute = TupleDescAttr(desc, i);
 			NameData *name;
 			grn_id domain;
 			unsigned char flags;
@@ -3932,11 +3933,11 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 					(PGrnPrimaryKeyColumn *) palloc(sizeof(PGrnPrimaryKeyColumn));
 
 				desc = RelationGetDescr(table);
-				columnName = so->index->rd_att->attrs[j]->attname.data;
+				columnName = TupleDescAttr(so->index->rd_att, j)->attname.data;
 
 				primaryKeyColumn->number = primaryKeyNumber;
 				primaryKeyColumn->type =
-					desc->attrs[primaryKeyNumber - 1]->atttypid;
+					TupleDescAttr(desc, primaryKeyNumber - 1)->atttypid;
 				primaryKeyColumn->domain = PGrnGetType(primaryKeyIndex,
 													   i,
 													   &(primaryKeyColumn->flags));
@@ -4916,7 +4917,7 @@ PGrnSearchBuildCondition(Relation index,
 		return false;
 
 	desc = RelationGetDescr(index);
-	attribute = desc->attrs[key->sk_attno - 1];
+	attribute = TupleDescAttr(desc, key->sk_attno - 1);
 
 	targetColumnName = attribute->attname.data;
 	targetColumn = PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
@@ -5300,7 +5301,7 @@ PGrnSort(IndexScanDesc scan)
 								  NULL, so->searched);
 
 	desc = RelationGetDescr(scan->indexRelation);
-	attribute = desc->attrs[key->sk_attno - 1];
+	attribute = TupleDescAttr(desc, key->sk_attno - 1);
 	targetColumnName = attribute->attname.data;
 	sort_key.key = grn_obj_column(ctx, so->searched,
 								  targetColumnName,
@@ -5420,7 +5421,7 @@ PGrnFillBorder(IndexScanDesc scan,
 		grn_id domain;
 
 		attrNumber = key->sk_attno - 1;
-		attribute = desc->attrs[attrNumber];
+		attribute = TupleDescAttr(desc, attrNumber);
 
 		domain = PGrnGetType(index, attrNumber, NULL);
 		switch (key->sk_strategy)
@@ -5693,7 +5694,7 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 
 	for (i = 0; i < desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name;
 		grn_obj *dataColumn;
 
@@ -6451,7 +6452,7 @@ pgroonga_canreturn_raw(Relation index,
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
 			return false;

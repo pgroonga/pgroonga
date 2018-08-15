@@ -198,7 +198,7 @@ PGrnFindSynonymsAttribute(const char *tableName,
 	desc = RelationGetDescr(table);
 	for (i = 1; i <= desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i - 1];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i - 1);
 
 		if (strlen(attribute->attname.data) != columnNameSize)
 			continue;
@@ -253,7 +253,7 @@ PGrnFindTermIndex(Relation table,
 		index = index_open(indexOID, NoLock);
 		for (i = 1; i <= index->rd_att->natts; i++)
 		{
-			const char *name = index->rd_att->attrs[i - 1]->attname.data;
+			const char *name = TupleDescAttr(index->rd_att, i - 1)->attname.data;
 			Oid opFamily;
 			StrategyNumber strategy;
 
@@ -321,7 +321,7 @@ PGrnFindTermAttributeNumber(const char *tableName,
 	desc = RelationGetDescr(table);
 	for (i = 1; i <= desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i - 1];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i - 1);
 
 		if (strlen(attribute->attname.data) != columnNameSize)
 			continue;

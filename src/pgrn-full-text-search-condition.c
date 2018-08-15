@@ -45,7 +45,7 @@ PGrnFullTextSearchConditionDeconstructGeneric(HeapTupleHeader header,
 
 	for (i = 0; i < desc->natts; i++)
 	{
-		Form_pg_attribute attribute = desc->attrs[i];
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		bool isNULL;
 		Datum datum;
 

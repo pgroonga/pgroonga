@@ -1413,7 +1413,7 @@ PGrnJSONBInsertRecord(Relation index,
 							sizeof(uint64));
 	}
 
-	attribute = desc->attrs[0];
+	attribute = TupleDescAttr(desc, 0);
 	attributeName = &(attribute->attname);
 	column = PGrnLookupColumn(sourcesTable, attributeName->data, ERROR);
 	if (data->isForFullTextSearchOnly)
@@ -1934,7 +1934,7 @@ PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 	grn_id valuesTableID;
 
 	desc = RelationGetDescr(index);
-	attribute = desc->attrs[nthAttribute];
+	attribute = TupleDescAttr(desc, nthAttribute);
 	data->isJSONBAttribute = PGrnAttributeIsJSONB(attribute->atttypid);
 	if (!data->isJSONBAttribute)
 		return;

@@ -59,7 +59,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_JSONB
 			Form_pg_attribute attribute;
 
-			attribute = desc->attrs[i];
+			attribute = TupleDescAttr(desc, i);
 			if (PGrnAttributeIsJSONB(attribute->atttypid))
 			{
 				PGrnFlushObject(PGrnJSONBLookupValuesTable(index, i, ERROR),

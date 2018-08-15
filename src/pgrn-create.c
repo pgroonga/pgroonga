@@ -99,7 +99,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 
 	{
 		char columnName[GRN_TABLE_MAX_KEY_SIZE];
-		PGrnColumnNameEncode(data->desc->attrs[data->i]->attname.data,
+		PGrnColumnNameEncode(TupleDescAttr(data->desc, data->i)->attname.data,
 							 columnName);
 		PGrnCreateColumn(data->index,
 						 data->sourcesTable,
