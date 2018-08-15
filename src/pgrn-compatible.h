@@ -178,3 +178,32 @@
 #	define pgrn_array_create_iterator(array, slide_ndim)	\
 	array_create_iterator(array, slide_ndim)
 #endif
+
+#if PG_VERSION_NUM >= 110000
+#	define PGrnIndexBuildHeapScan(heap,				\
+								  index,			\
+								  indexInfo,		\
+								  allowSync,		\
+								  callback,			\
+								  callbackState)	\
+	IndexBuildHeapScan((heap),						\
+					   (index),						\
+					   (indexInfo),					\
+					   (allowSync),					\
+					   (callback),					\
+					   (callbackState),				\
+					   NULL)
+#else
+#	define PGrnIndexBuildHeapScan(heap,				\
+								  index,			\
+								  indexInfo,		\
+								  allowSync,		\
+								  callback,			\
+								  callbackState)	\
+	IndexBuildHeapScan((heap),						\
+					   (index),						\
+					   (indexInfo),					\
+					   (allowSync),					\
+					   (callback),					\
+					   (callbackState))
+#endif

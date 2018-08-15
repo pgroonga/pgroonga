@@ -6050,8 +6050,12 @@ pgroonga_build_raw(Relation heap,
 		PGrnCreate(&data);
 		bs.sourcesTable = data.sourcesTable;
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
-		nHeapTuples = IndexBuildHeapScan(heap, index, indexInfo, true,
-										 PGrnBuildCallback, &bs);
+		nHeapTuples = PGrnIndexBuildHeapScan(heap,
+											 index,
+											 indexInfo,
+											 true,
+											 PGrnBuildCallback,
+											 &bs);
 		PGrnSetSources(index, bs.sourcesTable);
 		PGrnCreateSourcesTableFinish(&data);
 	}
