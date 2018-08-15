@@ -50,6 +50,11 @@
 #	define PGRN_SUPPORT_JSONB
 #endif
 
+#if PG_VERSION_NUM < 110000
+#	define PG_GETARG_JSONB_P(n) PG_GETARG_JSONB((n))
+#	define DatumGetJsonbP(datum) DatumGetJsonb((datum))
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif

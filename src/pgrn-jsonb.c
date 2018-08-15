@@ -1295,7 +1295,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 Datum
 pgroonga_match_script_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *target = PG_GETARG_JSONB(0);
+	Jsonb *target = PG_GETARG_JSONB_P(0);
 	text *script = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
@@ -1314,7 +1314,7 @@ pgroonga_match_script_jsonb(PG_FUNCTION_ARGS)
 Datum
 pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *target = PG_GETARG_JSONB(0);
+	Jsonb *target = PG_GETARG_JSONB_P(0);
 	text *term = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
@@ -1333,7 +1333,7 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 Datum
 pgroonga_query_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *target = PG_GETARG_JSONB(0);
+	Jsonb *target = PG_GETARG_JSONB_P(0);
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
@@ -1352,7 +1352,7 @@ pgroonga_query_jsonb(PG_FUNCTION_ARGS)
 Datum
 pgroonga_script_jsonb(PG_FUNCTION_ARGS)
 {
-	Jsonb *target = PG_GETARG_JSONB(0);
+	Jsonb *target = PG_GETARG_JSONB_P(0);
 	text *script = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
@@ -1488,7 +1488,7 @@ PGrnJSONBInsert(Relation index,
 	}
 	PGrnJSONBInsertDataInit(&data);
 
-	jsonb = DatumGetJsonb(values[nthAttribute]);
+	jsonb = DatumGetJsonbP(values[nthAttribute]);
 	PGrnJSONBInsertJSONB(&data, jsonb);
 
 	PGrnJSONBInsertRecord(index,
@@ -1813,7 +1813,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 		PGrnSearchBuildConditionJSONContain(data,
 											subFilter,
 											targetColumn,
-											DatumGetJsonb(key->sk_argument));
+											DatumGetJsonbP(key->sk_argument));
 		break;
 	default:
 		ereport(ERROR,
