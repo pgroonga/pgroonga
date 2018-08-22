@@ -1390,7 +1390,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 	{
 		void *key;
 		grn_id sourceID;
-		uint64 packedCtid;
+		uint64 packedCtid = 0;
 		ItemPointerData ctid;
 		ItemPointerData resolvedCtid;
 		uint64 resolvedPackedCtid;
@@ -1425,11 +1425,27 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		}
 		else
 		{
-			grn_table_get_key(ctx,
-							  so->sourcesTable,
-							  sourceID,
-							  &packedCtid,
-							  sizeof(uint64));
+			int keySize;
+
+			keySize = grn_table_get_key(ctx,
+										so->sourcesTable,
+										sourceID,
+										&packedCtid,
+										sizeof(uint64));
+			if (keySize != sizeof(uint64))
+			{
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[ignore] <%s>(%u): <%u>: "
+						"<%d> != <%" PGRN_PRIuSIZE ">",
+						tag,
+						table->rd_rel->relname.data,
+						so->dataTableID,
+						sourceID,
+						keySize,
+						sizeof(uint64));
+				continue;
+			}
 		}
 		ctid = PGrnCtidUnpack(packedCtid);
 		resolvedCtid = ctid;
