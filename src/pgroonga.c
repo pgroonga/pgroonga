@@ -3802,6 +3802,16 @@ PGrnInsert(Relation index,
 								packedCtid)));
 			}
 			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"pgroonga: [insert] <%s>(%u): <%u>: <(%u,%u),%u>(%lu)",
+					index->rd_rel->relname.data,
+					index->rd_id,
+					id,
+					ht_ctid->ip_blkid.bi_hi,
+					ht_ctid->ip_blkid.bi_lo,
+					ht_ctid->ip_posid,
+					packedCtid);
 		}
 
 		for (i = 0; i < desc->natts; i++)
@@ -5779,6 +5789,23 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 						  so->currentID,
 						  &(buffers->ctid));
 		packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+		if (grn_logger_pass(ctx, GRN_LOG_DEBUG))
+		{
+			NameData tableName;
+			ItemPointerData ctid = PGrnCtidUnpack(packedCtid);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"pgroonga: [delete] "
+					"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+					so->dataTableID,
+					so->currentID,
+					recordID,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid,
+					packedCtid);
+		}
 		grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
 
 		PGrnWALDelete(so->index,
