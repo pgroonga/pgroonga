@@ -1449,7 +1449,18 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		}
 		ctid = PGrnCtidUnpack(packedCtid);
 		resolvedCtid = ctid;
-		heap_get_latest_tid(table, snapshot, &resolvedCtid);
+		if (!heap_hot_search(&resolvedCtid, table, snapshot, NULL))
+		{
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[ignore][dead] <%s>(%u): <%u>",
+					tag,
+					table->rd_rel->relname.data,
+					so->dataTableID,
+					sourceID);
+			continue;
+		}
+
 		if (!sourcesCtidColumnCache &&
 			ItemPointerEquals(&ctid, &resolvedCtid))
 		{
