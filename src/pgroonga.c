@@ -1537,6 +1537,19 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 							  sizeof(uint64));
 	if (resolveID != GRN_ID_NIL)
 	{
+		{
+			NameData soTableName;
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[hot-resolved] <%s>(%u):<(%u,%u),%u>:<%u>",
+					tag,
+					PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
+					so->dataTableID,
+					ctid->ip_blkid.bi_hi,
+					ctid->ip_blkid.bi_lo,
+					ctid->ip_posid,
+					resolveID);
+		}
 		GRN_BULK_REWIND(&(buffers->general));
 		grn_obj_get_value(ctx,
 						  so->ctidResolveTable,
