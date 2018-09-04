@@ -1,7 +1,5 @@
 #pragma once
 
-#include <access/tupdesc.h>
-
 #ifdef WIN32
 #	define PRId64 "I64d"
 #	define PRIu64 "I64u"
@@ -219,8 +217,4 @@ typedef char *PGrnStringOptionValue;
 					   (allowSync),					\
 					   (callback),					\
 					   (callbackState))
-#endif
-
-#ifndef TupleDescAttr
-#	define TupleDescAttr(tupdesc, i) ((tupdesc)->attrs[(i)])
 #endif
