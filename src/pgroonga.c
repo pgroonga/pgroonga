@@ -335,41 +335,67 @@ PGrnFinalizePrefixRKSequentialSearchData(void)
 static void
 PGrnOnProcExit(int code, Datum arg)
 {
+	const char *tag = "pgroonga: [exit]";
+
 	if (ctx)
 	{
 		grn_obj *db;
 
+		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][scan-opaques]", tag);
 		PGrnFinalizeScanOpaques();
 
 		db = grn_ctx_db(ctx);
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"%s[db][%s]",
+				tag,
+				db ? "opened" : "not-opened");
 		if (db)
 		{
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][auto-close]", tag);
 			PGrnFinalizeAutoClose();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][query-extract-keywords]", tag);
 			PGrnFinalizeQueryExtractKeywords();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][match-positions-byte]", tag);
 			PGrnFinalizeMatchPositionsByte();
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][match-positions-character]", tag);
 			PGrnFinalizeMatchPositionsCharacter();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][highlight-html]", tag);
 			PGrnFinalizeHighlightHTML();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][keywords]", tag);
 			PGrnFinalizeKeywords();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][jsonb]", tag);
 			PGrnFinalizeJSONB();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][sequential-search-data]", tag);
 			PGrnFinalizeSequentialSearchData();
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][prefix-rk-sequential-search-data]", tag);
 			PGrnFinalizePrefixRKSequentialSearchData();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][options]", tag);
 			PGrnFinalizeOptions();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[db][close]", tag);
 			grn_obj_close(ctx, db);
 		}
 
+		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][buffers]", tag);
 		PGrnFinalizeBuffers();
 
+		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][context]", tag);
 		grn_ctx_fin(ctx);
 	}
 
+	GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize]", tag);
 	grn_fin();
 
 	PGrnGroongaInitialized = false;
