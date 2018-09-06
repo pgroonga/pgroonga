@@ -304,6 +304,40 @@ PGrnFinalizeScanOpaques(void)
 {
 	dlist_mutable_iter iter;
 
+	/*
+	 * TODO: Workaround for PostgreSQL bug on
+	 * 'could not obtain lock on row in relation' error.
+	 * PostgreSQL should clean up.
+	 *
+	 * How to reproduce:
+	 *
+	 * 1. Create schema and data:
+	 *
+	 * create table a (
+	 *   id int
+	 * );
+	 *
+	 * create index b on a using pgroonga (id);
+	 *
+	 * insert into a values (1);
+	 *
+	 *
+	 * 2. Lock the record:
+	 *
+	 * begin;
+	 * select * from a where id = 1 for update;
+	 *
+	 * 3. Open another connection and lock the record:
+	 *
+	 * begin;
+	 * select * from a where id = 1 for update;
+	 * -- Raises an error: ERROR:  could not obtain lock on row in relation "a"
+	 * -- In this case, beginscan is called but endscan isn't called.
+	 * -- So indexam can't finalize scan->opaque data.
+	 */
+	if (PGrnKeepNSearchResults < 0)
+		return;
+
 	dlist_foreach_modify(iter, &PGrnScanOpaques)
 	{
 		PGrnScanOpaque so;
