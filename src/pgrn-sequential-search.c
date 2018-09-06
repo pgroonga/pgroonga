@@ -62,7 +62,7 @@ PGrnSequentialSearchDataFinalize(PGrnSequentialSearchData *data)
 		grn_obj_close(ctx, data->expression);
 	grn_obj_close(ctx, data->matched);
 	if (data->indexColumn)
-		grn_obj_close(ctx, data->indexColumn);
+		grn_obj_remove(ctx, data->indexColumn);
 	if (data->lexicon)
 		grn_obj_close(ctx, data->lexicon);
 	grn_obj_close(ctx, data->textsColumn);
@@ -88,7 +88,7 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 
 	if (data->indexColumn)
 	{
-		grn_obj_close(ctx, data->indexColumn);
+		grn_obj_remove(ctx, data->indexColumn);
 		data->indexColumn = NULL;
 	}
 	if (data->lexicon)
