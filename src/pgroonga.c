@@ -341,7 +341,9 @@ PGrnOnProcExit(int code, Datum arg)
 	{
 		grn_obj *db;
 
-		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][scan-opaques]", tag);
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"%s[finalize][scan-opaques] %u",
+				tag, PGrnNScanOpaques);
 		PGrnFinalizeScanOpaques();
 
 		db = grn_ctx_db(ctx);
