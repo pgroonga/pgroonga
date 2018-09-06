@@ -4052,6 +4052,10 @@ PGrnScanOpaqueInitPrimaryKeyColumns(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [initialize][scan-opaque][start] %u",
+			PGrnNScanOpaques);
+
 	so->index = index;
 	so->dataTableID = index->rd_index->indrelid;
 	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -4095,6 +4099,10 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreTargetRecords = NULL;
 
 	so->isScanEnd = false;
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [initialize][scan-opaque][end] %u",
+			PGrnNScanOpaques);
 }
 
 static void
@@ -4143,6 +4151,10 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [finalize][scan-opaque][start] %u",
+			PGrnNScanOpaques);
+
 	dlist_delete(&(so->node));
 	PGrnNScanOpaques--;
 
@@ -4156,6 +4168,10 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	PGrnScanOpaqueReinit(so);
 
 	pfree(so);
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [finalize][scan-opaque][end] %u",
+			PGrnNScanOpaques);
 }
 
 static IndexScanDesc
