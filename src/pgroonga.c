@@ -6887,6 +6887,10 @@ PGrnIndexIsPGroonga(Relation index)
 {
 	if (!index->rd_aminfo)
 		return false;
-	return index->rd_aminfo->aminsert.fn_addr == pgroonga_insert;
+	if (index->rd_aminfo->aminsert.fn_addr)
+		return index->rd_aminfo->aminsert.fn_addr == pgroonga_insert;
+	if (index->rd_aminfo->amcanreturn.fn_addr)
+		return index->rd_aminfo->amcanreturn.fn_addr == pgroonga_canreturn;
+	return false;
 }
 #endif
