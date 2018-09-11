@@ -6,6 +6,7 @@
 
 typedef struct PGrnSearchData
 {
+	Relation index;
 	grn_obj *sourcesTable;
 	grn_obj targetColumns;
 	grn_obj matchTargets;

@@ -29,6 +29,7 @@ typedef struct PGrnSequentialSearchData
 	grn_obj *expression;
 	grn_obj *variable;
 	bool useIndex;
+	grn_expr_flags exprFlags;
 } PGrnSequentialSearchData;
 
 void

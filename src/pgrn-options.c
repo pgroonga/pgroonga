@@ -26,6 +26,7 @@ typedef struct PGrnOptions
 	int regexpSearchNormalizerOffset;
 	int prefixSearchNormalizerOffset;
 	int lexiconTypeOffset;
+	bool queryAllowColumn;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -291,6 +292,10 @@ PGrnInitializeOptions(void)
 						 "Lexicon type to be used for lexicon",
 						 NULL,
 						 PGrnOptionValidateLexiconType);
+	add_bool_reloption(PGrnReloptionKind,
+					   "query_allow_column",
+					   "Accept column:... syntax in query",
+					   false);
 #endif
 }
 
@@ -451,6 +456,24 @@ PGrnApplyOptionValues(Relation index,
 #endif
 }
 
+grn_expr_flags
+PGrnOptionsGetExprParseFlags(Relation index)
+{
+	grn_expr_flags flags = 0;
+#ifdef PGRN_SUPPORT_OPTIONS
+	PGrnOptions *options;
+
+	options = (PGrnOptions *) (index->rd_options);
+	if (!options)
+		return flags;
+
+	if (options->queryAllowColumn)
+		flags |= GRN_EXPR_ALLOW_COLUMN;
+#endif
+
+	return flags;
+}
+
 #ifdef PGRN_SUPPORT_OPTIONS
 bytea *
 pgroonga_options_raw(Datum reloptions,
@@ -475,7 +498,9 @@ pgroonga_options_raw(Datum reloptions,
 		{"prefix_search_normalizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, prefixSearchNormalizerOffset)},
 		{"lexicon_type", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, lexiconTypeOffset)}
+		 offsetof(PGrnOptions, lexiconTypeOffset)},
+		{"query_allow_column", RELOPT_TYPE_BOOL,
+		 offsetof(PGrnOptions, queryAllowColumn)},
 	};
 
 	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,

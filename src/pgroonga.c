@@ -4710,6 +4710,7 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 		return false;
 	}
 
+	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	grn_expr_parse(ctx,
 				   data->expression,
 				   VARDATA_ANY(query),
@@ -4945,6 +4946,7 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
+	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	rc = grn_expr_parse(ctx, data->expression,
 						query, querySize,
 						matchTarget, GRN_OP_MATCH, GRN_OP_AND,
@@ -5328,8 +5330,9 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 }
 
 static void
-PGrnSearchDataInit(PGrnSearchData *data, grn_obj *sourcesTable)
+PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 {
+	data->index = index;
 	data->sourcesTable = sourcesTable;
 	GRN_PTR_INIT(&(data->matchTargets), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&(data->targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -5377,7 +5380,7 @@ PGrnSearch(IndexScanDesc scan)
 	if (scan->numberOfKeys == 0)
 		return;
 
-	PGrnSearchDataInit(&data, so->sourcesTable);
+	PGrnSearchDataInit(&data, so->index, so->sourcesTable);
 	PG_TRY();
 	{
 		PGrnSearchBuildConditions(scan, so, &data);
@@ -6709,7 +6712,7 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 		key.sk_attno = nthAttribute;
 		key.sk_strategy = strategy;
 		key.sk_argument = ((Const *) estimatedRightNode)->constvalue;
-		PGrnSearchDataInit(&data, sourcesTable);
+		PGrnSearchDataInit(&data, index, sourcesTable);
 		if (PGrnSearchBuildCondition(index, &key, &data))
 		{
 			unsigned int estimatedSize;

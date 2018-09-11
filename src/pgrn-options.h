@@ -24,5 +24,7 @@ void PGrnApplyOptionValues(Relation index,
 						   grn_obj *tokenFilters,
 						   grn_table_flags *lexiconType);
 
+grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);
+
 bytea *pgroonga_options_raw(Datum reloptions,
 							bool validate);

@@ -419,14 +419,17 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	currentData.scanProcedure = get_opcode(opNo);
 
 	GRN_TEXT_INIT(&expandedQuery, 0);
-	grn_expr_syntax_expand_query(ctx,
-								 VARDATA_ANY(query),
-								 VARSIZE_ANY_EXHDR(query),
-								 PGRN_EXPR_QUERY_PARSE_FLAGS,
-								 grn_ctx_get(ctx,
-											 PGRN_EXPANDER_NAME,
-											 PGRN_EXPANDER_NAME_LENGTH),
-								 &expandedQuery);
+	{
+		grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+		grn_expr_syntax_expand_query(ctx,
+									 VARDATA_ANY(query),
+									 VARSIZE_ANY_EXHDR(query),
+									 flags,
+									 grn_ctx_get(ctx,
+												 PGRN_EXPANDER_NAME,
+												 PGRN_EXPANDER_NAME_LENGTH),
+									 &expandedQuery);
+	}
 	if (currentData.scan)
 	{
 		index_endscan(currentData.scan);

@@ -53,6 +53,7 @@ PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data)
 	data->expression = NULL;
 	data->variable = NULL;
 	data->useIndex = false;
+	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
 void
@@ -108,6 +109,7 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 
 	data->indexColumnSource = NULL;
 	data->useIndex = false;
+	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
 static void
@@ -156,6 +158,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 							  &normalizer, PGRN_DEFAULT_NORMALIZER,
 							  tokenFilters,
 							  &table_flags);
+		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
 		RelationClose(index);
 
 		data->lexicon = PGrnCreateTable(InvalidRelation,
@@ -399,7 +402,6 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
 								 unsigned int querySize)
 {
-	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	grn_rc rc;
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
@@ -415,7 +417,7 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 						query, querySize,
 						data->indexColumnSource,
 						GRN_OP_MATCH, GRN_OP_AND,
-						flags);
+						data->exprFlags);
 	if (rc != GRN_SUCCESS)
 	{
 		char message[GRN_CTX_MSGSIZE];
