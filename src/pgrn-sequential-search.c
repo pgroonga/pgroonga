@@ -113,7 +113,9 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 static void
 PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 										Oid indexOID,
-										grn_obj *source)
+										grn_obj *source,
+										const char *indexName,
+										unsigned int indexNameSize)
 {
 	grn_column_flags column_flags =
 		GRN_OBJ_COLUMN_INDEX |
@@ -129,12 +131,24 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	if (data->indexOID != indexOID)
 	{
 		Relation index;
+		bool isPGroongaIndex;
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizer = NULL;
 		grn_obj *tokenFilters = &(buffers->tokenFilters);
 		grn_table_flags table_flags = 0;
 
 		index = PGrnPGResolveIndexID(indexOID);
+		isPGroongaIndex = PGrnIndexIsPGroonga(index);
+		if (!isPGroongaIndex) {
+			RelationClose(index);
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: [sequential-search][index][invalid] "
+							"not PGroonga index: <%.*s>",
+							indexNameSize,
+							indexName)));
+		}
+
 		GRN_BULK_REWIND(tokenFilters);
 		PGrnApplyOptionValues(index,
 							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
@@ -227,7 +241,11 @@ PGrnSequentialSearchDataPrepare(PGrnSequentialSearchData *data,
 
 	if (PGrnIsTemporaryIndexSearchAvailable)
 	{
-		PGrnSequentialSearchDataExecuteSetIndex(data, indexOID, column);
+		PGrnSequentialSearchDataExecuteSetIndex(data,
+												indexOID,
+												column,
+												indexName,
+												indexNameSize);
 	}
 }
 
