@@ -22,15 +22,12 @@ case "${distribution}" in
   debian)
     component=main
     run cat <<EOF | run sudo tee /etc/apt/sources.list.d/groonga.list
-deb http://packages.groonga.org/debian/ ${code_name} main
-deb-src http://packages.groonga.org/debian/ ${code_name} main
+deb [signed-by=/usr/share/keyrings/groonga-archive-keyring.gpg] https://packages.groonga.org/debian/ stretch main
+deb-src [signed-by=/usr/share/keyrings/groonga-archive-keyring.gpg] https://packages.groonga.org/debian/ stretch main
 EOF
-    if [ "${code_name}" = "jessie" ]; then
-      run sudo apt update
-    else
-      run sudo apt update --allow-insecure-repositories
-    fi
-    run sudo apt install -V -y --allow-unauthenticated groonga-keyring
+    run sudo wget \
+        -O /usr/share/keyrings/groonga-archive-keyring.gpg \
+        https://packages.groonga.org/debian/groonga-archive-keyring.gpg
     run sudo apt update
     ;;
   ubuntu)
