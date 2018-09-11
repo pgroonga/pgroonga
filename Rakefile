@@ -14,8 +14,8 @@ package = "pgroonga"
 package_label = "PGroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
 gpg_uids = [
-  "45499429",
-#  "34839225",
+  "C97E4649A2051D0CEA1A73F972A7496B45499429",
+#  "2701F317CFCCCB975CADE9C2624CF77434839225",
 ]
 groonga_source_dir_candidates = [
   "../groonga.clean",
