@@ -5440,6 +5440,7 @@ PGrnSort(IndexScanDesc scan)
 static void
 PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 {
+	const char *tag = "[cursor][open]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	grn_obj *table;
 	int offset = 0;
@@ -5457,9 +5458,20 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	else
 		flags |= GRN_CURSOR_ASCENDING;
 
+	if (!grn_obj_is_table(ctx, table))
+	{
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"pgroonga: %s target table is invalid: <%p>:<%p>:<%p>:<%p>",
+				tag,
+				table,
+				so->sorted,
+				so->searched,
+				so->sourcesTable);
+	}
 	so->tableCursor = grn_table_cursor_open(ctx, table,
 											NULL, 0, NULL, 0,
 											offset, limit, flags);
+	PGrnCheck("%s: failed to open cursor", tag);
 	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
 	{
 		so->ctidAccessor = grn_obj_column(ctx, table,
