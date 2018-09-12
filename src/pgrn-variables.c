@@ -342,21 +342,6 @@ PGrnInitializeVariables(void)
 							 PGrnEnableWALAssign,
 							 NULL);
 
-	PGrnDefineCustomIntVariable("pgroonga.keep_n_search_results",
-								"Keep N search results for pgroonga.score.",
-								"The default is -1. "
-								"It means that no search results are kept. "
-								"Normally, you don't change this.",
-								&PGrnKeepNSearchResults,
-								-1,
-								-1,
-								INT_MAX,
-								PGC_USERSET,
-								0,
-								NULL,
-								NULL,
-								NULL);
-
 	PGrnDefineCustomIntVariable("pgroonga.match_escalation_threshold",
 								"The threshold number of matched records "
 								"for determining whether "

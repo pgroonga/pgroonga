@@ -4,7 +4,6 @@
 
 grn_ctx PGrnContext;
 struct PGrnBuffers PGrnBuffers;
-int PGrnKeepNSearchResults = -1;
 int PGrnMatchEscalationThreshold = 0;
 
 static grn_ctx *ctx = &PGrnContext;

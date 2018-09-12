@@ -35,7 +35,6 @@ struct PGrnBuffers
 
 extern grn_ctx PGrnContext;
 extern struct PGrnBuffers PGrnBuffers;
-extern int PGrnKeepNSearchResults;
 extern int PGrnMatchEscalationThreshold;
 
 void PGrnInitializeBuffers(void);

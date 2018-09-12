@@ -300,43 +300,38 @@ PGrnGetEncoding(void)
 static void PGrnScanOpaqueFin(PGrnScanOpaque so);
 
 static void
-PGrnFinalizeScanOpaques(void)
+PGrnReleaseScanOpaques(ResourceReleasePhase phase,
+					   bool isCommit,
+					   bool isTopLevel,
+					   void *arg)
 {
+	const char *tag = "pgroonga: [release][scan-opaques]";
 	dlist_mutable_iter iter;
 
-	/*
-	 * TODO: Workaround for PostgreSQL bug on
-	 * 'could not obtain lock on row in relation' error.
-	 * PostgreSQL should clean up.
-	 *
-	 * How to reproduce:
-	 *
-	 * 1. Create schema and data:
-	 *
-	 * create table a (
-	 *   id int
-	 * );
-	 *
-	 * create index b on a using pgroonga (id);
-	 *
-	 * insert into a values (1);
-	 *
-	 *
-	 * 2. Lock the record:
-	 *
-	 * begin;
-	 * select * from a where id = 1 for update;
-	 *
-	 * 3. Open another connection and lock the record:
-	 *
-	 * begin;
-	 * select * from a where id = 1 for update;
-	 * -- Raises an error: ERROR:  could not obtain lock on row in relation "a"
-	 * -- In this case, beginscan is called but endscan isn't called.
-	 * -- So indexam can't finalize scan->opaque data.
-	 */
-	if (PGrnKeepNSearchResults < 0)
+	switch (phase)
+	{
+	case RESOURCE_RELEASE_BEFORE_LOCKS:
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"%s%s %u: skip",
+				tag,
+				"[before-locks]",
+				PGrnNScanOpaques);
 		return;
+	case RESOURCE_RELEASE_LOCKS:
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"%s%s %u: skip",
+				tag,
+				"[locks]",
+				PGrnNScanOpaques);
+		return;
+	case RESOURCE_RELEASE_AFTER_LOCKS:
+		GRN_LOG(ctx, GRN_LOG_DEBUG,
+				"%s%s[start] %u",
+				tag,
+				"[after-locks]",
+				PGrnNScanOpaques);
+		break;
+	}
 
 	dlist_foreach_modify(iter, &PGrnScanOpaques)
 	{
@@ -344,6 +339,12 @@ PGrnFinalizeScanOpaques(void)
 		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
 		PGrnScanOpaqueFin(so);
 	}
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"%s%s[end] %u",
+			tag,
+			"[after-locks]",
+			PGrnNScanOpaques);
 }
 
 static void
@@ -374,11 +375,6 @@ PGrnOnProcExit(int code, Datum arg)
 	if (ctx)
 	{
 		grn_obj *db;
-
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
-				"%s[finalize][scan-opaques] %u",
-				tag, PGrnNScanOpaques);
-		PGrnFinalizeScanOpaques();
 
 		db = grn_ctx_db(ctx);
 		GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -566,6 +562,8 @@ _PG_init(void)
 	grn_set_segv_handler();
 
 	on_proc_exit(PGrnOnProcExit, 0);
+
+	RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
 
 	grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
 
@@ -4113,20 +4111,6 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 
-	if (PGrnKeepNSearchResults >= 0)
-	{
-		while (PGrnNScanOpaques > PGrnKeepNSearchResults)
-		{
-			PGrnScanOpaque oldestSo;
-
-			oldestSo = dlist_tail_element(PGrnScanOpaqueData,
-										  node,
-										  &PGrnScanOpaques);
-			if (!oldestSo->isScanEnd)
-				break;
-			PGrnScanOpaqueFin(oldestSo);
-		}
-	}
 	dlist_push_head(&PGrnScanOpaques, &(so->node));
 	PGrnNScanOpaques++;
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
@@ -4201,7 +4185,7 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	PGrnScanOpaqueReinit(so);
 
-	pfree(so);
+	free(so);
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [finalize][scan-opaque][end] %u",
@@ -4227,7 +4211,7 @@ pgroonga_beginscan_raw(Relation index,
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 #endif
 
-	so = (PGrnScanOpaque) palloc(sizeof(PGrnScanOpaqueData));
+	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
 	PGrnScanOpaqueInit(so, index);
 
 	scan->opaque = so;
@@ -6055,14 +6039,7 @@ pgroonga_endscan_raw(IndexScanDesc scan)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	if (PGrnKeepNSearchResults < 0)
-	{
-		PGrnScanOpaqueFin(so);
-	}
-	else
-	{
-		so->isScanEnd = true;
-	}
+	so->isScanEnd = true;
 }
 
 /**
