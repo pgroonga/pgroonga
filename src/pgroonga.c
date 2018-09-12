@@ -4147,8 +4147,8 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		grn_table_cursor_close(ctx, so->tableCursor);
 		so->tableCursor = NULL;
 	}
-	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
-	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
+	GRN_BULK_REWIND(&(so->minBorderValue));
+	GRN_BULK_REWIND(&(so->maxBorderValue));
 	if (so->ctidResolveTable)
 	{
 		grn_obj_close(ctx, so->ctidResolveTable);
@@ -4184,6 +4184,9 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	}
 
 	PGrnScanOpaqueReinit(so);
+
+	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
+	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
 
 	free(so);
 
