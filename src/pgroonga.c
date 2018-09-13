@@ -306,28 +306,32 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 					   void *arg)
 {
 	const char *tag = "pgroonga: [release][scan-opaques]";
+	const char *top_level_tag = isTopLevel ? "[top-level]" : "";
 	dlist_mutable_iter iter;
 
 	switch (phase)
 	{
 	case RESOURCE_RELEASE_BEFORE_LOCKS:
 		GRN_LOG(ctx, GRN_LOG_DEBUG,
-				"%s%s %u: skip",
+				"%s%s%s %u: skip",
 				tag,
+				top_level_tag,
 				"[before-locks]",
 				PGrnNScanOpaques);
 		return;
 	case RESOURCE_RELEASE_LOCKS:
 		GRN_LOG(ctx, GRN_LOG_DEBUG,
-				"%s%s %u: skip",
+				"%s%s%s %u: skip",
 				tag,
+				top_level_tag,
 				"[locks]",
 				PGrnNScanOpaques);
 		return;
 	case RESOURCE_RELEASE_AFTER_LOCKS:
 		GRN_LOG(ctx, GRN_LOG_DEBUG,
-				"%s%s[start] %u",
+				"%s%s%s[start] %u",
 				tag,
+				top_level_tag,
 				"[after-locks]",
 				PGrnNScanOpaques);
 		break;
@@ -341,8 +345,9 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 	}
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"%s%s[end] %u",
+			"%s%s%s[end] %u",
 			tag,
+			top_level_tag,
 			"[after-locks]",
 			PGrnNScanOpaques);
 }
