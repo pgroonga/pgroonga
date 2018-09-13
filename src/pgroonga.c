@@ -4119,8 +4119,9 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->isScanEnd = false;
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"pgroonga: [initialize][scan-opaque][end] %u",
-			PGrnNScanOpaques);
+			"pgroonga: [initialize][scan-opaque][end] %u: <%p>",
+			PGrnNScanOpaques,
+			so);
 }
 
 static void
@@ -4170,8 +4171,9 @@ static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"pgroonga: [finalize][scan-opaque][start] %u",
-			PGrnNScanOpaques);
+			"pgroonga: [finalize][scan-opaque][start] %u: <%p>",
+			PGrnNScanOpaques,
+			so);
 
 	dlist_delete(&(so->node));
 	PGrnNScanOpaques--;
@@ -4191,8 +4193,9 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 	free(so);
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"pgroonga: [finalize][scan-opaque][end] %u",
-			PGrnNScanOpaques);
+			"pgroonga: [finalize][scan-opaque][end] %u: <%p>",
+			PGrnNScanOpaques,
+			so);
 }
 
 static IndexScanDesc
@@ -4216,6 +4219,10 @@ pgroonga_beginscan_raw(Relation index,
 
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
 	PGrnScanOpaqueInit(so, index);
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [scan][begin] <%p>",
+			so);
 
 	scan->opaque = so;
 
@@ -5461,8 +5468,10 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	if (!grn_obj_is_table(ctx, table))
 	{
 		GRN_LOG(ctx, GRN_LOG_DEBUG,
-				"pgroonga: %s target table is invalid: <%p>:<%p>:<%p>:<%p>",
+				"pgroonga: %s target table is invalid: "
+				"<%p>: <%p>:<%p>:<%p>:<%p>",
 				tag,
+				so,
 				table,
 				so->sorted,
 				so->searched,
@@ -6053,6 +6062,10 @@ static void
 pgroonga_endscan_raw(IndexScanDesc scan)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [scan][end] <%p>",
+			so);
 
 	so->isScanEnd = true;
 }
