@@ -334,6 +334,8 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 				top_level_tag,
 				"[after-locks]",
 				PGrnNScanOpaques);
+		if (!isTopLevel)
+			return;
 		break;
 	}
 
