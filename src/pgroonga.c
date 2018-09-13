@@ -3996,7 +3996,7 @@ PGrnPrimaryKeyColumnsFin(slist_head *columns)
 
 		current = slist_pop_head_node(columns);
 		column = slist_container(PGrnPrimaryKeyColumn, node, current);
-		pfree(column);
+		free(column);
 	}
 }
 
@@ -4040,7 +4040,7 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 					continue;
 
 				primaryKeyColumn =
-					(PGrnPrimaryKeyColumn *) palloc(sizeof(PGrnPrimaryKeyColumn));
+					(PGrnPrimaryKeyColumn *) malloc(sizeof(PGrnPrimaryKeyColumn));
 
 				desc = RelationGetDescr(table);
 				columnName = TupleDescAttr(so->index->rd_att, j)->attname.data;
