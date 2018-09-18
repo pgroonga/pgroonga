@@ -91,6 +91,9 @@ EOF
 %{pg_datadir}/extension/*.sql
 
 %changelog
+* Tue Sep 18 2018 Kouhei Sutou <kou@clear-code.com> - 2.1.4-1
+- new upstream release.
+
 * Tue Sep 11 2018 Kouhei Sutou <kou@clear-code.com> - 2.1.3-1
 - new upstream release.
 
