@@ -4,25 +4,7 @@ require "socket"
 require "stringio"
 
 module Helpers
-  module Sandbox
-    class << self
-      def included(base)
-        base.module_eval do
-          setup :setup_tmp_dir
-          teardown :teardown_tmp_dir
-
-          setup :setup_db
-          teardown :teardown_db
-
-          setup :setup_postgres
-          teardown :teardown_postgres
-
-          setup :setup_test_db
-          teardown :teardown_test_db
-        end
-      end
-    end
-
+  module CommandRunnable
     def spawn_process(*args)
       env = {
         "LC_ALL" => "C",
@@ -64,16 +46,66 @@ module Helpers
       end
       [output, error]
     end
+  end
 
-    def dll_extension
-      case RUBY_PLATFORM
-      when /mingw|mswin|cygwin/
-        "dll"
-      when /darwin/
-        "dylib"
-      else
-        "so"
+  class PostgreSQL
+    include CommandRunnable
+
+    attr_reader :dir
+    attr_reader :socket_dir
+    attr_reader :host
+    attr_reader :port
+    def initialize(base_dir)
+      @base_dir = base_dir
+      @running = false
+    end
+
+    def running?
+      @running
+    end
+
+    def initdb
+      @dir = File.join(@base_dir, "db")
+      @socket_dir = File.join(@dir, "socket")
+      @host = "127.0.0.1"
+      @port = 15432
+      run_command("initdb",
+                  "--locale", "C",
+                  "--encoding", "UTF-8",
+                  "-D", @dir)
+      FileUtils.mkdir_p(@socket_dir)
+      postgresql_conf = File.join(@dir, "postgresql.conf")
+      File.open(postgresql_conf, "a") do |conf|
+        conf.puts("listen_addresses = '#{@host}'")
+        conf.puts("port = #{@port}")
+        conf.puts("unix_socket_directories = '#{@socket_dir}'")
+        conf.puts("logging_collector = on")
+        conf.puts("log_filename = 'postgresql.log'")
+        conf.puts("shared_preload_libraries = 'pgroonga_check.#{dll_extension}'")
+        conf.puts("pgroonga.enable_wal = yes")
       end
+    end
+
+    def start
+      run_command("pg_ctl", "start",
+                  "-D", @dir)
+      loop do
+        begin
+          TCPSocket.open(@host, @port) do
+          end
+        rescue SystemCallError
+          sleep(0.1)
+        else
+          break
+        end
+      end
+      @running = true
+    end
+
+    def stop
+      return unless running?
+      run_command("pg_ctl", "stop",
+                  "-D", @dir)
     end
 
     def psql(db, sql)
@@ -86,39 +118,58 @@ module Helpers
                   "--command", sql)
     end
 
-    def run_sql(sql)
-      psql(@test_db_name, sql)
-    end
-
     def groonga(*command_line)
-      pgrn = Dir.glob("#{@db_dir}/base/*/pgrn").first
+      pgrn = Dir.glob("#{@dir}/base/*/pgrn").first
       output, _ = run_command("groonga",
                               pgrn,
                               *command_line)
       JSON.parse(output)
     end
 
-    def start_postgres
-      @postgres_is_running = false
-      run_command("pg_ctl", "start",
-                  "-D", @db_dir)
-      loop do
-        begin
-          TCPSocket.open(@host, @port) do
-          end
-        rescue SystemCallError
-          sleep(0.1)
-        else
-          break
+    private
+    def dll_extension
+      case RUBY_PLATFORM
+      when /mingw|mswin|cygwin/
+        "dll"
+      when /darwin/
+        "dylib"
+      else
+        "so"
+      end
+    end
+  end
+
+  module Sandbox
+    include CommandRunnable
+
+    class << self
+      def included(base)
+        base.module_eval do
+          setup :setup_tmp_dir
+          teardown :teardown_tmp_dir
+
+          setup :setup_db
+          teardown :teardown_db
+
+          setup :setup_postgres
+          teardown :teardown_postgres
+
+          setup :setup_test_db
+          teardown :teardown_test_db
         end
       end
-      @postgres_is_running = true
     end
 
-    def stop_postgres
-      return unless @postgres_is_running
-      run_command("pg_ctl", "stop",
-                  "-D", @db_dir)
+    def psql(db, sql)
+      @postgresql.psql(db, sql)
+    end
+
+    def run_sql(sql)
+      psql(@test_db_name, sql)
+    end
+
+    def groonga(*command_line)
+      @postgresql.groonga(*command_line)
     end
 
     def setup_tmp_dir
@@ -137,28 +188,19 @@ module Helpers
     end
 
     def setup_db
-      @db_dir = File.join(@tmp_dir, "db")
-      @socket_dir = File.join(@db_dir, "socket")
-      @host = "127.0.0.1"
-      @port = 15432
-      run_command("initdb",
-                  "--locale", "C",
-                  "--encoding", "UTF-8",
-                  "-D", @db_dir)
-      FileUtils.mkdir_p(@socket_dir)
-      postgresql_conf = File.join(@db_dir, "postgresql.conf")
-      File.open(postgresql_conf, "a") do |conf|
-        conf.puts("listen_addresses = '#{@host}'")
-        conf.puts("port = #{@port}")
-        conf.puts("unix_socket_directories = '#{@socket_dir}'")
-        conf.puts("logging_collector = on")
-        conf.puts("log_filename = 'postgresql.log'")
-        conf.puts("shared_preload_libraries = 'pgroonga_check.#{dll_extension}'")
-        conf.puts("pgroonga.enable_wal = yes")
-      end
+      @postgresql = PostgreSQL.new(@tmp_dir)
+      @postgresql.initdb
     end
 
     def teardown_db
+    end
+
+    def start_postgres
+      @postgresql.start
+    end
+
+    def stop_postgres
+      @postgresql.stop
     end
 
     def setup_postgres
@@ -173,7 +215,7 @@ module Helpers
       @test_db_name = "test"
       psql("postgres", "CREATE DATABASE #{@test_db_name}")
       run_sql("CREATE EXTENSION pgroonga")
-      Dir.glob(File.join(@db_dir, "base", "*", "pgrn")) do |pgrn|
+      Dir.glob(File.join(@postgresql.dir, "base", "*", "pgrn")) do |pgrn|
         @test_db_dir = File.dirname(pgrn)
       end
     end
