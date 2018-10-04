@@ -117,8 +117,6 @@ typedef struct PGrnScanOpaqueData
 	dlist_node node;
 	slist_head primaryKeyColumns;
 	grn_obj *scoreTargetRecords;
-
-	bool isScanEnd;
 } PGrnScanOpaqueData;
 
 typedef PGrnScanOpaqueData *PGrnScanOpaque;
@@ -4123,8 +4121,6 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
 	so->scoreTargetRecords = NULL;
 
-	so->isScanEnd = false;
-
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [initialize][scan-opaque][end] %u: <%p>",
 			PGrnNScanOpaques,
@@ -6074,7 +6070,7 @@ pgroonga_endscan_raw(IndexScanDesc scan)
 			"pgroonga: [scan][end] <%p>",
 			so);
 
-	so->isScanEnd = true;
+	PGrnScanOpaqueFin(so);
 }
 
 /**
