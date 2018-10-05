@@ -124,6 +124,7 @@ module Helpers
 
     def start
       run_command("pg_ctl", "start",
+                  "-w",
                   "-D", @dir)
       loop do
         begin
