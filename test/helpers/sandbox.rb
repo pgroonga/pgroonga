@@ -113,7 +113,6 @@ module Helpers
                   "--host", master.host,
                   "--port", master.port.to_s,
                   "--pgdata", @dir,
-                  "--xlog",
                   "--username", master.replication_user,
                   "--write-recovery-conf")
       postgresql_conf = File.join(@dir, "postgresql.conf")
