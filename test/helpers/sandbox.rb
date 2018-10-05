@@ -52,11 +52,17 @@ module Helpers
     include CommandRunnable
 
     attr_reader :dir
-    attr_reader :socket_dir
     attr_reader :host
     attr_reader :port
+    attr_reader :replication_user
+    attr_reader :replication_password
     def initialize(base_dir)
       @base_dir = base_dir
+      @dir = nil
+      @host = "127.0.0.1"
+      @port = nil
+      @replication_user = nil
+      @replication_password = nil
       @running = false
     end
 
@@ -66,23 +72,54 @@ module Helpers
 
     def initdb
       @dir = File.join(@base_dir, "db")
-      @socket_dir = File.join(@dir, "socket")
-      @host = "127.0.0.1"
+      socket_dir = File.join(@dir, "socket")
       @port = 15432
+      @replication_user = "replicator"
       run_command("initdb",
                   "--locale", "C",
                   "--encoding", "UTF-8",
                   "-D", @dir)
-      FileUtils.mkdir_p(@socket_dir)
+      FileUtils.mkdir_p(socket_dir)
       postgresql_conf = File.join(@dir, "postgresql.conf")
       File.open(postgresql_conf, "a") do |conf|
         conf.puts("listen_addresses = '#{@host}'")
         conf.puts("port = #{@port}")
-        conf.puts("unix_socket_directories = '#{@socket_dir}'")
+        conf.puts("unix_socket_directories = '#{socket_dir}'")
         conf.puts("logging_collector = on")
         conf.puts("log_filename = 'postgresql.log'")
+        conf.puts("wal_level = replica")
+        conf.puts("max_wal_senders = 4")
         conf.puts("shared_preload_libraries = 'pgroonga_check.#{dll_extension}'")
         conf.puts("pgroonga.enable_wal = yes")
+      end
+      pg_hba_conf = File.join(@dir, "pg_hba.conf")
+      File.open(pg_hba_conf, "a") do |conf|
+        conf.puts("host replication #{@replication_user} #{@host}/32 trust")
+      end
+    end
+
+    def create_replication_user
+      run_command("createuser",
+                  "--host", @host,
+                  "--port", @port.to_s,
+                  "--replication",
+                  @replication_user)
+    end
+
+    def init_replication(master)
+      @dir = File.join(@base_dir, "db-slave")
+      @port = master.port + 1
+      run_command("pg_basebackup",
+                  "--host", master.host,
+                  "--port", master.port.to_s,
+                  "--pgdata", @dir,
+                  "--xlog",
+                  "--username", master.replication_user,
+                  "--write-recovery-conf")
+      postgresql_conf = File.join(@dir, "postgresql.conf")
+      File.open(postgresql_conf, "a") do |conf|
+        conf.puts("hot_standby = on")
+        conf.puts("port = #{@port}")
       end
     end
 
@@ -168,6 +205,14 @@ module Helpers
       psql(@test_db_name, sql)
     end
 
+    def psql_slave(db, sql)
+      @postgresql_slave.psql(db, sql)
+    end
+
+    def run_sql_slave(sql)
+      psql_slave(@test_db_name, sql)
+    end
+
     def groonga(*command_line)
       @postgresql.groonga(*command_line)
     end
@@ -175,7 +220,7 @@ module Helpers
     def setup_tmp_dir
       memory_fs = "/dev/shm"
       if File.exist?(memory_fs)
-        @tmp_dir = File.join(memory_fs, "pgroonga-check")
+        @tmp_dir = File.join(memory_fs, "pgroonga")
       else
         @tmp_dir = File.join(__dir__, "tmp")
       end
@@ -195,6 +240,16 @@ module Helpers
     def teardown_db
     end
 
+    def setup_slave_db
+      @postgresql_slave = PostgreSQL.new(@tmp_dir)
+      @postgresql_slave.init_replication(@postgresql)
+      @postgresql_slave.start
+    end
+
+    def teardown_slave_db
+      @postgresql_slave.stop
+    end
+
     def start_postgres
       @postgresql.start
     end
@@ -205,6 +260,7 @@ module Helpers
 
     def setup_postgres
       start_postgres
+      @postgresql.create_replication_user
     end
 
     def teardown_postgres

@@ -179,6 +179,15 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 #define PGRN_WAL_META_PAGE_BLOCK_NUMBER 0
 
 #ifdef PGRN_SUPPORT_WAL
+static LOCKMODE
+PGrnWALLockMode(void)
+{
+	if (RecoveryInProgress())
+		return RowExclusiveLock;
+	else
+		return ShareUpdateExclusiveLock;
+}
+
 static Buffer
 PGrnWALReadLockedBuffer(Relation index,
 						BlockNumber blockNumber,
@@ -399,7 +408,7 @@ PGrnWALStart(Relation index)
 	if (!RelationIsValid(index))
 		return NULL;
 
-	LockRelation(index, ShareUpdateExclusiveLock);
+	LockRelation(index, PGrnWALLockMode());
 
 	data = palloc(sizeof(PGrnWALData));
 
@@ -432,7 +441,7 @@ PGrnWALFinish(PGrnWALData *data)
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
 
-	UnlockRelation(data->index, ShareUpdateExclusiveLock);
+	UnlockRelation(data->index, PGrnWALLockMode());
 
 	pfree(data);
 #endif
@@ -453,7 +462,7 @@ PGrnWALAbort(PGrnWALData *data)
 	}
 	UnlockReleaseBuffer(data->meta.buffer);
 
-	UnlockRelation(data->index, ShareUpdateExclusiveLock);
+	UnlockRelation(data->index, PGrnWALLockMode());
 
 	pfree(data);
 #endif
@@ -1920,13 +1929,13 @@ PGrnWALApply(Relation index)
 	if (!PGrnWALApplyNeeded(&data))
 		return 0;
 
-	LockRelation(index, ShareUpdateExclusiveLock);
+	LockRelation(index, PGrnWALLockMode());
 	PGrnIndexStatusGetWALAppliedPosition(data.index,
 										 &(data.current.block),
 										 &(data.current.offset));
 	data.sources = NULL;
 	nAppliedOperations = PGrnWALApplyConsume(&data);
-	UnlockRelation(index, ShareUpdateExclusiveLock);
+	UnlockRelation(index, PGrnWALLockMode());
 #endif
 	return nAppliedOperations;
 }
@@ -2062,11 +2071,11 @@ PGrnWALTruncate(Relation index)
 	BlockNumber nBlocks;
 	GenericXLogState *state;
 
-	LockRelation(index, ShareUpdateExclusiveLock);
+	LockRelation(index, PGrnWALLockMode());
 	nBlocks = RelationGetNumberOfBlocks(index);
 	if (nBlocks == 0)
 	{
-		UnlockRelation(index, ShareUpdateExclusiveLock);
+		UnlockRelation(index, PGrnWALLockMode());
 		return 0;
 	}
 
@@ -2112,7 +2121,7 @@ PGrnWALTruncate(Relation index)
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
 										 0);
 
-	UnlockRelation(index, ShareUpdateExclusiveLock);
+	UnlockRelation(index, PGrnWALLockMode());
 
 	return nTruncatedBlocks;
 }
