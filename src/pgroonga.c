@@ -99,6 +99,9 @@ typedef struct PGrnPrimaryKeyColumn
 typedef struct PGrnScanOpaqueData
 {
 	Relation index;
+
+	MemoryContext memoryContext;
+
 	Oid dataTableID;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
@@ -4094,6 +4097,12 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 			PGrnNScanOpaques);
 
 	so->index = index;
+
+	so->memoryContext =
+		AllocSetContextCreate(CurrentMemoryContext,
+							  "PGroonga scan opaque temporay context",
+							  ALLOCSET_DEFAULT_SIZES);
+
 	so->dataTableID = index->rd_index->indrelid;
 	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
@@ -4192,6 +4201,8 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
 	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
+
+	MemoryContextDelete(so->memoryContext);
 
 	free(so);
 
@@ -5820,11 +5831,14 @@ static void
 PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 						   IndexScanDesc scan)
 {
+	MemoryContext oldMemoryContext;
 	TupleDesc desc;
 	Datum *values;
 	bool *isNulls;
 	grn_id recordID;
 	unsigned int i;
+
+	oldMemoryContext = MemoryContextSwitchTo(so->memoryContext);
 
 	desc = RelationGetDescr(so->index);
 	scan->xs_itupdesc = desc;
@@ -5849,12 +5863,13 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		grn_obj_unlink(ctx, dataColumn);
 	}
 
+	MemoryContextSwitchTo(oldMemoryContext);
+
 	scan->xs_itup = index_form_tuple(scan->xs_itupdesc,
 									 values,
 									 isNulls);
 
-	pfree(values);
-	pfree(isNulls);
+	MemoryContextReset(so->memoryContext);
 }
 #endif
 
