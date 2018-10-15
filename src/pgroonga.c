@@ -4139,6 +4139,7 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 static void
 PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
+	MemoryContextReset(so->memoryContext);
 	so->currentID = GRN_ID_NIL;
 	if (so->scoreAccessor)
 	{
@@ -5838,6 +5839,7 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 	grn_id recordID;
 	unsigned int i;
 
+	MemoryContextReset(so->memoryContext);
 	oldMemoryContext = MemoryContextSwitchTo(so->memoryContext);
 
 	desc = RelationGetDescr(so->index);
@@ -5863,13 +5865,11 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		grn_obj_unlink(ctx, dataColumn);
 	}
 
-	MemoryContextSwitchTo(oldMemoryContext);
-
 	scan->xs_itup = index_form_tuple(scan->xs_itupdesc,
 									 values,
 									 isNulls);
 
-	MemoryContextReset(so->memoryContext);
+	MemoryContextSwitchTo(oldMemoryContext);
 }
 #endif
 
