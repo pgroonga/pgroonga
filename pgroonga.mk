@@ -22,9 +22,9 @@ endif
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
-COPT += -Ivendor/xxHash
+PG_CPPFLAGS += -Ivendor/xxHash
 ifdef HAVE_MSGPACK
-COPT += -DPGRN_HAVE_MSGPACK
+PG_CPPFLAGS += -DPGRN_HAVE_MSGPACK
 endif
 
 include makefiles/pgrn-pgxs.mk
