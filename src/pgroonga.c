@@ -3799,6 +3799,7 @@ PGrnInsert(Relation index,
 		   bool *isnull,
 		   ItemPointer ht_ctid)
 {
+	const char *tag = "pgroonga: [insert]";
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
 	PGrnWALData *walData;
@@ -3850,6 +3851,17 @@ PGrnInsert(Relation index,
 			PGrnCheck("failed to set ctid value: <%u>: <%" PRIu64 ">",
 					  id,
 					  packedCtid);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[array] <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+					tag,
+					index->rd_rel->relname.data,
+					index->rd_id,
+					id,
+					ht_ctid->ip_blkid.bi_hi,
+					ht_ctid->ip_blkid.bi_lo,
+					ht_ctid->ip_posid,
+					packedCtid);
 			PGrnWALInsertColumn(walData, sourcesCtidColumn, &(buffers->ctid));
 		}
 		else
@@ -3872,7 +3884,8 @@ PGrnInsert(Relation index,
 			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
-					"pgroonga: [insert] <%s>(%u): <%u>: <(%u,%u),%u>(%lu)",
+					"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+					tag,
 					index->rd_rel->relname.data,
 					index->rd_id,
 					id,
@@ -5985,6 +5998,7 @@ static int64
 pgroonga_getbitmap_raw(IndexScanDesc scan,
 					   TIDBitmap *tbm)
 {
+	const char *tag = "pgroonga: [getbitmap]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 
@@ -5996,10 +6010,22 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		grn_id termID;
 		while ((posting = grn_index_cursor_next(ctx, so->indexCursor, &termID)))
 		{
+			uint64 packedCtid;
 			ItemPointerData ctid;
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &(buffers->ctid));
-			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			ctid = PGrnCtidUnpack(packedCtid);
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[index-cursor] <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+					tag,
+					so->index->rd_rel->relname.data,
+					so->index->rd_id,
+					posting->rid,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid,
+					packedCtid);
 			if (!ItemPointerIsValid(&ctid))
 				continue;
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
@@ -6011,10 +6037,22 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		grn_id id;
 		while ((id = grn_table_cursor_next(ctx, so->tableCursor)) != GRN_ID_NIL)
 		{
+			uint64 packedCtid;
 			ItemPointerData ctid;
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
-			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			ctid = PGrnCtidUnpack(packedCtid);
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+					tag,
+					so->index->rd_rel->relname.data,
+					so->index->rd_id,
+					id,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid,
+					packedCtid);
 			if (!ItemPointerIsValid(&ctid))
 				continue;
 			tbm_add_tuples(tbm, &ctid, 1, scan->xs_recheck);
