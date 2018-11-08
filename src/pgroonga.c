@@ -6499,6 +6499,18 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 			ctid = PGrnCtidUnpack(packedCtid);
 			if (callback(&ctid, callbackState))
 			{
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+						tag,
+						index->rd_rel->relname.data,
+						index->rd_id,
+						id,
+						ctid.ip_blkid.bi_hi,
+						ctid.ip_blkid.bi_lo,
+						ctid.ip_posid,
+						packedCtid);
+
 				jsonbData.id = id;
 				PGrnJSONBBulkDeleteRecord(&jsonbData);
 
