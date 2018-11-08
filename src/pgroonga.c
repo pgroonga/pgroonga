@@ -6430,6 +6430,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 						IndexBulkDeleteCallback callback,
 						void *callbackState)
 {
+	const char *tag = "pgroonga: [bulk-delete]";
 	Relation index = info->index;
 	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
