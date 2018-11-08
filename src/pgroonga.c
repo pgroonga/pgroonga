@@ -6116,7 +6116,7 @@ static void
 pgroonga_endscan_raw(IndexScanDesc scan)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
-	MemoryContext *memoryContext = so->memoryContext;
+	MemoryContext memoryContext = so->memoryContext;
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [scan][end] <%p>",
