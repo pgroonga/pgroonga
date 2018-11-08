@@ -4152,7 +4152,6 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 static void
 PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
-	MemoryContextReset(so->memoryContext);
 	so->currentID = GRN_ID_NIL;
 	if (so->scoreAccessor)
 	{
@@ -4215,8 +4214,6 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
 	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
-
-	MemoryContextDelete(so->memoryContext);
 
 	free(so);
 
@@ -6089,6 +6086,7 @@ pgroonga_rescan_raw(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+	MemoryContextReset(so->memoryContext);
 	PGrnScanOpaqueReinit(so);
 
 	if (keys && scan->numberOfKeys > 0)
@@ -6118,12 +6116,14 @@ static void
 pgroonga_endscan_raw(IndexScanDesc scan)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	MemoryContext *memoryContext = so->memoryContext;
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [scan][end] <%p>",
 			so);
 
 	PGrnScanOpaqueFin(so);
+	MemoryContextDelete(memoryContext);
 }
 
 /**
