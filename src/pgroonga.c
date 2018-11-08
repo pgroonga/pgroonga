@@ -5995,7 +5995,7 @@ static int64
 pgroonga_getbitmap_raw(IndexScanDesc scan,
 					   TIDBitmap *tbm)
 {
-	const char *tag = "pgroonga: [getbitmap]";
+	const char *tag = "pgroonga: [get-bitmap]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
 
@@ -6009,8 +6009,12 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		{
 			uint64 packedCtid;
 			ItemPointerData ctid;
+			so->currentID = posting->rid;
 			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx, so->ctidAccessor, posting->rid, &(buffers->ctid));
+			grn_obj_get_value(ctx,
+							  so->ctidAccessor,
+							  so->currentID,
+							  &(buffers->ctid));
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -6018,7 +6022,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 					tag,
 					so->index->rd_rel->relname.data,
 					so->index->rd_id,
-					posting->rid,
+					so->currentID,
 					ctid.ip_blkid.bi_hi,
 					ctid.ip_blkid.bi_lo,
 					ctid.ip_posid,
@@ -6031,13 +6035,18 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 	}
 	else
 	{
-		grn_id id;
-		while ((id = grn_table_cursor_next(ctx, so->tableCursor)) != GRN_ID_NIL)
+		while (true)
 		{
 			uint64 packedCtid;
 			ItemPointerData ctid;
+			so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
+			if (so->currentID == GRN_ID_NIL)
+				break;
 			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
+			grn_obj_get_value(ctx,
+							  so->ctidAccessor,
+							  so->currentID,
+							  &(buffers->ctid));
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -6045,7 +6054,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 					tag,
 					so->index->rd_rel->relname.data,
 					so->index->rd_id,
-					id,
+					PGrnScanOpaqueResolveID(so),
 					ctid.ip_blkid.bi_hi,
 					ctid.ip_blkid.bi_lo,
 					ctid.ip_posid,
