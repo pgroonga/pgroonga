@@ -223,7 +223,12 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 			}
 			else
 			{
-				/* TODO: Report unknown parameter name error. */
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: tokenize: "
+								"unknown parameter name: <%.*s>",
+								(int) VARSIZE_ANY_EXHDR(name),
+								VARDATA_ANY(name))));
 			}
 #undef NAME_EQUAL
 		}
