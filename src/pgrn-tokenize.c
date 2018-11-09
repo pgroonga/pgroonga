@@ -39,6 +39,7 @@ PGrnFinalizeTokenize(void)
 	grn_obj_close(ctx, lexicon);
 }
 
+#if GRN_VERSION_OR_LATER(8, 0, 9)
 static void
 PGrnTokenizeSetModule(const char *moduleName,
 					  grn_info_type type,
@@ -158,6 +159,7 @@ PGrnTokenize(text *target)
 							  false,
 							  'i');
 }
+#endif
 
 /**
  * pgroonga_tokenize(target text, options text[]) : text[]
