@@ -24,6 +24,7 @@ HEADERS =					\
 	src/pgrn-query-extract-keywords.h	\
 	src/pgrn-search.h			\
 	src/pgrn-sequential-search.h		\
+	src/pgrn-tokenize.h			\
 	src/pgrn-value.h			\
 	src/pgrn-variables.h			\
 	src/pgrn-wal.h				\

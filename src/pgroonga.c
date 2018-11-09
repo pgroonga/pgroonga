@@ -25,6 +25,7 @@
 #include "pgrn-query-extract-keywords.h"
 #include "pgrn-search.h"
 #include "pgrn-sequential-search.h"
+#include "pgrn-tokenize.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
@@ -395,6 +396,10 @@ PGrnOnProcExit(int code, Datum arg)
 			PGrnFinalizeAutoClose();
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][tokenize]", tag);
+			PGrnFinalizeTokenize();
+
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
 					"%s[finalize][query-extract-keywords]", tag);
 			PGrnFinalizeQueryExtractKeywords();
 
@@ -498,6 +503,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeQueryExpand();
 
 	PGrnInitializeQueryExtractKeywords();
+
+	PGrnInitializeTokenize();
 
 	PGrnInitializeAutoClose();
 }

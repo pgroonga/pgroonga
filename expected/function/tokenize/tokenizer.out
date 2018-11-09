@@ -1,0 +1,7 @@
+SELECT pgroonga_tokenize('This is a pen.',
+                         'tokenizer', 'TokenNgram');
+                   pgroonga_tokenize                    
+--------------------------------------------------------
+ {Th,hi,is,"s "," i",is,"s "," a","a "," p",pe,en,n.,.}
+(1 row)
+

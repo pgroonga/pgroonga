@@ -247,6 +247,13 @@ CREATE FUNCTION pgroonga_normalize(target text, normalizerName text)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_tokenize(target text, VARIADIC options text[])
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_tokenize'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)
