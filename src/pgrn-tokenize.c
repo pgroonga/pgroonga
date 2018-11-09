@@ -199,9 +199,15 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 			Datum valueDatum;
 			text *value;
 
-			/* TODO: raise */
 			if (!array_iterate(iterator, &valueDatum, &isNULL))
-				break;
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: tokenize: "
+								"parameter value is missing: <%.*s>",
+								(int) VARSIZE_ANY_EXHDR(name),
+								VARDATA_ANY(name))));
+			}
 
 			value = DatumGetTextPP(valueDatum);
 
