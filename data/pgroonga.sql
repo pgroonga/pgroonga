@@ -248,7 +248,7 @@ CREATE FUNCTION pgroonga_normalize(target text, normalizerName text)
 	STRICT;
 
 CREATE FUNCTION pgroonga_tokenize(target text, VARIADIC options text[])
-	RETURNS text[]
+	RETURNS json[]
 	AS 'MODULE_PATHNAME', 'pgroonga_tokenize'
 	LANGUAGE C
 	IMMUTABLE

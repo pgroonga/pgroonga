@@ -7,6 +7,7 @@
 #include <catalog/pg_type.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
+#include <utils/json.h>
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *lexicon;
@@ -14,6 +15,7 @@ static grn_obj tokenizerValue;
 static grn_obj normalizerValue;
 static grn_obj tokenFiltersValue;
 static grn_obj tokens;
+static grn_obj tokenJSON;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_tokenize);
 
@@ -28,11 +30,13 @@ PGrnInitializeTokenize(void)
 	GRN_TEXT_INIT(&normalizerValue, 0);
 	GRN_TEXT_INIT(&tokenFiltersValue, 0);
 	GRN_TEXT_INIT(&tokens, GRN_OBJ_VECTOR);
+	GRN_TEXT_INIT(&tokenJSON, 0);
 }
 
 void
 PGrnFinalizeTokenize(void)
 {
+	GRN_OBJ_FIN(ctx, &tokenJSON);
 	GRN_OBJ_FIN(ctx, &tokens);
 	GRN_OBJ_FIN(ctx, &tokenFiltersValue);
 	GRN_OBJ_FIN(ctx, &normalizerValue);
@@ -136,17 +140,26 @@ PGrnTokenize(text *target)
 	nTokens = grn_vector_size(ctx, &tokens);
 	if (nTokens == 0)
 	{
-		return construct_empty_array(TEXTOID);
+		return construct_empty_array(JSONOID);
 	}
 
 	tokenData = palloc(sizeof(Datum) * nTokens);
 	for (i = 0; i < nTokens; i++)
 	{
+		grn_content_type type = GRN_CONTENT_JSON;
 		const char *data;
 		unsigned int length;
+		text *json;
 
+		GRN_BULK_REWIND(&tokenJSON);
+		grn_output_map_open(ctx, &tokenJSON, type, "token", 1);
+		grn_output_cstr(ctx, &tokenJSON, type, "data");
 		length = grn_vector_get_element(ctx, &tokens, i, &data, NULL, NULL);
-		tokenData[i] = PointerGetDatum(cstring_to_text_with_len(data, length));
+		grn_output_str(ctx, &tokenJSON, type, data, length);
+		grn_output_map_close(ctx, &tokenJSON, type);
+		json = cstring_to_text_with_len(GRN_TEXT_VALUE(&tokenJSON),
+										GRN_TEXT_LEN(&tokenJSON));
+		tokenData[i] = PointerGetDatum(json);
 	}
 	dims[0] = nTokens;
 	lbs[0] = 1;
@@ -155,7 +168,7 @@ PGrnTokenize(text *target)
 							  1,
 							  dims,
 							  lbs,
-							  TEXTOID,
+							  JSONOID,
 							  -1,
 							  false,
 							  'i');
@@ -163,7 +176,7 @@ PGrnTokenize(text *target)
 #endif
 
 /**
- * pgroonga_tokenize(target text, options text[]) : text[]
+ * pgroonga_tokenize(target text, options text[]) : json[]
  *
  * options:
  *   "tokenizer", tokenizer text,
@@ -256,6 +269,6 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 
 	PG_RETURN_POINTER(pgTokens);
 #else
-	PG_RETURN_POINTER(construct_empty_array(TEXTOID));
+	PG_RETURN_POINTER(construct_empty_array(JSONOID));
 #endif
 }

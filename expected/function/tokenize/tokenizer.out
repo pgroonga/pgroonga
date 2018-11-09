@@ -1,7 +1,52 @@
-SELECT pgroonga_tokenize('This is a pen.',
-                         'tokenizer', 'TokenNgram');
-                   pgroonga_tokenize                    
---------------------------------------------------------
- {Th,hi,is,"s "," i",is,"s "," a","a "," p",pe,en,n.,.}
-(1 row)
+SELECT jsonb_pretty(token::jsonb)
+  FROM (
+    SELECT unnest(pgroonga_tokenize('This is a pen.',
+                                    'tokenizer', 'TokenNgram'))
+           AS token
+  ) AS tokens;
+   jsonb_pretty   
+------------------
+ {               +
+     "data": "Th"+
+ }
+ {               +
+     "data": "hi"+
+ }
+ {               +
+     "data": "is"+
+ }
+ {               +
+     "data": "s "+
+ }
+ {               +
+     "data": " i"+
+ }
+ {               +
+     "data": "is"+
+ }
+ {               +
+     "data": "s "+
+ }
+ {               +
+     "data": " a"+
+ }
+ {               +
+     "data": "a "+
+ }
+ {               +
+     "data": " p"+
+ }
+ {               +
+     "data": "pe"+
+ }
+ {               +
+     "data": "en"+
+ }
+ {               +
+     "data": "n."+
+ }
+ {               +
+     "data": "." +
+ }
+(14 rows)
 
