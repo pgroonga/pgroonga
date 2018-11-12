@@ -1,0 +1,56 @@
+SELECT jsonb_pretty(token::jsonb)
+  FROM (
+    SELECT
+      unnest(pgroonga_tokenize('これはペンです。',
+                               'tokenizer', 'TokenMecab("include_class", true)'))
+        AS token
+  ) AS tokens;
+           jsonb_pretty           
+----------------------------------
+ {                               +
+     "value": "これ",            +
+     "metadata": {               +
+         "class": "名詞",        +
+         "subclass0": "代名詞",  +
+         "subclass1": "一般"     +
+     },                          +
+     "position": 0,              +
+     "force_prefix_search": false+
+ }
+ {                               +
+     "value": "は",              +
+     "metadata": {               +
+         "class": "助詞",        +
+         "subclass0": "係助詞"   +
+     },                          +
+     "position": 1,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "ペン",            +
+     "metadata": {               +
+         "class": "名詞",        +
+         "subclass0": "一般"     +
+     },                          +
+     "position": 2,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "です",            +
+     "metadata": {               +
+         "class": "助動詞"       +
+     },                          +
+     "position": 3,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "。",              +
+     "metadata": {               +
+         "class": "記号",        +
+         "subclass0": "句点"     +
+     },                          +
+     "position": 4,              +
+     "force_prefix_search": true +
+ }
+(5 rows)
+

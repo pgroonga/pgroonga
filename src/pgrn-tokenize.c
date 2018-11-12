@@ -15,15 +15,17 @@ static grn_obj tokenizerValue;
 static grn_obj normalizerValue;
 static grn_obj tokenFiltersValue;
 static grn_obj tokens;
+static grn_obj tokenMetadataName;
+static grn_obj tokenMetadataValue;
 static grn_obj tokenJSON;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_tokenize);
 
 typedef struct {
 	grn_id id;
-	grn_obj data;
+	grn_obj value;
 	int32_t position;
-	grn_bool forcePrefix;
+	grn_bool forcePrefixSearch;
 	uint64_t sourceOffset;
 	uint32_t sourceLength;
 	uint32_t sourceFirstCharacterLength;
@@ -61,7 +63,7 @@ PGrnTokensReinit(void)
 	{
 		PGrnToken *token;
 		token = PGrnTokensAt(i);
-		GRN_OBJ_FIN(ctx, &(token->data));
+		GRN_OBJ_FIN(ctx, &(token->value));
 		GRN_OBJ_FIN(ctx, &(token->metadata));
 	}
 	GRN_BULK_REWIND(&tokens);
@@ -73,19 +75,60 @@ PGrnTokensAppend(grn_id id, grn_token_cursor *tokenCursor)
 {
 	PGrnToken *token;
 	grn_token *grnToken;
-	grn_obj *data;
 
 	grn_bulk_space(ctx, &tokens, sizeof(PGrnToken));
 	token = ((PGrnToken *) (GRN_BULK_CURR(&tokens))) - 1;
-	GRN_TEXT_INIT(&(token->data), 0);
+	GRN_TEXT_INIT(&(token->value), 0);
 	GRN_TEXT_INIT(&(token->metadata), GRN_OBJ_VECTOR);
 
+	token->id = id;
+
 	grnToken = grn_token_cursor_get_token(ctx, tokenCursor);
-	data = grn_token_get_data(ctx, grnToken);
-	GRN_TEXT_SET(ctx,
-				 &(token->data),
-				 GRN_TEXT_VALUE(data),
-				 GRN_TEXT_LEN(data));
+	{
+		grn_obj *data = grn_token_get_data(ctx, grnToken);
+		GRN_TEXT_SET(ctx,
+					 &(token->value),
+					 GRN_TEXT_VALUE(data),
+					 GRN_TEXT_LEN(data));
+	}
+	token->position = grn_token_get_position(ctx, grnToken);
+	token->forcePrefixSearch = grn_token_get_position(ctx, grnToken);
+    token->sourceOffset = grn_token_get_source_offset(ctx, grnToken);
+    token->sourceLength = grn_token_get_source_length(ctx, grnToken);
+    token->sourceFirstCharacterLength =
+      grn_token_get_source_first_character_length(ctx, grnToken);
+    {
+      grn_obj *metadata;
+      size_t nMetadata;
+      size_t i;
+
+      metadata = grn_token_get_metadata(ctx, grnToken);
+      nMetadata = grn_token_metadata_get_size(ctx, metadata);
+      for (i = 0; i < nMetadata; i++) {
+        GRN_BULK_REWIND(&tokenMetadataName);
+        GRN_BULK_REWIND(&tokenMetadataValue);
+        grn_token_metadata_at(ctx,
+							  metadata,
+							  i,
+							  &tokenMetadataName,
+							  &tokenMetadataValue);
+        if (GRN_TEXT_LEN(&tokenMetadataName) == 0) {
+          continue;
+        }
+        grn_vector_add_element(ctx,
+                               &(token->metadata),
+                               GRN_BULK_HEAD(&tokenMetadataName),
+                               GRN_BULK_VSIZE(&tokenMetadataName),
+                               0,
+                               tokenMetadataName.header.domain);
+        grn_vector_add_element(ctx,
+                               &(token->metadata),
+                               GRN_BULK_HEAD(&tokenMetadataValue),
+                               GRN_BULK_VSIZE(&tokenMetadataValue),
+                               0,
+                               tokenMetadataValue.header.domain);
+      }
+    }
 }
 #endif
 
@@ -107,6 +150,8 @@ PGrnInitializeTokenize(void)
 	GRN_TEXT_INIT(&normalizerValue, 0);
 	GRN_TEXT_INIT(&tokenFiltersValue, 0);
 	PGrnTokensInit();
+	GRN_TEXT_INIT(&tokenMetadataName, 0);
+	GRN_VOID_INIT(&tokenMetadataValue);
 	GRN_TEXT_INIT(&tokenJSON, 0);
 }
 
@@ -114,6 +159,8 @@ void
 PGrnFinalizeTokenize(void)
 {
 	GRN_OBJ_FIN(ctx, &tokenJSON);
+	GRN_OBJ_FIN(ctx, &tokenMetadataValue);
+	GRN_OBJ_FIN(ctx, &tokenMetadataName);
 	PGrnTokensFin();
 	GRN_OBJ_FIN(ctx, &tokenFiltersValue);
 	GRN_OBJ_FIN(ctx, &normalizerValue);
@@ -174,14 +221,121 @@ PGrnTokenizeSetModule(const char *moduleName,
 }
 
 static ArrayType *
-PGrnTokenize(text *target)
+PGrnTokenizeCreateArray(void)
 {
-	grn_token_cursor *tokenCursor;
 	size_t i;
 	size_t nTokens;
 	Datum *tokenData;
 	int	dims[1];
 	int	lbs[1];
+
+	nTokens = PGrnTokensSize();
+	if (nTokens == 0)
+	{
+		return construct_empty_array(JSONOID);
+	}
+
+	tokenData = palloc(sizeof(Datum) * nTokens);
+	for (i = 0; i < nTokens; i++)
+	{
+		grn_content_type type = GRN_CONTENT_JSON;
+		PGrnToken *token = PGrnTokensAt(i);
+		int nElements = 3;
+		bool haveSourceLocation = false;
+		bool haveMetadata = false;
+		text *json;
+
+		GRN_BULK_REWIND(&tokenJSON);
+		if (token->sourceOffset > 0 || token->sourceLength > 0)
+		{
+			haveSourceLocation = true;
+			nElements += 3;
+		}
+		if (grn_vector_size(ctx, &(token->metadata)) > 0)
+		{
+			haveMetadata = true;
+			nElements++;
+		}
+		grn_output_map_open(ctx, &tokenJSON, type, "token", nElements);
+		grn_output_cstr(ctx, &tokenJSON, type, "value");
+		grn_output_str(ctx, &tokenJSON, type,
+					   GRN_TEXT_VALUE(&(token->value)),
+					   GRN_TEXT_LEN(&(token->value)));
+		grn_output_cstr(ctx, &tokenJSON, type, "position");
+		grn_output_uint32(ctx, &tokenJSON, type, token->position);
+		grn_output_cstr(ctx, &tokenJSON, type, "force_prefix_search");
+		grn_output_bool(ctx, &tokenJSON, type, token->forcePrefixSearch);
+		if (haveSourceLocation)
+		{
+			grn_output_cstr(ctx, &tokenJSON, type, "source_offset");
+			grn_output_uint64(ctx, &tokenJSON, type, token->sourceOffset);
+			grn_output_cstr(ctx, &tokenJSON, type, "source_length");
+			grn_output_uint32(ctx, &tokenJSON, type, token->sourceLength);
+			grn_output_cstr(ctx, &tokenJSON, type,
+							"source_first_character_length");
+			grn_output_uint32(ctx, &tokenJSON, type,
+							  token->sourceFirstCharacterLength);
+		}
+		if (haveMetadata)
+		{
+			size_t j;
+			size_t nMetadata;
+
+			nMetadata = grn_vector_size(ctx, &(token->metadata)) / 2;
+			grn_output_cstr(ctx, &tokenJSON, type, "metadata");
+			grn_output_map_open(ctx, &tokenJSON, type, "metadata", nMetadata);
+			for (j = 0; j < nMetadata; j++)
+			{
+				const char *rawName;
+				unsigned int rawNameLength;
+				const char *rawValue;
+				unsigned int rawValueLength;
+				grn_id valueDomain;
+
+				rawNameLength = grn_vector_get_element(ctx,
+													   &(token->metadata),
+													   j * 2,
+													   &rawName,
+													   NULL,
+													   NULL);
+				grn_output_str(ctx, &tokenJSON, type, rawName, rawNameLength);
+
+				rawValueLength = grn_vector_get_element(ctx,
+														&(token->metadata),
+														j * 2 + 1,
+														&rawValue,
+														NULL,
+														&valueDomain);
+				grn_obj_reinit(ctx, &tokenMetadataValue, valueDomain, 0);
+				grn_bulk_write(ctx, &tokenMetadataValue,
+							   rawValue, rawValueLength);
+				grn_output_obj(ctx, &tokenJSON, type, &tokenMetadataValue, NULL);
+			}
+			grn_output_map_close(ctx, &tokenJSON, type);
+		}
+		grn_output_map_close(ctx, &tokenJSON, type);
+
+		json = cstring_to_text_with_len(GRN_TEXT_VALUE(&tokenJSON),
+										GRN_TEXT_LEN(&tokenJSON));
+		tokenData[i] = PointerGetDatum(json);
+	}
+	dims[0] = nTokens;
+	lbs[0] = 1;
+	return construct_md_array(tokenData,
+							  NULL,
+							  1,
+							  dims,
+							  lbs,
+							  JSONOID,
+							  -1,
+							  false,
+							  'i');
+}
+
+static ArrayType *
+PGrnTokenize(text *target)
+{
+	grn_token_cursor *tokenCursor;
 
 	tokenCursor = grn_token_cursor_open(ctx,
 										lexicon,
@@ -204,41 +358,7 @@ PGrnTokenize(text *target)
 	}
 	grn_token_cursor_close(ctx, tokenCursor);
 
-	nTokens = PGrnTokensSize();
-	if (nTokens == 0)
-	{
-		return construct_empty_array(JSONOID);
-	}
-
-	tokenData = palloc(sizeof(Datum) * nTokens);
-	for (i = 0; i < nTokens; i++)
-	{
-		grn_content_type type = GRN_CONTENT_JSON;
-		PGrnToken *token = PGrnTokensAt(i);
-		text *json;
-
-		GRN_BULK_REWIND(&tokenJSON);
-		grn_output_map_open(ctx, &tokenJSON, type, "token", 1);
-		grn_output_cstr(ctx, &tokenJSON, type, "data");
-		grn_output_str(ctx, &tokenJSON, type,
-					   GRN_TEXT_VALUE(&(token->data)),
-					   GRN_TEXT_LEN(&(token->data)));
-		grn_output_map_close(ctx, &tokenJSON, type);
-		json = cstring_to_text_with_len(GRN_TEXT_VALUE(&tokenJSON),
-										GRN_TEXT_LEN(&tokenJSON));
-		tokenData[i] = PointerGetDatum(json);
-	}
-	dims[0] = nTokens;
-	lbs[0] = 1;
-	return construct_md_array(tokenData,
-							  NULL,
-							  1,
-							  dims,
-							  lbs,
-							  JSONOID,
-							  -1,
-							  false,
-							  'i');
+	return PGrnTokenizeCreateArray();
 }
 #endif
 

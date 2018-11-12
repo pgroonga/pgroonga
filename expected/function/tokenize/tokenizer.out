@@ -4,49 +4,77 @@ SELECT jsonb_pretty(token::jsonb)
                                     'tokenizer', 'TokenNgram'))
            AS token
   ) AS tokens;
-   jsonb_pretty   
-------------------
- {               +
-     "data": "Th"+
+           jsonb_pretty           
+----------------------------------
+ {                               +
+     "value": "Th",              +
+     "position": 0,              +
+     "force_prefix_search": false+
  }
- {               +
-     "data": "hi"+
+ {                               +
+     "value": "hi",              +
+     "position": 1,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "is"+
+ {                               +
+     "value": "is",              +
+     "position": 2,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "s "+
+ {                               +
+     "value": "s ",              +
+     "position": 3,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": " i"+
+ {                               +
+     "value": " i",              +
+     "position": 4,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "is"+
+ {                               +
+     "value": "is",              +
+     "position": 5,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "s "+
+ {                               +
+     "value": "s ",              +
+     "position": 6,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": " a"+
+ {                               +
+     "value": " a",              +
+     "position": 7,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "a "+
+ {                               +
+     "value": "a ",              +
+     "position": 8,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": " p"+
+ {                               +
+     "value": " p",              +
+     "position": 9,              +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "pe"+
+ {                               +
+     "value": "pe",              +
+     "position": 10,             +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "en"+
+ {                               +
+     "value": "en",              +
+     "position": 11,             +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "n."+
+ {                               +
+     "value": "n.",              +
+     "position": 12,             +
+     "force_prefix_search": true +
  }
- {               +
-     "data": "." +
+ {                               +
+     "value": ".",               +
+     "position": 13,             +
+     "force_prefix_search": true +
  }
 (14 rows)
 

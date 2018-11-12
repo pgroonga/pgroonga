@@ -1,0 +1,53 @@
+SELECT jsonb_pretty(token::jsonb)
+  FROM (
+    SELECT
+      unnest(pgroonga_tokenize('This is a pen.',
+                               'tokenizer',
+                                 'TokenNgram("report_source_location", true)',
+                               'normalizer', 'NormalizerNFKC100'))
+        AS token
+  ) AS tokens;
+              jsonb_pretty              
+----------------------------------------
+ {                                     +
+     "value": "this",                  +
+     "position": 0,                    +
+     "source_length": 4,               +
+     "source_offset": 0,               +
+     "force_prefix_search": false,     +
+     "source_first_character_length": 1+
+ }
+ {                                     +
+     "value": "is",                    +
+     "position": 1,                    +
+     "source_length": 3,               +
+     "source_offset": 4,               +
+     "force_prefix_search": true,      +
+     "source_first_character_length": 2+
+ }
+ {                                     +
+     "value": "a",                     +
+     "position": 2,                    +
+     "source_length": 2,               +
+     "source_offset": 7,               +
+     "force_prefix_search": true,      +
+     "source_first_character_length": 2+
+ }
+ {                                     +
+     "value": "pen",                   +
+     "position": 3,                    +
+     "source_length": 4,               +
+     "source_offset": 9,               +
+     "force_prefix_search": true,      +
+     "source_first_character_length": 2+
+ }
+ {                                     +
+     "value": ".",                     +
+     "position": 4,                    +
+     "source_length": 1,               +
+     "source_offset": 13,              +
+     "force_prefix_search": true,      +
+     "source_first_character_length": 1+
+ }
+(5 rows)
+
