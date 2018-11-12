@@ -69,7 +69,6 @@ PGrnTokensReinit(void)
 	GRN_BULK_REWIND(&tokens);
 }
 
-#if GRN_VERSION_OR_LATER(8, 0, 9)
 static void
 PGrnTokensAppend(grn_id id, grn_token_cursor *tokenCursor)
 {
@@ -130,7 +129,6 @@ PGrnTokensAppend(grn_id id, grn_token_cursor *tokenCursor)
       }
     }
 }
-#endif
 
 static void
 PGrnTokensFin(void)
@@ -168,7 +166,6 @@ PGrnFinalizeTokenize(void)
 	grn_obj_close(ctx, lexicon);
 }
 
-#if GRN_VERSION_OR_LATER(8, 0, 9)
 static void
 PGrnTokenizeSetModule(const char *moduleName,
 					  grn_info_type type,
@@ -360,7 +357,6 @@ PGrnTokenize(text *target)
 
 	return PGrnTokenizeCreateArray();
 }
-#endif
 
 /**
  * pgroonga_tokenize(target text, options text[]) : json[]
@@ -374,8 +370,6 @@ PGrnTokenize(text *target)
 Datum
 pgroonga_tokenize(PG_FUNCTION_ARGS)
 {
-/* TODO: Remove me and require Groonga 8.0.9 when Groonga 8.0.9 is released. */
-#if GRN_VERSION_OR_LATER(8, 0, 9)
 	text *target;
 	ArrayType *options;
 	text *tokenizerName = NULL;
@@ -455,7 +449,4 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 	pgTokens = PGrnTokenize(target);
 
 	PG_RETURN_POINTER(pgTokens);
-#else
-	PG_RETURN_POINTER(construct_empty_array(JSONOID));
-#endif
 }
