@@ -18,6 +18,7 @@
 #include "pgrn-keywords.h"
 #include "pgrn-match-positions-byte.h"
 #include "pgrn-match-positions-character.h"
+#include "pgrn-normalize.h"
 #include "pgrn-options.h"
 #include "pgrn-pg.h"
 #include "pgrn-portable.h"
@@ -396,6 +397,10 @@ PGrnOnProcExit(int code, Datum arg)
 			PGrnFinalizeAutoClose();
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
+					"%s[finalize][normalize]", tag);
+			PGrnFinalizeNormalize();
+
+			GRN_LOG(ctx, GRN_LOG_DEBUG,
 					"%s[finalize][tokenize]", tag);
 			PGrnFinalizeTokenize();
 
@@ -505,6 +510,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeQueryExtractKeywords();
 
 	PGrnInitializeTokenize();
+
+	PGrnInitializeNormalize();
 
 	PGrnInitializeAutoClose();
 }

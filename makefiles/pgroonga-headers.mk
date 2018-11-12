@@ -17,6 +17,7 @@ HEADERS =					\
 	src/pgrn-keywords.h			\
 	src/pgrn-match-positions-byte.h		\
 	src/pgrn-match-positions-character.h	\
+	src/pgrn-normalize.h			\
 	src/pgrn-options.h			\
 	src/pgrn-pg.h				\
 	src/pgrn-portable.h			\

@@ -1,2 +1,2 @@
 SELECT pgroonga_normalize('aBcDe 123', 'Nonexistent');
-ERROR:  pgroonga: object isn't found: <Nonexistent>
+ERROR:  pgroonga: normalize: failed to set normalizer: <Nonexistent>: [info][set][normalizer][(anonymous)] unknown normalizer: <Nonexistent>
