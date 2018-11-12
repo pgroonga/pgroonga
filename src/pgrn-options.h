@@ -21,7 +21,7 @@ void PGrnApplyOptionValues(Relation index,
 						   const char *defaultTokenizerName,
 						   grn_obj **normalizer,
 						   const char *defaultNormalizerName,
-						   grn_obj *tokenFilters,
+						   grn_obj **tokenFilters,
 						   grn_table_flags *lexiconType);
 
 grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);

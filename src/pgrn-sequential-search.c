@@ -136,7 +136,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		bool isPGroongaIndex;
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizer = NULL;
-		grn_obj *tokenFilters = &(buffers->tokenFilters);
+		grn_obj *tokenFilters = NULL;
 		grn_table_flags table_flags = 0;
 
 		index = PGrnPGResolveIndexID(indexOID);
@@ -151,12 +151,11 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 							indexName)));
 		}
 
-		GRN_BULK_REWIND(tokenFilters);
 		PGrnApplyOptionValues(index,
 							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 							  &normalizer, PGRN_DEFAULT_NORMALIZER,
-							  tokenFilters,
+							  &tokenFilters,
 							  &table_flags);
 		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
 		RelationClose(index);

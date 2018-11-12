@@ -24,7 +24,9 @@ module Helpers
     def read_command_output(input)
       return "" unless IO.select([input], nil, nil, 0)
       begin
-        input.readpartial(4096).gsub(/\r\n/, "\n")
+        data = input.readpartial(4096).gsub(/\r\n/, "\n")
+        data.force_encoding("UTF-8")
+        data
       rescue EOFError
         ""
       end

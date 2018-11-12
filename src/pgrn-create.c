@@ -9,7 +9,6 @@
 #include "pgrn-value.h"
 
 static grn_ctx *ctx = &PGrnContext;
-static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
@@ -119,9 +118,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
-	grn_obj *tokenFilters = &(buffers->tokenFilters);
+	grn_obj *tokenFilters = NULL;
 
-	GRN_BULK_REWIND(tokenFilters);
 	switch (data->attributeTypeID)
 	{
 	case GRN_DB_TEXT:
@@ -161,7 +159,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  useCase,
 							  &tokenizer, tokenizerName,
 							  &normalizer, normalizerName,
-							  tokenFilters,
+							  &tokenFilters,
 							  &flags);
 	}
 	else

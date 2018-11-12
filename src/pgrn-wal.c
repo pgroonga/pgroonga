@@ -163,11 +163,21 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 {
 	if (object)
 	{
-		char name[GRN_TABLE_MAX_KEY_SIZE];
-		int nameSize;
-		nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
-		msgpack_pack_str(packer, nameSize);
-		msgpack_pack_str_body(packer, name, nameSize);
+		if (grn_obj_is_text_family_bulk(ctx, object))
+		{
+			msgpack_pack_str(packer, GRN_TEXT_LEN(object));
+			msgpack_pack_str_body(packer,
+								  GRN_TEXT_VALUE(object),
+								  GRN_TEXT_LEN(object));
+		}
+		else
+		{
+			char name[GRN_TABLE_MAX_KEY_SIZE];
+			int nameSize;
+			nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+			msgpack_pack_str(packer, nameSize);
+			msgpack_pack_str_body(packer, name, nameSize);
+		}
 	}
 	else
 	{
@@ -811,22 +821,7 @@ PGrnWALCreateTable(Relation index,
 	msgpack_pack_grn_obj(packer, normalizer);
 
 	msgpack_pack_cstr(packer, "token_filters");
-	{
-		unsigned int i, nTokenFilters;
-
-		if (tokenFilters)
-			nTokenFilters = GRN_BULK_VSIZE(tokenFilters) / sizeof(grn_obj *);
-		else
-			nTokenFilters = 0;
-
-		msgpack_pack_array(packer, nTokenFilters);
-		for (i = 0; i < nTokenFilters; i++)
-		{
-			grn_obj *tokenFilter;
-			tokenFilter = GRN_PTR_VALUE_AT(tokenFilters, i);
-			msgpack_pack_grn_obj(packer, tokenFilter);
-		}
-	}
+	msgpack_pack_grn_obj(packer, tokenFilters);
 
 	PGrnWALFinish(data);
 #endif
@@ -1177,57 +1172,6 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 }
 
 static void
-PGrnWALApplyValueGetGroongaObjects(const char *context,
-								   msgpack_object_kv *kv,
-								   grn_obj *objects)
-{
-	msgpack_object_array *array;
-	uint32_t i;
-
-	if (kv->val.type != MSGPACK_OBJECT_ARRAY)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be array: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
-	}
-
-	array = &(kv->val.via.array);
-	for (i = 0; i < array->size; i++)
-	{
-		msgpack_object *element;
-		grn_obj *object;
-
-		element = &(array->ptr[i]);
-		if (element->type != MSGPACK_OBJECT_STR)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: %s%s"
-							"%.*s value must be array of string: "
-							"[%u]=<%#x>",
-							context ? context : "",
-							context ? ": " : "",
-							MSGPACK_OBJECT_VIA_STR(kv->key).size,
-							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-							i,
-							element->type)));
-		}
-
-		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(*element).ptr,
-									MSGPACK_OBJECT_VIA_STR(*element).size,
-									ERROR);
-		GRN_PTR_PUT(ctx, objects, object);
-	}
-}
-
-static void
 PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 									 msgpack_object_kv *kv,
 									 grn_obj *ids)
@@ -1278,6 +1222,114 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 		objectID = grn_obj_id(ctx, object);
 		GRN_RECORD_PUT(ctx, ids, objectID);
 	}
+}
+
+static grn_obj *
+PGrnWALApplyValueGetTableModule(const char *context,
+								msgpack_object_kv *kv,
+								grn_obj *buffer)
+{
+	grn_obj *module = NULL;
+
+	switch (kv->val.type)
+	{
+	case MSGPACK_OBJECT_NIL:
+		break;
+	case MSGPACK_OBJECT_STR:
+		module = buffer;
+		GRN_BULK_REWIND(module);
+		GRN_TEXT_SET(ctx,
+					 module,
+					 MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
+					 MSGPACK_OBJECT_VIA_STR(kv->val).size);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: WAL: apply: %s%s"
+						"%.*s value must be nil or string: "
+						"<%#x>",
+						context ? context : "",
+						context ? ": " : "",
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+						kv->val.type)));
+		break;
+	}
+
+	return module;
+}
+
+static grn_obj *
+PGrnWALApplyValueGetTableModules(const char *context,
+								 msgpack_object_kv *kv,
+								 grn_obj *buffer)
+{
+	grn_obj *modules = NULL;
+
+	switch (kv->val.type)
+	{
+	case MSGPACK_OBJECT_NIL:
+		break;
+	case MSGPACK_OBJECT_STR:
+		modules = buffer;
+		GRN_BULK_REWIND(modules);
+		GRN_TEXT_SET(ctx,
+					 modules,
+					 MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
+					 MSGPACK_OBJECT_VIA_STR(kv->val).size);
+		break;
+	case MSGPACK_OBJECT_ARRAY:
+	{
+		msgpack_object_array *array;
+		uint32_t i;
+
+		GRN_BULK_REWIND(modules);
+		array = &(kv->val.via.array);
+		for (i = 0; i < array->size; i++)
+		{
+			msgpack_object *element;
+
+			element = &(array->ptr[i]);
+			if (element->type != MSGPACK_OBJECT_STR)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: WAL: apply: %s%s"
+								"%.*s value must be string or array of string: "
+								"[%u]=<%#x>",
+								context ? context : "",
+								context ? ": " : "",
+								MSGPACK_OBJECT_VIA_STR(kv->key).size,
+								MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+								i,
+								element->type)));
+			}
+
+			if (i > 0)
+				GRN_TEXT_PUTS(ctx, modules, ", ");
+			GRN_TEXT_PUT(ctx,
+						 modules,
+						 MSGPACK_OBJECT_VIA_STR(*element).ptr,
+						 MSGPACK_OBJECT_VIA_STR(*element).size);
+		}
+		break;
+	}
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: WAL: apply: %s%s"
+						"%.*s value must be string or array: "
+						"<%#x>",
+						context ? context : "",
+						context ? ": " : "",
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+						kv->val.type)));
+		break;
+	}
+
+	return modules;
 }
 
 static void
@@ -1517,10 +1569,9 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 	grn_obj *type = NULL;
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
-	grn_obj *tokenFilters = &(buffers->tokenFilters);
+	grn_obj *tokenFilters = NULL;
 	uint32_t i;
 
-	GRN_BULK_REWIND(tokenFilters);
 	for (i = currentElement; i < map->size; i++)
 	{
 		msgpack_object_kv *kv;
@@ -1540,15 +1591,21 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 		}
 		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "tokenizer"))
 		{
-			tokenizer = PGrnWALApplyValueGetGroongaObject(context, kv);
+			tokenizer = PGrnWALApplyValueGetTableModule(context,
+														kv,
+														&(buffers->tokenizer));
 		}
 		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "normalizer"))
 		{
-			normalizer = PGrnWALApplyValueGetGroongaObject(context, kv);
+			normalizer = PGrnWALApplyValueGetTableModule(context,
+														 kv,
+														 &(buffers->normalizer));
 		}
 		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "token_filters"))
 		{
-			PGrnWALApplyValueGetGroongaObjects(context, kv, tokenFilters);
+			tokenFilters = PGrnWALApplyValueGetTableModules(context,
+															kv,
+															&(buffers->tokenFilters));
 		}
 	}
 

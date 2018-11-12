@@ -20,7 +20,7 @@ PGrnInitializeBuffers(void)
 	GRN_UINT32_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR);
 	GRN_TEXT_INIT(&(PGrnBuffers.tokenizer), GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_INIT(&(PGrnBuffers.normalizer), GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_PTR_INIT(&(PGrnBuffers.tokenFilters), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_TEXT_INIT(&(PGrnBuffers.tokenFilters), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.text), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.texts), GRN_OBJ_VECTOR);
 	GRN_UINT64_INIT(&(PGrnBuffers.jsonbValueKeys), GRN_OBJ_VECTOR);

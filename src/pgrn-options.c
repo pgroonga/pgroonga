@@ -90,103 +90,84 @@ PGrnOptionEnsureLexicon(const char *context)
 }
 
 static void
-PGrnOptionValidateTokenizer(PGrnStringOptionValue name)
+PGrnOptionValidateTokenizer(PGrnStringOptionValue rawTokenizer)
 {
-	grn_obj *tokenizer_name = &(buffers->tokenizer);
+	grn_obj *tokenizer = &(buffers->tokenizer);
 	grn_rc rc;
 
-	if (PGrnIsNoneValue(name))
+	if (PGrnIsNoneValue(rawTokenizer))
 		return;
 
-	if (strcmp(name, PGRN_DEFAULT_TOKENIZER) == 0)
+	if (strcmp(rawTokenizer, PGRN_DEFAULT_TOKENIZER) == 0)
 		return;
 
 	PGrnOptionEnsureLexicon("tokenizer");
 
-	GRN_TEXT_SETS(ctx, tokenizer_name, name);
+	GRN_TEXT_SETS(ctx, tokenizer, rawTokenizer);
 	rc = grn_obj_set_info(ctx,
 						  lexicon,
 						  GRN_INFO_DEFAULT_TOKENIZER,
-						  tokenizer_name);
+						  tokenizer);
 	if (rc != GRN_SUCCESS) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: invalid tokenizer: <%s>: %s",
-						name,
+						rawTokenizer,
 						ctx->errbuf)));
 	}
 }
 
 static void
-PGrnOptionValidateNormalizer(PGrnStringOptionValue name)
+PGrnOptionValidateNormalizer(PGrnStringOptionValue rawNormalizer)
 {
-	grn_obj *normalizer_name = &(buffers->normalizer);
+	grn_obj *normalizer = &(buffers->normalizer);
 	grn_rc rc;
 
-	if (PGrnIsNoneValue(name))
+	if (PGrnIsNoneValue(rawNormalizer))
 		return;
 
-	if (strcmp(name, PGRN_DEFAULT_NORMALIZER) == 0)
+	if (strcmp(rawNormalizer, PGRN_DEFAULT_NORMALIZER) == 0)
 		return;
 
 	PGrnOptionEnsureLexicon("normalizer");
 
-	GRN_TEXT_SETS(ctx, normalizer_name, name);
+	GRN_TEXT_SETS(ctx, normalizer, rawNormalizer);
 	rc = grn_obj_set_info(ctx,
 						  lexicon,
 						  GRN_INFO_NORMALIZER,
-						  normalizer_name);
+						  normalizer);
 	if (rc != GRN_SUCCESS) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: invalid normalizer: <%s>: %s",
-						name,
+						rawNormalizer,
 						ctx->errbuf)));
 	}
 }
 
-static bool
-PGrnIsTokenFilter(grn_obj *object)
-{
-	if (object->header.type != GRN_PROC)
-		return false;
-
-	if (grn_proc_get_type(ctx, object) != GRN_PROC_TOKEN_FILTER)
-		return false;
-
-	return true;
-}
-
 static void
-PGrnOptionValidateTokenFilter(const char *name, size_t nameSize, void *data)
+PGrnOptionValidateTokenFilters(PGrnStringOptionValue rawTokenFilters)
 {
-	grn_obj *tokenFilter;
+	grn_obj *tokenFilters = &(buffers->tokenFilters);
+	grn_rc rc;
 
-	tokenFilter = grn_ctx_get(ctx, name, nameSize);
-	if (!tokenFilter)
-	{
+	if (PGrnIsNoneValue(rawTokenFilters))
+		return;
+
+	PGrnOptionEnsureLexicon("token filters");
+
+	GRN_TEXT_SETS(ctx, tokenFilters, rawTokenFilters);
+	rc = grn_obj_set_info(ctx,
+						  lexicon,
+						  GRN_INFO_TOKEN_FILTERS,
+						  tokenFilters);
+	if (rc != GRN_SUCCESS) {
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: nonexistent token filter: <%.*s>",
-						(int)nameSize, name)));
+				 errmsg("pgroonga: invalid token filters: <%s>: %s",
+						rawTokenFilters,
+						ctx->errbuf)));
 	}
-
-	if (!PGrnIsTokenFilter(tokenFilter))
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: not token filter: <%.*s>: %s",
-						(int)nameSize, name,
-						PGrnInspect(tokenFilter))));
-	}
-}
-
-static void
-PGrnOptionValidateTokenFilters(PGrnStringOptionValue names)
-{
-	PGrnOptionParseNames(names,
-						 PGrnOptionValidateTokenFilter,
-						 NULL);
 }
 
 static void
@@ -308,20 +289,6 @@ PGrnFinalizeOptions(void)
 	}
 }
 
-#ifdef PGRN_SUPPORT_OPTIONS
-static void
-PGrnOptionCollectTokenFilter(const char *name,
-							 size_t nameSize,
-							 void *data)
-{
-	grn_obj *tokenFilters = data;
-	grn_obj *tokenFilter;
-
-	tokenFilter = PGrnLookupWithSize(name, nameSize, ERROR);
-	GRN_PTR_PUT(ctx, tokenFilters, tokenFilter);
-}
-#endif
-
 void
 PGrnApplyOptionValues(Relation index,
 					  PGrnOptionUseCase useCase,
@@ -329,14 +296,14 @@ PGrnApplyOptionValues(Relation index,
 					  const char *defaultTokenizerName,
 					  grn_obj **normalizer,
 					  const char *defaultNormalizerName,
-					  grn_obj *tokenFilters,
+					  grn_obj **tokenFilters,
 					  grn_table_flags *lexiconType)
 {
 #ifdef PGRN_SUPPORT_OPTIONS
 	PGrnOptions *options;
-	const char *tokenizerName;
-	const char *normalizerName;
-	const char *tokenFilterNames;
+	const char *rawTokenizer;
+	const char *rawNormalizer;
+	const char *rawTokenFilters;
 	const char *lexiconTypeName;
 
 	options = (PGrnOptions *) (index->rd_options);
@@ -357,8 +324,7 @@ PGrnApplyOptionValues(Relation index,
 		return;
 	}
 
-	tokenizerName    = ((const char *) options) + options->tokenizerOffset;
-	tokenFilterNames = ((const char *) options) + options->tokenFiltersOffset;
+	rawTokenizer = ((const char *) options) + options->tokenizerOffset;
 
 	if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
 	{
@@ -366,11 +332,11 @@ PGrnApplyOptionValues(Relation index,
 	}
 	else
 	{
-		if (PGrnIsExplicitNoneValue(tokenizerName))
+		if (PGrnIsExplicitNoneValue(rawTokenizer))
 		{
 			*tokenizer = NULL;
 		}
-		else if (PGrnIsNoneValue(tokenizerName))
+		else if (PGrnIsNoneValue(rawTokenizer))
 		{
 			if (defaultTokenizerName)
 				*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
@@ -380,31 +346,31 @@ PGrnApplyOptionValues(Relation index,
 		else
 		{
 			*tokenizer = &(buffers->tokenizer);
-			GRN_TEXT_SETS(ctx, *tokenizer, tokenizerName);
+			GRN_TEXT_SETS(ctx, *tokenizer, rawTokenizer);
 		}
 	}
 
-	normalizerName = ((const char *) options) + options->normalizerOffset;
+	rawNormalizer = ((const char *) options) + options->normalizerOffset;
 	switch (useCase)
 	{
 	case PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH:
 		if (options->fullTextSearchNormalizerOffset != 0)
 		{
-			normalizerName =
+			rawNormalizer =
 				((const char *) options) + options->fullTextSearchNormalizerOffset;
 		}
 		break;
 	case PGRN_OPTION_USE_CASE_REGEXP_SEARCH:
 		if (options->regexpSearchNormalizerOffset != 0)
 		{
-			normalizerName =
+			rawNormalizer =
 				((const char *) options) + options->regexpSearchNormalizerOffset;
 		}
 		break;
 	case PGRN_OPTION_USE_CASE_PREFIX_SEARCH:
 		if (options->prefixSearchNormalizerOffset != 0)
 		{
-			normalizerName =
+			rawNormalizer =
 				((const char *) options) + options->prefixSearchNormalizerOffset;
 		}
 		break;
@@ -412,11 +378,11 @@ PGrnApplyOptionValues(Relation index,
 		break;
 	}
 
-	if (PGrnIsExplicitNoneValue(normalizerName))
+	if (PGrnIsExplicitNoneValue(rawNormalizer))
 	{
 		*normalizer = NULL;
 	}
-	else if (PGrnIsNoneValue(normalizerName))
+	else if (PGrnIsNoneValue(rawNormalizer))
 	{
 		if (defaultNormalizerName)
 			*normalizer = PGrnLookup(defaultNormalizerName, ERROR);
@@ -426,12 +392,15 @@ PGrnApplyOptionValues(Relation index,
 	else
 	{
 		*normalizer = &(buffers->normalizer);
-		GRN_TEXT_SETS(ctx, *normalizer, normalizerName);
+		GRN_TEXT_SETS(ctx, *normalizer, rawNormalizer);
 	}
 
-	PGrnOptionParseNames(tokenFilterNames,
-						 PGrnOptionCollectTokenFilter,
-						 tokenFilters);
+	rawTokenFilters = ((const char *) options) + options->tokenFiltersOffset;
+	if (!PGrnIsNoneValue(rawTokenFilters))
+	{
+		*tokenFilters = &(buffers->tokenFilters);
+		GRN_TEXT_SETS(ctx, *tokenFilters, rawTokenFilters);
+	}
 
 	lexiconTypeName = GET_STRING_RELOPTION(options, lexiconTypeOffset);
 	if (lexiconTypeName)

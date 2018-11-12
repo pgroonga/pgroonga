@@ -36,4 +36,70 @@ EXPLAIN (COSTS OFF) #{select};
     assert_equal([output, ""],
                  run_sql_slave("#{select};"))
   end
+
+  test "tokenizer options" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos " +
+            "USING pgroonga (content) " +
+            "WITH (tokenizer='TokenNgram(\"unify_alphabet\", false)');")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'Groonga'"
+    output = <<-OUTPUT
+#{select};
+      content      
+-------------------
+ PGroonga is good!
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_slave("#{select};"))
+  end
+
+  test "normalizer options" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos " +
+            "USING pgroonga (content) " +
+            "WITH (normalizer='NormalizerNFKC100(\"unify_kana\", true)');")
+    run_sql("INSERT INTO memos VALUES ('りんご');")
+    run_sql("INSERT INTO memos VALUES ('リンゴ');")
+    run_sql("INSERT INTO memos VALUES ('林檎');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'りんご'"
+    output = <<-OUTPUT
+#{select};
+ content 
+---------
+ りんご
+ リンゴ
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_slave("#{select};"))
+  end
+
+  test "token filters options" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos " +
+            "USING pgroonga (content) " +
+            "WITH (token_filters='TokenFilterNFKC100(\"unify_kana\", true)');")
+    run_sql("INSERT INTO memos VALUES ('りんご');")
+    run_sql("INSERT INTO memos VALUES ('リンゴ');")
+    run_sql("INSERT INTO memos VALUES ('林檎');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'りんご'"
+    output = <<-OUTPUT
+#{select};
+ content 
+---------
+ りんご
+ リンゴ
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_slave("#{select};"))
+  end
 end

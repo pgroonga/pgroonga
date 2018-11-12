@@ -875,14 +875,13 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizer = NULL;
-	grn_obj *tokenFilters = &(buffers->tokenFilters);
+	grn_obj *tokenFilters = NULL;
 
-	GRN_BULK_REWIND(tokenFilters);
 	PGrnApplyOptionValues(data->index,
 						  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 						  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 						  &normalizer, PGRN_DEFAULT_NORMALIZER,
-						  tokenFilters,
+						  &tokenFilters,
 						  &flags);
 
 	if (!tokenizer)
