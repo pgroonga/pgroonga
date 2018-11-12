@@ -1,0 +1,52 @@
+SELECT jsonb_pretty(token::jsonb)
+  FROM (
+    SELECT
+      unnest(pgroonga_tokenize('これはペンです。',
+                               'tokenizer', 'TokenNgram',
+                               'token_filters', 'TokenFilterNFKC100("unify_kana", true)'))
+      AS token
+  ) AS tokens;
+           jsonb_pretty           
+----------------------------------
+ {                               +
+     "value": "これ",            +
+     "position": 0,              +
+     "force_prefix_search": false+
+ }
+ {                               +
+     "value": "れは",            +
+     "position": 1,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "はぺ",            +
+     "position": 2,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "ぺん",            +
+     "position": 3,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "んで",            +
+     "position": 4,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "です",            +
+     "position": 5,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "す。",            +
+     "position": 6,              +
+     "force_prefix_search": true +
+ }
+ {                               +
+     "value": "。",              +
+     "position": 7,              +
+     "force_prefix_search": true +
+ }
+(8 rows)
+
