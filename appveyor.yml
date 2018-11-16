@@ -71,7 +71,6 @@ build_script:
 test_script:
   # TODO: Remove me when Groonga bundles libstemmer
   - rm sql/full-text-search/text/options/token-filters/custom.sql
-  - rm sql/function/normalize/normalizer-option.sql
   # Reduce tests to reduce test time
   - rm -rf sql/compatibility
   - if not "%WAL_SUPPORTED%" == "yes" (
