@@ -41,7 +41,9 @@ install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - |
     if [ "${GROONGA_MASTER}" != "yes" ]; then
-      sudo apt-get install -qq -y groonga-token-filter-stem
+      sudo apt-get install -qq -y \
+        groonga-tokenizer-mecab \
+        groonga-token-filter-stem
     fi
   - |
     if [ "${WAL_SUPPORTED}" = "yes" ]; then
