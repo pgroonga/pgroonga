@@ -57,6 +57,7 @@ script:
       9.3)
         for path in jsonb/ \
                     function/flush/jsonb.sql \
+                    function/tokenize/ \
                     full-text-search/jsonb/ \
                     full-text-search/text/options/normalizer/ \
                     full-text-search/text/options/tokenizer/ \
@@ -71,6 +72,7 @@ script:
         rm -rf sql/compatibility
         ;;
       9.4)
+        rm -rf sql/function/tokenize/
         for path in full-text-search/text/options/normalizer/ \
                     full-text-search/text/options/tokenizer/ \
                     regexp/text/options/ \
