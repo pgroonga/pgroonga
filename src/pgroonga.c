@@ -5901,6 +5901,7 @@ static bool
 pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
+	const char *tag = "pgroonga: [get-tuple]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	bool found = false;
 
@@ -5926,8 +5927,8 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 			ItemPointerData ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
-					"pgroonga: [delete] "
-					"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+					"%s[delete] <%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+					tag,
 					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
 					so->dataTableID,
 					so->currentID,
@@ -5966,14 +5967,41 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 			break;
 
 		{
+			uint64 packedCtid;
 			ItemPointerData ctid;
+			bool valid;
+
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx,
 							  so->ctidAccessor,
 							  so->currentID,
 							  &(buffers->ctid));
-			ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
-			if (!ItemPointerIsValid(&ctid))
+			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			ctid = PGrnCtidUnpack(packedCtid);
+			valid = ItemPointerIsValid(&ctid);
+
+			if (grn_logger_pass(ctx, GRN_LOG_DEBUG))
+			{
+				grn_id recordID;
+				NameData tableName;
+				recordID = PGrnScanOpaqueResolveID(so);
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s <%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>: <%s>",
+						tag,
+						PGrnPGGetRelationNameByID(so->dataTableID,
+												  tableName.data),
+						so->dataTableID,
+						so->currentID,
+						recordID,
+						ctid.ip_blkid.bi_hi,
+						ctid.ip_blkid.bi_lo,
+						ctid.ip_posid,
+						packedCtid,
+						valid ? "true" : "false");
+			}
+
+			if (!valid)
 				continue;
 
 			scan->xs_ctup.t_self = ctid;
