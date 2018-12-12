@@ -54,6 +54,34 @@ PGrnInitializeIndexStatus(void)
 	}
 }
 
+void
+PGrnIndexStatusDeleteRaw(Oid indexFileNodeID)
+{
+	grn_obj *table;
+	const void *key;
+	size_t keySize;
+	grn_id id;
+
+	table = PGrnLookupWithSize(TABLE_NAME, TABLE_NAME_SIZE, ERROR);
+	key = &indexFileNodeID;
+	keySize = sizeof(uint32_t);
+
+	id = grn_table_get(ctx, table, key, keySize);
+	if (id == GRN_ID_NIL)
+		return;
+
+	grn_table_delete(ctx, table, key, keySize);
+	PGrnCheck("index-status: failed to delete entry: <%u>", indexFileNodeID);
+
+	grn_db_touch(ctx, grn_ctx_db(ctx));
+}
+
+void
+PGrnIndexStatusDelete(Relation index)
+{
+	PGrnIndexStatusDeleteRaw(index->rd_node.relNode);
+}
+
 static grn_id
 PGrnIndexStatusGetRecordIDWithWAL(Relation index,
 								  PGrnWALData **walData,

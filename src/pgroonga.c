@@ -6664,6 +6664,7 @@ PGrnRemoveUnusedTables(void)
 					 PGrnSourcesTableNameFormat, relationFileNodeID);
 			PGrnRemoveObject(tableName);
 			PGrnAliasDeleteRaw(relationFileNodeID);
+			PGrnIndexStatusDeleteRaw(relationFileNodeID);
 		}
 
 		for (i = 0; true; i++)

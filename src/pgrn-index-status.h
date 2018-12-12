@@ -8,6 +8,9 @@
 
 void PGrnInitializeIndexStatus(void);
 
+void PGrnIndexStatusDelete(Relation index);
+void PGrnIndexStatusDeleteRaw(Oid indexFileNodeID);
+
 uint32_t PGrnIndexStatusGetMaxRecordSize(Relation index);
 void PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size);
 
