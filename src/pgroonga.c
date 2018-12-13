@@ -1133,8 +1133,10 @@ PGrnCollectScoreGetScore(Relation table,
 
 	GRN_BULK_REWIND(&(buffers->ctid));
 	grn_obj_get_value(ctx, so->ctidAccessor, id, &(buffers->ctid));
-	ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+	if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
+		return 0.0;
 
+	ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
 	if (!PGrnCtidIsAlive(table, &ctid))
 		return 0.0;
 
@@ -5920,30 +5922,46 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 						  so->ctidAccessor,
 						  so->currentID,
 						  &(buffers->ctid));
-		packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
-		if (grn_logger_pass(ctx, GRN_LOG_DEBUG))
+		if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 		{
 			NameData tableName;
-			ItemPointerData ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
-					"%s[delete] <%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+					"%s[delete][nonexistent] <%s>(%u): <%u> -> <%u>",
 					tag,
 					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
 					so->dataTableID,
 					so->currentID,
-					recordID,
-					ctid.ip_blkid.bi_hi,
-					ctid.ip_blkid.bi_lo,
-					ctid.ip_posid,
-					packedCtid);
+					recordID);
 		}
-		grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
+		else
+		{
+			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
+			if (grn_logger_pass(ctx, GRN_LOG_DEBUG))
+			{
+				NameData tableName;
+				ItemPointerData ctid = PGrnCtidUnpack(packedCtid);
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[delete] "
+						"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+						tag,
+						PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+						so->dataTableID,
+						so->currentID,
+						recordID,
+						ctid.ip_blkid.bi_hi,
+						ctid.ip_blkid.bi_lo,
+						ctid.ip_posid,
+						packedCtid);
+			}
+			grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
 
-		PGrnWALDelete(so->index,
-					  so->sourcesTable,
-					  (const char *) &packedCtid,
-					  sizeof(uint64));
+			PGrnWALDelete(so->index,
+						  so->sourcesTable,
+						  (const char *) &packedCtid,
+						  sizeof(uint64));
+		}
 	}
 
 	while (!found)
@@ -5976,15 +5994,26 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 							  so->ctidAccessor,
 							  so->currentID,
 							  &(buffers->ctid));
+			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
+			{
+				NameData tableName;
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[nonexistent] <%s>(%u): <%u> -> <%u>",
+						tag,
+						PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+						so->dataTableID,
+						so->currentID,
+						PGrnScanOpaqueResolveID(so));
+				continue;
+			}
+
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
 			valid = ItemPointerIsValid(&ctid);
 
-			if (grn_logger_pass(ctx, GRN_LOG_DEBUG))
 			{
-				grn_id recordID;
 				NameData tableName;
-				recordID = PGrnScanOpaqueResolveID(so);
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
 						"%s <%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>: <%s>",
@@ -5993,7 +6022,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 												  tableName.data),
 						so->dataTableID,
 						so->currentID,
-						recordID,
+						PGrnScanOpaqueResolveID(so),
 						ctid.ip_blkid.bi_hi,
 						ctid.ip_blkid.bi_lo,
 						ctid.ip_posid,
@@ -6051,12 +6080,25 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		{
 			uint64 packedCtid;
 			ItemPointerData ctid;
+
 			so->currentID = posting->rid;
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx,
 							  so->ctidAccessor,
 							  so->currentID,
 							  &(buffers->ctid));
+			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
+			{
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[index-cursor][nonexistent] <%s>(%u): <%u>",
+						tag,
+						so->index->rd_rel->relname.data,
+						so->index->rd_id,
+						so->currentID);
+				continue;
+			}
+
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -6081,14 +6123,28 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		{
 			uint64 packedCtid;
 			ItemPointerData ctid;
+
 			so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
 			if (so->currentID == GRN_ID_NIL)
 				break;
+
 			GRN_BULK_REWIND(&(buffers->ctid));
 			grn_obj_get_value(ctx,
 							  so->ctidAccessor,
 							  so->currentID,
 							  &(buffers->ctid));
+			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
+			{
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[nonexistent] <%s>(%u): <%u>",
+						tag,
+						so->index->rd_rel->relname.data,
+						so->index->rd_id,
+						PGrnScanOpaqueResolveID(so));
+				continue;
+			}
+
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -6540,12 +6596,35 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 			{
 				GRN_BULK_REWIND(&(buffers->ctid));
 				grn_obj_get_value(ctx, sourcesCtidColumn, id, &(buffers->ctid));
+				if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
+				{
+					GRN_LOG(ctx,
+							GRN_LOG_DEBUG,
+							"%s[nonexistent] <%s>(%u): <%u>",
+							tag,
+							index->rd_rel->relname.data,
+							index->rd_id,
+							id);
+					continue;
+				}
 				packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			}
 			else
 			{
 				void *key;
-				grn_table_cursor_get_key(ctx, cursor, &key);
+				int keySize;
+				keySize = grn_table_cursor_get_key(ctx, cursor, &key);
+				if (keySize == 0)
+				{
+					GRN_LOG(ctx,
+							GRN_LOG_DEBUG,
+							"%s[nonexistent] <%s>(%u): <%u>",
+							tag,
+							index->rd_rel->relname.data,
+							index->rd_id,
+							id);
+					continue;
+				}
 				packedCtid = *((uint64 *) key);
 			}
 			ctid = PGrnCtidUnpack(packedCtid);
