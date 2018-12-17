@@ -73,7 +73,7 @@ script:
         for path in jsonb/ \
                     function/flush/jsonb.sql \
                     function/tokenize/ \
-                    function/vacuum/jsonb.sql \
+                    function/vacuum/ \
                     full-text-search/jsonb/ \
                     full-text-search/text/options/normalizer/ \
                     full-text-search/text/options/tokenizer/ \
