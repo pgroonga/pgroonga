@@ -1,0 +1,37 @@
+CREATE TABLE memos (
+  content text
+);
+CREATE INDEX pgroonga_index ON memos USING PGroonga (content);
+SELECT pgroonga_table_name('pgroonga_index');
+ pgroonga_table_name 
+---------------------
+ Sources21116
+(1 row)
+
+\gset old_
+REINDEX INDEX pgroonga_index;
+SELECT pgroonga_command('select',
+                        ARRAY[
+                          'table', :'old_pgroonga_table_name'
+                        ])::json#>>'{0, 0}';
+ ?column? 
+----------
+ 0
+(1 row)
+
+SELECT pgroonga_vacuum();
+ pgroonga_vacuum 
+-----------------
+ t
+(1 row)
+
+SELECT pgroonga_command('select',
+                        ARRAY[
+                          'table', :'old_pgroonga_table_name'
+                        ])::json#>>'{0, 0}';
+ ?column? 
+----------
+ -22
+(1 row)
+
+DROP TABLE memos;
