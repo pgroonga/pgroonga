@@ -28,12 +28,12 @@ matrix:
       addons:
         postgresql: "10"
       dist: xenial
-    - env:
-        PG_VERSION: 11
-        WAL_SUPPORTED: "yes"
-      addons:
-        postgresql: "11"
-      dist: xenial
+    # - env:
+    #     PG_VERSION: 11
+    #     WAL_SUPPORTED: "yes"
+    #   addons:
+    #     postgresql: "11"
+    #   dist: xenial
     - env:
         PG_VERSION: 9.6
         WAL_SUPPORTED: "yes"
