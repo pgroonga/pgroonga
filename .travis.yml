@@ -5,36 +5,43 @@ dist: trusty
 language: c
 matrix:
   include:
-    - env:
+    - name: "9.3"
+      env:
         PG_VERSION: 9.3
       addons:
         postgresql: "9.3"
-    - env:
+    - name: "9.4"
+      env:
         PG_VERSION: 9.4
       addons:
         postgresql: "9.4"
-    - env:
+    - name: "9.5"
+      env:
         PG_VERSION: 9.5
       addons:
         postgresql: "9.5"
-    - env:
+    - name: "9.6"
+      env:
         PG_VERSION: 9.6
         WAL_SUPPORTED: "yes"
       addons:
         postgresql: "9.6"
-    - env:
+    - name: "10"
+      env:
         PG_VERSION: 10
         WAL_SUPPORTED: "yes"
       addons:
         postgresql: "10"
       dist: xenial
-    # - env:
+    # - name: "11"
+    #   env:
     #     PG_VERSION: 11
     #     WAL_SUPPORTED: "yes"
     #   addons:
     #     postgresql: "11"
     #   dist: xenial
-    - env:
+    - name: "with Groonga master"
+      env:
         PG_VERSION: 9.6
         WAL_SUPPORTED: "yes"
         GROONGA_MASTER: "yes"
