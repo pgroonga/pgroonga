@@ -15,12 +15,15 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  WHERE content &@~ ('id:1 PostgreSQL',
                     NULL,
-                    'pgrn_index')::pgroonga_full_text_search_condition;
+                    'pgrn_index')::pgroonga_full_text_search_condition
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+\pset format aligned
 
 SELECT id, content
   FROM memos

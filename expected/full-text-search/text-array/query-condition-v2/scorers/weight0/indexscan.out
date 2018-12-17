@@ -12,6 +12,7 @@ CREATE INDEX pgrn_index ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
@@ -22,13 +23,13 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
           'scorer_tf_idf($index)',
           'scorer_tf_at_most($index, 0.25)'
         ],
-        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
-                                                                                                                             QUERY PLAN                                                                                                                             
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Index Scan using pgrn_index on memos
-   Index Cond: (ARRAY[title, content] &@~ ROW('Groonga OR search OR fast OR RDBMS -PGroonga'::text, '{5,0}'::integer[], '{scorer_tf_idf($index),"scorer_tf_at_most($index, 0.25)"}'::text[], 'pgrn_index'::text)::pgroonga_full_text_search_condition_with_scorers)
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Index Scan using pgrn_index on memos
+  Index Cond: (ARRAY[title, content] &@~ pgroonga_full_text_search_condition_with_scorers)
 (2 rows)
-
+\pset format aligned
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~

@@ -11,21 +11,22 @@ CREATE INDEX pgrn_index ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
        ('りんご',
         ARRAY[5, 2],
-        'pgrn_index')::pgroonga_full_text_search_condition;
-                                                                   QUERY PLAN                                                                    
--------------------------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (ARRAY[title, content] &@ ROW('りんご'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (ARRAY[title, content] &@ ROW('りんご'::text, '{5,2}'::integer[], 'pgrn_index'::text)::pgroonga_full_text_search_condition)
+        'pgrn_index')::pgroonga_full_text_search_condition
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition)
 (4 rows)
-
+\pset format aligned
 SELECT title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@

@@ -5,14 +5,18 @@ environment:
   matrix:
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.5.14-1
+      POSTGRESQL_VERSION: 9.5.15-1
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 9.6.10-1
+      POSTGRESQL_VERSION: 9.6.11-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: amd64
-      POSTGRESQL_VERSION: 10.5-1
+      POSTGRESQL_VERSION: 10.6-1
+      WAL_SUPPORTED: "yes"
+    - VS_VERSION: 12
+      ARCH: amd64
+      POSTGRESQL_VERSION: 11.1-1
       WAL_SUPPORTED: "yes"
 notifications:
   - provider: Webhook

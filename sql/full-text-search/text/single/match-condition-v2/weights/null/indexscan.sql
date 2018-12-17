@@ -14,10 +14,13 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@ ('Groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE content &@ ('Groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+\pset format aligned
 
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos

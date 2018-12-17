@@ -12,6 +12,7 @@ CREATE INDEX pgrn_index ON memos
 SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
@@ -22,15 +23,15 @@ SELECT id, title, content, pgroonga_score(tableoid, ctid)
           NULL,
           'scorer_tf_at_most($index, 0.25)'
         ],
-        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
-                                                                                                      QUERY PLAN                                                                                                      
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], '{NULL,"scorer_tf_at_most($index, 0.25)"}'::text[], 'pgrn_index'::text)::pgroonga_full_text_search_condition_with_scorers)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (ARRAY[title, content] &@ ROW('PostgreSQL'::text, '{5,2}'::integer[], '{NULL,"scorer_tf_at_most($index, 0.25)"}'::text[], 'pgrn_index'::text)::pgroonga_full_text_search_condition_with_scorers)
+        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition_with_scorers)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition_with_scorers)
 (4 rows)
-
+\pset format aligned
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
