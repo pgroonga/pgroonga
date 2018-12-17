@@ -165,7 +165,7 @@ CREATE FUNCTION pgroonga_escape(value int8)
 
 CREATE FUNCTION pgroonga_escape(value float4)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'pgroonga_escape_float8'
+	AS 'MODULE_PATHNAME', 'pgroonga_escape_float4'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
