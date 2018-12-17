@@ -2,21 +2,16 @@ CREATE TABLE logs (
   message jsonb
 );
 CREATE INDEX pgroonga_index ON logs USING PGroonga (message);
-SELECT pgroonga_table_name('pgroonga_index');
- pgroonga_table_name 
----------------------
- Sources22468
-(1 row)
-
+SELECT pgroonga_table_name('pgroonga_index')
 \gset old_
 REINDEX INDEX pgroonga_index;
-SELECT pgroonga_command('select',
+SELECT pgroonga_command('object_exist',
                         ARRAY[
-                          'table', :'old_pgroonga_table_name'
-                        ])::json#>>'{0, 0}';
+                          'name', :'old_pgroonga_table_name'
+                        ])::json->>1;
  ?column? 
 ----------
- 0
+ true
 (1 row)
 
 SELECT pgroonga_vacuum();
@@ -25,13 +20,13 @@ SELECT pgroonga_vacuum();
  t
 (1 row)
 
-SELECT pgroonga_command('select',
+SELECT pgroonga_command('object_exist',
                         ARRAY[
-                          'table', :'old_pgroonga_table_name'
-                        ])::json#>>'{0, 0}';
+                          'name', :'old_pgroonga_table_name'
+                        ])::json->>1;
  ?column? 
 ----------
- -22
+ false
 (1 row)
 
 DROP TABLE logs;
