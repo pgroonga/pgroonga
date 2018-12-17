@@ -28,6 +28,7 @@ SRCS =						\
 	src/pgrn-snippet-html.c			\
 	src/pgrn-sequential-search.c		\
 	src/pgrn-tokenize.c			\
+	src/pgrn-vacuum.c			\
 	src/pgrn-value.c			\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\

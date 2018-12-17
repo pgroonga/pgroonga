@@ -254,6 +254,13 @@ CREATE FUNCTION pgroonga_tokenize(target text, VARIADIC options text[])
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_vacuum()
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_vacuum'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

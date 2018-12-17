@@ -6690,7 +6690,7 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
-static void
+void
 PGrnRemoveUnusedTables(void)
 {
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID

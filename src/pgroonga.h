@@ -93,4 +93,5 @@
 
 extern bool PGrnGroongaInitialized;
 void PGrnEnsureDatabase(void);
+void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);

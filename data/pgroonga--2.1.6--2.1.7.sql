@@ -11,3 +11,10 @@ CREATE OR REPLACE FUNCTION pgroonga_escape(value float4)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT;
+
+CREATE FUNCTION pgroonga_vacuum()
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_vacuum'
+	LANGUAGE C
+	VOLATILE
+	STRICT;
