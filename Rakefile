@@ -554,6 +554,9 @@ postgresql-server-dev-#{postgresql_version}
     windows_packages = []
     windows_postgresql_versions.each do |windows_postgresql_version|
       windows_architectures.each do |arch|
+        if windows_postgresql_version.split(".")[0].to_i >= 11 and arch == "x86"
+          next
+        end
         windows_package =
           "pgroonga-#{version}-postgresql-#{windows_postgresql_version}-#{arch}.zip"
         windows_packages << windows_package
