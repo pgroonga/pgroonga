@@ -5,9 +5,10 @@ require "octokit"
 
 latest_groonga_version = "8.0.9"
 windows_postgresql_versions = [
-  "9.5.14-1",
-  "9.6.10-1",
-  "10.5-1",
+  "9.5.15-1",
+  "9.6.11-1",
+  "10.6-1",
+  "11.1-1",
 ]
 
 package = "pgroonga"
@@ -212,6 +213,7 @@ namespace :package do
       "95",
       "96",
       "10",
+      "11",
     ]
     namespace :build do
       postgresql_package_versions.each do |postgresql_package_version|
