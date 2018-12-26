@@ -39,7 +39,13 @@ groonga_release_rpm=groonga-release-latest.noarch.rpm
 groonga_release_rpm_url=https://packages.groonga.org/centos/${groonga_release_rpm}
 run yum install -y ${groonga_release_rpm_url}
 
+run yum install -y epel-release
 run yum groupinstall -y "Development Tools"
+if [ ${PG_PACKAGE_VERSION} -ge 11 -a \
+     ${PG_PACKAGE_VERSION} -lt 94 -a \
+     ${distribution_version} -eq 7 ]; then
+  run yum install -y centos-release-scl
+fi
 run yum install -y rpm-build rpmdevtools tar ${DEPENDED_PACKAGES}
 
 if [ -x /usr/bin/rpmdev-setuptree ]; then
@@ -72,11 +78,6 @@ else
   run cp /vagrant/tmp/${PACKAGE}-${VERSION}.* rpmbuild/SOURCES/
 fi
 run cp /vagrant/tmp/${distribution}/${PACKAGE}.spec rpmbuild/SPECS/
-
-if grep -q -E 'Requires:\s+msgpack' rpmbuild/SPECS/${PACKAGE}.spec; then
-  run yum install -y epel-release
-  run yum install -y msgpack-devel
-fi
 
 run rpmbuild -ba ${rpmbuild_options} rpmbuild/SPECS/${PACKAGE}.spec
 

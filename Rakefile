@@ -233,6 +233,11 @@ namespace :package do
 
           env_sh = "#{yum_dir}/env.sh"
           File.open(env_sh, "w") do |file|
+            if postgresql_version == "11"
+              llvm_package_names = ["llvm-toolset-7", "llvm5.0-devel"]
+            else
+              llvm_package_names = []
+            end
             file.puts(<<-ENV)
 SOURCE_ARCHIVE=#{archive_name}
 PACKAGE=#{rpm_package}
@@ -244,7 +249,9 @@ gcc
 make
 pkg-config
 groonga-devel
+msgpack-devel
 postgresql#{postgresql_package_version}-devel
+#{llvm_package_names.join("\n")}
 "
             ENV
           end

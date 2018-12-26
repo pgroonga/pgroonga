@@ -10,6 +10,10 @@
 %define pg_bindir          %{pg_prefix}/bin
 %define pg_libdir          %{pg_prefix}/lib
 %define pg_datadir         %{pg_prefix}/share
+%define pg_includedir      %{pg_prefix}/include
+
+%define support_jit %{pg_package_version} >= 11 && %{pg_package_version} < 94
+%define need_llvm %{support_jit} && %{_centos_ver} >= 7
 
 Name:		@PACKAGE@
 Version:	@VERSION@
@@ -27,6 +31,10 @@ BuildRequires:	groonga-devel
 BuildRequires:	msgpack-devel
 %endif
 BuildRequires:	postgresql%{pg_package_version}-devel
+%if %{need_llvm}
+BuildRequires:	llvm5.0-devel
+BuildRequires:	llvm-toolset-7
+%endif
 Requires:	groonga-libs >= @GROONGA_VERSION@
 %if %{_use_msgpack}
 Requires:	msgpack
@@ -89,6 +97,13 @@ EOF
 %{pg_libdir}/*.so
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
+%if %{support_jit}
+%{pg_includedir}/server/extension/pgroonga/
+%endif
+%if %{need_llvm}
+%{pg_libdir}/bitcode/pgroonga*.index.bc
+%{pg_libdir}/bitcode/pgroonga*/
+%endif
 
 %changelog
 * Tue Dec 25 2018 Kouhei Sutou <kou@clear-code.com> - 2.1.7-1
