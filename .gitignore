@@ -3,8 +3,8 @@
 *.so
 *.tar.gz
 *.zip
-pgroonga--*.sql
-!pgroonga--*--*.sql
+/data/pgroonga--*.sql
+!/data/pgroonga--*--*.sql
 /examples/completion/edict.gz
 /regression.*
 /sql/vacuum/tablespace.sql
