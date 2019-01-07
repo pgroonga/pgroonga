@@ -178,14 +178,18 @@ _PG_init(void)
 	if (grn_init() != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: failed to initialize Groonga")));
+				 errmsg("pgroonga: check: failed to initialize Groonga")));
 
 	if (grn_ctx_init(ctx, 0) != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: failed to initialize Groonga context")));
+				 errmsg("pgroonga: check: "
+						"failed to initialize Groonga context")));
 
-	GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx,
+			GRN_LOG_NOTICE,
+			"pgroonga: check: initialize: <%s>",
+			PGRN_VERSION);
 
 	PGrnCheckAllDatabases(ctx);
 
