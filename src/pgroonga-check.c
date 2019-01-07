@@ -180,7 +180,7 @@ _PG_init(void)
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga")));
 
-	if (grn_ctx_init(ctx, 0))
+	if (grn_ctx_init(ctx, 0) != GRN_SUCCESS)
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg("pgroonga: failed to initialize Groonga context")));
