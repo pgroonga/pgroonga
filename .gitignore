@@ -5,6 +5,8 @@
 *.zip
 /data/pgroonga--*.sql
 !/data/pgroonga--*--*.sql
+/data/pgroonga_database--*.sql
+!/data/pgroonga_database--*--*.sql
 /examples/completion/edict.gz
 /regression.*
 /sql/vacuum/tablespace.sql

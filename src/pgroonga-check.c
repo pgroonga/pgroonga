@@ -1,17 +1,10 @@
 #include "pgroonga.h"
 
-#include "pgrn-portable.h"
+#include "pgrn-database.h"
 
 #include <miscadmin.h>
 
 #include <groonga.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifndef WIN32
-#	include <dirent.h>
-#	include <unistd.h>
-#endif
 
 PG_MODULE_MAGIC;
 
@@ -24,61 +17,14 @@ PGrnGetThreadLimit(void *data)
 }
 
 static void
-PGrnRemoveAllRelatedFiles(const char *databaseDirectoryPath)
-{
-#ifdef WIN32
-	WIN32_FIND_DATA data;
-	HANDLE finder;
-	char targetPath[MAXPGPATH];
-
-	join_path_components(targetPath,
-						 databaseDirectoryPath,
-						 PGrnDatabaseBasename "*");
-	finder = FindFirstFile(targetPath, &data);
-	if (finder != INVALID_HANDLE_VALUE)
-	{
-		do
-		{
-			char path[MAXPGPATH];
-			join_path_components(path,
-								 databaseDirectoryPath,
-								 data.cFileName);
-			unlink(path);
-		} while (FindNextFile(finder, &data) != 0);
-		FindClose(finder);
-	}
-#else
-	DIR *dir = opendir(databaseDirectoryPath);
-	if (dir)
-	{
-		struct dirent *entry;
-		while ((entry = readdir(dir)))
-		{
-			if (strncmp(entry->d_name,
-						PGrnDatabaseBasename,
-						strlen(PGrnDatabaseBasename)) == 0)
-			{
-				char path[MAXPGPATH];
-				join_path_components(path,
-									 databaseDirectoryPath,
-									 entry->d_name);
-				unlink(path);
-			}
-		}
-		closedir(dir);
-	}
-#endif
-}
-
-static void
-PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
+PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *directoryPath)
 {
 	char databasePath[MAXPGPATH];
 	grn_obj	*db;
 	pgrn_stat_buffer fileStatus;
 
 	join_path_components(databasePath,
-						 databaseDirectoryPath,
+						 directoryPath,
 						 PGrnDatabaseBasename);
 
 	if (pgrn_stat(databasePath, &fileStatus) != 0)
@@ -89,7 +35,7 @@ PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
 	db = grn_db_open(ctx, databasePath);
 	if (!db)
 	{
-		PGrnRemoveAllRelatedFiles(databaseDirectoryPath);
+		PGrnDatabaseRemoveAllRelatedFiles(directoryPath);
 		return;
 	}
 
@@ -97,7 +43,7 @@ PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *databaseDirectoryPath)
 	if (ctx->rc != GRN_SUCCESS)
 	{
 		grn_obj_remove(ctx, db);
-		PGrnRemoveAllRelatedFiles(databaseDirectoryPath);
+		PGrnDatabaseRemoveAllRelatedFiles(directoryPath);
 		return;
 	}
 
@@ -122,7 +68,7 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 	{
 		do
 		{
-			char databaseDirectoryPath[MAXPGPATH];
+			char directoryPath[MAXPGPATH];
 
 			if (strcmp(data.cFileName, ".") == 0)
 				continue;
@@ -131,10 +77,10 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 			if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 				continue;
 
-			join_path_components(databaseDirectoryPath,
+			join_path_components(directoryPath,
 								 baseDirectoryPath,
 								 data.cFileName);
-			PGrnCheckDatabaseDirectory(ctx, databaseDirectoryPath);
+			PGrnCheckDatabaseDirectory(ctx, directoryPath);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
 	}
@@ -145,17 +91,17 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 		struct dirent *entry;
 		while ((entry = readdir(dir)))
 		{
-			char databaseDirectoryPath[MAXPGPATH];
+			char directoryPath[MAXPGPATH];
 
 			if (strcmp(entry->d_name, ".") == 0)
 				continue;
 			if (strcmp(entry->d_name, "..") == 0)
 				continue;
 
-			join_path_components(databaseDirectoryPath,
+			join_path_components(directoryPath,
 								 baseDirectoryPath,
 								 entry->d_name);
-			PGrnCheckDatabaseDirectory(ctx, databaseDirectoryPath);
+			PGrnCheckDatabaseDirectory(ctx, directoryPath);
 		}
 		closedir(dir);
 	}

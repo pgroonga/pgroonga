@@ -156,6 +156,27 @@ task :tag do
   sh("git", "push", "--tags")
 end
 
+namespace :version do
+  desc "Update version"
+  task :update do
+    current_version = find_version(package)
+    new_version = env_value("NEW_VERSION")
+
+    Dir.glob("*.control") do |control_path|
+      package_name = File.basename(control_path, ".*")
+      content = File.read(control_path)
+      content = content.gsub(/^default_version = '.+?'/,
+                             "default_version = '#{new_version}'")
+      File.open(control_path) do |control_file|
+        control_file.print(content)
+      end
+
+      touch(File.join("data",
+                      "#{package_name}--#{current_version}--#{new_version}.sql"))
+    end
+  end
+end
+
 packages_dir = "packages"
 
 namespace :package do

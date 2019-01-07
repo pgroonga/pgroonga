@@ -8,6 +8,7 @@ HEADERS =					\
 	src/pgrn-create.h			\
 	src/pgrn-ctid.h				\
 	src/pgrn-full-text-search-condition.h	\
+	src/pgrn-database.h			\
 	src/pgrn-global.h			\
 	src/pgrn-groonga-tuple-is-alive.h	\
 	src/pgrn-groonga.h			\
