@@ -31,7 +31,7 @@ CREATE EXTENSION pgroonga_database;
 SELECT pgroonga_database_remove();
  pgroonga_database_remove 
 --------------------------
- 
+ t
 (1 row)
 
       OUTPUT

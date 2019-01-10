@@ -15,7 +15,7 @@ extern PGDLLEXPORT void _PG_init(void);
 PGRN_FUNCTION_INFO_V1(pgroonga_database_remove);
 
 /**
- * pgroonga_database_remove() : NULL
+ * pgroonga_database_remove() : bool
  */
 Datum
 pgroonga_database_remove(PG_FUNCTION_ARGS)
@@ -48,7 +48,7 @@ pgroonga_database_remove(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	heap_close(tablespaces, lock);
 
-	PG_RETURN_NULL();
+	PG_RETURN_BOOL(true);
 }
 
 void
