@@ -7,6 +7,7 @@ class PGroongaDatabaseTestCase < Test::Unit::TestCase
     test "tablespace" do
       tablespace_location = File.join(@tmp_dir, "tablespace")
       FileUtils.mkdir_p(tablespace_location)
+      system("dir #{tablespace_location}")
       pgrn_pattern = File.join(@test_db_dir, "pgrn.*")
       tablespace_pgrn_pattern =
         File.join(tablespace_location, "PG_*", "*", "pgrn.*")
