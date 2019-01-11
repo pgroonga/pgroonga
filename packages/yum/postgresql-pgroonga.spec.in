@@ -98,7 +98,9 @@ EOF
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
 %if %{support_jit}
+%{pg_includedir}/server/contrib/pgroonga_check/
 %{pg_includedir}/server/extension/pgroonga/
+%{pg_includedir}/server/extension/pgroonga_database/
 %endif
 %if %{need_llvm}
 %{pg_libdir}/bitcode/pgroonga*.index.bc
