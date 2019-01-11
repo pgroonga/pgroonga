@@ -639,7 +639,8 @@ postgresql-server-dev-#{postgresql_version}
                "-DGRN_WITH_MRUBY=yes")
             sh("cmake",
                "--build", ".",
-               "--config", "Release")
+               "--config", "Release",
+               "--parallel", "4")
             sh("cmake",
                "--build", ".",
                "--config", "Release",
