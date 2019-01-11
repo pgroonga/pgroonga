@@ -7,11 +7,16 @@ class PGroongaDatabaseTestCase < Test::Unit::TestCase
     test "tablespace" do
       tablespace_location = File.join(@tmp_dir, "tablespace")
       FileUtils.mkdir_p(tablespace_location)
-      system("dir #{tablespace_location}")
       pgrn_pattern = File.join(@test_db_dir, "pgrn.*")
       tablespace_pgrn_pattern =
         File.join(tablespace_location, "PG_*", "*", "pgrn.*")
-      run_sql("CREATE TABLESPACE space LOCATION '#{tablespace_location}'");
+      if File::ALT_SEPARATOR
+        tablespace_location_native =
+          tablespace_location.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+      else
+        tablespace_location_native = tablespace_location
+      end
+      run_sql("CREATE TABLESPACE space LOCATION '#{tablespace_location_native}'");
       run_sql("CREATE TABLE memos (content text);")
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content) " +
               "TABLESPACE space;")
