@@ -632,6 +632,7 @@ postgresql-server-dev-#{postgresql_version}
                windows_pgroonga_source_name_base,
                "-G", cmake_generator,
                "-DCMAKE_INSTALL_PREFIX=pgsql",
+               "-DCMAKE_BUILD_PARALLEL_LEVEL=4",
                "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}",
                "-DGRN_WITH_BUNDLED_LZ4=yes",
                "-DGRN_WITH_BUNDLED_MECAB=yes",
@@ -639,8 +640,7 @@ postgresql-server-dev-#{postgresql_version}
                "-DGRN_WITH_MRUBY=yes")
             sh("cmake",
                "--build", ".",
-               "--config", "Release",
-               "--parallel", "4")
+               "--config", "Release")
             sh("cmake",
                "--build", ".",
                "--config", "Release",
