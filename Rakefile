@@ -167,7 +167,7 @@ namespace :version do
       content = File.read(control_path)
       content = content.gsub(/^default_version = '.+?'/,
                              "default_version = '#{new_version}'")
-      File.open(control_path) do |control_file|
+      File.open(control_path, "w") do |control_file|
         control_file.print(content)
       end
 
