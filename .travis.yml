@@ -5,11 +5,6 @@ dist: xenial
 language: c
 matrix:
   include:
-    - name: "9.3"
-      env:
-        PG_VERSION: 9.3
-      addons:
-        postgresql: "9.3"
     - name: "9.4"
       env:
         PG_VERSION: 9.4
