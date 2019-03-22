@@ -27,12 +27,12 @@ matrix:
         WAL_SUPPORTED: "yes"
       addons:
         postgresql: "10"
-    # - name: "11"
-    #   env:
-    #     PG_VERSION: 11
-    #     WAL_SUPPORTED: "yes"
-    #   addons:
-    #     postgresql: "11"
+    - name: "11"
+      env:
+        PG_VERSION: 11
+        WAL_SUPPORTED: "yes"
+      addons:
+        postgresql: "11"
     - name: "with Groonga master"
       env:
         PG_VERSION: 10
