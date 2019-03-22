@@ -5,6 +5,9 @@ class PGroongaDatabaseTestCase < Test::Unit::TestCase
 
   sub_test_case "pgroonga_database_remove" do
     test "tablespace" do
+      if /mingw/.match?(RUBY_PLATFORM)
+        omit("TODO: This doesn't work on Windows yet.")
+      end
       tablespace_location = File.join(@tmp_dir, "tablespace")
       FileUtils.mkdir_p(tablespace_location)
       pgrn_pattern = File.join(@test_db_dir, "pgrn.*")
