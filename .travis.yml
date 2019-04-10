@@ -64,6 +64,7 @@ install:
           postgresql-client-${PG_VERSION} \
           postgresql-server-dev-${PG_VERSION}
         sudo service postgresql start ${PG_VERSION}
+        sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
         ;;
       *)
         sudo apt install -V \
