@@ -5,39 +5,39 @@ dist: xenial
 language: c
 matrix:
   include:
-    # - name: "9.4"
-    #   env:
-    #     PG_VERSION: 9.4
-    #   addons:
-    #     postgresql: "9.4"
-    # - name: "9.5"
-    #   env:
-    #     PG_VERSION: 9.5
-    #   addons:
-    #     postgresql: "9.5"
-    # - name: "9.6"
-    #   env:
-    #     PG_VERSION: 9.6
-    #     WAL_SUPPORTED: "yes"
-    #   addons:
-    #     postgresql: "9.6"
-    # - name: "10"
-    #   env:
-    #     PG_VERSION: 10
-    #     WAL_SUPPORTED: "yes"
-    #   addons:
-    #     postgresql: "10"
+    - name: "9.4"
+      env:
+        PG_VERSION: 9.4
+      addons:
+        postgresql: "9.4"
+    - name: "9.5"
+      env:
+        PG_VERSION: 9.5
+      addons:
+        postgresql: "9.5"
+    - name: "9.6"
+      env:
+        PG_VERSION: 9.6
+        WAL_SUPPORTED: "yes"
+      addons:
+        postgresql: "9.6"
+    - name: "10"
+      env:
+        PG_VERSION: 10
+        WAL_SUPPORTED: "yes"
+      addons:
+        postgresql: "10"
     - name: "11"
       env:
         PG_VERSION: 11
         WAL_SUPPORTED: "yes"
-    # - name: "with Groonga master"
-    #   env:
-    #     PG_VERSION: 10
-    #     WAL_SUPPORTED: "yes"
-    #     GROONGA_MASTER: "yes"
-    #   addons:
-    #     postgresql: "10"
+    - name: "with Groonga master"
+      env:
+        PG_VERSION: 10
+        WAL_SUPPORTED: "yes"
+        GROONGA_MASTER: "yes"
+      addons:
+        postgresql: "10"
 sudo: required
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
