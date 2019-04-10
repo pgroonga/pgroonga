@@ -9,44 +9,65 @@ matrix:
       env:
         PG_VERSION: 9.4
       addons:
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-server-dev-9.4
         postgresql: "9.4"
     - name: "9.5"
       env:
         PG_VERSION: 9.5
       addons:
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-server-dev-9.5
         postgresql: "9.5"
     - name: "9.6"
       env:
         PG_VERSION: 9.6
         WAL_SUPPORTED: "yes"
       addons:
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-server-dev-9.6
         postgresql: "9.6"
     - name: "10"
       env:
         PG_VERSION: 10
         WAL_SUPPORTED: "yes"
       addons:
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-server-dev-10
         postgresql: "10"
     - name: "11"
       env:
         PG_VERSION: 11
         WAL_SUPPORTED: "yes"
       addons:
-        postgresql: "11"
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-client-11
+            - postgresql-server-dev-11
+      services:
+        - postgresql
     - name: "with Groonga master"
       env:
         PG_VERSION: 10
         WAL_SUPPORTED: "yes"
         GROONGA_MASTER: "yes"
       addons:
+        apt:
+          packages:
+            - libmsgpack-dev
+            - postgresql-server-dev-10
         postgresql: "10"
 sudo: required
 install:
-  - sudo apt update -qq
-  - sudo apt install -qq -y
-      postgresql-client-${PG_VERSION}
-      postgresql-server-dev-${PG_VERSION}
-      libmsgpack-dev
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - |
     if [ "${GROONGA_MASTER}" != "yes" ]; then
