@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 #include <postgres.h>
 #include <fmgr.h>
 #include <utils/rel.h>
