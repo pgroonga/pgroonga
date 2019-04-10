@@ -119,7 +119,7 @@ script:
         dpkg -l | grep postgresql
         dpkg -S /etc/init.d/postgresql || :
         sudo systemctl status postgresql
-        sudo systemctl start postgresql
+        sudo systemctl restart postgresql
         sudo systemctl status postgresql
         ;;
     esac
