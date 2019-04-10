@@ -117,9 +117,10 @@ script:
       11)
         cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
         sudo apt purge postgresql-{9.4,9.5,9.6,10}
+        sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
         sudo service postgresql restart 11
         which psql
-        psql -U postgres -c "CREATE ROLE travis SUPERUSER LOGIN CREATEDB;"
+        sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
         psql -c 'select version();'
         ;;
     esac
