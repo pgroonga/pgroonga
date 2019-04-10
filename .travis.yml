@@ -121,7 +121,9 @@ script:
         sudo service postgresql restart 11
         which psql
         sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
-        psql -c 'select version();'
+        psql -c 'select version();' postgres
+        /usr/lib/postgresql/11/bin/psql -c 'select version();' postgres
+        sudo ls -la /var/run/postgresql/
         ;;
     esac
   - |
