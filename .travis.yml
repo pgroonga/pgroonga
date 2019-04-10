@@ -58,15 +58,12 @@ install:
         sudo service postgresql stop
         sudo apt purge postgresql-{9.4,9.5,9.6,10}
         sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
-        sudo apt purge postgresql\*
         sudo apt install -V \
           libmsgpack-dev \
-          postgresql-${PG_VERSION}
+          postgresql-${PG_VERSION} \
           postgresql-client-${PG_VERSION} \
           postgresql-server-dev-${PG_VERSION}
         sudo service postgresql start ${PG_VERSION}
-        sudo find /usr/lib/postgresql/11/
-        sudo ls -la /var/run/postgresql/
         ;;
       *)
         sudo apt install -V \
