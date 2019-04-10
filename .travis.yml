@@ -115,6 +115,9 @@ script:
         done
         ;;
       11)
+        cat /etc/postgresql/9.6/main/pg_hba.conf
+        cat /etc/postgresql/11/main/pg_hba.conf
+        grep -r port /etc/postgresql/11/main
         cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
         sudo apt purge postgresql-{9.4,9.5,9.6,10}
         sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
