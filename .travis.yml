@@ -51,6 +51,7 @@ matrix:
         apt:
           packages:
             - libmsgpack-dev
+            - postgresql-11
             - postgresql-client-11
             - postgresql-server-dev-11
       services:
