@@ -55,11 +55,9 @@ install:
   - |
     case ${PG_VERSION} in
       11)
-        sudo cat /etc/postgresql/9.6/main/pg_hba.conf
-        sudo cat /etc/postgresql/11/main/pg_hba.conf
-        sudo grep -r port /etc/postgresql/11/main
-        sudo cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
         sudo service postgresql stop
+        sudo apt purge postgresql-{9.4,9.5,9.6,10}
+        sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
         sudo apt purge postgresql\*
         sudo apt install -V \
           libmsgpack-dev \
@@ -67,10 +65,7 @@ install:
           postgresql-client-${PG_VERSION} \
           postgresql-server-dev-${PG_VERSION}
         sudo service postgresql start ${PG_VERSION}
-        which psql
-        sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
-        psql -c 'select version();' postgres
-        /usr/lib/postgresql/11/bin/psql -c 'select version();' postgres
+        sudo find /usr/lib/postgresql/11/
         sudo ls -la /var/run/postgresql/
         ;;
       *)
