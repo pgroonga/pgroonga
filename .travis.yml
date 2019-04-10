@@ -54,8 +54,6 @@ matrix:
             - postgresql-11
             - postgresql-client-11
             - postgresql-server-dev-11
-      services:
-        - postgresql
     - name: "with Groonga master"
       env:
         PG_VERSION: 10
@@ -115,6 +113,11 @@ script:
           rm -rf sql/$path
           rm -rf sql/compatibility/schema/$path
         done
+        ;;
+      11)
+        sudo systemctl status postgresql
+        sudo systemctl start postgresql
+        sudo systemctl status postgresql
         ;;
     esac
   - |
