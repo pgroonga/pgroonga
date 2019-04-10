@@ -9,61 +9,34 @@ matrix:
     #   env:
     #     PG_VERSION: 9.4
     #   addons:
-    #     apt:
-    #       packages:
-    #         - libmsgpack-dev
-    #         - postgresql-server-dev-9.4
     #     postgresql: "9.4"
     # - name: "9.5"
     #   env:
     #     PG_VERSION: 9.5
     #   addons:
-    #     apt:
-    #       packages:
-    #         - libmsgpack-dev
-    #         - postgresql-server-dev-9.5
     #     postgresql: "9.5"
     # - name: "9.6"
     #   env:
     #     PG_VERSION: 9.6
     #     WAL_SUPPORTED: "yes"
     #   addons:
-    #     apt:
-    #       packages:
-    #         - libmsgpack-dev
-    #         - postgresql-server-dev-9.6
     #     postgresql: "9.6"
     # - name: "10"
     #   env:
     #     PG_VERSION: 10
     #     WAL_SUPPORTED: "yes"
     #   addons:
-    #     apt:
-    #       packages:
-    #         - libmsgpack-dev
-    #         - postgresql-server-dev-10
     #     postgresql: "10"
     - name: "11"
       env:
         PG_VERSION: 11
         WAL_SUPPORTED: "yes"
-      addons:
-        apt:
-          packages:
-            - libmsgpack-dev
-            - postgresql-11
-            - postgresql-client-11
-            - postgresql-server-dev-11
     # - name: "with Groonga master"
     #   env:
     #     PG_VERSION: 10
     #     WAL_SUPPORTED: "yes"
     #     GROONGA_MASTER: "yes"
     #   addons:
-    #     apt:
-    #       packages:
-    #         - libmsgpack-dev
-    #         - postgresql-server-dev-10
     #     postgresql: "10"
 sudo: required
 install:
@@ -83,6 +56,33 @@ before_script:
   - PKG_CONFIG_PATH=$PWD/data/travis/pkgconfig make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
+  - |
+    case ${PG_VERSION} in
+      11)
+        sudo cat /etc/postgresql/9.6/main/pg_hba.conf
+        sudo cat /etc/postgresql/11/main/pg_hba.conf
+        sudo grep -r port /etc/postgresql/11/main
+        sudo cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
+        sudo service postgresql stop
+        sudo apt purge postgresql\*
+        sudo apt install -V \
+          libmsgpack-dev \
+          postgresql-${PG_VERSION}
+          postgresql-client-${PG_VERSION} \
+          postgresql-server-dev-${PG_VERSION}
+        sudo service postgresql start ${PG_VERSION}
+        which psql
+        sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
+        psql -c 'select version();' postgres
+        /usr/lib/postgresql/11/bin/psql -c 'select version();' postgres
+        sudo ls -la /var/run/postgresql/
+        ;;
+      *)
+        sudo apt install -V \
+          libmsgpack-dev \
+          postgresql-server-dev-${PG_VERSION}
+        ;;
+    esac
   - |
     case ${PG_VERSION} in
       9.3)
@@ -113,20 +113,6 @@ script:
           rm -rf sql/$path
           rm -rf sql/compatibility/schema/$path
         done
-        ;;
-      11)
-        cat /etc/postgresql/9.6/main/pg_hba.conf
-        cat /etc/postgresql/11/main/pg_hba.conf
-        grep -r port /etc/postgresql/11/main
-        cp /etc/postgresql/{9.6,11}/main/pg_hba.conf
-        sudo apt purge postgresql-{9.4,9.5,9.6,10}
-        sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
-        sudo service postgresql restart 11
-        which psql
-        sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
-        psql -c 'select version();' postgres
-        /usr/lib/postgresql/11/bin/psql -c 'select version();' postgres
-        sudo ls -la /var/run/postgresql/
         ;;
     esac
   - |
