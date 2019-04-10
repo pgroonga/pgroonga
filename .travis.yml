@@ -42,12 +42,15 @@ matrix:
         postgresql: "10"
 sudo: required
 install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq -y postgresql-server-dev-${PG_VERSION} libmsgpack-dev
+  - sudo apt update -qq
+  - sudo apt install -qq -y
+      postgresql-client-${PG_VERSION}
+      postgresql-server-dev-${PG_VERSION}
+      libmsgpack-dev
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - |
     if [ "${GROONGA_MASTER}" != "yes" ]; then
-      sudo apt-get install -qq -y \
+      sudo apt install -qq -y \
         groonga-tokenizer-mecab \
         groonga-token-filter-stem
     fi
@@ -56,7 +59,6 @@ install:
       rvm use 2.3.3 --install --binary --fuzzy
       gem install test-unit
     fi
-  - cat $(find /usr/include/postgresql -name 'pg_config.h')
 before_script:
   - PKG_CONFIG_PATH=$PWD/data/travis/pkgconfig make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
