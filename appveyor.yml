@@ -25,10 +25,6 @@ environment:
       POSTGRESQL_VERSION: 10.7-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
-      ARCH: x86
-      POSTGRESQL_VERSION: 11.2-1
-      WAL_SUPPORTED: "yes"
-    - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 11.2-1
       WAL_SUPPORTED: "yes"
