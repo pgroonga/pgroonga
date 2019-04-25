@@ -3,15 +3,30 @@ clone_depth: 10
 environment:
   matrix:
     - VS_VERSION: 12
+      ARCH: x86
+      POSTGRESQL_VERSION: 9.5.16-1
+    - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 9.5.16-1
+    - VS_VERSION: 12
+      ARCH: x86
+      POSTGRESQL_VERSION: 9.6.12-1
+      WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 9.6.12-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
+      ARCH: x86
+      POSTGRESQL_VERSION: 10.7-1
+      WAL_SUPPORTED: "yes"
+    - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 10.7-1
+      WAL_SUPPORTED: "yes"
+    - VS_VERSION: 12
+      ARCH: x86
+      POSTGRESQL_VERSION: 11.2-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: x64
@@ -78,12 +93,12 @@ test_script:
       sed -e 's,\.sql$,,g' > schedule
   - ps: Set-Culture ja-JP
   - set PG_REGRESS_DIFF_OPTS=-u
-  # - ..\pgsql\bin\pg_regress
-  #     --bindir=..\pgsql\bin
-  #     --load-extension=pgroonga
-  #     --temp-instance=..\pgsql\test
-  #     --schedule=schedule
-  #     --launcher=test\short-pgappname.bat
+  - ..\pgsql\bin\pg_regress
+      --bindir=..\pgsql\bin
+      --load-extension=pgroonga
+      --temp-instance=..\pgsql\test
+      --schedule=schedule
+      --launcher=test\short-pgappname.bat
   - set PATH=%CD%\..\pgsql\bin;%PATH%
   # TODO: Remove me when we fix test failure on Windows
   - rm test/test-streaming-replication.rb
