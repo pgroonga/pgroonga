@@ -1,22 +1,21 @@
 version: "{build}"
 clone_depth: 10
 environment:
-  GROONGA_VERSION: 8.0.0
   matrix:
     - VS_VERSION: 12
-      ARCH: amd64
-      POSTGRESQL_VERSION: 9.5.15-1
+      ARCH: x64
+      POSTGRESQL_VERSION: 9.5.16-1
     - VS_VERSION: 12
-      ARCH: amd64
-      POSTGRESQL_VERSION: 9.6.11-1
+      ARCH: x64
+      POSTGRESQL_VERSION: 9.6.12-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
-      ARCH: amd64
-      POSTGRESQL_VERSION: 10.6-1
+      ARCH: x64
+      POSTGRESQL_VERSION: 10.7-1
       WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
-      ARCH: amd64
-      POSTGRESQL_VERSION: 11.1-1
+      ARCH: x64
+      POSTGRESQL_VERSION: 11.2-1
       WAL_SUPPORTED: "yes"
 notifications:
   - provider: Webhook
@@ -24,7 +23,7 @@ notifications:
 # init:
 #   - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 install:
-  - set PATH=C:\Ruby23-x64\bin;%PATH%
+  - set PATH=C:\Ruby26-x64\bin;%PATH%
   - set PATH=C:\msys64\usr\bin;%PATH%
   - gem install test-unit
 build_script:
@@ -39,39 +38,29 @@ build_script:
   - cd pgroonga
 
   # Groonga
-  #   Released version:
-  # - curl -O http://packages.groonga.org/source/groonga/groonga-%GROONGA_VERSION%.zip
-  # - 7z x groonga-%GROONGA_VERSION%.zip > nul
-  # - mv groonga-%GROONGA_VERSION% vendor\groonga
-  #   Unreleased version:
-  - git clone --depth 1
-      https://github.com/groonga/groonga.git
-      vendor\groonga
-  - cd vendor\groonga
-  - git submodule update --init
-  - cd vendor
-  - ruby download_mecab.rb
-  - ruby download_message_pack.rb
-  - ruby download_lz4.rb
-  - cd ..\..\..
+  - curl -O http://packages.groonga.org/source/groonga/groonga-latest.zip
+  - 7z x groonga-latest.zip > nul
+  - rm groonga-latest.zip
+  - mv groonga-* vendor\groonga
 
   - set CMAKE_GENERATOR_NAME=Visual Studio %VS_VERSION%
   - if "%VS_VERSION%" == "12"
       set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% 2013
   - if "%VS_VERSION%" == "14"
       set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% 2015
-  - if "%ARCH%" == "amd64"
+  - if "%ARCH%" == "x64"
       set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% Win64
   - cmake . -G "%CMAKE_GENERATOR_NAME%"
       -DCMAKE_INSTALL_PREFIX="..\\pgsql"
-      -DGRN_LOCK_TIMEOUT=900000
+      -DPGRN_POSTGRESQL_VERSION=%POSTGRESQL_VERSION%
       -DGRN_WITH_MRUBY=yes
       -DGRN_WITH_BUNDLED_MECAB=yes
       -DGRN_WITH_BUNDLED_LZ4=yes
       -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes
   - set CMAKE_BUILD_PARALLEL_LEVEL=4
-  - cmake --build . --config Debug
-  - cmake --build . --config Debug --target Install
+  - cmake --build . --config RelWithDebInfo
+  - cmake --build . --config RelWithDebInfo --target install
+  - cmake --build . --config RelWithDebInfo --target package
 
 test_script:
   # TODO: Remove me when Groonga bundles libstemmer
@@ -100,5 +89,15 @@ test_script:
   # TODO: Remove me when we fix test failure on Windows
   - rm test/test-streaming-replication.rb
   - if "%WAL_SUPPORTED%" == "yes" (
-       ruby test\run-test.rb
+      ruby test\run-test.rb
     )
+
+on_success:
+  - set
+  - if "%APPVEYOR_REPO_TAG" == "true" (
+      set PGROONGA_VERSION="%APPVEYOR_REPO_TAG_NAME%"
+    ) else (
+      set PGROONGA_VERSION="%APPVEYOR_REPO_COMMIT%"
+    )
+  - dir
+  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
