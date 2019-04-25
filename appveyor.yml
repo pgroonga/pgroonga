@@ -83,8 +83,7 @@ test_script:
       --load-extension=pgroonga
       --temp-instance=..\pgsql\test
       --schedule=schedule
-      --launcher=test\short-pgappname.bat ||
-    (type regression.diffs & nonexistent_command)
+      --launcher=test\short-pgappname.bat
   - set PATH=%CD%\..\pgsql\bin;%PATH%
   # TODO: Remove me when we fix test failure on Windows
   - rm test/test-streaming-replication.rb
@@ -101,3 +100,6 @@ on_success:
     )
   - dir
   - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
+
+on_failure:
+  - type regression.diffs
