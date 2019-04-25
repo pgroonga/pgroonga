@@ -92,15 +92,7 @@ test_script:
     )
 
 on_success:
-  - set
-  - ps: |
-      if ($Env::%APPVEYOR_REPO_TAG -eq "true") {
-        $Env:PGROONGA_VERSION = $Env:APPVEYOR_REPO_TAG_NAME
-      } else {
-        $Env:PGROONGA_VERSION = $Env:APPVEYOR_REPO_COMMIT
-      }
-  - set
-  - dir
+  - ps: $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'%","`$1"
   - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
 
 on_failure:
