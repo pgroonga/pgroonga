@@ -49,7 +49,6 @@ install:
     fi
   - |
     if [ "${WAL_SUPPORTED}" = "yes" ]; then
-      rvm use 2.3.3 --install --binary --fuzzy
       gem install test-unit
     fi
   - |
