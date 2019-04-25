@@ -78,12 +78,12 @@ test_script:
       sed -e 's,\.sql$,,g' > schedule
   - ps: Set-Culture ja-JP
   - set PG_REGRESS_DIFF_OPTS=-u
-  - ..\pgsql\bin\pg_regress
-      --bindir=..\pgsql\bin
-      --load-extension=pgroonga
-      --temp-instance=..\pgsql\test
-      --schedule=schedule
-      --launcher=test\short-pgappname.bat
+  # - ..\pgsql\bin\pg_regress
+  #     --bindir=..\pgsql\bin
+  #     --load-extension=pgroonga
+  #     --temp-instance=..\pgsql\test
+  #     --schedule=schedule
+  #     --launcher=test\short-pgappname.bat
   - set PATH=%CD%\..\pgsql\bin;%PATH%
   # TODO: Remove me when we fix test failure on Windows
   - rm test/test-streaming-replication.rb
@@ -93,11 +93,13 @@ test_script:
 
 on_success:
   - set
-  - if "%APPVEYOR_REPO_TAG" == "true" (
-      set "PGROONGA_VERSION=%APPVEYOR_REPO_TAG_NAME%"
-    ) else (
-      set "PGROONGA_VERSION=%APPVEYOR_REPO_COMMIT%"
-    )
+  - ps: |
+      if ($Env::%APPVEYOR_REPO_TAG -eq "true") {
+        $Env:PGROONGA_VERSION = $Env:APPVEYOR_REPO_TAG_NAME
+      } else {
+        $Env:PGROONGA_VERSION = $Env:APPVEYOR_REPO_COMMIT
+      }
+  - set
   - dir
   - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
 
