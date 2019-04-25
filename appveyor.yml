@@ -48,11 +48,11 @@ build_script:
 
   # PostgreSQL
   - ps: |
-      $Env:POSTGRESQL_ARCHIVE_NAME = postgresql-$Env:POSTGRESQL_VERSION-windows
+      $Env:POSTGRESQL_ARCHIVE_NAME = "postgresql-$Env:POSTGRESQL_VERSION-windows"
       if ($Env:ARCH -eq "x64") {
-        $Env:POSTGRESQL_ARCHIVE_NAME += -$Env:ARCH
+        $Env:POSTGRESQL_ARCHIVE_NAME += "-$Env:ARCH"
       }
-      $Env:POSTGRESQL_ARCHIVE_NAME += -binaries.zip
+      $Env:POSTGRESQL_ARCHIVE_NAME += "-binaries.zip"
   - curl -O http://get.enterprisedb.com/postgresql/%POSTGRESQL_ARCHIVE_NAME%
   - 7z x %POSTGRESQL_ARCHIVE_NAME% > nul
 
