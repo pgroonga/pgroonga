@@ -47,8 +47,8 @@ build_script:
   - choco install -y curl 7zip.commandline
 
   # PostgreSQL
-  - curl -O http://get.enterprisedb.com/postgresql/postgresql-%POSTGRESQL_VERSION%-windows-x64-binaries.zip
-  - 7z x postgresql-%POSTGRESQL_VERSION%-windows-x64-binaries.zip > nul
+  - curl -O http://get.enterprisedb.com/postgresql/postgresql-%POSTGRESQL_VERSION%-windows-%ARCH%-binaries.zip
+  - 7z x postgresql-%POSTGRESQL_VERSION%-windows-%ARCH%-binaries.zip > nul
 
   - cd pgroonga
 
