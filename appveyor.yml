@@ -47,8 +47,14 @@ build_script:
   - choco install -y curl 7zip.commandline
 
   # PostgreSQL
-  - curl -O http://get.enterprisedb.com/postgresql/postgresql-%POSTGRESQL_VERSION%-windows-%ARCH%-binaries.zip
-  - 7z x postgresql-%POSTGRESQL_VERSION%-windows-%ARCH%-binaries.zip > nul
+  - ps: |
+      $Env:POSTGRESQL_ARCHIVE_NAME = postgresql-$Env:POSTGRESQL_VERSION-windows
+      if ($Env:ARCH -eq "x64") {
+        $Env:POSTGRESQL_ARCHIVE_NAME += -$Env:ARCH
+      }
+      $Env:POSTGRESQL_ARCHIVE_NAME += -binaries.zip
+  - curl -O http://get.enterprisedb.com/postgresql/%POSTGRESQL_ARCHIVE_NAME%
+  - 7z x %POSTGRESQL_ARCHIVE_NAME% > nul
 
   - cd pgroonga
 
