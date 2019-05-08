@@ -76,9 +76,11 @@ def prepare_debian_dir(source, destination, variables)
   rm_f(control_in_path)
 end
 
-debian_variables = {
-  "GROONGA_VERSION" => latest_groonga_version,
-}
+def debian_variables
+  {
+    "GROONGA_VERSION" => latest_groonga_version,
+  }
+end
 
 version = find_version(package)
 
