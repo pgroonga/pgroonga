@@ -494,22 +494,6 @@ postgresql-server-dev-#{postgresql_version}
       tmp_dir = "packages/ubuntu/tmp"
       tmp_debian_dir = "#{tmp_dir}/debian"
 
-      desc "Upload package for PostgreSQL 9.3"
-      task :postgresql93 => [archive_name] do
-        rm_rf(tmp_dir)
-        mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/debian93",
-                           tmp_debian_dir,
-                           debian_variables)
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--code-names", "trusty",
-             "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
-      end
-
       desc "Upload package for PostgreSQL 9.5"
       task :postgresql95 => [archive_name] do
         rm_rf(tmp_dir)
@@ -561,7 +545,6 @@ postgresql-server-dev-#{postgresql_version}
 
     desc "Upload package"
     upload_tasks = [
-      "package:ubuntu:upload:postgresql93",
       "package:ubuntu:upload:postgresql95",
       "package:ubuntu:upload:postgresql10",
       "package:ubuntu:upload:postgresql11",
@@ -642,7 +625,6 @@ postgresql-server-dev-#{postgresql_version}
            version,
            env_value("NEW_RELEASE_DATE"),
            "README.md",
-           "packages/debian93/changelog",
            "packages/debian95/changelog",
            "packages/debian96/changelog",
            "packages/debian10/changelog",
