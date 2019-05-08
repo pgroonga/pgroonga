@@ -8,7 +8,7 @@ Build-Depends:
   libgroonga-dev,
   postgresql-server-dev-9.5
 Standards-Version: 3.9.8
-Homepage: http://pgroonga.github.io/
+Homepage: https://pgroonga.github.io/
 
 Package: postgresql-9.5-pgroonga
 Architecture: any

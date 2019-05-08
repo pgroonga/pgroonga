@@ -9,7 +9,7 @@ Build-Depends:
   postgresql-server-dev-9.6,
   libmsgpack-dev
 Standards-Version: 3.9.3
-Homepage: http://pgroonga.github.io/
+Homepage: https://pgroonga.github.io/
 
 Package: postgresql-9.6-pgroonga
 Architecture: any
