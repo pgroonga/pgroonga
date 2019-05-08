@@ -1,15 +1,8 @@
 # -*- ruby -*-
 
-require "open-uri"
 require "octokit"
-
-latest_groonga_version = "8.1.0"
-windows_postgresql_versions = [
-  "9.5.15-1",
-  "9.6.11-1",
-  "10.6-1",
-  "11.1-1",
-]
+require "open-uri"
+require "veyor"
 
 package = "pgroonga"
 package_label = "PGroonga"
@@ -44,33 +37,21 @@ def find_version(package)
   end
 end
 
+def latest_groonga_version
+  @latest_groonga_version ||= detect_latest_groonga_version
+end
+
+def detect_latest_groonga_version
+  open("https://packages.groonga.org/source/groonga/") do |groonga_sources|
+    versions = groonga_sources.read.scan(/<a href="groonga-([\d.]+).zip">/)
+    versions.flatten.sort.last
+  end
+end
+
 def env_value(name)
   value = ENV[name]
   raise "Specify #{name} environment variable" if value.nil?
   value
-end
-
-def download(url, download_dir)
-  base_name = url.split("/").last
-  absolute_output_path = File.join(download_dir, base_name)
-
-  unless File.exist?(absolute_output_path)
-    mkdir_p(download_dir)
-    rake_output_message "Downloading... #{url}"
-    open(url) do |downloaded_file|
-      File.open(absolute_output_path, "wb") do |output_file|
-        output_file.print(downloaded_file.read)
-      end
-    end
-  end
-
-  absolute_output_path
-end
-
-def extract_zip(filename, destrination_dir)
-  require "archive/zip"
-
-  Archive::Zip.extract(filename, destrination_dir)
 end
 
 def export_source(base_name)
@@ -96,7 +77,7 @@ def prepare_debian_dir(source, destination, variables)
 end
 
 debian_variables = {
-  "GROONGA_VERSION" => latest_groonga_version
+  "GROONGA_VERSION" => latest_groonga_version,
 }
 
 version = find_version(package)
@@ -572,96 +553,37 @@ postgresql-server-dev-#{postgresql_version}
   end
 
   namespace :windows do
-    windows_packages_dir = "#{packages_dir}/windows"
-    rsync_path = "#{rsync_base_path}/windows/pgroonga"
-    windows_postgresql_download_base = "http://get.enterprisedb.com/postgresql"
-
-    directory windows_packages_dir
-
-    windows_architectures = ["x86", "x64"]
-    windows_packages = []
-    windows_postgresql_versions.each do |windows_postgresql_version|
-      windows_architectures.each do |arch|
-        if windows_postgresql_version.split(".")[0].to_i >= 11 and arch == "x86"
-          next
-        end
-        windows_package =
-          "pgroonga-#{version}-postgresql-#{windows_postgresql_version}-#{arch}.zip"
-        windows_packages << windows_package
-        file windows_package => windows_packages_dir do
-          rm_rf("tmp/build")
-          mkdir_p("tmp/build")
-
-          download_dir = "download"
-          mkdir_p("tmp/#{download_dir}")
-          cd("tmp/build") do
-            relative_download_dir = "../#{download_dir}"
-
-            cmake_generator = "Visual Studio 12 2013"
-            if arch == "x64"
-              cmake_generator << " Win64"
-              windows_postgresql_archive_name =
-                "postgresql-#{windows_postgresql_version}-windows-x64-binaries.zip"
-            else
-              windows_postgresql_archive_name =
-                "postgresql-#{windows_postgresql_version}-windows-binaries.zip"
-            end
-            windows_postgresql_url =
-              "#{windows_postgresql_download_base}/#{windows_postgresql_archive_name}"
-            download(windows_postgresql_url, relative_download_dir)
-            extract_zip("#{relative_download_dir}/#{windows_postgresql_archive_name}",
-                        ".")
-
-            windows_pgroonga_source_name_base = archive_base_name
-            windows_pgroonga_source_name =
-              "#{windows_pgroonga_source_name_base}.zip"
-            if suffix
-              windows_pgroonga_source_url_base =
-                "https://packages.groonga.org/tmp"
-            else
-              windows_pgroonga_source_url_base =
-                "https://packages.groonga.org/source/#{package}"
-            end
-            windows_pgroonga_source_url =
-              "#{windows_pgroonga_source_url_base}/#{windows_pgroonga_source_name}"
-            download(windows_pgroonga_source_url, relative_download_dir)
-            extract_zip("#{relative_download_dir}/#{windows_pgroonga_source_name}",
-                        ".")
-
-            sh("cmake",
-               windows_pgroonga_source_name_base,
-               "-G", cmake_generator,
-               "-DCMAKE_INSTALL_PREFIX=pgsql",
-               "-DPGRN_POSTGRESQL_VERSION=#{windows_postgresql_version}",
-               "-DGRN_WITH_BUNDLED_LZ4=yes",
-               "-DGRN_WITH_BUNDLED_MECAB=yes",
-               "-DGRN_WITH_BUNDLED_MESSAGE_PACK=yes",
-               "-DGRN_WITH_MRUBY=yes")
-            sh("cmake",
-               "--build", ".",
-               "--config", "Release")
-            sh("cmake",
-               "--build", ".",
-               "--config", "Release",
-               "--target", "package")
-            mv(windows_package, "../../")
-          end
-        end
-      end
-    end
-
-    desc "Build packages"
-    task :build => windows_packages
-
     desc "Upload packages"
-    task :upload => windows_packages do
-      download("http://curl.haxx.se/ca/cacert.pem", ".")
-      ENV["SSL_CERT_FILE"] ||= File.expand_path("cacert.pem")
-
+    task :upload do
       pgroonga_repository = "pgroonga/pgroonga"
       tag_name = version
 
       client = Octokit::Client.new(:access_token => env_value("GITHUB_TOKEN"))
+
+      appveyor_url = "https://ci.appveyor.com/"
+      appveyor_info = nil
+      client.statuses(pgroonga_repository, tag_name).each do |status|
+        next unless status.target_url.start_with?(appveyor_url)
+        case status.state
+        when "success"
+          match_data = /\/(.+?)\/(.+?)\/builds\/(\d+)\z/.match(status.target_url)
+          appveyor_info = {
+            account: match_data[1],
+            project: match_data[2],
+            build_id: match_data[3],
+          }
+          break
+        when "pending"
+          # Ignore
+        else
+          message = "AppVeyor build isn't succeeded: #{status.state}\n"
+          message << "  #{status.target_url}"
+          raise message
+        end
+      end
+      if appveyor_info.nil?
+        raise "No AppVeyor build"
+      end
 
       releases = client.releases(pgroonga_repository)
       current_release = releases.find do |release|
@@ -672,8 +594,23 @@ postgresql-server-dev-#{postgresql_version}
       options = {
         :content_type => "application/zip",
       }
-      windows_packages.each do |windows_package|
-        client.upload_asset(current_release.url, windows_package, options)
+      build_history = Veyor.project_history(account: appveyor_info[:account],
+                                            project: appveyor_info[:project],
+                                            start_build: appveyor_info[:build_id],
+                                            limit: 1)
+      build_version = build_history["builds"][0]["buildNumber"]
+      project = Veyor.project(account: appveyor_info[:account],
+                              project: appveyor_info[:project],
+                              version: build_version)
+      project["build"]["jobs"].each do |job|
+        job_id = job["jobId"]
+        artifacts = Veyor.build_artifacts(job_id: job_id)
+        artifacts.each do |artifact|
+          file_name = artifact["fileName"]
+          url = "#{appveyor_url}api/buildjobs/#{job_id}/artifacts/#{file_name}"
+          sh("curl", "--output", file_name, url)
+          client.upload_asset(current_release.url, file_name, options)
+        end
       end
     end
   end
