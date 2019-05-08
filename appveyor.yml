@@ -2,28 +2,6 @@ version: "{build}"
 clone_depth: 10
 environment:
   matrix:
-    - VS_VERSION: 12
-      ARCH: x86
-      POSTGRESQL_VERSION: 9.5.16-1
-    - VS_VERSION: 12
-      ARCH: x64
-      POSTGRESQL_VERSION: 9.5.16-1
-    - VS_VERSION: 12
-      ARCH: x86
-      POSTGRESQL_VERSION: 9.6.12-1
-      WAL_SUPPORTED: "yes"
-    - VS_VERSION: 12
-      ARCH: x64
-      POSTGRESQL_VERSION: 9.6.12-1
-      WAL_SUPPORTED: "yes"
-    - VS_VERSION: 12
-      ARCH: x86
-      POSTGRESQL_VERSION: 10.7-1
-      WAL_SUPPORTED: "yes"
-    - VS_VERSION: 12
-      ARCH: x64
-      POSTGRESQL_VERSION: 10.7-1
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 14
       ARCH: x64
       POSTGRESQL_VERSION: 11.2-1
@@ -113,4 +91,4 @@ on_failure:
 
 on_finish:
   - ps: $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'","`$1"
-  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION_MAJOR-$Env:ARCH.zip
+  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
