@@ -108,9 +108,9 @@ test_script:
       ruby test\run-test.rb
     )
 
-on_success:
-  - ps: $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'","`$1"
-  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION-$Env:ARCH.zip
-
 on_failure:
   - type regression.diffs
+
+on_finish:
+  - ps: $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'","`$1"
+  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION_MAJOR-$Env:ARCH.zip
