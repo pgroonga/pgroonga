@@ -5,5 +5,5 @@
     compress
     delaycompress
     notifempty
-    create 600 postgres postgres
+    su postgres postgres
 }

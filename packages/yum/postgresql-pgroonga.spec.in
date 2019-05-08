@@ -87,7 +87,7 @@ cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
     compress
     delaycompress
     notifempty
-    create 600 postgres postgres
+    su postgres postgres
 }
 EOF
 
