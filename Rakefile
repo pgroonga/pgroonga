@@ -566,7 +566,7 @@ postgresql-server-dev-#{postgresql_version}
         next unless status.target_url.start_with?(appveyor_url)
         case status.state
         when "success"
-          match_data = /\/(.+?)\/(.+?)\/builds\/(\d+)\z/.match(status.target_url)
+          match_data = /\/([^\/]+?)\/([^\/]+?)\/builds\/(\d+)\z/.match(status.target_url)
           appveyor_info = {
             account: match_data[1],
             project: match_data[2],
@@ -591,12 +591,10 @@ postgresql-server-dev-#{postgresql_version}
       end
       current_release ||= client.create_release(pgroonga_repository, tag_name)
 
-      options = {
-        :content_type => "application/zip",
-      }
+      start_build = appveyor_info[:build_id].to_i + 1
       build_history = Veyor.project_history(account: appveyor_info[:account],
                                             project: appveyor_info[:project],
-                                            start_build: appveyor_info[:build_id],
+                                            start_build: start_build,
                                             limit: 1)
       build_version = build_history["builds"][0]["buildNumber"]
       project = Veyor.project(account: appveyor_info[:account],
@@ -608,7 +606,10 @@ postgresql-server-dev-#{postgresql_version}
         artifacts.each do |artifact|
           file_name = artifact["fileName"]
           url = "#{appveyor_url}api/buildjobs/#{job_id}/artifacts/#{file_name}"
-          sh("curl", "--output", file_name, url)
+          sh("curl", "--location", "--output", file_name, url)
+          options = {
+            :content_type => "application/zip",
+          }
           client.upload_asset(current_release.url, file_name, options)
         end
       end
