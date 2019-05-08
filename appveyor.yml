@@ -35,6 +35,12 @@ environment:
       POSTGRESQL_VERSION: 11.2-1
       POSTGRESQL_VERSION_MAJOR: 11
       WAL_SUPPORTED: "yes"
+    - VS_VERSION: 14
+      ARCH: x64
+      GROONGA_MASTER: "yes"
+      POSTGRESQL_VERSION: 11.2-1
+      POSTGRESQL_VERSION_MAJOR: 11
+      WAL_SUPPORTED: "yes"
 notifications:
   - provider: Webhook
     url: https://webhook.commit-email.info/
@@ -62,11 +68,24 @@ build_script:
   - cd pgroonga
 
   # Groonga
-  - curl -O http://packages.groonga.org/source/groonga/groonga-latest.zip
-  - 7z x groonga-latest.zip > nul
-  - rm groonga-latest.zip
-  - mv groonga-* vendor\groonga
-
+  - |
+    if "%GROONGA_MASTER%" == "yes" (
+      git clone --depth 1 ^
+        https://github.com/groonga/groonga.git ^
+        vendor\groonga
+      cd vendor\groonga
+      git submodule update --init
+      cd vendor
+      ruby download_mecab.rb
+      ruby download_message_pack.rb
+      ruby download_lz4.rb
+      cd ..\..\..
+    ) else (
+      curl -O http://packages.groonga.org/source/groonga/groonga-latest.zip
+      7z x groonga-latest.zip > nul
+      rm groonga-latest.zip
+      mv groonga-* vendor\groonga
+    )
   - set CMAKE_GENERATOR_NAME=Visual Studio %VS_VERSION%
   - if "%VS_VERSION%" == "12"
       set CMAKE_GENERATOR_NAME=%CMAKE_GENERATOR_NAME% 2013
