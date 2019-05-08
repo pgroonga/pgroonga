@@ -541,6 +541,22 @@ postgresql-server-dev-#{postgresql_version}
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
+
+      desc "Upload package for PostgreSQL 11"
+      task :postgresql11 => [archive_name] do
+        rm_rf(tmp_dir)
+        mkdir_p(tmp_dir)
+        prepare_debian_dir("packages/debian11",
+                           tmp_debian_dir,
+                           debian_variables)
+        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
+             "--package", package,
+             "--version", version,
+             "--source-archive", archive_name,
+             "--code-names", "disco",
+             "--debian-directory", tmp_debian_dir,
+             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+      end
     end
 
     desc "Upload package"
@@ -548,6 +564,7 @@ postgresql-server-dev-#{postgresql_version}
       "package:ubuntu:upload:postgresql93",
       "package:ubuntu:upload:postgresql95",
       "package:ubuntu:upload:postgresql10",
+      "package:ubuntu:upload:postgresql11",
     ]
     task :upload => upload_tasks
   end
@@ -629,6 +646,7 @@ postgresql-server-dev-#{postgresql_version}
            "packages/debian95/changelog",
            "packages/debian96/changelog",
            "packages/debian10/changelog",
+           "packages/debian11/changelog",
            "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
