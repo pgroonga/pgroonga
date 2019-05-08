@@ -16,8 +16,8 @@ add_subdirectory(vendor/groonga)
 
 set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
   CACHE PATH "PostgreSQL binary directory")
-set(PGRN_POSTGRESQL_VERSION "unknown"
-  CACHE STRING "PostgreSQL version")
+set(PGRN_POSTGRESQL_VERSION_MAJOR "unknown"
+  CACHE STRING "PostgreSQL major version")
 
 set(PGRN_DLL_NAME "${PGRN_PROJECT_ID}")
 set(PGRN_CHECK_DLL_NAME "${PGRN_PROJECT_ID}_check")
@@ -208,6 +208,6 @@ else()
   set(PGRN_SYSTEM_NAME "x86")
 endif()
 set(CPACK_PACKAGE_FILE_NAME
-  "${PGRN_PROJECT_ID}-${PGRN_VERSION}-postgresql-${PGRN_POSTGRESQL_VERSION}-${PGRN_SYSTEM_NAME}")
+  "${PGRN_PROJECT_ID}-${PGRN_VERSION}-postgresql-${PGRN_POSTGRESQL_VERSION_MAJOR}-${PGRN_SYSTEM_NAME}")
 
 include(CPack)
