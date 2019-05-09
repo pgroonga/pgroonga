@@ -137,5 +137,8 @@ on_failure:
   - type regression.diffs
 
 on_finish:
-  - ps: $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'","`$1"
-  - ps: Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION_MAJOR-$Env:ARCH.zip
+  - ps: |
+      if ($Env:GROONGA_MASTER != "yes") {
+        $Env:PGROONGA_VERSION = (Get-Content pgroonga.control)[0] -replace "^.*'(.+)'","`$1"
+        Push-AppveyorArtifact pgroonga-$Env:PGROONGA_VERSION-postgresql-$Env:POSTGRESQL_VERSION_MAJOR-$Env:ARCH.zip
+      }
