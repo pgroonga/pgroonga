@@ -64,7 +64,7 @@ build_script:
       $Env:POSTGRESQL_ARCHIVE_NAME += "-binaries.zip"
   - ps: |
       Invoke-WebRequest `
-        http:s//get.enterprisedb.com/postgresql/$Env:POSTGRESQL_ARCHIVE_NAME `
+        https://get.enterprisedb.com/postgresql/$Env:POSTGRESQL_ARCHIVE_NAME `
         -OutFile $Env:POSTGRESQL_ARCHIVE_NAME
   - 7z x %POSTGRESQL_ARCHIVE_NAME% > nul
 
