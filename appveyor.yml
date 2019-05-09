@@ -53,7 +53,7 @@ install:
 build_script:
   - git submodule update --init
   - cd ..
-  - choco install -y curl 7zip.commandline
+  - choco install -y 7zip.commandline
 
   # PostgreSQL
   - ps: |
@@ -62,7 +62,10 @@ build_script:
         $Env:POSTGRESQL_ARCHIVE_NAME += "-$Env:ARCH"
       }
       $Env:POSTGRESQL_ARCHIVE_NAME += "-binaries.zip"
-  - curl -O http://get.enterprisedb.com/postgresql/%POSTGRESQL_ARCHIVE_NAME%
+  - ps: |
+      Invoke-WebRequest `
+        http:s//get.enterprisedb.com/postgresql/$Env:POSTGRESQL_ARCHIVE_NAME `
+        -OutFile $Env:POSTGRESQL_ARCHIVE_NAME
   - 7z x %POSTGRESQL_ARCHIVE_NAME% > nul
 
   - cd pgroonga
@@ -82,7 +85,7 @@ build_script:
         cd ..\..\..
       } else {
         Invoke-WebRequest `
-          http://packages.groonga.org/source/groonga/groonga-latest.zip `
+          https://packages.groonga.org/source/groonga/groonga-latest.zip `
           -OutFile groonga-latest.zip
         7z x groonga-latest.zip > nul
         rm groonga-latest.zip
