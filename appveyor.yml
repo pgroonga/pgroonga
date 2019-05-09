@@ -68,8 +68,7 @@ build_script:
   - cd pgroonga
 
   # Groonga
-  - |
-    if "%GROONGA_MASTER%" == "yes" (
+  - if "%GROONGA_MASTER%" == "yes" (
       git clone --depth 1 ^
         https://github.com/groonga/groonga.git ^
         vendor\groonga
