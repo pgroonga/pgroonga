@@ -87,7 +87,7 @@ build_script:
         Invoke-WebRequest `
           https://packages.groonga.org/source/groonga/groonga-latest.zip `
           -OutFile groonga-latest.zip
-        7z x groonga-latest.zip > nul
+        7z x groonga-latest.zip > $null
         rm groonga-latest.zip
         mv groonga-* vendor\groonga
       }
