@@ -1,0 +1,29 @@
+CREATE TABLE records (
+  ids int4[]
+);
+INSERT INTO records VALUES (ARRAY[1, 2]);
+INSERT INTO records VALUES (ARRAY[2, 3, 4]);
+INSERT INTO records VALUES (ARRAY[3, 4, 5]);
+CREATE INDEX pgroonga_index ON records USING pgroonga (ids);
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT ids
+  FROM records
+ WHERE ids = ARRAY[2, 3, 4];
+                   QUERY PLAN                    
+-------------------------------------------------
+ Index Only Scan using pgroonga_index on records
+   Index Cond: (ids = '{2,3,4}'::integer[])
+(2 rows)
+
+SELECT ids
+  FROM records
+ WHERE ids = ARRAY[2, 3, 4];
+   ids   
+---------
+ {2,3,4}
+(1 row)
+
+DROP TABLE records;

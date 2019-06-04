@@ -1680,6 +1680,10 @@ CREATE OPERATOR CLASS pgroonga_varchar_regexp_ops FOR TYPE varchar
 		OPERATOR 22 &~;
 
 /* v2 */
+CREATE OPERATOR CLASS pgroonga_int4_array_ops DEFAULT FOR TYPE int4[]
+	USING pgroonga AS
+		OPERATOR 3 = (anyarray, anyarray);
+
 CREATE OPERATOR CLASS pgroonga_text_full_text_search_ops_v2
 	DEFAULT FOR TYPE text
 	USING pgroonga AS

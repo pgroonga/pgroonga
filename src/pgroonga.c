@@ -649,6 +649,10 @@ PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 		typeID = GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
 		break;
 #endif
+	case INT4ARRAYOID:
+		typeID = GRN_DB_INT32;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
 	case VARCHARARRAYOID:
 		typeID = GRN_DB_SHORT_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
@@ -683,35 +687,81 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 }
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
+static Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
+
 static Datum
 PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 {
 	Oid elementTypeID;
+	int elementLength;
+	bool elementByValue;
+	char elementAlign;
 	int i, n;
 	Datum *values;
 
-	if (typeID == VARCHARARRAYOID)
+	switch (typeID)
+	{
+	case INT4ARRAYOID:
+		elementTypeID = INT4OID;
+		elementLength = 4;
+		elementByValue = true;
+		elementAlign = 'i';
+		break;
+	case VARCHARARRAYOID:
 		elementTypeID = VARCHAROID;
-	else
+		elementLength = -1;
+		elementByValue = false;
+		elementAlign = 'i';
+		break;
+	case TEXTARRAYOID:
 		elementTypeID = TEXTOID;
+		elementLength = -1;
+		elementByValue = false;
+		elementAlign = 'i';
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: unsupported datum array type: %u",
+						typeID)));
+		break;
+	}
 
 	n = grn_vector_size(ctx, vector);
 	if (n == 0)
 		PG_RETURN_POINTER(construct_empty_array(elementTypeID));
 
 	values = palloc(sizeof(Datum) * n);
-	for (i = 0; i < n; i++)
+	if (vector->header.domain == GRN_VECTOR)
 	{
-		const char *element;
-		unsigned int elementSize;
-		text *value;
+		for (i = 0; i < n; i++)
+		{
+			const char *element;
+			unsigned int elementSize;
+			text *value;
 
-		elementSize = grn_vector_get_element(ctx, vector, i,
-											 &element,
-											 NULL,
-											 NULL);
-		value = cstring_to_text_with_len(element, elementSize);
-		values[i] = PointerGetDatum(value);
+			elementSize = grn_vector_get_element(ctx, vector, i,
+												 &element,
+												 NULL,
+												 NULL);
+			value = cstring_to_text_with_len(element, elementSize);
+			values[i] = PointerGetDatum(value);
+		}
+	}
+	else
+	{
+		unsigned int elementSize = grn_uvector_element_size(ctx, vector);
+		grn_obj element;
+		GRN_VALUE_FIX_SIZE_INIT(&element,
+								GRN_OBJ_DO_SHALLOW_COPY,
+								vector->header.domain);
+		for (i = 0; i < n; i++)
+		{
+			const char *rawElement = GRN_BULK_HEAD(vector) + (elementSize * i);
+			GRN_TEXT_SET(ctx, &element, rawElement, elementSize);
+			values[i] = PGrnConvertToDatum(&element, elementTypeID);
+		}
+		GRN_OBJ_FIN(ctx, &element);
 	}
 
 	{
@@ -723,7 +773,9 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 		PG_RETURN_POINTER(construct_md_array(values, NULL,
 											 1, dims, lbs,
 											 elementTypeID,
-											 -1, false, 'i'));
+											 elementLength,
+											 elementByValue,
+											 elementAlign));
 	}
 }
 
@@ -801,6 +853,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		/* GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT; */
 		break;
 #endif
+	case INT4ARRAYOID:
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
 		return PGrnConvertToDatumArrayType(value, typeID);

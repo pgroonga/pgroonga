@@ -28,7 +28,6 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 	while (array_iterate(iterator, &elementDatum, &isNULL))
 	{
 		int weight = 0;
-		VarChar *element;
 
 		if (isNULL)
 		{
@@ -42,7 +41,16 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 
 		switch (typeID)
 		{
+		case INT4ARRAYOID:
+		{
+			int32 element;
+			element = DatumGetInt32(elementDatum);
+			GRN_INT32_PUT(ctx, buffer, element);
+			break;
+		}
 		case VARCHARARRAYOID:
+		{
+			VarChar *element;
 			element = DatumGetVarCharPP(elementDatum);
 			grn_vector_add_element(ctx, buffer,
 								   VARDATA_ANY(element),
@@ -50,13 +58,23 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 								   weight,
 								   buffer->header.domain);
 			break;
+		}
 		case TEXTARRAYOID:
+		{
+			VarChar *element;
 			element = DatumGetTextPP(elementDatum);
 			grn_vector_add_element(ctx, buffer,
 								   VARDATA_ANY(element),
 								   VARSIZE_ANY_EXHDR(element),
 								   weight,
 								   buffer->header.domain);
+			break;
+		}
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+					 errmsg("pgroonga: unsupported datum array type: %u",
+							typeID)));
 			break;
 		}
 	}
@@ -138,6 +156,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 		/* GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT; */
 		break;
 #endif
+	case INT4ARRAYOID:
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
 		PGrnConvertFromDataArrayType(datum, typeID, buffer);
