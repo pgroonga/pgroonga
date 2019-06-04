@@ -116,9 +116,13 @@ test_script:
   # Reduce tests to reduce test time
   - rm -rf sql/compatibility
   - if not "%WAL_SUPPORTED%" == "yes" (
-       rm -rf sql/function/wal-apply/
-       rm -rf sql/function/wal-truncate/
-       rm -rf sql/function/set-writable/wal-*
+      rm -rf sql/function/wal-apply/
+      rm -rf sql/function/wal-truncate/
+      rm -rf sql/function/set-writable/wal-*
+    )
+  # TODO: Remove this when Groonga 9.0.4 is released
+  - if not "%GROONGA_MASTER%" == "yes" (
+      rm -rf sql/int4-array
     )
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |

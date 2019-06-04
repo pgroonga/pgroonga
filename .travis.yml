@@ -113,6 +113,11 @@ script:
       rm -rf sql/function/wal-truncate/
       rm -rf sql/function/set-writable/
     fi
+  # TODO: Remove this when Groonga 9.0.4 is released
+  - |
+    if [ "${GROONGA_MASTER}" != "yes" ]; then
+      rm -rf sql/int4-array
+    fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
     # (for i in $(seq 600)
