@@ -507,7 +507,8 @@ postgresql-server-dev-#{postgresql_version}
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "xenial",
+             "--ubuntu-code-names", "xenial",
+             "--ubuntu-versions", "16.04",
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
@@ -523,7 +524,8 @@ postgresql-server-dev-#{postgresql_version}
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "bionic,cosmic",
+             "--ubuntu-code-names", "bionic,cosmic",
+             "--ubuntu-versions", "18.04,18.10",
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
@@ -539,7 +541,8 @@ postgresql-server-dev-#{postgresql_version}
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--code-names", "disco",
+             "--ubuntu-code-names", "disco",
+             "--ubuntu-versions", "19.04",
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
