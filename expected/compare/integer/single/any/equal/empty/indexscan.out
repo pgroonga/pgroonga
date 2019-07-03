@@ -13,8 +13,8 @@ SELECT id
   FROM ids
  WHERE id = ANY(ARRAY[]::integer[])
  ORDER BY id ASC;
-                 QUERY PLAN                  
----------------------------------------------
+                 QUERY PLAN                 
+--------------------------------------------
  Index Scan using pgroonga_index on ids
    Index Cond: (id = ANY ('{}'::integer[]))
 (2 rows)

@@ -12,8 +12,8 @@ EXPLAIN (COSTS OFF)
 SELECT ids
   FROM records
  WHERE ids = ARRAY[2, 3, 4];
-                   QUERY PLAN                    
--------------------------------------------------
+                 QUERY PLAN                 
+--------------------------------------------
  Index Scan using pgroonga_index on records
    Index Cond: (ids = '{2,3,4}'::integer[])
 (2 rows)
