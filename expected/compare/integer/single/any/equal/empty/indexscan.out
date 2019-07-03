@@ -15,7 +15,7 @@ SELECT id
  ORDER BY id ASC;
                  QUERY PLAN                  
 ---------------------------------------------
- Index Only Scan using pgroonga_index on ids
+ Index Scan using pgroonga_index on ids
    Index Cond: (id = ANY ('{}'::integer[]))
 (2 rows)
 

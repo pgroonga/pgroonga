@@ -20,7 +20,7 @@ SELECT id, content
                     'pgrn_index')::pgroonga_full_text_search_condition
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
-Index Only Scan using pgrn_index on memos
+Index Scan using pgrn_index on memos
   Index Cond: (content &@~ pgroonga_full_text_search_condition)
 (2 rows)
 \pset format aligned

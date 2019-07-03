@@ -6856,22 +6856,50 @@ static bool
 pgroonga_canreturn_raw(Relation index,
 					   int nthAttribute)
 {
-	TupleDesc desc;
-	unsigned int i;
+	bool can_return = true;
 
-	desc = RelationGetDescr(index);
-	for (i = 0; i < desc->natts; i++)
+	Relation table = RelationIdGetRelation(index->rd_index->indrelid);
+	TupleDesc table_desc = RelationGetDescr(table);
+	TupleDesc desc = RelationGetDescr(index);
+	for (unsigned int i = 0; i < desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
+
+		bool is_nullable = true;
+		for (unsigned int j = 0; j < table_desc->natts; j++)
+		{
+			Form_pg_attribute table_attribute = TupleDescAttr(table_desc, j);
+			if (strcmp(NameStr(table_attribute->attname),
+					   NameStr(attribute->attname)) != 0)
+				continue;
+			if (table_attribute->atttypid != attribute->atttypid)
+				continue;
+			is_nullable = !table_attribute->attnotnull;
+			break;
+		}
+		if (is_nullable)
+		{
+			can_return = false;
+			break;
+		}
+
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
-			return false;
+			can_return = false;
+			break;
 		}
 
 		if (PGrnIsForPrefixSearchIndex(index, i))
 		{
-			return false;
+			can_return = false;
+			break;
 		}
+	}
+	RelationClose(table);
+
+	if (!can_return)
+	{
+		return false;
 	}
 
 	return PGrnIndexStatusGetMaxRecordSize(index) <
