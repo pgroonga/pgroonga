@@ -61,8 +61,10 @@
 #define PGrnMatchConditionWithScorersStrategyV2Number	33
 /* operator &@~ with pgroonga_match_condition_with_scorers */
 #define PGrnQueryConditionWithScorersStrategyV2Number	34
+/* operator &~| (multiple conditions of @~ in Groonga) */
+#define PGrnRegexpInStrategyV2Number		35
 
-#define PGRN_N_STRATEGIES PGrnQueryConditionWithScorersStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnRegexpInStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

@@ -1,0 +1,34 @@
+CREATE TABLE memos (
+  id integer,
+  content text
+);
+INSERT INTO memos VALUES (1, 'PostgreSQL is a RDBMS.');
+INSERT INTO memos VALUES (2, 'Groonga is fast full text search engine.');
+INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groonga.');
+CREATE INDEX pgroonga_index ON memos
+  USING pgroonga (content pgroonga_text_regexp_ops_v2);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &~| ARRAY['.ull', 'db.'];
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &~| '{.ull,db.}'::text[])
+   ->  Bitmap Index Scan on pgroonga_index
+         Index Cond: (content &~| '{.ull,db.}'::text[])
+(4 rows)
+
+SELECT id, content
+  FROM memos
+ WHERE content &~| ARRAY['.ull', 'db.'];
+ id |                 content                  
+----+------------------------------------------
+  1 | PostgreSQL is a RDBMS.
+  2 | Groonga is fast full text search engine.
+(2 rows)
+
+DROP TABLE memos;

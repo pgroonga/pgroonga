@@ -241,6 +241,8 @@ PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_regexp_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
+PGRN_FUNCTION_INFO_V1(pgroonga_regexp_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_regexp_in_varchar);
 
 PGRN_FUNCTION_INFO_V1(pgroonga_insert);
 PGRN_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -3744,7 +3746,7 @@ pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.regexp_text(target text, pattern text) : bool
+ * pgroonga_regexp_text(target text, pattern text) : bool
  */
 Datum
 pgroonga_regexp_text(PG_FUNCTION_ARGS)
@@ -3763,7 +3765,7 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.regexp_varchar(target varchar, pattern varchar) : bool
+ * pgroonga_regexp_varchar(target varchar, pattern varchar) : bool
  */
 Datum
 pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
@@ -3778,6 +3780,44 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 										VARSIZE_ANY_EXHDR(pattern),
 										NULL,
 										0);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_regexp_in_text(target text, patterns text[]) : bool
+ */
+Datum
+pgroonga_regexp_in_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
+
+	bool matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   patterns,
+												   NULL,
+												   0,
+												   pgroonga_match_regexp_raw);
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_regexp_in_varchar(target varchar, patterns varchar[]) : bool
+ */
+Datum
+pgroonga_regexp_in_varchar(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
+
+	bool matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   patterns,
+												   NULL,
+												   0,
+												   pgroonga_match_regexp_raw);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -5175,6 +5215,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnQueryInStrategyV2Deprecated2Number:
 	case PGrnMatchInStrategyV2Number:
 	case PGrnMatchInStrategyV2DeprecatedNumber:
+	case PGrnRegexpInStrategyV2Number:
 		switch (valueTypeID)
 		{
 		case VARCHAROID:
@@ -5245,6 +5286,7 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	case PGrnRegexpStrategyNumber:
 	case PGrnRegexpStrategyV2Number:
+	case PGrnRegexpInStrategyV2Number:
 		operator = GRN_OP_REGEXP;
 		break;
 	case PGrnQueryInStrategyV2Number:
@@ -5355,6 +5397,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixInStrategyV2Number:
 	case PGrnMatchInStrategyV2Number:
 	case PGrnMatchInStrategyV2DeprecatedNumber:
+	case PGrnRegexpInStrategyV2Number:
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;
@@ -5368,7 +5411,7 @@ PGrnSearchBuildCondition(Relation index,
 			unsigned int keywordSize;
 
 			keywordSize = grn_vector_get_element(ctx, keywords, i,
-												&keyword, NULL, NULL);
+												 &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
 			PGrnSearchBuildConditionBinaryOperation(data,
 													targetColumn,

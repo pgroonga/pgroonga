@@ -1425,6 +1425,38 @@ CREATE OPERATOR &~ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_regexp_in_text(text, text[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_regexp_in_text'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	COST 200;
+
+CREATE OPERATOR &~| (
+	PROCEDURE = pgroonga_regexp_in_text,
+	LEFTARG = text,
+	RIGHTARG = text[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_regexp_in_varchar(varchar, varchar[])
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_regexp_in_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	COST 200;
+
+CREATE OPERATOR &~| (
+	PROCEDURE = pgroonga_regexp_in_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar[],
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 DO LANGUAGE plpgsql $$
 BEGIN
 	EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
@@ -1493,7 +1525,7 @@ EXCEPTION
 		DELETE FROM pg_am WHERE amname = 'pgroonga';
 		INSERT INTO pg_am VALUES(
 			'pgroonga',	-- amname
-			34,		-- amstrategies
+			35,		-- amstrategies
 			0,		-- amsupport
 			true,		-- amcanorder
 			true,		-- amcanorderbyop
@@ -1752,7 +1784,8 @@ CREATE OPERATOR CLASS pgroonga_text_regexp_ops_v2 FOR TYPE text
 		OPERATOR 6 ~~,
 		OPERATOR 7 ~~*,
 		OPERATOR 10 @~, -- For backward compatibility
-		OPERATOR 22 &~;
+		OPERATOR 22 &~,
+		OPERATOR 35 &~| (text, text[]);
 
 CREATE OPERATOR CLASS pgroonga_varchar_term_search_ops_v2
 	DEFAULT FOR TYPE varchar
@@ -1801,7 +1834,8 @@ CREATE OPERATOR CLASS pgroonga_varchar_array_term_search_ops_v2
 CREATE OPERATOR CLASS pgroonga_varchar_regexp_ops_v2 FOR TYPE varchar
 	USING pgroonga AS
 		OPERATOR 10 @~, -- For backward compatibility
-		OPERATOR 22 &~;
+		OPERATOR 22 &~,
+		OPERATOR 35 &~| (varchar, varchar[]);
 
 DO LANGUAGE plpgsql $$
 BEGIN
