@@ -1,0 +1,34 @@
+CREATE TABLE tags (
+  name text
+);
+INSERT INTO tags VALUES ('PostgreSQL');
+INSERT INTO tags VALUES ('Groonga');
+INSERT INTO tags VALUES ('PGroonga');
+INSERT INTO tags VALUES ('pglogical');
+CREATE INDEX pgroonga_index ON tags
+  USING pgroonga (name pgroonga_text_term_search_ops_v2);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT name
+  FROM tags
+ WHERE name !&^| ARRAY['gro', 'pos'];
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Bitmap Heap Scan on tags
+   Recheck Cond: (name !&^| '{gro,pos}'::text[])
+   ->  Bitmap Index Scan on pgroonga_index
+         Index Cond: (name !&^| '{gro,pos}'::text[])
+(4 rows)
+
+SELECT name
+  FROM tags
+ WHERE name !&^| ARRAY['gro', 'pos'];
+   name    
+-----------
+ PGroonga
+ pglogical
+(2 rows)
+
+DROP TABLE tags;

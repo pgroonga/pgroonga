@@ -232,6 +232,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_query_contain_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text);
+PGRN_FUNCTION_INFO_V1(pgroonga_not_prefix_in_text);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_text_array);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_prefix_in_varchar_array);
@@ -3590,7 +3591,7 @@ pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.prefix_in_text(target text, prefixes text[]) : bool
+ * pgroonga_prefix_in_text(target text, prefixes text[]) : bool
  */
 Datum
 pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
@@ -3607,6 +3608,26 @@ pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 												   0,
 												   pgroonga_prefix_raw);
 	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_not_prefix_in_text(target text, prefixes text[]) : bool
+ */
+Datum
+pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched = false;
+
+	matched =
+		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+												   VARSIZE_ANY_EXHDR(target),
+												   prefixes,
+												   NULL,
+												   0,
+												   pgroonga_prefix_raw);
+	PG_RETURN_BOOL(!matched);
 }
 
 /**
@@ -4872,7 +4893,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 							  GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
 	if (*nKeywords > 0)
-			grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
+		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
 	(*nKeywords)++;
 
 	GRN_BULK_REWIND(keyword);
@@ -5209,6 +5230,7 @@ PGrnSearchBuildCondition(Relation index,
 	switch (key->sk_strategy)
 	{
 	case PGrnPrefixInStrategyV2Number:
+	case PGrnNotPrefixInStrategyV2Number:
 	case PGrnPrefixRKInStrategyV2Number:
 	case PGrnQueryInStrategyV2Number:
 	case PGrnQueryInStrategyV2DeprecatedNumber:
@@ -5278,6 +5300,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixStrategyV2Number:
 	case PGrnPrefixStrategyV2DeprecatedNumber:
 	case PGrnPrefixInStrategyV2Number:
+	case PGrnNotPrefixInStrategyV2Number:
 		operator = GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
@@ -5423,6 +5446,39 @@ PGrnSearchBuildCondition(Relation index,
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
 	}
+	case PGrnNotPrefixInStrategyV2Number:
+	{
+		grn_obj *keywords = &(buffers->general);
+		grn_obj keywordBuffer;
+		unsigned int i, n;
+
+		if (data->nExpressions == 0)
+		{
+			grn_expr_append_obj(ctx, data->expression,
+								grn_ctx_get(ctx, "all_records", -1),
+								GRN_OP_PUSH, 1);
+			grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 0);
+		}
+
+		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		n = grn_vector_size(ctx, keywords);
+		for (i = 0; i < n; i++)
+		{
+			const char *keyword;
+			unsigned int keywordSize;
+
+			keywordSize = grn_vector_get_element(ctx, keywords, i,
+												 &keyword, NULL, NULL);
+			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
+			PGrnSearchBuildConditionBinaryOperation(data,
+													targetColumn,
+													&keywordBuffer,
+													operator);
+			grn_expr_append_op(ctx, data->expression, GRN_OP_AND_NOT, 2);
+		}
+		GRN_OBJ_FIN(ctx, &keywordBuffer);
+		break;
+	}
 	default:
 		PGrnSearchBuildConditionBinaryOperation(data,
 												targetColumn,
@@ -5439,7 +5495,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnScanOpaque so,
 						  PGrnSearchData *data)
 {
-	int i, nExpressions = 0;
+	int i;
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
@@ -5454,9 +5510,16 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 		if (data->isEmptyCondition)
 			return;
 
-		if (nExpressions > 0)
-			grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
-		nExpressions++;
+		switch (key->sk_strategy)
+		{
+		case PGrnNotPrefixInStrategyV2Number:
+			break;
+		default:
+			if (data->nExpressions > 0)
+				grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+			break;
+		}
+		data->nExpressions++;
 	}
 }
 
@@ -5472,6 +5535,7 @@ PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, sourcesTable,
 							  data->expression, data->expressionVariable);
 	data->isEmptyCondition = false;
+	data->nExpressions = 0;
 }
 
 static void

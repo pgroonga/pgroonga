@@ -63,8 +63,10 @@
 #define PGrnQueryConditionWithScorersStrategyV2Number	34
 /* operator &~| (multiple conditions of @~ in Groonga) */
 #define PGrnRegexpInStrategyV2Number		35
+/* operator !&^| (multiple conditions of not prefix search) */
+#define PGrnNotPrefixInStrategyV2Number		36
 
-#define PGRN_N_STRATEGIES PGrnRegexpInStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnNotPrefixInStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

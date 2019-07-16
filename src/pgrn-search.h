@@ -14,6 +14,7 @@ typedef struct PGrnSearchData
 	grn_obj *expression;
 	grn_obj *expressionVariable;
 	bool    isEmptyCondition;
+	size_t  nExpressions;
 } PGrnSearchData;
 
 void PGrnSearchBuildConditionQuery(PGrnSearchData *data,
