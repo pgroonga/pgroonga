@@ -70,10 +70,10 @@ ALTER OPERATOR FAMILY pgroonga_text_term_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 36 !&^| (text, text[]);
 
-ALTER OPERATOR FAMILY pgroonga_text_term_search_ops_v2 USING pgroonga
+ALTER OPERATOR FAMILY pgroonga_text_array_term_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 11 @> (anyarray, anyarray);
 
-ALTER OPERATOR FAMILY pgroonga_varchar_term_search_ops_v2 USING pgroonga
+ALTER OPERATOR FAMILY pgroonga_varchar_array_term_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 11 @> (anyarray, anyarray);
