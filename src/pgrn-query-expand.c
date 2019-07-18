@@ -27,6 +27,7 @@ typedef struct {
 	Snapshot snapshot;
 	IndexScanDesc scan;
 	StrategyNumber scanStrategy;
+	Oid scanOperator;
 	RegProcedure scanProcedure;
 } PGrnQueryExpandData;
 
@@ -45,6 +46,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	grn_obj *term;
 	grn_obj *expandedTerm;
 	text *termText;
+	ArrayType *termTexts;
+	Datum scanKeyDatum;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
 	HeapScanDesc heapScan = NULL;
@@ -56,13 +59,45 @@ func_query_expander_postgresql(grn_ctx *ctx,
 
 	termText = cstring_to_text_with_len(GRN_TEXT_VALUE(term),
 										GRN_TEXT_LEN(term));
+	switch (currentData.scanOperator)
+	{
+	case TextEqualOperator:
+		scanKeyDatum = PointerGetDatum(termText);
+		break;
+	case OID_ARRAY_CONTAINS_OP:
+	{
+		const size_t nElements = 1;
+		Datum *elements;
+		int dims[1];
+		int lbs[1];
+
+		elements = palloc(sizeof(Datum) * nElements);
+		elements[0] = PointerGetDatum(termText);
+		dims[0] = nElements;
+		lbs[0] = 1;
+		termTexts = construct_md_array(elements,
+									   NULL,
+									   1,
+									   dims,
+									   lbs,
+									   TEXTOID,
+									   -1,
+									   false,
+									   'i');
+		scanKeyDatum = PointerGetDatum(termTexts);
+		break;
+	}
+	default:
+		break;
+	}
+
 	if (currentData.scan)
 	{
 		ScanKeyInit(&(scanKeys[0]),
 					currentData.termAttributeNumber,
 					currentData.scanStrategy,
 					currentData.scanProcedure,
-					PointerGetDatum(termText));
+					scanKeyDatum);
 		index_rescan(currentData.scan, scanKeys, nKeys, NULL, 0);
 	}
 	else
@@ -71,7 +106,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					currentData.termAttributeNumber,
 					InvalidStrategy,
 					currentData.scanProcedure,
-					PointerGetDatum(termText));
+					scanKeyDatum);
 		heapScan = heap_beginscan(currentData.table,
 								  currentData.snapshot,
 								  nKeys,
@@ -187,15 +222,15 @@ PGrnInitializeQueryExpand(void)
 }
 
 static Form_pg_attribute
-PGrnFindSynonymsAttribute(const char *tableName,
-						  Relation table,
+PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
+						  const char *tableName,
 						  const char *columnName,
 						  size_t columnNameSize)
 {
 	TupleDesc desc;
 	int i;
 
-	desc = RelationGetDescr(table);
+	desc = RelationGetDescr(data->table);
 	for (i = 1; i <= desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i - 1);
@@ -231,19 +266,16 @@ PGrnFindSynonymsAttribute(const char *tableName,
 }
 
 static Relation
-PGrnFindTermIndex(Relation table,
+PGrnFindTermIndex(PGrnQueryExpandData *data,
 				  const char *columnName,
-				  size_t columnNameSize,
-				  Oid opNo,
-				  AttrNumber *indexAttributeNumber,
-				  StrategyNumber *indexStrategy)
+				  size_t columnNameSize)
 {
 	Relation termIndex = InvalidRelation;
 	Relation preferedIndex = InvalidRelation;
 	List *indexOIDList;
 	ListCell *cell;
 
-	indexOIDList = RelationGetIndexList(table);
+	indexOIDList = RelationGetIndexList(data->table);
 	foreach(cell, indexOIDList)
 	{
 		Relation index = InvalidRelation;
@@ -253,8 +285,10 @@ PGrnFindTermIndex(Relation table,
 		index = index_open(indexOID, NoLock);
 		for (i = 1; i <= index->rd_att->natts; i++)
 		{
-			const char *name = TupleDescAttr(index->rd_att, i - 1)->attname.data;
+			Form_pg_attribute attribute = TupleDescAttr(index->rd_att, i - 1);
+			const char *name = attribute->attname.data;
 			Oid opFamily;
+			Oid opNo = InvalidOid;
 			StrategyNumber strategy;
 
 			if (strlen(name) != columnNameSize)
@@ -264,6 +298,20 @@ PGrnFindTermIndex(Relation table,
 				continue;
 
 			opFamily = index->rd_opfamily[i - 1];
+			switch (attribute->atttypid)
+			{
+			case TEXTOID:
+				opNo = TextEqualOperator;
+				break;
+			case TEXTARRAYOID:
+				opNo = OID_ARRAY_CONTAINS_OP;
+				break;
+			default:
+				break;
+			}
+			if (!OidIsValid(opNo))
+				continue;
+
 			strategy = get_op_opfamily_strategy(opNo, opFamily);
 			if (strategy == InvalidStrategy)
 				continue;
@@ -271,16 +319,18 @@ PGrnFindTermIndex(Relation table,
 			if (PGrnIndexIsPGroonga(index))
 			{
 				preferedIndex = index;
-				*indexStrategy = strategy;
-				*indexAttributeNumber = i;
+				data->termAttributeNumber = i;
+				data->scanStrategy = strategy;
+				data->scanOperator = opNo;
 				break;
 			}
 
 			if (!RelationIsValid(termIndex))
 			{
 				termIndex = index;
-				*indexStrategy = strategy;
-				*indexAttributeNumber = i;
+				data->termAttributeNumber = i;
+				data->scanStrategy = strategy;
+				data->scanOperator = opNo;
 			}
 
 			break;
@@ -309,16 +359,16 @@ PGrnFindTermIndex(Relation table,
 	}
 }
 
-static AttrNumber
-PGrnFindTermAttributeNumber(const char *tableName,
-							Relation table,
+static void
+PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
+							const char *tableName,
 							const char *columnName,
 							size_t columnNameSize)
 {
 	TupleDesc desc;
 	int i;
 
-	desc = RelationGetDescr(table);
+	desc = RelationGetDescr(data->table);
 	for (i = 1; i <= desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i - 1);
@@ -328,17 +378,27 @@ PGrnFindTermAttributeNumber(const char *tableName,
 		if (strncmp(attribute->attname.data, columnName, columnNameSize) != 0)
 			continue;
 
-		if (attribute->atttypid != TEXTOID)
+		switch (attribute->atttypid)
 		{
+		case TEXTOID:
+			data->scanOperator = TextEqualOperator;
+			break;
+		case TEXTARRAYOID:
+			data->scanOperator = OID_ARRAY_CONTAINS_OP;
+			break;
+		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_NAME),
 					 errmsg("pgroonga: query_expand: "
-							"term column isn't text type: <%s>.<%.*s>",
+							"term column isn't text type nor text[] type: "
+							"<%s>.<%.*s>",
 							tableName,
 							(int)columnNameSize, columnName)));
+			break;
 		}
 
-		return attribute->attnum;
+		data->termAttributeNumber = attribute->attnum;
+		return;
 	}
 
 	ereport(ERROR,
@@ -348,11 +408,12 @@ PGrnFindTermAttributeNumber(const char *tableName,
 					tableName,
 					(int)columnNameSize, columnName)));
 
-	return InvalidAttrNumber;
+	data->termAttributeNumber = InvalidAttrNumber;
+	return;
 }
 
 /**
- * pgroonga.query_expand(tableName cstring,
+ * pgroonga_query_expand(tableName cstring,
  *                       termColumnName text,
  *                       synonymsColumnName text,
  *                       query text) : text
@@ -367,7 +428,6 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	Datum tableOIDDatum;
 	Oid tableOID;
 	Relation index;
-	Oid opNo = TextEqualOperator;
 	grn_obj expandedQuery;
 
 	tableOIDDatum = DirectFunctionCall1(regclassin, tableNameDatum);
@@ -382,23 +442,19 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	currentData.table = RelationIdGetRelation(tableOID);
 
 	currentData.synonymsAttribute =
-		PGrnFindSynonymsAttribute(DatumGetCString(tableNameDatum),
-								  currentData.table,
+		PGrnFindSynonymsAttribute(&currentData,
+								  DatumGetCString(tableNameDatum),
 								  VARDATA_ANY(synonymsColumnName),
 								  VARSIZE_ANY_EXHDR(synonymsColumnName));
 
-	index = PGrnFindTermIndex(currentData.table,
+	index = PGrnFindTermIndex(&currentData,
 							  VARDATA_ANY(termColumnName),
-							  VARSIZE_ANY_EXHDR(termColumnName),
-							  opNo,
-							  &(currentData.termAttributeNumber),
-							  &(currentData.scanStrategy));
+							  VARSIZE_ANY_EXHDR(termColumnName));
 	if (!index)
-		currentData.termAttributeNumber =
-			PGrnFindTermAttributeNumber(DatumGetCString(tableNameDatum),
-										currentData.table,
-										VARDATA_ANY(termColumnName),
-										VARSIZE_ANY_EXHDR(termColumnName));
+		PGrnFindTermAttributeNumber(&currentData,
+									DatumGetCString(tableNameDatum),
+									VARDATA_ANY(termColumnName),
+									VARSIZE_ANY_EXHDR(termColumnName));
 
 	currentData.snapshot = GetActiveSnapshot();
 	if (index)
@@ -416,7 +472,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		currentData.scan = NULL;
 	}
 
-	currentData.scanProcedure = get_opcode(opNo);
+	currentData.scanProcedure = get_opcode(currentData.scanOperator);
 
 	GRN_TEXT_INIT(&expandedQuery, 0);
 	{
