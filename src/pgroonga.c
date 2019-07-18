@@ -5229,6 +5229,7 @@ PGrnSearchBuildCondition(Relation index,
 	valueTypeID = attribute->atttypid;
 	switch (key->sk_strategy)
 	{
+	case PGrnContainStrategyNumber:
 	case PGrnPrefixInStrategyV2Number:
 	case PGrnNotPrefixInStrategyV2Number:
 	case PGrnPrefixRKInStrategyV2Number:
@@ -5290,6 +5291,9 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
 	case PGrnQueryStrategyV2DeprecatedNumber:
+		break;
+	case PGrnContainStrategyNumber:
+		operator = GRN_OP_MATCH;
 		break;
 	case PGrnSimilarStrategyV2Number:
 	case PGrnSimilarStrategyV2DeprecatedNumber:
@@ -5358,6 +5362,32 @@ PGrnSearchBuildCondition(Relation index,
 									  GRN_TEXT_VALUE(&(buffers->general)),
 									  GRN_TEXT_LEN(&(buffers->general)));
 		break;
+	case PGrnContainStrategyNumber:
+	{
+		grn_obj *elements = &(buffers->general);
+		grn_obj elementBuffer;
+		unsigned int i, n;
+
+		GRN_TEXT_INIT(&elementBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		n = grn_vector_size(ctx, elements);
+		for (i = 0; i < n; i++)
+		{
+			const char *element;
+			unsigned int elementSize;
+
+			elementSize = grn_vector_get_element(ctx, elements, i,
+												 &element, NULL, NULL);
+			GRN_TEXT_SET(ctx, &elementBuffer, element, elementSize);
+			PGrnSearchBuildConditionBinaryOperation(data,
+													targetColumn,
+													&elementBuffer,
+													operator);
+			if (i > 0)
+				grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+		}
+		GRN_OBJ_FIN(ctx, &elementBuffer);
+		break;
+	}
 	case PGrnScriptStrategyV2Number:
 		PGrnSearchBuildConditionScript(data,
 									   targetColumn,

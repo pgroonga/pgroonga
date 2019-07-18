@@ -25,7 +25,7 @@
 #define PGrnMatchStrategyNumber			8	/* operator %% (@ in Groonga) */
 #define PGrnQueryStrategyNumber			9	/* operator @@ (Groonga query) */
 #define PGrnRegexpStrategyNumber		10	/* operator @~ (@~ in Groonga)  */
-#define PGrnJSONContainStrategyNumber	11	/* operator @> */
+#define PGrnContainStrategyNumber		11	/* operator @> */
 
 #define PGrnMatchStrategyV2Number		12	/* operator &@	(@ in Groonga) */
 /* operator &? (query in Groonga). Deprecated since 1.2.2. */

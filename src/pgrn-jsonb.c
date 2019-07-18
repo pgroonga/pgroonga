@@ -1808,7 +1808,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 											  &(buffers->keyword));
 		}
 		break;
-	case PGrnJSONContainStrategyNumber:
+	case PGrnContainStrategyNumber:
 		PGrnSearchBuildConditionJSONContain(data,
 											subFilter,
 											targetColumn,
