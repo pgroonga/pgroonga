@@ -6134,7 +6134,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
 						"%s[delete] "
-						"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>",
+						"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%" PRIu64 ">",
 						tag,
 						PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
 						so->dataTableID,
@@ -6206,7 +6206,8 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 				NameData tableName;
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
-						"%s <%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%lu>: <%s>",
+						"%s <%s>(%u): <%u> -> <%u>: "
+						"<(%u,%u),%u>: <%" PRIu64 ">: <%s>",
 						tag,
 						PGrnPGGetRelationNameByID(so->dataTableID,
 												  tableName.data),
