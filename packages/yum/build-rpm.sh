@@ -28,13 +28,7 @@ case "${architecture}" in
     ;;
 esac
 
-if [ ${PG_PACKAGE_VERSION} -ge 94 ]; then
-  pgdg_rpm=pgdg-centos${PG_PACKAGE_VERSION}-${PG_VERSION}-3.noarch.rpm
-else
-  pgdg_rpm=pgdg-centos${PG_PACKAGE_VERSION}-${PG_VERSION}-2.noarch.rpm
-fi
-run wget --no-check-certificate https://yum.postgresql.org/${PG_VERSION}/redhat/rhel-${distribution_version}-${architecture}/${pgdg_rpm}
-run rpm -ivh ${pgdg_rpm}
+run yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-${distribution_version}-${architecture}/pgdg-redhat-repo-latest.noarch.rpm
 groonga_release_rpm=groonga-release-latest.noarch.rpm
 groonga_release_rpm_url=https://packages.groonga.org/centos/${groonga_release_rpm}
 run yum install -y ${groonga_release_rpm_url}
