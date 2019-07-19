@@ -6998,12 +6998,14 @@ pgroonga_canreturn_raw(Relation index,
 	Relation table = RelationIdGetRelation(index->rd_index->indrelid);
 	TupleDesc table_desc = RelationGetDescr(table);
 	TupleDesc desc = RelationGetDescr(index);
-	for (unsigned int i = 0; i < desc->natts; i++)
+	unsigned int i;
+	for (i = 0; i < desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 
 		bool is_nullable = true;
-		for (unsigned int j = 0; j < table_desc->natts; j++)
+		unsigned int j;
+		for (j = 0; j < table_desc->natts; j++)
 		{
 			Form_pg_attribute table_attribute = TupleDescAttr(table_desc, j);
 			if (strcmp(NameStr(table_attribute->attname),
