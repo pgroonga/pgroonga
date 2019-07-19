@@ -108,6 +108,9 @@ EOF
 %endif
 
 %changelog
+* Fri Jul 19 2019 Sutou Kouhei <kou@clear-code.com> - 2.2.1-1
+- new upstream release.
+
 * Wed Jun 05 2019 Sutou Kouhei <kou@clear-code.com> - 2.2.0-1
 - new upstream release.
 
