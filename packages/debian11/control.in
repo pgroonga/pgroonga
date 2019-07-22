@@ -3,7 +3,7 @@ Section: database
 Priority: optional
 Maintainer: PGroonga Project <packages@groonga.org>
 Build-Depends:
-  debhelper (>= 12),
+  debhelper (>= 10.2.5),
   pkg-config,
   libgroonga-dev,
   postgresql-server-dev-11,

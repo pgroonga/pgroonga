@@ -360,17 +360,17 @@ postgresql#{postgresql_package_version}-devel
 
   namespace :apt do
     distribution = "debian"
-    code_names = [
-      "stretch",
-    ]
     architectures = [
       "i386",
       "amd64",
     ]
-    postgresql_versions = [
-      "10",
-      :system,
-    ]
+    targets = {
+      "stretch" => [
+        "9.6-system",
+        "10",
+        "11",
+      ],
+    }
     rsync_path = rsync_base_path
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
@@ -387,14 +387,11 @@ postgresql#{postgresql_package_version}-devel
 
       cd(apt_dir) do
         sh("vagrant", "destroy", "--force")
-        code_names.each do |code_name|
+        targets.each do |code_name, postgresql_versions|
           postgresql_versions.each do |postgresql_version|
-            next if postgresql_version != :system and code_name == "jessie"
             architectures.each do |arch|
-              use_system_postgresql = (postgresql_version == :system)
-              if use_system_postgresql
-                postgresql_version = "9.6"
-              end
+              use_system_postgresql = postgresql_version.end_with?("-system")
+              postgresql_version = postgresql_version.delete_suffix("-system")
               short_postgresql_version = postgresql_version.delete(".")
 
               rm_rf("tmp/debian")
