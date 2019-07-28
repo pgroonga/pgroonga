@@ -206,10 +206,6 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 			  ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&packed_ctid));
 			  if (PGrnCtidIsAlive(pg_table, &ctid))
 			  {
-				  grn_rc grn_ii_posting_add(grn_ctx *ctx,
-											grn_posting *pos,
-											grn_hash *s,
-											grn_operator op);
 				  posting.rid = id;
 				  grn_ii_posting_add(ctx, &posting, (grn_hash *)res, op);
 			  }
@@ -241,10 +237,6 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 		  memset(&posting, 0, sizeof(grn_posting));
 		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
 		  {
-			  grn_rc grn_ii_posting_add(grn_ctx *ctx,
-										grn_posting *pos,
-										grn_hash *s,
-										grn_operator op);
 			  posting.rid = id;
 			  grn_ii_posting_add(ctx, &posting, (grn_hash *)res, op);
 		  }
