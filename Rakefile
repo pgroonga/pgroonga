@@ -370,7 +370,11 @@ postgresql#{postgresql_package_version}-devel
         "10",
         "11",
       ],
+      "buster" => [
+        "11-system",
+      ],
     }
+    code_names = targets.keys
     rsync_path = rsync_base_path
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
