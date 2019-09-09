@@ -44,7 +44,7 @@ matrix:
       install:
         - docker build
             -t pgroonga/pgroonga-centos-7
-            -f travis/Dockerfile.cnetos-7
+            -f travis/Dockerfile.centos-7
             .
       script:
         - docker run
