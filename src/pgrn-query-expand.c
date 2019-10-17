@@ -5,6 +5,7 @@
 #include "pgrn-global.h"
 #include "pgrn-query-expand.h"
 
+#include <access/genam.h>
 #include <access/heapam.h>
 #include <access/relscan.h>
 #include <catalog/pg_operator.h>
