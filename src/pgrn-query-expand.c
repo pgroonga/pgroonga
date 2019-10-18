@@ -108,10 +108,10 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					InvalidStrategy,
 					currentData.scanProcedure,
 					scanKeyDatum);
-		heapScan = heap_beginscan(currentData.table,
-								  currentData.snapshot,
-								  nKeys,
-								  scanKeys);
+		heapScan = pgrn_heap_beginscan(currentData.table,
+									   currentData.snapshot,
+									   nKeys,
+									   scanKeys);
 	}
 
 	while (true)
