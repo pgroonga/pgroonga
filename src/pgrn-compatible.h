@@ -240,3 +240,11 @@ typedef char *PGrnStringOptionValue;
 					   (callback),					\
 					   (callbackState))
 #endif
+
+#if PG_VERSION_NUM >= 120000
+#	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
+	((scan)->xs_heaptid = (ctid))
+#else
+#	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
+	((scan)->xs_ctup.t_self = (ctid))
+#endif

@@ -6222,7 +6222,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 			if (!valid)
 				continue;
 
-			scan->xs_ctup.t_self = ctid;
+			PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid);
 		}
 
 #ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
