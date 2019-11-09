@@ -39,6 +39,9 @@
 #	include <access/reloptions.h>
 #endif
 #include <access/relscan.h>
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_type.h>

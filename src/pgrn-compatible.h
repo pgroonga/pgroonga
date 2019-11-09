@@ -61,6 +61,10 @@ typedef const char *PGrnStringOptionValue;
 typedef char *PGrnStringOptionValue;
 #endif
 
+#if PG_VERSION_NUM >= 120000
+#	define PGRN_SUPPORT_TABLEAM
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
@@ -212,7 +216,22 @@ typedef char *PGrnStringOptionValue;
 	array_create_iterator(array, slide_ndim)
 #endif
 
-#if PG_VERSION_NUM >= 110000
+#if PG_VERSION_NUM >= 120000
+#	define PGrnIndexBuildHeapScan(heap,				\
+								  index,			\
+								  indexInfo,		\
+								  allowSync,		\
+								  callback,			\
+								  callbackState)	\
+	table_index_build_scan((heap),					\
+						   (index),					\
+						   (indexInfo),				\
+						   (allowSync),				\
+						   false,					\
+						   (callback),				\
+						   (callbackState),			\
+						   NULL)
+#elif PG_VERSION_NUM >= 110000
 #	define PGrnIndexBuildHeapScan(heap,				\
 								  index,			\
 								  indexInfo,		\
