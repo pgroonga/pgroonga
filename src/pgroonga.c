@@ -55,7 +55,6 @@
 #include <utils/selfuncs.h>
 #include <utils/snapmgr.h>
 #include <utils/timestamp.h>
-#include <utils/tqual.h>
 #include <utils/typcache.h>
 
 #include <lib/ilist.h>
