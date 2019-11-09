@@ -13,17 +13,15 @@ bool
 PGrnCtidIsAlive(Relation table, ItemPointer ctid)
 {
 	Snapshot snapshot;
-	ItemPointerData realCtid;
 	Buffer buffer;
 	HeapTupleData heapTuple;
 	bool found;
 
 	snapshot = GetActiveSnapshot();
-	realCtid = *ctid;
 	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
 	LockBuffer(buffer, BUFFER_LOCK_SHARE);
 	/* table_index_fetch_tuple_check() may be better in the future. */
-	found = heap_hot_search_buffer(&realCtid,
+	found = heap_hot_search_buffer(ctid,
 								   table,
 								   buffer,
 								   snapshot,

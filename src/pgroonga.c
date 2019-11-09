@@ -1181,7 +1181,6 @@ PGrnCollectScoreGetScore(Relation table,
 {
 	double score = 0.0;
 	grn_id id;
-	ItemPointerData ctid;
 
 	id = grn_table_get(ctx, so->searched, &recordID, sizeof(grn_id));
 	if (id == GRN_ID_NIL)
@@ -1192,9 +1191,12 @@ PGrnCollectScoreGetScore(Relation table,
 	if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 		return 0.0;
 
-	ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
-	if (!PGrnCtidIsAlive(table, &ctid))
-		return 0.0;
+	{
+		ItemPointerData ctid;
+		ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&(buffers->ctid)));
+		if (!PGrnCtidIsAlive(table, &ctid))
+			return 0.0;
+	}
 
 	GRN_BULK_REWIND(&(buffers->score));
 	grn_obj_get_value(ctx, so->scoreAccessor, id, &(buffers->score));
@@ -1497,12 +1499,9 @@ static void
 PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 {
 	const char *tag = "pgroonga: [ctid-resolve-table][create]";
-	Snapshot snapshot;
 	Relation table;
 	grn_obj *sourceRecord;
 	grn_column_cache *sourcesCtidColumnCache = NULL;
-
-	snapshot = GetActiveSnapshot();
 
 	table = RelationIdGetRelation(so->dataTableID);
 
@@ -1589,7 +1588,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		}
 		ctid = PGrnCtidUnpack(packedCtid);
 		resolvedCtid = ctid;
-		if (!heap_hot_search(&resolvedCtid, table, snapshot, NULL))
+		if (!PGrnCtidIsAlive(table, &resolvedCtid))
 		{
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
