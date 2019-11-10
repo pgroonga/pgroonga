@@ -62,6 +62,7 @@ typedef char *PGrnStringOptionValue;
 #endif
 
 #if PG_VERSION_NUM >= 120000
+#	define PGRN_SUPPORT_INDEX_CLAUSE
 #	define PGRN_SUPPORT_TABLEAM
 #endif
 

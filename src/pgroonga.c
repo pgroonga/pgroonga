@@ -7063,6 +7063,108 @@ pgroonga_canreturn(PG_FUNCTION_ARGS)
 }
 
 static void
+PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
+									 IndexPath *path,
+									 Relation index,
+									 grn_obj *sourcesTable,
+									 RestrictInfo *info)
+{
+	IndexOptInfo *indexInfo = path->indexinfo;
+	OpExpr *expr;
+	int strategy;
+	Oid leftType;
+	Oid rightType;
+	Node *leftNode;
+	Node *rightNode;
+	Node *estimatedRightNode;
+	Var *var;
+	int nthAttribute = InvalidAttrNumber;
+	Oid opFamily = InvalidOid;
+	ScanKeyData key;
+	PGrnSearchData data;
+
+	if (!IsA(info->clause, OpExpr))
+		return;
+
+	expr = (OpExpr *) info->clause;
+
+	leftNode = get_leftop(info->clause);
+	rightNode = get_rightop(info->clause);
+
+	if (!IsA(leftNode, Var))
+		return;
+
+	estimatedRightNode = estimate_expression_value(root, rightNode);
+	if (!IsA(estimatedRightNode, Const))
+		return;
+
+	var = (Var *) leftNode;
+	{
+		int i;
+
+		for (i = 0; i < indexInfo->ncolumns; i++)
+		{
+			if (indexInfo->indexkeys[i] == var->varattno)
+			{
+				nthAttribute = i + 1;
+				break;
+			}
+		}
+	}
+	if (!AttributeNumberIsValid(nthAttribute))
+		return;
+
+	opFamily = index->rd_opfamily[nthAttribute - 1];
+	get_op_opfamily_properties(expr->opno,
+							   opFamily,
+							   false,
+							   &strategy,
+							   &leftType,
+							   &rightType);
+
+	key.sk_flags = 0;
+	key.sk_attno = nthAttribute;
+	key.sk_strategy = strategy;
+	key.sk_argument = ((Const *) estimatedRightNode)->constvalue;
+	PGrnSearchDataInit(&data, index, sourcesTable);
+	if (PGrnSearchBuildCondition(index, &key, &data))
+	{
+		unsigned int estimatedSize;
+		unsigned int nRecords;
+
+		if (data.isEmptyCondition)
+		{
+			estimatedSize = 0;
+		}
+		else
+		{
+			estimatedSize = grn_expr_estimate_size(ctx, data.expression);
+		}
+
+		nRecords = grn_table_size(ctx, sourcesTable);
+		if (estimatedSize > nRecords)
+			estimatedSize = nRecords - 1;
+		if (estimatedSize == nRecords)
+		{
+			/* TODO: estimatedSize == nRecords means
+			 * estimation isn't support in Groonga. We should
+			 * support it in Groonga. */
+			info->norm_selec = 0.01;
+		}
+		else
+		{
+			info->norm_selec = (double) estimatedSize / (double) nRecords;
+			/* path->path.rows = (double) estimatedSize; */
+		}
+	}
+	else
+	{
+		info->norm_selec = 0.0;
+	}
+	PGrnSearchDataFree(&data);
+}
+
+static void
 PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 {
 	IndexOptInfo *indexInfo = path->indexinfo;
@@ -7074,108 +7176,56 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 	PGrnWALApply(index);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
+#ifdef PGRN_SUPPORT_INDEX_CLAUSE
+	foreach(cell, path->indexclauses)
+	{
+		IndexClause *clause = (IndexClause *) lfirst(cell);
+
+		if (clause->indexquals)
+		{
+			ListCell *qualCell;
+			foreach(qualCell, clause->indexquals)
+			{
+				Node *qualClause = (Node *) lfirst(qualCell);
+				RestrictInfo *info;
+
+				if (!IsA(qualClause, RestrictInfo))
+					continue;
+
+				info = (RestrictInfo *) qualClause;
+				PGrnCostEstimateUpdateSelectivityOne(root,
+													 path,
+													 index,
+													 sourcesTable,
+													 info);
+			}
+		}
+		else
+		{
+			PGrnCostEstimateUpdateSelectivityOne(root,
+												 path,
+												 index,
+												 sourcesTable,
+												 clause->rinfo);
+		}
+	}
+#else
 	foreach(cell, path->indexquals)
 	{
 		Node *clause = (Node *) lfirst(cell);
 		RestrictInfo *info;
-		OpExpr *expr;
-		int strategy;
-		Oid leftType;
-		Oid rightType;
-		Node *leftNode;
-		Node *rightNode;
-		Node *estimatedRightNode;
-		Var *var;
-		int nthAttribute = InvalidAttrNumber;
-		Oid opFamily = InvalidOid;
-		ScanKeyData key;
-		PGrnSearchData data;
 
 		if (!IsA(clause, RestrictInfo))
 			continue;
 
 		info = (RestrictInfo *) clause;
-
-		if (!IsA(info->clause, OpExpr))
-			continue;
-
-		expr = (OpExpr *) info->clause;
-
-		leftNode = get_leftop(info->clause);
-		rightNode = get_rightop(info->clause);
-
-		if (!IsA(leftNode, Var))
-			continue;
-
-		estimatedRightNode = estimate_expression_value(root, rightNode);
-		if (!IsA(estimatedRightNode, Const))
-			continue;
-
-		var = (Var *) leftNode;
-		{
-			int i;
-
-			for (i = 0; i < indexInfo->ncolumns; i++)
-			{
-				if (indexInfo->indexkeys[i] == var->varattno)
-				{
-					nthAttribute = i + 1;
-					break;
-				}
-			}
-		}
-		if (!AttributeNumberIsValid(nthAttribute))
-			continue;
-
-		opFamily = index->rd_opfamily[nthAttribute - 1];
-		get_op_opfamily_properties(expr->opno,
-								   opFamily,
-								   false,
-								   &strategy,
-								   &leftType,
-								   &rightType);
-
-		key.sk_flags = 0;
-		key.sk_attno = nthAttribute;
-		key.sk_strategy = strategy;
-		key.sk_argument = ((Const *) estimatedRightNode)->constvalue;
-		PGrnSearchDataInit(&data, index, sourcesTable);
-		if (PGrnSearchBuildCondition(index, &key, &data))
-		{
-			unsigned int estimatedSize;
-			unsigned int nRecords;
-
-			if (data.isEmptyCondition)
-			{
-				estimatedSize = 0;
-			}
-			else
-			{
-				estimatedSize = grn_expr_estimate_size(ctx, data.expression);
-			}
-
-			nRecords = grn_table_size(ctx, sourcesTable);
-			if (estimatedSize > nRecords)
-				estimatedSize = nRecords - 1;
-			if (estimatedSize == nRecords)
-			{
-				/* TODO: estimatedSize == nRecords means
-				 * estimation isn't support in Groonga. We should
-				 * support it in Groonga. */
-				info->norm_selec = 0.01;
-			}
-			else
-			{
-				info->norm_selec = (double) estimatedSize / (double) nRecords;
-				/* path->path.rows = (double) estimatedSize; */
-			}
-		}
-		else
-		{
-			info->norm_selec = 0.0;
-		}
-		PGrnSearchDataFree(&data);
+		PGrnCostEstimateUpdateSelectivityOne(root,
+											 path,
+											 index,
+											 sourcesTable,
+											 info);
 	}
+#endif
 
 	RelationClose(index);
 }
