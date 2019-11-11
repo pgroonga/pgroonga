@@ -1,7 +1,7 @@
 notifications:
   webhooks:
     - https://webhook.commit-email.info/
-dist: xenial
+dist: bionic
 language: c
 matrix:
   include:
