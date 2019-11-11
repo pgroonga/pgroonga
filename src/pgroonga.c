@@ -47,6 +47,7 @@
 #include <catalog/pg_type.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
+#include <nodes/nodeFuncs.h>
 #include <optimizer/clauses.h>
 #include <optimizer/cost.h>
 #include <storage/bufmgr.h>
