@@ -122,14 +122,15 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 	while (true)
 	{
 		HeapTuple tuple;
+		Form_pg_tablespace form;
 
 		tuple = heap_getnext(scan, ForwardScanDirection);
 
 		if (!HeapTupleIsValid(tuple))
 			break;
 
-		*relationID = RelidByRelfilenode(HeapTupleGetOid(tuple),
-										 fileNodeID);
+		form = (Form_pg_tablespace) GETSTRUCT(tuple);
+		*relationID = RelidByRelfilenode(form->oid, fileNodeID);
 		if (!OidIsValid(*relationID))
 			continue;
 

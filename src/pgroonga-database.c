@@ -24,32 +24,33 @@ Datum
 pgroonga_database_remove(PG_FUNCTION_ARGS)
 {
 	const LOCKMODE lock = RowExclusiveLock;
-	Relation tablespaces;
+	Relation tableSpaces;
 	PGrnTableScanDesc scan;
 
-	tablespaces = heap_open(TableSpaceRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(tablespaces, 0, NULL);
+	tableSpaces = heap_open(TableSpaceRelationId, lock);
+	scan = pgrn_table_beginscan_catalog(tableSpaces, 0, NULL);
 	while (true)
 	{
 		HeapTuple tuple;
-		Oid tablespace;
+		Form_pg_tablespace form;
+		Oid tableSpace;
 		char *databaseDirectoryPath;
 
 		tuple = heap_getnext(scan, ForwardScanDirection);
 		if (!HeapTupleIsValid(tuple))
 			break;
 
-		tablespace = HeapTupleGetOid(tuple);
-
-		if (!pg_tablespace_ownercheck(tablespace, GetUserId()))
+		form = (Form_pg_tablespace) GETSTRUCT(tuple);
+		tableSpace = form->oid;
+		if (!pg_tablespace_ownercheck(tableSpace, GetUserId()))
 			break;
 
-		databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tablespace);
+		databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tableSpace);
 		PGrnDatabaseRemoveAllRelatedFiles(databaseDirectoryPath);
 		pfree(databaseDirectoryPath);
 	}
 	heap_endscan(scan);
-	heap_close(tablespaces, lock);
+	heap_close(tableSpaces, lock);
 
 	PG_RETURN_BOOL(true);
 }
