@@ -7175,6 +7175,7 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index;
 	grn_obj *sourcesTable;
+	List *quals;
 	ListCell *cell;
 
 	index = RelationIdGetRelation(indexInfo->indexoid);
@@ -7182,40 +7183,11 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
 #ifdef PGRN_SUPPORT_INDEX_CLAUSE
-	foreach(cell, path->indexclauses)
-	{
-		IndexClause *clause = (IndexClause *) lfirst(cell);
-
-		if (clause->indexquals)
-		{
-			ListCell *qualCell;
-			foreach(qualCell, clause->indexquals)
-			{
-				Node *qualClause = (Node *) lfirst(qualCell);
-				RestrictInfo *info;
-
-				if (!IsA(qualClause, RestrictInfo))
-					continue;
-
-				info = (RestrictInfo *) qualClause;
-				PGrnCostEstimateUpdateSelectivityOne(root,
-													 path,
-													 index,
-													 sourcesTable,
-													 info);
-			}
-		}
-		else
-		{
-			PGrnCostEstimateUpdateSelectivityOne(root,
-												 path,
-												 index,
-												 sourcesTable,
-												 clause->rinfo);
-		}
-	}
+	quals = get_quals_from_indexclauses(path->indexclauses);
 #else
-	foreach(cell, path->indexquals)
+	quals = path->indexquals;
+#endif
+	foreach(cell, quals)
 	{
 		Node *clause = (Node *) lfirst(cell);
 		RestrictInfo *info;
@@ -7230,7 +7202,6 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 											 sourcesTable,
 											 info);
 	}
-#endif
 
 	RelationClose(index);
 }
@@ -7249,9 +7220,19 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 #endif
 	)
 {
+	List *quals;
 	PGrnCostEstimateUpdateSelectivity(root, path);
+#ifdef PGRN_SUPPORT_INDEX_CLAUSE
+	{
+		List *indexQuals;
+		indexQuals = get_quals_from_indexclauses(path->indexclauses);
+		quals = add_predicate_to_index_quals(path->indexinfo, indexQuals);
+	}
+#else
+	quals = path->indexquals
+#endif
 	*indexSelectivity = clauselist_selectivity(root,
-											   path->indexquals,
+											   quals,
 											   path->indexinfo->rel->relid,
 											   JOIN_INNER,
 											   NULL);
