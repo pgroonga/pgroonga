@@ -84,28 +84,6 @@ typedef char *PGrnStringOptionValue;
 	ALLOCSET_DEFAULT_MAXSIZE
 #endif
 
-#if PG_VERSION_NUM >= 120000
-#	define pgrn_heap_beginscan(relation,		\
-							   snapshot,		\
-							   n_keys,			\
-							   key)				\
-	heap_beginscan((relation),					\
-				   (snapshot),					\
-				   (n_keys),					\
-				   (key),						\
-				   NULL,						\
-				   0)
-#else
-#	define pgrn_heap_beginscan(relation,		\
-							   snapshot,		\
-							   n_keys,			\
-							   key)				\
-	heap_beginscan((relation),					\
-				   (snapshot),					\
-				   (n_keys),					\
-				   (key))
-#endif
-
 #ifdef PGRN_IS_GREENPLUM
 #	define PGrnDefineCustomIntVariable(name,			\
 									   shortDesc,		\
@@ -277,7 +255,9 @@ typedef char *PGrnStringOptionValue;
 #endif
 
 #if PG_VERSION_NUM >= 120000
+#	define pgrn_table_beginscan table_beginscan
 #	define pgrn_table_beginscan_catalog table_beginscan_catalog
 #else
+#	define pgrn_heap_beginscan heap_beginscan
 #	define pgrn_table_beginscan_catalog heap_beginscan_catalog
 #endif

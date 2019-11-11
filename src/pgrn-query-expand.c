@@ -8,6 +8,9 @@
 #include <access/genam.h>
 #include <access/heapam.h>
 #include <access/relscan.h>
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
 #include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
 #include <utils/array.h>
@@ -51,7 +54,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	Datum scanKeyDatum;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
-	HeapScanDesc heapScan = NULL;
+	PGrnTableScanDesc heapScan = NULL;
 	HeapTuple tuple;
 	int ith_synonyms = 0;
 
@@ -108,10 +111,10 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					InvalidStrategy,
 					currentData.scanProcedure,
 					scanKeyDatum);
-		heapScan = pgrn_heap_beginscan(currentData.table,
-									   currentData.snapshot,
-									   nKeys,
-									   scanKeys);
+		heapScan = pgrn_table_beginscan(currentData.table,
+										currentData.snapshot,
+										nKeys,
+										scanKeys);
 	}
 
 	while (true)
