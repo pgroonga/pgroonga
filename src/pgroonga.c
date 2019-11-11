@@ -7229,7 +7229,7 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 		quals = add_predicate_to_index_quals(path->indexinfo, indexQuals);
 	}
 #else
-	quals = path->indexquals
+	quals = path->indexquals;
 #endif
 	*indexSelectivity = clauselist_selectivity(root,
 											   quals,
