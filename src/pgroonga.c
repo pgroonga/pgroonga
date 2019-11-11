@@ -7343,9 +7343,9 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 bool
 PGrnIndexIsPGroonga(Relation index)
 {
-	if (!index->rd_amroutine)
+	if (!PGRN_RELATION_GET_RD_INDAM(index))
 		return false;
-	return index->rd_amroutine->aminsert == pgroonga_insert_raw;
+	return PGRN_RELATION_GET_RD_INDAM(index)->aminsert == pgroonga_insert_raw;
 }
 #else
 bool
