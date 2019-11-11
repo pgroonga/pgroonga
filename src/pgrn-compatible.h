@@ -254,7 +254,7 @@ typedef char *PGrnStringOptionValue;
 	((scan)->xs_ctup.t_self = (ctid))
 #endif
 
-#if PG_VERSION_NUM >= 120000
+#ifdef PGRN_SUPPORT_TABLEAM
 #	define pgrn_table_beginscan table_beginscan
 #	define pgrn_table_beginscan_catalog table_beginscan_catalog
 #else
