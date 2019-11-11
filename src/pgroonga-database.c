@@ -5,6 +5,9 @@
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
 #include <catalog/pg_tablespace.h>
 #include <miscadmin.h>
 
@@ -22,10 +25,10 @@ pgroonga_database_remove(PG_FUNCTION_ARGS)
 {
 	const LOCKMODE lock = RowExclusiveLock;
 	Relation tablespaces;
-	HeapScanDesc scan;
+	PGrnTableScanDesc scan;
 
 	tablespaces = heap_open(TableSpaceRelationId, lock);
-	scan = heap_beginscan_catalog(tablespaces, 0, NULL);
+	scan = pgrn_table_beginscan_catalog(tablespaces, 0, NULL);
 	while (true)
 	{
 		HeapTuple tuple;

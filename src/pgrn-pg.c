@@ -6,6 +6,9 @@
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
 #include <catalog/pg_tablespace.h>
 #include <catalog/pg_type.h>
 #include <pgtime.h>
@@ -111,11 +114,11 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 {
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	Relation tableSpaces;
-	HeapScanDesc scan;
+	PGrnTableScanDesc scan;
 	Relation relation = InvalidRelation;
 
 	tableSpaces = heap_open(TableSpaceRelationId, AccessShareLock);
-	scan = heap_beginscan_catalog(tableSpaces, 0, NULL);
+	scan = pgrn_table_beginscan_catalog(tableSpaces, 0, NULL);
 	while (true)
 	{
 		HeapTuple tuple;

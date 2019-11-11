@@ -67,6 +67,12 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_HAVE_OPTIMIZER_H
 #endif
 
+#if PG_VERSION_NUM >= 120000
+#	define PGrnTableScanDesc TableScanDesc
+#else
+#	define PGrnTableScanDesc HeapScanDesc
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
@@ -268,4 +274,10 @@ typedef char *PGrnStringOptionValue;
 #else
 #	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
 	((scan)->xs_ctup.t_self = (ctid))
+#endif
+
+#if PG_VERSION_NUM >= 120000
+#	define pgrn_table_beginscan_catalog table_beginscan_catalog
+#else
+#	define pgrn_table_beginscan_catalog heap_beginscan_catalog
 #endif

@@ -8,6 +8,10 @@
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
+
 static bool PGrnWALEnabled = false;
 
 bool
@@ -2066,7 +2070,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	HeapScanDesc scan;
+	PGrnTableScanDesc scan;
 	HeapTuple indexTuple;
 
 	if (!PGrnIsWritable())
@@ -2079,7 +2083,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	}
 
 	indexes = heap_open(IndexRelationId, lock);
-	scan = heap_beginscan_catalog(indexes, 0, NULL);
+	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
@@ -2244,11 +2248,11 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	HeapScanDesc scan;
+	PGrnTableScanDesc scan;
 	HeapTuple indexTuple;
 
 	indexes = heap_open(IndexRelationId, lock);
-	scan = heap_beginscan_catalog(indexes, 0, NULL);
+	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
