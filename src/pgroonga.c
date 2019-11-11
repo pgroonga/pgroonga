@@ -48,8 +48,12 @@
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
 #include <nodes/nodeFuncs.h>
-#include <optimizer/clauses.h>
-#include <optimizer/cost.h>
+#ifdef PGRN_HAVE_OPTIMIZER_H
+#	include <optimizer/optimizer.h>
+#else
+#	include <optimizer/clauses.h>
+#	include <optimizer/cost.h>
+#endif
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <utils/array.h>
