@@ -258,6 +258,6 @@ typedef char *PGrnStringOptionValue;
 #	define pgrn_table_beginscan table_beginscan
 #	define pgrn_table_beginscan_catalog table_beginscan_catalog
 #else
-#	define pgrn_heap_beginscan heap_beginscan
+#	define pgrn_table_beginscan heap_beginscan
 #	define pgrn_table_beginscan_catalog heap_beginscan_catalog
 #endif
