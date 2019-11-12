@@ -31,8 +31,6 @@ matrix:
       env:
         PG_VERSION: 11
         WAL_SUPPORTED: "yes"
-      addons:
-        postgresql: "11"
     - name: "12"
       env:
         PG_VERSION: 12
@@ -71,16 +69,16 @@ install:
     fi
   - |
     case ${PG_VERSION} in
-      12)
+      11|12)
         sudo service postgresql stop
-        sudo apt purge postgresql-{9.4,9.5,9.6,10,11}
-        sudo apt purge postgresql-client-{9.4,9.5,9.6,10,11}
+        sudo apt purge postgresql-{9.3,9.4,9.5,9.6,10}
+        sudo apt purge postgresql-client-{9.3,9.4,9.5,9.6,10}
         sudo apt install -V \
           libmsgpack-dev \
           postgresql-${PG_VERSION} \
           postgresql-client-${PG_VERSION} \
           postgresql-server-dev-${PG_VERSION}
-        sudo service postgresql start ${PG_VERSION}
+        sudo systemctl start postgresql start ${PG_VERSION}
         sudo -u postgres -H psql -c "CREATE ROLE travis SUPERUSER LOGIN;"
         ;;
       *)
