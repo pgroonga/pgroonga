@@ -31,6 +31,12 @@ matrix:
       env:
         PG_VERSION: 11
         WAL_SUPPORTED: "yes"
+      addons:
+        postgresql: "11"
+    - name: "12"
+      env:
+        PG_VERSION: 12
+        WAL_SUPPORTED: "yes"
     - name: "with Groonga master"
       env:
         PG_VERSION: 10
@@ -65,10 +71,10 @@ install:
     fi
   - |
     case ${PG_VERSION} in
-      11)
+      12)
         sudo service postgresql stop
-        sudo apt purge postgresql-{9.4,9.5,9.6,10}
-        sudo apt purge postgresql-client-{9.4,9.5,9.6,10}
+        sudo apt purge postgresql-{9.4,9.5,9.6,10,11}
+        sudo apt purge postgresql-client-{9.4,9.5,9.6,10,11}
         sudo apt install -V \
           libmsgpack-dev \
           postgresql-${PG_VERSION} \
