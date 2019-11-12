@@ -5,8 +5,23 @@ CREATE TABLE synonyms (
 
 CREATE INDEX synonyms_term_index ON synonyms (term);
 
-INSERT INTO synonyms VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
-INSERT INTO synonyms VALUES ('Groonga', ARRAY['Mroonga', 'PGroonga', 'Rroonga']);
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		WHERE current_setting('server_version_num')::int >= 120000;
+	IF FOUND THEN
+		INSERT INTO synonyms
+			VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
+		INSERT INTO synonyms
+			VALUES ('Groonga', ARRAY['Mroonga', 'PGroonga', 'Rroonga']);
+	ELSE
+		INSERT INTO synonyms
+			VALUES ('Groonga', ARRAY['Mroonga', 'PGroonga', 'Rroonga']);
+		INSERT INTO synonyms
+			VALUES ('Groonga', ARRAY['Groonga', 'Senna']);
+	END IF;
+END;
+$$;
 
 SELECT pgroonga_query_expand('synonyms', 'term', 'synonyms', 'Groonga');
 

@@ -5,8 +5,19 @@ CREATE TABLE synonyms (
 
 CREATE INDEX synonyms_term_index ON synonyms (term);
 
-INSERT INTO synonyms VALUES ('PGroonga', 'PGroonga');
-INSERT INTO synonyms VALUES ('PGroonga', 'Groonga PostgreSQL');
+DO LANGUAGE plpgsql $$
+BEGIN
+	PERFORM 1
+		WHERE current_setting('server_version_num')::int >= 120000;
+	IF FOUND THEN
+		INSERT INTO synonyms VALUES ('PGroonga', 'PGroonga');
+		INSERT INTO synonyms VALUES ('PGroonga', 'Groonga PostgreSQL');
+	ELSE
+		INSERT INTO synonyms VALUES ('PGroonga', 'Groonga PostgreSQL');
+		INSERT INTO synonyms VALUES ('PGroonga', 'PGroonga');
+	END IF;
+END;
+$$;
 
 SELECT pgroonga_query_expand('synonyms', 'term', 'synonym', 'PGroonga');
 
