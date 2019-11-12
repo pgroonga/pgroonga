@@ -542,8 +542,8 @@ postgresql-server-dev-#{postgresql_version}
              "--package", package,
              "--version", version,
              "--source-archive", archive_name,
-             "--ubuntu-code-names", "disco",
-             "--ubuntu-versions", "19.04",
+             "--ubuntu-code-names", "disco,eoan",
+             "--ubuntu-versions", "19.04,19.10",
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
