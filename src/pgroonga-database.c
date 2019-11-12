@@ -2,13 +2,8 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-database.h"
+#include "pgrn-tablespace.h"
 
-#include <access/heapam.h>
-#include <access/htup_details.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
-#include <catalog/pg_tablespace.h>
 #include <miscadmin.h>
 
 PG_MODULE_MAGIC;
@@ -23,34 +18,26 @@ PGRN_FUNCTION_INFO_V1(pgroonga_database_remove);
 Datum
 pgroonga_database_remove(PG_FUNCTION_ARGS)
 {
-	const LOCKMODE lock = RowExclusiveLock;
-	Relation tableSpaces;
-	PGrnTableScanDesc scan;
+	PGrnTablespaceIterator iterator;
 
-	tableSpaces = heap_open(TableSpaceRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(tableSpaces, 0, NULL);
+	PGrnTablespaceIteratorInitialize(&iterator, RowExclusiveLock);
 	while (true)
 	{
-		HeapTuple tuple;
-		Form_pg_tablespace form;
-		Oid tableSpace;
+		Oid tablespaceOid;
 		char *databaseDirectoryPath;
 
-		tuple = heap_getnext(scan, ForwardScanDirection);
-		if (!HeapTupleIsValid(tuple))
+		tablespaceOid = PGrnTablespaceIteratorNext(&iterator);
+		if (!OidIsValid(tablespaceOid))
 			break;
 
-		form = (Form_pg_tablespace) GETSTRUCT(tuple);
-		tableSpace = form->oid;
-		if (!pg_tablespace_ownercheck(tableSpace, GetUserId()))
+		if (!pg_tablespace_ownercheck(tablespaceOid, GetUserId()))
 			break;
 
-		databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tableSpace);
+		databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tablespaceOid);
 		PGrnDatabaseRemoveAllRelatedFiles(databaseDirectoryPath);
 		pfree(databaseDirectoryPath);
 	}
-	heap_endscan(scan);
-	heap_close(tableSpaces, lock);
+	PGrnTablespaceIteratorFinalize(&iterator);
 
 	PG_RETURN_BOOL(true);
 }

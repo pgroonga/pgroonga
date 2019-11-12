@@ -3,13 +3,13 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-pg.h"
+#include "pgrn-tablespace.h"
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
-#include <catalog/pg_tablespace.h>
 #include <catalog/pg_type.h>
 #include <pgtime.h>
 #include <storage/lmgr.h>
@@ -113,24 +113,18 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 						LOCKMODE lockMode)
 {
 #ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
-	Relation tableSpaces;
-	PGrnTableScanDesc scan;
+	PGrnTablespaceIterator iterator;
 	Relation relation = InvalidRelation;
 
-	tableSpaces = heap_open(TableSpaceRelationId, AccessShareLock);
-	scan = pgrn_table_beginscan_catalog(tableSpaces, 0, NULL);
+	PGrnTablespaceIteratorInitialize(&iterator, AccessShareLock);
 	while (true)
 	{
-		HeapTuple tuple;
-		Form_pg_tablespace form;
+		Oid tablespaceOid = PGrnTablespaceIteratorNext(&iterator);
 
-		tuple = heap_getnext(scan, ForwardScanDirection);
-
-		if (!HeapTupleIsValid(tuple))
+		if (!OidIsValid(tablespaceOid))
 			break;
 
-		form = (Form_pg_tablespace) GETSTRUCT(tuple);
-		*relationID = RelidByRelfilenode(form->oid, fileNodeID);
+		*relationID = RelidByRelfilenode(tablespaceOid, fileNodeID);
 		if (!OidIsValid(*relationID))
 			continue;
 
@@ -140,8 +134,7 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 			break;
 		UnlockRelationOid(*relationID, lockMode);
 	}
-	heap_endscan(scan);
-	heap_close(tableSpaces, AccessShareLock);
+	PGrnTablespaceIteratorFinalize(&iterator);
 
 	return relation;
 #else
