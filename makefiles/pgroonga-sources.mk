@@ -1,5 +1,4 @@
 SRCS =						\
-	src/pgroonga.c				\
 	src/pgrn-alias.c			\
 	src/pgrn-auto-close.c			\
 	src/pgrn-column-name.c			\
@@ -33,4 +32,5 @@ SRCS =						\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\
 	src/pgrn-writable.c			\
+	src/pgroonga.c				\
 	vendor/xxHash/xxhash.c
