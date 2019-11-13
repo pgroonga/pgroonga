@@ -19,10 +19,12 @@ Bundled software is released under different license. Here are bundled software 
 
   * [xxHash](https://github.com/Cyan4973/xxHash)
     * BSD license
-    * Copyright: `Copyright (c) 2012-2014, Yann Collet`
+    * Copyright: `Copyright (c) 2012-2019, Yann Collet`
     * Detail: [`vendor/xxHash/LICENSE`](https://github.com/Cyan4973/xxHash/blob/master/LICENSE)
 
   * [Groonga](http://groonga.org/) (bundled only for Windows package)
     * LGPL 2.1
-    * Copyright: `Copyright(C) 2009-2015 Brazil`
+    * Copyright:
+      * `Copyright(C) 2009-2019 Brazil`
+      * `Copyright(C) 2018-2019 Sutou Kouhei <kou@clear-code.com>`
     * Detail: [`vendor/groonga/COPYING`](https://github.com/groonga/groonga/blob/master/COPYING)
