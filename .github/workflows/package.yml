@@ -33,6 +33,8 @@ jobs:
           - postgresql12-pgroonga-centos-6
           - postgresql11-pgroonga-centos-7
           - postgresql11-pgroonga-centos-6
+          - postgresql10-pgroonga-centos-7
+          - postgresql10-pgroonga-centos-6
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -92,7 +94,13 @@ jobs:
             echo -n '  "github": '; \
             echo '${{ toJson(github) }},'; \
             echo -n '  "job": '; \
-            echo '${{ toJson(job) }}'; \
+            echo '${{ toJson(job) }},'; \
+            echo -n '  "success": '; \
+            echo '${{ toJson(success()) }},'; \
+            echo -n '  "failure": '; \
+            echo '${{ toJson(success()) }},'; \
+            echo -n '  "cancelled": '; \
+            echo '${{ toJson(cancelled()) }}'; \
             echo '}'; \
           } | tee data.json
           curl \
