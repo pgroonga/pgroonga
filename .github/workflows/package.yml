@@ -28,11 +28,15 @@ jobs:
           - postgresql-10-pgroonga-debian-stretch-i386
           - postgresql-9.6-pgroonga-debian-stretch
           - postgresql-9.6-pgroonga-debian-stretch-i386
+          - postgresql12-pgroonga-centos-8
+          - postgresql12-pgroonga-centos-7
+          - postgresql12-pgroonga-centos-6
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
         with:
           fetch-depth: 1
+          submodule: recursive
       - name: Install dependencies
         run: |
           sudo apt update
