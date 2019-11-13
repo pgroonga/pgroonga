@@ -1,0 +1,17 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL10PGroongaPackageTask < PGroongaAptPackageTask
+  def initialize
+    super("postgresql-10-pgroonga")
+  end
+
+  def apt_targets_default
+    [
+      "debian-stretch",
+      "debian-stretch-i386",
+    ]
+  end
+end
+
+task = PostgreSQL10PGroongaPackageTask.new
+task.define

@@ -20,6 +20,12 @@ jobs:
         package-id:
           - postgresql-12-pgroonga-debian-buster
           - postgresql-12-pgroonga-debian-buster-i386
+          - postgresql-11-pgroonga-debian-buster
+          - postgresql-11-pgroonga-debian-buster-i386
+          - postgresql-11-pgroonga-debian-stretch
+          - postgresql-11-pgroonga-debian-stretch-i386
+          - postgresql-10-pgroonga-debian-stretch
+          - postgresql-10-pgroonga-debian-stretch-i386
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -62,11 +68,11 @@ jobs:
     needs:
       - build
     steps:
-      uses: joelwmale/webhook-action@master
-      env:
-        WEBHOOK_URL: https://webhook.commit-email.info/
-        data: |
-          {
-            "github": ${{ toJson(github) }},
-            "job": ${{ toJson(job) }}
-          }
+      - uses: joelwmale/webhook-action@master
+        env:
+          WEBHOOK_URL: https://webhook.commit-email.info/
+          data: |
+            {
+              "github": ${{ toJson(github) }},
+              "job": ${{ toJson(job) }}
+            }
