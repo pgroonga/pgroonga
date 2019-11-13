@@ -1,4 +1,4 @@
-Source: pgroonga
+Source: postgresql-9.5-pgroonga
 Section: database
 Priority: optional
 Maintainer: PGroonga Project <packages@groonga.org>

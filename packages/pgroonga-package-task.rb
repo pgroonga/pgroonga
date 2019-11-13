@@ -1,4 +1,5 @@
 require "pathname"
+require "time"
 require_relative "../helper"
 
 apache_arrow_repository = ENV["APACHE_ARROW_REPOSITORY"]
@@ -16,12 +17,21 @@ class PGroongaPackageTask < PackageTask
 
   def initialize(package)
     @apache_arrow_repository = Pathname(@@apache_arrow_repository)
-    super(package, Helper.detect_version("pgroonga"), Time.now.utc)
+    super(package, Helper.detect_version("pgroonga"), detect_release_time)
     @original_archive_base_name = "pgroonga-#{@version}"
     @original_archive_name = "#{@original_archive_base_name}.tar.gz"
   end
 
   private
+  def detect_release_time
+    release_time_env = ENV["RELEASE_TIME"] || ENV["NEW_RELEASE_TIME"]
+    if release_time_env
+      Time.parse(release_time_env).utc
+    else
+      Time.now.utc
+    end
+  end
+
   def top_directory
     packages_directory.parent
   end

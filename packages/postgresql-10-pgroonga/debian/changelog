@@ -1,9 +1,3 @@
-postgresql-10-pgroonga (2.2.2-1) unstable; urgency=low
-
-  * New upstream release.
-
- -- Sutou Kouhei <kou@clear-code.com>  Wed, 13 Nov 2019 01:22:06 -0000
-
 pgroonga (2.2.1-1) unstable; urgency=low
 
   * New upstream release.

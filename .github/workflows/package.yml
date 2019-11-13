@@ -33,6 +33,11 @@ jobs:
       - uses: actions/checkout@master
         with:
           fetch-depth: 1
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt -y -V install \
+            rake
       - name: Clone dependencies
         run: |
           cd ..

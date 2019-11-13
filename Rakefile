@@ -472,7 +472,7 @@ postgresql-server-dev-#{postgresql_version}
       task :postgresql95 => [archive_name] do
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/debian95",
+        prepare_debian_dir("packages/postgresql-9.5-pgroonga/debian",
                            tmp_debian_dir,
                            debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
@@ -602,12 +602,19 @@ postgresql-server-dev-#{postgresql_version}
            env_value("OLD_RELEASE_DATE"),
            version,
            env_value("NEW_RELEASE_DATE"),
-           "README.md",
-           "packages/debian95/changelog",
-           "packages/debian96/changelog",
-           "packages/debian10/changelog",
-           "packages/debian11/changelog",
            "packages/yum/postgresql-pgroonga.spec.in")
+      packages = [
+        "postgresql-9.5-pgroonga",
+        "postgresql-9.6-pgroonga",
+        "postgresql-10-pgroonga",
+        "postgresql-11-pgroonga",
+        "postgresql-12-pgroonga",
+      ]
+      packages.each do |package|
+        cd(package) do
+          ruby("-S", "rake", "version:update")
+        end
+      end
     end
   end
 end
