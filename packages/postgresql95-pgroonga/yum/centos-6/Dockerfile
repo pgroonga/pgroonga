@@ -1,0 +1,17 @@
+ARG FROM=centos:6
+FROM ${FROM}
+
+ARG DEBUG
+
+RUN \
+  quiet=$([ "${DEBUG}" = "yes" ] || echo "--quiet") && \
+  yum install -y ${quiet} \
+    https://download.postgresql.org/pub/repos/yum/reporpms/EL-6-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+    https://packages.groonga.org/centos/groonga-release-latest.noarch.rpm \
+    epel-release && \
+  yum groupinstall -y ${quiet} "Development Tools" && \
+  yum install -y ${quiet} \
+    groonga-devel \
+    msgpack-devel \
+    postgresql95-devel && \
+  yum clean -y ${quiet} all
