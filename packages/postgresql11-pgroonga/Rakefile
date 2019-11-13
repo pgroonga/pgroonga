@@ -1,0 +1,17 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL11PGroongaPackageTask < PGroongaYumPackageTask
+  def initialize
+    super("11")
+  end
+
+  def yum_targets_default
+    [
+      "centos-6",
+      "centos-7",
+    ]
+  end
+end
+
+task = PostgreSQL11PGroongaPackageTask.new
+task.define

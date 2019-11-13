@@ -31,6 +31,8 @@ jobs:
           - postgresql12-pgroonga-centos-8
           - postgresql12-pgroonga-centos-7
           - postgresql12-pgroonga-centos-6
+          - postgresql11-pgroonga-centos-7
+          - postgresql11-pgroonga-centos-6
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -53,6 +55,7 @@ jobs:
           rake dist
       - name: Build with Docker
         run: |
+          set -x
           package=$(echo ${{ matrix.package }} | \
                       sed -E -e 's/-(debian|centos).*$//g')
           os=$(echo ${{ matrix.package }} | \
