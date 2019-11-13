@@ -7,8 +7,8 @@ class PostgreSQL12PGroongaPackageTask < PGroongaAptPackageTask
 
   def apt_targets_default
     [
-      "debian-stretch",
       "debian-buster",
+      "debian-buster-i386",
     ]
   end
 end

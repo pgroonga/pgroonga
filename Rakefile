@@ -506,7 +506,7 @@ postgresql-server-dev-#{postgresql_version}
       task :postgresql11 => [archive_name] do
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/debian11",
+        prepare_debian_dir("packages/postgresql-11-pgroonga/debian",
                            tmp_debian_dir,
                            debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",

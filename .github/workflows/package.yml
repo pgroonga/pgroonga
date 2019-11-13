@@ -65,4 +65,8 @@ jobs:
       uses: joelwmale/webhook-action@master
       env:
         WEBHOOK_URL: https://webhook.commit-email.info/
-        data: ${{ toJson({"github": github, "job": job}) }}
+        data: |
+          {
+            "github": ${{ toJson(github) }},
+            "job": ${{ toJson(job) }}
+          }
