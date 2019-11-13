@@ -329,58 +329,32 @@ postgresql#{postgresql_package_version}-devel
   ]
   task :yum => yum_tasks
 
-  apt_packages = [
-    "postgresql-9.6-pgroonga",
-    "postgresql-10-pgroonga",
-    "postgresql-11-pgroonga",
-    "postgresql-12-pgroonga",
-  ]
-  namespace :apt do
-    distribution = "debian"
-    rsync_path = rsync_base_path
+  desc "Release APT packages"
+  task :apt do
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
-
-    directory repositories_dir
-
-    desc "Download repositories"
-    task :download => repositories_dir do
-      sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{rsync_path}/#{distribution}/",
-         "#{repositories_dir}/#{distribution}")
-    end
-
-    desc "Build packages"
-    task :build => repositories_dir do
-      apt_packages.each do |package|
-        package_dir = "packages/#{package}"
-        cd(package_dir) do
-          rm_rf("apt/repositories")
-          ruby("-S", "rake", "apt:build")
-        end
-        sh("rsync", "-avz", "--progress",
-           "#{package_dir}/apt/repositories/",
-           "#{repositories_dir}/")
+    rm_rf(repositories_dir)
+    mkdir_p(repositories_dir)
+    apt_packages = [
+      "postgresql-9.6-pgroonga",
+      "postgresql-10-pgroonga",
+      "postgresql-11-pgroonga",
+      "postgresql-12-pgroonga",
+    ]
+    apt_packages.each do |package|
+      package_dir = "packages/#{package}"
+      cd(package_dir) do
+        rm_rf("apt/repositories")
+        ruby("-S", "rake", "apt:build")
       end
-    end
-
-    desc "Upload repositories"
-    task :upload => repositories_dir do
       sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{repositories_dir}/#{distribution}/",
-         "#{rsync_path}/#{distribution}")
+         "#{package_dir}/apt/repositories/",
+         repositories_dir)
     end
+    sh("rsync", "-avz", "--progress",
+       "#{repositories_dir}/",
+       rsync_base_path)
   end
-
-  desc "Release APT packages"
-  apt_tasks = [
-    "package:apt:download",
-    "package:apt:build",
-    "package:apt:upload",
-  ]
-  task :apt => apt_tasks
 
   namespace :ubuntu do
     namespace :upload do

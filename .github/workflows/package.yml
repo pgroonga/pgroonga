@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@master
         with:
           fetch-depth: 1
-          submodule: recursive
+          submodules: recursive
       - name: Install dependencies
         run: |
           sudo apt update
