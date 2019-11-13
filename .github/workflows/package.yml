@@ -35,6 +35,8 @@ jobs:
           - postgresql11-pgroonga-centos-6
           - postgresql10-pgroonga-centos-7
           - postgresql10-pgroonga-centos-6
+          - postgresql96-pgroonga-centos-7
+          - postgresql96-pgroonga-centos-6
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -91,16 +93,11 @@ jobs:
         run: |
           { \
             echo "{"; \
-            echo -n '  "github": '; \
-            echo '${{ toJson(github) }},'; \
-            echo -n '  "job": '; \
-            echo '${{ toJson(job) }},'; \
-            echo -n '  "success": '; \
-            echo '${{ toJson(success()) }},'; \
-            echo -n '  "failure": '; \
-            echo '${{ toJson(success()) }},'; \
-            echo -n '  "cancelled": '; \
-            echo '${{ toJson(cancelled()) }}'; \
+            echo -n "  \"github\": ${GITHUB_CONTEXT},"; \
+            echo -n "  \"job\": ${JOB_CONTEXT},"; \
+            echo -n "  \"success\": ${SUCCESS},"; \
+            echo -n "  \"failure\": ${FAILURE},"; \
+            echo -n "  \"cancelled\": ${CANCELLED}"; \
             echo '}'; \
           } | tee data.json
           curl \
@@ -108,3 +105,9 @@ jobs:
             --header "Content-Type: application/json" \
             --data @data.json \
             https://webhook.commit-email.info/
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+          JOB_CONTEXT: ${{ toJson(job) }}
+          SUCCESS: ${{ success() }}
+          FAILURE: ${{ failure() }}
+          CANCELLED: ${{ cancelled() }}
