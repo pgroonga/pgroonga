@@ -24,7 +24,7 @@ class PGroongaPackageTask < PackageTask
 
   private
   def detect_release_time
-    release_time_env = ENV["RELEASE_TIME"] || ENV["NEW_RELEASE_TIME"]
+    release_time_env = ENV["RELEASE_TIME"] || ENV["NEW_RELEASE_DATE"]
     if release_time_env
       Time.parse(release_time_env).utc
     else
