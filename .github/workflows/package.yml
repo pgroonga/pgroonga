@@ -26,6 +26,8 @@ jobs:
           - postgresql-11-pgroonga-debian-stretch-i386
           - postgresql-10-pgroonga-debian-stretch
           - postgresql-10-pgroonga-debian-stretch-i386
+          - postgresql-9.6-pgroonga-debian-stretch
+          - postgresql-9.6-pgroonga-debian-stretch-i386
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -64,6 +66,7 @@ jobs:
           path: repositories/
   webhook:
     name: Webhook
+    runs-on: ubuntu-latest
     if: always()
     needs:
       - build
