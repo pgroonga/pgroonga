@@ -60,9 +60,9 @@ jobs:
       - name: Build with Docker
         run: |
           set -x
-          package=$(echo ${{ matrix.package }} | \
+          package=$(echo ${{ matrix.package-id }} | \
                       sed -E -e 's/-(debian|centos).*$//g')
-          os=$(echo ${{ matrix.package }} | \
+          os=$(echo ${{ matrix.package-id }} | \
                  sed -E -e 's/^.*-((debian|centos).*)$/\1/g')
           cd packages/${package}
           rake version:update

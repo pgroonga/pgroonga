@@ -24,11 +24,7 @@
 /packages/*/yum/tmp/
 /packages/apt/repositories/
 /packages/source/
-/packages/yum/*.spec
-/packages/yum/.vagrant/
-/packages/yum/env.sh
 /packages/yum/repositories/
-/packages/yum/tmp/
 /regression.*
 /results/
 /sql/vacuum/tablespace.sql

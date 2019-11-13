@@ -174,161 +174,6 @@ namespace :package do
   ]
   task :source => source_tasks
 
-
-  namespace :yum do
-    distribution = "centos"
-    rsync_path = rsync_base_path
-    yum_dir = "#{packages_dir}/yum"
-    repositories_dir = "#{yum_dir}/repositories"
-
-    directory repositories_dir
-
-    postgresql_package_versions = [
-      "94",
-      "95",
-      "96",
-      "10",
-      "11",
-    ]
-    namespace :build do
-      postgresql_package_versions.each do |postgresql_package_version|
-        rpm_package = "postgresql#{postgresql_package_version}-#{package}"
-
-        if postgresql_package_version.start_with?("9")
-          postgresql_version = postgresql_package_version.scan(/(.)/).join(".")
-        else
-          postgresql_version = postgresql_package_version
-        end
-        desc "Build RPM packages for PostgreSQL #{postgresql_version}"
-        task postgresql_package_version => [archive_name, repositories_dir] do
-          tmp_dir = "#{yum_dir}/tmp"
-          rm_rf(tmp_dir)
-          mkdir_p(tmp_dir)
-          cp(archive_name, tmp_dir)
-
-          env_sh = "#{yum_dir}/env.sh"
-          File.open(env_sh, "w") do |file|
-            if postgresql_version == "11"
-              llvm_package_names = ["llvm-toolset-7", "llvm5.0-devel"]
-            else
-              llvm_package_names = []
-            end
-            file.puts(<<-ENV)
-SOURCE_ARCHIVE=#{archive_name}
-PACKAGE=#{rpm_package}
-VERSION=#{version}
-PG_VERSION=#{postgresql_version}
-PG_PACKAGE_VERSION=#{postgresql_package_version}
-DEPENDED_PACKAGES="
-gcc
-make
-pkg-config
-groonga-devel
-msgpack-devel
-postgresql#{postgresql_package_version}-devel
-#{llvm_package_names.join("\n")}
-"
-            ENV
-          end
-
-          tmp_distribution_dir = "#{tmp_dir}/#{distribution}"
-          mkdir_p(tmp_distribution_dir)
-          spec = "#{tmp_distribution_dir}/#{rpm_package}.spec"
-          spec_in = "#{yum_dir}/postgresql-pgroonga.spec.in"
-          spec_in_data = File.read(spec_in)
-          spec_data = spec_in_data.gsub(/@(.+?)@/) do |matched|
-            case $1
-            when "PG_VERSION"
-              postgresql_version
-            when "PG_PACKAGE_VERSION"
-              postgresql_package_version
-            when "PACKAGE"
-              rpm_package
-            when "VERSION"
-              version
-            when "GROONGA_VERSION"
-              latest_groonga_version
-            else
-              matched
-            end
-          end
-          File.open(spec, "w") do |spec_file|
-            spec_file.print(spec_data)
-          end
-
-          cd(yum_dir) do
-            sh("vagrant", "destroy", "--force")
-            distribution_versions = {
-              "6" => ["i386", "x86_64"],
-              "7" => ["x86_64"],
-            }
-            distribution_versions.each do |ver, archs|
-              next if postgresql_package_version == "96" and ver == "5"
-              archs.each do |arch|
-                id = "#{distribution}-#{ver}-#{arch}"
-                sh("vagrant", "up", id)
-                sh("vagrant", "destroy", "--force", id)
-              end
-            end
-          end
-        end
-      end
-    end
-
-    desc "Build RPM packages"
-    build_tasks = postgresql_package_versions.collect do |package_version|
-      "build:#{package_version}"
-    end
-    task :build => build_tasks
-
-    desc "Sign packages"
-    task :sign do
-      gpg_uids.each do |gpg_uid|
-        sh("#{groonga_source_dir}/packages/yum/sign-rpm.sh",
-           gpg_uid,
-           "#{repositories_dir}/",
-           distribution)
-      end
-    end
-
-    desc "Update repositories"
-    task :update do
-      gpg_uids.each do |gpg_uid|
-        sh("#{groonga_source_dir}/packages/yum/update-repository.sh",
-           gpg_uid,
-           "groonga",
-           "#{repositories_dir}/",
-           distribution)
-      end
-    end
-
-    desc "Download repositories"
-    task :download => repositories_dir do
-      sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{rsync_path}/#{distribution}/",
-         "#{repositories_dir}/#{distribution}")
-    end
-
-    desc "Upload repositories"
-    task :upload => repositories_dir do
-      sh("rsync", "-avz", "--progress",
-         "--delete",
-         "#{repositories_dir}/#{distribution}/",
-         "#{rsync_path}/#{distribution}")
-    end
-  end
-
-  desc "Release Yum packages"
-  yum_tasks = [
-    "package:yum:download",
-    "package:yum:build",
-    "package:yum:sign",
-    "package:yum:update",
-    "package:yum:upload",
-  ]
-  task :yum => yum_tasks
-
   desc "Release APT packages"
   task :apt do
     apt_dir = "#{packages_dir}/apt"
@@ -420,6 +265,34 @@ postgresql#{postgresql_package_version}-devel
       "package:ubuntu:upload:postgresql11",
     ]
     task :upload => upload_tasks
+  end
+
+  desc "Release Yum packages"
+  task :yum do
+    yum_dir = "#{packages_dir}/yum"
+    repositories_dir = "#{yum_dir}/repositories"
+    rm_rf(repositories_dir)
+    mkdir_p(repositories_dir)
+    apt_packages = [
+      "postgresql95-pgroonga",
+      "postgresql96-pgroonga",
+      "postgresql10-pgroonga",
+      "postgresql11-pgroonga",
+      "postgresql12-pgroonga",
+    ]
+    apt_packages.each do |package|
+      package_dir = "packages/#{package}"
+      cd(package_dir) do
+        rm_rf("yum/repositories")
+        ruby("-S", "rake", "yum:build")
+      end
+      sh("rsync", "-avz", "--progress",
+         "#{package_dir}/yum/repositories/",
+         repositories_dir)
+    end
+    sh("rsync", "-avz", "--progress",
+       "#{repositories_dir}/",
+       rsync_base_path)
   end
 
   namespace :windows do
