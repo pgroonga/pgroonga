@@ -20,7 +20,6 @@ groonga_source_dir = groonga_source_dir_candidates.find do |candidate|
   File.exist?(candidate)
 end
 groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
-cutter_source_dir = File.expand_path("../cutter")
 
 def latest_groonga_version
   @latest_groonga_version ||= Helper.detect_latest_groonga_version
@@ -363,19 +362,15 @@ namespace :package do
   namespace :version do
     desc "Update versions"
     task :update do
-      ruby("#{cutter_source_dir}/misc/update-latest-release.rb",
-           package,
-           Helper.env_value("OLD_RELEASE"),
-           Helper.env_value("OLD_RELEASE_DATE"),
-           version,
-           Helper.env_value("NEW_RELEASE_DATE"),
-           "packages/yum/postgresql-pgroonga.spec.in")
       packages = [
         "postgresql-9.5-pgroonga",
         "postgresql-9.6-pgroonga",
         "postgresql-10-pgroonga",
         "postgresql-11-pgroonga",
         "postgresql-12-pgroonga",
+        # One of Yum packages because we share one .spec.in in all Yum
+        # packages.
+        "postgresql12-pgroonga",
       ]
       packages.each do |package|
         cd("packages/#{package}") do

@@ -9,14 +9,7 @@ end
 require "#{apache_arrow_repository}/dev/tasks/linux-packages/package-task"
 
 class PGroongaPackageTask < PackageTask
-  class << self
-    def apache_arrow_repository=(repository)
-      @@apache_arrow_repository = repository
-    end
-  end
-
   def initialize(package)
-    @apache_arrow_repository = Pathname(@@apache_arrow_repository)
     super(package, Helper.detect_version("pgroonga"), detect_release_time)
     @original_archive_base_name = "pgroonga-#{@version}"
     @original_archive_name = "#{@original_archive_base_name}.tar.gz"
@@ -144,15 +137,20 @@ class PGroongaYumPackageTask < PGroongaPackageTask
     end
   end
 
+  def source_yum_spec_in_path
+    packages_directory + "yum" + "postgresql-pgroonga.spec.in"
+  end
+
   def define_yum_spec_in_task
-    source_yum_spec_in_path =
-      packages_directory + "yum" + "postgresql-pgroonga.spec.in"
     file yum_spec_in_path => source_yum_spec_in_path do
       mkdir_p(File.dirname(yum_spec_in_path))
       cp(source_yum_spec_in_path,
          yum_spec_in_path)
     end
   end
-end
 
-PGroongaPackageTask.apache_arrow_repository = apache_arrow_repository
+  def update_spec
+    super
+    cp(yum_spec_in_path, source_yum_spec_in_path)
+  end
+end
