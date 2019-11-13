@@ -329,111 +329,19 @@ postgresql#{postgresql_package_version}-devel
   ]
   task :yum => yum_tasks
 
+  apt_packages = [
+    "postgresql-9.6-pgroonga",
+    "postgresql-10-pgroonga",
+    "postgresql-11-pgroonga",
+    "postgresql-12-pgroonga",
+  ]
   namespace :apt do
     distribution = "debian"
-    architectures = [
-      "i386",
-      "amd64",
-    ]
-    targets = {
-      "stretch" => [
-        "9.6-system",
-        "10",
-        "11",
-      ],
-      "buster" => [
-        "11-system",
-      ],
-    }
-    code_names = targets.keys
     rsync_path = rsync_base_path
     apt_dir = "#{packages_dir}/apt"
     repositories_dir = "#{apt_dir}/repositories"
 
     directory repositories_dir
-
-    desc "Build DEB packages"
-    task :build => [archive_name, repositories_dir] do
-      tmp_dir = "#{apt_dir}/tmp"
-      rm_rf(tmp_dir)
-      mkdir_p(tmp_dir)
-      cp(archive_name, tmp_dir)
-      absolute_packages_dir = File.expand_path(packages_dir)
-
-      cd(apt_dir) do
-        sh("vagrant", "destroy", "--force")
-        targets.each do |code_name, postgresql_versions|
-          postgresql_versions.each do |postgresql_version|
-            architectures.each do |arch|
-              use_system_postgresql = postgresql_version.end_with?("-system")
-              postgresql_version = postgresql_version.delete_suffix("-system")
-              short_postgresql_version = postgresql_version.delete(".")
-
-              rm_rf("tmp/debian")
-              debian_dir = "debian#{short_postgresql_version}"
-              prepare_debian_dir("#{absolute_packages_dir}/#{debian_dir}",
-                                 "tmp/debian",
-                                 debian_variables)
-
-              File.open("tmp/env.sh", "w") do |file|
-                file.puts(<<-ENV)
-PACKAGE=#{package}
-VERSION=#{version}
-USE_SYSTEM_POSTGRESQL=#{use_system_postgresql}
-DEPENDED_PACKAGES="
-debhelper
-pkg-config
-libgroonga-dev
-libmsgpack-dev
-"
-SYSTEM_POSTGRESQL_DEPENDED_PACKAGES="
-postgresql-server-dev-#{postgresql_version}
-"
-OFFICIAL_POSTGRESQL_DEPENDED_PACKAGES="
-postgresql-server-dev-#{postgresql_version}
-"
-                ENV
-              end
-
-              id = "#{distribution}-#{code_name}-#{arch}"
-              sh("vagrant", "up", id)
-              sh("vagrant", "destroy", "--force", id)
-            end
-          end
-        end
-      end
-    end
-
-    desc "Sign packages"
-    task :sign do
-      gpg_uids.each do |gpg_uid|
-        sh("#{groonga_source_dir}/packages/apt/sign-packages.sh",
-           gpg_uid,
-           "#{repositories_dir}/",
-           code_names.join(" "))
-      end
-    end
-
-    namespace :repository do
-      desc "Update repositories"
-      task :update do
-        sh("#{groonga_source_dir}/packages/apt/update-repository.sh",
-           "Groonga",
-           "#{repositories_dir}/",
-           architectures.join(" "),
-           code_names.join(" "))
-      end
-
-      desc "Sign repositories"
-      task :sign do
-        gpg_uids.each do |gpg_uid|
-          sh("#{groonga_source_dir}/packages/apt/sign-repository.sh",
-             gpg_uid,
-             "#{repositories_dir}/",
-             code_names.join(" "))
-        end
-      end
-    end
 
     desc "Download repositories"
     task :download => repositories_dir do
@@ -441,6 +349,20 @@ postgresql-server-dev-#{postgresql_version}
          "--delete",
          "#{rsync_path}/#{distribution}/",
          "#{repositories_dir}/#{distribution}")
+    end
+
+    desc "Build packages"
+    task :build => repositories_dir do
+      apt_packages.each do |package|
+        package_dir = "packages/#{package}"
+        cd(package_dir) do
+          rm_rf("apt/repositories")
+          ruby("-S", "rake", "apt:build")
+        end
+        sh("rsync", "-avz", "--progress",
+           "#{package_dir}/apt/repositories/",
+           "#{repositories_dir}/")
+      end
     end
 
     desc "Upload repositories"
@@ -456,9 +378,6 @@ postgresql-server-dev-#{postgresql_version}
   apt_tasks = [
     "package:apt:download",
     "package:apt:build",
-    "package:apt:sign",
-    "package:apt:repository:update",
-    "package:apt:repository:sign",
     "package:apt:upload",
   ]
   task :apt => apt_tasks
@@ -482,7 +401,7 @@ postgresql-server-dev-#{postgresql_version}
              "--ubuntu-code-names", "xenial",
              "--ubuntu-versions", "16.04",
              "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
       desc "Upload package for PostgreSQL 10"
@@ -499,7 +418,7 @@ postgresql-server-dev-#{postgresql_version}
              "--ubuntu-code-names", "bionic,cosmic",
              "--ubuntu-versions", "18.04,18.10",
              "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
 
       desc "Upload package for PostgreSQL 11"
@@ -516,7 +435,7 @@ postgresql-server-dev-#{postgresql_version}
              "--ubuntu-code-names", "disco,eoan",
              "--ubuntu-versions", "19.04,19.10",
              "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
     end
 
@@ -535,7 +454,8 @@ postgresql-server-dev-#{postgresql_version}
       pgroonga_repository = "pgroonga/pgroonga"
       tag_name = version
 
-      client = Octokit::Client.new(:access_token => env_value("GITHUB_TOKEN"))
+      github_token = Helper.env_value("GITHUB_TOKEN")
+      client = Octokit::Client.new(:access_token => github_token)
 
       appveyor_url = "https://ci.appveyor.com/"
       appveyor_info = nil
@@ -598,10 +518,10 @@ postgresql-server-dev-#{postgresql_version}
     task :update do
       ruby("#{cutter_source_dir}/misc/update-latest-release.rb",
            package,
-           env_value("OLD_RELEASE"),
-           env_value("OLD_RELEASE_DATE"),
+           Helper.env_value("OLD_RELEASE"),
+           Helper.env_value("OLD_RELEASE_DATE"),
            version,
-           env_value("NEW_RELEASE_DATE"),
+           Helper.env_value("NEW_RELEASE_DATE"),
            "packages/yum/postgresql-pgroonga.spec.in")
       packages = [
         "postgresql-9.5-pgroonga",
@@ -611,7 +531,7 @@ postgresql-server-dev-#{postgresql_version}
         "postgresql-12-pgroonga",
       ]
       packages.each do |package|
-        cd(package) do
+        cd("packages/#{package}") do
           ruby("-S", "rake", "version:update")
         end
       end

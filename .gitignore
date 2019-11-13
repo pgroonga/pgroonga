@@ -22,10 +22,7 @@
 /packages/*/yum/env.sh
 /packages/*/yum/repositories/
 /packages/*/yum/tmp/
-/packages/apt/.vagrant/
-/packages/apt/env.sh
 /packages/apt/repositories/
-/packages/apt/tmp/
 /packages/source/
 /packages/yum/*.spec
 /packages/yum/.vagrant/
