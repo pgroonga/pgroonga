@@ -368,9 +368,6 @@ namespace :package do
         "postgresql-10-pgroonga",
         "postgresql-11-pgroonga",
         "postgresql-12-pgroonga",
-        # One of Yum packages because we share one .spec.in in all Yum
-        # packages.
-        "postgresql12-pgroonga",
       ]
       packages.each do |package|
         cd("packages/#{package}") do

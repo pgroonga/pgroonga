@@ -9,10 +9,21 @@ end
 require "#{apache_arrow_repository}/dev/tasks/linux-packages/package-task"
 
 class PGroongaPackageTask < PackageTask
-  def initialize(package)
-    super(package, Helper.detect_version("pgroonga"), detect_release_time)
+  def initialize(postgresql_version)
+    @postgresql_version = postgresql_version
+    @postgresql_package_version = postgresql_version.gsub(".", "")
+    super("postgresql-#{@postgresql_version}-pgroonga",
+          Helper.detect_version("pgroonga"),
+          detect_release_time)
     @original_archive_base_name = "pgroonga-#{@version}"
     @original_archive_name = "#{@original_archive_base_name}.tar.gz"
+    @rpm_package = "postgresql#{@postgresql_package_version}-pgroonga"
+  end
+
+  def define
+    super
+    define_debian_control_task
+    define_yum_spec_in_task
   end
 
   private
@@ -62,19 +73,7 @@ class PGroongaPackageTask < PackageTask
       end
     end
   end
-end
 
-class PGroongaAptPackageTask < PGroongaPackageTask
-  def initialize(postgresql_version)
-    super("postgresql-#{postgresql_version}-pgroonga")
-  end
-
-  def define
-    super
-    define_debian_control_task
-  end
-
-  private
   def define_debian_control_task
     control_paths = []
     debian_directory = package_directory + "debian"
@@ -100,28 +99,6 @@ class PGroongaAptPackageTask < PGroongaPackageTask
     namespace :apt do
       task :build => control_paths
     end
-  end
-
-  def enable_yum?
-    false
-  end
-end
-
-class PGroongaYumPackageTask < PGroongaPackageTask
-  def initialize(postgresql_version)
-    @postgresql_version = postgresql_version
-    @postgresql_package_version = postgresql_version.gsub(".", "")
-    super("postgresql#{@postgresql_package_version}-pgroonga")
-  end
-
-  def define
-    super
-    define_yum_spec_in_task
-  end
-
-  private
-  def enable_apt?
-    false
   end
 
   def yum_expand_variable(key)

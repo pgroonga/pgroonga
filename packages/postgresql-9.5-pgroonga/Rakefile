@@ -1,12 +1,19 @@
 require_relative "../pgroonga-package-task"
 
-class PostgreSQL95PGroongaPackageTask < PGroongaAptPackageTask
+class PostgreSQL95PGroongaPackageTask < PGroongaPackageTask
   def initialize
     super("9.5")
   end
 
   def apt_targets_default
     []
+  end
+
+  def yum_targets_default
+    [
+      "centos-6",
+      "centos-7",
+    ]
   end
 end
 
