@@ -3,6 +3,7 @@
 require "octokit"
 require "open-uri"
 require "veyor"
+require_relative "helper"
 
 package = "pgroonga"
 package_label = "PGroonga"
@@ -21,37 +22,8 @@ end
 groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
 cutter_source_dir = File.expand_path("../cutter")
 
-def control_file(package)
-  "#{package}.control"
-end
-
-def find_version(package)
-  env_version = ENV["VERSION"]
-  return env_version if env_version
-
-  control_content = File.read(control_file(package))
-  if /^default_version\s*=\s*'(.+)'$/ =~ control_content
-    $1
-  else
-    nil
-  end
-end
-
 def latest_groonga_version
-  @latest_groonga_version ||= detect_latest_groonga_version
-end
-
-def detect_latest_groonga_version
-  open("https://packages.groonga.org/source/groonga/") do |groonga_sources|
-    versions = groonga_sources.read.scan(/<a href="groonga-([\d.]+).zip">/)
-    versions.flatten.sort.last
-  end
-end
-
-def env_value(name)
-  value = ENV[name]
-  raise "Specify #{name} environment variable" if value.nil?
-  value
+  @latest_groonga_version ||= Helper.detect_latest_groonga_version
 end
 
 def export_source(base_name)
@@ -82,7 +54,7 @@ def debian_variables
   }
 end
 
-version = find_version(package)
+version = Helper.detect_version(package)
 
 archive_base_name = "#{package}-#{version}"
 suffix = ENV["SUFFIX"]
@@ -142,8 +114,7 @@ end
 namespace :version do
   desc "Update version"
   task :update do
-    current_version = find_version(package)
-    new_version = env_value("NEW_VERSION")
+    new_version = Helper.env_value("NEW_VERSION")
 
     Dir.glob("*.control") do |control_path|
       package_name = File.basename(control_path, ".*")
@@ -155,7 +126,7 @@ namespace :version do
       end
 
       touch(File.join("data",
-                      "#{package_name}--#{current_version}--#{new_version}.sql"))
+                      "#{package_name}--#{version}--#{new_version}.sql"))
     end
   end
 end

@@ -1,0 +1,68 @@
+name: Package
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: |
+        0 0 * * *
+jobs:
+  build:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        package-id:
+          - postgresql-12-pgroonga-debian-buster
+          - postgresql-12-pgroonga-debian-buster-i386
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+      - name: Clone dependencies
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/apache/arrow.git
+      - name: Build archive
+        run: |
+          rake dist
+      - name: Build with Docker
+        run: |
+          package=$(echo ${{ matrix.package }} | \
+                      sed -E -e 's/-(debian|centos).*$//g')
+          os=$(echo ${{ matrix.package }} | \
+                 sed -E -e 's/^.*-((debian|centos).*)$/\1/g')
+          cd packages/${package}
+          rake version:update
+          case ${os} in
+            debian-*)
+              rake apt:build APT_TARGETS=${os}
+              mv apt/repositories/ ../../
+              ;;
+            centos-*)
+              rake yum:build YUM_TARGETS=${os}
+              mv yum/repositories/ ../../
+              ;;
+          esac
+        env:
+          APACHE_ARROW_REPOSITORY: ../../../arrow
+      - uses: actions/upload-artifact@master
+        with:
+          name: packages-${{ matrix.package-id }}
+          path: repositories/
+  webhook:
+    name: Webhook
+    if: always()
+    needs:
+      - build
+    steps:
+      uses: joelwmale/webhook-action@master
+      env:
+        WEBHOOK_URL: https://webhook.commit-email.info/
+        data: ${{ toJson({"github": github, "job": job}) }}
