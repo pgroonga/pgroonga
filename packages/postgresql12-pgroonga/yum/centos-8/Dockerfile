@@ -1,0 +1,21 @@
+ARG FROM=centos:8
+FROM ${FROM}
+
+ARG DEBUG
+
+RUN \
+  quiet=$([ "${DEBUG}" = "yes" ] || echo "--quiet") && \
+  dnf install -y ${quiet} \
+    https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+    https://packages.groonga.org/centos/groonga-release-latest.noarch.rpm \
+    epel-release && \
+  dnf module -y ${quiet} disable postgresql && \
+  dnf groupinstall -y ${quiet} "Development Tools" && \
+  dnf install --enablerepo=PowerTools -y ${quiet} \
+    ccache \
+    groonga-devel \
+    llvm-toolset \
+    llvm-devel \
+    # msgpack-devel \
+    postgresql12-devel && \
+  dnf clean -y ${quiet} all

@@ -2,7 +2,7 @@ require_relative "../pgroonga-package-task"
 
 class PostgreSQL11PGroongaPackageTask < PGroongaAptPackageTask
   def initialize
-    super("postgresql-11-pgroonga")
+    super("11")
   end
 
   def apt_targets_default

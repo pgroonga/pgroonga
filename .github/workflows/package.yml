@@ -38,6 +38,8 @@ jobs:
           sudo apt update
           sudo apt -y -V install \
             rake
+          sudo gem install bundler
+          bundle install
       - name: Clone dependencies
         run: |
           cd ..
@@ -76,11 +78,18 @@ jobs:
     needs:
       - build
     steps:
-      - uses: joelwmale/webhook-action@master
-        env:
-          WEBHOOK_URL: https://webhook.commit-email.info/
-          data: |
-            {
-              "github": ${{ toJson(github) }},
-              "job": ${{ toJson(job) }}
-            }
+      - name: Send Webhook
+        run: |
+          { \
+            echo "{"; \
+            echo -n '  "github": '; \
+            echo '${{ toJson(github) }},'; \
+            echo -n '  "job": '; \
+            echo '${{ toJson(job) }}'; \
+            echo '}'; \
+          } | tee data.json
+          curl \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data @data.json \
+            https://webhook.commit-email.info/

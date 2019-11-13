@@ -32,6 +32,10 @@ class PGroongaPackageTask < PackageTask
     end
   end
 
+  def latest_groonga_version
+    @latest_groonga_version ||= Helper.detect_latest_groonga_version
+  end
+
   def top_directory
     packages_directory.parent
   end
@@ -46,6 +50,10 @@ class PGroongaPackageTask < PackageTask
 
   def original_archive_path
     top_directory + @original_archive_name
+  end
+
+  def rpm_archive_name
+    @original_archive_name
   end
 
   def define_archive_task
@@ -64,6 +72,10 @@ class PGroongaPackageTask < PackageTask
 end
 
 class PGroongaAptPackageTask < PGroongaPackageTask
+  def initialize(postgresql_version)
+    super("postgresql-#{postgresql_version}-pgroonga")
+  end
+
   def define
     super
     define_debian_control_task
@@ -84,7 +96,7 @@ class PGroongaAptPackageTask < PGroongaPackageTask
         control_content =
           control_in_content
             .gsub(/@GROONGA_VERSION@/,
-                  Helper.detect_latest_groonga_version)
+                  latest_groonga_version)
         rm_rf(target_debian_directory)
         cp_r(debian_directory, target_debian_directory)
         control_path.open("w") do |file|
@@ -99,6 +111,47 @@ class PGroongaAptPackageTask < PGroongaPackageTask
 
   def enable_yum?
     false
+  end
+end
+
+class PGroongaYumPackageTask < PGroongaPackageTask
+  def initialize(postgresql_version)
+    @postgresql_version = postgresql_version
+    @postgresql_package_version = postgresql_version.gsub(".", "")
+    super("postgresql#{@postgresql_package_version}-pgroonga")
+  end
+
+  def define
+    super
+    define_yum_spec_in_task
+  end
+
+  private
+  def enable_apt?
+    false
+  end
+
+  def yum_expand_variable(key)
+    case key
+    when "PG_VERSION"
+      @postgresql_version
+    when "PG_PACKAGE_VERSION"
+      @postgresql_package_version
+    when "GROONGA_VERSION"
+      latest_groonga_version
+    else
+      super
+    end
+  end
+
+  def define_yum_spec_in_task
+    source_yum_spec_in_path =
+      packages_directory + "yum" + "postgresql-pgroonga.spec.in"
+    file yum_spec_in_path => source_yum_spec_in_path do
+      mkdir_p(File.dirname(yum_spec_in_path))
+      cp(source_yum_spec_in_path,
+         yum_spec_in_path)
+    end
   end
 end
 

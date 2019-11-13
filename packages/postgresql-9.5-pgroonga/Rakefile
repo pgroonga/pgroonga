@@ -1,0 +1,14 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL95PGroongaPackageTask < PGroongaAptPackageTask
+  def initialize
+    super("9.5")
+  end
+
+  def apt_targets_default
+    []
+  end
+end
+
+task = PostgreSQL95PGroongaPackageTask.new
+task.define

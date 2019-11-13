@@ -1,14 +1,15 @@
 require_relative "../pgroonga-package-task"
 
-class PostgreSQL12PGroongaPackageTask < PGroongaAptPackageTask
+class PostgreSQL12PGroongaPackageTask < PGroongaYumPackageTask
   def initialize
     super("12")
   end
 
-  def apt_targets_default
+  def yum_targets_default
     [
-      "debian-buster",
-      "debian-buster-i386",
+      "centos-6",
+      "centos-7",
+      "centos-8",
     ]
   end
 end
