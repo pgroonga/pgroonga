@@ -11,10 +11,8 @@
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
+#include <utils/jsonb.h>
 #include <utils/lsyscache.h>
-#ifdef PGRN_SUPPORT_JSONB
-#	include <utils/jsonb.h>
-#endif
 
 #include <groonga.h>
 
@@ -22,16 +20,13 @@
 
 #include <string.h>
 
-#ifdef PGRN_SUPPORT_JSONB
 PGRN_FUNCTION_INFO_V1(pgroonga_match_script_jsonb);
 
 /* v2 */
 PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
 PGRN_FUNCTION_INFO_V1(pgroonga_query_jsonb);
 PGRN_FUNCTION_INFO_V1(pgroonga_script_jsonb);
-#endif
 
-#ifdef PGRN_SUPPORT_JSONB
 typedef struct
 {
 	grn_obj *pathsTable;
@@ -330,23 +325,6 @@ PGrnJSONGenerateCompletePath(grn_obj *components, grn_obj *path)
 						 PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE |
 						 PGRN_JSON_GENERATE_PATH_INCLUDE_ARRAY,
 						 path);
-}
-
-static const char *
-PGrnJSONIteratorTokenName(JsonbIteratorToken token)
-{
-	static char *names[] = {
-		"WJB_DONE",
-		"WJB_KEY",
-		"WJB_VALUE",
-		"WJB_ELEM",
-		"WJB_BEGIN_ARRAY",
-		"WJB_END_ARRAY",
-		"WJB_BEGIN_OBJECT",
-		"WJB_END_OBJECT"
-	};
-
-	return names[token];
 }
 
 static void
@@ -800,12 +778,10 @@ PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
 		}
 	}
 }
-#endif
 
 void
 PGrnInitializeJSONB(void)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBCreateData data;
 
 	tmpPathsTable = PGrnJSONBCreatePathsTable(InvalidRelation, NULL);
@@ -816,20 +792,16 @@ PGrnInitializeJSONB(void)
 	data.typesTable = tmpTypesTable;
 	data.valuesTable = tmpValuesTable;
 	PGrnJSONBCreateDataColumns(InvalidRelation, &data);
-#endif
 }
 
 void
 PGrnFinalizeJSONB(void)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	grn_obj_remove(ctx, tmpValuesTable);
 	grn_obj_remove(ctx, tmpTypesTable);
 	grn_obj_remove(ctx, tmpPathsTable);
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBCreateTables(PGrnCreateData *data,
 					  PGrnJSONBCreateData *jsonbData)
@@ -974,19 +946,13 @@ PGrnJSONBCreateIndexColumns(PGrnCreateData *data,
 
 	PGrnJSONBCreateFullTextSearchIndexColumn(data, jsonbData);
 }
-#endif
 
 bool
 PGrnAttributeIsJSONB(Oid id)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	return id == JSONBOID;
-#else
-	return false;
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static bool
 PGrnJSONBIsForFullTextSearchOnly(Relation index, unsigned int nthAttribute)
 {
@@ -999,12 +965,10 @@ PGrnJSONBIsForFullTextSearchOnly(Relation index, unsigned int nthAttribute)
 	return !OidIsValid(strategyOID);
 
 }
-#endif
 
 void
 PGrnJSONBCreate(PGrnCreateData *data)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	if (data->desc->natts != 1)
 	{
 		ereport(ERROR,
@@ -1033,10 +997,8 @@ PGrnJSONBCreate(PGrnCreateData *data)
 		data->attributeFlags = GRN_OBJ_VECTOR;
 		PGrnCreateDataColumn(data);
 	}
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBValueSetSource(Relation index,
 						grn_obj *jsonValuesTable,
@@ -1116,12 +1078,10 @@ PGrnJSONBSetSources(Relation index,
 
 	grn_obj_unlink(ctx, jsonPathsTable);
 }
-#endif
 
 grn_obj *
 PGrnJSONBSetSource(Relation index, unsigned int i)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	grn_obj *indexColumn;
 
 	if (PGrnJSONBIsForFullTextSearchOnly(index, i))
@@ -1139,12 +1099,8 @@ PGrnJSONBSetSource(Relation index, unsigned int i)
 	}
 
 	return indexColumn;
-#else
-	return NULL;
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONBDeleteValues(grn_obj *valuesTable, grn_obj *valueIDs)
 {
@@ -1454,7 +1410,6 @@ PGrnJSONBInsertRecord(Relation index,
 	PGrnWALInsertFinish(walData);
 	PGrnWALFinish(walData);
 }
-#endif
 
 uint32_t
 PGrnJSONBInsert(Relation index,
@@ -1465,7 +1420,6 @@ PGrnJSONBInsert(Relation index,
 				uint64_t packedCtid)
 {
 	uint32_t recordSize = 0; /* always 0 */
-#ifdef PGRN_SUPPORT_JSONB
 	PGrnJSONBInsertData data;
 	unsigned int nthAttribute = 0;
 	Jsonb *jsonb;
@@ -1497,12 +1451,10 @@ PGrnJSONBInsert(Relation index,
 						  &data);
 
 	PGrnJSONBInsertDataFin(&data);
-#endif
 
 	return recordSize;
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 								   grn_obj *subFilter,
@@ -1742,7 +1694,6 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 	}
 	GRN_OBJ_FIN(ctx, &components);
 }
-#endif
 
 bool
 PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
@@ -1750,7 +1701,6 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 							  ScanKey key,
 							  grn_obj *targetColumn)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	unsigned int nthAttribute = 0;
 	grn_obj *subFilter;
 
@@ -1822,12 +1772,8 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 		break;
 	}
 	return true;
-#else
-	return false;
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnJSONValuesUpdateDeletedID(grn_obj *jsonValuesTable,
 							  grn_obj *values,
@@ -1920,12 +1866,10 @@ PGrnJSONValuesDeleteBulk(PGrnJSONBBulkDeleteData *data)
 
 	grn_table_cursor_close(ctx, tableCursor);
 }
-#endif
 
 void
 PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	Relation index = data->index;
 	unsigned int nthAttribute = 0;
 	TupleDesc desc;
@@ -1958,13 +1902,11 @@ PGrnJSONBBulkDeleteInit(PGrnJSONBBulkDeleteData *data)
 
 	GRN_RECORD_SET(ctx, &(data->valueMin), GRN_ID_NIL);
 	GRN_RECORD_SET(ctx, &(data->valueMax), GRN_ID_NIL);
-#endif
 }
 
 void
 PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	if (!data->isJSONBAttribute)
 		return;
 
@@ -1980,13 +1922,11 @@ PGrnJSONBBulkDeleteRecord(PGrnJSONBBulkDeleteData *data)
 								  &(data->values),
 								  &(data->valueMin),
 								  &(data->valueMax));
-#endif
 }
 
 void
 PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	if (!data->isJSONBAttribute)
 		return;
 
@@ -1999,10 +1939,8 @@ PGrnJSONBBulkDeleteFin(PGrnJSONBBulkDeleteData *data)
 	grn_obj_unlink(ctx, data->sourcesValuesColumn);
 	grn_obj_unlink(ctx, data->valuesIndexColumn);
 	grn_obj_unlink(ctx, data->valuesTable);
-#endif
 }
 
-#ifdef PGRN_SUPPORT_JSONB
 static void
 PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 {
@@ -2014,12 +1952,10 @@ PGrnRemoveJSONValueLexicon(const char *typeName, unsigned int relationID)
 		return;
 	PGrnRemoveObject(tableName);
 }
-#endif
 
 void
 PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 {
-#ifdef PGRN_SUPPORT_JSONB
 	{
 		char jsonValuesTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonValuesTableName, sizeof(jsonValuesTableName),
@@ -2058,5 +1994,4 @@ PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 					 relationFileNodeID, 0);
 			PGrnRemoveObject(name);
 		}
-#endif
 }

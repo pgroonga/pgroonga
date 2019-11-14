@@ -5,11 +5,6 @@ dist: bionic
 language: c
 matrix:
   include:
-    - name: "9.4"
-      env:
-        PG_VERSION: 9.4
-      addons:
-        postgresql: "9.4"
     - name: "9.5"
       env:
         PG_VERSION: 9.5
@@ -91,47 +86,10 @@ install:
   - sudo make install
 script:
   - |
-    case ${PG_VERSION} in
-      9.3)
-        for path in jsonb/ \
-                    function/flush/jsonb.sql \
-                    function/tokenize/ \
-                    function/vacuum/ \
-                    full-text-search/jsonb/ \
-                    full-text-search/text/options/normalizer/ \
-                    full-text-search/text/options/tokenizer/ \
-                    reindex/analyze.sql \
-                    regexp/text/options/ \
-                    groonga-function/tuple-is-alive/ \
-                    groonga-function/tuple-is-alive/ \
-                    term-search/text/options/
-        do
-          rm -rf sql/${path}
-        done
-        rm -rf sql/compatibility
-        ;;
-      9.4)
-        rm -rf sql/function/tokenize/
-        for path in full-text-search/text/options/normalizer/ \
-                    full-text-search/text/options/tokenizer/ \
-                    regexp/text/options/ \
-                    term-search/text/options/
-        do
-          rm -rf sql/$path
-          rm -rf sql/compatibility/schema/$path
-        done
-        ;;
-    esac
-  - |
     if [ "${WAL_SUPPORTED}" != "yes" ]; then
       rm -rf sql/function/wal-apply/
       rm -rf sql/function/wal-truncate/
       rm -rf sql/function/set-writable/
-    fi
-  # TODO: Remove this when Groonga 9.0.4 is released
-  - |
-    if [ "${GROONGA_MASTER}" != "yes" ]; then
-      rm -rf sql/int4-array
     fi
   - sudo -u postgres -H mkdir -p /tmp/space
   - |
