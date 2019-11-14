@@ -133,6 +133,14 @@ end
 packages_dir = "packages"
 
 namespace :package do
+  packages = [
+    "postgresql-9.5-pgroonga",
+    "postgresql-9.6-pgroonga",
+    "postgresql-10-pgroonga",
+    "postgresql-11-pgroonga",
+    "postgresql-12-pgroonga",
+  ]
+
   namespace :source do
     rsync_path = "#{rsync_base_path}/source/#{package}"
     source_dir = "#{packages_dir}/source"
@@ -179,13 +187,7 @@ namespace :package do
     repositories_dir = "#{apt_dir}/repositories"
     rm_rf(repositories_dir)
     mkdir_p(repositories_dir)
-    apt_packages = [
-      "postgresql-9.6-pgroonga",
-      "postgresql-10-pgroonga",
-      "postgresql-11-pgroonga",
-      "postgresql-12-pgroonga",
-    ]
-    apt_packages.each do |package|
+    packages.each do |package|
       package_dir = "packages/#{package}"
       cd(package_dir) do
         rm_rf("apt/repositories")
@@ -272,14 +274,7 @@ namespace :package do
     repositories_dir = "#{yum_dir}/repositories"
     rm_rf(repositories_dir)
     mkdir_p(repositories_dir)
-    apt_packages = [
-      "postgresql95-pgroonga",
-      "postgresql96-pgroonga",
-      "postgresql10-pgroonga",
-      "postgresql11-pgroonga",
-      "postgresql12-pgroonga",
-    ]
-    apt_packages.each do |package|
+    packages.each do |package|
       package_dir = "packages/#{package}"
       cd(package_dir) do
         rm_rf("yum/repositories")
@@ -362,13 +357,6 @@ namespace :package do
   namespace :version do
     desc "Update versions"
     task :update do
-      packages = [
-        "postgresql-9.5-pgroonga",
-        "postgresql-9.6-pgroonga",
-        "postgresql-10-pgroonga",
-        "postgresql-11-pgroonga",
-        "postgresql-12-pgroonga",
-      ]
       packages.each do |package|
         cd("packages/#{package}") do
           ruby("-S", "rake", "version:update")
