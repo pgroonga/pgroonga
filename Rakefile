@@ -129,7 +129,7 @@ end
 packages_dir = "packages"
 
 namespace :package do
-  packages = [
+  package_names = [
     "postgresql-9.5-pgroonga",
     "postgresql-9.6-pgroonga",
     "postgresql-10-pgroonga",
@@ -183,8 +183,8 @@ namespace :package do
     repositories_dir = "#{apt_dir}/repositories"
     rm_rf(repositories_dir)
     mkdir_p(repositories_dir)
-    packages.each do |package|
-      package_dir = "packages/#{package}"
+    package_names.each do |package_name|
+      package_dir = "packages/#{package_name}"
       cd(package_dir) do
         rm_rf("apt/repositories")
         ruby("-S", "rake", "apt:build")
@@ -205,13 +205,14 @@ namespace :package do
 
       desc "Upload package for PostgreSQL 9.5"
       task :postgresql95 => [archive_name] do
+        package_name = "postgresql-9.5-pgroonga"
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/postgresql-9.5-pgroonga/debian",
+        prepare_debian_dir("packages/#{package_name}/debian",
                            tmp_debian_dir,
                            debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
+             "--package", package_name,
              "--version", version,
              "--source-archive", archive_name,
              "--ubuntu-code-names", "xenial",
@@ -222,13 +223,14 @@ namespace :package do
 
       desc "Upload package for PostgreSQL 10"
       task :postgresql10 => [archive_name] do
+        package_name = "postgresql-10-pgroonga"
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/postgresql-10-pgroonga/debian",
+        prepare_debian_dir("packages/#{package_name}/debian",
                            tmp_debian_dir,
                            debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
+             "--package", package_name,
              "--version", version,
              "--source-archive", archive_name,
              "--ubuntu-code-names", "bionic,cosmic",
@@ -239,13 +241,14 @@ namespace :package do
 
       desc "Upload package for PostgreSQL 11"
       task :postgresql11 => [archive_name] do
+        package_name = "postgresql-11-pgroonga"
         rm_rf(tmp_dir)
         mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/postgresql-11-pgroonga/debian",
+        prepare_debian_dir("packages/#{package_name}/debian",
                            tmp_debian_dir,
                            debian_variables)
         ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package,
+             "--package", package_name,
              "--version", version,
              "--source-archive", archive_name,
              "--ubuntu-code-names", "disco,eoan",
@@ -270,8 +273,8 @@ namespace :package do
     repositories_dir = "#{yum_dir}/repositories"
     rm_rf(repositories_dir)
     mkdir_p(repositories_dir)
-    packages.each do |package|
-      package_dir = "packages/#{package}"
+    package_names.each do |package_name|
+      package_dir = "packages/#{package_name}"
       cd(package_dir) do
         rm_rf("yum/repositories")
         ruby("-S", "rake", "yum:build")
@@ -353,12 +356,12 @@ namespace :package do
   namespace :version do
     desc "Update versions"
     task :update do
-      packages.each do |package|
-        cd("packages/#{package}") do
+      package_names.each do |package_name|
+        cd("packages/#{package_name}") do
           ruby("-S", "rake", "version:update")
         end
       end
-      cp(Dir.glob("packages/#{packages.last}/yum/*.spec.in").first,
+      cp(Dir.glob("packages/#{package_names.last}/yum/*.spec.in").first,
          "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
