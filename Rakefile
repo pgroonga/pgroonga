@@ -119,9 +119,12 @@ namespace :version do
       File.open(control_path, "w") do |control_file|
         control_file.print(content)
       end
+      sh("git", "add", control_path)
 
-      touch(File.join("data",
-                      "#{package_name}--#{version}--#{new_version}.sql"))
+      migration_sql_name = "#{package_name}--#{version}--#{new_version}.sql"
+      migration_sql_path = File.join("data", migration_sql)
+      touch(migration_sql_path)
+      sh("git", "add", migration_sql_path)
     end
   end
 end
