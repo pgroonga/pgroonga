@@ -47,21 +47,11 @@ CREATE OPERATOR &@~ (
 	RIGHTARG = varchar
 );
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		CREATE OPERATOR &@~ (
-			PROCEDURE = pgroonga.query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
-	END IF;
-END;
-$$;
+CREATE OPERATOR &@~ (
+	PROCEDURE = pgroonga.query_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text
+);
 
 CREATE OPERATOR &@* (
 	PROCEDURE = pgroonga.similar_text,
@@ -111,19 +101,9 @@ ALTER OPERATOR FAMILY pgroonga.varchar_full_text_search_ops USING pgroonga
 	ADD
 		OPERATOR 28 &@~ (varchar, varchar);
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
-			ADD
-				OPERATOR 28 &@~ (jsonb, text);
-	END IF;
-END;
-$$;
+ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
+	ADD
+		OPERATOR 28 &@~ (jsonb, text);
 
 ALTER OPERATOR FAMILY pgroonga.text_full_text_search_ops_v2 USING pgroonga
 	ADD
@@ -143,16 +123,6 @@ ALTER OPERATOR FAMILY pgroonga.varchar_full_text_search_ops_v2 USING pgroonga
 		OPERATOR 29 &@* (varchar, varchar),
 		OPERATOR 30 &@~| (varchar, varchar[]);
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		ALTER OPERATOR FAMILY pgroonga.jsonb_ops_v2 USING pgroonga
-			ADD
-				OPERATOR 28 &@~ (jsonb, text);
-	END IF;
-END;
-$$;
+ALTER OPERATOR FAMILY pgroonga.jsonb_ops_v2 USING pgroonga
+	ADD
+		OPERATOR 28 &@~ (jsonb, text);

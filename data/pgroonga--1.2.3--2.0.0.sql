@@ -54,16 +54,11 @@ BEGIN
 		ALTER OPERATOR public.&~ (text, text) SET SCHEMA pgroonga;
 		ALTER OPERATOR public.&~ (varchar, varchar) SET SCHEMA pgroonga;
 
-		PERFORM 1
-			FROM pg_type
-			WHERE typname = 'jsonb';
-		IF FOUND THEN
-			ALTER OPERATOR public.&@ (jsonb, text) SET SCHEMA pgroonga;
-			ALTER OPERATOR public.&? (jsonb, text) SET SCHEMA pgroonga;
-			ALTER OPERATOR public.&@~ (jsonb, text) SET SCHEMA pgroonga;
-			ALTER OPERATOR public.&` (jsonb, text) SET SCHEMA pgroonga;
-			ALTER OPERATOR public.@@ (jsonb, text) SET SCHEMA pgroonga;
-		END IF;
+		ALTER OPERATOR public.&@ (jsonb, text) SET SCHEMA pgroonga;
+		ALTER OPERATOR public.&? (jsonb, text) SET SCHEMA pgroonga;
+		ALTER OPERATOR public.&@~ (jsonb, text) SET SCHEMA pgroonga;
+		ALTER OPERATOR public.&` (jsonb, text) SET SCHEMA pgroonga;
+		ALTER OPERATOR public.@@ (jsonb, text) SET SCHEMA pgroonga;
 	END IF;
 END;
 $$;

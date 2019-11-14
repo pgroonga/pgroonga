@@ -571,30 +571,20 @@ CREATE OPERATOR &> (
 	JOIN = contjoinsel
 );
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE FUNCTION pgroonga_match_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga_match_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
-
-		CREATE OPERATOR &@ (
-			PROCEDURE = pgroonga_match_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text,
-			RESTRICT = contsel,
-			JOIN = contjoinsel
-		);
-	END IF;
-END;
-$$;
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga_match_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
 
 CREATE FUNCTION pgroonga_query_text(text, text)
 	RETURNS bool
@@ -776,40 +766,30 @@ CREATE OPERATOR &@~ (
 	JOIN = contjoinsel
 );
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE FUNCTION pgroonga_query_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	COST 200;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga_query_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			COST 200;
+-- Deprecated since 1.2.2.
+CREATE OPERATOR &? (
+	PROCEDURE = pgroonga_query_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
 
-		-- Deprecated since 1.2.2.
-		CREATE OPERATOR &? (
-			PROCEDURE = pgroonga_query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text,
-			RESTRICT = contsel,
-			JOIN = contjoinsel
-		);
-
-		CREATE OPERATOR &@~ (
-			PROCEDURE = pgroonga_query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text,
-			RESTRICT = contsel,
-			JOIN = contjoinsel
-		);
-	END IF;
-END;
-$$;
+CREATE OPERATOR &@~ (
+	PROCEDURE = pgroonga_query_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
 
 CREATE FUNCTION pgroonga_similar_text(text, text)
 	RETURNS bool
@@ -1098,31 +1078,21 @@ CREATE OPERATOR &` (
 	JOIN = contjoinsel
 );
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE FUNCTION pgroonga_script_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	COST 200;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga_script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			COST 200;
-
-		CREATE OPERATOR &` (
-			PROCEDURE = pgroonga_script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text,
-			RESTRICT = contsel,
-			JOIN = contjoinsel
-		);
-	END IF;
-END;
-$$;
+CREATE OPERATOR &` (
+	PROCEDURE = pgroonga_script_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
 
 CREATE FUNCTION pgroonga_match_in_text(text, text[])
 	RETURNS bool
@@ -1682,39 +1652,29 @@ CREATE OPERATOR CLASS pgroonga_timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 4 >=,
 		OPERATOR 5 >;
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE FUNCTION pgroonga_match_script_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga_match_script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
+CREATE OPERATOR @@ (
+	PROCEDURE = pgroonga_match_script_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
 
-		CREATE OPERATOR @@ (
-			PROCEDURE = pgroonga_match_script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text,
-			RESTRICT = contsel,
-			JOIN = contjoinsel
-		);
-
-		CREATE OPERATOR CLASS pgroonga_jsonb_ops FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text),
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
-				OPERATOR 15 &` (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
-	END IF;
-END;
-$$;
+CREATE OPERATOR CLASS pgroonga_jsonb_ops FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 9 @@ (jsonb, text),
+		OPERATOR 11 @>,
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+		OPERATOR 15 &` (jsonb, text),
+		OPERATOR 28 &@~ (jsonb, text);
 
 CREATE OPERATOR CLASS pgroonga_text_regexp_ops FOR TYPE text
 	USING pgroonga AS
@@ -1857,31 +1817,21 @@ CREATE OPERATOR CLASS pgroonga_varchar_regexp_ops_v2 FOR TYPE varchar
 		OPERATOR 22 &~,
 		OPERATOR 35 &~| (varchar, varchar[]);
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE OPERATOR CLASS pgroonga_jsonb_ops_v2
+	DEFAULT FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
+		OPERATOR 11 @>,
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+		OPERATOR 15 &` (jsonb, text),
+		OPERATOR 28 &@~ (jsonb, text);
 
-	IF FOUND THEN
-		CREATE OPERATOR CLASS pgroonga_jsonb_ops_v2
-			DEFAULT FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
-				OPERATOR 15 &` (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
-
-		CREATE OPERATOR CLASS pgroonga_jsonb_full_text_search_ops_v2
-			FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
-	END IF;
-END;
-$$;
+CREATE OPERATOR CLASS pgroonga_jsonb_full_text_search_ops_v2
+	FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 28 &@~ (jsonb, text);
 
 -- For backward compatibility
 
@@ -2293,27 +2243,21 @@ $$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+	CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
+		RETURNS bool
+		AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
+		LANGUAGE C
+		IMMUTABLE
+		STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@ (
-				PROCEDURE = pgroonga.match_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&@ (
+			PROCEDURE = pgroonga.match_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
+		);
 	END IF;
 END;
 $$;
@@ -2410,36 +2354,30 @@ $$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+	CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
+		RETURNS bool
+		AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
+		LANGUAGE C
+		IMMUTABLE
+		STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
+	IF current_schema() <> 'public' THEN
+		-- Deprecated since 1.2.2.
+		CREATE OPERATOR public.&? (
+			PROCEDURE = pgroonga.query_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
+		);
 
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&? (
-				PROCEDURE = pgroonga.query_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~ (
-				PROCEDURE = pgroonga.query_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
+		CREATE OPERATOR public.&@~ (
+			PROCEDURE = pgroonga.query_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
+		);
 	END IF;
 END;
 $$;
@@ -2701,27 +2639,21 @@ $$;
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+	CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
+		RETURNS bool
+		AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
+		LANGUAGE C
+		IMMUTABLE
+		STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&` (
-				PROCEDURE = pgroonga.script_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.&` (
+			PROCEDURE = pgroonga.script_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
+		);
 	END IF;
 END;
 $$;
@@ -3132,37 +3064,31 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops FOR TYPE timestamptz
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+	CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
+		RETURNS bool
+		AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
+		LANGUAGE C
+		IMMUTABLE
+		STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.@@ (
-				PROCEDURE = pgroonga.match_script_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
-		CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text),
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
-				OPERATOR 15 &` (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
+	IF current_schema() <> 'public' THEN
+		CREATE OPERATOR public.@@ (
+			PROCEDURE = pgroonga.match_script_jsonb,
+			LEFTARG = jsonb,
+			RIGHTARG = text,
+			RESTRICT = contsel,
+			JOIN = contjoinsel
+		);
 	END IF;
+
+	CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
+		USING pgroonga AS
+			OPERATOR 9 @@ (jsonb, text),
+			OPERATOR 11 @>,
+			OPERATOR 12 &@ (jsonb, text),
+			OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+			OPERATOR 15 &` (jsonb, text),
+			OPERATOR 28 &@~ (jsonb, text);
 END;
 $$;
 
@@ -3266,22 +3192,12 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
 		OPERATOR 10 @~, -- For backward compatibility
 		OPERATOR 22 &~;
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
-			FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
-				OPERATOR 15 &` (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
-	END IF;
-END;
-$$;
+CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
+	FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
+		OPERATOR 11 @>,
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+		OPERATOR 15 &` (jsonb, text),
+		OPERATOR 28 &@~ (jsonb, text);

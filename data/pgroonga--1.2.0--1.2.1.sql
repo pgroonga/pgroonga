@@ -439,112 +439,82 @@ ALTER OPERATOR FAMILY pgroonga.varchar_array_ops USING pgroonga
 		OPERATOR 23 &> (varchar[], varchar);
 
 -- Rename "pgroonga_match_jsonb" to "pgroonga_match_script_jsonb"
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+DROP OPERATOR CLASS pgroonga.jsonb_ops USING pgroonga;
+DROP OPERATOR @@ (jsonb, text);
+DROP FUNCTION pgroonga.match_query(jsonb, text);
 
-	IF FOUND THEN
-		DROP OPERATOR CLASS pgroonga.jsonb_ops USING pgroonga;
-		DROP OPERATOR @@ (jsonb, text);
-		DROP FUNCTION pgroonga.match_query(jsonb, text);
+CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-		CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
+CREATE OPERATOR @@ (
+	PROCEDURE = pgroonga.match_script_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text
+);
 
-		CREATE OPERATOR @@ (
-			PROCEDURE = pgroonga.match_script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
-
-		CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text),
-				OPERATOR 11 @>;
-	END IF;
-END;
-$$;
+CREATE OPERATOR CLASS pgroonga.jsonb_ops DEFAULT FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 9 @@ (jsonb, text),
+		OPERATOR 11 @>;
 
 -- Add pgroonga.jsonb_ops_v2
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
+CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-	IF FOUND THEN
-		CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
+CREATE OPERATOR &@ (
+	PROCEDURE = pgroonga.match_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text
+);
 
-		CREATE OPERATOR &@ (
-			PROCEDURE = pgroonga.match_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-		CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
+CREATE OPERATOR &? (
+	PROCEDURE = pgroonga.query_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text
+);
 
-		CREATE OPERATOR &? (
-			PROCEDURE = pgroonga.query_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
+CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
 
-		CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT;
-
-		CREATE OPERATOR &` (
-			PROCEDURE = pgroonga.script_jsonb,
-			LEFTARG = jsonb,
-			RIGHTARG = text
-		);
-		CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
-			FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text),
-				OPERATOR 15 &` (jsonb, text);
-	END IF;
-END;
-$$;
+CREATE OPERATOR &` (
+	PROCEDURE = pgroonga.script_jsonb,
+	LEFTARG = jsonb,
+	RIGHTARG = text
+);
+CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
+	FOR TYPE jsonb
+	USING pgroonga AS
+		OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
+		OPERATOR 11 @>,
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 13 &? (jsonb, text),
+		OPERATOR 15 &` (jsonb, text);
 
 -- Add v2 compatible operators to ops for jsonb
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
-			ADD
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text),
-				OPERATOR 15 &` (jsonb, text);
-	END IF;
-END;
-$$;
+ALTER OPERATOR FAMILY pgroonga.jsonb_ops USING pgroonga
+	ADD
+		OPERATOR 12 &@ (jsonb, text),
+		OPERATOR 13 &? (jsonb, text),
+		OPERATOR 15 &` (jsonb, text);
 
 -- Add v2 compatible operators to regexp ops for text and varchar
 ALTER OPERATOR FAMILY pgroonga.text_regexp_ops USING pgroonga

@@ -133,19 +133,9 @@ ALTER FUNCTION pgroonga_regexp_text(text, text)
 ALTER FUNCTION pgroonga_regexp_varchar(varchar, varchar)
 	COST 200;
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM 1
-		FROM pg_type
-		WHERE typname = 'jsonb';
-
-	IF FOUND THEN
-		ALTER FUNCTION pgroonga_match_jsonb(jsonb, text)
-			COST 200;
-		ALTER FUNCTION pgroonga_query_jsonb(jsonb, text)
-			COST 200;
-		ALTER FUNCTION pgroonga_script_jsonb(jsonb, text)
-			COST 200;
-	END IF;
-END;
-$$;
+ALTER FUNCTION pgroonga_match_jsonb(jsonb, text)
+	COST 200;
+ALTER FUNCTION pgroonga_query_jsonb(jsonb, text)
+	COST 200;
+ALTER FUNCTION pgroonga_script_jsonb(jsonb, text)
+	COST 200;
