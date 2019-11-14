@@ -127,7 +127,7 @@ class PGroongaPackageTask < PackageTask
   end
 
   def update_spec
+    cp(source_yum_spec_in_path, yum_spec_in_path)
     super
-    cp(yum_spec_in_path, source_yum_spec_in_path)
   end
 end

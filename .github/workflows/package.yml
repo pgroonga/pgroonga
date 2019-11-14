@@ -12,8 +12,8 @@ on:
     - cron: |
         0 0 * * *
 jobs:
-  build:
-    name: Build
+  linux:
+    name: Linux
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
-      - build
+      - linux
     steps:
       - name: Send Webhook
         run: |

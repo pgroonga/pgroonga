@@ -374,6 +374,8 @@ namespace :package do
           ruby("-S", "rake", "version:update")
         end
       end
+      cp(Dir.glob("packages/#{packages.last}/yum/*.spec.in").first,
+         "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
 end
