@@ -85,34 +85,3 @@ jobs:
         with:
           name: packages-${{ matrix.package-id }}
           path: repositories/
-  webhook:
-    name: Webhook
-    runs-on: ubuntu-latest
-    if: always()
-    needs:
-      - linux
-    steps:
-      - name: Send Webhook
-        run: |
-          { \
-            echo "{"; \
-            echo -n "  \"github\": ${GITHUB_CONTEXT},"; \
-            echo -n "  \"job\": ${JOB_CONTEXT},"; \
-            echo -n "  \"env\": ${ENV_CONTEXT},"; \
-            echo -n "  \"steps\": ${STEPS_CONTEXT},"; \
-            echo -n "  \"runner\": ${RUNNER_CONTEXT},"; \
-            echo -n "  \"strategy\": ${STRATEGY_CONTEXT}"; \
-            echo '}'; \
-          } | tee data.json
-          curl \
-            --request POST \
-            --header "Content-Type: application/json" \
-            --data @data.json \
-            https://webhook.commit-email.info/
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-          JOB_CONTEXT: ${{ toJson(job) }}
-          ENV_CONTEXT: ${{ toJson(env) }}
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
