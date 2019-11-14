@@ -11,19 +11,6 @@
 #	define PGRN_PRIuSIZE "zu"
 #endif
 
-#ifdef GP_VERSION
-#	define PGRN_IS_GREENPLUM
-#endif
-
-#ifndef PGRN_IS_GREENPLUM
-#	define PGRN_SUPPORT_OPTIONS
-#	define PGRN_SUPPORT_ENUM_VARIABLE
-#	define PGRN_SUPPORT_RECHECK_PER_SCAN
-#	define PGRN_SUPPORT_INDEX_ONLY_SCAN
-#	define PGRN_SUPPORT_BITMAP_INDEX
-#	define PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
-#endif
-
 #if PG_VERSION_NUM >= 90601
 #	define PGRN_FUNCTION_INFO_V1(function_name)		\
 	PGDLLEXPORT PG_FUNCTION_INFO_V1(function_name)
@@ -76,106 +63,6 @@ typedef char *PGrnStringOptionValue;
 	ALLOCSET_DEFAULT_MINSIZE,					\
 	ALLOCSET_DEFAULT_INITSIZE,					\
 	ALLOCSET_DEFAULT_MAXSIZE
-#endif
-
-#ifdef PGRN_IS_GREENPLUM
-#	define PGrnDefineCustomIntVariable(name,			\
-									   shortDesc,		\
-									   longDesc,		\
-									   valueAddr,		\
-									   bootValue,		\
-									   minValue,		\
-									   maxValue,		\
-									   context,			\
-									   flags,			\
-									   checkHook,		\
-									   assignHook,		\
-									   showHook)		\
-	DefineCustomIntVariable(name,						\
-							shortDesc,					\
-							longDesc,					\
-							valueAddr,					\
-							minValue,					\
-							maxValue,					\
-							context,					\
-							assignHook,					\
-							showHook)
-#	define PGrnDefineCustomStringVariable(name,			\
-										  shortDesc,	\
-										  longDesc,		\
-										  valueAddr,	\
-										  bootValue,	\
-										  context,		\
-										  flags,		\
-										  checkHook,	\
-										  assignHook,	\
-										  showHook)		\
-	DefineCustomStringVariable(name,					\
-							   shortDesc,				\
-							   longDesc,				\
-							   valueAddr,				\
-							   context,					\
-							   assignHook,				\
-							   showHook)
-#else
-#	define PGrnDefineCustomIntVariable(name,			\
-									   shortDesc,		\
-									   longDesc,		\
-									   valueAddr,		\
-									   bootValue,		\
-									   minValue,		\
-									   maxValue,		\
-									   context,			\
-									   flags,			\
-									   checkHook,		\
-									   assignHook,		\
-									   showHook)		\
-	DefineCustomIntVariable(name,						\
-							shortDesc,					\
-							longDesc,					\
-							valueAddr,					\
-							bootValue,					\
-							minValue,					\
-							maxValue,					\
-							context,					\
-							flags,						\
-							checkHook,					\
-							assignHook,					\
-							showHook)
-#	define PGrnDefineCustomStringVariable(name,			\
-										  shortDesc,	\
-										  longDesc,		\
-										  valueAddr,	\
-										  bootValue,	\
-										  context,		\
-										  flags,		\
-										  checkHook,	\
-										  assignHook,	\
-										  showHook)		\
-	DefineCustomStringVariable(name,					\
-							   shortDesc,				\
-							   longDesc,				\
-							   valueAddr,				\
-							   bootValue,				\
-							   context,					\
-							   flags,					\
-							   checkHook,				\
-							   assignHook,				\
-							   showHook)
-#endif
-
-#ifdef PGRN_IS_GREENPLUM
-#	define IndexBuildHeapScan(heapRelation,		\
-							  indexRelation,	\
-							  indexInfo,		\
-							  allow_sync,		\
-							  callback,			\
-							  callbackState)	\
-	IndexBuildScan(heapRelation,				\
-				   indexRelation,				\
-				   indexInfo,					\
-				   callback,					\
-				   callbackState)
 #endif
 
 #if PG_VERSION_NUM >= 100000

@@ -12,7 +12,6 @@
 
 #include <limits.h>
 
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static int PGrnLogType;
 enum PGrnLogType {
 	PGRN_LOG_TYPE_FILE,
@@ -25,11 +24,9 @@ static struct config_enum_entry PGrnLogTypeEntries[] = {
 	{"postgresql",        PGRN_LOG_TYPE_POSTGRESQL,        false},
 	{NULL,                PGRN_LOG_TYPE_FILE,              false}
 };
-#endif
 
 static char *PGrnLogPath;
 
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static int PGrnLogLevel;
 static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"none",      GRN_LOG_NONE,    false},
@@ -44,7 +41,6 @@ static struct config_enum_entry PGrnLogLevelEntries[] = {
 	{"dump",      GRN_LOG_DUMP,    false},
 	{NULL,        GRN_LOG_NONE,    false}
 };
-#endif
 
 static char *PGrnQueryLogPath;
 
@@ -54,7 +50,6 @@ static bool PGrnEnableWAL;
 
 static char *PGrnLibgroongaVersion;
 
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx, grn_log_level level,
 						const char *timestamp, const char *title,
@@ -104,7 +99,6 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		break;
 	}
 }
-#endif
 
 static void
 PGrnLogPathAssignRaw(const char *new_value)
@@ -129,28 +123,17 @@ PGrnLogPathAssignRaw(const char *new_value)
 	}
 }
 
-#ifdef PGRN_IS_GREENPLUM
-static const char *
-PGrnLogPathAssign(const char *new_value, bool doit, GucSource source)
-{
-	PGrnLogPathAssignRaw(new_value);
-	return new_value;
-}
-#else
 static void
 PGrnLogPathAssign(const char *new_value, void *extra)
 {
 	PGrnLogPathAssignRaw(new_value);
 }
-#endif
 
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
 	grn_default_logger_set_max_level(new_value);
 }
-#endif
 
 static void
 PGrnQueryLogPathAssignRaw(const char *new_value)
@@ -176,20 +159,11 @@ PGrnQueryLogPathAssignRaw(const char *new_value)
 	}
 }
 
-#ifdef PGRN_IS_GREENPLUM
-static const char *
-PGrnQueryLogPathAssign(const char *new_value, bool doit, GucSource source)
-{
-	PGrnQueryLogPathAssignRaw(new_value);
-	return new_value;
-}
-#else
 static void
 PGrnQueryLogPathAssign(const char *new_value, void *extra)
 {
 	PGrnQueryLogPathAssignRaw(new_value);
 }
-#endif
 
 static void
 PGrnLockTimeoutAssignRaw(int new_value)
@@ -197,20 +171,11 @@ PGrnLockTimeoutAssignRaw(int new_value)
 	grn_set_lock_timeout(new_value);
 }
 
-#ifdef PGRN_IS_GREENPLUM
-static bool
-PGrnLockTimeoutAssign(int new_value, bool doit, GucSource source)
-{
-	PGrnLockTimeoutAssignRaw(new_value);
-	return true;
-}
-#else
 static void
 PGrnLockTimeoutAssign(int new_value, void *extra)
 {
 	PGrnLockTimeoutAssignRaw(new_value);
 }
-#endif
 
 static void
 PGrnEnableWALAssign(bool new_value, void *extra)
@@ -235,25 +200,15 @@ PGrnMatchEscalationThresholdAssignRaw(int new_value)
 	grn_ctx_set_match_escalation_threshold(&PGrnContext, new_value);
 }
 
-#ifdef PGRN_IS_GREENPLUM
-static bool
-PGrnMatchEscalationThresholdAssign(int new_value, bool doit, GucSource source)
-{
-	PGrnMatchEscalationThresholdAssignRaw(new_value);
-	return true;
-}
-#else
 static void
 PGrnMatchEscalationThresholdAssign(int new_value, void *extra)
 {
 	PGrnMatchEscalationThresholdAssignRaw(new_value);
 }
-#endif
 
 void
 PGrnInitializeVariables(void)
 {
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 	DefineCustomEnumVariable("pgroonga.log_type",
 							 "Log type for PGroonga.",
 							 "Available log types: "
@@ -267,22 +222,20 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnLogTypeAssign,
 							 NULL);
-#endif
 
-	PGrnDefineCustomStringVariable("pgroonga.log_path",
-								   "Log path for PGroonga.",
-								   "The default is "
-								   "\"${PG_DATA}/" PGrnLogPathDefault "\". "
-								   "Use \"none\" to disable file output.",
-								   &PGrnLogPath,
-								   PGrnLogPathDefault,
-								   PGC_USERSET,
-								   0,
-								   NULL,
-								   PGrnLogPathAssign,
-								   NULL);
+	DefineCustomStringVariable("pgroonga.log_path",
+							   "Log path for PGroonga.",
+							   "The default is "
+							   "\"${PG_DATA}/" PGrnLogPathDefault "\". "
+							   "Use \"none\" to disable file output.",
+							   &PGrnLogPath,
+							   PGrnLogPathDefault,
+							   PGC_USERSET,
+							   0,
+							   NULL,
+							   PGrnLogPathAssign,
+							   NULL);
 
-#ifdef PGRN_SUPPORT_ENUM_VARIABLE
 	DefineCustomEnumVariable("pgroonga.log_level",
 							 "Log level for PGroonga.",
 							 "Available log levels: "
@@ -297,38 +250,37 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnLogLevelAssign,
 							 NULL);
-#endif
 
-	PGrnDefineCustomStringVariable("pgroonga.query_log_path",
-								   "Query log path for PGroonga.",
-								   "Path must be a relative path "
-								   "from \"${PG_DATA}/\" or absolute path. "
-								   "Use \"none\" to disable file output. "
-								   "The default is disabled.",
-								   &PGrnQueryLogPath,
-								   PGrnQueryLogPathDefault,
-								   PGC_USERSET,
-								   0,
-								   NULL,
-								   PGrnQueryLogPathAssign,
-								   NULL);
+	DefineCustomStringVariable("pgroonga.query_log_path",
+							   "Query log path for PGroonga.",
+							   "Path must be a relative path "
+							   "from \"${PG_DATA}/\" or absolute path. "
+							   "Use \"none\" to disable file output. "
+							   "The default is disabled.",
+							   &PGrnQueryLogPath,
+							   PGrnQueryLogPathDefault,
+							   PGC_USERSET,
+							   0,
+							   NULL,
+							   PGrnQueryLogPathAssign,
+							   NULL);
 
-	PGrnDefineCustomIntVariable("pgroonga.lock_timeout",
-								"Try pgroonga.lock_timeout times "
-								"at 1 msec intervals to "
-								"get write lock in PGroonga.",
-								"The default is 900000. "
-								"It means that PGroonga tries to get write lock "
-								"between about 15 minutes.",
-								&PGrnLockTimeout,
-								grn_get_lock_timeout(),
-								0,
-								INT_MAX,
-								PGC_USERSET,
-								0,
-								NULL,
-								PGrnLockTimeoutAssign,
-								NULL);
+	DefineCustomIntVariable("pgroonga.lock_timeout",
+							"Try pgroonga.lock_timeout times "
+							"at 1 msec intervals to "
+							"get write lock in PGroonga.",
+							"The default is 900000. "
+							"It means that PGroonga tries to get write lock "
+							"between about 15 minutes.",
+							&PGrnLockTimeout,
+							grn_get_lock_timeout(),
+							0,
+							INT_MAX,
+							PGC_USERSET,
+							0,
+							NULL,
+							PGrnLockTimeoutAssign,
+							NULL);
 
 	DefineCustomBoolVariable("pgroonga.enable_wal",
 							 "Enable WAL. (experimental)",
@@ -342,36 +294,36 @@ PGrnInitializeVariables(void)
 							 PGrnEnableWALAssign,
 							 NULL);
 
-	PGrnDefineCustomIntVariable("pgroonga.match_escalation_threshold",
-								"The threshold number of matched records "
-								"for determining whether "
-								"loose search is used automatically. "
-								"-1 disables the auto loose search.",
-								"The default is 0. "
-								"It means that the number of matched records "
-								"is equal or less than 0, loose search is "
-								"used automtaically.",
-								&PGrnMatchEscalationThreshold,
-								grn_get_default_match_escalation_threshold(),
-								-1,
-								INT_MAX,
-								PGC_USERSET,
-								0,
-								NULL,
-								PGrnMatchEscalationThresholdAssign,
-								NULL);
+	DefineCustomIntVariable("pgroonga.match_escalation_threshold",
+							"The threshold number of matched records "
+							"for determining whether "
+							"loose search is used automatically. "
+							"-1 disables the auto loose search.",
+							"The default is 0. "
+							"It means that the number of matched records "
+							"is equal or less than 0, loose search is "
+							"used automtaically.",
+							&PGrnMatchEscalationThreshold,
+							grn_get_default_match_escalation_threshold(),
+							-1,
+							INT_MAX,
+							PGC_USERSET,
+							0,
+							NULL,
+							PGrnMatchEscalationThresholdAssign,
+							NULL);
 
-	PGrnDefineCustomStringVariable("pgroonga.libgroonga_version",
-								   "The used libgroonga version.",
-								   "It's runtime version "
-								   "not compile time version.",
-								   &PGrnLibgroongaVersion,
-								   grn_get_version(),
-								   PGC_INTERNAL,
-								   0,
-								   NULL,
-								   NULL,
-								   NULL);
+	DefineCustomStringVariable("pgroonga.libgroonga_version",
+							   "The used libgroonga version.",
+							   "It's runtime version "
+							   "not compile time version.",
+							   &PGrnLibgroongaVersion,
+							   grn_get_version(),
+							   PGC_INTERNAL,
+							   0,
+							   NULL,
+							   NULL,
+							   NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

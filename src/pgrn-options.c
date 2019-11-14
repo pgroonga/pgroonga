@@ -6,11 +6,8 @@
 #include "pgrn-options.h"
 #include "pgrn-value.h"
 
-#ifdef PGRN_SUPPORT_OPTIONS
-#	include <access/reloptions.h>
-#endif
+#include <access/reloptions.h>
 
-#ifdef PGRN_SUPPORT_OPTIONS
 static const char *PGRN_LEXICON_TYPE_HASH_TABLE = "hash_table";
 static const char *PGRN_LEXICON_TYPE_PATRICIA_TRIE = "patricia_trie";
 static const char *PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE = "double_array_trie";
@@ -223,13 +220,11 @@ PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 					PGRN_LEXICON_TYPE_PATRICIA_TRIE,
 					PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE)));
 }
-#endif
 
 void
 PGrnInitializeOptions(void)
 {
 	lexicon = NULL;
-#ifdef PGRN_SUPPORT_OPTIONS
 	PGrnReloptionKind = add_reloption_kind();
 
 	add_string_reloption(PGrnReloptionKind,
@@ -277,7 +272,6 @@ PGrnInitializeOptions(void)
 					   "query_allow_column",
 					   "Accept column:... syntax in query",
 					   false);
-#endif
 }
 
 void
@@ -299,7 +293,6 @@ PGrnApplyOptionValues(Relation index,
 					  grn_obj **tokenFilters,
 					  grn_table_flags *lexiconType)
 {
-#ifdef PGRN_SUPPORT_OPTIONS
 	PGrnOptions *options;
 	const char *rawTokenizer;
 	const char *rawNormalizer;
@@ -422,14 +415,12 @@ PGrnApplyOptionValues(Relation index,
 	{
 		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 	}
-#endif
 }
 
 grn_expr_flags
 PGrnOptionsGetExprParseFlags(Relation index)
 {
 	grn_expr_flags flags = 0;
-#ifdef PGRN_SUPPORT_OPTIONS
 	PGrnOptions *options;
 
 	options = (PGrnOptions *) (index->rd_options);
@@ -438,12 +429,10 @@ PGrnOptionsGetExprParseFlags(Relation index)
 
 	if (options->queryAllowColumn)
 		flags |= GRN_EXPR_ALLOW_COLUMN;
-#endif
 
 	return flags;
 }
 
-#ifdef PGRN_SUPPORT_OPTIONS
 bytea *
 pgroonga_options_raw(Datum reloptions,
 					 bool validate)
@@ -501,4 +490,3 @@ pgroonga_options(PG_FUNCTION_ARGS)
 
 	PG_RETURN_BYTEA_P(grnOptions);
 }
-#endif

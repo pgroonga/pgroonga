@@ -35,9 +35,7 @@
 #ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 #	include <access/amapi.h>
 #endif
-#ifdef PGRN_SUPPORT_OPTIONS
-#	include <access/reloptions.h>
-#endif
+#include <access/reloptions.h>
 #include <access/relscan.h>
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
@@ -255,9 +253,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_regexp_in_varchar);
 PGRN_FUNCTION_INFO_V1(pgroonga_insert);
 PGRN_FUNCTION_INFO_V1(pgroonga_beginscan);
 PGRN_FUNCTION_INFO_V1(pgroonga_gettuple);
-#ifdef PGRN_SUPPORT_BITMAP_INDEX
 PGRN_FUNCTION_INFO_V1(pgroonga_getbitmap);
-#endif
 PGRN_FUNCTION_INFO_V1(pgroonga_rescan);
 PGRN_FUNCTION_INFO_V1(pgroonga_endscan);
 PGRN_FUNCTION_INFO_V1(pgroonga_build);
@@ -696,7 +692,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	return PGrnPGTypeToGrnType(attr->atttypid, flags);
 }
 
-#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 static Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
 
 static Datum
@@ -876,7 +871,6 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		break;
 	}
 }
-#endif
 
 static bool
 PGrnIsQueryStrategyIndex(Relation index, int nthAttribute)
@@ -4362,21 +4356,12 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 static IndexScanDesc
 pgroonga_beginscan_raw(Relation index,
 					   int nKeys,
-#ifdef PGRN_IS_GREENPLUM
-					   ScanKey key
-#else
-					   int nOrderBys
-#endif
-	)
+					   int nOrderBys)
 {
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
 
-#ifdef PGRN_IS_GREENPLUM
-	scan = RelationGetIndexScan(index, nKeys, key);
-#else
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
-#endif
 
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
 	PGrnScanOpaqueInit(so, index);
@@ -4398,21 +4383,12 @@ pgroonga_beginscan(PG_FUNCTION_ARGS)
 {
 	Relation index = (Relation) PG_GETARG_POINTER(0);
 	int nKeys = PG_GETARG_INT32(1);
-#ifdef PGRN_IS_GREENPLUM
-	ScanKey key = (ScanKey) PG_GETARG_POINTER(2);
-#else
 	int nOrderBys = PG_GETARG_INT32(2);
-#endif
 	IndexScanDesc scan;
 
 	scan = pgroonga_beginscan_raw(index,
 								  nKeys,
-#ifdef PGRN_IS_GREENPLUM
-								  key
-#else
-								  nOrderBys
-#endif
-		);
+								  nOrderBys);
 
 	PG_RETURN_POINTER(scan);
 }
@@ -5993,7 +5969,6 @@ PGrnEnsureCursorOpened(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-#ifdef PGRN_SUPPORT_RECHECK_PER_SCAN
 	scan->xs_recheck = false;
 
 	{
@@ -6009,7 +5984,6 @@ PGrnEnsureCursorOpened(IndexScanDesc scan,
 			}
 		}
 	}
-#endif
 
 	if (so->indexCursor)
 		return;
@@ -6049,7 +6023,6 @@ PGrnScanOpaqueResolveID(PGrnScanOpaque so)
 	return recordID;
 }
 
-#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 static void
 PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 						   IndexScanDesc scan)
@@ -6093,7 +6066,6 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 
 	MemoryContextSwitchTo(oldMemoryContext);
 }
-#endif
 
 static bool
 pgroonga_gettuple_raw(IndexScanDesc scan,
@@ -6233,10 +6205,8 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 			PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid);
 		}
 
-#ifdef PGRN_SUPPORT_INDEX_ONLY_SCAN
 		if (scan->xs_want_itup)
 			PGrnGetTupleFillIndexTuple(so, scan);
-#endif
 
 		found = true;
 	}
@@ -6364,7 +6334,6 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 	return nRecords;
 }
 
-#ifdef PGRN_SUPPORT_BITMAP_INDEX
 /**
  * pgroonga.getbitmap() -- amgetbitmap
  */
@@ -6379,7 +6348,6 @@ pgroonga_getbitmap(PG_FUNCTION_ARGS)
 
 	PG_RETURN_INT64(nRecords);
 }
-#endif
 
 static void
 pgroonga_rescan_raw(IndexScanDesc scan,
@@ -6444,12 +6412,12 @@ pgroonga_endscan(PG_FUNCTION_ARGS)
 }
 
 static void
-PGrnBuildCallbackRaw(Relation index,
-					 ItemPointer ctid,
-					 Datum *values,
-					 bool *isnull,
-					 bool tupleIsAlive,
-					 void *state)
+PGrnBuildCallback(Relation index,
+				  HeapTuple htup,
+				  Datum *values,
+				  bool *isnull,
+				  bool tupleIsAlive,
+				  void *state)
 {
 	PGrnBuildState bs = (PGrnBuildState) state;
 	MemoryContext oldMemoryContext;
@@ -6465,7 +6433,7 @@ PGrnBuildCallbackRaw(Relation index,
 							bs->sourcesCtidColumn,
 							values,
 							isnull,
-							ctid);
+							&(htup->t_self));
 	if (bs->needMaxRecordSizeUpdate &&
 		recordSize > bs->maxRecordSize)
 	{
@@ -6476,40 +6444,6 @@ PGrnBuildCallbackRaw(Relation index,
 	MemoryContextSwitchTo(oldMemoryContext);
 	MemoryContextReset(bs->memoryContext);
 }
-
-#ifdef PGRN_IS_GREENPLUM
-static void
-PGrnBuildCallback(Relation index,
-				  ItemPointer ctid,
-				  Datum *values,
-				  bool *isnull,
-				  bool tupleIsAlive,
-				  void *state)
-{
-	PGrnBuildCallbackRaw(index,
-						 ctid,
-						 values,
-						 isnull,
-						 tupleIsAlive,
-						 state);
-}
-#else
-static void
-PGrnBuildCallback(Relation index,
-				  HeapTuple htup,
-				  Datum *values,
-				  bool *isnull,
-				  bool tupleIsAlive,
-				  void *state)
-{
-	PGrnBuildCallbackRaw(index,
-						 &(htup->t_self),
-						 values,
-						 isnull,
-						 tupleIsAlive,
-						 state);
-}
-#endif
 
 static IndexBuildResult *
 pgroonga_build_raw(Relation heap,
@@ -6890,7 +6824,6 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 void
 PGrnRemoveUnusedTables(void)
 {
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
 
@@ -6960,7 +6893,6 @@ PGrnRemoveUnusedTables(void)
 		PGrnJSONBRemoveUnusedTables(relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
-#endif
 }
 
 static IndexBulkDeleteResult *

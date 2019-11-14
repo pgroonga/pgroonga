@@ -16,9 +16,7 @@
 #include <utils/builtins.h>
 #include <utils/datetime.h>
 #include <utils/rel.h>
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
-#	include <utils/relfilenodemap.h>
-#endif
+#include <utils/relfilenodemap.h>
 #include <utils/syscache.h>
 
 Oid
@@ -112,7 +110,6 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 						Oid *relationID,
 						LOCKMODE lockMode)
 {
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	PGrnTablespaceIterator iterator;
 	Relation relation = InvalidRelation;
 
@@ -137,15 +134,11 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 	PGrnTablespaceIteratorFinalize(&iterator);
 
 	return relation;
-#else
-	return InvalidRelation;
-#endif
 }
 
 bool
 PGrnPGIsValidFileNodeID(Oid fileNodeID)
 {
-#ifdef PGRN_SUPPORT_FILE_NODE_ID_TO_RELATION_ID
 	Relation relation;
 	Oid relationID = InvalidOid;
 	LOCKMODE lockMode = AccessShareLock;
@@ -160,9 +153,6 @@ PGrnPGIsValidFileNodeID(Oid fileNodeID)
 	}
 
 	return valid;
-#else
-	return true;
-#endif
 }
 
 int
