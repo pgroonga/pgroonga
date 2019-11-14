@@ -37,19 +37,6 @@ matrix:
         GROONGA_MASTER: "yes"
       addons:
         postgresql: "10"
-    - name: "CentOS 7"
-      services:
-        - docker
-      install:
-        - docker build
-            -t pgroonga/pgroonga-centos-7
-            -f travis/Dockerfile.centos-7
-            .
-      script:
-        - docker run
-            --interactive
-            --tty
-            pgroonga/pgroonga-centos-7
 install:
   - curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
   - |
