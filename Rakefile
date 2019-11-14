@@ -236,8 +236,8 @@ namespace :package do
              "--package", package_name,
              "--version", version,
              "--source-archive", archive_name,
-             "--ubuntu-code-names", "bionic,cosmic",
-             "--ubuntu-versions", "18.04,18.10",
+             "--ubuntu-code-names", "bionic",
+             "--ubuntu-versions", "18.04",
              "--debian-directory", tmp_debian_dir,
              "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
       end
