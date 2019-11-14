@@ -56,7 +56,6 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 		desc = RelationGetDescr(index);
 		for (i = 0; i < desc->natts; i++)
 		{
-#ifdef PGRN_SUPPORT_JSONB
 			Form_pg_attribute attribute;
 
 			attribute = TupleDescAttr(desc, i);
@@ -82,7 +81,6 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 								true);
 			}
 			else
-#endif
 			{
 				PGrnFlushObject(PGrnLookupLexicon(index, i, ERROR),
 								true);
