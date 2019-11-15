@@ -54,9 +54,7 @@ jobs:
       - name: Clone dependencies
         run: |
           cd ..
-          git clone https://github.com/kou/arrow.git
-          cd arrow
-          git checkout packaging-rpm-release
+          git clone https://github.com/apache/arrow.git
       - name: Build archive
         run: |
           rake dist
