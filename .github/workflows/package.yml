@@ -41,7 +41,7 @@ jobs:
           - postgresql-9.5-pgroonga-centos-6
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v1
         with:
           fetch-depth: 1
           submodules: recursive
