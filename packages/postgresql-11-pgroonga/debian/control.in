@@ -16,7 +16,8 @@ Architecture: any
 Depends:
   ${misc:Depends},
   ${shlibs:Depends},
-  libgroonga0 (>= @GROONGA_VERSION@)
+  libgroonga0 (>= @GROONGA_VERSION@),
+  postgresql-server-11
 Description: Fast full-text search plugin for PostgreSQL based on Groonga
  PGroonga is a PostgreSQL plugin. It provides fast full-text search feature.
  It is based on Groonga full-text search engine.
