@@ -66,7 +66,7 @@ build_script:
         https://get.enterprisedb.com/postgresql/$Env:POSTGRESQL_ARCHIVE_NAME `
         -OutFile $Env:POSTGRESQL_ARCHIVE_NAME
   - ps: |
-      Expand-Archive -Path %POSTGRESQL_ARCHIVE_NAME%
+      Expand-Archive -Path $Env:POSTGRESQL_ARCHIVE_NAME -DestinationPath .
 
   - cd pgroonga
 
@@ -87,7 +87,7 @@ build_script:
         Invoke-WebRequest `
           https://packages.groonga.org/source/groonga/groonga-latest.zip `
           -OutFile groonga-latest.zip
-        Expand-Archive -Path groonga-latest.zip
+        Expand-Archive -Path groonga-latest.zip -DestinationPath .
         rm groonga-latest.zip
         mv groonga-* vendor\groonga
       }
