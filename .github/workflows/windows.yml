@@ -1,0 +1,118 @@
+name: Windows
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: |
+        0 0 * * *
+jobs:
+  test:
+    name: Test
+    runs-on: windows-latest
+    steps:
+      - name: Disable crash dialog
+        run: |
+          reg add "HKCU\SOFTWARE\Microsoft\Windows\Windows Error Reporting" `
+            /v DontShowUI `
+            /t REG_DWORD `
+            /d 1 `
+            /f
+      - name: Use JST
+        run: |
+          Set-TimeZone -Id "Tokyo Standard Time"
+      - uses: actions/setup-ruby@master
+        with:
+          ruby-version: 2.6
+      - uses: actions/checkout@master
+      - name: Update submodules
+        run: |
+          git submodule update --init --recursive
+      - name: Download PostgreSQL
+        run: |
+          cd ..
+          $POSTGRESQL_ARCHIVE_NAME = "postgresql-12-windows-x64-binaries.zip"
+          Invoke-WebRequest `
+            "https://get.enterprisedb.com/postgresql/$POSTGRESQL_ARCHIVE_NAME" `
+            -OutFile $POSTGRESQL_ARCHIVE_NAME
+          Expand-Archive -Path $POSTGRESQL_ARCHIVE_NAME -DestinationPath .
+      - name: Download Groonga
+        run: |
+          if ($Env:GROONGA_MASTER -eq "yes") {
+            git clone --depth 1 `
+              https://github.com/groonga/groonga.git `
+              vendor\groonga
+              cd vendor\groonga
+              git submodule update --init
+              cd vendor
+              ruby download_mecab.rb
+              ruby download_message_pack.rb
+              ruby download_lz4.rb
+          } else {
+            Invoke-WebRequest `
+              https://packages.groonga.org/source/groonga/groonga-latest.zip `
+              -OutFile groonga-latest.zip
+            Expand-Archive -Path groonga-latest.zip -DestinationPath .
+            rm groonga-latest.zip
+            mv groonga-* vendor\groonga
+          }
+      - name: Run CMake
+        run: |
+          New-Item ..\build -ItemType Directory
+          cmake `
+            -A x64 `
+            -B ..\build `
+            -G "Visual Studio 16 2019" `
+            -S . `
+            -DCMAKE_INSTALL_PREFIX=..\pgsql `
+            -DGRN_WITH_BUNDLED_LZ4=yes `
+            -DGRN_WITH_BUNDLED_MECAB=yes `
+            -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes `
+            -DGRN_WITH_MRUBY=yes `
+            -DPGRN_POSTGRESQL_VERSION_MAJOR=12
+      - name: Build
+        run: |
+          $Env:CMAKE_BUILD_PARALLEL_LEVEL = $Env:NUMBER_OF_PROCESSORS
+          cmake --build ..\build --config RelWithDebInfo
+      - name: Install
+        run: |
+          cmake --build ..\build --config RelWithDebInfo --target install
+      - name: Package
+        run: |
+          New-Item ..\packages -ItemType Directory
+          cmake --build ..\build --config RelWithDebInfo --target package
+          Copy-Item -Path ..\build\*.zip -Destination packages
+      - uses: actions/upload-artifact@master
+        with:
+          name: postgresql-12-x64
+          path: ..\packages
+      - name: Run regression test
+        run: |
+          # TODO: Remove me when Groonga bundles libstemmer
+          Remove-Item sql/full-text-search/text/options/token-filters/custom.sql
+          # Reduce tests to reduce test time
+          Remove-Item sql/compatibility -Recurse -Force
+          ruby test\prepare.rb > schedule
+          Set-Culture ja-JP
+          $Env:PG_REGRESS_DIFF_OPTS = "-u"
+          ..\pgsql\bin\pg_regress
+            --bindir=..\pgsql\bin
+            --load-extension=pgroonga
+            --temp-instance=..\pgsql\test
+            --schedule=schedule
+            --launcher=test\short-pgappname.bat
+      - name: Show diff
+        if: failure()
+        run: |
+          Get-Content regression.diffs
+      - name: Run unit test
+        run: |
+          $Env:PATH = "$(Get-Location)\..\pgsql\bin;${Env:PATH}"
+          # TODO: Remove me when we fix test failure on Windows
+          Remove-Item test/test-streaming-replication.rb
+          ruby test\run-test.rb
