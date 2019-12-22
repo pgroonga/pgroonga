@@ -74,7 +74,7 @@ jobs:
             -B ..\build `
             -G "Visual Studio 16 2019" `
             -S . `
-            -DCMAKE_INSTALL_PREFIX=..\pgsql `
+            -DCMAKE_INSTALL_PREFIX="..\pgsql" `
             -DGRN_WITH_BUNDLED_LZ4=yes `
             -DGRN_WITH_BUNDLED_MECAB=yes `
             -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes `
