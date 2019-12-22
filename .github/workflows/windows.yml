@@ -109,7 +109,7 @@ jobs:
           # Reduce tests to reduce test time
           Remove-Item sql/compatibility -Recurse -Force
           ruby test\prepare.rb > schedule
-          # Set-Culture ja-JP
+          [CultureInfo]::CurrentCulture = "ja-JP"
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
