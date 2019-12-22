@@ -41,6 +41,7 @@ jobs:
             "https://get.enterprisedb.com/postgresql/$POSTGRESQL_ARCHIVE_NAME" `
             -OutFile $POSTGRESQL_ARCHIVE_NAME
           Expand-Archive -Path $POSTGRESQL_ARCHIVE_NAME -DestinationPath .
+          dir
       - name: Download Groonga
         run: |
           if ($Env:GROONGA_MASTER -eq "yes") {
@@ -63,6 +64,10 @@ jobs:
           }
       - name: Run CMake
         run: |
+          dir ..
+          dir ..\pgsql
+          dir ..\pgsql\include
+          dir ..\pgsql\include\server
           New-Item ..\build -ItemType Directory
           cmake `
             -A x64 `
@@ -77,15 +82,26 @@ jobs:
             -DPGRN_POSTGRESQL_VERSION_MAJOR=12
       - name: Build
         run: |
-          $Env:CMAKE_BUILD_PARALLEL_LEVEL = $Env:NUMBER_OF_PROCESSORS
-          cmake --build ..\build --config RelWithDebInfo
+          cmake `
+            --build ..\build `
+            --config RelWithDebInfo `
+            --parallel $Env:NUMBER_OF_PROCESSORS `
+            --verbose
       - name: Install
         run: |
-          cmake --build ..\build --config RelWithDebInfo --target install
+          cmake `
+            --build ..\build `
+            --config RelWithDebInfo `
+            --target install `
+            --verbose
       - name: Package
         run: |
           New-Item ..\packages -ItemType Directory
-          cmake --build ..\build --config RelWithDebInfo --target package
+          cmake `
+            --build ..\build `
+            --config RelWithDebInfo `
+            --target package `
+            --verbose
           Copy-Item -Path ..\build\*.zip -Destination packages
       - uses: actions/upload-artifact@master
         with:
