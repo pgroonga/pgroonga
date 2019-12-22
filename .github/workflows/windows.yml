@@ -111,12 +111,12 @@ jobs:
           ruby test\prepare.rb > schedule
           Set-Culture ja-JP
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
-          ..\pgsql\bin\pg_regress
-            --bindir=..\pgsql\bin
-            --load-extension=pgroonga
+          ..\pgsql\bin\pg_regress `
+            --bindir=..\pgsql\bin `
+            --launcher=test\short-pgappname.bat `
+            --load-extension=pgroonga `
+            --schedule=schedule `
             --temp-instance=..\pgsql\test
-            --schedule=schedule
-            --launcher=test\short-pgappname.bat
       - name: Show diff
         if: failure()
         run: |
