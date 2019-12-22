@@ -41,7 +41,6 @@ jobs:
             "https://get.enterprisedb.com/postgresql/$POSTGRESQL_ARCHIVE_NAME" `
             -OutFile $POSTGRESQL_ARCHIVE_NAME
           Expand-Archive -Path $POSTGRESQL_ARCHIVE_NAME -DestinationPath .
-          dir
       - name: Download Groonga
         run: |
           if ($Env:GROONGA_MASTER -eq "yes") {
@@ -64,10 +63,6 @@ jobs:
           }
       - name: Run CMake
         run: |
-          dir ..
-          dir ..\pgsql
-          dir ..\pgsql\include
-          dir ..\pgsql\include\server
           New-Item ..\build -ItemType Directory
           cmake `
             -A x64 `

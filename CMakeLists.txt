@@ -14,10 +14,8 @@ endif()
 
 add_subdirectory(vendor/groonga)
 
-message(STATUS "CMAKE_INSTALL_PREFIX: <${CMAKE_INSTALL_PREFIX}>")
 set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
   CACHE PATH "PostgreSQL binary directory")
-message(STATUS "PGRN_POSTGRESQL_DIR: <${PGRN_POSTGRESQL_DIR}>")
 set(PGRN_POSTGRESQL_VERSION_MAJOR "unknown"
   CACHE STRING "PostgreSQL major version")
 
