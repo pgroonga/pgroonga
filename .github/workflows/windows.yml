@@ -97,7 +97,7 @@ jobs:
             --config RelWithDebInfo `
             --target package `
             --verbose
-          Copy-Item -Path ..\build\*.zip -Destination packages
+          Copy-Item -Path ..\build\*.zip -Destination ..\packages
       - uses: actions/upload-artifact@master
         with:
           name: postgresql-12-x64
