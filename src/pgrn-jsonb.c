@@ -443,6 +443,9 @@ PGrnJSONBInsertAddPath(PGrnJSONBInsertData *data,
 						 flags,
 						 &(data->path));
 
+	if (GRN_TEXT_LEN(&(data->path)) == 0)
+		return;
+
 	if (GRN_TEXT_LEN(&(data->path)) >= GRN_TABLE_MAX_KEY_SIZE)
 		return;
 
