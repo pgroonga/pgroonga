@@ -72,13 +72,6 @@ install:
           postgresql-server-dev-${PG_VERSION}
         ;;
     esac
-  - echo $PATH
-  - ls -lah /usr/lib/postgresql/
-  - ls -lah /usr/lib/postgresql/*/bin/
-  - ls -lah /usr/lib/postgresql/*/lib/pgxs/src/makefiles/
-  - which pg_config
-  - pg_config --version
-  - pg_config
   - PKG_CONFIG_PATH=$PWD/data/travis/pkgconfig make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
