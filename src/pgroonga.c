@@ -1107,12 +1107,30 @@ PGrnCreateCheckType(PGrnCreateData *data)
 	}
 }
 
-/**
- * PGrnCreate
- */
+static void PGrnRemoveUnusedTable(Oid relationFileNodeID);
+
 static void
 PGrnCreate(PGrnCreateData *data)
 {
+	/*
+	 * If CREATE TABLE and TRUNCATE TABLE exist in the same
+	 * transaction, PostgreSQL reuses the created table instead of
+	 * creating a new table. We need to remove existing Groonga tables
+	 * and columns in the case.
+	 */
+	{
+		char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
+		grn_obj *sourcesTable;
+
+		snprintf(sourcesTableName, sizeof(sourcesTableName),
+				 PGrnSourcesTableNameFormat, data->relNode);
+		sourcesTable = grn_ctx_get(ctx, sourcesTableName, -1);
+		if (sourcesTable) {
+			grn_obj_unlink(ctx, sourcesTable);
+			PGrnRemoveUnusedTable(data->relNode);
+		}
+	}
+
 	PGrnCreateSourcesTable(data);
 
 	for (data->i = 0; data->i < data->desc->natts; data->i++)
@@ -6821,6 +6839,51 @@ pgroonga_bulkdelete(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(stats);
 }
 
+static void
+PGrnRemoveUnusedTable(Oid relationFileNodeID)
+{
+	unsigned int i;
+
+	for (i = 0; true; i++)
+	{
+		char tableName[GRN_TABLE_MAX_KEY_SIZE];
+		grn_obj *lexicon;
+
+		snprintf(tableName, sizeof(tableName),
+				 PGrnLexiconNameFormat, relationFileNodeID, i);
+		lexicon = grn_ctx_get(ctx, tableName, -1);
+		if (!lexicon)
+			break;
+
+		PGrnRemoveColumns(lexicon);
+	}
+
+	{
+		char tableName[GRN_TABLE_MAX_KEY_SIZE];
+		snprintf(tableName, sizeof(tableName),
+				 PGrnSourcesTableNameFormat, relationFileNodeID);
+		PGrnRemoveObject(tableName);
+		PGrnAliasDeleteRaw(relationFileNodeID);
+		PGrnIndexStatusDeleteRaw(relationFileNodeID);
+	}
+
+	for (i = 0; true; i++)
+	{
+		char tableName[GRN_TABLE_MAX_KEY_SIZE];
+		grn_obj *lexicon;
+
+		snprintf(tableName, sizeof(tableName),
+				 PGrnLexiconNameFormat, relationFileNodeID, i);
+		lexicon = grn_ctx_get(ctx, tableName, -1);
+		if (!lexicon)
+			break;
+
+		PGrnRemoveObject(tableName);
+	}
+
+	PGrnJSONBRemoveUnusedTables(relationFileNodeID);
+}
+
 void
 PGrnRemoveUnusedTables(void)
 {
@@ -6838,7 +6901,6 @@ PGrnRemoveUnusedTables(void)
 		char *idEnd = NULL;
 		int nameSize;
 		Oid relationFileNodeID;
-		unsigned int i;
 
 		if (!PGrnIsWritable())
 			break;
@@ -6853,44 +6915,7 @@ PGrnRemoveUnusedTables(void)
 		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
 			continue;
 
-		for (i = 0; true; i++)
-		{
-			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			grn_obj *lexicon;
-
-			snprintf(tableName, sizeof(tableName),
-					 PGrnLexiconNameFormat, relationFileNodeID, i);
-			lexicon = grn_ctx_get(ctx, tableName, -1);
-			if (!lexicon)
-				break;
-
-			PGrnRemoveColumns(lexicon);
-		}
-
-		{
-			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			snprintf(tableName, sizeof(tableName),
-					 PGrnSourcesTableNameFormat, relationFileNodeID);
-			PGrnRemoveObject(tableName);
-			PGrnAliasDeleteRaw(relationFileNodeID);
-			PGrnIndexStatusDeleteRaw(relationFileNodeID);
-		}
-
-		for (i = 0; true; i++)
-		{
-			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			grn_obj *lexicon;
-
-			snprintf(tableName, sizeof(tableName),
-					 PGrnLexiconNameFormat, relationFileNodeID, i);
-			lexicon = grn_ctx_get(ctx, tableName, -1);
-			if (!lexicon)
-				break;
-
-			PGrnRemoveObject(tableName);
-		}
-
-		PGrnJSONBRemoveUnusedTables(relationFileNodeID);
+		PGrnRemoveUnusedTable(relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
 }
