@@ -54,6 +54,7 @@ install:
       11|12)
         sudo service postgresql stop
         sudo apt purge postgresql-{9.3,9.4,9.5,9.6,10}
+        sudo apt purge postgresql-client
         sudo apt purge postgresql-client-{9.3,9.4,9.5,9.6,10}
         sudo apt install -V \
           libmsgpack-dev \
@@ -66,10 +67,15 @@ install:
       *)
         sudo apt install -V \
           libmsgpack-dev \
+          postgresql-${PG_VERSION} \
+          postgresql-client-${PG_VERSION} \
           postgresql-server-dev-${PG_VERSION}
         ;;
     esac
   - echo $PATH
+  - ls -lah /usr/lib/postgresql/
+  - ls -lah /usr/lib/postgresql/*/bin/
+  - ls -lah /usr/lib/postgresql/*/lib/pgxs/src/makefiles/
   - which pg_config
   - pg_config --version
   - pg_config
