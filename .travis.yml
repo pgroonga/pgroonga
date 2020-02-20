@@ -69,6 +69,10 @@ install:
           postgresql-server-dev-${PG_VERSION}
         ;;
     esac
+  - echo $PATH
+  - which pg_config
+  - pg_config --version
+  - pg_config
   - PKG_CONFIG_PATH=$PWD/data/travis/pkgconfig make DEBUG=1 HAVE_MSGPACK=1
   - sudo make install
 script:
