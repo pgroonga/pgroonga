@@ -1,0 +1,54 @@
+name: Linux
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: |
+        0 0 * * *
+jobs:
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        postgresql-version:
+          - 9.5.21
+          - 9.6.17
+          - 10.12
+          - 11.7
+          - 12.2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+          submodules: true
+      - name: Install dependency
+        run: |
+          curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
+          sudo gem install test-unit
+          sudo apt -y -V install libreadline-dev
+        env:
+          GROONGA_MASTER: yes
+      - name: Install PostgreSQL
+        run: |
+          wget https://ftp.postgresql.org/pub/source/v${{ matrix.postgresql-version }}/postgresql-${{ matrix.postgresql-version }}.tar.bz2
+          tar xf postgresql-${{ matrix.postgresql-version }}.tar.bz2
+          cd postgresql-${{ matrix.postgresql-version }}
+          ./configure --prefix=/tmp/local
+          make > /dev/null
+          make install > /dev/null
+      - name: Init PostgreSQL
+        run: |
+          mkdir -p /tmp/local/var/lib
+          /tmp/local/bin/initdb --locale C --encoding UTF-8 -D /tmp/local/var/lib/postgresql
+          /tmp/local/bin/postgres -D /tmp/local/var/lib/postgresql &
+      - name: Run regression tests
+        run: |
+          PATH=/tmp/local/bin:$PATH test/run-sql-test.sh
