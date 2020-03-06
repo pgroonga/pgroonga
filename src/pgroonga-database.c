@@ -5,6 +5,7 @@
 #include "pgrn-tablespace.h"
 
 #include <miscadmin.h>
+#include <utils/acl.h>
 
 PG_MODULE_MAGIC;
 
