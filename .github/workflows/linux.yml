@@ -18,11 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         postgresql-version:
-          - 9.5.21
-          - 9.6.17
-          - 10.12
-          - 11.7
-          - 12.2
+          - 9.5
+          - 9.6
+          - 10
+          - 11
+          - 12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -32,23 +32,18 @@ jobs:
       - name: Install dependency
         run: |
           curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
-          sudo gem install test-unit
-          sudo apt -y -V install libreadline-dev
         env:
           GROONGA_MASTER: yes
       - name: Install PostgreSQL
         run: |
-          wget https://ftp.postgresql.org/pub/source/v${{ matrix.postgresql-version }}/postgresql-${{ matrix.postgresql-version }}.tar.bz2
-          tar xf postgresql-${{ matrix.postgresql-version }}.tar.bz2
-          cd postgresql-${{ matrix.postgresql-version }}
-          ./configure --prefix=/tmp/local
-          make > /dev/null
-          make install > /dev/null
-      - name: Init PostgreSQL
-        run: |
-          mkdir -p /tmp/local/var/lib
-          /tmp/local/bin/initdb --locale C --encoding UTF-8 -D /tmp/local/var/lib/postgresql
-          /tmp/local/bin/postgres -D /tmp/local/var/lib/postgresql &
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt update
+          sudo apt -y -V install postgresql-${{ matrix.postgresql-version }}
+          sudo apt -y -V install postgresql-server-dev-${{ matrix.postgresql-version }}
+          sudo systemctl start postgresql
+          sudo systemctl enable postgresql
+          sudo -u postgres -H psql -c "CREATE ROLE root SUPERUSER LOGIN;"
       - name: Run regression tests
         run: |
-          PATH=/tmp/local/bin:$PATH test/run-sql-test.sh
+          sudo test/run-sql-test.sh
