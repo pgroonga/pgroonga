@@ -32,7 +32,11 @@ while [ $# -gt 0 ]; do
 done
 
 DEBUG=1 HAVE_MSGPACK=1 run make -j$(nproc) > /dev/null
-run make install > /dev/null
+if [ "${NEED_SUDO:-no}" = "yes" ]; then
+  run sudo -H make install > /dev/null
+else
+  run make install > /dev/null
+fi
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 launcher="--launcher=$(pwd)/test/short-pgappname"
 if [ -n "${test_names}" ]; then

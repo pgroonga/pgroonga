@@ -75,7 +75,6 @@ jobs:
             postgresql-server-dev-${{ matrix.postgresql-version }}
           sudo systemctl start postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
-          sudo -u postgres -H psql -c "CREATE ROLE root SUPERUSER LOGIN;"
       - name: Disable WAL tests
         if: |
           ${{ matrix.postgresql-version }} == '9.5'
