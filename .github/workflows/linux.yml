@@ -89,6 +89,11 @@ jobs:
         if: failure()
         run: |
           cat regression.diffs
+      - name: Show pgroonga.log
+        if: failure()
+        run: |
+          sudo cat \
+            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
       - name: Run unit test
         if: |
           ${{ matrix.postgresql-version }} != '9.5'
