@@ -77,7 +77,7 @@ jobs:
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Disable WAL tests
         if: |
-          ${{ matrix.postgresql-version }} == '9.5'
+          matrix.postgresql-version == '9.5'
         run: |
           rm -rf sql/function/wal-apply/
           rm -rf sql/function/wal-truncate/
@@ -96,7 +96,7 @@ jobs:
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
       - name: Run unit test
         if: |
-          ${{ matrix.postgresql-version }} != '9.5'
+          matrix.postgresql-version != '9.5'
         run: |
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
             test/run-test.rb
