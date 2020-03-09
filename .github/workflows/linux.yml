@@ -37,7 +37,7 @@ jobs:
             postgresql-version: "12"
           - label: PostgreSQL 12 with Groonga master
             postgresql-version: "12"
-            with-groonga: "yes"
+            groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
     runs-on: ubuntu-latest
