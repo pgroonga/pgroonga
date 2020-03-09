@@ -32,6 +32,44 @@ jobs:
       - name: Install dependency
         run: |
           curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
+          sudo apt -y -V install libmsgpack-dev
+          sudo apt -y -V install groonga-token-filter-stem
+          sudo apt -y -V install groonga-tokenizer-mecab
+      - name: Disable WAL tests
+        if: ${{ matrix.postgresql-version }} == '9.5'
+        run: |
+          rm -rf sql/function/wal-apply/
+          rm -rf sql/function/wal-truncate/
+          rm -rf sql/function/set-writable/
+      - name: Install PostgreSQL
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt update
+          sudo apt -y -V install postgresql-${{ matrix.postgresql-version }}
+          sudo apt -y -V install postgresql-server-dev-${{ matrix.postgresql-version }}
+          sudo systemctl start postgresql
+          sudo systemctl enable postgresql
+          sudo -u postgres -H psql -c "CREATE ROLE root SUPERUSER LOGIN;"
+      - name: Run regression tests
+        run: |
+          sudo test/run-sql-test.sh
+  test-with-groonga-master:
+    name: Test with Groonga master
+    strategy:
+      fail-fast: false
+      matrix:
+        postgresql-version:
+          - 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 1
+          submodules: true
+      - name: Install dependency
+        run: |
+          curl --silent --location https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | sh
         env:
           GROONGA_MASTER: yes
       - name: Install PostgreSQL
