@@ -62,8 +62,8 @@ jobs:
       - name: Install PostgreSQL
         run: |
           echo \
-            "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-            | sudo tee /etc/apt/sources.list.d/pgdg.list
+            "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
+            sudo tee /etc/apt/sources.list.d/pgdg.list
           curl \
             --silent \
             --location \
@@ -93,4 +93,5 @@ jobs:
         if: |
           ${{ matrix.postgresql-version }} != '9.5'
         run: |
-          test/run-test.rb
+          PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
+            test/run-test.rb
