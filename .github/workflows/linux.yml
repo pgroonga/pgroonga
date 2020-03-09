@@ -1,0 +1,102 @@
+name: Linux
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: |
+        0 0 * * *
+jobs:
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        label:
+          - PostgreSQL 9.5
+          - PostgreSQL 9.6
+          - PostgreSQL 10
+          - PostgreSQL 11
+          - PostgreSQL 12
+          - PostgreSQL 12 with Groonga master
+        include:
+          - label: PostgreSQL 9.5
+            postgresql-version: "9.5"
+          - label: PostgreSQL 9.6
+            postgresql-version: "9.6"
+          - label: PostgreSQL 10
+            postgresql-version: "10"
+          - label: PostgreSQL 11
+            postgresql-version: "11"
+          - label: PostgreSQL 12
+            postgresql-version: "12"
+          - label: PostgreSQL 12 with Groonga master
+            postgresql-version: "12"
+            groonga-master: "yes"
+    env:
+      GROONGA_MASTER: ${{ matrix.groonga-master }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout submodules
+        run: |
+          git submodule update --init --force --recursive --depth 1
+      - name: Install dependency
+        run: |
+          curl \
+            --silent \
+            --location \
+            https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | \
+            sh
+          if [ "${GROONGA_MASTER}" != "yes" ]; then
+            sudo apt -y -V install \
+              groonga-token-filter-stem \
+              groonga-tokenizer-mecab \
+              libmsgpack-dev
+          fi
+      - name: Install PostgreSQL
+        run: |
+          echo \
+            "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
+            sudo tee /etc/apt/sources.list.d/pgdg.list
+          curl \
+            --silent \
+            --location \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+            sudo apt-key add -
+          sudo apt update
+          sudo apt -y -V install \
+            postgresql-${{ matrix.postgresql-version }} \
+            postgresql-server-dev-${{ matrix.postgresql-version }}
+          sudo systemctl start postgresql
+          sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
+      - name: Disable WAL tests
+        if: |
+          matrix.postgresql-version == '9.5'
+        run: |
+          rm -rf sql/function/wal-apply/
+          rm -rf sql/function/wal-truncate/
+          rm -rf sql/function/set-writable/
+      - name: Run regression test
+        run: |
+          NEED_SUDO=yes test/run-sql-test.sh
+      - name: Show diff
+        if: failure()
+        run: |
+          cat regression.diffs
+      - name: Show pgroonga.log
+        if: failure()
+        run: |
+          sudo cat \
+            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
+      - name: Run unit test
+        if: |
+          matrix.postgresql-version != '9.5'
+        run: |
+          PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
+            test/run-test.rb

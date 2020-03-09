@@ -427,8 +427,9 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 
 		ereport(ERROR,
 				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						message)));
+				 errmsg("pgroonga: failed to parse expression: %s: <%.*s>",
+						message,
+						(int) querySize, query)));
 	}
 }
 
@@ -464,8 +465,9 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 
 		ereport(ERROR,
 				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						message)));
+				 errmsg("pgroonga: failed to parse expression: %s: <%.*s>",
+						message,
+						(int) scriptSize, script)));
 	}
 }
 
