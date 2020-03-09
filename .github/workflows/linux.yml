@@ -93,4 +93,4 @@ jobs:
         if: |
           ${{ matrix.postgresql-version }} != '9.5'
         run: |
-          test/run-test.sh
+          test/run-test.rb
