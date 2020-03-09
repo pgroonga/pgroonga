@@ -5940,8 +5940,26 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 		grn_obj *indexColumn;
 		grn_obj *lexicon;
 		grn_obj *tokenizer;
+		unsigned int nthAttribute = 0;
 
-		indexColumn = PGrnLookupIndexColumn(scan->indexRelation, 0, ERROR);
+		TupleDesc desc = RelationGetDescr(scan->indexRelation);
+		Form_pg_attribute attribute = TupleDescAttr(desc, nthAttribute);
+
+		if (PGrnAttributeIsJSONB(attribute->atttypid))
+		{
+			grn_obj *jsonValuesTable;
+			jsonValuesTable =
+				PGrnJSONBLookupValuesTable(scan->indexRelation,
+										   nthAttribute,
+										   ERROR);
+			indexColumn = PGrnLookupColumn(jsonValuesTable,
+										   PGrnIndexColumnName,
+										   ERROR);
+		}
+		else
+		{
+			indexColumn = PGrnLookupIndexColumn(scan->indexRelation, nthAttribute, ERROR);
+		}
 		lexicon = grn_column_table(ctx, indexColumn);
 		tokenizer = grn_obj_get_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
 									 NULL);
