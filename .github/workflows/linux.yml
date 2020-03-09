@@ -26,17 +26,17 @@ jobs:
           - PostgreSQL 12 with Groonga master
         include:
           - label: PostgreSQL 9.5
-            postgresql-version: 9.5
+            postgresql-version: "9.5"
           - label: PostgreSQL 9.6
-            postgresql-version: 9.6
+            postgresql-version: "9.6"
           - label: PostgreSQL 10
-            postgresql-version: 10
+            postgresql-version: "10"
           - label: PostgreSQL 11
-            postgresql-version: 11
+            postgresql-version: "11"
           - label: PostgreSQL 12
-            postgresql-version: 12
+            postgresql-version: "12"
           - label: PostgreSQL 12 with Groonga master
-            postgresql-version: 12
+            postgresql-version: "12"
             with-groonga: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
@@ -85,7 +85,7 @@ jobs:
           rm -rf sql/function/set-writable/
       - name: Run regression test
         run: |
-          sudo test/run-sql-test.sh
+          NEED_SUDO=yes test/run-sql-test.sh
       - name: Show diff
         if: failure()
         run: |
