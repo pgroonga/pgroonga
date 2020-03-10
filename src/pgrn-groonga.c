@@ -15,7 +15,6 @@ bool PGrnIsTemporaryIndexSearchAvailable;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
-static bool IsTemporaryIndexSearchAvailable(void);
 
 static bool
 IsTemporaryIndexSearchAvailable(void)
