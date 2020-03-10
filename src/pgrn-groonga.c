@@ -15,6 +15,42 @@ bool PGrnIsTemporaryIndexSearchAvailable;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
+static bool IsTemporaryIndexSearchAvailable(void);
+
+static bool
+IsTemporaryIndexSearchAvailable(void)
+{
+	const char *libgroonga_version;
+	char *libgroonga_version_temp;
+	char *major_version;
+	char *minor_version;
+	char *micro_version;
+
+	libgroonga_version = grn_get_version();
+	libgroonga_version_temp = (char *)malloc(strlen(libgroonga_version)+1);
+	strcpy(libgroonga_version_temp, libgroonga_version);
+
+	major_version = strtok(libgroonga_version_temp, ".");
+	minor_version = strtok(NULL, ".");
+	micro_version = strtok(NULL, ".");
+
+	if (atoi(major_version) > 8)
+	{
+		free(libgroonga_version_temp);
+		return true;
+	}
+	else if (atoi(major_version) == 8)
+	{
+		if (atoi(minor_version)    >= 0
+			&& atoi(micro_version) >= 2)
+		{
+			free(libgroonga_version_temp);
+			return true;
+		}
+	}
+	free(libgroonga_version_temp);
+	return false;
+}
 
 void
 PGrnInitializeGroongaInformation(void)
@@ -34,14 +70,7 @@ PGrnInitializeGroongaInformation(void)
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZSTD, &grnIsSupported);
 	PGrnIsZstdAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
-
-	{
-		const char *libgroonga_version;
-		libgroonga_version = grn_get_version();
-		PGrnIsTemporaryIndexSearchAvailable =
-			(atoi(libgroonga_version) >= 8 &&
-			 (strcmp(libgroonga_version, "8.0.2") > 0));
-	}
+	PGrnIsTemporaryIndexSearchAvailable = IsTemporaryIndexSearchAvailable();
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);
 }
