@@ -5937,9 +5937,17 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 
 	if (scan->numberOfKeys == 0)
 	{
+		TupleDesc desc = RelationGetDescr(scan->indexRelation);
 		grn_obj *indexColumn;
 		grn_obj *lexicon;
 		grn_obj *tokenizer;
+
+		if (desc->natts == 1)
+		{
+			Form_pg_attribute attribute = TupleDescAttr(desc, 0);
+			if (PGrnAttributeIsJSONB(attribute->atttypid))
+				return false;
+		}
 
 		indexColumn = PGrnLookupIndexColumn(scan->indexRelation, 0, ERROR);
 		lexicon = grn_column_table(ctx, indexColumn);
