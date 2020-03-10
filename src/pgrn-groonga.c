@@ -20,35 +20,19 @@ static bool
 IsTemporaryIndexSearchAvailable(void)
 {
 	const char *libgroonga_version;
-	char *libgroonga_version_temp;
-	char *major_version;
-	char *minor_version;
-	char *micro_version;
+	int major_version;
 
 	libgroonga_version = grn_get_version();
-	libgroonga_version_temp = (char *)malloc(strlen(libgroonga_version)+1);
-	strcpy(libgroonga_version_temp, libgroonga_version);
 
-	major_version = strtok(libgroonga_version_temp, ".");
-	minor_version = strtok(NULL, ".");
-	micro_version = strtok(NULL, ".");
+	major_version = atoi(libgroonga_version);
 
-	if (atoi(major_version) > 8)
-	{
-		free(libgroonga_version_temp);
+	if (major_version > 8)
 		return true;
-	}
-	else if (atoi(major_version) == 8)
-	{
-		if (atoi(minor_version)    >= 0
-			&& atoi(micro_version) >= 2)
-		{
-			free(libgroonga_version_temp);
-			return true;
-		}
-	}
-	free(libgroonga_version_temp);
-	return false;
+
+	if (major_version < 8)
+		return false;
+
+	return strcmp(libgroonga_version, "8.0.2") > 0;
 }
 
 void
