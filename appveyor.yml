@@ -77,9 +77,7 @@ build_script:
 
   # Groonga
   - |
-    call ^
-      "C:\Program Files (x86)\Microsoft Visual Studio %VS_VERSION%.0\VC\vcvarsall.bat" ^
-      %ARCH%
+    call "C:\Program Files (x86)\Microsoft Visual Studio %VS_VERSION%.0\VC\vcvarsall.bat" %ARCH%
   - ps: |
       if ($Env:GROONGA_MASTER -eq "yes") {
         git clone --depth 1 `
