@@ -12,6 +12,10 @@ class PostgreSQL96PGroongaPackageTask < PGroongaPackageTask
     ]
   end
 
+  def enable_ubuntu?
+    false
+  end
+
   def yum_targets_default
     [
       "centos-6",
