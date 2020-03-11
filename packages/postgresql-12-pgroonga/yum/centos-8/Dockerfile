@@ -9,6 +9,7 @@ RUN \
     https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
     https://packages.groonga.org/centos/groonga-release-latest.noarch.rpm \
     epel-release && \
+  sed -i'' -e 's/k$//g' /etc/yum.repos.d/pgdg-redhat-all.repo && \
   dnf module -y ${quiet} disable postgresql && \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=PowerTools -y ${quiet} \
