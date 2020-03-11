@@ -10,6 +10,7 @@ RUN \
     https://packages.groonga.org/centos/groonga-release-latest.noarch.rpm \
     centos-release-scl \
     epel-release && \
+  sed -i'' -e 's/k$//g' /etc/yum.repos.d/pgdg-redhat-all.repo && \
   yum groupinstall -y ${quiet} "Development Tools" && \
   yum install -y ${quiet} \
     ccache \
