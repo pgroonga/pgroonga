@@ -17,6 +17,7 @@
 /packages/*/apt/repositories/
 /packages/*/apt/tmp/
 /packages/*/debian.*/
+/packages/*/ubuntu/tmp/
 /packages/*/yum/*.spec.in
 /packages/*/yum/build.sh
 /packages/*/yum/env.sh

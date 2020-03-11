@@ -14,6 +14,12 @@ class PostgreSQL11PGroongaPackageTask < PGroongaPackageTask
     ]
   end
 
+  def ubuntu_targets_default
+    [
+      ["eoan", "19.10"],
+    ]
+  end
+
   def yum_targets_default
     [
       "centos-6",

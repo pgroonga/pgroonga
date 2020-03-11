@@ -12,6 +12,12 @@ class PostgreSQL10PGroongaPackageTask < PGroongaPackageTask
     ]
   end
 
+  def ubuntu_targets_default
+    [
+      ["bionic", "18.04"],
+    ]
+  end
+
   def yum_targets_default
     [
       "centos-6",

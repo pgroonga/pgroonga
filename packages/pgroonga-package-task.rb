@@ -2,13 +2,13 @@ require "pathname"
 require "time"
 require_relative "../helper"
 
-apache_arrow_repository = ENV["APACHE_ARROW_REPOSITORY"]
-if apache_arrow_repository.nil?
-  raise "Specify APACHE_ARROW_REPOSITORY environment variable"
+groonga_repository = ENV["GROONGA_REPOSITORY"]
+if groonga_repository.nil?
+  raise "Specify GROONGA_REPOSITORY environment variable"
 end
-require "#{apache_arrow_repository}/dev/tasks/linux-packages/package-task"
+require "#{groonga_repository}/packages/packages-groonga-org-package-task"
 
-class PGroongaPackageTask < PackageTask
+class PGroongaPackageTask < PackagesGroongaOrgPackageTask
   def initialize(postgresql_version)
     @postgresql_version = postgresql_version
     @postgresql_package_version = postgresql_version.gsub(".", "")
@@ -78,7 +78,11 @@ class PGroongaPackageTask < PackageTask
     control_paths = []
     debian_directory = package_directory + "debian"
     control_in_path = debian_directory + "control.in"
-    apt_targets.each do |target|
+    targets = apt_targets
+    ubuntu_targets.each do |code_name, _version|
+      targets << "ubuntu-#{code_name}"
+    end
+    targets.each do |target|
       distribution, code_name, _architecture = target.split("-", 3)
       target_debian_directory = package_directory + "debian.#{target}"
       control_path = target_debian_directory + "control"
@@ -98,6 +102,13 @@ class PGroongaPackageTask < PackageTask
     end
     namespace :apt do
       task :build => control_paths
+    end
+    namespace :ubuntu do
+      namespace :upload do
+        ubuntu_targets.each do |code_name, version|
+          task code_name => control_paths
+        end
+      end
     end
   end
 

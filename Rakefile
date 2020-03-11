@@ -29,26 +29,6 @@ def export_source(base_name)
      "tar xf -")
 end
 
-def prepare_debian_dir(source, destination, variables)
-  cp_r(source, destination)
-  control_path = "#{destination}/control"
-  control_in_path = "#{control_path}.in"
-  control_in_data = File.read(control_in_path)
-  control_data = control_in_data.gsub(/@(.+?)@/) do |matched|
-    variables[$1] || matched
-  end
-  File.open(control_path, "w") do |control|
-    control.print(control_data)
-  end
-  rm_f(control_in_path)
-end
-
-def debian_variables
-  {
-    "GROONGA_VERSION" => latest_groonga_version,
-  }
-end
-
 version = Helper.detect_version(package)
 
 archive_base_name = "#{package}-#{version}"
@@ -201,73 +181,14 @@ namespace :package do
        rsync_base_path)
   end
 
-  namespace :ubuntu do
-    namespace :upload do
-      tmp_dir = "packages/ubuntu/tmp"
-      tmp_debian_dir = "#{tmp_dir}/debian"
-
-      desc "Upload package for PostgreSQL 9.5"
-      task :postgresql95 => [archive_name] do
-        package_name = "postgresql-9.5-pgroonga"
-        rm_rf(tmp_dir)
-        mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/#{package_name}/debian",
-                           tmp_debian_dir,
-                           debian_variables)
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package_name,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--ubuntu-code-names", "xenial",
-             "--ubuntu-versions", "16.04",
-             "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
-      end
-
-      desc "Upload package for PostgreSQL 10"
-      task :postgresql10 => [archive_name] do
-        package_name = "postgresql-10-pgroonga"
-        rm_rf(tmp_dir)
-        mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/#{package_name}/debian",
-                           tmp_debian_dir,
-                           debian_variables)
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package_name,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--ubuntu-code-names", "bionic",
-             "--ubuntu-versions", "18.04",
-             "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
-      end
-
-      desc "Upload package for PostgreSQL 11"
-      task :postgresql11 => [archive_name] do
-        package_name = "postgresql-11-pgroonga"
-        rm_rf(tmp_dir)
-        mkdir_p(tmp_dir)
-        prepare_debian_dir("packages/#{package_name}/debian",
-                           tmp_debian_dir,
-                           debian_variables)
-        ruby("#{groonga_source_dir}/packages/ubuntu/upload.rb",
-             "--package", package_name,
-             "--version", version,
-             "--source-archive", archive_name,
-             "--ubuntu-code-names", "disco,eoan",
-             "--ubuntu-versions", "19.04,19.10",
-             "--debian-directory", tmp_debian_dir,
-             "--pgp-sign-key", Helper.env_value("LAUNCHPAD_UPLOADER_PGP_KEY"))
+  desc "Release Ubuntu packages"
+  task :ubuntu do
+    package_names.each do |package_name|
+      package_dir = "packages/#{package_name}"
+      cd(package_dir) do
+        ruby("-S", "rake", "ubuntu", "--trace")
       end
     end
-
-    desc "Upload package"
-    upload_tasks = [
-      "package:ubuntu:upload:postgresql95",
-      "package:ubuntu:upload:postgresql10",
-      "package:ubuntu:upload:postgresql11",
-    ]
-    task :upload => upload_tasks
   end
 
   desc "Release Yum packages"

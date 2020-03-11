@@ -48,7 +48,9 @@ jobs:
       - name: Clone dependencies
         run: |
           cd ..
-          git clone https://github.com/apache/arrow.git
+          git clone --depth 1 https://github.com/groonga/groonga.git
+          cd groonga
+          git submodule update --init --force --recursive --depth 1
       - name: Build archive
         run: |
           rake dist
@@ -72,7 +74,7 @@ jobs:
               ;;
           esac
         env:
-          APACHE_ARROW_REPOSITORY: ../../../arrow
+          GROONGA_REPOSITORY: ../../../groonga
 
       # Artifact
       - uses: actions/upload-artifact@master
