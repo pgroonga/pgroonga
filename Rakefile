@@ -8,14 +8,6 @@ require_relative "helper"
 package = "pgroonga"
 package_label = "PGroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
-groonga_source_dir_candidates = [
-  "../groonga.clean",
-  "../groonga",
-]
-groonga_source_dir = groonga_source_dir_candidates.find do |candidate|
-  File.exist?(candidate)
-end
-groonga_source_dir = File.expand_path(groonga_source_dir) if groonga_source_dir
 
 def latest_groonga_version
   @latest_groonga_version ||= Helper.detect_latest_groonga_version
