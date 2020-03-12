@@ -1,3 +1,9 @@
+postgresql-12-pgroonga (2.2.5-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Horimoto Yasuhiro <horimoto@clear-code.com>  Thu, 12 Mar 2020 02:34:32 -0000
+
 postgresql-12-pgroonga (2.2.4-1) unstable; urgency=low
 
   * New upstream release.
