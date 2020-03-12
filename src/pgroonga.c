@@ -6077,6 +6077,18 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		NameData *name;
 		grn_obj *dataColumn;
 
+		if (PGrnAttributeIsJSONB(attribute->atttypid))
+		{
+			/* FIXME: PostgreSQL chooses index only scan for COUNT(*)
+			   even if PGroonga returns false by pgroonga_canreturn().
+			   We should send a patch to PostgreSQL.
+			*/
+			/* values[i] = JsonbPGetDatum(NULL); */
+			values[i] = PointerGetDatum(NULL);
+			isNulls[i] = true;
+			continue;
+		}
+
 		name = &(attribute->attname);
 		dataColumn = PGrnLookupColumn(so->sourcesTable, name->data, ERROR);
 		GRN_BULK_REWIND(&(buffers->general));
