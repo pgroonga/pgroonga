@@ -74,6 +74,15 @@ class PGroongaPackageTask < PackagesGroongaOrgPackageTask
     end
   end
 
+  def apt_expand_variable(key)
+    case key
+    when "GROONGA_VERSION"
+      latest_groonga_version
+    else
+      nil
+    end
+  end
+
   def define_debian_control_task
     control_paths = []
     debian_directory = package_directory + "debian"
@@ -89,10 +98,9 @@ class PGroongaPackageTask < PackagesGroongaOrgPackageTask
       control_paths << control_path.to_s
       file control_path.to_s => control_in_path.to_s do |task|
         control_in_content = control_in_path.read
-        control_content =
-          control_in_content
-            .gsub(/@GROONGA_VERSION@/,
-                  latest_groonga_version)
+        control_content = substitute_content(control_in_content) do |key, matched|
+          apt_expand_variable(key) || matched
+        end
         rm_rf(target_debian_directory)
         cp_r(debian_directory, target_debian_directory)
         control_path.open("w") do |file|
