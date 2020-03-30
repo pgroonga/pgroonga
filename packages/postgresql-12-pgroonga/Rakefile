@@ -12,8 +12,10 @@ class PostgreSQL12PGroongaPackageTask < PGroongaPackageTask
     ]
   end
 
-  def enable_ubuntu?
-    false
+  def ubuntu_targets_default
+    [
+      ["focal", "20.04"],
+    ]
   end
 
   def yum_targets_default
