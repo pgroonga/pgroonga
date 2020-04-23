@@ -212,6 +212,7 @@ namespace :package do
 
       github_token = Helper.env_value("GITHUB_TOKEN")
       client = Octokit::Client.new(:access_token => github_token)
+      client.auto_paginate = true
 
       appveyor_url = "https://ci.appveyor.com/"
       appveyor_info = nil
