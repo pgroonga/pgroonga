@@ -62,6 +62,7 @@ include_directories(
   "${PGRN_POSTGRESQL_DIR}/include/server/port/win32"
   "${PGRN_POSTGRESQL_DIR}/include/server"
   "${PGRN_POSTGRESQL_DIR}/include"
+  "${CMAKE_CURRENT_BINARY_DIR}/vendor/groonga/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/xxHash"
   "${PGRN_BUNDLED_MESSAGE_PACK_DIR}/include")
