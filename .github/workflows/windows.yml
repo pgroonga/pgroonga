@@ -91,17 +91,17 @@ jobs:
             --verbose
       - name: Package
         run: |
-          New-Item ..\packages -ItemType Directory
+          New-Item artifacts -ItemType Directory
           cmake `
             --build ..\build `
             --config RelWithDebInfo `
             --target package `
             --verbose
-          Copy-Item -Path ..\build\*.zip -Destination ..\packages
-      - uses: actions/upload-artifact@master
+          Copy-Item -Path ..\build\*.zip -Destination artifacts
+      - uses: actions/upload-artifact@v2
         with:
           name: postgresql-12-x64
-          path: ..\packages
+          path: artifacts
       - name: Run regression test
         # TODO: Set culture to ja-JP
         if: |
