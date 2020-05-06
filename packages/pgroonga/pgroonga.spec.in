@@ -1,0 +1,99 @@
+# -*- rpm -*-
+
+# find-debuginfo.sh crashes on CentOS 8...
+%define debug_package %{nil}
+
+%define _use_msgpack false
+
+%define pg_version         @PG_VERSION@
+%define pg_package_version @PG_PACKAGE_VERSION@
+%define pg_prefix          pgsql
+%define pg_bindir          %{pg_prefix}/bin
+%define pg_libdir          /usr/lib64/%{pg_prefix}
+%define pg_datadir         /usr/share/%{pg_prefix}
+%define pg_includedir      /usr/include/%{pg_prefix}
+
+
+%define support_jit %{pg_package_version} >= 11 && %{pg_package_version} < 94
+%define need_llvm %{support_jit} && %{fedora} >= 30
+
+Name:		@PACKAGE@
+Version:	@VERSION@
+Release:	1%{?dist}
+Summary:	Fast full-text search plugin for PostgreSQL based on Groonga
+
+Group:		Applications/Text
+License:	PostgreSQL
+URL:		https://pgroonga.github.io/
+Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
+
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
+BuildRequires:	groonga-devel
+%if %{_use_msgpack}
+BuildRequires:	msgpack-devel
+%endif
+BuildRequires:	postgresql-server-devel, libpq-devel, gcc
+%if %{need_llvm}
+BuildRequires:	ccache
+BuildRequires:	llvm-devel
+%endif
+Requires:	groonga-libs >= @GROONGA_VERSION@
+%if %{_use_msgpack}
+Requires:	msgpack
+%endif
+Requires:	postgresql-server
+
+%description
+This package provides a fast full-text search plugin for PostgreSQL.
+It is based on Groonga.
+
+%prep
+%setup -q -n pgroonga-%{version}
+
+
+%build
+PATH="%{pg_bindir}:$PATH" \
+  PKG_CONFIG_PATH="${PWD}" \
+  make \
+%if %{_use_msgpack}
+    HAVE_MSGPACK=1 \
+%endif
+    enable_rpath=no \
+    %{?_smp_mflags}
+
+%install
+PATH="%{pg_bindir}:$PATH" \
+  make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/
+cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
+/var/lib/pgsql/*/data/pgroonga.log {
+    weekly
+    missingok
+    rotate 10
+    compress
+    delaycompress
+    notifempty
+    su postgres postgres
+}
+EOF
+
+%files
+%doc README.md COPYING
+%config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
+%{pg_libdir}/*.so
+%{pg_datadir}/extension/*.control
+%{pg_datadir}/extension/*.sql
+%if %{support_jit}
+%{pg_includedir}/server/contrib/pgroonga_check/
+%{pg_includedir}/server/extension/pgroonga/
+%{pg_includedir}/server/extension/pgroonga_database/
+%endif
+%if %{need_llvm}
+%{pg_libdir}/bitcode/pgroonga*.index.bc
+%{pg_libdir}/bitcode/pgroonga*/
+%endif
+
+%changelog
+* Thu May 18 2020 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.2.6-1
+- initial packaging for Fedora.

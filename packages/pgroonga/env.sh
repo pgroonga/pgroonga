@@ -1,0 +1,4 @@
+SOURCE_ARCHIVE=pgroonga-2.2.5.tar.gz
+PACKAGE=pgroonga
+VERSION=2.2.5
+RELEASE=1
