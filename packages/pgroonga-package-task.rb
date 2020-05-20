@@ -8,34 +8,16 @@ if groonga_repository.nil?
 end
 require "#{groonga_repository}/packages/packages-groonga-org-package-task"
 
-class PGroongaPackageTask < PackagesGroongaOrgPackageTask
-  def initialize(postgresql_version)
-    @postgresql_version = postgresql_version
-    @postgresql_package_version = postgresql_version.gsub(".", "")
-    super("postgresql-#{@postgresql_version}-pgroonga",
+class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
+  def initialize(package_name)
+    super(package_name,
           Helper.detect_version("pgroonga"),
-          detect_release_time)
+          Helper.detect_release_time)
     @original_archive_base_name = "pgroonga-#{@version}"
     @original_archive_name = "#{@original_archive_base_name}.tar.gz"
-    @rpm_package = "postgresql#{@postgresql_package_version}-pgroonga"
-  end
-
-  def define
-    super
-    define_debian_control_task
-    define_yum_spec_in_task
   end
 
   private
-  def detect_release_time
-    release_time_env = ENV["RELEASE_TIME"] || ENV["NEW_RELEASE_DATE"]
-    if release_time_env
-      Time.parse(release_time_env).utc
-    else
-      Time.now.utc
-    end
-  end
-
   def latest_groonga_version
     @latest_groonga_version ||= Helper.detect_latest_groonga_version
   end
@@ -83,6 +65,35 @@ class PGroongaPackageTask < PackagesGroongaOrgPackageTask
     end
   end
 
+  def yum_expand_variable(key)
+    case key
+    when "PG_VERSION"
+      @postgresql_version
+    when "PG_PACKAGE_VERSION"
+      @postgresql_package_version
+    when "GROONGA_VERSION"
+      latest_groonga_version
+    else
+      super
+    end
+  end
+end
+
+class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
+  def initialize(postgresql_version)
+    @postgresql_version = postgresql_version
+    @postgresql_package_version = postgresql_version.gsub(".", "")
+    super("postgresql-#{@postgresql_version}-pgroonga")
+    @rpm_package = "postgresql#{@postgresql_package_version}-pgroonga"
+  end
+
+  def define
+    super
+    define_debian_control_task
+    define_yum_spec_in_task
+  end
+
+  private
   def define_debian_control_task
     control_paths = []
     debian_directory = package_directory + "debian"
@@ -117,19 +128,6 @@ class PGroongaPackageTask < PackagesGroongaOrgPackageTask
           task code_name => control_paths
         end
       end
-    end
-  end
-
-  def yum_expand_variable(key)
-    case key
-    when "PG_VERSION"
-      @postgresql_version
-    when "PG_PACKAGE_VERSION"
-      @postgresql_package_version
-    when "GROONGA_VERSION"
-      latest_groonga_version
-    else
-      super
     end
   end
 

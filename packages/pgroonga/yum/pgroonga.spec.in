@@ -1,0 +1,77 @@
+# -*- rpm -*-
+
+# TODO: Remove this
+%define debug_package %{nil}
+
+Name:		@PACKAGE@
+Version:	@VERSION@
+Release:	1%{?dist}
+Summary:	Fast full-text search plugin for PostgreSQL based on Groonga
+
+Group:		Applications/Text
+License:	PostgreSQL
+URL:		https://pgroonga.github.io/
+Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
+
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
+BuildRequires:	ccache
+BuildRequires:	clang
+BuildRequires:	gcc
+BuildRequires:	groonga-devel
+BuildRequires:	libpq-devel
+BuildRequires:	llvm-devel
+BuildRequires:	make
+BuildRequires:	msgpack-devel
+BuildRequires:	postgresql-server-devel
+Requires:	groonga-libs >= @GROONGA_VERSION@
+Requires:	logrotate
+Requires:	msgpack
+Requires:	postgresql-server
+
+%description
+This package provides a fast full-text search plugin for PostgreSQL.
+It is based on Groonga.
+
+%prep
+%setup -q -n pgroonga-%{version}
+
+
+%build
+make \
+  HAVE_MSGPACK=1 \
+  enable_rpath=no \
+  %{?_smp_mflags}
+
+%install
+PATH="%{pg_bindir}:$PATH" \
+make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/
+cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
+/var/lib/pgsql/*/data/pgroonga.log {
+    weekly
+    missingok
+    rotate 10
+    compress
+    delaycompress
+    notifempty
+    su postgres postgres
+}
+EOF
+
+strip $RPM_BUILD_ROOT%{_libdir}/pgsql/*.so
+
+rm -rf $RPM_BUILD_ROOT%{_includedir}
+
+%files
+%doc README.md COPYING
+%config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
+%{_libdir}/pgsql/*.so
+%{_libdir}/pgsql/bitcode/pgroonga*.index.bc
+%{_libdir}/pgsql/bitcode/pgroonga*/
+%{_datadir}/pgsql/extension/*.control
+%{_datadir}/pgsql/extension/*.sql
+
+%changelog
+* Wed May 06 2020 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.2.5-1
+- initial packaging for Fedora.

@@ -22,6 +22,15 @@ module Helper
     end
   end
 
+  def detect_release_time
+    release_time_env = ENV["RELEASE_TIME"] || ENV["NEW_RELEASE_DATE"]
+    if release_time_env
+      Time.parse(release_time_env).utc
+    else
+      Time.now.utc
+    end
+  end
+
   def detect_latest_groonga_version
     URI("https://packages.groonga.org/source/groonga/").open do |groonga_sources|
       versions = groonga_sources.read.scan(/<a href="groonga-([\d.]+).zip">/)

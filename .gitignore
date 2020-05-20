@@ -23,6 +23,7 @@
 /packages/*/yum/env.sh
 /packages/*/yum/repositories/
 /packages/*/yum/tmp/
+!/packages/pgroonga/yum/*.spec.in
 /packages/apt/repositories/
 /packages/source/
 /packages/yum/repositories/

@@ -1,27 +1,26 @@
 require_relative "../pgroonga-package-task"
 
-class PostgreSQL95PGroongaPackageTask < VersionedPGroongaPackageTask
+class PGroongaPackageTask < GenericPGroongaPackageTask
   def initialize
-    super("9.5")
+    super("pgroonga")
   end
 
   def apt_targets_default
-    []
+    [
+    ]
   end
 
   def ubuntu_targets_default
     [
-      ["xenial", "16.04"],
     ]
   end
 
   def yum_targets_default
     [
-      "centos-6",
-      "centos-7",
+      "fedora-32",
     ]
   end
 end
 
-task = PostgreSQL95PGroongaPackageTask.new
+task = PGroongaPackageTask.new
 task.define

@@ -1,6 +1,6 @@
 require_relative "../pgroonga-package-task"
 
-class PostgreSQL96PGroongaPackageTask < PGroongaPackageTask
+class PostgreSQL96PGroongaPackageTask < VersionedPGroongaPackageTask
   def initialize
     super("9.6")
   end
