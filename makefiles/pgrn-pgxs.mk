@@ -10,7 +10,7 @@ PG_CPPFLAGS += $(shell pkg-config --cflags $(PACKAGES))
 SHLIB_LINK += $(shell pkg-config --libs $(PACKAGES)) -lm
 
 PG_CPPFLAGS += -DPGRN_VERSION="\"${PGRN_VERSION}\""
-ifdef DEBUG
+ifdef PGRN_DEBUG
 PG_CPPFLAGS += -O0 -g3 -DPGROONGA_DEBUG=1
 SHLIB_LINK += -Wl,--rpath=$(shell pkg-config --libs-only-L $(PACKAGES) | sed -e 's/^-L//')
 endif
