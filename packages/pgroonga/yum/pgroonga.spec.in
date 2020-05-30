@@ -33,14 +33,12 @@ It is based on Groonga.
 
 
 %build
-make \
+%make_build \
   HAVE_MSGPACK=1 \
-  enable_rpath=no \
-  %{?_smp_mflags}
+  PG_CONFIG=%_bindir/pg_server_config
 
 %install
-PATH="%{pg_bindir}:$PATH" \
-make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+%make_install PG_CONFIG=%_bindir/pg_server_config
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/
 cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
