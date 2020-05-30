@@ -34,7 +34,10 @@ module Helper
   def detect_latest_groonga_version
     URI("https://packages.groonga.org/source/groonga/").open do |groonga_sources|
       versions = groonga_sources.read.scan(/<a href="groonga-([\d.]+).zip">/)
-      versions.flatten.sort.last
+      sorted_versions = versions.flatten.sort_by do |version|
+        version.split(".").collect(&:to_i)
+      end
+      sorted_versions.last
     end
   end
 end
