@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 CREATE TYPE pgroonga_full_text_search_condition_with_scorers AS (
   query text,
   weigths int[],

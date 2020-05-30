@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 CREATE FUNCTION pgroonga_highlight_html(target text,
 				        keywords text[],
 				        indexName cstring)

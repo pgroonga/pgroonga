@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 -- Update amstrategies for old PostgreSQL
 DO LANGUAGE plpgsql $$
 BEGIN

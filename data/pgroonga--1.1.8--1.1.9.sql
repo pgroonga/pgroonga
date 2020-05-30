@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 DROP FUNCTION pgroonga.table_name;
 CREATE FUNCTION pgroonga.table_name(indexName cstring)
 	RETURNS text

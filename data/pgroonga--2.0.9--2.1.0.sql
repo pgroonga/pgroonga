@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 ALTER FUNCTION pgroonga_match_term(target text, term text)
 	COST 200;
 ALTER FUNCTION pgroonga_match_term(target text[], term text)

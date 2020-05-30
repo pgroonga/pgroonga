@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 -- Move old operators to pgroonga schema
 DO LANGUAGE plpgsql $$
 BEGIN

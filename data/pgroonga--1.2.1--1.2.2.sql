@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 CREATE FUNCTION pgroonga.query_expand(tableName cstring,
 				      termColumnName text,
 				      synonymsColumnName text,

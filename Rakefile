@@ -93,10 +93,12 @@ namespace :version do
       end
       sh("git", "add", control_path)
 
-      migration_sql_name = "#{package_name}--#{version}--#{new_version}.sql"
-      migration_sql_path = File.join("data", migration_sql_name)
-      touch(migration_sql_path)
-      sh("git", "add", migration_sql_path)
+      upgrade_sql_name = "#{package_name}--#{version}--#{new_version}.sql"
+      upgrade_sql_path = File.join("data", upgrade_sql_name)
+      File.open(upgrade_sql_path, "w") do |upgrade_sql|
+        upgrade_sql.puts("-- Upgrade SQL")
+      end
+      sh("git", "add", upgrade_sql_path)
     end
   end
 end

@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 UPDATE pg_catalog.pg_proc
    SET prosrc = 'pgroonga_score_row'
  WHERE proname = 'pgroonga_score';

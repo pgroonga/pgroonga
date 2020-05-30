@@ -1,3 +1,5 @@
+-- Upgrade SQL
+
 -- Set RESTRICT and JOIN
 UPDATE pg_catalog.pg_operator
    SET oprrest = 'contsel',
