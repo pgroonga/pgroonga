@@ -59,7 +59,8 @@ EOF
 rm -rf $RPM_BUILD_ROOT%{_includedir}
 
 %files
-%doc README.md COPYING
+%license COPYING
+%doc README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
 %{_libdir}/pgsql/*.so
 %{_libdir}/pgsql/bitcode/pgroonga*.index.bc
