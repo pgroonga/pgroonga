@@ -1,8 +1,5 @@
 # -*- rpm -*-
 
-# TODO: Remove this
-%define debug_package %{nil}
-
 Name:		@PACKAGE@
 Version:	@VERSION@
 Release:	1%{?dist}
@@ -58,8 +55,6 @@ cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
     su postgres postgres
 }
 EOF
-
-strip $RPM_BUILD_ROOT%{_libdir}/pgsql/*.so
 
 rm -rf $RPM_BUILD_ROOT%{_includedir}
 
