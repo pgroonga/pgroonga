@@ -10,7 +10,6 @@ License:	PostgreSQL
 URL:		https://pgroonga.github.io/
 Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	ccache
 BuildRequires:	clang
 BuildRequires:	gcc
