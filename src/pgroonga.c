@@ -4181,13 +4181,14 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 	indexOIDList = RelationGetIndexList(table);
 	foreach(cell, indexOIDList)
 	{
+		const LOCKMODE lockMode = AccessShareLock;
 		Oid indexOID = lfirst_oid(cell);
 		Relation primaryKeyIndex;
 		int i;
 
-		primaryKeyIndex = index_open(indexOID, NoLock);
+		primaryKeyIndex = index_open(indexOID, lockMode);
 		if (!primaryKeyIndex->rd_index->indisprimary) {
-			index_close(primaryKeyIndex, NoLock);
+			index_close(primaryKeyIndex, lockMode);
 			continue;
 		}
 
@@ -4236,7 +4237,7 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 			}
 		}
 
-		index_close(primaryKeyIndex, NoLock);
+		index_close(primaryKeyIndex, lockMode);
 		break;
 	}
 	list_free(indexOIDList);
