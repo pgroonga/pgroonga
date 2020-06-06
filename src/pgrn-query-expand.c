@@ -40,6 +40,7 @@ typedef struct {
 
 static grn_ctx *ctx = &PGrnContext;
 static PGrnQueryExpandData currentData;
+static const LOCKMODE lockMode = AccessShareLock;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_query_expand);
 
@@ -302,7 +303,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 		Oid indexOID = lfirst_oid(cell);
 		int i;
 
-		index = index_open(indexOID, NoLock);
+		index = index_open(indexOID, lockMode);
 		for (i = 1; i <= index->rd_att->natts; i++)
 		{
 			Form_pg_attribute attribute = TupleDescAttr(index->rd_att, i - 1);
@@ -362,7 +363,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 		if (termIndex == index)
 			continue;
 
-		index_close(index, NoLock);
+		index_close(index, lockMode);
 		index = InvalidRelation;
 	}
 	list_free(indexOIDList);
@@ -370,7 +371,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 	if (RelationIsValid(preferedIndex))
 	{
 		if (RelationIsValid(termIndex) && termIndex != preferedIndex)
-			index_close(termIndex, NoLock);
+			index_close(termIndex, lockMode);
 		return preferedIndex;
 	}
 	else
@@ -518,7 +519,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		ExecDropSingleTupleTableSlot(currentData.slot);
 #endif
 		index_endscan(currentData.scan);
-		index_close(index, NoLock);
+		index_close(index, lockMode);
 	}
 
 	RelationClose(currentData.table);
