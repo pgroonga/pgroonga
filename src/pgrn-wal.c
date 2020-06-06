@@ -2130,6 +2130,7 @@ PGrnWALTruncate(Relation index)
 	int64_t nTruncatedBlocks = 0;
 	BlockNumber i;
 	BlockNumber nBlocks;
+	Buffer *buffers;
 	GenericXLogState *state;
 
 	LockRelation(index, PGrnWALLockMode());
@@ -2139,6 +2140,8 @@ PGrnWALTruncate(Relation index)
 		UnlockRelation(index, PGrnWALLockMode());
 		return 0;
 	}
+
+	buffers = palloc(sizeof(Buffer) * nBlocks);
 
 	state = GenericXLogStart(index);
 
@@ -2150,10 +2153,10 @@ PGrnWALTruncate(Relation index)
 		buffer = PGrnWALReadLockedBuffer(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
 										 BUFFER_LOCK_EXCLUSIVE);
+		buffers[0] = buffer;
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
 		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
-		UnlockReleaseBuffer(buffer);
 
 		nTruncatedBlocks++;
 	}
@@ -2164,6 +2167,7 @@ PGrnWALTruncate(Relation index)
 		Page page;
 
 		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
+		buffers[i] = buffer;
 		if (nTruncatedBlocks >= MAX_GENERIC_XLOG_PAGES)
 		{
 			GenericXLogFinish(state);
@@ -2171,12 +2175,17 @@ PGrnWALTruncate(Relation index)
 		}
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(page, BLCKSZ, 0);
-		UnlockReleaseBuffer(buffer);
 
 		nTruncatedBlocks++;
 	}
 
 	GenericXLogFinish(state);
+
+	for (i = 0; i < nBlocks; i++)
+	{
+		UnlockReleaseBuffer(buffers[i]);
+	}
+	pfree(buffers);
 
 	PGrnIndexStatusSetWALAppliedPosition(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
