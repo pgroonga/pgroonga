@@ -25,6 +25,20 @@ CREATE FUNCTION pgroonga_score(tableoid oid, ctid tid)
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnName cstring)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_string'
+	LANGUAGE C
+	STABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_index_column_name(indexName cstring, ordinalNumber int4)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_int4'
+	LANGUAGE C
+	STABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga_table_name(indexName cstring)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_table_name'

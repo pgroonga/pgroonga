@@ -146,6 +146,8 @@ extern PGDLLEXPORT void _PG_init(void);
 PGRN_FUNCTION_INFO_V1(pgroonga_score);
 PGRN_FUNCTION_INFO_V1(pgroonga_score_row);
 PGRN_FUNCTION_INFO_V1(pgroonga_score_ctid);
+PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_string);
+PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_int4);
 PGRN_FUNCTION_INFO_V1(pgroonga_table_name);
 PGRN_FUNCTION_INFO_V1(pgroonga_command);
 
@@ -1821,6 +1823,68 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 	}
 
 	PG_RETURN_FLOAT8(score);
+}
+
+/**
+ * pgroonga_index_column_name_string(indexName cstring, columnName cstring) : text
+ */
+Datum
+pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
+{
+	const char *indexName = PG_GETARG_CSTRING(0);
+	const char *columnName = PG_GETARG_CSTRING(1);
+
+	Oid indexID;
+	Oid fileNodeID;
+	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	text *tableName;
+
+	Relation index = PGrnPGResolveIndexName(indexName);
+	TupleDesc desc = RelationGetDescr(index);
+	int i = 0;
+
+	indexID = PGrnPGIndexNameToID(indexName);
+	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
+
+	for (i = 0; i <= desc->natts; i++)
+	{
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
+		const char *attributeName = attribute->attname.data;
+		if (strlen(attributeName) != strlen(columnName))
+			continue;
+		if (strncmp(attributeName, columnName, strlen(columnName)) == 0)
+			break;
+	}
+
+	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+			 PGrnIndexColumnNameFormat,
+			 fileNodeID, i);
+	tableName = cstring_to_text(tableNameBuffer);
+	PG_RETURN_TEXT_P(tableName);
+}
+
+/**
+ * pgroonga_index_column_name_int4(indexName cstring, ordinalNumber int4) : text
+ */
+Datum
+pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
+{
+	const char *indexName = PG_GETARG_CSTRING(0);
+	const int32 ordinalNumber = PG_GETARG_INT32(1);
+
+	Oid indexID;
+	Oid fileNodeID;
+	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	text *tableName;
+
+	indexID = PGrnPGIndexNameToID(indexName);
+	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
+
+	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+			 PGrnIndexColumnNameFormat,
+			 fileNodeID, ordinalNumber);
+	tableName = cstring_to_text(tableNameBuffer);
+	PG_RETURN_TEXT_P(tableName);
 }
 
 /**
