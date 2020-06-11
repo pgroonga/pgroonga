@@ -1,4 +1,4 @@
-SELECT pgroonga_index_column_name('pgroonga_index', 'tag');
+SELECT pgroonga_index_column_name('pgroonga_index', 2);
  pgroonga_index_column_name 
 ----------------------------
  Lexicon26648_2.index

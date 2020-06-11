@@ -1,0 +1,2 @@
+SELECT pgroonga_index_column_name('pgroonga_index', 999);
+ERROR:  pgroonga: an invlid value was specified for ordinalNumber: 999
