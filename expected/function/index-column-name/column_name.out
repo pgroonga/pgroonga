@@ -12,4 +12,5 @@ SELECT pgroonga_index_column_name('pgroonga_index', 'tag');
 ----------------------------
  Lexicon26648_2.index
 (1 row)
+
 DROP TABLE memos;
