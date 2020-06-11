@@ -1864,6 +1864,9 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 			 PGrnIndexColumnNameFormat,
 			 fileNodeID, i);
 	tableName = cstring_to_text(tableNameBuffer);
+
+	RelationClose(index);
+
 	PG_RETURN_TEXT_P(tableName);
 }
 
