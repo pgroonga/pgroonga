@@ -10,3 +10,5 @@ CREATE INDEX pgroonga_index
        USING pgroonga (title, content, tag);
 
 SELECT pgroonga_index_column_name('pgroonga_index', 999);
+
+DROP TABLE memos;

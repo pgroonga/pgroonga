@@ -9,5 +9,7 @@ CREATE INDEX pgroonga_index
           ON memos
        USING pgroonga (title, content, tag);
 
-SELECT pgroonga_index_column_name('pgroonga_index', 'title');
-SELECT pgroonga_command('table_list --output_pretty yes');
+SELECT pgroonga_index_column_name('pgroonga_index', 'tag');
+
+DROP TABLE memos;
+
