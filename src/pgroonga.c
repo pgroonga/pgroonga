@@ -1850,7 +1850,7 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 	indexID = PGrnPGIndexNameToID(indexNameData);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
-	for (i = 0; i <= desc->natts; i++)
+	for (i = 0; i < desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		const char *attributeName = attribute->attname.data;
