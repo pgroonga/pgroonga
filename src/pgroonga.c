@@ -1845,7 +1845,7 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 
 	Relation index = PGrnPGResolveIndexName(indexNameData);
 	TupleDesc desc = RelationGetDescr(index);
-	int i = 0;
+	int i;
 
 	indexID = PGrnPGIndexNameToID(indexNameData);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
