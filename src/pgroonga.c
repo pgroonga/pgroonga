@@ -1826,33 +1826,37 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_index_column_name_string(indexName cstring, columnName cstring) : text
+ * pgroonga_index_column_name_string(indexName text, columnName text) : text
  */
 Datum
 pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 {
-	const char *indexName = PG_GETARG_CSTRING(0);
-	const char *columnName = PG_GETARG_CSTRING(1);
+	const text *indexName = PG_GETARG_TEXT_PP(0);
+	const text *columnName = PG_GETARG_TEXT_PP(1);
+
+	const char *indexNameData = VARDATA_ANY(indexName);
+	const char *columnNameData = VARDATA_ANY(columnName);
+	const unsigned int columnNameSize = VARSIZE_ANY_EXHDR(columnName);
 
 	Oid indexID;
 	Oid fileNodeID;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName;
 
-	Relation index = PGrnPGResolveIndexName(indexName);
+	Relation index = PGrnPGResolveIndexName(indexNameData);
 	TupleDesc desc = RelationGetDescr(index);
 	int i = 0;
 
-	indexID = PGrnPGIndexNameToID(indexName);
+	indexID = PGrnPGIndexNameToID(indexNameData);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
 	for (i = 0; i <= desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		const char *attributeName = attribute->attname.data;
-		if (strlen(attributeName) != strlen(columnName))
+		if (strlen(attributeName) != columnNameSize)
 			continue;
-		if (strncmp(attributeName, columnName, strlen(columnName)) == 0)
+		if (strncmp(attributeName, columnNameData, columnNameSize) == 0)
 			break;
 	}
 
@@ -1864,12 +1868,12 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_index_column_name_int4(indexName cstring, ordinalNumber int4) : text
+ * pgroonga_index_column_name_int4(indexName text, ordinalNumber int4) : text
  */
 Datum
 pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
 {
-	const char *indexName = PG_GETARG_CSTRING(0);
+	const text *indexName = PG_GETARG_TEXT_PP(0);
 	const int32 ordinalNumber = PG_GETARG_INT32(1);
 
 	Oid indexID;
@@ -1877,13 +1881,14 @@ pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName;
 
-	indexID = PGrnPGIndexNameToID(indexName);
+	indexID = PGrnPGIndexNameToID(VARDATA_ANY(indexName));
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
 	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
 			 PGrnIndexColumnNameFormat,
 			 fileNodeID, ordinalNumber);
 	tableName = cstring_to_text(tableNameBuffer);
+
 	PG_RETURN_TEXT_P(tableName);
 }
 
