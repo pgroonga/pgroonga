@@ -103,16 +103,14 @@ jobs:
           name: postgresql-12-x64
           path: artifacts
       - name: Run regression test
-        # TODO: Set culture to ja-JP
-        if: |
-          false
-        run: |
           # TODO: Remove me when Groonga bundles libstemmer
           Remove-Item sql/full-text-search/text/options/token-filters/custom.sql
+          # TODO: Remove me when we find how to change culture to ja_JP.
+          # Set-Culture "ja-JP" doesn't work.
+          # Remove-Item sql/...
           # Reduce tests to reduce test time
           Remove-Item sql/compatibility -Recurse -Force
           ruby test\prepare.rb > schedule
-          Set-Culture "ja-JP"
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
