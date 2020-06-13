@@ -103,6 +103,7 @@ jobs:
           name: postgresql-12-x64
           path: artifacts
       - name: Run regression test
+        run: |
           # TODO: Remove me when Groonga bundles libstemmer
           Remove-Item sql/full-text-search/text/options/token-filters/custom.sql
           # TODO: Remove me when we find how to change culture to ja_JP.
