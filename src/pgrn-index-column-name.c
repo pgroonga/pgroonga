@@ -54,14 +54,11 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 						(const int)columnNameSize,
 						columnNameData)));
 	}
-	else
-	{
-		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
-				 PGrnIndexColumnNameFormat,
-				 fileNodeID, i);
-		tableName = cstring_to_text(tableNameBuffer);
-	}
 
+	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+			 PGrnIndexColumnNameFormat,
+			 fileNodeID, i);
+	tableName = cstring_to_text(tableNameBuffer);
 	PG_RETURN_TEXT_P(tableName);
 }
 
@@ -98,13 +95,10 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 						n_attributes - 1,
 						columnIndex)));
 	}
-	else
-	{
-		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
-				 PGrnIndexColumnNameFormat,
-				 fileNodeID, columnIndex);
-		tableName = cstring_to_text(tableNameBuffer);
-	}
 
+	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+			 PGrnIndexColumnNameFormat,
+			 fileNodeID, columnIndex);
+	tableName = cstring_to_text(tableNameBuffer);
 	PG_RETURN_TEXT_P(tableName);
 }
