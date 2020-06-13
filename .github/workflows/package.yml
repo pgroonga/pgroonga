@@ -33,6 +33,7 @@ jobs:
           - postgresql-9.6-pgroonga-centos-6
           - postgresql-9.5-pgroonga-centos-7
           - postgresql-9.5-pgroonga-centos-6
+          - pgroonga-fedora-32
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -57,9 +58,9 @@ jobs:
         run: |
           set -x
           package=$(echo ${{ matrix.package-id }} | \
-                      sed -E -e 's/-(debian|centos).*$//g')
+                      sed -E -e 's/-(debian|centos|fedora).*$//g')
           os=$(echo ${{ matrix.package-id }} | \
-                 sed -E -e 's/^.*-((debian|centos).*)$/\1/g')
+                 sed -E -e 's/^.*-((debian|centos|fedora).*)$/\1/g')
           cd packages/${package}
           rake version:update
           case ${os} in
@@ -67,7 +68,7 @@ jobs:
               rake apt:build APT_TARGETS=${os}
               mv apt/repositories/ ../../
               ;;
-            centos-*)
+            centos-*|fedora-*)
               rake yum:build YUM_TARGETS=${os}
               mv yum/repositories/ ../../
               ;;
