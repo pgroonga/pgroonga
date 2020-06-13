@@ -61,14 +61,10 @@ jobs:
           fi
       - name: Install PostgreSQL
         run: |
-          echo \
-            "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
-            sudo tee /etc/apt/sources.list.d/pgdg.list
-          curl \
-            --silent \
-            --location \
-            https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-            sudo apt-key add -
+          sudo apt -y -V purge \
+            postgresql \
+            postgresql-client \
+            libqp-dev
           sudo apt update
           sudo apt -y -V install \
             postgresql-${{ matrix.postgresql-version }} \

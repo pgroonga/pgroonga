@@ -45,7 +45,7 @@ eval "run make -j$(nproc) PG_CONFIG=${PG_CONFIG} ${OUTPUT}"
 if [ "${NEED_SUDO:-no}" = "yes" ]; then
   eval "run sudo -H make PG_CONFIG=${PG_CONFIG} install ${OUTPUT}"
 else
-  eval "run make install PG_CONFIG=${PG_CONFIG} ${OUTPUT}"
+  eval "run make PG_CONFIG=${PG_CONFIG} install ${OUTPUT}"
 fi
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 launcher="--launcher=$(pwd)/test/short-pgappname"
