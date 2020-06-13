@@ -112,7 +112,7 @@ module Helpers
     end
 
     def init_replication(master)
-      @dir = File.join(@base_dir, "db-slave")
+      @dir = File.join(@base_dir, "db-standby")
       @port = master.port + 1
       run_command("pg_basebackup",
                   "--host", master.host,
@@ -211,12 +211,12 @@ module Helpers
       psql(@test_db_name, sql)
     end
 
-    def psql_slave(db, sql)
-      @postgresql_slave.psql(db, sql)
+    def psql_standby(db, sql)
+      @postgresql_standby.psql(db, sql)
     end
 
-    def run_sql_slave(sql)
-      psql_slave(@test_db_name, sql)
+    def run_sql_standby(sql)
+      psql_standby(@test_db_name, sql)
     end
 
     def groonga(*command_line)
@@ -246,14 +246,14 @@ module Helpers
     def teardown_db
     end
 
-    def setup_slave_db
-      @postgresql_slave = PostgreSQL.new(@tmp_dir)
-      @postgresql_slave.init_replication(@postgresql)
-      @postgresql_slave.start
+    def setup_standby_db
+      @postgresql_standby = PostgreSQL.new(@tmp_dir)
+      @postgresql_standby.init_replication(@postgresql)
+      @postgresql_standby.start
     end
 
-    def teardown_slave_db
-      @postgresql_slave.stop
+    def teardown_standby_db
+      @postgresql_standby.stop
     end
 
     def start_postgres

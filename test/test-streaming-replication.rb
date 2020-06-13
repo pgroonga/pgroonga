@@ -3,8 +3,8 @@ require_relative "helpers/sandbox"
 class StreamingReplicationTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
-  setup :setup_slave_db
-  teardown :teardown_slave_db
+  setup :setup_standby_db
+  teardown :teardown_standby_db
 
   test "index search" do
     run_sql("CREATE TABLE memos (content text);")
@@ -24,7 +24,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_slave("EXPLAIN (COSTS OFF) #{select};"))
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
     output = <<-OUTPUT
 #{select};
       content      
@@ -34,7 +34,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_slave("#{select};"))
+                 run_sql_standby("#{select};"))
   end
 
   test "tokenizer options" do
@@ -54,7 +54,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_slave("#{select};"))
+                 run_sql_standby("#{select};"))
   end
 
   test "normalizer options" do
@@ -77,7 +77,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_slave("#{select};"))
+                 run_sql_standby("#{select};"))
   end
 
   test "token filters options" do
@@ -100,7 +100,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_slave("#{select};"))
+                 run_sql_standby("#{select};"))
   end
 
   test "pgroonga_vacuum" do
@@ -108,18 +108,18 @@ EXPLAIN (COSTS OFF) #{select};
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
     run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-    run_sql_slave("SELECT pgroonga_wal_apply();")
+    run_sql_standby("SELECT pgroonga_wal_apply();")
     pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
     pgroonga_table_name =
-      run_sql_slave(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
+      run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
 
     run_sql("REINDEX INDEX memos_content;")
-    run_sql_slave("SELECT pgroonga_wal_apply();")
+    run_sql_standby("SELECT pgroonga_wal_apply();")
 
     pgroonga_table_exist_sql =
       "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
       "::json->>1 AS exist;"
-    assert_equal([<<-OUTPUT, ""], run_sql_slave(pgroonga_table_exist_sql))
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
  exist 
 -------
@@ -128,7 +128,7 @@ EXPLAIN (COSTS OFF) #{select};
 
     OUTPUT
 
-    assert_equal([<<-OUTPUT, ""], run_sql_slave("SELECT pgroonga_vacuum();"))
+    assert_equal([<<-OUTPUT, ""], run_sql_standby("SELECT pgroonga_vacuum();"))
 SELECT pgroonga_vacuum();
  pgroonga_vacuum 
 -----------------
@@ -137,7 +137,7 @@ SELECT pgroonga_vacuum();
 
     OUTPUT
 
-    assert_equal([<<-OUTPUT, ""], run_sql_slave(pgroonga_table_exist_sql))
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
  exist 
 -------
