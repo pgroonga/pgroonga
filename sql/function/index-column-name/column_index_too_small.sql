@@ -4,9 +4,11 @@ CREATE TABLE memos (
   content text,
   tag text
 );
+
 CREATE INDEX pgroonga_index
           ON memos
        USING pgroonga (title, content, tag);
-SELECT pgroonga_index_column_name('pgroonga_index', 'invalid');
-ERROR:  pgroonga: an invlid value was specified for column name: invalid
+
+SELECT pgroonga_index_column_name('pgroonga_index', -1);
+
 DROP TABLE memos;

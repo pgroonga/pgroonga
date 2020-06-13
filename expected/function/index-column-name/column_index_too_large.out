@@ -7,6 +7,6 @@ CREATE TABLE memos (
 CREATE INDEX pgroonga_index
           ON memos
        USING pgroonga (title, content, tag);
-SELECT pgroonga_index_column_name('pgroonga_index', 999);
-ERROR:  pgroonga: an invlid value was specified for ordinalNumber: 999
+SELECT pgroonga_index_column_name('pgroonga_index', 3);
+ERROR:  pgroonga: index_column_name: column index must be 0..2: 3
 DROP TABLE memos;

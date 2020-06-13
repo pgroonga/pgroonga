@@ -48,7 +48,8 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("pgroonga: an invlid value was specified for column name: %.*s",
+				 errmsg("pgroonga: index_column_name: nonexistent column is specified: "
+						"<%.*s>",
 						(const int)columnNameSize,
 						columnNameData)));
 	}
@@ -84,11 +85,12 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
-	if (desc->natts <= columnIndex)
+	if (columnIndex < 0 || desc->natts <= columnIndex)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("pgroonga: an invlid value was specified for ordinalNumber: %d",
+				 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
+						desc->natts - 1,
 						columnIndex)));
 	}
 	else
