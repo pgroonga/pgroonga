@@ -48,8 +48,9 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
-				 errmsg("pgroonga: an invlid value was specified for column name: %s",
-					 columnNameData)));
+				 errmsg("pgroonga: an invlid value was specified for column name: %.*s",
+						(const int)columnNameSize,
+						columnNameData)));
 	}
 	else
 	{
