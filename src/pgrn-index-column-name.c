@@ -52,16 +52,16 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	{
 		Oid indexID;
 		Oid fileNodeID;
-		char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-		text *tableName;
+		char indexColumnNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+		text *indexColumnName;
 
 		indexID = PGrnPGIndexNameToID(indexName);
 		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+		snprintf(indexColumnNameBuffer, sizeof(indexColumnNameBuffer),
 				 PGrnIndexColumnNameFormat,
 				 fileNodeID, i);
-		tableName = cstring_to_text(tableNameBuffer);
-		PG_RETURN_TEXT_P(tableName);
+		indexColumnName = cstring_to_text(indexColumnNameBuffer);
+		PG_RETURN_TEXT_P(indexColumnName);
 	}
 }
 
@@ -96,15 +96,15 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	{
 		Oid indexID;
 		Oid fileNodeID;
-		char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-		text *tableName;
+		char indexColumnNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+		text *indexColumnName;
 
 		indexID = PGrnPGIndexNameToID(indexName);
 		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+		snprintf(indexColumnNameBuffer, sizeof(indexColumnNameBuffer),
 				 PGrnIndexColumnNameFormat,
 				 fileNodeID, columnIndex);
-		tableName = cstring_to_text(tableNameBuffer);
-		PG_RETURN_TEXT_P(tableName);
+		indexColumnName = cstring_to_text(indexColumnNameBuffer);
+		PG_RETURN_TEXT_P(indexColumnName);
 	}
 }
