@@ -64,7 +64,7 @@ jobs:
           sudo apt -y -V purge \
             postgresql \
             postgresql-client \
-            libqp-dev
+            libpq-dev
           sudo apt update
           sudo apt -y -V install \
             postgresql-${{ matrix.postgresql-version }} \
