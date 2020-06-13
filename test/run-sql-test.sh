@@ -37,11 +37,13 @@ else
   OUTPUT=""
 fi
 
-eval "PGRN_DEBUG=1 HAVE_MSGPACK=1 run make -j$(nproc) ${OUTPUT}"
+export PGRN_DEBUG=1
+export HAVE_MSGPACK=1
+eval "run make -j$(nproc) PG_CONFIG=${PG_CONFIG:-pg_config} ${OUTPUT}"
 if [ "${NEED_SUDO:-no}" = "yes" ]; then
-  eval "run sudo -H make install ${OUTPUT}"
+  eval "run sudo -H make PG_CONFIG=${PG_CONFIG:-pg_config} install ${OUTPUT}"
 else
-  eval "run make install ${OUTPUT}"
+  eval "run make install PG_CONFIG=${PG_CONFIG:-pg_config} ${OUTPUT}"
 fi
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 launcher="--launcher=$(pwd)/test/short-pgappname"

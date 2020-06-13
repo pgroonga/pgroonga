@@ -40,8 +40,6 @@ jobs:
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
-      PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
-      SUPPRESS_LOG: "no"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -86,7 +84,11 @@ jobs:
           rm -rf sql/function/set-writable/
       - name: Run regression test
         run: |
-          NEED_SUDO=yes test/run-sql-test.sh
+          test/run-sql-test.sh
+        env:
+          NEED_SUDO: "yes"
+          PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
+          SUPPRESS_LOG: "no"
       - name: Show diff
         if: failure()
         run: |
