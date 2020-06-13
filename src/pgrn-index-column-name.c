@@ -30,7 +30,7 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 		for (i = 0; i < desc->natts; i++)
 		{
 			Form_pg_attribute attribute = TupleDescAttr(desc, i);
-			const char *attributeName = attribute->attname.data;
+			const char *attributeName = NameStr(attribute->attname);
 			if (strlen(attributeName) != columnNameSize)
 				continue;
 			if (strncmp(attributeName, columnNameData, columnNameSize) == 0)
