@@ -45,7 +45,7 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	}
 	RelationClose(index);
 
-	if (desc->natts <= i)
+	if (i == desc->natts)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
