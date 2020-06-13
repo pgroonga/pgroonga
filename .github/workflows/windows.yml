@@ -15,6 +15,10 @@ jobs:
   test:
     name: Test
     runs-on: windows-latest
+    env:
+      PGRN_TEST_DATA: "test-data"
+      PGRN_TEST_ENCODING: "UTF-8"
+      PGRN_TEST_USER: "pgroonga-test"
     steps:
       - name: Disable crash dialog
         run: |
@@ -101,6 +105,15 @@ jobs:
         with:
           name: postgresql-12-x64
           path: artifacts
+      - name: Run PostgreSQL for test
+        run: |
+          ..\pgsql\bin\initdb `
+            --encoding ${PGRN_TEST_ENCODING} `
+            --locale C `
+            --pgdata ${PGRN_TEST_DATA} `
+            --username ${PGRN_TEST_USER}
+          ..\pgsql\bin\pg_ctl start `
+            --pgdata ${PGRN_TEST_DATA}
       - name: Run regression test
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
@@ -114,10 +127,15 @@ jobs:
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
+            --encoding=${PGRN_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
             --load-extension=pgroonga `
-            --schedule=schedule `
-            --temp-instance=..\pgsql\test
+            --schedule=schedule
+      - name: Shutdown PostgreSQL for test
+        if: always()
+        run: |
+          ..\pgsql\bin\pg_ctl stop `
+            --pgdata ${PGRN_TEST_DATA}
       - name: Show diff
         if: failure()
         run: |
