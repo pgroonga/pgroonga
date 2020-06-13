@@ -26,13 +26,12 @@ jobs:
       - name: Use JST
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
-      - uses: actions/setup-ruby@master
+      - uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.6
-      - uses: actions/checkout@master
-      - name: Update submodules
-        run: |
-          git submodule update --init --recursive
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Download PostgreSQL
         run: |
           cd ..
