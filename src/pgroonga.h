@@ -91,6 +91,7 @@
 #define PGrnLexiconNamePrefix			"Lexicon"
 #define PGrnLexiconNameFormat			PGrnLexiconNamePrefix "%u_%u"
 #define PGrnIndexColumnName				"index"
+#define PGrnIndexColumnNameFormat		PGrnLexiconNameFormat "." PGrnIndexColumnName
 
 #define PGRN_EXPR_QUERY_PARSE_FLAGS				\
 	(GRN_EXPR_SYNTAX_QUERY |					\

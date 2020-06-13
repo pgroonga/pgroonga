@@ -261,6 +261,20 @@ CREATE FUNCTION pgroonga_vacuum()
 	VOLATILE
 	STRICT;
 
+CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnName text)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_name'
+	LANGUAGE C
+	STABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnIndex int4)
+	RETURNS text
+	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_index'
+	LANGUAGE C
+	STABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

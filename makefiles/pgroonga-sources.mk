@@ -13,6 +13,7 @@ SRCS =						\
 	src/pgrn-groonga.c			\
 	src/pgrn-groonga-tuple-is-alive.c	\
 	src/pgrn-highlight-html.c		\
+	src/pgrn-index-column-name.c		\
 	src/pgrn-index-status.c			\
 	src/pgrn-jsonb.c			\
 	src/pgrn-keywords.c			\
