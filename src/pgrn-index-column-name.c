@@ -12,15 +12,13 @@ PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_string);
 PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_int4);
 
 /**
- * pgroonga_index_column_name_string(indexName text, columnName text) : text
+ * pgroonga_index_column_name_string(indexName cstring, columnName text) : text
  */
 Datum
 pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 {
-	const text *indexName = PG_GETARG_TEXT_PP(0);
+	const char *indexName = PG_GETARG_CSTRING(0);
 	const text *columnName = PG_GETARG_TEXT_PP(1);
-
-	const char *indexNameData = VARDATA_ANY(indexName);
 	const char *columnNameData = VARDATA_ANY(columnName);
 	const unsigned int columnNameSize = VARSIZE_ANY_EXHDR(columnName);
 
@@ -29,11 +27,11 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName = NULL;
 
-	Relation index = PGrnPGResolveIndexName(indexNameData);
+	Relation index = PGrnPGResolveIndexName(indexName);
 	TupleDesc desc = RelationGetDescr(index);
 	int i;
 
-	indexID = PGrnPGIndexNameToID(indexNameData);
+	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
 	for (i = 0; i < desc->natts; i++)
@@ -66,25 +64,23 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_index_column_name_int4(indexName text, ordinalNumber int4) : text
+ * pgroonga_index_column_name_int4(indexName cstring, ordinalNumber int4) : text
  */
 Datum
 pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
 {
-	const text *indexName = PG_GETARG_TEXT_PP(0);
+	const char *indexName = PG_GETARG_CSTRING(0);
 	const int32 ordinalNumber = PG_GETARG_INT32(1);
-
-	const char *indexNameData = VARDATA_ANY(indexName);
 
 	Oid indexID;
 	Oid fileNodeID;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName = NULL;
 
-	Relation index = PGrnPGResolveIndexName(indexNameData);
+	Relation index = PGrnPGResolveIndexName(indexName);
 	TupleDesc desc = RelationGetDescr(index);
 
-	indexID = PGrnPGIndexNameToID(indexNameData);
+	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
 	if (desc->natts <= ordinalNumber)
