@@ -31,11 +31,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-PGRN_DEBUG=1 HAVE_MSGPACK=1 run make -j$(nproc) > /dev/null
-if [ "${NEED_SUDO:-no}" = "yes" ]; then
-  run sudo -H make install > /dev/null
+if [ "${SUPPRESS_LOG:-yes}" = "yes" ]; then
+  OUTPUT="> /dev/null"
 else
-  run make install > /dev/null
+  OUTPUT=""
+fi
+
+eval "PGRN_DEBUG=1 HAVE_MSGPACK=1 run make -j$(nproc) ${OUTPUT}"
+if [ "${NEED_SUDO:-no}" = "yes" ]; then
+  eval "run sudo -H make install ${OUTPUT}"
+else
+  eval "run make install ${OUTPUT}"
 fi
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 launcher="--launcher=$(pwd)/test/short-pgappname"

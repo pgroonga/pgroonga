@@ -40,6 +40,7 @@ jobs:
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
+      SUPPRESS_LOG: "no"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
