@@ -34,7 +34,14 @@ pgroonga_database_remove(PG_FUNCTION_ARGS)
 		if (!pg_tablespace_ownercheck(tablespaceOid, GetUserId()))
 			break;
 
-		databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tablespaceOid);
+		if (tablespaceOid == GLOBALTABLESPACE_OID)
+		{
+			databaseDirectoryPath = GetDatabasePath(InvalidOid, tablespaceOid);
+		}
+		else
+		{
+			databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tablespaceOid);
+		}
 		PGrnDatabaseRemoveAllRelatedFiles(databaseDirectoryPath);
 		pfree(databaseDirectoryPath);
 	}
