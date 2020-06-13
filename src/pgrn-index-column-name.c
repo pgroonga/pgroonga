@@ -43,6 +43,7 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 		if (strncmp(attributeName, columnNameData, columnNameSize) == 0)
 			break;
 	}
+	RelationClose(index);
 
 	if (desc->natts <= i)
 	{
@@ -60,7 +61,6 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 				 fileNodeID, i);
 		tableName = cstring_to_text(tableNameBuffer);
 	}
-	RelationClose(index);
 
 	PG_RETURN_TEXT_P(tableName);
 }
@@ -79,18 +79,23 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName = NULL;
 
-	Relation index = PGrnPGResolveIndexName(indexName);
-	TupleDesc desc = RelationGetDescr(index);
+	int n_attributes = 0;
+	{
+		Relation index = PGrnPGResolveIndexName(indexName);
+		TupleDesc desc = RelationGetDescr(index);
+		n_attributes = desc->natts;
+		RelationClose(index);
+	}
 
 	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
-	if (columnIndex < 0 || desc->natts <= columnIndex)
+	if (columnIndex < 0 || n_attributes <= columnIndex)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
-						desc->natts - 1,
+						n_attributes - 1,
 						columnIndex)));
 	}
 	else
@@ -100,7 +105,6 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 				 fileNodeID, columnIndex);
 		tableName = cstring_to_text(tableNameBuffer);
 	}
-	RelationClose(index);
 
 	PG_RETURN_TEXT_P(tableName);
 }
