@@ -63,6 +63,7 @@ module Helpers
       @dir = nil
       @host = "127.0.0.1"
       @port = nil
+      @user = "pgroonga-test"
       @replication_user = nil
       @replication_password = nil
       @running = false
@@ -80,6 +81,7 @@ module Helpers
       run_command("initdb",
                   "--locale", "C",
                   "--encoding", "UTF-8",
+                  "--username", @user,
                   "-D", @dir)
       FileUtils.mkdir_p(socket_dir)
       postgresql_conf = File.join(@dir, "postgresql.conf")
@@ -104,6 +106,7 @@ module Helpers
       run_command("createuser",
                   "--host", @host,
                   "--port", @port.to_s,
+                  "--username", @user,
                   "--replication",
                   @replication_user)
     end
@@ -151,6 +154,7 @@ module Helpers
       run_command("psql",
                   "--host", @host,
                   "--port", @port.to_s,
+                  "--username", @user,
                   "--dbname", db,
                   "--echo-all",
                   "--no-psqlrc",
