@@ -8,14 +8,14 @@
 
 #include <utils/builtins.h>
 
-PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_string);
-PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_int4);
+PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_name);
+PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_index);
 
 /**
- * pgroonga_index_column_name_string(indexName cstring, columnName text) : text
+ * pgroonga_index_column_name_name(indexName cstring, columnName text) : text
  */
 Datum
-pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
+pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 {
 	const char *indexName = PG_GETARG_CSTRING(0);
 	const text *columnName = PG_GETARG_TEXT_PP(1);
@@ -65,13 +65,13 @@ pgroonga_index_column_name_string(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_index_column_name_int4(indexName cstring, ordinalNumber int4) : text
+ * pgroonga_index_column_name_index(indexName cstring, columnIndex int4) : text
  */
 Datum
-pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
+pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 {
 	const char *indexName = PG_GETARG_CSTRING(0);
-	const int32 ordinalNumber = PG_GETARG_INT32(1);
+	const int32 columnIndex = PG_GETARG_INT32(1);
 
 	Oid indexID;
 	Oid fileNodeID;
@@ -84,18 +84,18 @@ pgroonga_index_column_name_int4(PG_FUNCTION_ARGS)
 	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
 
-	if (desc->natts <= ordinalNumber)
+	if (desc->natts <= columnIndex)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INTERNAL_ERROR),
 				 errmsg("pgroonga: an invlid value was specified for ordinalNumber: %d",
-					 ordinalNumber)));
+						columnIndex)));
 	}
 	else
 	{
 		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
 				 PGrnIndexColumnNameFormat,
-				 fileNodeID, ordinalNumber);
+				 fileNodeID, columnIndex);
 		tableName = cstring_to_text(tableNameBuffer);
 	}
 	RelationClose(index);
