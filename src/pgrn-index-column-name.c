@@ -48,7 +48,7 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	if (desc->natts <= i)
 	{
 		ereport(ERROR,
-				(errcode(ERRCODE_INTERNAL_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: index_column_name: nonexistent column is specified: "
 						"<%.*s>",
 						(const int)columnNameSize,
@@ -93,7 +93,7 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	if (columnIndex < 0 || n_attributes <= columnIndex)
 	{
 		ereport(ERROR,
-				(errcode(ERRCODE_INTERNAL_ERROR),
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
 						n_attributes - 1,
 						columnIndex)));
