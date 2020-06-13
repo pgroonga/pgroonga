@@ -22,44 +22,47 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	const char *columnNameData = VARDATA_ANY(columnName);
 	const unsigned int columnNameSize = VARSIZE_ANY_EXHDR(columnName);
 
-	Oid indexID;
-	Oid fileNodeID;
-	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-	text *tableName = NULL;
-
-	Relation index = PGrnPGResolveIndexName(indexName);
-	TupleDesc desc = RelationGetDescr(index);
 	int i;
-
-	indexID = PGrnPGIndexNameToID(indexName);
-	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-
-	for (i = 0; i < desc->natts; i++)
 	{
-		Form_pg_attribute attribute = TupleDescAttr(desc, i);
-		const char *attributeName = attribute->attname.data;
-		if (strlen(attributeName) != columnNameSize)
-			continue;
-		if (strncmp(attributeName, columnNameData, columnNameSize) == 0)
-			break;
-	}
-	RelationClose(index);
+		Relation index = PGrnPGResolveIndexName(indexName);
+		TupleDesc desc = RelationGetDescr(index);
 
-	if (i == desc->natts)
+		for (i = 0; i < desc->natts; i++)
+		{
+			Form_pg_attribute attribute = TupleDescAttr(desc, i);
+			const char *attributeName = attribute->attname.data;
+			if (strlen(attributeName) != columnNameSize)
+				continue;
+			if (strncmp(attributeName, columnNameData, columnNameSize) == 0)
+				break;
+		}
+		RelationClose(index);
+
+		if (i == desc->natts)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: index_column_name: "
+							"nonexistent column is specified: <%.*s>",
+							(const int)columnNameSize,
+							columnNameData)));
+		}
+	}
+
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: index_column_name: nonexistent column is specified: "
-						"<%.*s>",
-						(const int)columnNameSize,
-						columnNameData)));
-	}
+		Oid indexID;
+		Oid fileNodeID;
+		char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+		text *tableName;
 
-	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
-			 PGrnIndexColumnNameFormat,
-			 fileNodeID, i);
-	tableName = cstring_to_text(tableNameBuffer);
-	PG_RETURN_TEXT_P(tableName);
+		indexID = PGrnPGIndexNameToID(indexName);
+		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
+		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+				 PGrnIndexColumnNameFormat,
+				 fileNodeID, i);
+		tableName = cstring_to_text(tableNameBuffer);
+		PG_RETURN_TEXT_P(tableName);
+	}
 }
 
 /**
@@ -71,34 +74,37 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	const char *indexName = PG_GETARG_CSTRING(0);
 	const int32 columnIndex = PG_GETARG_INT32(1);
 
-	Oid indexID;
-	Oid fileNodeID;
-	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-	text *tableName = NULL;
-
-	int n_attributes = 0;
 	{
-		Relation index = PGrnPGResolveIndexName(indexName);
-		TupleDesc desc = RelationGetDescr(index);
-		n_attributes = desc->natts;
-		RelationClose(index);
+		int n_attributes = 0;
+		{
+			Relation index = PGrnPGResolveIndexName(indexName);
+			TupleDesc desc = RelationGetDescr(index);
+			n_attributes = desc->natts;
+			RelationClose(index);
+		}
+
+		if (columnIndex < 0 || n_attributes <= columnIndex)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
+							n_attributes - 1,
+							columnIndex)));
+		}
 	}
 
-	indexID = PGrnPGIndexNameToID(indexName);
-	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-
-	if (columnIndex < 0 || n_attributes <= columnIndex)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
-						n_attributes - 1,
-						columnIndex)));
-	}
+		Oid indexID;
+		Oid fileNodeID;
+		char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+		text *tableName;
 
-	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
-			 PGrnIndexColumnNameFormat,
-			 fileNodeID, columnIndex);
-	tableName = cstring_to_text(tableNameBuffer);
-	PG_RETURN_TEXT_P(tableName);
+		indexID = PGrnPGIndexNameToID(indexName);
+		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
+		snprintf(tableNameBuffer, sizeof(tableNameBuffer),
+				 PGrnIndexColumnNameFormat,
+				 fileNodeID, columnIndex);
+		tableName = cstring_to_text(tableNameBuffer);
+		PG_RETURN_TEXT_P(tableName);
+	}
 }
