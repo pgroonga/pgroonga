@@ -80,6 +80,9 @@ jobs:
               ruby download_mecab.rb
               ruby download_message_pack.rb
               ruby download_rapidjson.rb
+            choco install -y winflexbison3
+            Write-Host "::set-env name=YACC::win_bison.exe"
+            Write-Host "::set-env name=VC_PREFIX::C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           } else {
             Invoke-WebRequest `
               https://packages.groonga.org/source/groonga/groonga-latest.zip `
@@ -89,26 +92,34 @@ jobs:
             mv groonga-* vendor\groonga
           }
       - name: Run CMake
+        shell: cmd
         run: |
-          New-Item ..\build -ItemType Directory
-          cmake `
-            -A x64 `
-            -B ..\build `
-            -G "${{ matrix.cmake-generator }}" `
-            -S . `
-            -DCMAKE_INSTALL_PREFIX="..\pgsql" `
-            -DGRN_WITH_BUNDLED_LZ4=yes `
-            -DGRN_WITH_BUNDLED_MECAB=yes `
-            -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes `
-            -DGRN_WITH_BUNDLED_RAPIDJSON=yes `
-            -DGRN_WITH_MRUBY=yes `
+          if "%VC_PREFIX%" != "" (
+            call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          )
+          mkdir ..\build
+          cmake ^
+            -A x64 ^
+            -B ..\build ^
+            -G "${{ matrix.cmake-generator }}" ^
+            -S . ^
+            -DCMAKE_INSTALL_PREFIX="..\pgsql" ^
+            -DGRN_WITH_BUNDLED_LZ4=yes ^
+            -DGRN_WITH_BUNDLED_MECAB=yes ^
+            -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes ^
+            -DGRN_WITH_BUNDLED_RAPIDJSON=yes ^
+            -DGRN_WITH_MRUBY=yes ^
             -DPGRN_POSTGRESQL_VERSION_MAJOR=${{ matrix.postgresql-version-major }}
       - name: Build
+        shell: cmd
         run: |
-          cmake `
-            --build ..\build `
-            --config RelWithDebInfo `
-            --parallel $Env:NUMBER_OF_PROCESSORS `
+          if "%VC_PREFIX%" != "" (
+            call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          )
+          cmake ^
+            --build ..\build ^
+            --config RelWithDebInfo ^
+            --parallel %NUMBER_OF_PROCESSORS% ^
             --verbose
       - name: Install
         run: |
