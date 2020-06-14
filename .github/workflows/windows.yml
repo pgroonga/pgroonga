@@ -108,12 +108,12 @@ jobs:
       - name: Run PostgreSQL for test
         run: |
           ..\pgsql\bin\initdb `
-            --encoding=$PGRN_TEST_ENCODING `
+            --encoding=${Env:PGRN_TEST_ENCODING} `
             --locale=C `
-            --pgdata=$PGRN_TEST_DATA `
-            --username=$PGRN_TEST_USER
+            --pgdata=${Env:PGRN_TEST_DATA} `
+            --username=${Env:PGRN_TEST_USER}
           ..\pgsql\bin\pg_ctl start `
-            --pgdata=$PGRN_TEST_DATA
+            --pgdata=${Env:PGRN_TEST_DATA}
       - name: Run regression test
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
@@ -127,7 +127,7 @@ jobs:
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
-            --encoding=$PGRN_TEST_ENCODING `
+            --encoding=${Env:PGRN_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
             --load-extension=pgroonga `
             --schedule=schedule
