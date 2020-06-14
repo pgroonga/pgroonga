@@ -13,25 +13,22 @@ on:
         0 0 * * *
 jobs:
   test:
-    name: Test
+    name: ${{ matrix.label }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        label:
-          - PostgreSQL 12 + Visual Studio 2015
-          - PostgreSQL 12 + Visual Studio 2019 + Groonga master
         include:
-          - label: PostgreSQL 12 + Visual Studio 2015
-            artifact-id: "postgresql-12-x64"
+          - artifact-id: "postgresql-12-x64"
             cmake-generator: "Visual Studio 14 2015"
-            postgresql-version: "12.3-1"
             postgresql-version-major: "12"
+            postgresql-version: "12.3-1"
             visual-studio-package: "visualstudio2015community"
-          - label: PostgreSQL 12 with Groonga master
-            artifact-id: "postgresql-12-x64-groonga-master"
+            label: PostgreSQL 12 + Visual Studio 2015
+          - artifact-id: "postgresql-12-x64-groonga-master"
             cmake-generator: "Visual Studio 16 2019"
             groonga-master: "yes"
+            label: PostgreSQL 12 + Visual Studio 2019 + Groonga master
             postgresql-version-major: "12"
             postgresql-version: "12.3-1"
     env:
