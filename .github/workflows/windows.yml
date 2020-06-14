@@ -136,7 +136,7 @@ jobs:
         if: always()
         run: |
           ..\pgsql\bin\pg_ctl stop `
-            --pgdata=$PGRN_TEST_DATA
+            --pgdata=${Env:PGRN_TEST_DATA}
       - name: Show diff
         if: failure()
         run: |
