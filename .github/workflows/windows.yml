@@ -15,10 +15,27 @@ jobs:
   test:
     name: Test
     runs-on: windows-latest
+      matrix:
+        label:
+          - PostgreSQL 12 + Visual Studio 2015
+          - PostgreSQL 12 + Visual Studio 2019 + Groonga master
+        include:
+          - label: PostgreSQL 12 + Visual Studio 2015
+            artifact-id: "postgresql-12-x64"
+            cmake-generator: "Visual Studio 14 2015"
+            postgresql-version: "12.3-1"
+            postgresql-version-major: "12"
+            visual-studio-package: "visualstudio2015community"
+          - label: PostgreSQL 12 with Groonga master
+            artifact-id: "postgresql-12-x64-groonga-master"
+            cmake-generator: "Visual Studio 16 2019"
+            groonga-master: "yes"
+            postgresql-version-major: "12"
+            postgresql-version: "12.3-1"
     env:
-      PGRN_TEST_DATA: "test-data"
-      PGRN_TEST_ENCODING: "UTF-8"
-      PGRN_TEST_USER: "pgroonga-test"
+      PGROONGA_TEST_DATA: "test-data"
+      PGROONGA_TEST_ENCODING: "UTF-8"
+      PGROONGA_TEST_USER: "pgroonga-test"
     steps:
       - name: Disable crash dialog
         run: |
@@ -36,26 +53,33 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+      - name: Install Visual Studio
+        if:
+          matrix.visual-studio-package != ""
+        run: |
+          choco install -y ${{ matrix.visual-studio-package }}
       - name: Download PostgreSQL
         run: |
           cd ..
-          $POSTGRESQL_ARCHIVE_NAME = "postgresql-12.3-1-windows-x64-binaries.zip"
+          $POSTGRESQL_ARCHIVE_NAME = `
+            "postgresql-${{ matrix.postgresql-version }}-windows-x64-binaries.zip"
           Invoke-WebRequest `
             "https://get.enterprisedb.com/postgresql/$POSTGRESQL_ARCHIVE_NAME" `
             -OutFile $POSTGRESQL_ARCHIVE_NAME
           Expand-Archive -Path $POSTGRESQL_ARCHIVE_NAME -DestinationPath .
       - name: Download Groonga
         run: |
-          if ($Env:GROONGA_MASTER -eq "yes") {
+          if ("${{ matrix.groonga-master }}" -eq "yes") {
             git clone --depth 1 `
               https://github.com/groonga/groonga.git `
               vendor\groonga
               cd vendor\groonga
               git submodule update --init
               cd vendor
+              ruby download_lz4.rb
               ruby download_mecab.rb
               ruby download_message_pack.rb
-              ruby download_lz4.rb
+              ruby download_rapidjson.rb
           } else {
             Invoke-WebRequest `
               https://packages.groonga.org/source/groonga/groonga-latest.zip `
@@ -70,14 +94,15 @@ jobs:
           cmake `
             -A x64 `
             -B ..\build `
-            -G "Visual Studio 16 2019" `
+            -G "${{ matrix.cmake-generator }}" `
             -S . `
             -DCMAKE_INSTALL_PREFIX="..\pgsql" `
             -DGRN_WITH_BUNDLED_LZ4=yes `
             -DGRN_WITH_BUNDLED_MECAB=yes `
             -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes `
+            -DGRN_WITH_BUNDLED_RAPIDJSON=yes `
             -DGRN_WITH_MRUBY=yes `
-            -DPGRN_POSTGRESQL_VERSION_MAJOR=12
+            -DPGRN_POSTGRESQL_VERSION_MAJOR=${{ matrix.postgresql-version-major }}
       - name: Build
         run: |
           cmake `
@@ -103,17 +128,17 @@ jobs:
           Copy-Item -Path ..\build\*.zip -Destination artifacts
       - uses: actions/upload-artifact@v2
         with:
-          name: postgresql-12-x64
+          name: ${{ matrix.artifact-id }}
           path: artifacts
       - name: Run PostgreSQL for test
         run: |
           ..\pgsql\bin\initdb `
-            --encoding=${Env:PGRN_TEST_ENCODING} `
+            --encoding=${Env:PGROONGA_TEST_ENCODING} `
             --locale=C `
-            --pgdata=${Env:PGRN_TEST_DATA} `
-            --username=${Env:PGRN_TEST_USER}
+            --pgdata=${Env:PGROONGA_TEST_DATA} `
+            --username=${Env:PGROONGA_TEST_USER}
           ..\pgsql\bin\pg_ctl start `
-            --pgdata=${Env:PGRN_TEST_DATA}
+            --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Run regression test
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
@@ -124,16 +149,16 @@ jobs:
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
-            --encoding=${Env:PGRN_TEST_ENCODING} `
+            --encoding=${Env:PGROONGA_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
             --load-extension=pgroonga `
             --schedule=schedule `
-            --user=${Env:PGRN_TEST_USER}
+            --user=${Env:PGROONGA_TEST_USER}
       - name: Shutdown PostgreSQL for test
         if: always()
         run: |
           ..\pgsql\bin\pg_ctl stop `
-            --pgdata=${Env:PGRN_TEST_DATA}
+            --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Show diff
         if: failure()
         run: |
