@@ -130,7 +130,8 @@ jobs:
             --encoding=${Env:PGRN_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
             --load-extension=pgroonga `
-            --schedule=schedule
+            --schedule=schedule `
+            --user=${Env:PGRN_TEST_USER}
       - name: Shutdown PostgreSQL for test
         if: always()
         run: |
