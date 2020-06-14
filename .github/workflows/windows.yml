@@ -19,12 +19,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact-id: "postgresql-12-x64"
-            cmake-generator: "Visual Studio 14 2015"
-            postgresql-version-major: "12"
-            postgresql-version: "12.3-1"
-            visual-studio-package: "visualstudio2015community"
-            label: PostgreSQL 12 + Visual Studio 2015
+          # TODO: Installing Visual Studio in each job is too heavy...
+          # - artifact-id: "postgresql-12-x64"
+          #   cmake-generator: "Visual Studio 14 2015"
+          #   postgresql-version-major: "12"
+          #   postgresql-version: "12.3-1"
+          #   visual-studio-package: "visualstudio2015community"
+          #   label: PostgreSQL 12 + Visual Studio 2015
           - artifact-id: "postgresql-12-x64-groonga-master"
             cmake-generator: "Visual Studio 16 2019"
             groonga-master: "yes"
