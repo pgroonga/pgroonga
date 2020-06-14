@@ -57,7 +57,7 @@ jobs:
           submodules: recursive
       - name: Install Visual Studio
         if:
-          matrix.visual-studio-package != ""
+          matrix.visual-studio-package
         run: |
           choco install -y ${{ matrix.visual-studio-package }}
       - name: Download PostgreSQL
