@@ -94,7 +94,7 @@ jobs:
       - name: Run CMake
         shell: cmd
         run: |
-          if "%VC_PREFIX%" != "" (
+          if not "%VC_PREFIX%" == "" (
             call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           )
           mkdir ..\build
@@ -113,7 +113,7 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          if "%VC_PREFIX%" != "" (
+          if not "%VC_PREFIX%" == "" (
             call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           )
           cmake ^
