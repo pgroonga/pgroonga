@@ -118,9 +118,6 @@ jobs:
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
           Remove-Item sql/full-text-search/text/options/token-filters/custom.sql
-          # TODO: Remove me when we find how to change culture to ja_JP.
-          # Set-Culture "ja-JP" doesn't work.
-          # Remove-Item sql/...
           # Reduce tests to reduce test time
           Remove-Item sql/compatibility -Recurse -Force
           ruby test\prepare.rb > schedule
