@@ -48,6 +48,7 @@ typedef struct PGrnJSONBInsertData
 	grn_obj *sizeColumn;
 	grn_obj *typeColumn;
 	grn_obj *valueIDs;
+	grn_obj *tokenStack;
 	grn_obj key;
 	grn_obj components;
 	grn_obj valueKey;
@@ -659,12 +660,18 @@ static void
 PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 {
 	JsonbIteratorToken token;
+	JsonbIteratorToken lastToken = WJB_DONE;
 	JsonbValue value;
 
+	/* Suppress -Wunused-but-set-variable */
+	(void)lastToken;
+
+	GRN_BULK_REWIND(data->tokenStack);
 	while ((token = JsonbIteratorNext(iter, &value, false)) != WJB_DONE) {
 		switch (token)
 		{
 		case WJB_KEY:
+			GRN_UINT8_PUT(ctx, data->tokenStack, token);
 			grn_vector_add_element(ctx, &(data->components),
 								   value.val.string.val,
 								   value.val.string.len,
@@ -672,19 +679,24 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 								   GRN_DB_SHORT_TEXT);
 			break;
 		case WJB_VALUE:
+			/* WJB_VALUE isn't emitted when a value is an array or an
+			   object. */
 			PGrnJSONBInsertValue(iter, &value, data);
 			{
 				const char *component;
 				grn_vector_pop_element(ctx, &(data->components), &component,
 									   NULL, NULL);
 			}
+			GRN_UINT8_POP(data->tokenStack, lastToken);
 			break;
 		case WJB_ELEM:
 			PGrnJSONBInsertValue(iter, &value, data);
 			break;
 		case WJB_BEGIN_ARRAY:
 		{
-			uint32_t nElements = value.val.array.nElems;
+			uint32_t nElements;
+			GRN_UINT8_PUT(ctx, data->tokenStack, token);
+			nElements = value.val.array.nElems;
 			grn_vector_add_element(ctx, &(data->components),
 								   (const char *)&nElements,
 								   sizeof(uint32_t),
@@ -696,15 +708,39 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 		case WJB_END_ARRAY:
 		{
 			const char *component;
+			size_t nTokens;
 			grn_vector_pop_element(ctx, &(data->components), &component,
 								   NULL, NULL);
+			GRN_UINT8_POP(data->tokenStack, lastToken);
+			nTokens = GRN_UINT8_VECTOR_SIZE(data->tokenStack);
+			if (nTokens > 0 &&
+				GRN_UINT8_VALUE_AT(data->tokenStack, nTokens - 1) == WJB_KEY)
+			{
+				grn_vector_pop_element(ctx, &(data->components), &component,
+									   NULL, NULL);
+				GRN_UINT8_POP(data->tokenStack, lastToken);
+			}
 			break;
 		}
 		case WJB_BEGIN_OBJECT:
+			GRN_UINT8_PUT(ctx, data->tokenStack, token);
 			PGrnJSONBInsertValueSet(data, NULL, "object");
 			break;
 		case WJB_END_OBJECT:
+		{
+			size_t nTokens;
+			GRN_UINT8_POP(data->tokenStack, lastToken);
+			nTokens = GRN_UINT8_VECTOR_SIZE(data->tokenStack);
+			if (nTokens > 0 &&
+				GRN_UINT8_VALUE_AT(data->tokenStack, nTokens - 1) == WJB_KEY)
+			{
+				const char *component;
+				grn_vector_pop_element(ctx, &(data->components), &component,
+									   NULL, NULL);
+				GRN_UINT8_POP(data->tokenStack, lastToken);
+			}
 			break;
+		}
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_SYSTEM_ERROR),
@@ -1129,6 +1165,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 						 const char *logTag)
 {
 	grn_obj valueIDs;
+	grn_obj tokenStack;
 	PGrnJSONBInsertData data;
 	JsonbIterator *iter;
 	grn_obj *matchTarget = NULL;
@@ -1146,6 +1183,8 @@ PGrnJSONBMatchExpression(Jsonb *target,
 	data.valuesTable = tmpValuesTable;
 	GRN_PTR_INIT(&valueIDs, GRN_OBJ_VECTOR, grn_obj_id(ctx, data.valuesTable));
 	data.valueIDs = &valueIDs;
+	GRN_UINT8_INIT(&tokenStack, GRN_OBJ_VECTOR);
+	data.tokenStack = &tokenStack;
 	PGrnJSONBInsertDataInit(&data);
 	iter = JsonbIteratorInit(&(target->root));
 	PGrnJSONBInsertContainer(&iter, &data);
@@ -1228,6 +1267,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 			grn_obj_close(ctx, condition);
 		if (matchTarget)
 			grn_obj_close(ctx, matchTarget);
+		GRN_OBJ_FIN(ctx, &tokenStack);
 		PGrnJSONBDeleteValues(tmpValuesTable, &valueIDs);
 		GRN_OBJ_FIN(ctx, &valueIDs);
 		PG_RE_THROW();
@@ -1441,6 +1481,7 @@ PGrnJSONBInsert(Relation index,
 		grn_obj_reinit(ctx, data.valueIDs,
 					   grn_obj_id(ctx, data.valuesTable),
 					   GRN_OBJ_VECTOR);
+		data.tokenStack = &(buffers->jsonbTokenStack);
 	}
 	PGrnJSONBInsertDataInit(&data);
 
