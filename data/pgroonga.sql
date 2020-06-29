@@ -1465,14 +1465,14 @@ BEGIN
 	 WHERE name = 'server_version_num' AND
 	       setting::integer >= 96000;
 	IF FOUND THEN
-		DROP ACCESS METHOD IF EXISTS pgroonga CASCADE;
+		EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
 		CREATE FUNCTION pgroonga_handler(internal)
 			RETURNS index_am_handler
 			AS 'MODULE_PATHNAME', 'pgroonga_handler'
 			LANGUAGE C;
-		CREATE ACCESS METHOD pgroonga
-		  TYPE INDEX
-		  HANDLER pgroonga_handler;
+		EXECUTE 'CREATE ACCESS METHOD pgroonga' ||
+			'TYPE INDEX ' ||
+			'HANDLER pgroonga_handler';
 	ELSE
 		CREATE FUNCTION pgroonga_insert(internal)
 			RETURNS bool
