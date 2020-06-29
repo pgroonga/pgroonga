@@ -18,15 +18,12 @@ jobs:
       fail-fast: false
       matrix:
         label:
-          - PostgreSQL 9.5
           - PostgreSQL 9.6
           - PostgreSQL 10
           - PostgreSQL 11
           - PostgreSQL 12
           - PostgreSQL 12 with Groonga master
         include:
-          - label: PostgreSQL 9.5
-            postgresql-version: "9.5"
           - label: PostgreSQL 9.6
             postgresql-version: "9.6"
           - label: PostgreSQL 10
@@ -71,13 +68,6 @@ jobs:
             postgresql-server-dev-${{ matrix.postgresql-version }}
           sudo systemctl start postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
-      - name: Disable WAL tests
-        if: |
-          matrix.postgresql-version == '9.5'
-        run: |
-          rm -rf sql/function/wal-apply/
-          rm -rf sql/function/wal-truncate/
-          rm -rf sql/function/set-writable/
       - name: Run regression test
         run: |
           test/run-sql-test.sh
@@ -95,8 +85,6 @@ jobs:
           sudo cat \
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
       - name: Run unit test
-        if: |
-          matrix.postgresql-version != '9.5'
         run: |
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
             test/run-test.rb

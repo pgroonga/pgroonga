@@ -14,20 +14,12 @@
 #if PG_VERSION_NUM >= 90601
 #	define PGRN_FUNCTION_INFO_V1(function_name)		\
 	PGDLLEXPORT PG_FUNCTION_INFO_V1(function_name)
-#elif PG_VERSION_NUM >= 90600
+#else
 #	define PGRN_FUNCTION_INFO_V1(function_name)				\
 	extern PGDLLEXPORT PG_FUNCTION_INFO_V1(function_name)
-#else
-#	define PGRN_FUNCTION_INFO_V1(function_name)					\
-	extern PGDLLEXPORT Datum function_name(PG_FUNCTION_ARGS);	\
-	PG_FUNCTION_INFO_V1(function_name)
 #endif
 
-#if PG_VERSION_NUM >= 90600
-#	define PGRN_SUPPORT_CREATE_ACCESS_METHOD
-#endif
-
-#if PG_VERSION_NUM >= 90600 && defined(PGRN_HAVE_MSGPACK)
+#ifdef PGRN_HAVE_MSGPACK
 #	define PGRN_SUPPORT_WAL
 #endif
 
@@ -75,13 +67,8 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_SUPPORT_LOGICAL_REPLICATION
 #endif
 
-#if PG_VERSION_NUM >= 90500
-#	define pgrn_array_create_iterator(array, slide_ndim)	\
+#define pgrn_array_create_iterator(array, slide_ndim)	\
 	array_create_iterator(array, slide_ndim, NULL)
-#else
-#	define pgrn_array_create_iterator(array, slide_ndim)	\
-	array_create_iterator(array, slide_ndim)
-#endif
 
 #if PG_VERSION_NUM >= 120000
 #	define PGrnIndexBuildHeapScan(heap,				\

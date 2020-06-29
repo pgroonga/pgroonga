@@ -32,9 +32,7 @@
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
-#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
-#	include <access/amapi.h>
-#endif
+#include <access/amapi.h>
 #include <access/reloptions.h>
 #include <access/relscan.h>
 #ifdef PGRN_SUPPORT_TABLEAM
@@ -262,9 +260,7 @@ PGRN_FUNCTION_INFO_V1(pgroonga_bulkdelete);
 PGRN_FUNCTION_INFO_V1(pgroonga_vacuumcleanup);
 PGRN_FUNCTION_INFO_V1(pgroonga_canreturn);
 PGRN_FUNCTION_INFO_V1(pgroonga_costestimate);
-#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 PGRN_FUNCTION_INFO_V1(pgroonga_handler);
-#endif
 
 static grn_ctx *ctx = NULL;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -7256,7 +7252,6 @@ pgroonga_costestimate(PG_FUNCTION_ARGS)
 	PG_RETURN_VOID();
 }
 
-#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 static bool
 pgroonga_validate_raw(Oid opClassOid)
 {
@@ -7315,9 +7310,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 
 	PG_RETURN_POINTER(routine);
 }
-#endif
 
-#ifdef PGRN_SUPPORT_CREATE_ACCESS_METHOD
 bool
 PGrnIndexIsPGroonga(Relation index)
 {
@@ -7325,16 +7318,3 @@ PGrnIndexIsPGroonga(Relation index)
 		return false;
 	return PGRN_RELATION_GET_RD_INDAM(index)->aminsert == pgroonga_insert_raw;
 }
-#else
-bool
-PGrnIndexIsPGroonga(Relation index)
-{
-	if (!index->rd_aminfo)
-		return false;
-	if (index->rd_aminfo->aminsert.fn_addr)
-		return index->rd_aminfo->aminsert.fn_addr == pgroonga_insert;
-	if (index->rd_aminfo->amcanreturn.fn_addr)
-		return index->rd_aminfo->amcanreturn.fn_addr == pgroonga_canreturn;
-	return false;
-}
-#endif

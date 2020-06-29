@@ -107,7 +107,6 @@ packages_dir = "packages"
 
 namespace :package do
   package_names = [
-    "postgresql-9.5-pgroonga",
     "postgresql-9.6-pgroonga",
     "postgresql-10-pgroonga",
     "postgresql-11-pgroonga",

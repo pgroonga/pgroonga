@@ -1459,111 +1459,14 @@ CREATE OPERATOR &~| (
 	JOIN = contjoinsel
 );
 
-DO LANGUAGE plpgsql $$
-BEGIN
-	PERFORM setting FROM pg_settings
-	 WHERE name = 'server_version_num' AND
-	       setting::integer >= 90600;
-	IF FOUND THEN
-		EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
-		CREATE FUNCTION pgroonga_handler(internal)
-			RETURNS index_am_handler
-			AS 'MODULE_PATHNAME', 'pgroonga_handler'
-			LANGUAGE C;
-		EXECUTE 'CREATE ACCESS METHOD pgroonga ' ||
-			'TYPE INDEX ' ||
-			'HANDLER pgroonga_handler';
-	ELSE
-		CREATE FUNCTION pgroonga_insert(internal)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_insert'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_beginscan(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_beginscan'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_gettuple(internal)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_gettuple'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_getbitmap(internal)
-			RETURNS bigint
-			AS 'MODULE_PATHNAME', 'pgroonga_getbitmap'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_rescan(internal)
-			RETURNS void
-			AS 'MODULE_PATHNAME', 'pgroonga_rescan'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_endscan(internal)
-			RETURNS void
-			AS 'MODULE_PATHNAME', 'pgroonga_endscan'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_build(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_build'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_buildempty(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_buildempty'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_bulkdelete(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_bulkdelete'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_vacuumcleanup(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_vacuumcleanup'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_canreturn(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_canreturn'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_costestimate(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_costestimate'
-			LANGUAGE C;
-		CREATE FUNCTION pgroonga_options(internal)
-			RETURNS internal
-			AS 'MODULE_PATHNAME', 'pgroonga_options'
-			LANGUAGE C;
-
-		DELETE FROM pg_am WHERE amname = 'pgroonga';
-		INSERT INTO pg_am VALUES(
-			'pgroonga',	-- amname
-			36,		-- amstrategies
-			0,		-- amsupport
-			true,		-- amcanorder
-			true,		-- amcanorderbyop
-			true,		-- amcanbackward
-			true,		-- amcanunique
-			true,		-- amcanmulticol
-			true,		-- amoptionalkey
-			true,		-- amsearcharray
-			false,		-- amsearchnulls
-			false,		-- amstorage
-			true,		-- amclusterable
-			false,		-- ampredlocks
-			0,		-- amkeytype
-			'pgroonga_insert',	-- aminsert
-			'pgroonga_beginscan',	-- ambeginscan
-			'pgroonga_gettuple',	-- amgettuple
-			'pgroonga_getbitmap',	-- amgetbitmap
-			'pgroonga_rescan',	-- amrescan
-			'pgroonga_endscan',	-- amendscan
-			0,		-- ammarkpos,
-			0,		-- amrestrpos,
-			'pgroonga_build',	-- ambuild
-			'pgroonga_buildempty',	-- ambuildempty
-			'pgroonga_bulkdelete',	-- ambulkdelete
-			'pgroonga_vacuumcleanup',	-- amvacuumcleanup
-			'pgroonga_canreturn',		-- amcanreturn
-			'pgroonga_costestimate',	-- amcostestimate
-			'pgroonga_options'	-- amoptions
-		);
-	END IF;
-END;
-$$;
-
+DROP ACCESS METHOD IF EXISTS pgroonga CASCADE;
+CREATE FUNCTION pgroonga_handler(internal)
+	RETURNS index_am_handler
+	AS 'MODULE_PATHNAME', 'pgroonga_handler'
+	LANGUAGE C;
+CREATE ACCESS METHOD pgroonga
+	TYPE INDEX
+	HANDLER pgroonga_handler;
 
 /* v1 */
 CREATE OPERATOR CLASS pgroonga_text_full_text_search_ops FOR TYPE text

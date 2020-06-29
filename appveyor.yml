@@ -4,48 +4,33 @@ environment:
   matrix:
     - VS_VERSION: 12
       ARCH: x86
-      POSTGRESQL_VERSION: 9.5.22-1
-      POSTGRESQL_VERSION_MAJOR: 9.5
-    - VS_VERSION: 12
-      ARCH: x64
-      POSTGRESQL_VERSION: 9.5.22-1
-      POSTGRESQL_VERSION_MAJOR: 9.5
-    - VS_VERSION: 12
-      ARCH: x86
       POSTGRESQL_VERSION: 9.6.18-1
       POSTGRESQL_VERSION_MAJOR: 9.6
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 9.6.18-1
       POSTGRESQL_VERSION_MAJOR: 9.6
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: x86
       POSTGRESQL_VERSION: 10.13-1
       POSTGRESQL_VERSION_MAJOR: 10
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 12
       ARCH: x64
       POSTGRESQL_VERSION: 10.13-1
       POSTGRESQL_VERSION_MAJOR: 10
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 14
       ARCH: x64
       POSTGRESQL_VERSION: 11.8-1
       POSTGRESQL_VERSION_MAJOR: 11
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 14
       ARCH: x64
       POSTGRESQL_VERSION: 12.3-1
       POSTGRESQL_VERSION_MAJOR: 12
-      WAL_SUPPORTED: "yes"
     - VS_VERSION: 14
       ARCH: x64
       GROONGA_MASTER: "yes"
       POSTGRESQL_VERSION: 12.3-1
       POSTGRESQL_VERSION_MAJOR: 12
-      WAL_SUPPORTED: "yes"
 notifications:
   - provider: Webhook
     url: https://webhook.commit-email.info/
@@ -120,11 +105,6 @@ test_script:
   - rm sql/full-text-search/text/options/token-filters/custom.sql
   # Reduce tests to reduce test time
   - rm -rf sql/compatibility
-  - if not "%WAL_SUPPORTED%" == "yes" (
-      rm -rf sql/function/wal-apply/
-      rm -rf sql/function/wal-truncate/
-      rm -rf sql/function/set-writable/wal-*
-    )
   - find sql/* -type d | sed -e 's,^sql,results,' | xargs mkdir -p
   - find sql -name '*.sql' |
       sed -e 's,^sql/,test:\ ,g' |
@@ -140,9 +120,7 @@ test_script:
   - set PATH=%CD%\..\pgsql\bin;%PATH%
   # TODO: Remove me when we fix test failure on Windows
   - rm test/test-streaming-replication.rb
-  - if "%WAL_SUPPORTED%" == "yes" (
-      ruby test\run-test.rb
-    )
+  - ruby test\run-test.rb
 
 on_failure:
   - type regression.diffs
