@@ -1470,7 +1470,7 @@ BEGIN
 			RETURNS index_am_handler
 			AS 'MODULE_PATHNAME', 'pgroonga_handler'
 			LANGUAGE C;
-		EXECUTE 'CREATE ACCESS METHOD pgroonga' ||
+		EXECUTE 'CREATE ACCESS METHOD pgroonga ' ||
 			'TYPE INDEX ' ||
 			'HANDLER pgroonga_handler';
 	ELSE
