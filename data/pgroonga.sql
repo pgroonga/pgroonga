@@ -1463,7 +1463,7 @@ DO LANGUAGE plpgsql $$
 BEGIN
 	PERFORM setting FROM pg_settings
 	 WHERE name = 'server_version_num' AND
-	       setting::integer >= 96000;
+	       setting::integer >= 90600;
 	IF FOUND THEN
 		EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
 		CREATE FUNCTION pgroonga_handler(internal)
