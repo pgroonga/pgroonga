@@ -1461,7 +1461,7 @@ CREATE OPERATOR &~| (
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	SELECT setting FROM pg_settings
+	PERFORM setting FROM pg_settings
 	 WHERE name = 'server_version_num' AND
 	       setting::integer >= 96000;
 	IF FOUND THEN
