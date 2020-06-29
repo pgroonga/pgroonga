@@ -1461,16 +1461,19 @@ CREATE OPERATOR &~| (
 
 DO LANGUAGE plpgsql $$
 BEGIN
-	EXECUTE 'DROP ACCESS METHOD IF EXISTS pgroonga CASCADE';
-	CREATE FUNCTION pgroonga_handler(internal)
-		RETURNS index_am_handler
-		AS 'MODULE_PATHNAME', 'pgroonga_handler'
-		LANGUAGE C;
-	EXECUTE 'CREATE ACCESS METHOD pgroonga ' ||
-		'TYPE INDEX ' ||
-		'HANDLER pgroonga_handler';
-EXCEPTION
-	WHEN syntax_error THEN
+	SELECT setting FROM pg_settings
+	 WHERE name = 'server_version_num' AND
+	       setting::integer >= 96000;
+	IF FOUND THEN
+		DROP ACCESS METHOD IF EXISTS pgroonga CASCADE;
+		CREATE FUNCTION pgroonga_handler(internal)
+			RETURNS index_am_handler
+			AS 'MODULE_PATHNAME', 'pgroonga_handler'
+			LANGUAGE C;
+		CREATE ACCESS METHOD pgroonga
+		  TYPE INDEX
+		  HANDLER pgroonga_handler;
+	ELSE
 		CREATE FUNCTION pgroonga_insert(internal)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_insert'
@@ -1557,6 +1560,7 @@ EXCEPTION
 			'pgroonga_costestimate',	-- amcostestimate
 			'pgroonga_options'	-- amoptions
 		);
+	END IF;
 END;
 $$;
 
