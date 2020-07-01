@@ -16,6 +16,7 @@ SELECT pgroonga_set_writable(false);
  t
 (1 row)
 
+\set SHOW_CONTEXT never
 VACUUM memos;
 ERROR:  pgroonga: can't delete bulk records while pgroonga.writable is false
 SELECT pgroonga_command('object_exist',

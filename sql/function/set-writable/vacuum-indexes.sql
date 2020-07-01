@@ -17,6 +17,7 @@ DROP INDEX pgrn_index2;
 
 SELECT pgroonga_set_writable(false);
 
+\set SHOW_CONTEXT never
 VACUUM memos;
 SELECT pgroonga_command('object_exist',
                         ARRAY[
