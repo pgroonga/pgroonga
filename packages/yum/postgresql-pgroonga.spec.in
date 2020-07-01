@@ -117,6 +117,9 @@ EOF
 %endif
 
 %changelog
+* Wed Jul 01 2020 Sutou Kouhei <kou@clear-code.com> - 2.2.6-1
+- New upstream release.
+
 * Thu Mar 12 2020 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.2.5-1
 - New upstream release.
 

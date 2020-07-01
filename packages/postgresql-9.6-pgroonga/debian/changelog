@@ -1,3 +1,9 @@
+postgresql-9.6-pgroonga (2.2.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Wed, 01 Jul 2020 03:52:44 -0000
+
 postgresql-9.6-pgroonga (2.2.5-1) unstable; urgency=low
 
   * New upstream release.

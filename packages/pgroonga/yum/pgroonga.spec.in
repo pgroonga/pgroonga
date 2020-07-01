@@ -66,5 +66,8 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %{_datadir}/pgsql/extension/*.sql
 
 %changelog
+* Wed Jul 01 2020 Sutou Kouhei <kou@clear-code.com> - 2.2.6-1
+- New upstream release.
+
 * Wed May 06 2020 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.2.5-1
 - initial packaging for Fedora.
