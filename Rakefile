@@ -166,9 +166,12 @@ namespace :package do
         rm_rf("apt/repositories")
         ruby("-S", "rake", "apt:build")
       end
-      sh("rsync", "-avz", "--progress",
-         "#{package_dir}/apt/repositories/",
-         repositories_dir)
+      package_repositories_dir = "#{package_dir}/apt/repository"
+      if File.exist?(package_repositories_dir)
+        sh("rsync", "-av", "--progress",
+           "#{package_repositories_dir}/",
+           repositories_dir)
+      end
     end
     sh("rsync", "-avz", "--progress",
        "#{repositories_dir}/",
@@ -197,9 +200,12 @@ namespace :package do
         rm_rf("yum/repositories")
         ruby("-S", "rake", "yum:build")
       end
-      sh("rsync", "-avz", "--progress",
-         "#{package_dir}/yum/repositories/",
-         repositories_dir)
+      package_repositories_dir = "#{package_dir}/yum/repository"
+      if File.exist?(package_repositories_dir)
+        sh("rsync", "-av", "--progress",
+           "#{package_repositories_dir}/",
+           repositories_dir)
+      end
     end
     sh("rsync", "-avz", "--progress",
        "#{repositories_dir}/",
