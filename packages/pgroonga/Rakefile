@@ -5,14 +5,12 @@ class PGroongaPackageTask < GenericPGroongaPackageTask
     super("pgroonga")
   end
 
-  def apt_targets_default
-    [
-    ]
+  def enable_apt?
+    false
   end
 
-  def ubuntu_targets_default
-    [
-    ]
+  def enable_ubuntu?
+    false
   end
 
   def yum_targets_default
