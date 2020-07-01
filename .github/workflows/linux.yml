@@ -22,7 +22,8 @@ jobs:
           - PostgreSQL 10
           - PostgreSQL 11
           - PostgreSQL 12
-          - PostgreSQL 12 with Groonga master
+          - PostgreSQL 13
+          - PostgreSQL 13 with Groonga master
         include:
           - label: PostgreSQL 9.6
             postgresql-version: "9.6"
@@ -32,8 +33,10 @@ jobs:
             postgresql-version: "11"
           - label: PostgreSQL 12
             postgresql-version: "12"
-          - label: PostgreSQL 12 with Groonga master
-            postgresql-version: "12"
+          - label: PostgreSQL 13
+            postgresql-version: "13"
+          - label: PostgreSQL 13 with Groonga master
+            postgresql-version: "13"
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
