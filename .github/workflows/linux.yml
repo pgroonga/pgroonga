@@ -65,10 +65,12 @@ jobs:
             postgresql-12 \
             postgresql-client \
             postgresql-client-12
-          sudo sed \
-            -i'' \
-            -e 's/main/${{ matrix.postgresql-version }}/g' \
-            /etc/apt/sources.list.d/pgdg.list
+          if [ ${{ matrix.postgresql-version }} -ge 13 ]; then \
+            sudo sed \
+              -i'' \
+              -e 's/main/${{ matrix.postgresql-version }}/g' \
+              /etc/apt/sources.list.d/pgdg.list; \
+          fi
           sudo apt update
           sudo apt -y -V install \
             postgresql-${{ matrix.postgresql-version }} \
