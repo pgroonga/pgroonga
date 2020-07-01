@@ -40,12 +40,6 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_HAVE_OPTIMIZER_H
 #endif
 
-#if PG_VERSION_NUM >= 120000
-#	define PGrnTableScanDesc TableScanDesc
-#else
-#	define PGrnTableScanDesc HeapScanDesc
-#endif
-
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
@@ -129,12 +123,14 @@ typedef char *PGrnStringOptionValue;
 #endif
 
 #ifdef PGRN_SUPPORT_TABLEAM
+#	define PGrnTableScanDesc TableScanDesc
 #	define pgrn_table_beginscan table_beginscan
 #	define pgrn_table_beginscan_catalog table_beginscan_catalog
 #	define pgrn_table_endscan table_endscan
 #	define pgrn_table_open table_open
 #	define pgrn_table_close table_close
 #else
+#	define PGrnTableScanDesc HeapScanDesc
 #	define pgrn_table_beginscan heap_beginscan
 #	define pgrn_table_beginscan_catalog heap_beginscan_catalog
 #	define pgrn_table_endscan heap_endscan
