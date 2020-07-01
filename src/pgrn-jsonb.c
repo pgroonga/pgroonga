@@ -644,6 +644,13 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 		GRN_BOOL_SET(ctx, &(data->value), value->val.boolean);
 		PGrnJSONBInsertValueSet(data, data->booleanColumn, "boolean");
 		break;
+#ifdef PGRN_HAVE_JSONB_DATETIME
+	case jbvDatetime:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("pgroonga: datetime value for jsonb isn't supported")));
+		break;
+#endif
 	case jbvArray:
 		PGrnJSONBInsertContainer(iter, data);
 		break;
@@ -774,6 +781,9 @@ PGrnJSONBInsertValueForFullTextSearch(JsonbIterator **iter,
 		break;
 	case jbvNumeric:
 	case jbvBool:
+#ifdef PGRN_HAVE_JSONB_DATETIME
+	case jbvDatetime:
+#endif
 		break;
 	case jbvArray:
 		PGrnJSONBInsertContainerForFullTextSearch(iter, data);
