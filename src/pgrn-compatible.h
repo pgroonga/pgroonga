@@ -131,7 +131,13 @@ typedef char *PGrnStringOptionValue;
 #ifdef PGRN_SUPPORT_TABLEAM
 #	define pgrn_table_beginscan table_beginscan
 #	define pgrn_table_beginscan_catalog table_beginscan_catalog
+#	define pgrn_table_endscan table_endscan
+#	define pgrn_table_open table_open
+#	define pgrn_table_close table_close
 #else
 #	define pgrn_table_beginscan heap_beginscan
 #	define pgrn_table_beginscan_catalog heap_beginscan_catalog
+#	define pgrn_table_endscan heap_endscan
+#	define pgrn_table_open heap_open
+#	define pgrn_table_close heap_close
 #endif

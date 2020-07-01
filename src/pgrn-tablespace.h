@@ -22,7 +22,7 @@ PGrnTablespaceIteratorInitialize(PGrnTablespaceIterator *iterator,
 								 LOCKMODE lockMode)
 {
 	iterator->lockMode = lockMode;
-	iterator->tablespaces = heap_open(TableSpaceRelationId, lockMode);
+	iterator->tablespaces = pgrn_table_open(TableSpaceRelationId, lockMode);
 	iterator->scan = pgrn_table_beginscan_catalog(iterator->tablespaces,
 												  0,
 												  NULL);
@@ -51,6 +51,6 @@ static inline void
 PGrnTablespaceIteratorFinalize(PGrnTablespaceIterator *iterator)
 {
 	heap_endscan(iterator->scan);
-	heap_close(iterator->tablespaces, iterator->lockMode);
+	pgrn_table_close(iterator->tablespaces, iterator->lockMode);
 }
 

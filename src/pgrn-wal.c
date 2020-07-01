@@ -2082,7 +2082,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 						"while pgroonga.writable is false")));
 	}
 
-	indexes = heap_open(IndexRelationId, lock);
+	indexes = pgrn_table_open(IndexRelationId, lock);
 	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
@@ -2107,14 +2107,14 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			heap_close(indexes, lock);
+			pgrn_table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	heap_close(indexes, lock);
+	pgrn_table_close(indexes, lock);
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
@@ -2260,7 +2260,7 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 	PGrnTableScanDesc scan;
 	HeapTuple indexTuple;
 
-	indexes = heap_open(IndexRelationId, lock);
+	indexes = pgrn_table_open(IndexRelationId, lock);
 	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
@@ -2285,14 +2285,14 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			heap_close(indexes, lock);
+			pgrn_table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	heap_close(indexes, lock);
+	pgrn_table_close(indexes, lock);
 #else
 	ereport(ERROR,
 			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
