@@ -65,7 +65,7 @@ jobs:
             postgresql-12 \
             postgresql-client \
             postgresql-client-12
-          sed \
+          sudo sed \
             -i'' \
             -e 's/main/${{ matrix.postgresql-version }}/g' \
             /etc/apt/sources.list.d/pgdg.list
