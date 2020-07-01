@@ -450,9 +450,7 @@ bytea *
 pgroonga_options_raw(Datum reloptions,
 					 bool validate)
 {
-	relopt_value *options;
 	PGrnOptions *grnOptions;
-	int nOptions;
 	const relopt_parse_elt optionsMap[] = {
 		{"tokenizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenizerOffset)},
@@ -474,17 +472,34 @@ pgroonga_options_raw(Datum reloptions,
 		 offsetof(PGrnOptions, queryAllowColumn)},
 	};
 
-	options = parseRelOptions(reloptions, validate, PGrnReloptionKind,
-							  &nOptions);
-	grnOptions = allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
-	fillRelOptions(grnOptions,
-				   sizeof(PGrnOptions),
-				   options,
-				   nOptions,
-				   validate,
-				   optionsMap,
-				   lengthof(optionsMap));
-	pfree(options);
+#ifdef PGRN_HAVE_BUILD_RELOPTIONS
+	grnOptions = build_reloptions(reloptions,
+								  validate,
+								  PGrnReloptionKind,
+								  sizeof(PGrnOptions),
+								  optionsMap,
+								  lengthof(optionsMap));
+#else
+	{
+		relopt_value *options;
+		int nOptions;
+		options = parseRelOptions(reloptions,
+								  validate,
+								  PGrnReloptionKind,
+								  &nOptions);
+		grnOptions = allocateReloptStruct(sizeof(PGrnOptions),
+										  options,
+										  nOptions);
+		fillRelOptions(grnOptions,
+					   sizeof(PGrnOptions),
+					   options,
+					   nOptions,
+					   validate,
+					   optionsMap,
+					   lengthof(optionsMap));
+		pfree(options);
+	}
+#endif
 
 	return (bytea *) grnOptions;
 }

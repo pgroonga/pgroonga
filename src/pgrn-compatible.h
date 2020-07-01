@@ -42,6 +42,7 @@ typedef char *PGrnStringOptionValue;
 
 #if PG_VERSION_NUM >= 130000
 #	define PGRN_SUPPORT_OPTION_LOCK_MODE
+#	define PGRN_HAVE_BUILD_RELOPTIONS
 #endif
 
 #ifndef ERRCODE_SYSTEM_ERROR
