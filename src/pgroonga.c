@@ -6461,15 +6461,15 @@ PGrnBuildCallback(Relation index,
 	PGrnBuildState bs = (PGrnBuildState) state;
 	MemoryContext oldMemoryContext;
 	uint32_t recordSize;
+#ifndef PGRN_INDEX_BUILD_CALLBACK_USE_ITEM_POINTER
+	ItemPointer tid = &(htup->t_self);
+#endif
 
 	if (!tupleIsAlive)
 		return;
 
 	oldMemoryContext = MemoryContextSwitchTo(bs->memoryContext);
 
-#ifndef PGRN_INDEX_BUILD_CALLBACK_USE_ITEM_POINTER
-	ItemPointer tid = &(htup->t_self);
-#endif
 	recordSize = PGrnInsert(index,
 							bs->sourcesTable,
 							bs->sourcesCtidColumn,
