@@ -40,6 +40,10 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_HAVE_OPTIMIZER_H
 #endif
 
+#if PG_VERSION_NUM >= 130000
+#	define PGRN_SUPPORT_OPTION_LOCK_MODE
+#endif
+
 #ifndef ERRCODE_SYSTEM_ERROR
 #	define ERRCODE_SYSTEM_ERROR ERRCODE_IO_ERROR
 #endif
@@ -136,4 +140,50 @@ typedef char *PGrnStringOptionValue;
 #	define pgrn_table_endscan heap_endscan
 #	define pgrn_table_open heap_open
 #	define pgrn_table_close heap_close
+#endif
+
+#ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
+#	define pgrn_add_string_reloption(kinds,			\
+									 name,			\
+									 desc,			\
+									 default_value,	\
+									 validator,		\
+									 lock_mode)		\
+	add_string_reloption((kinds),					\
+						 (name),					\
+						 (desc),					\
+						 (default_value),			\
+						 (validator),				\
+						 (lock_mode))
+#	define pgrn_add_bool_reloption(kinds,			\
+								   name,			\
+								   desc,			\
+								   default_value,	\
+								   lock_mode)		\
+	add_bool_reloption((kinds),						\
+					   (name),						\
+					   (desc),						\
+					   (default_value),				\
+					   (lock_mode))
+#else
+#	define pgrn_add_string_reloption(kinds,			\
+									 name,			\
+									 desc,			\
+									 default_value,	\
+									 validator,		\
+									 lock_mode)		\
+	add_string_reloption((kinds),					\
+						 (name),					\
+						 (desc),					\
+						 (default_value),			\
+						 (validator))
+#	define pgrn_add_bool_reloption(kinds,			\
+								   name,			\
+								   desc,			\
+								   default_value,	\
+								   lock_mode)		\
+	add_bool_reloption((kinds),						\
+					   (name),						\
+					   (desc),						\
+					   (default_value))
 #endif

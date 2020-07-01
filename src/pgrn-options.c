@@ -224,54 +224,67 @@ PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 void
 PGrnInitializeOptions(void)
 {
+#ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
+	const LOCKMODE lock_mode = ShareUpdateExclusiveLock;
+#endif
+
 	lexicon = NULL;
 	PGrnReloptionKind = add_reloption_kind();
 
-	add_string_reloption(PGrnReloptionKind,
-						 "tokenizer",
-						 "Tokenizer name to be used for full-text search",
-						 PGRN_DEFAULT_TOKENIZER,
-						 PGrnOptionValidateTokenizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "normalizer",
-						 "Normalizer name to be used as fallback",
-						 PGRN_DEFAULT_NORMALIZER,
-						 PGrnOptionValidateNormalizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "token_filters",
-						 "Token filter names separated by \",\" "
-						 "to be used for full-text search",
-						 "",
-						 PGrnOptionValidateTokenFilters);
-	add_string_reloption(PGrnReloptionKind,
-						 "plugins",
-						 "Plugin names separated by \",\" to be installed",
-						 "",
-						 PGrnOptionValidatePlugins);
-	add_string_reloption(PGrnReloptionKind,
-						 "full_text_search_normalizer",
-						 "Normalizer name to be used for full-text search",
-						 NULL,
-						 PGrnOptionValidateNormalizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "regexp_search_normalizer",
-						 "Normalizer name to be used for regexp search",
-						 NULL,
-						 PGrnOptionValidateNormalizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "prefix_search_normalizer",
-						 "Normalizer name to be used for prefix search",
-						 NULL,
-						 PGrnOptionValidateNormalizer);
-	add_string_reloption(PGrnReloptionKind,
-						 "lexicon_type",
-						 "Lexicon type to be used for lexicon",
-						 NULL,
-						 PGrnOptionValidateLexiconType);
-	add_bool_reloption(PGrnReloptionKind,
-					   "query_allow_column",
-					   "Accept column:... syntax in query",
-					   false);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "tokenizer",
+							  "Tokenizer name to be used for full-text search",
+							  PGRN_DEFAULT_TOKENIZER,
+							  PGrnOptionValidateTokenizer,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "normalizer",
+							  "Normalizer name to be used as fallback",
+							  PGRN_DEFAULT_NORMALIZER,
+							  PGrnOptionValidateNormalizer,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "token_filters",
+							  "Token filter names separated by \",\" "
+							  "to be used for full-text search",
+							  "",
+							  PGrnOptionValidateTokenFilters,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "plugins",
+							  "Plugin names separated by \",\" to be installed",
+							  "",
+							  PGrnOptionValidatePlugins,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "full_text_search_normalizer",
+							  "Normalizer name to be used for full-text search",
+							  NULL,
+							  PGrnOptionValidateNormalizer,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "regexp_search_normalizer",
+							  "Normalizer name to be used for regexp search",
+							  NULL,
+							  PGrnOptionValidateNormalizer,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "prefix_search_normalizer",
+							  "Normalizer name to be used for prefix search",
+							  NULL,
+							  PGrnOptionValidateNormalizer,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "lexicon_type",
+							  "Lexicon type to be used for lexicon",
+							  NULL,
+							  PGrnOptionValidateLexiconType,
+							  lock_mode);
+	pgrn_add_bool_reloption(PGrnReloptionKind,
+							"query_allow_column",
+							"Accept column:... syntax in query",
+							false,
+							lock_mode);
 }
 
 void
