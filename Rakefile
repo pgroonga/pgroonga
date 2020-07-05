@@ -164,18 +164,9 @@ namespace :package do
       package_dir = "packages/#{package_name}"
       cd(package_dir) do
         rm_rf("apt/repositories")
-        ruby("-S", "rake", "apt:build")
-      end
-      package_repositories_dir = "#{package_dir}/apt/repository"
-      if File.exist?(package_repositories_dir)
-        sh("rsync", "-av", "--progress",
-           "#{package_repositories_dir}/",
-           repositories_dir)
+        ruby("-S", "rake", "apt")
       end
     end
-    sh("rsync", "-avz", "--progress",
-       "#{repositories_dir}/",
-       rsync_base_path)
   end
 
   desc "Release Ubuntu packages"
@@ -198,18 +189,9 @@ namespace :package do
       package_dir = "packages/#{package_name}"
       cd(package_dir) do
         rm_rf("yum/repositories")
-        ruby("-S", "rake", "yum:build")
-      end
-      package_repositories_dir = "#{package_dir}/yum/repository"
-      if File.exist?(package_repositories_dir)
-        sh("rsync", "-av", "--progress",
-           "#{package_repositories_dir}/",
-           repositories_dir)
+        ruby("-S", "rake", "yum")
       end
     end
-    sh("rsync", "-avz", "--progress",
-       "#{repositories_dir}/",
-       rsync_base_path)
   end
 
   namespace :windows do
