@@ -25,8 +25,17 @@ Requires:	msgpack
 Requires:	postgresql-server
 
 %description
-This package provides a fast full-text search plugin for PostgreSQL.
-It is based on Groonga.
+
+PGroonga (píːzí:lúnɡά) is a PostgreSQL extension to use Groonga as the index.
+Groonga is a fast and accurate full text search engine based on inverted index.
+One of the characteristics of Groonga is that a newly registered document instantly
+appears in search results. Also, Groonga allows updates without read locks.
+These characteristics result in superior performance on real-time applications.
+
+PostgreSQL supports full text search against languages that use only alphabet and digit.
+It means that PostgreSQL doesn't support full text search against Japanese, Chinese and so on.
+You can use super fast full text search feature against all languages by installing PGroonga
+into your PostgreSQL.
 
 %prep
 %setup -q -n pgroonga-%{version}
