@@ -26,7 +26,7 @@ Requires:	postgresql-server
 
 %description
 
-PGroonga (píːzí:lúnɡά) is a PostgreSQL extension to use Groonga as the index.
+PGroonga is a PostgreSQL extension to use Groonga as the index.
 Groonga is a fast and accurate full text search engine based on inverted index.
 One of the characteristics of Groonga is that a newly registered document instantly
 appears in search results. Also, Groonga allows updates without read locks.
