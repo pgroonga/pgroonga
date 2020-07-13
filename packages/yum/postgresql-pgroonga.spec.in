@@ -5,8 +5,6 @@
 
 %define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:6}
 
-%define _use_msgpack %{?use_msgpack:%{use_msgpack}}%{!?use_msgpack:%{_centos_ver} != 8}
-
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
 %define pg_prefix          /usr/pgsql-%{pg_version}
@@ -30,9 +28,7 @@ Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
-%if %{_use_msgpack}
 BuildRequires:	msgpack-devel
-%endif
 BuildRequires:	postgresql%{pg_package_version}-devel
 %if %{need_llvm}
 %if %{_centos_ver} >= 8
@@ -46,9 +42,7 @@ BuildRequires:	llvm-toolset-7
 %endif
 BuildRequires:	xxhash-devel
 Requires:	groonga-libs >= @GROONGA_VERSION@
-%if %{_use_msgpack}
 Requires:	msgpack
-%endif
 Requires:	postgresql%{pg_package_version}-server
 Requires:	xxhash-libs
 
@@ -79,9 +73,7 @@ EOF
 PATH="%{pg_bindir}:$PATH" \
   PKG_CONFIG_PATH="${PWD}" \
   make \
-%if %{_use_msgpack}
     HAVE_MSGPACK=1 \
-%endif
     HAVE_XXHASH=1 \
     enable_rpath=no \
     %{?_smp_mflags}

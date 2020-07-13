@@ -17,7 +17,7 @@ RUN \
     groonga-devel \
     llvm-toolset \
     llvm-devel \
-    # msgpack-devel \
+    msgpack-devel \
     postgresql12-devel \
     xxhash-devel && \
   dnf clean -y ${quiet} all
