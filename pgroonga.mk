@@ -2,6 +2,9 @@ PACKAGES =
 ifdef HAVE_MSGPACK
 PACKAGES += msgpack
 endif
+ifdef HAVE_XXHASH
+PACKAGES += libxxhash
+endif
 
 MODULE_big = pgroonga
 include makefiles/pgroonga-sources.mk
@@ -22,9 +25,11 @@ endif
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
-PG_CPPFLAGS += -Ivendor/xxHash
 ifdef HAVE_MSGPACK
 PG_CPPFLAGS += -DPGRN_HAVE_MSGPACK
+endif
+ifndef HAVE_XXHASH
+PG_CPPFLAGS += -Ivendor/xxHash
 endif
 
 include makefiles/pgrn-pgxs.mk

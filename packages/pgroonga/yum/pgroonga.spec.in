@@ -19,10 +19,12 @@ BuildRequires:	llvm-devel
 BuildRequires:	make
 BuildRequires:	msgpack-devel
 BuildRequires:	postgresql-server-devel
+BuildRequires:	xxhash-devel
 Requires:	groonga-libs >= @GROONGA_VERSION@
 Requires:	logrotate
 Requires:	msgpack
 Requires:	postgresql-server
+Requires:	xxhash-libs
 
 %description
 
@@ -44,6 +46,7 @@ into your PostgreSQL.
 %build
 %make_build \
   HAVE_MSGPACK=1 \
+  HAVE_XXHASH=1 \
   PG_CONFIG=%_bindir/pg_server_config
 
 %install

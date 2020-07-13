@@ -14,5 +14,6 @@ RUN \
   yum install -y ${quiet} \
     groonga-devel \
     msgpack-devel \
-    postgresql12-devel && \
+    postgresql12-devel \
+    xxhash-devel && \
   yum clean -y ${quiet} all

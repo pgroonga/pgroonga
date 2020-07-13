@@ -31,5 +31,9 @@ HEADERS =					\
 	src/pgrn-variables.h			\
 	src/pgrn-wal.h				\
 	src/pgrn-writable.h			\
-	src/pgroonga.h				\
+	src/pgroonga.h
+
+ifndef HAVE_XXHASH
+HEADERS +=					\
 	vendor/xxHash/xxhash.h
+endif

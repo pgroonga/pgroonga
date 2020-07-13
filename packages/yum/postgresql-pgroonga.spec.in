@@ -44,11 +44,13 @@ BuildRequires:	llvm5.0-devel
 BuildRequires:	llvm-toolset-7
 %endif
 %endif
+BuildRequires:	xxhash-devel
 Requires:	groonga-libs >= @GROONGA_VERSION@
 %if %{_use_msgpack}
 Requires:	msgpack
 %endif
 Requires:	postgresql%{pg_package_version}-server
+Requires:	xxhash-libs
 
 %description
 This package provides a fast full-text search plugin for PostgreSQL.
@@ -80,6 +82,7 @@ PATH="%{pg_bindir}:$PATH" \
 %if %{_use_msgpack}
     HAVE_MSGPACK=1 \
 %endif
+    HAVE_XXHASH=1 \
     enable_rpath=no \
     %{?_smp_mflags}
 

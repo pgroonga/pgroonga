@@ -18,5 +18,6 @@ RUN \
     llvm-toolset \
     llvm-devel \
     # msgpack-devel \
-    postgresql12-devel && \
+    postgresql12-devel \
+    xxhash-devel && \
   dnf clean -y ${quiet} all

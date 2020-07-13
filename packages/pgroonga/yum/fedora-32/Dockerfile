@@ -16,7 +16,8 @@ RUN \
     llvm-devel \
     make \
     msgpack-devel \
-    postgresql-server-devel && \
+    postgresql-server-devel \
+    xxhash-devel && \
   dnf clean -y ${quiet} all
 
 # TODO: Remove this: 17 == $(( 0x0001|0x0010 ))

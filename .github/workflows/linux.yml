@@ -40,7 +40,7 @@ jobs:
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -58,6 +58,8 @@ jobs:
               groonga-tokenizer-mecab \
               libmsgpack-dev
           fi
+          sudo apt -y -V install \
+            libxxhash-dev
       - name: Install PostgreSQL
         run: |
           sudo apt -y -V purge \
@@ -81,6 +83,7 @@ jobs:
         run: |
           test/run-sql-test.sh
         env:
+          HAVE_XXHASH: "1"
           NEED_SUDO: "yes"
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
           SUPPRESS_LOG: "no"
