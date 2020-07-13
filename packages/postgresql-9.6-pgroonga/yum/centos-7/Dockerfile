@@ -15,5 +15,6 @@ RUN \
     ccache \
     groonga-devel \
     msgpack-devel \
-    postgresql96-devel && \
+    postgresql96-devel \
+    xxhash-devel && \
   yum clean -y ${quiet} all
