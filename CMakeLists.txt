@@ -76,6 +76,7 @@ string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "[ \t\n]" "" PGRN_SOURCES "${PGRN_SOURCES}")
 string(REGEX REPLACE "\\\\" ";" PGRN_SOURCES "${PGRN_SOURCES}")
+list(APPEND PGRN_SOURCES "vendor/xxHash/xxhash.c")
 
 file(READ
   ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-headers.mk
@@ -84,6 +85,7 @@ string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_HEADERS "${PGRN_HEADERS}")
 string(REGEX REPLACE "[ \t\n]" "" PGRN_HEADERS "${PGRN_HEADERS}")
 string(REGEX REPLACE "\\\\" ";" PGRN_HEADERS "${PGRN_HEADERS}")
+list(APPEND PGRN_HEADERS "vendor/xxHash/xxhash.h")
 
 file(READ
   ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-check-sources.mk

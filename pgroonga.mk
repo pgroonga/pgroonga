@@ -9,6 +9,10 @@ endif
 MODULE_big = pgroonga
 include makefiles/pgroonga-sources.mk
 include makefiles/pgroonga-headers.mk
+ifndef HAVE_XXHASH
+SRCS += vendor/xxHash/xxhash.c
+HEADERS += vendor/xxHash/xxhash.h
+endif
 OBJS = $(SRCS:.c=.o)
 $(OBJS): $(HEADERS)
 EXTENSION = pgroonga

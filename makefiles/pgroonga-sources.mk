@@ -34,8 +34,3 @@ SRCS =						\
 	src/pgrn-wal.c				\
 	src/pgrn-writable.c			\
 	src/pgroonga.c
-
-ifndef HAVE_XXHASH
-SRCS +=						\
-	vendor/xxHash/xxhash.c
-endif
