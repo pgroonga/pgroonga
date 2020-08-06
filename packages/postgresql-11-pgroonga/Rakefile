@@ -14,10 +14,8 @@ class PostgreSQL11PGroongaPackageTask < VersionedPGroongaPackageTask
     ]
   end
 
-  def ubuntu_targets_default
-    [
-      ["eoan", "19.10"],
-    ]
+  def enable_ubuntu?
+    false
   end
 
   def yum_targets_default
