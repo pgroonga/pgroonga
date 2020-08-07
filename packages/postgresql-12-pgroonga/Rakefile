@@ -5,11 +5,8 @@ class PostgreSQL12PGroongaPackageTask < VersionedPGroongaPackageTask
     super("12")
   end
 
-  def apt_targets_default
-    [
-      "debian-buster",
-      "debian-buster-i386",
-    ]
+  def enable_apt?
+    false
   end
 
   def ubuntu_targets_default

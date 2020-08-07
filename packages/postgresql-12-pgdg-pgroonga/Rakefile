@@ -1,0 +1,26 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL12PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("12", "-pgdg")
+  end
+
+  def apt_targets_default
+    [
+      "debian-buster",
+      "ubuntu-bionic",
+      "ubuntu-focal",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL12PGDGPGroongaPackageTask.new
+task.define

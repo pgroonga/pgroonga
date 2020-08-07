@@ -9,18 +9,11 @@ ARG DEBUG
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
-  grep '^deb ' /etc/apt/sources.list | \
-    sed -e 's/^deb /deb-src /' > /etc/apt/sources.list.d/base-source.list && \
   apt update ${quiet} && \
-  apt install -y -V ${quiet} \
-    gnupg \
-    wget && \
-  { \
-    echo "deb [signed-by=/usr/share/keyrings/groonga-archive-keyring.gpg] http://packages.groonga.org/debian/ buster main"; \
-    echo "deb-src [signed-by=/usr/share/keyrings/groonga-archive-keyring.gpg] http://packages.groonga.org/debian/ buster main"; \
-  } | tee /etc/apt/sources.list.d/groonga.list && \
-  wget -O /usr/share/keyrings/groonga-archive-keyring.gpg \
-    https://packages.groonga.org/debian/groonga-archive-keyring.gpg && \
+  apt install -y -V ${quiet} wget && \
+  wget https://packages.groonga.org/debian/groonga-archive-keyring-latest-buster.deb && \
+  apt install -y -V ./groonga-archive-keyring-latest-buster.deb && \
+  rm groonga-archive-keyring-latest-buster.deb && \
   echo "deb http://apt.postgresql.org/pub/repos/apt/ buster-pgdg main" > \
     /etc/apt/sources.list.d/pgdg.list && \
   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
@@ -32,6 +25,5 @@ RUN \
     devscripts \
     libgroonga-dev \
     libmsgpack-dev \
-    libxxhash-dev \
     pkg-config \
     postgresql-server-dev-12

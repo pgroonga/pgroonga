@@ -80,11 +80,15 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
 end
 
 class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
-  def initialize(postgresql_version)
+  def initialize(postgresql_version, postgresql_package_name_suffix="")
     @postgresql_version = postgresql_version
     @postgresql_package_version = postgresql_version.gsub(".", "")
-    super("postgresql-#{@postgresql_version}-pgroonga")
-    @rpm_package = "postgresql#{@postgresql_package_version}-pgroonga"
+    postgresql_package_name =
+      "postgresql-#{@postgresql_version}#{postgresql_package_name_suffix}"
+    super("#{postgresql_package_name}-pgroonga")
+    rpm_postgresql_package_name =
+      "postgresql#{@postgresql_version}#{postgresql_package_name_suffix}"
+    @rpm_package = "#{rpm_postgresql_package_name}-pgroonga"
   end
 
   def define
@@ -144,7 +148,9 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
   end
 
   def update_spec
-    cp(source_yum_spec_in_path, yum_spec_in_path)
+    if enable_yum?
+      cp(source_yum_spec_in_path, yum_spec_in_path)
+    end
     super
   end
 end

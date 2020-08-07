@@ -112,6 +112,7 @@ namespace :package do
     "postgresql-10-pgroonga",
     "postgresql-11-pgroonga",
     "postgresql-12-pgroonga",
+    "postgresql-12-pdgd-pgroonga",
   ]
 
   namespace :source do
