@@ -13,6 +13,7 @@ Homepage: https://pgroonga.github.io/
 
 Package: postgresql-12-pgdg-pgroonga
 Architecture: any
+Conflicts: postgresql-12-pgroonga
 Depends:
   ${misc:Depends},
   ${shlibs:Depends},
