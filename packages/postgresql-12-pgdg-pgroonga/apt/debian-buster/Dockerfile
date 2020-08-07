@@ -11,9 +11,9 @@ RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
   apt update ${quiet} && \
   apt install -y -V ${quiet} wget && \
-  wget https://packages.groonga.org/debian/groonga-archive-keyring-latest-buster.deb && \
-  apt install -y -V ./groonga-archive-keyring-latest-buster.deb && \
-  rm groonga-archive-keyring-latest-buster.deb && \
+  wget https://packages.groonga.org/debian/groonga-apt-source-latest-buster.deb && \
+  apt install -y -V ./groonga-apt-source-latest-buster.deb && \
+  rm groonga-apt-source-latest-buster.deb && \
   echo "deb http://apt.postgresql.org/pub/repos/apt/ buster-pgdg main" > \
     /etc/apt/sources.list.d/pgdg.list && \
   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
