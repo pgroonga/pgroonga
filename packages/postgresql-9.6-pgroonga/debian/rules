@@ -9,8 +9,8 @@ export DH_OPTIONS
 %:
 	dh $@
 
-override_dh_auto_make:
-	make HAVE_MSGPACK=1
+override_dh_auto_build:
+	dh_auto_build -- HAVE_MSGPACK=1
 
 # disable 'make check'.
 override_dh_auto_test:
