@@ -101,6 +101,7 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
   def define_debian_control_task
     control_paths = []
     debian_directory = package_directory + "debian"
+    debian_files = Pathname.glob(debian_directory + "**" + "*")
     control_in_path = debian_directory + "control.in"
     targets = apt_targets
     ubuntu_targets.each do |code_name, _version|
@@ -111,7 +112,7 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
       target_debian_directory = package_directory + "debian.#{target}"
       control_path = target_debian_directory + "control"
       control_paths << control_path.to_s
-      file control_path.to_s => control_in_path.to_s do |task|
+      file control_path.to_s => debian_files.collect(&:to_s) do |task|
         control_in_content = control_in_path.read
         control_content = substitute_content(control_in_content) do |key, matched|
           apt_expand_variable(key) || matched
