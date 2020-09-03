@@ -112,7 +112,7 @@ namespace :package do
     "postgresql-10-pgroonga",
     "postgresql-11-pgroonga",
     "postgresql-12-pgroonga",
-    "postgresql-12-pdgd-pgroonga",
+    "postgresql-12-pgdg-pgroonga",
   ]
 
   namespace :source do
@@ -269,8 +269,12 @@ namespace :package do
           ruby("-S", "rake", "version:update")
         end
       end
-      cp(Dir.glob("packages/#{package_names.last}/yum/*.spec.in").first,
-         "packages/yum/postgresql-pgroonga.spec.in")
+      spec_in = nil
+      package_names.reverse_each do |package_name|
+        spec_in = Dir.glob("packages/#{package_name}/yum/*.spec.in").first
+        break if spec_in
+      end
+      cp(spec_in, "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
 end
