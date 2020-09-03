@@ -5,8 +5,8 @@ class PostgreSQL12PGroongaPackageTask < VersionedPGroongaPackageTask
     super("12")
   end
 
-  def enable_apt?
-    false
+  def apt_targets_default
+    []
   end
 
   def ubuntu_targets_default
