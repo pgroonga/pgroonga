@@ -1,3 +1,9 @@
+postgresql-9.6-pgroonga (2.2.6-2) unstable; urgency=low
+
+  * Fix a bug that WAL support is disabled.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Thu, 03 Sep 2020 00:00:54 -0000
+
 postgresql-9.6-pgroonga (2.2.6-1) unstable; urgency=low
 
   * New upstream release.
