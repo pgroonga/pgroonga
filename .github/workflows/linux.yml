@@ -67,7 +67,7 @@ jobs:
             postgresql-12 \
             postgresql-client \
             postgresql-client-12
-          if [ ${{ matrix.postgresql-version }} -ge 13 ]; then \
+          if [ ${{ matrix.postgresql-version }} -ge 14 ]; then \
             sudo sed \
               -i'' \
               -e 's/main/${{ matrix.postgresql-version }}/g' \
