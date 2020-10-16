@@ -64,9 +64,9 @@ jobs:
         run: |
           sudo apt -y -V purge \
             postgresql \
-            postgresql-* \
+            ~n^postgresql- \
             postgresql-client \
-            postgresql-client-*
+            ~n^postgresql-client-
           if [ ${{ matrix.postgresql-version }} -ge 14 ]; then
             sudo sed \
               -i'' \
