@@ -64,14 +64,14 @@ jobs:
         run: |
           sudo apt -y -V purge \
             postgresql \
-            postgresql-12 \
+            postgresql-* \
             postgresql-client \
-            postgresql-client-12
-          if [ ${{ matrix.postgresql-version }} -ge 14 ]; then \
+            postgresql-client-*
+          if [ ${{ matrix.postgresql-version }} -ge 14 ]; then
             sudo sed \
               -i'' \
               -e 's/main/${{ matrix.postgresql-version }}/g' \
-              /etc/apt/sources.list.d/pgdg.list; \
+              /etc/apt/sources.list.d/pgdg.list;
           fi
           sudo apt update
           sudo apt -y -V install \
