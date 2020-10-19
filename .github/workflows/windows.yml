@@ -26,12 +26,22 @@ jobs:
           #   postgresql-version: "12.3-1"
           #   visual-studio-package: "visualstudio2015community"
           #   label: PostgreSQL 12 + Visual Studio 2015
-          - artifact-id: "postgresql-12-x64-groonga-master"
+          - artifact-id: "postgresql-12-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 12 + Visual Studio 2019
+            postgresql-version-major: "12"
+            postgresql-version: "12.4-1"
+          - artifact-id: "postgresql-13-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 13 + Visual Studio 2019
+            postgresql-version-major: "13"
+            postgresql-version: "13.0-1"
+          - artifact-id: "postgresql-13-x64-groonga-master"
             cmake-generator: "Visual Studio 16 2019"
             groonga-master: "yes"
-            label: PostgreSQL 12 + Visual Studio 2019 + Groonga master
-            postgresql-version-major: "12"
-            postgresql-version: "12.3-1"
+            label: PostgreSQL 13 + Visual Studio 2019 + Groonga master
+            postgresql-version-major: "13"
+            postgresql-version: "13.0-1"
     env:
       PGROONGA_TEST_DATA: "test-data"
       PGROONGA_TEST_ENCODING: "UTF-8"
@@ -48,8 +58,6 @@ jobs:
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
       - uses: actions/setup-ruby@v1
-        with:
-          ruby-version: 2.6
       - uses: actions/checkout@v2
         with:
           submodules: recursive
@@ -80,9 +88,6 @@ jobs:
               ruby download_mecab.rb
               ruby download_message_pack.rb
               ruby download_rapidjson.rb
-            choco install -y winflexbison3
-            Write-Host "::set-env name=YACC::win_bison.exe"
-            Write-Host "::set-env name=VC_PREFIX::C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC"
           } else {
             Invoke-WebRequest `
               https://packages.groonga.org/source/groonga/groonga-latest.zip `
