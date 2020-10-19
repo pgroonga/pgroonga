@@ -28,9 +28,13 @@ environment:
       POSTGRESQL_VERSION_MAJOR: 12
     - VS_VERSION: 14
       ARCH: x64
+      POSTGRESQL_VERSION: 13.0-1
+      POSTGRESQL_VERSION_MAJOR: 13
+    - VS_VERSION: 14
+      ARCH: x64
       GROONGA_MASTER: "yes"
-      POSTGRESQL_VERSION: 12.3-1
-      POSTGRESQL_VERSION_MAJOR: 12
+      POSTGRESQL_VERSION: 13.0-1
+      POSTGRESQL_VERSION_MAJOR: 13
 notifications:
   - provider: Webhook
     url: https://webhook.commit-email.info/
