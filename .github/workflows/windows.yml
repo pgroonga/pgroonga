@@ -88,6 +88,8 @@ jobs:
               ruby download_mecab.rb
               ruby download_message_pack.rb
               ruby download_rapidjson.rb
+            Write-Output "VC_PREFIX=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC" | `
+              Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } else {
             Invoke-WebRequest `
               https://packages.groonga.org/source/groonga/groonga-latest.zip `
