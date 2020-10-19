@@ -62,11 +62,7 @@ jobs:
             libxxhash-dev
       - name: Install PostgreSQL
         run: |
-          sudo apt -y -V purge \
-            postgresql \
-            ~n^postgresql- \
-            postgresql-client \
-            ~n^postgresql-client-
+          sudo apt -y -V purge '^postgresql'
           if [ ${{ matrix.postgresql-version }} -ge 14 ]; then
             sudo sed \
               -i'' \
