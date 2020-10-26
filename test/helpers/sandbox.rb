@@ -135,8 +135,8 @@ module Helpers
         run_command("pg_ctl", "start",
                     "-w",
                     "-D", @dir)
-      rescue
-        notify("PostgreSQL log:\n#{File.read(@log_path)}")
+      rescue => error
+        error.message << "\nPostgreSQL log:\n#{File.read(@log_path)}"
         raise
       end
       loop do
