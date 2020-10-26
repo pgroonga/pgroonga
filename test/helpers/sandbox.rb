@@ -61,6 +61,7 @@ module Helpers
     def initialize(base_dir)
       @base_dir = base_dir
       @dir = nil
+      @log_path = nil
       @host = "127.0.0.1"
       @port = nil
       @user = "pgroonga-test"
@@ -75,6 +76,8 @@ module Helpers
 
     def initdb
       @dir = File.join(@base_dir, "db")
+      log_base_name = "postgresql.log"
+      @log_path = File.join(@dir, "log", log_base_name)
       socket_dir = File.join(@dir, "socket")
       @port = 15432
       @replication_user = "replicator"
@@ -90,7 +93,7 @@ module Helpers
         conf.puts("port = #{@port}")
         conf.puts("unix_socket_directories = '#{socket_dir}'")
         conf.puts("logging_collector = on")
-        conf.puts("log_filename = 'postgresql.log'")
+        conf.puts("log_filename = '#{log_base_name}'")
         conf.puts("wal_level = replica")
         conf.puts("max_wal_senders = 4")
         conf.puts("shared_preload_libraries = 'pgroonga_check.#{dll_extension}'")
@@ -128,9 +131,14 @@ module Helpers
     end
 
     def start
-      run_command("pg_ctl", "start",
-                  "-w",
-                  "-D", @dir)
+      begin
+        run_command("pg_ctl", "start",
+                    "-w",
+                    "-D", @dir)
+      rescue
+        notify("PostgreSQL log:\n#{File.read(@log_path)}")
+        raise
+      end
       loop do
         begin
           TCPSocket.open(@host, @port) do
