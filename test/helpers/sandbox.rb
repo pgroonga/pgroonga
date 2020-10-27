@@ -91,7 +91,9 @@ module Helpers
       File.open(postgresql_conf, "a") do |conf|
         conf.puts("listen_addresses = '#{@host}'")
         conf.puts("port = #{@port}")
-        conf.puts("unix_socket_directories = '#{socket_dir}'")
+        unless windows?
+          conf.puts("unix_socket_directories = '#{socket_dir}'")
+        end
         conf.puts("logging_collector = on")
         conf.puts("log_filename = '#{log_base_name}'")
         conf.puts("wal_level = replica")
@@ -187,6 +189,10 @@ module Helpers
       else
         "so"
       end
+    end
+
+    def windows?
+      /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
     end
   end
 
