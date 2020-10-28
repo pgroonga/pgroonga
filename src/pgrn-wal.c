@@ -100,6 +100,8 @@ struct PGrnWALData_
 		Buffer buffer;
 		Page page;
 	} current;
+	size_t nBuffers;
+	Buffer buffers[MAX_GENERIC_XLOG_PAGES];
 	msgpack_packer packer;
 #endif
 };
@@ -221,6 +223,29 @@ PGrnWALReadLockedBuffer(Relation index,
 }
 
 static void
+PGrnWALDataInitBuffers(PGrnWALData *data)
+{
+	size_t i;
+	data->nBuffers = 0;
+	for (i = 0; i < MAX_GENERIC_XLOG_PAGES; i++)
+	{
+		data->buffers[i] = InvalidBuffer;
+	}
+}
+
+static void
+PGrnWALDataReleaseBuffers(PGrnWALData *data)
+{
+	size_t i;
+	for (i = 0; i < data->nBuffers; i++)
+	{
+		UnlockReleaseBuffer(data->buffers[i]);
+		data->buffers[i] = InvalidBuffer;
+	}
+	data->nBuffers = 0;
+}
+
+static void
 PGrnWALDataInitNUsedPages(PGrnWALData *data)
 {
 	data->nUsedPages = 1; /* meta page */
@@ -235,6 +260,7 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 			PGrnWALReadLockedBuffer(data->index,
 									P_NEW,
 									BUFFER_LOCK_EXCLUSIVE);
+		data->buffers[data->nBuffers++] = data->meta.buffer;
 		data->meta.page = GenericXLogRegisterBuffer(data->state,
 													data->meta.buffer,
 													GENERIC_XLOG_FULL_IMAGE);
@@ -251,6 +277,7 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 			PGrnWALReadLockedBuffer(data->index,
 									PGRN_WAL_META_PAGE_BLOCK_NUMBER,
 									BUFFER_LOCK_EXCLUSIVE);
+		data->buffers[data->nBuffers++] = data->meta.buffer;
 		data->meta.page = GenericXLogRegisterBuffer(data->state,
 													data->meta.buffer,
 													0);
@@ -271,11 +298,7 @@ PGrnWALDataRestart(PGrnWALData *data)
 {
 	GenericXLogFinish(data->state);
 
-	if (data->current.buffer)
-	{
-		UnlockReleaseBuffer(data->current.buffer);
-	}
-	UnlockReleaseBuffer(data->meta.buffer);
+	PGrnWALDataReleaseBuffers(data);
 
 	data->state = GenericXLogStart(data->index);
 	PGrnWALDataInitNUsedPages(data);
@@ -339,6 +362,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 			PGrnWALReadLockedBuffer(data->index,
 									P_NEW,
 									BUFFER_LOCK_EXCLUSIVE);
+		data->buffers[data->nBuffers++] = data->current.buffer;
 		meta->next = BufferGetBlockNumber(data->current.buffer);
 		data->current.page =
 			GenericXLogRegisterBuffer(data->state,
@@ -352,6 +376,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 			PGrnWALReadLockedBuffer(data->index,
 									meta->next,
 									BUFFER_LOCK_EXCLUSIVE);
+		data->buffers[data->nBuffers++] = data->current.buffer;
 		data->current.page =
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
@@ -394,7 +419,6 @@ PGrnWALPageWriter(void *userData,
 			buffer += freeSize;
 
 			data->current.page = NULL;
-			UnlockReleaseBuffer(data->current.buffer);
 			data->current.buffer = InvalidBuffer;
 			data->meta.pageSpecial->next++;
 		}
@@ -429,6 +453,7 @@ PGrnWALStart(Relation index)
 	data->index = index;
 	data->state = GenericXLogStart(data->index);
 
+	PGrnWALDataInitBuffers(data);
 	PGrnWALDataInitNUsedPages(data);
 	PGrnWALDataInitMeta(data);
 	PGrnWALDataInitCurrent(data);
@@ -449,11 +474,7 @@ PGrnWALFinish(PGrnWALData *data)
 
 	GenericXLogFinish(data->state);
 
-	if (data->current.buffer)
-	{
-		UnlockReleaseBuffer(data->current.buffer);
-	}
-	UnlockReleaseBuffer(data->meta.buffer);
+	PGrnWALDataReleaseBuffers(data);
 
 	UnlockRelation(data->index, PGrnWALLockMode());
 
@@ -470,11 +491,7 @@ PGrnWALAbort(PGrnWALData *data)
 
 	GenericXLogAbort(data->state);
 
-	if (data->current.buffer)
-	{
-		UnlockReleaseBuffer(data->current.buffer);
-	}
-	UnlockReleaseBuffer(data->meta.buffer);
+	PGrnWALDataReleaseBuffers(data);
 
 	UnlockRelation(data->index, PGrnWALLockMode());
 
