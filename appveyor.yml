@@ -2,19 +2,19 @@ version: "{build}"
 clone_depth: 10
 environment:
   matrix:
-    - VS_VERSION: 12
+    - VS_VERSION: 14
       ARCH: x86
       POSTGRESQL_VERSION: 9.6.19-1
       POSTGRESQL_VERSION_MAJOR: 9.6
-    - VS_VERSION: 12
+    - VS_VERSION: 14
       ARCH: x64
       POSTGRESQL_VERSION: 9.6.19-1
       POSTGRESQL_VERSION_MAJOR: 9.6
-    - VS_VERSION: 12
+    - VS_VERSION: 14
       ARCH: x86
       POSTGRESQL_VERSION: 10.14-1
       POSTGRESQL_VERSION_MAJOR: 10
-    - VS_VERSION: 12
+    - VS_VERSION: 14
       ARCH: x64
       POSTGRESQL_VERSION: 10.14-1
       POSTGRESQL_VERSION_MAJOR: 10
