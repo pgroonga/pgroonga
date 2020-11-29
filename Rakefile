@@ -1,8 +1,6 @@
 # -*- ruby -*-
 
-require "octokit"
 require "open-uri"
-require "veyor"
 require_relative "helper"
 
 package = "pgroonga"
@@ -192,72 +190,6 @@ namespace :package do
       cd(package_dir) do
         rm_rf("yum/repositories")
         ruby("-S", "rake", "yum")
-      end
-    end
-  end
-
-  namespace :windows do
-    desc "Upload packages"
-    task :upload do
-      pgroonga_repository = "pgroonga/pgroonga"
-      tag_name = version
-
-      github_token = Helper.env_value("GITHUB_TOKEN")
-      client = Octokit::Client.new(:access_token => github_token)
-      client.auto_paginate = true
-
-      appveyor_url = "https://ci.appveyor.com/"
-      appveyor_info = nil
-      client.statuses(pgroonga_repository, tag_name).each do |status|
-        next unless status.target_url.start_with?(appveyor_url)
-        case status.state
-        when "success"
-          match_data = /\/([^\/]+?)\/([^\/]+?)\/builds\/(\d+)\z/.match(status.target_url)
-          appveyor_info = {
-            account: match_data[1],
-            project: match_data[2],
-            build_id: match_data[3],
-          }
-          break
-        when "pending"
-          # Ignore
-        else
-          message = "AppVeyor build isn't succeeded: #{status.state}\n"
-          message << "  #{status.target_url}"
-          raise message
-        end
-      end
-      if appveyor_info.nil?
-        raise "No AppVeyor build"
-      end
-
-      releases = client.releases(pgroonga_repository)
-      current_release = releases.find do |release|
-        release.tag_name == tag_name
-      end
-      current_release ||= client.create_release(pgroonga_repository, tag_name)
-
-      start_build = appveyor_info[:build_id].to_i + 1
-      build_history = Veyor.project_history(account: appveyor_info[:account],
-                                            project: appveyor_info[:project],
-                                            start_build: start_build,
-                                            limit: 1)
-      build_version = build_history["builds"][0]["buildNumber"]
-      project = Veyor.project(account: appveyor_info[:account],
-                              project: appveyor_info[:project],
-                              version: build_version)
-      project["build"]["jobs"].each do |job|
-        job_id = job["jobId"]
-        artifacts = Veyor.build_artifacts(job_id: job_id)
-        artifacts.each do |artifact|
-          file_name = artifact["fileName"]
-          url = "#{appveyor_url}api/buildjobs/#{job_id}/artifacts/#{file_name}"
-          sh("curl", "--location", "--output", file_name, url)
-          options = {
-            :content_type => "application/zip",
-          }
-          client.upload_asset(current_release.url, file_name, options)
-        end
       end
     end
   end

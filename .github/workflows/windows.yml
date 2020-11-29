@@ -19,13 +19,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # TODO: Installing Visual Studio in each job is too heavy...
-          # - artifact-id: "postgresql-12-x64"
-          #   cmake-generator: "Visual Studio 14 2015"
-          #   postgresql-version-major: "12"
-          #   postgresql-version: "12.3-1"
-          #   visual-studio-package: "visualstudio2015community"
-          #   label: PostgreSQL 12 + Visual Studio 2015
+          - artifact-id: "postgresql-96-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 9.6 + Visual Studio 2019
+            postgresql-version-major: "9.6"
+            postgresql-version: "9.6.20-1"
+          - artifact-id: "postgresql-10-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 10 + Visual Studio 2019
+            postgresql-version-major: "10"
+            postgresql-version: "10.15-1"
+          - artifact-id: "postgresql-11-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 11 + Visual Studio 2019
+            postgresql-version-major: "11"
+            postgresql-version: "11.10-1"
           - artifact-id: "postgresql-12-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 12 + Visual Studio 2019
@@ -88,6 +96,7 @@ jobs:
               ruby download_mecab.rb
               ruby download_message_pack.rb
               ruby download_rapidjson.rb
+              ruby download_xxhash.rb
             Write-Output "VC_PREFIX=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC" | `
               Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } else {
@@ -135,6 +144,8 @@ jobs:
             --config RelWithDebInfo `
             --target install `
             --verbose
+
+      # Upload artifacts
       - name: Package
         run: |
           New-Item artifacts -ItemType Directory
@@ -148,6 +159,36 @@ jobs:
         with:
           name: ${{ matrix.artifact-id }}
           path: artifacts
+
+      # Release
+      - name: Ensure creating release
+        if: |
+          startsWith(github.ref, 'refs/tags/')
+        id: create-release
+        uses: actions/github-script@0.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
+            const fs = require("fs");
+            const path = ".github/workflows/ensure-creating-release.js";
+            const script = fs.readFileSync(path).toString();
+            const func = new AsyncFunction("require", "github", "context", script);
+            return await func(require, github, context);
+      - name: Upload to release
+        uses: actions/upload-release-asset@v1.0.1
+        if: |
+          startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.result }}
+          asset_path: artifacts/${{ matrix.artifact-id }}.zip
+          asset_name: ${{ matrix.artifact-id }}.zip
+          asset_content_type: application/zip
+
+      # Test
       - name: Run PostgreSQL for test
         run: |
           ..\pgsql\bin\initdb `
@@ -160,9 +201,9 @@ jobs:
       - name: Run regression test
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
-          Remove-Item sql/full-text-search/text/options/token-filters/custom.sql
+          Remove-Item sql\full-text-search\text\options\token-filters\custom.sql
           # Reduce tests to reduce test time
-          Remove-Item sql/compatibility -Recurse -Force
+          Remove-Item sql\compatibility -Recurse -Force
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
@@ -185,5 +226,5 @@ jobs:
         run: |
           $Env:PATH = "$(Get-Location)\..\pgsql\bin;${Env:PATH}"
           # TODO: Remove me when we fix test failure on Windows
-          Remove-Item test/test-streaming-replication.rb
+          Remove-Item test\test-streaming-replication.rb
           ruby test\run-test.rb
