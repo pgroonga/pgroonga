@@ -43,25 +43,15 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
   end
 
   def define_archive_task
-    file @archive_name => original_archive_path.to_s do
-      sh("tar", "xf", original_archive_path.to_s)
-      archive_base_name = File.basename(@archive_name, ".tar.gz")
-      if @original_archive_base_name != archive_base_name
-        mv(@original_archive_base_name, archive_base_name)
-      end
-      sh("tar", "czf", @archive_name, archive_base_name)
-      rm_r(archive_base_name)
-    end
-
-    if deb_archive_name != @archive_name
-      file deb_archive_name => @archive_name do
-        cp(@archive_name, deb_archive_name)
-      end
-    end
-
-    if rpm_archive_name != @archive_name
-      file rpm_archive_name => @archive_name do
-        cp(@archive_name, rpm_archive_name)
+    [@archive_name, deb_archive_name, rpm_archive_name].each do |archive_name|
+      file archive_name => original_archive_path.to_s do
+        sh("tar", "xf", original_archive_path.to_s)
+        archive_base_name = File.basename(archive_name, ".tar.gz")
+        if @original_archive_base_name != archive_base_name
+          mv(@original_archive_base_name, archive_base_name)
+        end
+        sh("tar", "czf", archive_name, archive_base_name)
+        rm_r(archive_base_name)
       end
     end
   end

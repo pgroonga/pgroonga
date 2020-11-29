@@ -16,8 +16,10 @@ class PostgreSQL10PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     false
   end
 
-  def enable_yum?
-    false
+  def yum_targets_default
+    [
+      "centos-7",
+    ]
   end
 end
 
