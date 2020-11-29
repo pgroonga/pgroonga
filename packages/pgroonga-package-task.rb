@@ -43,15 +43,25 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
   end
 
   def define_archive_task
-    [@archive_name, deb_archive_name, rpm_archive_name].each do |archive_name|
-      file archive_name => original_archive_path.to_s do
-        sh("tar", "xf", original_archive_path.to_s)
-        archive_base_name = File.basename(archive_name, ".tar.gz")
-        if @original_archive_base_name != archive_base_name
-          mv(@original_archive_base_name, archive_base_name)
-        end
-        sh("tar", "czf", archive_name, archive_base_name)
-        rm_r(archive_base_name)
+    file @archive_name => original_archive_path.to_s do
+      sh("tar", "xf", original_archive_path.to_s)
+      archive_base_name = File.basename(@archive_name, ".tar.gz")
+      if @original_archive_base_name != archive_base_name
+        mv(@original_archive_base_name, archive_base_name)
+      end
+      sh("tar", "czf", @archive_name, archive_base_name)
+      rm_r(archive_base_name)
+    end
+
+    if deb_archive_name != @archive_name
+      file deb_archive_name => @archive_name do
+        cp(@archive_name, deb_archive_name)
+      end
+    end
+
+    if rpm_archive_name != @archive_name
+      file rpm_archive_name => @archive_name do
+        cp(@archive_name, rpm_archive_name)
       end
     end
   end
@@ -93,46 +103,13 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
 
   def define
     super
-    define_debian_control_task
     define_yum_spec_in_task
   end
 
   private
-  def define_debian_control_task
-    control_paths = []
-    debian_directory = package_directory + "debian"
-    debian_files = Pathname.glob(debian_directory + "**" + "*")
-    control_in_path = debian_directory + "control.in"
-    targets = apt_targets
-    ubuntu_targets.each do |code_name, _version|
-      targets << "ubuntu-#{code_name}"
-    end
-    targets.each do |target|
-      distribution, code_name, _architecture = target.split("-", 3)
-      target_debian_directory = package_directory + "debian.#{target}"
-      control_path = target_debian_directory + "control"
-      control_paths << control_path.to_s
-      file control_path.to_s => debian_files.collect(&:to_s) do |task|
-        control_in_content = control_in_path.read
-        control_content = substitute_content(control_in_content) do |key, matched|
-          apt_expand_variable(key) || matched
-        end
-        rm_rf(target_debian_directory)
-        cp_r(debian_directory, target_debian_directory)
-        control_path.open("w") do |file|
-          file.puts(control_content)
-        end
-      end
-    end
-    namespace :apt do
-      task :build => control_paths
-    end
-    namespace :ubuntu do
-      namespace :upload do
-        ubuntu_targets.each do |code_name, version|
-          task code_name => control_paths
-        end
-      end
+  def apt_prepare_debian_control(control_in, target)
+    substitute_content(control_in) do |key, matched|
+      apt_expand_variable(key) || matched
     end
   end
 
