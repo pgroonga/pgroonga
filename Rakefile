@@ -108,6 +108,7 @@ namespace :package do
     "pgroonga",
     "postgresql-9.6-pgroonga",
     "postgresql-10-pgroonga",
+    "postgresql-10-pgdg-pgroonga",
     "postgresql-11-pgroonga",
     "postgresql-12-pgroonga",
     "postgresql-12-pgdg-pgroonga",

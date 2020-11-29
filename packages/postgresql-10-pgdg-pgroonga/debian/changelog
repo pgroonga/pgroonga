@@ -1,0 +1,5 @@
+postgresql-10-pgdg-pgroonga (2.2.7-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Sun, 29 Nov 2020 21:28:37 -0000
