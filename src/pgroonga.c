@@ -606,6 +606,8 @@ _PG_init(void)
 
 	PGrnInitializeGroongaInformation();
 
+	PGrnVariablesApplyInitialValues();
+
 	PGrnInitializeOptions();
 
 	PGrnEnsureDatabase();

@@ -48,6 +48,8 @@ static int PGrnLockTimeout;
 
 static bool PGrnEnableWAL;
 
+static bool PGrnForceMatchEscalation;
+
 static char *PGrnLibgroongaVersion;
 
 static void
@@ -206,6 +208,15 @@ PGrnMatchEscalationThresholdAssign(int new_value, void *extra)
 	PGrnMatchEscalationThresholdAssignRaw(new_value);
 }
 
+static void
+PGrnForceMatchEscalationAssign(bool new_value, void *extra)
+{
+	if (!PGrnGroongaInitialized)
+		return;
+
+	grn_ctx_set_force_match_escalation(&PGrnContext, new_value);
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -313,6 +324,25 @@ PGrnInitializeVariables(void)
 							PGrnMatchEscalationThresholdAssign,
 							NULL);
 
+	DefineCustomBoolVariable("pgroonga.force_match_escalation",
+							 "Whether loose search is always used or "
+							 "used conditionally based on "
+							 "pgroonga.match_escalation_threshold.",
+							 "PGroonga always uses loose search when "
+							 "this is on. "
+							 "PGroonga determines whether loose search "
+							 "is used based on "
+							 "pgroonga.match_escalation_threshold when "
+							 "this is off. "
+							 "The default is off.",
+							 &PGrnForceMatchEscalation,
+							 false,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnForceMatchEscalationAssign,
+							 NULL);
+
 	DefineCustomStringVariable("pgroonga.libgroonga_version",
 							   "The used libgroonga version.",
 							   "It's runtime version "
@@ -326,4 +356,10 @@ PGrnInitializeVariables(void)
 							   NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
+}
+
+void
+PGrnVariablesApplyInitialValues(void)
+{
+	grn_ctx_set_force_match_escalation(&PGrnContext, PGrnForceMatchEscalation);
 }
