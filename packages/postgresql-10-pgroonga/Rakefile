@@ -5,11 +5,8 @@ class PostgreSQL10PGroongaPackageTask < VersionedPGroongaPackageTask
     super("10")
   end
 
-  def apt_targets_default
-    [
-      "debian-stretch",
-      "debian-stretch-i386",
-    ]
+  def enable_apt?
+    false
   end
 
   def ubuntu_targets_default

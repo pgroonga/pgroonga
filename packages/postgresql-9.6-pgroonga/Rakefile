@@ -5,11 +5,8 @@ class PostgreSQL96PGroongaPackageTask < VersionedPGroongaPackageTask
     super("9.6")
   end
 
-  def apt_targets_default
-    [
-      "debian-stretch",
-      "debian-stretch-i386",
-    ]
+  def enable_apt?
+    false
   end
 
   def enable_ubuntu?
