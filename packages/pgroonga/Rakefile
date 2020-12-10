@@ -15,7 +15,7 @@ class PGroongaPackageTask < GenericPGroongaPackageTask
 
   def yum_targets_default
     [
-      "fedora-32",
+      "fedora-33",
     ]
   end
 end
