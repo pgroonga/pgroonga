@@ -3,7 +3,7 @@
 # find-debuginfo.sh crashes on CentOS 8...
 %define debug_package %{nil}
 
-%define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:6}
+%define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:7}
 
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
@@ -14,7 +14,6 @@
 %define pg_includedir      %{pg_prefix}/include
 
 %define support_jit %{pg_package_version} >= 11 && %{pg_package_version} < 94
-%define need_llvm %{support_jit} && %{_centos_ver} >= 7
 
 Name:		@PACKAGE@
 Version:	@VERSION@
@@ -30,7 +29,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel
 BuildRequires:	msgpack-devel
 BuildRequires:	postgresql%{pg_package_version}-devel
-%if %{need_llvm}
+%if %{support_jit}
 %if %{_centos_ver} >= 8
 BuildRequires:	ccache
 BuildRequires:	llvm-devel
@@ -55,20 +54,6 @@ It is based on Groonga.
 
 
 %build
-%if %{_centos_ver} == 6
-cat <<EOF > msgpack.pc
-prefix=%{_prefix}
-exec_prefix=%{_exec_prefix}
-libdir=%{_libdir}
-includedir=%{_includedir}
-
-Name: MessagePack
-Description: Binary-based efficient object serialization library
-Version: 0.5.7
-Libs: -L\${libdir} -lmsgpackc
-Cflags: -I\${includedir}
-EOF
-%endif
 
 PATH="%{pg_bindir}:$PATH" \
   PKG_CONFIG_PATH="${PWD}" \
@@ -105,8 +90,6 @@ EOF
 %{pg_includedir}/server/contrib/pgroonga_check/
 %{pg_includedir}/server/extension/pgroonga/
 %{pg_includedir}/server/extension/pgroonga_database/
-%endif
-%if %{need_llvm}
 %{pg_libdir}/bitcode/pgroonga*.index.bc
 %{pg_libdir}/bitcode/pgroonga*/
 %endif
