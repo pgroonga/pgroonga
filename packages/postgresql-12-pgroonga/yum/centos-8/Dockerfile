@@ -12,7 +12,7 @@ RUN \
   sed -i'' -e 's/k$//g' /etc/yum.repos.d/pgdg-redhat-all.repo && \
   dnf module -y ${quiet} disable postgresql && \
   dnf groupinstall -y ${quiet} "Development Tools" && \
-  dnf install --enablerepo=PowerTools -y ${quiet} \
+  dnf install --enablerepo=powertools -y ${quiet} \
     ccache \
     groonga-devel \
     llvm-toolset \
