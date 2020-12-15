@@ -812,7 +812,7 @@ CREATE FUNCTION pgroonga_similar_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 300;
+	COST 10000;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
@@ -837,7 +837,7 @@ CREATE FUNCTION pgroonga_similar_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 300;
+	COST 10000;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
@@ -862,7 +862,7 @@ CREATE FUNCTION pgroonga_similar_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
-	COST 300;
+	COST 10000;
 
 -- Deprecated since 1.2.2.
 CREATE OPERATOR &~? (
