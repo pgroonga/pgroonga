@@ -2147,7 +2147,8 @@ PGrnWALTruncate(Relation index)
 	int64_t nTruncatedBlocks = 0;
 	BlockNumber i;
 	BlockNumber nBlocks;
-	Buffer *buffers;
+	Buffer processingBuffers[MAX_GENERIC_XLOG_PAGES];
+	uint32_t nProcessingBuffers = 0;
 	GenericXLogState *state;
 
 	LockRelation(index, PGrnWALLockMode());
@@ -2157,8 +2158,6 @@ PGrnWALTruncate(Relation index)
 		UnlockRelation(index, PGrnWALLockMode());
 		return 0;
 	}
-
-	buffers = palloc(sizeof(Buffer) * nBlocks);
 
 	state = GenericXLogStart(index);
 
@@ -2170,7 +2169,7 @@ PGrnWALTruncate(Relation index)
 		buffer = PGrnWALReadLockedBuffer(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
 										 BUFFER_LOCK_EXCLUSIVE);
-		buffers[0] = buffer;
+		processingBuffers[nProcessingBuffers++] = buffer;
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
 		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
@@ -2183,26 +2182,35 @@ PGrnWALTruncate(Relation index)
 		Buffer buffer;
 		Page page;
 
-		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
-		buffers[i] = buffer;
-		if (nTruncatedBlocks >= MAX_GENERIC_XLOG_PAGES)
+		if (nProcessingBuffers >= MAX_GENERIC_XLOG_PAGES)
 		{
 			GenericXLogFinish(state);
+			{
+				uint32_t j;
+				for (j = 0; j < nProcessingBuffers; j++)
+				{
+					UnlockReleaseBuffer(processingBuffers[j]);
+				}
+				nProcessingBuffers = 0;
+			}
 			state = GenericXLogStart(index);
 		}
+		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
+		processingBuffers[nProcessingBuffers++] = buffer;
 		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(page, BLCKSZ, 0);
 
 		nTruncatedBlocks++;
 	}
-
 	GenericXLogFinish(state);
 
-	for (i = 0; i < nBlocks; i++)
 	{
-		UnlockReleaseBuffer(buffers[i]);
+		uint32_t j;
+		for (j = 0; j < nProcessingBuffers; j++)
+		{
+			UnlockReleaseBuffer(processingBuffers[j]);
+		}
 	}
-	pfree(buffers);
 
 	PGrnIndexStatusSetWALAppliedPosition(index,
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
