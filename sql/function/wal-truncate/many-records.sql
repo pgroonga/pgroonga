@@ -5,12 +5,8 @@ CREATE TABLE memos (
 );
 
 INSERT INTO memos
-SELECT string_agg(str, '') 
-  FROM 
-  (SELECT chr(12449 + (random() * 1000)::int % 85 ) as str , i 
-    FROM  generate_series(1,20) length, generate_series(1,100000) num(i)
-   )t
-   GROUP BY i;
+SELECT clock_timestamp()::text
+  FROM generate_series(1, 50000);
 
 CREATE INDEX pgrn_memos_index ON memos USING PGroonga (content);
 SELECT pgroonga_wal_truncate();
