@@ -189,14 +189,6 @@ jobs:
           asset_content_type: application/zip
 
       # Test
-      # TODO: Rewrite expects of these tests when Groonga 10.1.0 is released.
-      - name: Remove incompatible regression tests
-        if: |
-          matrix.groonga-master == 'yes'
-        run: |
-          Remove-Item sql/function/match-positions-character/one-keyword.sql
-          Remove-Item sql/function/match-positions-byte/one-keyword.sql
-          Remove-Item sql/function/highlight-html/one-keyword.sql
       - name: Run PostgreSQL for test
         run: |
           ..\pgsql\bin\initdb `
