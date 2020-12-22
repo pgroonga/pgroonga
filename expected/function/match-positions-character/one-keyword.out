@@ -14,6 +14,6 @@ SELECT pgroonga_match_positions_character(
   ARRAY['Groonga']);
    pgroonga_match_positions_character    
 -----------------------------------------
- {{0,7},{110,7},{197,7},{319,9},{553,7}}
+ {{0,7},{110,7},{197,7},{321,9},{553,7}}
 (1 row)
 
