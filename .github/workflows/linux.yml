@@ -75,14 +75,6 @@ jobs:
             postgresql-server-dev-${{ matrix.postgresql-version }}
           sudo systemctl start postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
-      # TODO: Rewrite expects of these tests when Groonga 10.1.0 is released.
-      - name: Remove incompatible regression tests
-        if: |
-          matrix.groonga-master == 'yes'
-        run: |
-          rm -f sql/function/match-positions-character/one-keyword.sql
-          rm -f sql/function/match-positions-byte/one-keyword.sql
-          rm -f sql/function/highlight-html/one-keyword.sql
       - name: Run regression test
         run: |
           test/run-sql-test.sh
