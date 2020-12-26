@@ -10,6 +10,7 @@ class PostgreSQL13PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
       "debian-buster",
       "ubuntu-bionic",
       "ubuntu-focal",
+      "ubuntu-groovy",
     ]
   end
 
