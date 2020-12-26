@@ -86,7 +86,25 @@ CREATE FUNCTION pgroonga_match_positions_byte(target text, keywords text[])
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_match_positions_byte(target text,
+					      keywords text[],
+					      indexName cstring)
+	RETURNS integer[2][]
+	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 CREATE FUNCTION pgroonga_match_positions_character(target text, keywords text[])
+	RETURNS integer[2][]
+	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
+CREATE FUNCTION pgroonga_match_positions_character(target text,
+						   keywords text[],
+						   indexName cstring)
 	RETURNS integer[2][]
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
 	LANGUAGE C

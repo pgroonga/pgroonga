@@ -9,4 +9,7 @@
 void PGrnInitializeKeywords(void);
 void PGrnFinalizeKeywords(void);
 
-void PGrnKeywordsUpdateTable(ArrayType *keywords, grn_obj *keywordsTable);
+void PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
+							   const char *indexName);
+void PGrnKeywordsUpdateTable(ArrayType *keywords,
+							 grn_obj *keywordsTable);

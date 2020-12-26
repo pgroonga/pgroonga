@@ -4,14 +4,15 @@
 
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
-#include "pgrn-match-positions-byte.h"
 #include "pgrn-keywords.h"
+#include "pgrn-match-positions-byte.h"
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
+static grn_obj previousIndexName;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
 
@@ -22,15 +23,16 @@ PGrnInitializeMatchPositionsByte(void)
 									 GRN_OBJ_TABLE_PAT_KEY,
 									 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 									 NULL);
-	grn_obj_set_info(ctx,
-					 keywordsTable,
-					 GRN_INFO_NORMALIZER,
-					 grn_ctx_get(ctx, "NormalizerAuto", -1));
+	GRN_TEXT_INIT(&previousIndexName, 0);
+	GRN_TEXT_PUTC(ctx, &previousIndexName, '\0');
+	PGrnKeywordsSetNormalizer(keywordsTable, NULL);
 }
 
 void
 PGrnFinalizeMatchPositionsByte(void)
 {
+	GRN_OBJ_FIN(ctx, &previousIndexName);
+
 	if (!keywordsTable)
 		return;
 
@@ -118,14 +120,26 @@ PGrnMatchPositionsByte(text *target)
 
 /**
  * pgroonga.match_positions_byte(target text, keywords text[]) : integer[2][]
+ * pgroonga.match_positions_byte(target text, keywords text[], indexName cstring) : integer[2][]
  */
 Datum
 pgroonga_match_positions_byte(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
+	const char *indexName = NULL;
 	ArrayType *positions;
 
+	if (PG_NARGS() == 3)
+		indexName = PG_GETARG_CSTRING(2);
+	if (!indexName)
+		indexName = "";
+	if (strcmp(indexName, GRN_TEXT_VALUE(&previousIndexName)) != 0)
+	{
+		PGrnKeywordsSetNormalizer(keywordsTable, indexName);
+		GRN_TEXT_SETS(ctx, &previousIndexName, indexName);
+		GRN_TEXT_PUTC(ctx, &previousIndexName, '\0');
+	}
 	PGrnKeywordsUpdateTable(keywords, keywordsTable);
 	positions = PGrnMatchPositionsByte(target);
 

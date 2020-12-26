@@ -3,6 +3,8 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-keywords.h"
+#include "pgrn-options.h"
+#include "pgrn-pg.h"
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
@@ -20,6 +22,50 @@ void
 PGrnFinalizeKeywords(void)
 {
 	GRN_OBJ_FIN(ctx, &keywordIDs);
+}
+
+static void
+PGrnKeywordsResolveNormalizer(const char *indexName,
+							  grn_obj **normalizer)
+{
+	if (!indexName || indexName[0] == '\0')
+		return;
+
+	{
+		Oid oid = PGrnPGIndexNameToID(indexName);
+		if (!OidIsValid(oid))
+			return;
+	}
+
+	{
+		grn_obj *tokenizer = NULL;
+		grn_obj *tokenFilters = NULL;
+		grn_table_flags flags = 0;
+		Relation index = PGrnPGResolveIndexName(indexName);
+		PGrnApplyOptionValues(index,
+							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
+							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
+							  normalizer, PGRN_DEFAULT_NORMALIZER,
+							  &tokenFilters,
+							  &flags);
+		RelationClose(index);
+	}
+}
+
+void
+PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
+						  const char *indexName)
+{
+	grn_obj *normalizer = NULL;
+	PGrnKeywordsResolveNormalizer(indexName, &normalizer);
+	if (!normalizer)
+	{
+		normalizer = grn_ctx_get(ctx, "NormalizerAuto", -1);
+	}
+	grn_obj_set_info(ctx,
+					 keywordsTable,
+					 GRN_INFO_NORMALIZER,
+					 normalizer);
 }
 
 void
