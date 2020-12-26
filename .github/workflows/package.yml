@@ -34,7 +34,7 @@ jobs:
           - postgresql-10-pgdg-pgroonga-centos-7
           - postgresql-10-pgroonga-centos-7
           - postgresql-9.6-pgroonga-centos-7
-          - pgroonga-fedora-32
+          - pgroonga-fedora-33
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
