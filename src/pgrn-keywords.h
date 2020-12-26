@@ -10,6 +10,7 @@ void PGrnInitializeKeywords(void);
 void PGrnFinalizeKeywords(void);
 
 void PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
-							   const char *indexName);
+							   const char *indexName,
+							   Oid *previousIndexID);
 void PGrnKeywordsUpdateTable(ArrayType *keywords,
 							 grn_obj *keywordsTable);

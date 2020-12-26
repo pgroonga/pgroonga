@@ -13,4 +13,17 @@ SELECT pgroonga_match_positions_character(
  {{6,3}}
 (1 row)
 
+DROP INDEX pgrn_index;
+CREATE INDEX pgrn_index ON memos
+ USING pgroonga (tags)
+  WITH (normalizer = 'NormalizerNFKC100');
+SELECT pgroonga_match_positions_character(
+  'この八百屋のリンゴはおいしい。',
+  ARRAY['りんご'],
+  'pgrn_index');
+ pgroonga_match_positions_character 
+------------------------------------
+ {}
+(1 row)
+
 DROP TABLE memos;

@@ -24,17 +24,24 @@ PGrnFinalizeKeywords(void)
 	GRN_OBJ_FIN(ctx, &keywordIDs);
 }
 
-static void
+static bool
 PGrnKeywordsResolveNormalizer(const char *indexName,
-							  grn_obj **normalizer)
+							  grn_obj **normalizer,
+							  Oid *previousIndexID)
 {
 	if (!indexName || indexName[0] == '\0')
-		return;
-
 	{
-		Oid oid = PGrnPGIndexNameToID(indexName);
-		if (!OidIsValid(oid))
-			return;
+		if (!previousIndexID)
+			return true;
+		return *previousIndexID != InvalidOid;
+	}
+
+	if (previousIndexID)
+	{
+		Oid indexID = PGrnPGIndexNameToID(indexName);
+		if (indexID == *previousIndexID)
+			return false;
+		*previousIndexID = indexID;
 	}
 
 	{
@@ -50,14 +57,21 @@ PGrnKeywordsResolveNormalizer(const char *indexName,
 							  &flags);
 		RelationClose(index);
 	}
+	return true;
 }
 
 void
 PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
-						  const char *indexName)
+						  const char *indexName,
+						  Oid *previousIndexID)
 {
 	grn_obj *normalizer = NULL;
-	PGrnKeywordsResolveNormalizer(indexName, &normalizer);
+	if (!PGrnKeywordsResolveNormalizer(indexName, &normalizer, previousIndexID))
+		return;
+
+	if (grn_table_size(ctx, keywordsTable) > 0)
+		grn_table_truncate(ctx, keywordsTable);
+
 	if (!normalizer)
 	{
 		normalizer = grn_ctx_get(ctx, "NormalizerAuto", -1);

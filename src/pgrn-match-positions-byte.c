@@ -12,7 +12,7 @@
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
-static grn_obj previousIndexName;
+static Oid previousIndexID = InvalidOid;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
 
@@ -23,16 +23,12 @@ PGrnInitializeMatchPositionsByte(void)
 									 GRN_OBJ_TABLE_PAT_KEY,
 									 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 									 NULL);
-	GRN_TEXT_INIT(&previousIndexName, 0);
-	GRN_TEXT_PUTC(ctx, &previousIndexName, '\0');
-	PGrnKeywordsSetNormalizer(keywordsTable, NULL);
+	PGrnKeywordsSetNormalizer(keywordsTable, NULL, NULL);
 }
 
 void
 PGrnFinalizeMatchPositionsByte(void)
 {
-	GRN_OBJ_FIN(ctx, &previousIndexName);
-
 	if (!keywordsTable)
 		return;
 
@@ -132,14 +128,7 @@ pgroonga_match_positions_byte(PG_FUNCTION_ARGS)
 
 	if (PG_NARGS() == 3)
 		indexName = PG_GETARG_CSTRING(2);
-	if (!indexName)
-		indexName = "";
-	if (strcmp(indexName, GRN_TEXT_VALUE(&previousIndexName)) != 0)
-	{
-		PGrnKeywordsSetNormalizer(keywordsTable, indexName);
-		GRN_TEXT_SETS(ctx, &previousIndexName, indexName);
-		GRN_TEXT_PUTC(ctx, &previousIndexName, '\0');
-	}
+	PGrnKeywordsSetNormalizer(keywordsTable, indexName, &previousIndexID);
 	PGrnKeywordsUpdateTable(keywords, keywordsTable);
 	positions = PGrnMatchPositionsByte(target);
 
