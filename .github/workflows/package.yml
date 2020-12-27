@@ -55,25 +55,39 @@ jobs:
       - name: Build archive
         run: |
           rake dist
-      - name: Build with Docker
+      - name: Configure
         run: |
-          set -x
+          set -eux
           package=$(echo ${{ matrix.package-id }} | \
                       sed -E -e 's/-(debian|ubuntu|centos|fedora).*$//g')
           os=$(echo ${{ matrix.package-id }} | \
                  sed -E -e 's/^.*-((debian|ubuntu|centos|fedora).*)$/\1/g')
-          cd packages/${package}
-          rake version:update
+          echo "PACKAGE=${package}" >> ${GITHUB_ENV}
+          echo "OS=${os}" >> ${GITHUB_ENV}
           case ${os} in
             debian-*|ubuntu-*)
-              rake apt:build APT_TARGETS=${os}
-              mv apt/repositories/ ../../
+              echo "PACKAGE_TYPE=apt" >> ${GITHUB_ENV}
               ;;
             centos-*|fedora-*)
-              rake yum:build YUM_TARGETS=${os}
-              mv yum/repositories/ ../../
+              echo "PACKAGE_TYPE=yum" >> ${GITHUB_ENV}
               ;;
           esac
+          test_docker_image=$(echo ${os} | sed -E -e 's/-/:/g')
+          case ${test_docker_image} in
+            *:i386)
+              test_docker_image="$(echo ${test_docker_image} | \
+                                     sed -E -e 's/:i386$//g')"
+              test_docker_image="i386/${test_docker_image}"
+              ;;
+          esac
+          echo "TEST_DOCKER_IMAGE=${test_docker_image}" >> ${GITHUB_ENV}
+      - name: Build with Docker
+        run: |
+          set -x
+          cd packages/${PACKAGE}
+          rake version:update
+          rake ${PACKAGE_TYPE}:build ${PACKAGE_TYPE}_TARGETS=${OS}
+          mv ${PACKAGE_TYPE}/repositories/ ../../
         env:
           GROONGA_REPOSITORY: ../../../groonga
 
@@ -115,3 +129,13 @@ jobs:
           asset_path: ${{ matrix.package-id }}.tar.gz
           asset_name: ${{ matrix.package-id }}.tar.gz
           asset_content_type: application/gzip
+
+      # Test
+      - name: Test
+        run: |
+          docker run \
+            --rm \
+            --tty \
+            --volume ${PWD}:/pgroonga:ro \
+            ${TEST_DOCKER_IMAGE} \
+            /pgroonga/packages/${PACKAGE_TYPE}/test.sh
