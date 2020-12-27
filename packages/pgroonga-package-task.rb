@@ -77,6 +77,25 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
       super
     end
   end
+
+  def use_built_package?
+    true
+  end
+
+  def built_package_url(target_namespace, target)
+    url = "https://github.com/pgroonga/pgroonga/releases/download/#{@version}/"
+    case target_namespace
+    when :apt, :yum
+      url << "packages-#{@package}-#{target}.tar.gz"
+    else
+      raise [url, target_namespace, target, @package].inspect
+    end
+    url
+  end
+
+  def built_package_n_split_components
+    1
+  end
 end
 
 class VersionedPGroongaPackageTask < GenericPGroongaPackageTask

@@ -121,22 +121,35 @@ namespace :package do
 
     directory source_dir
 
-    desc "Download sources"
-    task :download => source_dir do
-      sh("rsync", "-avz", "--progress", "--delete", "#{rsync_path}/", source_dir)
+    desc "Clean sources"
+    task :clean do
+      rm_rf(source_dir)
     end
 
     desc "Upload sources"
     task :upload => [archive_name, windows_archive_name, source_dir] do
-      cp(archive_name, source_dir)
-      cd(source_dir) do
-        ln_sf(archive_name, "#{package}-latest.tar.gz")
+      groonga_repository = ENV["GROONGA_REPOSITORY"]
+      if groonga_repository.nil?
+        raise "Specify GROONGA_REPOSITORY environment variable"
       end
-      cp(windows_archive_name, source_dir)
-      cd(source_dir) do
-        ln_sf(windows_archive_name, "#{package}-latest.zip")
+      gpg_uid = File.read(File.join(groonga_repository, "gpg_uid_rsa4096")).strip
+
+      prepare_archive = lambda do |archive, latest_archive|
+        cp(archive, source_dir)
+        cd(source_dir) do
+          ln_sf(archive, latest_archive)
+          sh("gpg",
+             "--local-user", gpg_uid,
+             "--armor",
+             "--detach-sign",
+             archive)
+          ln_sf("#{archive}.asc", "#{latest_archive}.asc")
+        end
       end
-      sh("rsync", "-avz", "--progress", "--delete", "#{source_dir}/", rsync_path)
+
+      prepare_archive.call(archive_name, "#{package}-latest.tar.gz")
+      prepare_archive.call(windows_archive_name, "#{package}-latest.zip")
+      sh("rsync", "-avz", "--progress", "#{source_dir}/", rsync_path)
     end
 
     namespace :snapshot do
@@ -150,21 +163,15 @@ namespace :package do
 
   desc "Release sources"
   source_tasks = [
-    "package:source:download",
+    "package:source:clean",
     "package:source:upload",
   ]
   task :source => source_tasks
 
   desc "Release APT packages"
   task :apt do
-    apt_dir = "#{packages_dir}/apt"
-    repositories_dir = "#{apt_dir}/repositories"
-    rm_rf(repositories_dir)
-    mkdir_p(repositories_dir)
     package_names.each do |package_name|
-      package_dir = "packages/#{package_name}"
-      cd(package_dir) do
-        rm_rf("apt/repositories")
+      cd("packages/#{package_name}") do
         ruby("-S", "rake", "apt")
       end
     end
@@ -173,8 +180,7 @@ namespace :package do
   desc "Release Ubuntu packages"
   task :ubuntu do
     package_names.each do |package_name|
-      package_dir = "packages/#{package_name}"
-      cd(package_dir) do
+      cd("packages/#{package_name}") do
         ruby("-S", "rake", "ubuntu", "--trace")
       end
     end
@@ -182,14 +188,8 @@ namespace :package do
 
   desc "Release Yum packages"
   task :yum do
-    yum_dir = "#{packages_dir}/yum"
-    repositories_dir = "#{yum_dir}/repositories"
-    rm_rf(repositories_dir)
-    mkdir_p(repositories_dir)
     package_names.each do |package_name|
-      package_dir = "packages/#{package_name}"
-      cd(package_dir) do
-        rm_rf("yum/repositories")
+      cd("packages/#{package_name}") do
         ruby("-S", "rake", "yum")
       end
     end

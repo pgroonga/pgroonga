@@ -18,6 +18,11 @@ class PGroongaPackageTask < GenericPGroongaPackageTask
       "fedora-33",
     ]
   end
+
+  def release(target_namespace)
+    return if target_namespace.start_with?("fedora-")
+    super
+  end
 end
 
 task = PGroongaPackageTask.new
