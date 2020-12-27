@@ -165,7 +165,7 @@ jobs:
       # Release
       - name: Ensure creating release
         if: |
-          startsWith(github.ref, 'refs/tags/')
+          startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
         id: create-release
         uses: actions/github-script@0.4.0
         with:
@@ -181,7 +181,7 @@ jobs:
       - name: Upload to release
         uses: actions/upload-release-asset@v1.0.1
         if: |
-          startsWith(github.ref, 'refs/tags/')
+          startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
