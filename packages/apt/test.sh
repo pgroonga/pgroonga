@@ -42,7 +42,7 @@ postgresql_package_prefix=$(dpkg -l | \
                               grep pgroonga | \
                               grep -E -o 'postgresql-[0-9.]+(-pgdg)?' |
                               head -n1)
-if ! echo "${postgresql_package_prefix}" | grep -q pdgd; then
+if ! echo "${postgresql_package_prefix}" | grep -q pgdg; then
   apt install -V -y \
       $(echo ${postgresql_package_prefix} | \
           sed -e 's/^postgresql-/postgresql-server-dev-/')
