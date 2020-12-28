@@ -136,6 +136,6 @@ jobs:
           docker run \
             --rm \
             --tty \
-            --volume ${PWD}:/pgroonga:ro \
+            --volume ${PWD}:/host:ro \
             ${TEST_DOCKER_IMAGE} \
             /pgroonga/packages/${PACKAGE_TYPE}/test.sh

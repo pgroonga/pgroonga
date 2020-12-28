@@ -2,19 +2,29 @@
 
 set -eux
 
+echo "debconf debconf/frontend select Noninteractive" | \
+  debconf-set-selections
+
 apt update
 apt install -V -y \
     lsb-release \
     wget
 
+os=$(lsb_release --id --short | tr "A-Z" "a-z")
 code_name=$(lsb_release --codename --short)
 architecture=$(dpkg --print-architecture)
 
-repositories_dir=/pgroonga/repositories
+repositories_dir=/host/repositories
 
 wget \
-  https://packages.groonga.org/debian/groonga-apt-source-latest-${code_name}.deb
+  https://packages.groonga.org/${os}/groonga-apt-source-latest-${code_name}.deb
 apt install -V -y ./groonga-apt-source-latest-${code_name}.deb
+
+if [ "${os}" = "ubuntu" ]; then
+  apt install -y software-properties-common
+  add-apt-repository -y universe
+  add-apt-repository -y ppa:groonga/ppa
+fi
 
 if find ${repositories_dir} | grep -q "pgdg"; then
   echo "deb http://apt.postgresql.org/pub/repos/apt/ ${code_name}-pgdg main" | \
@@ -26,7 +36,17 @@ fi
 apt update
 
 apt install -V -y \
-  ${repositories_dir}/debian/pool/${code_name}/main/*/*/*_${architecture}.deb
+  ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
+
+postgresql_package_prefix=$(dpkg -l | \
+                              grep pgroonga | \
+                              grep -E -o 'postgresql-[0-9.]+(-pgdg)?' |
+                              head -n1)
+if ! echo "${postgresql_package_prefix}" | grep -q pdgd; then
+  apt install -V -y \
+      $(echo ${postgresql_package_prefix} | \
+          sed -e 's/^postgresql-/postgresql-server-dev-/')
+fi
 
 apt install -V -y \
     groonga-token-filter-stem \
@@ -46,16 +66,16 @@ sudo -u postgres -H \
      --pgdata=/${data_dir}
 
 cp -a \
-   /pgroonga/sql \
-   /pgroonga/expected \
+   /host/sql \
+   /host/expected \
    /tmp/
 cd /tmp
-ruby /pgroonga/test/prepare.rb > schedule
+ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
 set +e
 ${pg_regress} \
-  --launcher=/pgroonga/test/short-pgappname \
+  --launcher=/host/test/short-pgappname \
   --load-extension=pgroonga \
   --schedule=schedule
 pg_regress_status=$?

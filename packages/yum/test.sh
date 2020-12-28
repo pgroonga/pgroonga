@@ -25,11 +25,13 @@ case ${os} in
     ;;
 esac
 
-repositories_dir=/pgroonga/repositories
+repositories_dir=/host/repositories
 ${DNF} install -y \
        ${repositories_dir}/${os}/${version}/x86_64/Packages/*.rpm
 
-postgresql_package_prefix=$(rpm -qa | grep pgroonga | grep -E -o '^postgresql[0-9]+')
+postgresql_package_prefix=$(rpm -qa | \
+                              grep host | \
+                              grep -E -o '^postgresql[0-9.]+')
 
 case ${os} in
   centos)
@@ -66,16 +68,16 @@ sudo -u postgres -H \
      --pgdata=/${data_dir}
 
 cp -a \
-   /pgroonga/sql \
-   /pgroonga/expected \
+   /host/sql \
+   /host/expected \
    /tmp/
 cd /tmp
-ruby /pgroonga/test/prepare.rb > schedule
+ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(${pg_config} --pgxs))/../test/regress/pg_regress
 set +e
 ${pg_regress} \
-  --launcher=/pgroonga/test/short-pgappname \
+  --launcher=/host/test/short-pgappname \
   --load-extension=pgroonga \
   --schedule=schedule
 pg_regress_status=$?
