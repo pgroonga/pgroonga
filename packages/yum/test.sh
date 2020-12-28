@@ -42,16 +42,18 @@ case ${os} in
                                   sed -e 's/\.//g')
     ${DNF} install -y ${postgresql_package_prefix}-devel
     pg_config=$(echo /usr/pgsql-*/bin/pg_config)
+    groonga_token_filter_stem_package_name=groonga-token-filter-stem
     ;;
   *)
     ${DNF} install -y postgresql-devel
     pg_config=pg_config
+    groonga_token_filter_stem_package_name=groonga-plugin-token-filters
     ;;
 esac
 
 ${DNF} install -y \
+       ${groonga_token_filter_stem_package_name} \
        diffutils \
-       groonga-token-filter-stem \
        groonga-tokenizer-mecab \
        ruby \
        sudo
