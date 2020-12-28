@@ -4,8 +4,6 @@
 %define debug_package %{nil}
 
 %define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:7}
-%define _fedora  %{?fedora:%{fedora}}%{!?fedora:0}
-%define is_fedora  %{_fedora} > 0
 
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
@@ -42,11 +40,7 @@ BuildRequires:	llvm-toolset-7
 %endif
 %endif
 BuildRequires:	xxhash-devel
-%if %{is_fedora}
-Requires:	groonga-libs
-%else
 Requires:	groonga-libs >= @GROONGA_VERSION@
-%endif
 Requires:	msgpack
 Requires:	postgresql%{pg_package_version}-server
 Requires:	xxhash-libs

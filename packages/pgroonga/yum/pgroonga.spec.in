@@ -20,7 +20,7 @@ BuildRequires:	make
 BuildRequires:	msgpack-devel
 BuildRequires:	postgresql-server-devel
 BuildRequires:	xxhash-devel
-Requires:	groonga-libs >= @GROONGA_VERSION@
+Requires:	groonga-libs
 Requires:	logrotate
 Requires:	msgpack
 Requires:	postgresql-server
