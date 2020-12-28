@@ -30,7 +30,7 @@ ${DNF} install -y \
        ${repositories_dir}/${os}/${version}/x86_64/Packages/*.rpm
 
 postgresql_package_prefix=$(rpm -qa | \
-                              grep host | \
+                              grep pgroonga | \
                               grep -E -o '^postgresql[0-9.]+')
 
 case ${os} in
