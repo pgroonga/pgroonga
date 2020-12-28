@@ -138,4 +138,4 @@ jobs:
             --tty \
             --volume ${PWD}:/host:ro \
             ${TEST_DOCKER_IMAGE} \
-            /pgroonga/packages/${PACKAGE_TYPE}/test.sh
+            /host/packages/${PACKAGE_TYPE}/test.sh
