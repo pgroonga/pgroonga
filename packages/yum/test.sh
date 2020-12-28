@@ -29,10 +29,6 @@ repositories_dir=/host/repositories
 ${DNF} install -y \
        ${repositories_dir}/${os}/${version}/x86_64/Packages/*.rpm
 
-postgresql_package_prefix=$(rpm -qa | \
-                              grep pgroonga | \
-                              grep -E -o '^postgresql[0-9.]+')
-
 case ${os} in
   centos)
     case ${version} in
@@ -40,6 +36,10 @@ case ${os} in
         ${DNF} install -y centos-release-scl
         ;;
     esac
+    postgresql_package_prefix=$(rpm -qa | \
+                                  grep pgroonga | \
+                                  grep -E -o '^postgresql[0-9.]+' | \
+                                  sed -e 's/\.//g')
     ${DNF} install -y ${postgresql_package_prefix}-devel
     pg_config=$(echo /usr/pgsql-*/bin/pg_config)
     ;;
