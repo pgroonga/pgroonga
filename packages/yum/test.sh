@@ -45,7 +45,10 @@ case ${os} in
     groonga_token_filter_stem_package_name=groonga-token-filter-stem
     ;;
   *)
-    ${DNF} install -y postgresql-devel
+    ${DNF} install -y \
+           mecab-ipadic \
+           postgresql-devel \
+           postgresql-server-devel
     pg_config=pg_config
     groonga_token_filter_stem_package_name=groonga-plugin-token-filters
     ;;
@@ -74,6 +77,12 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
+if [ "${os}" = "fedora" ]; then
+  # Require Groonga 10.1.0 or later.
+  rm sql/function/highlight-html/one-keyword.sql
+  rm sql/function/match-positions-byte/one-keyword.sql
+  rm sql/function/match-positions-character/one-keyword.sql
+fi
 ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(${pg_config} --pgxs))/../test/regress/pg_regress
