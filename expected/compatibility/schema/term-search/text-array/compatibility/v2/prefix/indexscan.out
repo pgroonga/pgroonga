@@ -1,9 +1,10 @@
 CREATE TABLE tags (
+  id int,
   names text[]
 );
-INSERT INTO tags VALUES (ARRAY['PostgreSQL', 'PG']);
-INSERT INTO tags VALUES (ARRAY['Groonga', 'grn']);
-INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn']);
+INSERT INTO tags VALUES (1, ARRAY['PostgreSQL', 'PG']);
+INSERT INTO tags VALUES (2, ARRAY['Groonga', 'grn']);
+INSERT INTO tags VALUES (3, ARRAY['PGroonga', 'pgrn']);
 CREATE INDEX pgrn_index ON tags
   USING pgroonga (names pgroonga.text_array_term_search_ops_v2);
 SET enable_seqscan = off;
@@ -12,20 +13,24 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &^> 'pG';
-              QUERY PLAN              
---------------------------------------
- Index Scan using pgrn_index on tags
-   Index Cond: (names &^> 'pG'::text)
-(2 rows)
+ WHERE names &^> 'pG'
+ ORDER BY id;
+                 QUERY PLAN                 
+--------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Index Scan using pgrn_index on tags
+         Index Cond: (names &^> 'pG'::text)
+(4 rows)
 
 SELECT names
   FROM tags
- WHERE names &^> 'pG';
+ WHERE names &^> 'pG'
+ ORDER BY id;
       names      
 -----------------
- {PGroonga,pgrn}
  {PostgreSQL,PG}
+ {PGroonga,pgrn}
 (2 rows)
 
 DROP TABLE tags;
