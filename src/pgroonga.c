@@ -122,6 +122,8 @@ typedef struct PGrnScanOpaqueData
 	grn_obj *scoreAccessor;
 	grn_id currentID;
 
+	grn_obj canReturns;
+
 	dlist_node node;
 	slist_head primaryKeyColumns;
 	grn_obj *scoreTargetRecords;
@@ -4285,6 +4287,8 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	so->scoreAccessor = NULL;
 	so->currentID = GRN_ID_NIL;
 
+	GRN_BOOL_INIT(&(so->canReturns), GRN_OBJ_VECTOR);
+
 	dlist_push_head(&PGrnScanOpaques, &(so->node));
 	PGrnNScanOpaques++;
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
@@ -4337,6 +4341,7 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		grn_obj_close(ctx, so->searched);
 		so->searched = NULL;
 	}
+	GRN_BULK_REWIND(&(so->canReturns));
 }
 
 static void
@@ -4361,6 +4366,8 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	GRN_OBJ_FIN(ctx, &(so->minBorderValue));
 	GRN_OBJ_FIN(ctx, &(so->maxBorderValue));
+
+	GRN_OBJ_FIN(ctx, &(so->canReturns));
 
 	free(so);
 
@@ -6048,6 +6055,8 @@ PGrnScanOpaqueResolveID(PGrnScanOpaque so)
 	return recordID;
 }
 
+static bool pgroonga_canreturn_raw(Relation index, int nthAttribute);
+
 static void
 PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 						   IndexScanDesc scan)
@@ -6076,13 +6085,24 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		NameData *name;
 		grn_obj *dataColumn;
 
-		if (PGrnAttributeIsJSONB(attribute->atttypid))
+		/*
+		  FIXME: PostgreSQL chooses index only scan for COUNT(*)
+		  even if PGroonga returns false by pgroonga_canreturn().
+		  We should send a patch to PostgreSQL.
+		*/
+		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) < i) {
+			unsigned int j;
+			for (j = GRN_BOOL_VECTOR_SIZE(&(so->canReturns));
+				 j <= i;
+				 j++)
+			{
+				bool can = pgroonga_canreturn_raw(so->index, j);
+				GRN_BOOL_PUT(ctx, &(so->canReturns), can);
+			}
+		}
+
+		if (!GRN_BOOL_VALUE_AT(&(so->canReturns), i))
 		{
-			/* FIXME: PostgreSQL chooses index only scan for COUNT(*)
-			   even if PGroonga returns false by pgroonga_canreturn().
-			   We should send a patch to PostgreSQL.
-			*/
-			/* values[i] = JsonbPGetDatum(NULL); */
 			values[i] = PointerGetDatum(NULL);
 			isNulls[i] = true;
 			continue;
