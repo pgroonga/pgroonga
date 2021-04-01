@@ -112,7 +112,7 @@ jobs:
           rake version:update
           rake \
             ${PACKAGE_TYPE}:build \
-            ${PACKAGE_TYPE}_TARGETS=${OS} \
+            $(echo ${PACKAGE_TYPE} | tr 'a-z' 'A-Z')_TARGETS=${OS} \
             BUILD_DIR=build
           mv ${PACKAGE_TYPE}/repositories/ ../../
         env:
