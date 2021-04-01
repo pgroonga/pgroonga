@@ -54,7 +54,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt -y -V install ruby
+          sudo apt -y -V install \
+            qemu-user-static \
+            ruby
           sudo gem install bundler
           bundle install
       - name: Clone dependencies
@@ -85,6 +87,11 @@ jobs:
           esac
           test_docker_image=$(echo ${os} | sed -E -e 's/-/:/g')
           case ${test_docker_image} in
+            *:arm64)
+              test_docker_image="$(echo ${test_docker_image} | \
+                                     sed -E -e 's/:arm64$//g')"
+              test_docker_image="arm64v8/${test_docker_image}"
+              ;;
             *:i386)
               test_docker_image="$(echo ${test_docker_image} | \
                                      sed -E -e 's/:i386$//g')"
