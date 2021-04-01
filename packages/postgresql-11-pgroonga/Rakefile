@@ -8,6 +8,7 @@ class PostgreSQL11PGroongaPackageTask < VersionedPGroongaPackageTask
   def apt_targets_default
     [
       "debian-buster",
+      "debian-buster-arm64",
       "debian-buster-i386",
     ]
   end
