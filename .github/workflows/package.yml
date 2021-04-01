@@ -8,6 +8,8 @@ on:
 jobs:
   linux:
     name: Linux
+    # arm64 packages are often stuck.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
