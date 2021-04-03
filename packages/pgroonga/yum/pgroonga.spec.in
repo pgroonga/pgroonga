@@ -78,6 +78,9 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %{_datadir}/pgsql/extension/*.sql
 
 %changelog
+* Sat Apr 03 2021 Sutou Kouhei <kou@clear-code.com> - 2.2.9-1
+- New upstream release.
+
 * Sat Dec 26 2020 Sutou Kouhei <kou@clear-code.com> - 2.2.8-1
 - New upstream release.
 
