@@ -38,7 +38,6 @@ jobs:
           - postgresql-12-pgroonga-centos-7
           - postgresql-11-pgroonga-debian-buster
           - postgresql-11-pgroonga-debian-buster-arm64
-          - postgresql-11-pgroonga-debian-buster-i386
           - postgresql-11-pgroonga-centos-7
           - postgresql-10-pgdg-pgroonga-ubuntu-bionic
           - postgresql-10-pgdg-pgroonga-ubuntu-bionic-arm64
@@ -93,11 +92,6 @@ jobs:
               test_docker_image="$(echo ${test_docker_image} | \
                                      sed -E -e 's/:arm64$//g')"
               test_docker_image="arm64v8/${test_docker_image}"
-              ;;
-            *:i386)
-              test_docker_image="$(echo ${test_docker_image} | \
-                                     sed -E -e 's/:i386$//g')"
-              test_docker_image="i386/${test_docker_image}"
               ;;
           esac
           echo "TEST_DOCKER_IMAGE=${test_docker_image}" >> ${GITHUB_ENV}

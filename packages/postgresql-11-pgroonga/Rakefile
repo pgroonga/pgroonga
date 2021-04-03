@@ -9,7 +9,6 @@ class PostgreSQL11PGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "debian-buster",
       "debian-buster-arm64",
-      "debian-buster-i386",
     ]
   end
 
