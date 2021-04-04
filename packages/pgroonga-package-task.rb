@@ -86,7 +86,7 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
     url = "https://github.com/pgroonga/pgroonga/releases/download/#{@version}/"
     case target_namespace
     when :apt, :yum
-      url << "packages-#{@package}-#{target}.tar.gz"
+      url << "#{@package}-#{target}.tar.gz"
     else
       raise [url, target_namespace, target, @package].inspect
     end
