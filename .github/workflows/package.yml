@@ -160,7 +160,7 @@ jobs:
       # Test
       - name: Test
         if: |
-          env.architecture != 'arm64'
+          env.ARCHITECTURE != 'arm64'
         run: |
           docker run \
             --rm \
