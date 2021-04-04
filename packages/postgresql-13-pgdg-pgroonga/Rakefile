@@ -14,7 +14,7 @@ class PostgreSQL13PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
       "ubuntu-focal",
       "ubuntu-focal-arm64",
       "ubuntu-groovy",
-      "ubuntu-groovy-arm64",
+      # "ubuntu-groovy-arm64",
     ]
   end
 
