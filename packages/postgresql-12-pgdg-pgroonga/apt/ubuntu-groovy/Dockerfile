@@ -32,3 +32,7 @@ RUN \
     postgresql-server-dev-12 && \
   apt clean && \
   rm -rf /var/lib/apt/lists/*
+
+RUN { \
+      echo "DEBUILD_LINTIAN=no"; \
+    } > ~/.devscripts
