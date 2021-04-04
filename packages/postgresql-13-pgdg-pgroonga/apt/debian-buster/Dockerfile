@@ -27,4 +27,6 @@ RUN \
     libgroonga-dev \
     libmsgpack-dev \
     pkg-config \
-    postgresql-server-dev-13
+    postgresql-server-dev-13 && \
+  apt clean && \
+  rm -rf /var/lib/apt/lists/*
