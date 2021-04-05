@@ -89,13 +89,13 @@ jobs:
           test_docker_image=$(echo ${os} | sed -E -e 's/-/:/g')
           case ${test_docker_image} in
             *:arm64)
-              echo "ARCHITECTUR=arm64" >> ${GITHUB_ENV}
+              echo "ARCHITECTURE=arm64" >> ${GITHUB_ENV}
               test_docker_image="$(echo ${test_docker_image} | \
                                      sed -E -e 's/:arm64$//g')"
               test_docker_image="arm64v8/${test_docker_image}"
               ;;
             *)
-              echo "ARCHITECTUR=amd64" >> ${GITHUB_ENV}
+              echo "ARCHITECTURE=amd64" >> ${GITHUB_ENV}
               ;;
           esac
           echo "TEST_DOCKER_IMAGE=${test_docker_image}" >> ${GITHUB_ENV}
