@@ -9,6 +9,8 @@ class PostgreSQL13PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "debian-buster",
       "debian-buster-arm64",
+      "debian-bullseye",
+      "debian-bullseye-arm64",
       "ubuntu-bionic",
       "ubuntu-bionic-arm64",
       "ubuntu-focal",

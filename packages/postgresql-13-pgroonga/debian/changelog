@@ -1,0 +1,5 @@
+postgresql-13-pgroonga (2.2.9-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Sat, 03 Apr 2021 22:31:11 -0000
