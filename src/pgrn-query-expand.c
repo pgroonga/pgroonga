@@ -55,7 +55,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	grn_obj *expandedTerm;
 	text *termText;
 	ArrayType *termTexts;
-	Datum scanKeyDatum;
+	Datum scanKeyDatum = 0;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
 	PGrnTableScanDesc heapScan = NULL;
