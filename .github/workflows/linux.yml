@@ -63,12 +63,11 @@ jobs:
       - name: Install PostgreSQL
         run: |
           sudo apt -y -V purge '^postgresql'
-          if [ ${{ matrix.postgresql-version }} -ge 14 ]; then
-            sudo sed \
-              -i'' \
-              -e 's/main/${{ matrix.postgresql-version }}/g' \
-              /etc/apt/sources.list.d/pgdg.list;
-          fi
+          ls -lah /etc/apt/sources.list.d/
+          sudo tee /etc/apt/sources.list.d/pgdg.list <<APT_SOURCE
+          deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main
+          APT_SOURCE
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt update
           sudo apt -y -V install \
             postgresql-${{ matrix.postgresql-version }} \
