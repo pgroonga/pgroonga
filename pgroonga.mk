@@ -17,14 +17,9 @@ OBJS = $(SRCS:.c=.o)
 $(OBJS): $(HEADERS)
 EXTENSION = pgroonga
 
-ifdef GP
-DATA =						\
-	data/pgroonga-gpdb.sql
-else
 DATA =						\
 	data/pgroonga--$(PGRN_VERSION).sql	\
 	$(shell echo data/pgroonga--*--*.sql)
-endif
 
 REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
 REGRESS_OPTS = --load-extension=pgroonga
