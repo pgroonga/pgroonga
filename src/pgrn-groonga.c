@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-column-name.h"
+#include "pgrn-convert.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-wal.h"
