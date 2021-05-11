@@ -615,7 +615,7 @@ PGrnResultToRecordsetBuildRecord1(PGrnResultToRecordsetData *data)
 			case jbvNumeric:
 				{
 					Datum value = NumericGetDatum(element.val.numeric);
-					switch (data->context->tuple_desc->attrs[i].atttypid) {
+					switch (TupleDescAttr(data->context->tuple_desc, i)->atttypid) {
 					case INT2OID:
 						values[i] = DirectFunctionCall1(numeric_int2, value);
 						break;
