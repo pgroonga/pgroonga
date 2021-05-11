@@ -776,8 +776,8 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
-							token)));
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
+							PGrnJSONBIteratorTokenToString(token))));
 			break;
 		}
 	}
@@ -846,8 +846,8 @@ PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
-							token)));
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
+							PGrnJSONBIteratorTokenToString(token))));
 			break;
 		}
 	}
@@ -1766,8 +1766,8 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 		default:
 			ereport(ERROR,
 					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %d",
-							token)));
+					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
+							PGrnJSONBIteratorTokenToString(token))));
 			break;
 		}
 	}
