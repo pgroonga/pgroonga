@@ -711,11 +711,13 @@ pgroonga_result_to_recordset(PG_FUNCTION_ARGS)
 		{
 			PGrnResultToRecordsetBuildTupleDesc(data);
 		}
-		PG_FINALLY();
+		PG_CATCH();
 		{
 			MemoryContextSwitchTo(oldContext);
+			PG_RE_THROW();
 		}
 		PG_END_TRY();
+		MemoryContextSwitchTo(oldContext);
 		context->tuple_desc = BlessTupleDesc(data->desc);
 	}
 
