@@ -293,6 +293,13 @@ CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnIndex int4)
 	STABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_result_to_recordset(result jsonb)
+	RETURNS SETOF RECORD
+	AS 'MODULE_PATHNAME', 'pgroonga_result_to_recordset'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

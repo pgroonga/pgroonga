@@ -1,0 +1,67 @@
+SELECT pgroonga_result_to_recordset(
+  '{
+     "header": {
+       "return_code": 0,
+       "start_time": 0.0,
+       "elapsed_time": 0.0
+     },
+     "body": {
+       "n_hits": 10,
+       "columns": [
+         {"name": "_id", "type": "UInt32"},
+         {"name": "bool", "type": "Bool"},
+         {"name": "int8", "type": "Int8"},
+         {"name": "uint8", "type": "UInt8"},
+         {"name": "int16", "type": "Int16"},
+         {"name": "uint16", "type": "UInt16"},
+         {"name": "int32", "type": "Int32"},
+         {"name": "uint32", "type": "UInt32"},
+         {"name": "int64", "type": "Int64"},
+         {"name": "uint64", "type": "UInt64"},
+         {"name": "float32", "type": "Float32"},
+         {"name": "float", "type": "Float"},
+         {"name": "time", "type": "Time"},
+         {"name": "short_text", "type": "ShortText"},
+         {"name": "text", "type": "Text"},
+         {"name": "long_text", "type": "LongText"}
+       ],
+       "records": [
+         [
+           1,
+           true,
+           -128,
+           255,
+           -32768,
+           65535,
+           -2147483648,
+           4294967295,
+           -9223372036854775808,
+           9223372036854775807,
+           -1.0,
+           1.0,
+           1589102411.9,
+           "short",
+           "text",
+           "long"
+         ],
+         [
+           2,
+           false,
+           -10,
+           10,
+           -20,
+           20,
+           -30,
+           30,
+           -40,
+           40,
+           -5.5,
+           5.5,
+           1589102411,
+           "short2",
+           "text2",
+           "long2"
+         ]
+       ]
+     }
+   }'::jsonb);

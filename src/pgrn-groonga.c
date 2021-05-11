@@ -6,6 +6,7 @@
 #include "pgrn-wal.h"
 
 #include <catalog/catalog.h>
+#include <catalog/pg_type.h>
 #include <miscadmin.h>
 
 bool PGrnIsLZ4Available;
@@ -528,4 +529,125 @@ PGrnRemoveColumns(grn_obj *table)
 	} GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
+}
+
+grn_id
+PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
+{
+	grn_id typeID = GRN_ID_NIL;
+	unsigned char typeFlags = 0;
+
+	switch (pgTypeID)
+	{
+	case BOOLOID:
+		typeID = GRN_DB_BOOL;
+		break;
+	case INT2OID:
+		typeID = GRN_DB_INT16;
+		break;
+	case INT4OID:
+		typeID = GRN_DB_INT32;
+		break;
+	case INT8OID:
+		typeID = GRN_DB_INT64;
+		break;
+	case FLOAT4OID:
+		typeID = GRN_DB_FLOAT32;
+		break;
+	case FLOAT8OID:
+		typeID = GRN_DB_FLOAT;
+		break;
+	case TIMESTAMPOID:
+	case TIMESTAMPTZOID:
+		typeID = GRN_DB_TIME;
+		break;
+	case TEXTOID:
+	case XMLOID:
+		typeID = GRN_DB_LONG_TEXT;
+		break;
+	case VARCHAROID:
+		typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
+		break;
+#ifdef NOT_USED
+	case POINTOID:
+		typeID = GRN_DB_TOKYO_GEO_POINT or GRN_DB_WGS84_GEO_POINT;
+		break;
+#endif
+	case INT4ARRAYOID:
+		typeID = GRN_DB_INT32;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
+	case VARCHARARRAYOID:
+		typeID = GRN_DB_SHORT_TEXT;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
+	case TEXTARRAYOID:
+		typeID = GRN_DB_LONG_TEXT;
+		typeFlags |= GRN_OBJ_VECTOR;
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("[pgroonga][type][postgresql->groonga] "
+						"unsupported type: %u", pgTypeID)));
+		break;
+	}
+
+	if (flags)
+	{
+		*flags = typeFlags;
+	}
+
+	return typeID;
+}
+
+/* TODO: Support vector */
+Oid
+PGrnGrnTypeToPGType(grn_id typeID)
+{
+	Oid pgTypeID = InvalidOid;
+
+	switch (typeID)
+	{
+	case GRN_DB_BOOL:
+		pgTypeID = BOOLOID;
+		break;
+	case GRN_DB_INT8:
+	case GRN_DB_UINT8:
+	case GRN_DB_INT16:
+		pgTypeID = INT2OID;
+		break;
+	case GRN_DB_UINT16:
+	case GRN_DB_INT32:
+		pgTypeID = INT4OID;
+		break;
+	case GRN_DB_UINT32:
+	case GRN_DB_INT64:
+	case GRN_DB_UINT64:
+		pgTypeID = INT8OID;
+		break;
+	case GRN_DB_FLOAT32:
+		pgTypeID = FLOAT4OID;
+		break;
+	case GRN_DB_FLOAT:
+		pgTypeID = FLOAT8OID;
+		break;
+	case GRN_DB_TIME:
+		pgTypeID = TIMESTAMPOID;
+		break;
+	case GRN_DB_SHORT_TEXT:
+	case GRN_DB_TEXT:
+	case GRN_DB_LONG_TEXT:
+		pgTypeID = TEXTOID;
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("[pgroonga][type][groonga->postgresql] "
+						"unsupported type: %d",
+						typeID)));
+		break;
+	}
+
+	return pgTypeID;
 }
