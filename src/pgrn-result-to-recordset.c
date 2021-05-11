@@ -7,6 +7,7 @@
 #include "pgrn-pg.h"
 
 #include <access/tupdesc.h>
+#include <catalog/pg_type.h>
 #include <funcapi.h>
 #include <utils/builtins.h>
 #include <utils/jsonb.h>
