@@ -300,6 +300,13 @@ CREATE FUNCTION pgroonga_result_to_recordset(result jsonb)
 	IMMUTABLE
 	STRICT;
 
+CREATE FUNCTION pgroonga_result_to_jsonb_objects(result jsonb)
+	RETURNS jsonb
+	AS 'MODULE_PATHNAME', 'pgroonga_result_to_jsonb_objects'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT;
+
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)

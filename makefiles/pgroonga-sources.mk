@@ -26,6 +26,7 @@ SRCS =						\
 	src/pgrn-query-expand.c			\
 	src/pgrn-query-extract-keywords.c	\
 	src/pgrn-result-converter.c		\
+	src/pgrn-result-to-jsonb-objects.c	\
 	src/pgrn-result-to-recordset.c		\
 	src/pgrn-snippet-html.c			\
 	src/pgrn-sequential-search.c		\

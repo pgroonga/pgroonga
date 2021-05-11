@@ -12,8 +12,8 @@ typedef struct
 {
 	const char *tag;
 	JsonbIterator *iterator;
-	TupleDesc desc;
 	grn_command_version commandVersion;
+	TupleDesc desc;
 } PGrnResultConverter;
 
 void
@@ -24,3 +24,5 @@ void
 PGrnResultConverterBuildTupleDesc(PGrnResultConverter *converter);
 HeapTuple
 PGrnResultConverterBuildTuple(PGrnResultConverter *converter);
+Jsonb *
+PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter);

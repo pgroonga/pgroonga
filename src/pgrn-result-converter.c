@@ -23,8 +23,8 @@ PGrnResultConverterInit(PGrnResultConverter *converter,
 {
 	converter->tag = tag;
 	converter->iterator = JsonbIteratorInit(&(jsonb->root));
-	converter->desc = NULL;
 	converter->commandVersion = GRN_COMMAND_VERSION_DEFAULT;
+	converter->desc = NULL;
 }
 
 static void
@@ -662,3 +662,69 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 	}
 }
 
+Jsonb *
+PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
+{
+	JsonbParseState *state = NULL;
+
+	PGrnResultConverterBuildTupleDesc(converter);
+
+	pushJsonbValue(&state, WJB_BEGIN_ARRAY, NULL);
+	while (true)
+	{
+		JsonbValue record;
+		JsonbIteratorToken token;
+		int i = 0;
+		JsonbValue element;
+
+		token = JsonbIteratorNext(&(converter->iterator), &record, false);
+		if (token == WJB_END_ARRAY)
+			break;
+		if (token != WJB_BEGIN_ARRAY)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_DATA_EXCEPTION),
+					 errmsg("[pgroonga]%s[%d][select] "
+							"record must be array: %s",
+							converter->tag,
+							converter->commandVersion,
+							PGrnJSONBIteratorTokenToString(token))));
+		}
+
+		pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
+		while (true)
+		{
+			token = JsonbIteratorNext(&(converter->iterator), &element, false);
+			if (token == WJB_END_ARRAY)
+				break;
+			if (token != WJB_ELEM)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+						 errmsg("[pgroonga]%s[%d][select] "
+								"nested element value isn't supported yet: "
+								"%s",
+								converter->tag,
+								converter->commandVersion,
+								PGrnJSONBIteratorTokenToString(token))));
+			}
+			{
+				Form_pg_attribute attribute = TupleDescAttr(converter->desc, i);
+				JsonbValue key;
+				key.type = jbvString;
+				key.val.string.val = NameStr(attribute->attname);
+				key.val.string.len = strlen(key.val.string.val);
+				pushJsonbValue(&state, WJB_KEY, &key);
+			}
+			pushJsonbValue(&state, WJB_VALUE, &element);
+			i++;
+		}
+		pushJsonbValue(&state, WJB_END_OBJECT, NULL);
+	}
+
+	{
+		JsonbValue *objects;
+		objects = pushJsonbValue(&state, WJB_END_ARRAY, NULL);
+		return JsonbValueToJsonb(objects);
+	}
+}
