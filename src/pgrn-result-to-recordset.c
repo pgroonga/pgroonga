@@ -6,6 +6,7 @@
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
 
+#include <access/htup_details.h>
 #include <access/tupdesc.h>
 #include <catalog/pg_type.h>
 #include <funcapi.h>
