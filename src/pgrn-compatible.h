@@ -190,3 +190,11 @@ typedef char *PGrnStringOptionValue;
 					   (desc),						\
 					   (default_value))
 #endif
+
+#if PG_VERSION_NUM >= 120000
+#	define PGrnCreateTemplateTupleDesc(natts)	\
+	CreateTemplateTupleDesc((natts))
+#else
+#	define PGrnCreateTemplateTupleDesc(natts)	\
+	CreateTemplateTupleDesc((natts), false)
+#endif

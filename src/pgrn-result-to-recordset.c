@@ -6,6 +6,7 @@
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
 
+#include <access/tupdesc.h>
 #include <funcapi.h>
 #include <utils/builtins.h>
 #include <utils/jsonb.h>
@@ -200,7 +201,7 @@ PGrnResultToRecordsetBuildTupleDesc1(PGrnResultToRecordsetData *data)
 						PGrnJSONBIteratorTokenToString(token))));
 	}
 
-	data->desc = CreateTemplateTupleDesc(value.val.array.nElems);
+	data->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
 	{
 		AttrNumber i = 1;
 		while (true)
@@ -469,7 +470,7 @@ PGrnResultToRecordsetBuildTupleDesc3(PGrnResultToRecordsetData *data)
 								"body.columns must be array: %s",
 								PGrnJSONBIteratorTokenToString(token))));
 			}
-			data->desc = CreateTemplateTupleDesc(value.val.array.nElems);
+			data->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
 			{
 				AttrNumber i = 1;
 				while (true)
