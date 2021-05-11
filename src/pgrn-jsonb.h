@@ -1,11 +1,15 @@
 #pragma once
 
 #include <postgres.h>
+
 #include <access/skey.h>
+#include <utils/jsonb.h>
 
 #include "pgrn-create.h"
 #include "pgrn-search.h"
 #include "pgrn-wal.h"
+
+const char *PGrnJSONBIteratorTokenToString(JsonbIteratorToken token);
 
 void PGrnInitializeJSONB(void);
 void PGrnFinalizeJSONB(void);

@@ -4,6 +4,7 @@
 
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
+#include "pgrn-jsonb.h"
 #include "pgrn-pg.h"
 
 #include <access/htup_details.h>
@@ -11,7 +12,6 @@
 #include <catalog/pg_type.h>
 #include <funcapi.h>
 #include <utils/builtins.h>
-#include <utils/jsonb.h>
 
 static grn_ctx *ctx = &PGrnContext;
 
@@ -25,32 +25,6 @@ typedef struct
 	TupleDesc desc;
 	grn_command_version commandVersion;
 } PGrnResultToRecordsetData;
-
-static const char *
-PGrnJSONBIteratorTokenToString(JsonbIteratorToken token)
-{
-	switch (token)
-	{
-	case WJB_DONE:
-		return "done";
-	case WJB_KEY:
-		return "key";
-	case WJB_VALUE:
-		return "value";
-	case WJB_ELEM:
-		return "element";
-	case WJB_BEGIN_ARRAY:
-		return "begin-array";
-	case WJB_END_ARRAY:
-		return "end-array";
-	case WJB_BEGIN_OBJECT:
-		return "begin-object";
-	case WJB_END_OBJECT:
-		return "end-object";
-	default:
-		return "unknown";
-	}
-}
 
 static void
 PGrnResultToRecordsetBuildTupleDesc1FillAttribute(

@@ -11,7 +11,6 @@
 
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
-#include <utils/jsonb.h>
 #include <utils/lsyscache.h>
 
 #include <groonga.h>
@@ -69,6 +68,32 @@ static const unsigned int PGRN_JSON_GENERATE_PATH_USE_DOT_STYLE = 1 << 2;
 static grn_obj *tmpPathsTable = NULL;
 static grn_obj *tmpTypesTable = NULL;
 static grn_obj *tmpValuesTable = NULL;
+
+const char *
+PGrnJSONBIteratorTokenToString(JsonbIteratorToken token)
+{
+	switch (token)
+	{
+	case WJB_DONE:
+		return "done";
+	case WJB_KEY:
+		return "key";
+	case WJB_VALUE:
+		return "value";
+	case WJB_ELEM:
+		return "element";
+	case WJB_BEGIN_ARRAY:
+		return "begin-array";
+	case WJB_END_ARRAY:
+		return "end-array";
+	case WJB_BEGIN_OBJECT:
+		return "begin-object";
+	case WJB_END_OBJECT:
+		return "end-object";
+	default:
+		return "unknown";
+	}
+}
 
 grn_obj *
 PGrnJSONBLookupValuesTable(Relation index,
