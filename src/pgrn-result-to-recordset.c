@@ -565,7 +565,7 @@ PGrnResultToRecordsetBuildTupleDesc(PGrnResultToRecordsetData *data)
 }
 
 static HeapTuple
-PGrnResultToRecordsetBuildRecord1(PGrnResultToRecordsetData *data)
+PGrnResultToRecordsetBuildRecord(PGrnResultToRecordsetData *data)
 {
 	JsonbValue record;
 	JsonbIteratorToken token;
@@ -576,8 +576,9 @@ PGrnResultToRecordsetBuildRecord1(PGrnResultToRecordsetData *data)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga][result-to-recordset][1][select] "
+				 errmsg("[pgroonga][result-to-recordset][%d][select] "
 						"record must be array: %s",
+						data->commandVersion,
 						PGrnJSONBIteratorTokenToString(token))));
 	}
 
@@ -596,8 +597,9 @@ PGrnResultToRecordsetBuildRecord1(PGrnResultToRecordsetData *data)
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						 errmsg("[pgroonga][result-to-recordset][1][select] "
+						 errmsg("[pgroonga][result-to-recordset][%d][select] "
 								"nested element value isn't supported yet: %s",
+								data->commandVersion,
 								PGrnJSONBIteratorTokenToString(token))));
 			}
 			switch (element.type)
@@ -662,29 +664,6 @@ PGrnResultToRecordsetBuildRecord1(PGrnResultToRecordsetData *data)
 			i++;
 		}
 		return heap_form_tuple(data->context->tuple_desc, values, nulls);
-	}
-}
-
-static HeapTuple
-PGrnResultToRecordsetBuildRecord3(PGrnResultToRecordsetData *data)
-{
-	return PGrnResultToRecordsetBuildRecord1(data);
-}
-
-static HeapTuple
-PGrnResultToRecordsetBuildRecord(PGrnResultToRecordsetData *data)
-{
-	if (data->commandVersion == GRN_COMMAND_VERSION_1)
-	{
-		return PGrnResultToRecordsetBuildRecord1(data);
-	}
-	else if (data->commandVersion == GRN_COMMAND_VERSION_3)
-	{
-		return PGrnResultToRecordsetBuildRecord3(data);
-	}
-	else
-	{
-		return NULL;
 	}
 }
 
