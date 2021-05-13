@@ -198,3 +198,7 @@ typedef char *PGrnStringOptionValue;
 #	define PGrnCreateTemplateTupleDesc(natts)	\
 	CreateTemplateTupleDesc((natts), false)
 #endif
+
+#if PG_VERSION_NUM < 110000
+#	define PG_RETURN_JSONB_P(x) PG_RETURN_JSONB(x)
+#endif
