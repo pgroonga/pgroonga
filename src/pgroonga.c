@@ -1778,6 +1778,31 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 	PG_RETURN_TEXT_P(tableName);
 }
 
+static void
+PGrnCommandReceive(grn_ctx *ctx,
+				   int flags,
+				   void *user_data)
+{
+	grn_rc rc = ctx->rc;
+	char *chunk;
+	unsigned int chunkSize;
+	int recv_flags;
+	grn_ctx_recv(ctx, &chunk, &chunkSize, &recv_flags);
+	GRN_TEXT_PUT(ctx, &(buffers->body), chunk, chunkSize);
+
+	if (!(flags & GRN_CTX_TAIL)) {
+		return;
+	}
+
+	grn_output_envelope(ctx,
+						rc,
+						&(buffers->head),
+						&(buffers->body),
+						&(buffers->foot),
+						NULL,
+						0);
+}
+
 /**
  * pgroonga.command(groongaCommand text) : text
  * pgroonga.command(groongaCommandName text, arguments text[]) : text
@@ -1786,9 +1811,11 @@ Datum
 pgroonga_command(PG_FUNCTION_ARGS)
 {
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
-	grn_rc rc;
-	int flags = 0;
 	text *result;
+
+	GRN_BULK_REWIND(&(buffers->head));
+	GRN_BULK_REWIND(&(buffers->body));
+	GRN_BULK_REWIND(&(buffers->foot));
 
 	if (PG_NARGS() == 2)
 	{
@@ -1838,6 +1865,7 @@ pgroonga_command(PG_FUNCTION_ARGS)
 								   VARSIZE_ANY_EXHDR(value),
 								   command);
 		}
+		grn_ctx_recv_handler_set(ctx, PGrnCommandReceive, NULL);
 		grn_ctx_send(ctx,
 					 GRN_TEXT_VALUE(command),
 					 GRN_TEXT_LEN(command),
@@ -1845,30 +1873,13 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	}
 	else
 	{
+		grn_ctx_recv_handler_set(ctx, PGrnCommandReceive, NULL);
 		grn_ctx_send(ctx,
 					 VARDATA_ANY(groongaCommand),
 					 VARSIZE_ANY_EXHDR(groongaCommand),
 					 0);
 	}
-	rc = ctx->rc;
-
-	GRN_BULK_REWIND(&(buffers->body));
-	do {
-		char *chunk;
-		unsigned int chunkSize;
-		grn_ctx_recv(ctx, &chunk, &chunkSize, &flags);
-		GRN_TEXT_PUT(ctx, &(buffers->body), chunk, chunkSize);
-	} while ((flags & GRN_CTX_MORE));
-
-	GRN_BULK_REWIND(&(buffers->head));
-	GRN_BULK_REWIND(&(buffers->foot));
-	grn_output_envelope(ctx,
-						rc,
-						&(buffers->head),
-						&(buffers->body),
-						&(buffers->foot),
-						NULL,
-						0);
+	grn_ctx_recv_handler_set(ctx, NULL, NULL);
 
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
 	GRN_TEXT_PUT(ctx, &(buffers->general),
