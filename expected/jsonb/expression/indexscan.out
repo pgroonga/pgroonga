@@ -1,0 +1,28 @@
+CREATE TABLE logs (
+  record jsonb,
+  group_id int
+);
+CREATE INDEX pgroonga_index ON logs
+  USING pgroonga ((record->'host'))
+  WHERE group_id = 1;
+INSERT INTO logs VALUES ('{"host": "www"}',      1);
+INSERT INTO logs VALUES ('{"message": "error"}', 1);
+INSERT INTO logs VALUES ('{"host": "www"}',      2);
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT * FROM logs WHERE group_id = 1;
+               QUERY PLAN                
+-----------------------------------------
+ Index Scan using pgroonga_index on logs
+(1 row)
+
+SELECT * FROM logs WHERE group_id = 1;
+        record        | group_id 
+----------------------+----------
+ {"host": "www"}      |        1
+ {"message": "error"} |        1
+(2 rows)
+
+DROP TABLE logs;
