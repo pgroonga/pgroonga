@@ -1500,10 +1500,6 @@ PGrnJSONBInsert(Relation index,
 	uint32_t recordSize = 0; /* always 0 */
 	PGrnJSONBInsertData data;
 	unsigned int nthAttribute = 0;
-	Jsonb *jsonb;
-
-	if (isnull[nthAttribute])
-		return recordSize;
 
 	data.index = index;
 	data.isForFullTextSearchOnly =
@@ -1520,8 +1516,11 @@ PGrnJSONBInsert(Relation index,
 	}
 	PGrnJSONBInsertDataInit(&data);
 
-	jsonb = DatumGetJsonbP(values[nthAttribute]);
-	PGrnJSONBInsertJSONB(&data, jsonb);
+	if (!isnull[nthAttribute])
+	{
+		Jsonb *jsonb = DatumGetJsonbP(values[nthAttribute]);
+		PGrnJSONBInsertJSONB(&data, jsonb);
+	}
 
 	PGrnJSONBInsertRecord(index,
 						  sourcesTable,
