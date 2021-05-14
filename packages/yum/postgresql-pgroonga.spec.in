@@ -95,6 +95,9 @@ EOF
 %endif
 
 %changelog
+* Fri May 14 2021 Sutou Kouhei <kou@clear-code.com> - 2.3.0-1
+- New upstream release.
+
 * Sat Apr 03 2021 Sutou Kouhei <kou@clear-code.com> - 2.2.9-1
 - New upstream release.
 
