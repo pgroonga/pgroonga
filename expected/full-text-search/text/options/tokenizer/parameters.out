@@ -14,7 +14,7 @@ SELECT jsonb_pretty(
                      'sort_keys', '_key',
                      'output_columns', '_key',
                      'command_version', '3'
-                   ])::jsonb->1->'records'
+                   ])::jsonb->'body'->'records'
 );
  jsonb_pretty  
 ---------------
