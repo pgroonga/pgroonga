@@ -1,0 +1,25 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL11PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("11", "-pgdg")
+  end
+
+  def apt_targets_default
+    [
+      "ubuntu-bionic",
+      "ubuntu-bionic-arm64",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL11PGDGPGroongaPackageTask.new
+task.define
