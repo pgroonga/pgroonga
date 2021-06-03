@@ -2043,33 +2043,33 @@ PGrnJSONBRemoveUnusedTables(Oid relationFileNodeID)
 			return;
 	}
 
-		PGrnRemoveJSONValueLexicon("FullTextSearch", relationFileNodeID);
-		PGrnRemoveJSONValueLexicon("String", relationFileNodeID);
-		PGrnRemoveJSONValueLexicon("Number", relationFileNodeID);
-		PGrnRemoveJSONValueLexicon("Boolean", relationFileNodeID);
-		PGrnRemoveJSONValueLexicon("Size", relationFileNodeID);
+	PGrnRemoveJSONValueLexicon("FullTextSearch", relationFileNodeID);
+	PGrnRemoveJSONValueLexicon("String", relationFileNodeID);
+	PGrnRemoveJSONValueLexicon("Number", relationFileNodeID);
+	PGrnRemoveJSONValueLexicon("Boolean", relationFileNodeID);
+	PGrnRemoveJSONValueLexicon("Size", relationFileNodeID);
 
-		{
-			char name[GRN_TABLE_MAX_KEY_SIZE];
+	{
+		char name[GRN_TABLE_MAX_KEY_SIZE];
 
-			snprintf(name, sizeof(name),
-					 PGrnJSONPathsTableNameFormat ".%s",
-					 relationFileNodeID, 0, PGrnIndexColumnName);
-			PGrnRemoveObject(name);
+		snprintf(name, sizeof(name),
+				 PGrnJSONPathsTableNameFormat ".%s",
+				 relationFileNodeID, 0, PGrnIndexColumnName);
+		PGrnRemoveObject(name);
 
-			snprintf(name, sizeof(name),
-					 PGrnJSONValuesTableNameFormat,
-					 relationFileNodeID, 0);
-			PGrnRemoveObject(name);
+		snprintf(name, sizeof(name),
+				 PGrnJSONValuesTableNameFormat,
+				 relationFileNodeID, 0);
+		PGrnRemoveObject(name);
 
-			snprintf(name, sizeof(name),
-					 PGrnJSONPathsTableNameFormat,
-					 relationFileNodeID, 0);
-			PGrnRemoveObject(name);
+		snprintf(name, sizeof(name),
+				 PGrnJSONPathsTableNameFormat,
+				 relationFileNodeID, 0);
+		PGrnRemoveObject(name);
 
-			snprintf(name, sizeof(name),
-					 PGrnJSONTypesTableNameFormat,
-					 relationFileNodeID, 0);
-			PGrnRemoveObject(name);
-		}
+		snprintf(name, sizeof(name),
+				 PGrnJSONTypesTableNameFormat,
+				 relationFileNodeID, 0);
+		PGrnRemoveObject(name);
+	}
 }
