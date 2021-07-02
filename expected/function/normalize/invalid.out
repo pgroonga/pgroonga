@@ -1,2 +1,2 @@
 SELECT pgroonga_normalize('aBcDe 123', 'Nonexistent');
-ERROR:  pgroonga: normalize: failed to set normalizers: <Nonexistent>: [info][set][normalizer][(anonymous)] failed to parse normalizers: <Nonexistent>: Syntax error: <Nonexistent||>: [expr][parse] 
+ERROR:  pgroonga: normalize: failed to set normalizers: <Nonexistent>: [info][set][normalizers][(anonymous)] failed to parse normalizers: <Nonexistent>: Syntax error: <Nonexistent||>: [expr][parse] 
