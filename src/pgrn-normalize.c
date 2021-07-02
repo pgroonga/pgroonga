@@ -8,8 +8,8 @@
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *lexicon = NULL;
-static grn_obj normalizer;
-static grn_obj normalizerBuffer;
+static grn_obj normalizers;
+static grn_obj normalizersBuffer;
 
 PGRN_FUNCTION_INFO_V1(pgroonga_normalize);
 
@@ -20,20 +20,20 @@ PGrnInitializeNormalize(void)
 							   GRN_OBJ_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
-	GRN_TEXT_INIT(&normalizer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&normalizerBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&normalizers, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&normalizersBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 }
 
 void
 PGrnFinalizeNormalize(void)
 {
-	GRN_OBJ_FIN(ctx, &normalizerBuffer);
-	GRN_OBJ_FIN(ctx, &normalizer);
+	GRN_OBJ_FIN(ctx, &normalizersBuffer);
+	GRN_OBJ_FIN(ctx, &normalizers);
 	grn_obj_close(ctx, lexicon);
 }
 
 /**
- * pgroonga_normalize(target text, normalizerName text) : text
+ * pgroonga_normalize(target text, normalizers text) : text
  */
 Datum
 pgroonga_normalize(PG_FUNCTION_ARGS)
@@ -43,49 +43,49 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 	unsigned int lengthInBytes;
 	const char *normalized;
 	text *normalizedTarget;
+	const char *rawNormalizersData;
+	size_t rawNormalizersLength;
 
 	target = PG_GETARG_TEXT_PP(0);
 
 	if (PG_NARGS() == 2)
 	{
-		text *rawNormalizer;
-
-		rawNormalizer = PG_GETARG_TEXT_PP(1);
-		if (!(VARSIZE_ANY_EXHDR(rawNormalizer) == GRN_TEXT_LEN(&normalizer) &&
-			  memcmp(VARDATA_ANY(rawNormalizer),
-					 GRN_TEXT_VALUE(&normalizer),
-					 GRN_TEXT_LEN(&normalizer)) == 0))
-		{
-			GRN_TEXT_SET(ctx,
-						 &normalizerBuffer,
-						 VARDATA_ANY(rawNormalizer),
-						 VARSIZE_ANY_EXHDR(rawNormalizer));
-			grn_obj_set_info(ctx,
-							 lexicon,
-							 GRN_INFO_NORMALIZER,
-							 &normalizerBuffer);
-			PGrnCheck("normalize: failed to set normalizer: <%.*s>",
-					  (int) GRN_TEXT_LEN(&normalizerBuffer),
-					  GRN_TEXT_VALUE(&normalizerBuffer));
-			GRN_TEXT_SET(ctx,
-						 &normalizer,
-						 GRN_TEXT_VALUE(&normalizerBuffer),
-						 GRN_TEXT_LEN(&normalizerBuffer));
-		}
-		string = grn_string_open(ctx,
-								 VARDATA_ANY(target),
-								 VARSIZE_ANY_EXHDR(target),
-								 lexicon,
-								 0);
+		text *rawNormalizers = PG_GETARG_TEXT_PP(1);
+		rawNormalizersData = VARDATA_ANY(rawNormalizers);
+		rawNormalizersLength = VARSIZE_ANY_EXHDR(rawNormalizers);
 	}
 	else
 	{
-		string = grn_string_open(ctx,
-								 VARDATA_ANY(target),
-								 VARSIZE_ANY_EXHDR(target),
-								 PGrnLookup(PGRN_DEFAULT_NORMALIZER, ERROR),
-								 0);
+		rawNormalizersData = PGRN_DEFAULT_NORMALIZERS;
+		rawNormalizersLength = strlen(PGRN_DEFAULT_NORMALIZERS);
 	}
+
+	if (!(rawNormalizersLength == GRN_TEXT_LEN(&normalizers) &&
+		  memcmp(rawNormalizersData,
+				 GRN_TEXT_VALUE(&normalizers),
+				 GRN_TEXT_LEN(&normalizers)) == 0))
+	{
+		GRN_TEXT_SET(ctx,
+					 &normalizersBuffer,
+					 rawNormalizersData,
+					 rawNormalizersLength);
+		grn_obj_set_info(ctx,
+						 lexicon,
+						 GRN_INFO_NORMALIZER,
+						 &normalizersBuffer);
+		PGrnCheck("normalize: failed to set normalizers: <%.*s>",
+				  (int) GRN_TEXT_LEN(&normalizersBuffer),
+				  GRN_TEXT_VALUE(&normalizersBuffer));
+		GRN_TEXT_SET(ctx,
+					 &normalizers,
+					 GRN_TEXT_VALUE(&normalizersBuffer),
+					 GRN_TEXT_LEN(&normalizersBuffer));
+	}
+	string = grn_string_open(ctx,
+							 VARDATA_ANY(target),
+							 VARSIZE_ANY_EXHDR(target),
+							 lexicon,
+							 0);
 	PGrnCheck("normalize: failed to open normalized string");
 
 	grn_string_get_normalized(ctx,

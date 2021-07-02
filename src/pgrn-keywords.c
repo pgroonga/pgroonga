@@ -10,6 +10,7 @@
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
+static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj keywordIDs;
 
 void
@@ -26,7 +27,7 @@ PGrnFinalizeKeywords(void)
 
 static bool
 PGrnKeywordsResolveNormalizer(const char *indexName,
-							  grn_obj **normalizer,
+							  grn_obj **normalizers,
 							  Oid *previousIndexID)
 {
 	if (!indexName || indexName[0] == '\0')
@@ -50,9 +51,10 @@ PGrnKeywordsResolveNormalizer(const char *indexName,
 		grn_table_flags flags = 0;
 		Relation index = PGrnPGResolveIndexName(indexName);
 		PGrnApplyOptionValues(index,
+							  -1,
 							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-							  normalizer, PGRN_DEFAULT_NORMALIZER,
+							  normalizers, PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
 							  &flags);
 		RelationClose(index);
@@ -65,21 +67,22 @@ PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 						  const char *indexName,
 						  Oid *previousIndexID)
 {
-	grn_obj *normalizer = NULL;
-	if (!PGrnKeywordsResolveNormalizer(indexName, &normalizer, previousIndexID))
+	grn_obj *normalizers = NULL;
+	if (!PGrnKeywordsResolveNormalizer(indexName, &normalizers, previousIndexID))
 		return;
 
 	if (grn_table_size(ctx, keywordsTable) > 0)
 		grn_table_truncate(ctx, keywordsTable);
 
-	if (!normalizer)
+	if (!normalizers)
 	{
-		normalizer = grn_ctx_get(ctx, "NormalizerAuto", -1);
+		normalizers = &(buffers->normalizers);
+		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
 	}
 	grn_obj_set_info(ctx,
 					 keywordsTable,
-					 GRN_INFO_NORMALIZER,
-					 normalizer);
+					 GRN_INFO_NORMALIZERS,
+					 normalizers);
 }
 
 void

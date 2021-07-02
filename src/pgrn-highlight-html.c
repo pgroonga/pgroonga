@@ -186,7 +186,7 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 {
 	Oid oid;
 	grn_obj *tokenizer = NULL;
-	grn_obj *normalizer = NULL;
+	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
 	grn_table_flags flags = 0;
 
@@ -211,9 +211,10 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 	{
 		Relation index = PGrnPGResolveIndexName(indexName);
 		PGrnApplyOptionValues(index,
+							  -1,
 							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-							  &normalizer, PGRN_DEFAULT_NORMALIZER,
+							  &normalizers, PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
 							  &flags);
 		RelationClose(index);
@@ -226,7 +227,7 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 							  flags,
 							  grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							  tokenizer,
-							  normalizer,
+							  normalizers,
 							  tokenFilters);
 	grn_highlighter_set_lexicon(ctx, highlighter, lexicon);
 	PGrnCheck("highlight-html: failed to set lexicon");

@@ -10,8 +10,8 @@
 #ifndef PGRN_DEFAULT_TOKENIZER
 #  define PGRN_DEFAULT_TOKENIZER "TokenBigram"
 #endif
-#ifndef PGRN_DEFAULT_NORMALIZER
-#  define PGRN_DEFAULT_NORMALIZER "NormalizerAuto"
+#ifndef PGRN_DEFAULT_NORMALIZERS
+#  define PGRN_DEFAULT_NORMALIZERS "NormalizerAuto"
 #endif
 
 /* Groonga strategy types */

@@ -117,7 +117,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	grn_obj *type;
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
-	grn_obj *normalizer = NULL;
+	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
 
 	switch (data->attributeTypeID)
@@ -136,7 +136,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		data->forPrefixSearch)
 	{
 		const char *tokenizerName = NULL;
-		const char *normalizerName = PGRN_DEFAULT_NORMALIZER;
+		const char *normalizersName = PGRN_DEFAULT_NORMALIZERS;
 		PGrnOptionUseCase useCase = PGRN_OPTION_USE_CASE_UNKNOWN;
 
 		if (data->forFullTextSearch)
@@ -156,9 +156,10 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		}
 
 		PGrnApplyOptionValues(data->index,
+							  data->i,
 							  useCase,
 							  &tokenizer, tokenizerName,
-							  &normalizer, normalizerName,
+							  &normalizers, normalizersName,
 							  &tokenFilters,
 							  &flags);
 	}
@@ -175,7 +176,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  flags,
 							  type,
 							  tokenizer,
-							  normalizer,
+							  normalizers,
 							  tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 }

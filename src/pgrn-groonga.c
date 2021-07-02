@@ -244,7 +244,7 @@ PGrnCreateTable(Relation index,
 				grn_table_flags flags,
 				grn_obj *type,
 				grn_obj *tokenizer,
-				grn_obj *normalizer,
+				grn_obj *normalizers,
 				grn_obj *tokenFilters)
 {
 	unsigned int nameSize = 0;
@@ -258,7 +258,7 @@ PGrnCreateTable(Relation index,
 								   flags,
 								   type,
 								   tokenizer,
-								   normalizer,
+								   normalizers,
 								   tokenFilters);
 }
 
@@ -269,7 +269,7 @@ PGrnCreateTableWithSize(Relation index,
 						grn_table_flags flags,
 						grn_obj *type,
 						grn_obj *tokenizer,
-						grn_obj *normalizer,
+						grn_obj *normalizers,
 						grn_obj *tokenFilters)
 {
 	const char *path = NULL;
@@ -311,8 +311,8 @@ PGrnCreateTableWithSize(Relation index,
 			  (int)nameSize, name);
 	if (tokenizer)
 		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
-	if (normalizer)
-		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZER, normalizer);
+	if (normalizers)
+		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZERS, normalizers);
 	if (tokenFilters)
 		grn_obj_set_info(ctx, table, GRN_INFO_TOKEN_FILTERS, tokenFilters);
 
@@ -322,7 +322,7 @@ PGrnCreateTableWithSize(Relation index,
 					   flags,
 					   type,
 					   tokenizer,
-					   normalizer,
+					   normalizers,
 					   tokenFilters);
 
 	return table;

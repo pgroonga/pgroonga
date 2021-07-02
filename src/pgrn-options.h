@@ -16,6 +16,7 @@ void PGrnInitializeOptions(void);
 void PGrnFinalizeOptions(void);
 
 void PGrnApplyOptionValues(Relation index,
+						   int i,
 						   PGrnOptionUseCase useCase,
 						   grn_obj **tokenizer,
 						   const char *defaultTokenizerName,

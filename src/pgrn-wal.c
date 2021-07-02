@@ -804,7 +804,7 @@ PGrnWALCreateTable(Relation index,
 				   grn_table_flags flags,
 				   grn_obj *type,
 				   grn_obj *tokenizer,
-				   grn_obj *normalizer,
+				   grn_obj *normalizers,
 				   grn_obj *tokenFilters)
 {
 #ifdef PGRN_SUPPORT_WAL
@@ -838,8 +838,8 @@ PGrnWALCreateTable(Relation index,
 	msgpack_pack_cstr(packer, "tokenizer");
 	msgpack_pack_grn_obj(packer, tokenizer);
 
-	msgpack_pack_cstr(packer, "normalizer");
-	msgpack_pack_grn_obj(packer, normalizer);
+	msgpack_pack_cstr(packer, "normalizers");
+	msgpack_pack_grn_obj(packer, normalizers);
 
 	msgpack_pack_cstr(packer, "token_filters");
 	msgpack_pack_grn_obj(packer, tokenFilters);
@@ -1589,7 +1589,7 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 	grn_table_flags flags = 0;
 	grn_obj *type = NULL;
 	grn_obj *tokenizer = NULL;
-	grn_obj *normalizer = NULL;
+	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
 	uint32_t i;
 
@@ -1616,11 +1616,12 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 														kv,
 														&(buffers->tokenizer));
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "normalizer"))
+		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "normalizer") ||
+				 PGrnWALApplyKeyEqual(context, &(kv->key), "normalizers"))
 		{
-			normalizer = PGrnWALApplyValueGetTableModule(context,
-														 kv,
-														 &(buffers->normalizer));
+			normalizers = PGrnWALApplyValueGetTableModule(context,
+														  kv,
+														  &(buffers->normalizers));
 		}
 		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "token_filters"))
 		{
@@ -1636,7 +1637,7 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 							flags,
 							type,
 							tokenizer,
-							normalizer,
+							normalizers,
 							tokenFilters);
 }
 

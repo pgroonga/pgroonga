@@ -10,6 +10,9 @@
 #include "pgrn-wal.h"
 
 const char *PGrnJSONBIteratorTokenToString(JsonbIteratorToken token);
+const char *PGrnJSONBValueTypeToString(enum jbvType type);
+
+Jsonb *PGrnJSONBParse(const char *jsonString);
 
 void PGrnInitializeJSONB(void);
 void PGrnFinalizeJSONB(void);

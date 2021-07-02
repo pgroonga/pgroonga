@@ -95,6 +95,40 @@ PGrnJSONBIteratorTokenToString(JsonbIteratorToken token)
 	}
 }
 
+const char *
+PGrnJSONBValueTypeToString(enum jbvType type)
+{
+	switch (type)
+	{
+	case jbvNull:
+		return "null";
+	case jbvString:
+		return "string";
+	case jbvNumeric:
+		return "numeric";
+	case jbvBool:
+		return "bool";
+	case jbvArray:
+		return "array";
+	case jbvObject:
+		return "object";
+	case jbvBinary:
+		return "binary";
+	case jbvDatetime:
+		return "datetime";
+	default:
+		return "unknown";
+	}
+}
+
+Jsonb *
+PGrnJSONBParse(const char *jsonString)
+{
+	Datum jsonbDatum =
+		DirectFunctionCall1(jsonb_in, CStringGetDatum(jsonString));
+	return DatumGetJsonbP(jsonbDatum);
+}
+
 grn_obj *
 PGrnJSONBLookupValuesTable(Relation index,
 						   unsigned int nthAttribute,
@@ -920,13 +954,14 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	grn_obj *type;
 	grn_obj *lexicon;
 	grn_obj *tokenizer = NULL;
-	grn_obj *normalizer = NULL;
+	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
 
 	PGrnApplyOptionValues(data->index,
+						  data->i,
 						  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 						  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-						  &normalizer, PGRN_DEFAULT_NORMALIZER,
+						  &normalizers, PGRN_DEFAULT_NORMALIZERS,
 						  &tokenFilters,
 						  &flags);
 
@@ -942,7 +977,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 							  flags,
 							  type,
 							  tokenizer,
-							  normalizer,
+							  normalizers,
 							  tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 

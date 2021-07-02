@@ -14,7 +14,7 @@ typedef struct PGrnCreateData
 	grn_obj *lexicons;
 	TupleDesc desc;
 	Oid relNode;
-	unsigned int i;
+	int i;
 	bool forFullTextSearch;
 	bool forRegexpSearch;
 	bool forPrefixSearch;
