@@ -3,6 +3,7 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-normalize.h"
+#include "pgrn-string.h"
 
 #include <utils/builtins.h>
 
@@ -65,10 +66,10 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 				 GRN_TEXT_VALUE(&normalizers),
 				 GRN_TEXT_LEN(&normalizers)) == 0))
 	{
-		GRN_TEXT_SET(ctx,
-					 &normalizersBuffer,
-					 rawNormalizersData,
-					 rawNormalizersLength);
+		GRN_BULK_REWIND(&normalizersBuffer);
+		PGrnStringSubstituteVariables(rawNormalizersData,
+									  rawNormalizersLength,
+									  &normalizersBuffer);
 		grn_obj_set_info(ctx,
 						 lexicon,
 						 GRN_INFO_NORMALIZER,

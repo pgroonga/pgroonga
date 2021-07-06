@@ -27,6 +27,7 @@ HEADERS =					\
 	src/pgrn-result-converter.h		\
 	src/pgrn-search.h			\
 	src/pgrn-sequential-search.h		\
+	src/pgrn-string.h			\
 	src/pgrn-tokenize.h			\
 	src/pgrn-value.h			\
 	src/pgrn-variables.h			\

@@ -5,6 +5,7 @@
 #include "pgrn-groonga.h"
 #include "pgrn-jsonb.h"
 #include "pgrn-options.h"
+#include "pgrn-string.h"
 #include "pgrn-value.h"
 
 #include <access/reloptions.h>
@@ -505,7 +506,10 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 		if (defaultNormalizers)
 		{
 			*normalizers = &(buffers->normalizers);
-			GRN_TEXT_SETS(ctx, *normalizers, defaultNormalizers);
+			GRN_BULK_REWIND(*normalizers);
+			PGrnStringSubstituteVariables(defaultNormalizers,
+										  strlen(defaultNormalizers),
+										  *normalizers);
 		}
 		else
 		{
@@ -515,7 +519,10 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 	else
 	{
 		*normalizers = &(buffers->normalizers);
-		GRN_TEXT_SETS(ctx, *normalizers, rawNormalizers);
+		GRN_BULK_REWIND(*normalizers);
+		PGrnStringSubstituteVariables(rawNormalizers,
+									  strlen(rawNormalizers),
+									  *normalizers);
 	}
 }
 

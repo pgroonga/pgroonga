@@ -28,8 +28,9 @@ SRCS =						\
 	src/pgrn-result-converter.c		\
 	src/pgrn-result-to-jsonb-objects.c	\
 	src/pgrn-result-to-recordset.c		\
-	src/pgrn-snippet-html.c			\
 	src/pgrn-sequential-search.c		\
+	src/pgrn-snippet-html.c			\
+	src/pgrn-string.c			\
 	src/pgrn-tokenize.c			\
 	src/pgrn-vacuum.c			\
 	src/pgrn-value.c			\

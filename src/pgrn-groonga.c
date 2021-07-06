@@ -4,6 +4,7 @@
 #include "pgrn-convert.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
+#include "pgrn-pg.h"
 #include "pgrn-wal.h"
 
 #include <catalog/catalog.h>
@@ -236,6 +237,19 @@ PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 			 nthAttribute,
 			 PGrnIndexColumnName);
 	return PGrnLookup(name, errorLevel);
+}
+
+void
+PGrnFormatSourcesTableName(const char *indexName,
+						   char output[GRN_TABLE_MAX_KEY_SIZE])
+{
+	Oid indexID;
+	Oid fileNodeID;
+	indexID = PGrnPGIndexNameToID(indexName);
+	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
+	snprintf(output, GRN_TABLE_MAX_KEY_SIZE,
+			 PGrnSourcesTableNameFormat,
+			 fileNodeID);
 }
 
 grn_obj *

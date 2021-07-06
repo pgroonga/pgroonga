@@ -41,6 +41,9 @@ grn_obj *PGrnLookupIndexColumn(Relation index,
 							   unsigned int nthAttribute,
 							   int errorLevel);
 
+void PGrnFormatSourcesTableName(const char *indexName,
+								char output[GRN_TABLE_MAX_KEY_SIZE]);
+
 grn_obj *PGrnCreateTable(Relation index,
 						 const char *name,
 						 grn_table_flags flags,

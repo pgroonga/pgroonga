@@ -26,6 +26,7 @@
 #include "pgrn-query-extract-keywords.h"
 #include "pgrn-search.h"
 #include "pgrn-sequential-search.h"
+#include "pgrn-string.h"
 #include "pgrn-tokenize.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
@@ -1763,17 +1764,10 @@ Datum
 pgroonga_table_name(PG_FUNCTION_ARGS)
 {
 	const char *indexName = PG_GETARG_CSTRING(0);
-	Oid indexID;
-	Oid fileNodeID;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	text *tableName;
 
-	indexID = PGrnPGIndexNameToID(indexName);
-	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-
-	snprintf(tableNameBuffer, sizeof(tableNameBuffer),
-			 PGrnSourcesTableNameFormat,
-			 fileNodeID);
+	PGrnFormatSourcesTableName(indexName, tableNameBuffer);
 	tableName = cstring_to_text(tableNameBuffer);
 	PG_RETURN_TEXT_P(tableName);
 }
@@ -4452,34 +4446,6 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	PGrnCheck("IN: failed to push CALL");
 
 	return true;
-}
-
-static void
-PGrnStringSubstituteIndex(const char *text,
-						  unsigned int textSize,
-						  grn_obj *output,
-						  const char *indexName,
-						  int section)
-{
-	const char variable[] = "$index";
-	const size_t variableSize = sizeof(variable) - 1;
-	const char *current = text;
-	const char *end = current + textSize;
-
-	while (current < end)
-	{
-		if (current[0] == '$' &&
-			(end - current) >= variableSize &&
-			memcmp(current, variable, variableSize) == 0)
-		{
-			grn_text_printf(ctx, output, "%s[%d]", indexName, section);
-			current += variableSize;
-			continue;
-		}
-
-		GRN_TEXT_PUTC(ctx, output, current[0]);
-		current++;
-	}
 }
 
 static bool
