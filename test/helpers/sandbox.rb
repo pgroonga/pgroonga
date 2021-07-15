@@ -2,6 +2,7 @@ require "fileutils"
 require "json"
 require "socket"
 require "stringio"
+require "tempfile"
 
 module Helpers
   module CommandRunnable
@@ -34,9 +35,23 @@ module Helpers
 
     def run_command(*args)
       pid, output_read, error_read = spawn_process(*args)
-      _, status = Process.waitpid2(pid)
-      output = read_command_output(output_read)
-      error = read_command_output(error_read)
+      output = ""
+      error = ""
+      status = nil
+      loop do
+        readables, = IO.select([output_read, error_read], nil, nil, 0)
+        (readables || []).each do |readable|
+          if readable == output_read
+            output << read_command_output(output_read)
+          else
+            error << read_command_output(error_read)
+          end
+        end
+        _, status = Process.waitpid2(pid, Process::WNOHANG)
+        break if status
+      end
+      output << read_command_output(output_read)
+      error << read_command_output(error_read)
       unless status.success?
         command_line = args.join(" ")
         message = "failed to run: #{command_line}\n"

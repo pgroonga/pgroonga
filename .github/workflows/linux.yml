@@ -91,6 +91,14 @@ jobs:
         run: |
           sudo cat \
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
+      - name: Install test dependencies
+        run: |
+          sudo gem install groonga-synonym
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/red-datasets
+          key: red-datasets-ubuntu
       - name: Run unit test
         run: |
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
