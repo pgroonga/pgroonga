@@ -10,7 +10,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_query_escape);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_escape);
 
 /**
  * pgroonga.query_escape(query text) : text

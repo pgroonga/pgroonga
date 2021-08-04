@@ -10,7 +10,7 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_command_escape_value);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_command_escape_value);
 
 void
 PGrnCommandEscapeValue(const char *value,

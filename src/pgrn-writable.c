@@ -11,8 +11,8 @@ static grn_ctx *ctx = &PGrnContext;
 #define FALSE_VALUE "false"
 #define FALSE_VALUE_SIZE (sizeof(FALSE_VALUE) - 1)
 
-PGRN_FUNCTION_INFO_V1(pgroonga_is_writable);
-PGRN_FUNCTION_INFO_V1(pgroonga_set_writable);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_is_writable);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_set_writable);
 
 bool
 PGrnIsWritable(void)

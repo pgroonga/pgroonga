@@ -19,7 +19,7 @@ static grn_obj tokenMetadataName;
 static grn_obj tokenMetadataValue;
 static grn_obj tokenJSON;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_tokenize);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_tokenize);
 
 typedef struct {
 	grn_id id;

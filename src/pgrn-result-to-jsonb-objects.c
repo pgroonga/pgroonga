@@ -4,7 +4,7 @@
 
 #include "pgrn-result-converter.h"
 
-PGRN_FUNCTION_INFO_V1(pgroonga_result_to_jsonb_objects);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_result_to_jsonb_objects);
 
 /**
  * pgroonga_result_to_jsonb_objects(result jsonb) : jsonb

@@ -11,7 +11,7 @@ PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
 
-PGRN_FUNCTION_INFO_V1(pgroonga_database_remove);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_database_remove);
 
 /**
  * pgroonga_database_remove() : bool

@@ -11,7 +11,7 @@
 
 static grn_ctx *ctx = &PGrnContext;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_flush);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_flush);
 
 /**
  * pgroonga.flush(indexName cstring) : boolean

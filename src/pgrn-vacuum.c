@@ -2,7 +2,7 @@
 
 #include "pgrn-compatible.h"
 
-PGRN_FUNCTION_INFO_V1(pgroonga_vacuum);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_vacuum);
 
 /**
  * pgroonga_vacuum() : bool

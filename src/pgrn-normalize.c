@@ -12,7 +12,7 @@ static grn_obj *lexicon = NULL;
 static grn_obj normalizers;
 static grn_obj normalizersBuffer;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_normalize);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_normalize);
 
 void
 PGrnInitializeNormalize(void)

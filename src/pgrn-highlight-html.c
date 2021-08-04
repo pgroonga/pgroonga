@@ -25,7 +25,7 @@ static XXH64_hash_t keywordsHash = 0;
 static const char *keywordsHashDelimiter = "\0";
 static const size_t keywordsHashDelimiterSize = 1;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_highlight_html);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
 
 void
 PGrnInitializeHighlightHTML(void)

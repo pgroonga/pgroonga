@@ -8,8 +8,8 @@
 
 #include <utils/builtins.h>
 
-PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_name);
-PGRN_FUNCTION_INFO_V1(pgroonga_index_column_name_index);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_index_column_name_name);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_index_column_name_index);
 
 /**
  * pgroonga_index_column_name_name(indexName cstring, columnName text) : text

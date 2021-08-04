@@ -42,7 +42,7 @@ static grn_ctx *ctx = &PGrnContext;
 static PGrnQueryExpandData currentData;
 static const LOCKMODE lockMode = AccessShareLock;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_query_expand);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_expand);
 
 static grn_obj *
 func_query_expander_postgresql(grn_ctx *ctx,

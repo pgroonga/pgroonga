@@ -47,10 +47,10 @@ PGrnWALDisable(void)
 #	include <msgpack.h>
 #endif
 
-PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_index);
-PGRN_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
-PGRN_FUNCTION_INFO_V1(pgroonga_wal_truncate_index);
-PGRN_FUNCTION_INFO_V1(pgroonga_wal_truncate_all);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_apply_index);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_index);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_all);
 
 #ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;

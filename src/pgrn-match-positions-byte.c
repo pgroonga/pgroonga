@@ -14,7 +14,7 @@ static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
 static Oid previousIndexID = InvalidOid;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_positions_byte);
 
 void
 PGrnInitializeMatchPositionsByte(void)

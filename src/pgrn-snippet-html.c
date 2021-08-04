@@ -11,7 +11,7 @@
 
 static grn_ctx *ctx = &PGrnContext;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_snippet_html);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 
 static grn_obj *
 PGrnSnipCreate(ArrayType *keywords)

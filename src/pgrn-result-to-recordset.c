@@ -6,7 +6,7 @@
 
 #include <funcapi.h>
 
-PGRN_FUNCTION_INFO_V1(pgroonga_result_to_recordset);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_result_to_recordset);
 
 /**
  * pgroonga_result_to_recordset(result jsonb) : SETOF RECORD

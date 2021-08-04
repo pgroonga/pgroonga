@@ -36,7 +36,7 @@ static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj *lexicon = NULL;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_options);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_options);
 
 typedef void (*PGrnOptionNameFunction)(const char *name,
 									   size_t nameSize,

@@ -11,14 +11,14 @@
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_string);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_boolean);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_int2);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_int4);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_int8);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_float4);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_float8);
-PGRN_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_string);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_boolean);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_int2);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_int4);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_int8);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_float4);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_float8);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
 
 /**
  * pgroonga.escape(value text, special_characters text = '"\') : text

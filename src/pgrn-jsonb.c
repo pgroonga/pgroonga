@@ -19,12 +19,12 @@
 
 #include <string.h>
 
-PGRN_FUNCTION_INFO_V1(pgroonga_match_script_jsonb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_script_jsonb);
 
 /* v2 */
-PGRN_FUNCTION_INFO_V1(pgroonga_match_jsonb);
-PGRN_FUNCTION_INFO_V1(pgroonga_query_jsonb);
-PGRN_FUNCTION_INFO_V1(pgroonga_script_jsonb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_jsonb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_jsonb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_jsonb);
 
 typedef struct
 {

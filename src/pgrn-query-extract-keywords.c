@@ -14,7 +14,7 @@ static grn_ctx *ctx = &PGrnContext;
 static grn_obj *table = NULL;
 static grn_obj *textColumn = NULL;
 
-PGRN_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
 
 void
 PGrnInitializeQueryExtractKeywords(void)
