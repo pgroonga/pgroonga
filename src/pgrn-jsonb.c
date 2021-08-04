@@ -114,8 +114,10 @@ PGrnJSONBValueTypeToString(enum jbvType type)
 		return "object";
 	case jbvBinary:
 		return "binary";
+#ifdef PGRN_HAVE_JSONB_DATETIME
 	case jbvDatetime:
 		return "datetime";
+#endif
 	default:
 		return "unknown";
 	}
