@@ -656,6 +656,18 @@ PGrnGrnTypeToPGType(grn_id typeID)
 		pgTypeID = TEXTOID;
 		break;
 	default:
+		if (grn_id_maybe_table(ctx, typeID))
+		{
+			grn_obj *table = grn_ctx_at(ctx, typeID);
+			grn_id keyTypeID = GRN_ID_NIL;
+			if (grn_obj_is_table_with_key(ctx, table))
+			{
+				keyTypeID = table->header.domain;
+			}
+			grn_obj_unref(ctx, table);
+			if (keyTypeID != GRN_ID_NIL)
+				return PGrnGrnTypeToPGType(keyTypeID);
+		}
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("[pgroonga][type][groonga->postgresql] "
