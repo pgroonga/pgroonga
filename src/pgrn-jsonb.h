@@ -5,12 +5,13 @@
 #include <access/skey.h>
 #include <utils/jsonb.h>
 
+#include "pgrn-compatible.h"
 #include "pgrn-create.h"
 #include "pgrn-search.h"
 #include "pgrn-wal.h"
 
 const char *PGrnJSONBIteratorTokenToString(JsonbIteratorToken token);
-const char *PGrnJSONBValueTypeToString(enum jbvType type);
+const char *PGrnJSONBValueTypeToString(PGRN_JBV_TYPE type);
 
 Jsonb *PGrnJSONBParse(const char *jsonString);
 

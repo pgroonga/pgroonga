@@ -202,3 +202,9 @@ typedef char *PGrnStringOptionValue;
 #if PG_VERSION_NUM < 110000
 #	define PG_RETURN_JSONB_P(x) PG_RETURN_JSONB(x)
 #endif
+
+#if PG_VERSION_NUM >= 100000
+#	define PGRN_JBV_TYPE enum jbvType
+#else
+#	define PGRN_JBV_TYPE int
+#endif
