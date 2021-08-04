@@ -53,7 +53,7 @@ INSERT INTO memos VALUES
   ('unrelated');
               SQL
     assert_equal([<<-EXPECTED, ""],
-SELECT content, pgroonga_score(tableoid, ctid) AS score
+SELECT content, round(pgroonga_score(tableoid, ctid)::numeric, 2) AS score
   FROM memos
  WHERE content &@~ pgroonga_query_expand('thesaurus',
                                          'term',
@@ -62,16 +62,16 @@ SELECT content, pgroonga_score(tableoid, ctid) AS score
 ORDER BY score DESC,
          content;
 
-    content     |       score        
-----------------+--------------------
- キャパシティー |                  1
- キャパ         |  0.800000011920929
- 容量           | 0.6000000238418579
+    content     | score 
+----------------+-------
+ キャパシティー |  1.00
+ キャパ         |  0.80
+ 容量           |  0.60
 (3 rows)
 
                  EXPECTED
                  run_sql(<<-SQL))
-SELECT content, pgroonga_score(tableoid, ctid) AS score
+SELECT content, round(pgroonga_score(tableoid, ctid)::numeric, 2) AS score
   FROM memos
  WHERE content &@~ pgroonga_query_expand('thesaurus',
                                          'term',
@@ -107,7 +107,7 @@ INSERT INTO memos VALUES
   ('unrelated');
               SQL
     assert_equal([<<-EXPECTED, ""],
-SELECT content, pgroonga_score(tableoid, ctid) AS score
+SELECT content, round(pgroonga_score(tableoid, ctid)::numeric, 2) AS score
   FROM memos
  WHERE content &@~
          pgroonga_query_expand(
@@ -122,17 +122,17 @@ SELECT content, pgroonga_score(tableoid, ctid) AS score
 ORDER BY score DESC,
          content;
 
-    content     |       score        
-----------------+--------------------
- きゃぱ         |                  1
- キャパ         |  0.800000011920929
- キャパシティー |  0.800000011920929
- 容量           | 0.3999999761581421
+    content     | score 
+----------------+-------
+ きゃぱ         |  1.00
+ キャパ         |  0.80
+ キャパシティー |  0.80
+ 容量           |  0.40
 (4 rows)
 
                  EXPECTED
                  run_sql(<<-SQL))
-SELECT content, pgroonga_score(tableoid, ctid) AS score
+SELECT content, round(pgroonga_score(tableoid, ctid)::numeric, 2) AS score
   FROM memos
  WHERE content &@~
          pgroonga_query_expand(
