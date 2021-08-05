@@ -97,6 +97,7 @@ jobs:
               ruby download_message_pack.rb
               ruby download_rapidjson.rb
               ruby download_xxhash.rb
+              ruby download.rb zstd
             Write-Output "VC_PREFIX=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC" | `
               Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } else {
@@ -124,6 +125,7 @@ jobs:
             -DGRN_WITH_BUNDLED_MECAB=yes ^
             -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes ^
             -DGRN_WITH_BUNDLED_RAPIDJSON=yes ^
+            -DGRN_WITH_BUNDLED_ZSTD=yes ^
             -DGRN_WITH_MRUBY=yes ^
             -DPGRN_POSTGRESQL_VERSION_MAJOR=${{ matrix.postgresql-version-major }}
       - name: Build
