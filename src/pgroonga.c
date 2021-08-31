@@ -5995,11 +5995,6 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		NameData *name;
 		grn_obj *dataColumn;
 
-		/*
-		  FIXME: PostgreSQL chooses index only scan for COUNT(*)
-		  even if PGroonga returns false by pgroonga_canreturn().
-		  We should send a patch to PostgreSQL.
-		*/
 		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) < i) {
 			unsigned int j;
 			for (j = GRN_BOOL_VECTOR_SIZE(&(so->canReturns));
