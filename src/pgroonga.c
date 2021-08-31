@@ -139,6 +139,16 @@ typedef struct PGrnPrefixRKSequentialSearchData
 	grn_obj *resultTable;
 } PGrnPrefixRKSequentialSearchData;
 
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+typedef struct PGrnParallelScanDescData {
+	slock_t mutex;
+	bool scanning;
+} PGrnParallelScanDescData;
+typedef PGrnParallelScanDescData *PGrnParallelScanDesc;
+
+static bool PGrnParallelScanAcquire(IndexScanDesc scan);
+#endif
+
 static dlist_head PGrnScanOpaques = DLIST_STATIC_INIT(PGrnScanOpaques);
 static unsigned int PGrnNScanOpaques = 0;
 
@@ -6037,6 +6047,14 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	bool found = false;
 
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+	if (scan->parallel_scan)
+	{
+		if (!PGrnParallelScanAcquire(scan))
+			return false;
+	}
+#endif
+
 	PGrnEnsureCursorOpened(scan, direction, true);
 
 	if (scan->kill_prior_tuple &&
@@ -6198,6 +6216,14 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 	const char *tag = "pgroonga: [get-bitmap]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	int64 nRecords = 0;
+
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+	if (scan->parallel_scan)
+	{
+		if (!PGrnParallelScanAcquire(scan))
+			return 0;
+	}
+#endif
 
 	PGrnEnsureCursorOpened(scan, ForwardScanDirection, false);
 
@@ -7192,6 +7218,58 @@ pgroonga_validate_raw(Oid opClassOid)
 	return true;
 }
 
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+static Size
+pgroonga_estimateparallelscan_raw(void)
+{
+	return sizeof(PGrnParallelScanDescData);
+}
+
+static void
+pgroonga_initparallelscan_raw(void *target)
+{
+	PGrnParallelScanDesc pgrnParallelScan = (PGrnParallelScanDesc) target;
+
+	SpinLockInit(&(pgrnParallelScan->mutex));
+	pgrnParallelScan->scanning = false;
+}
+
+static void
+pgroonga_parallelrescan_raw(IndexScanDesc scan)
+{
+	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
+	PGrnParallelScanDesc pgrnParallelScan =
+		OffsetToPointer((void *) (parallelScan),
+						parallelScan->ps_offset);
+
+	pgrnParallelScan->scanning = false;
+}
+
+static bool
+PGrnParallelScanAcquire(IndexScanDesc scan)
+{
+	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
+	PGrnParallelScanDesc pgrnParallelScan =
+		OffsetToPointer((void *) (parallelScan),
+						parallelScan->ps_offset);
+	bool acquired = false;
+
+	if (so->indexCursor)
+		return true;
+	if (so->tableCursor)
+		return true;
+
+	SpinLockAcquire(&(pgrnParallelScan->mutex));
+	if (!pgrnParallelScan->scanning) {
+		acquired = true;
+		pgrnParallelScan->scanning = true;
+	}
+	SpinLockRelease(&(pgrnParallelScan->mutex));
+	return acquired;
+}
+#endif
+
 Datum
 pgroonga_handler(PG_FUNCTION_ARGS)
 {
@@ -7210,8 +7288,8 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amstorage = false;
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_PARALLEL
-	routine->amcanparallel = false;
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+	routine->amcanparallel = true;
 #endif
 	routine->amkeytype = 0;
 
@@ -7232,14 +7310,10 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amoptions = pgroonga_options_raw;
 	routine->amvalidate = pgroonga_validate_raw;
 
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_ESTIMATE_PARALLEL_SCAN
-	routine->amestimateparallelscan = NULL;
-#endif
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_INIT_PARALLEL_SCAN
-	routine->aminitparallelscan = NULL;
-#endif
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_RESCAN
-	routine->amparallelrescan = NULL;
+#ifdef PGRN_SUPPORT_PARALLEL_SCAN
+	routine->amestimateparallelscan = pgroonga_estimateparallelscan_raw;
+	routine->aminitparallelscan = pgroonga_initparallelscan_raw;
+	routine->amparallelrescan = pgroonga_parallelrescan_raw;
 #endif
 
 	PG_RETURN_POINTER(routine);

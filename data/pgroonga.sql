@@ -16,35 +16,40 @@ CREATE FUNCTION pgroonga_score("row" record)
 	AS 'MODULE_PATHNAME', 'pgroonga_score_row'
 	LANGUAGE C
 	VOLATILE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_score(tableoid oid, ctid tid)
 	RETURNS float8
 	AS 'MODULE_PATHNAME', 'pgroonga_score_ctid'
 	LANGUAGE C
 	VOLATILE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_table_name(indexName cstring)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_table_name'
 	LANGUAGE C
 	STABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_command(groongaCommand text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command'
 	LANGUAGE C
 	VOLATILE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_command(groongaCommand text, arguments text[])
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command'
 	LANGUAGE C
 	VOLATILE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_query_expand(tableName cstring,
 				      termColumnName text,
@@ -54,21 +59,24 @@ CREATE FUNCTION pgroonga_query_expand(tableName cstring,
 	AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
 	LANGUAGE C
 	STABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_snippet_html(target text, keywords text[])
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_highlight_html(target text, keywords text[])
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_highlight_html(target text,
 				        keywords text[],
@@ -77,14 +85,16 @@ CREATE FUNCTION pgroonga_highlight_html(target text,
 	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_positions_byte(target text, keywords text[])
 	RETURNS integer[2][]
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_positions_byte(target text,
 					      keywords text[],
@@ -93,14 +103,16 @@ CREATE FUNCTION pgroonga_match_positions_byte(target text,
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_positions_character(target text, keywords text[])
 	RETURNS integer[2][]
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_positions_character(target text,
 						   keywords text[],
@@ -109,105 +121,120 @@ CREATE FUNCTION pgroonga_match_positions_character(target text,
 	AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_query_extract_keywords(query text)
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_flush(indexName cstring)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_flush'
 	LANGUAGE C
 	VOLATILE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_command_escape_value(value text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_query_escape(query text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_query_escape'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value text, special_characters text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value boolean)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_boolean'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value int2)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_int2'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value int4)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_int4'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value int8)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_int8'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value float4)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_float4'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value float8)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_float8'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value timestamp)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_escape(value timestamptz)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_wal_apply()
 	RETURNS bigint
@@ -242,7 +269,8 @@ CREATE FUNCTION pgroonga_is_writable()
 	AS 'MODULE_PATHNAME', 'pgroonga_is_writable'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_set_writable(newWritable bool)
 	RETURNS bool
@@ -256,21 +284,24 @@ CREATE FUNCTION pgroonga_normalize(target text)
 	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_normalize(target text, normalizerName text)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_normalize'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_tokenize(target text, VARIADIC options text[])
 	RETURNS json[]
 	AS 'MODULE_PATHNAME', 'pgroonga_tokenize'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_vacuum()
 	RETURNS bool
@@ -284,28 +315,32 @@ CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnName text)
 	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_name'
 	LANGUAGE C
 	STABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_index_column_name(indexName cstring, columnIndex int4)
 	RETURNS text
 	AS 'MODULE_PATHNAME', 'pgroonga_index_column_name_index'
 	LANGUAGE C
 	STABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_result_to_recordset(result jsonb)
 	RETURNS SETOF RECORD
 	AS 'MODULE_PATHNAME', 'pgroonga_result_to_recordset'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_result_to_jsonb_objects(result jsonb)
 	RETURNS jsonb
 	AS 'MODULE_PATHNAME', 'pgroonga_result_to_jsonb_objects'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 
 /* v1 */
@@ -314,28 +349,32 @@ CREATE FUNCTION pgroonga_match_term(target text, term text)
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_term(target text[], term text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_text_array'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_term(target varchar, term varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_term(target varchar[], term varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar_array'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE OPERATOR %% (
 	PROCEDURE = pgroonga_match_term,
@@ -375,21 +414,24 @@ CREATE FUNCTION pgroonga_match_query(text, text)
 	AS 'MODULE_PATHNAME', 'pgroonga_match_query_text'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_query(text[], text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_query_text_array'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_query(varchar, varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_query_varchar'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga_match_query,
@@ -421,14 +463,16 @@ CREATE FUNCTION pgroonga_match_regexp(text, text)
 	AS 'MODULE_PATHNAME', 'pgroonga_match_regexp_text'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE FUNCTION pgroonga_match_regexp(varchar, varchar)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_regexp_varchar'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE OPERATOR @~ (
 	PROCEDURE = pgroonga_match_regexp,
@@ -454,6 +498,7 @@ CREATE FUNCTION pgroonga_match_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -471,6 +516,7 @@ CREATE FUNCTION pgroonga_match_text_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -489,6 +535,7 @@ CREATE FUNCTION pgroonga_match_text_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -505,6 +552,7 @@ CREATE FUNCTION pgroonga_match_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -522,6 +570,7 @@ CREATE FUNCTION pgroonga_match_text_array_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -540,6 +589,7 @@ CREATE FUNCTION pgroonga_match_text_array_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -556,6 +606,7 @@ CREATE FUNCTION pgroonga_match_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -573,6 +624,7 @@ CREATE FUNCTION pgroonga_match_varchar_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -591,6 +643,7 @@ CREATE FUNCTION pgroonga_match_varchar_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -607,6 +660,7 @@ CREATE FUNCTION pgroonga_contain_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &> (
@@ -623,6 +677,7 @@ CREATE FUNCTION pgroonga_match_jsonb(jsonb, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@ (
@@ -639,6 +694,7 @@ CREATE FUNCTION pgroonga_query_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -665,6 +721,7 @@ CREATE FUNCTION pgroonga_query_text_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -683,6 +740,7 @@ CREATE FUNCTION pgroonga_query_text_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -699,6 +757,7 @@ CREATE FUNCTION pgroonga_query_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -725,6 +784,7 @@ CREATE FUNCTION pgroonga_query_text_array_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -743,6 +803,7 @@ CREATE FUNCTION pgroonga_query_text_array_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -759,6 +820,7 @@ CREATE FUNCTION pgroonga_query_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -785,6 +847,7 @@ CREATE FUNCTION pgroonga_query_varchar_condition
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -803,6 +866,7 @@ CREATE FUNCTION pgroonga_query_varchar_condition_with_scorers
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@~ (
@@ -819,6 +883,7 @@ CREATE FUNCTION pgroonga_query_jsonb(jsonb, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -844,6 +909,7 @@ CREATE FUNCTION pgroonga_similar_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 10000;
 
 -- Deprecated since 1.2.2.
@@ -869,6 +935,7 @@ CREATE FUNCTION pgroonga_similar_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 10000;
 
 -- Deprecated since 1.2.2.
@@ -894,6 +961,7 @@ CREATE FUNCTION pgroonga_similar_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 10000;
 
 -- Deprecated since 1.2.2.
@@ -919,6 +987,7 @@ CREATE FUNCTION pgroonga_prefix_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^ (
@@ -935,6 +1004,7 @@ CREATE FUNCTION pgroonga_prefix_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^ (
@@ -960,6 +1030,7 @@ CREATE FUNCTION pgroonga_prefix_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^ (
@@ -976,6 +1047,7 @@ CREATE FUNCTION pgroonga_prefix_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^ (
@@ -1001,6 +1073,7 @@ CREATE FUNCTION pgroonga_prefix_rk_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~ (
@@ -1017,6 +1090,7 @@ CREATE FUNCTION pgroonga_prefix_rk_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~ (
@@ -1042,6 +1116,7 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~ (
@@ -1058,6 +1133,7 @@ CREATE FUNCTION pgroonga_prefix_rk_varchar_array(varchar[], varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~ (
@@ -1083,6 +1159,7 @@ CREATE FUNCTION pgroonga_script_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &` (
@@ -1099,6 +1176,7 @@ CREATE FUNCTION pgroonga_script_text_array(text[], text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &` (
@@ -1115,6 +1193,7 @@ CREATE FUNCTION pgroonga_script_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &` (
@@ -1131,6 +1210,7 @@ CREATE FUNCTION pgroonga_script_jsonb(jsonb, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &` (
@@ -1147,6 +1227,7 @@ CREATE FUNCTION pgroonga_match_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 /* Deprecated since 1.2.1. */
@@ -1172,6 +1253,7 @@ CREATE FUNCTION pgroonga_match_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@| (
@@ -1188,6 +1270,7 @@ CREATE FUNCTION pgroonga_match_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &@| (
@@ -1204,6 +1287,7 @@ CREATE FUNCTION pgroonga_query_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 /* Deprecated since 1.2.1. */
@@ -1238,6 +1322,7 @@ CREATE FUNCTION pgroonga_query_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -1263,6 +1348,7 @@ CREATE FUNCTION pgroonga_query_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 -- Deprecated since 1.2.2.
@@ -1288,6 +1374,7 @@ CREATE FUNCTION pgroonga_prefix_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^| (
@@ -1304,6 +1391,7 @@ CREATE FUNCTION pgroonga_not_prefix_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR !&^| (
@@ -1321,6 +1409,7 @@ CREATE FUNCTION pgroonga_prefix_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^| (
@@ -1337,6 +1426,7 @@ CREATE FUNCTION pgroonga_prefix_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^| (
@@ -1353,6 +1443,7 @@ CREATE FUNCTION pgroonga_prefix_in_varchar_array(varchar[], varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^| (
@@ -1369,6 +1460,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~| (
@@ -1385,6 +1477,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_text_array(text[], text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~| (
@@ -1401,6 +1494,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~| (
@@ -1417,6 +1511,7 @@ CREATE FUNCTION pgroonga_prefix_rk_in_varchar_array(varchar[], varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &^~| (
@@ -1433,6 +1528,7 @@ CREATE FUNCTION pgroonga_regexp_text(text, text)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &~ (
@@ -1449,6 +1545,7 @@ CREATE FUNCTION pgroonga_regexp_varchar(varchar, varchar)
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &~ (
@@ -1465,6 +1562,7 @@ CREATE FUNCTION pgroonga_regexp_in_text(text, text[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &~| (
@@ -1481,6 +1579,7 @@ CREATE FUNCTION pgroonga_regexp_in_varchar(varchar, varchar[])
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
+	PARALLEL SAFE
 	COST 300;
 
 CREATE OPERATOR &~| (
@@ -1611,7 +1710,8 @@ CREATE FUNCTION pgroonga_match_script_jsonb(jsonb, text)
 	AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
 	LANGUAGE C
 	IMMUTABLE
-	STRICT;
+	STRICT
+	PARALLEL SAFE;
 
 CREATE OPERATOR @@ (
 	PROCEDURE = pgroonga_match_script_jsonb,
@@ -1804,28 +1904,32 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_score'
 			LANGUAGE C
 			VOLATILE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.table_name(indexName cstring)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_table_name'
 			LANGUAGE C
 			STABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.command(groongaCommand text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command'
 			LANGUAGE C
 			VOLATILE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command'
 			LANGUAGE C
 			VOLATILE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.query_expand(tableName cstring,
 						      termColumnName text,
@@ -1835,133 +1939,152 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
 			LANGUAGE C
 			STABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[])
 			RETURNS text[]
 			AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.highlight_html(target text, keywords text[])
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_positions_byte(target text, keywords text[])
 			RETURNS integer[2][]
 			AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_positions_character(target text, keywords text[])
 			RETURNS integer[2][]
 			AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.query_extract_keywords(query text)
 			RETURNS text[]
 			AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.flush(indexName cstring)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_flush'
 			LANGUAGE C
 			VOLATILE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.command_escape_value(value text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.query_escape(query text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_query_escape'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value text, special_characters text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value boolean)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_boolean'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value int2)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_int2'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value int4)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_int4'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value int8)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_int8'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value float4)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_float8'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value float8)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_float8'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value timestamp)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.escape(value timestamptz)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 
 		/* v1 */
@@ -1970,28 +2093,32 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_term_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_term(target text[], term text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_term_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_term(target varchar, term varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_term(target varchar[], term varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_term_varchar_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.%% (
@@ -2032,21 +2159,24 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_query_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_query(text[], text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_query_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_query(varchar, varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_query_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.@@ (
@@ -2079,14 +2209,16 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_regexp_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		CREATE FUNCTION pgroonga.match_regexp(varchar, varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_regexp_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.@~ (
@@ -2112,7 +2244,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@ (
@@ -2129,7 +2262,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@ (
@@ -2146,7 +2280,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@ (
@@ -2163,7 +2298,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&> (
@@ -2180,7 +2316,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_jsonb'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@ (
@@ -2197,7 +2334,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2223,7 +2361,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2249,7 +2388,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2275,7 +2415,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_jsonb'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2301,7 +2442,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_similar_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2327,7 +2469,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_similar_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2353,7 +2496,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_similar_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2379,7 +2523,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^ (
@@ -2396,7 +2541,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^ (
@@ -2422,7 +2568,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^~ (
@@ -2439,7 +2586,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^~ (
@@ -2465,7 +2613,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_script_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&` (
@@ -2482,7 +2631,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_script_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&` (
@@ -2499,7 +2649,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_script_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&` (
@@ -2516,7 +2667,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&` (
@@ -2533,7 +2685,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_in_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			/* Deprecated since 1.2.1. */
@@ -2559,7 +2712,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_in_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@| (
@@ -2576,7 +2730,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_in_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&@| (
@@ -2593,7 +2748,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_in_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			/* Deprecated since 1.2.1. */
@@ -2628,7 +2784,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_in_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2654,7 +2811,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_query_in_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			-- Deprecated since 1.2.2.
@@ -2680,7 +2838,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_in_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^| (
@@ -2697,7 +2856,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_in_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^| (
@@ -2714,7 +2874,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_in_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^~| (
@@ -2731,7 +2892,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_in_text_array'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&^~| (
@@ -2748,7 +2910,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_regexp_text'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&~ (
@@ -2765,7 +2928,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_regexp_varchar'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.&~ (
@@ -2889,7 +3053,8 @@ BEGIN
 			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
 			LANGUAGE C
 			IMMUTABLE
-			STRICT;
+			STRICT
+			PARALLEL SAFE;
 
 		IF current_schema() <> 'public' THEN
 			CREATE OPERATOR public.@@ (
