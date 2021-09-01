@@ -83,7 +83,7 @@ cp -a \
 cd /tmp
 case "${os}" in
   centos)
-    if [ "$((${postgresql_version} < 13))" = 1 ]; then
+    if [ "$(echo "${postgresql_version} < 13" | bc)" = 1 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
     fi
     ;;
