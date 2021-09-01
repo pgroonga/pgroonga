@@ -38,7 +38,8 @@ case ${os} in
     esac
     postgresql_version=$(rpm -qa | \
                            grep pgroonga | \
-                           grep -E -o '[0-9.]+')
+                           grep -E -o '[0-9.]+' |
+                           head -n1)
     postgresql_package_prefix=$(rpm -qa | \
                                   grep pgroonga | \
                                   grep -E -o '^postgresql[0-9.]+' | \
