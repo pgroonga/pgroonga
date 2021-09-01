@@ -3,19 +3,19 @@ CREATE TABLE memos (
   content text
 ) PARTITION BY RANGE (id);
 
-CREATE TABLE memos_0_1000
+CREATE TABLE memos_0_10000
   PARTITION OF memos
-  FOR VALUES FROM (0) TO (1000);
-CREATE TABLE memos_1000_2000
+  FOR VALUES FROM (0) TO (10000);
+CREATE TABLE memos_10000_20000
   PARTITION OF memos
-  FOR VALUES FROM (1000) TO (2000);
-CREATE TABLE memos_2000_3000
+  FOR VALUES FROM (10000) TO (20000);
+CREATE TABLE memos_20000_30000
   PARTITION OF memos
-  FOR VALUES FROM (2000) TO (3000);
+  FOR VALUES FROM (20000) TO (30000);
 
 INSERT INTO memos
   SELECT id, 'data: ' || id
-    FROM generate_series(0, 2999) AS id;
+    FROM generate_series(0, 29999) AS id;
 
 CREATE INDEX memos_fts ON memos USING pgroonga (content);
 
