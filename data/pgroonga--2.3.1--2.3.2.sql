@@ -6,13 +6,22 @@ ALTER FUNCTION pgroonga_table_name(indexName cstring) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_command(groongaCommand text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_command(groongaCommand text, arguments text[]) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_expand(tableName cstring,
+				     termColumnName text,
+				     synonymsColumnName text,
+				     query text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_snippet_html(target text, keywords text[]) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_highlight_html(target text, keywords text[]) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_highlight_html(target text,
+				       keywords text[],
+				       indexName cstring) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_positions_byte(target text, keywords text[]) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_positions_byte(target text,
+					     keywords text[],
+					     indexName cstring) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_positions_character(target text, keywords text[]) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_positions_character(target text,
+						  keywords text[],
+						  indexName cstring) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_extract_keywords(query text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_flush(indexName cstring) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_command_escape_value(value text) PARALLEL SAFE;
@@ -46,24 +55,42 @@ ALTER FUNCTION pgroonga_match_regexp(text, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_regexp(varchar, varchar) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text(text, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text_condition
+	(target text, condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text_condition_with_scorers
+	(target text,
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text_array(text[], text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text_array_condition
+	(target text[], condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_text_array_condition_with_scorers
+	(target text[],
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_varchar(varchar, varchar) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_varchar_condition
+	(target varchar, condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_varchar_condition_with_scorers
+	(target varchar,
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_contain_varchar_array(varchar[], varchar) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_match_jsonb(jsonb, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text(text, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text_condition
+	(target text, condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text_condition_with_scorers
+	(target text,
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text_array(text[], text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text_array_condition
+	(targets text[], condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_text_array_condition_with_scorers
+	(targets text[],
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_varchar(varchar, varchar) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_varchar_condition
+	(target varchar, condition pgroonga_full_text_search_condition) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_varchar_condition_with_scorers
+	(target varchar,
+	 condition pgroonga_full_text_search_condition_with_scorers) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_query_jsonb(jsonb, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_similar_text(text, text) PARALLEL SAFE;
 ALTER FUNCTION pgroonga_similar_text_array(text[], text) PARALLEL SAFE;
