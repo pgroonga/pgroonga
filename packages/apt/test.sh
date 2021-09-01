@@ -38,6 +38,10 @@ apt update
 apt install -V -y \
   ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
 
+postgresql_version=$(dpkg -l | \
+                       grep pgroonga | \
+                       grep -E -o '[0-9.]+' |
+                       head -n1)
 postgresql_package_prefix=$(dpkg -l | \
                               grep pgroonga | \
                               grep -E -o 'postgresql-[0-9.]+(-pgdg)?' |
@@ -70,6 +74,9 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
+if [ "$((${postgresql_version} < 13))" = 1 ]; then
+  rm sql/full-text-search/text/single/declarative-partitioning.sql
+fi
 ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress

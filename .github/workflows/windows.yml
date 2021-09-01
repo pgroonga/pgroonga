@@ -208,6 +208,9 @@ jobs:
           Remove-Item sql\full-text-search\text\options\token-filters\custom.sql
           # Reduce tests to reduce test time
           Remove-Item sql\compatibility -Recurse -Force
+          if ({{ matrix.postgresql-version-major }} -lt 13) {
+            Remove-Item sql\full-text-search\text\single\declarative-partitioning.sql
+          }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `

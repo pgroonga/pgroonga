@@ -36,6 +36,9 @@ case ${os} in
         ${DNF} install -y centos-release-scl
         ;;
     esac
+    postgresql_version=$(rpm -qa | \
+                           grep pgroonga | \
+                           grep -E -o '[0-9.]+')
     postgresql_package_prefix=$(rpm -qa | \
                                   grep pgroonga | \
                                   grep -E -o '^postgresql[0-9.]+' | \
@@ -77,12 +80,19 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
-if [ "${os}" = "fedora" ]; then
-  # Require Groonga 10.1.0 or later.
-  rm sql/function/highlight-html/one-keyword.sql
-  rm sql/function/match-positions-byte/one-keyword.sql
-  rm sql/function/match-positions-character/one-keyword.sql
-fi
+case "${os}" in
+  centos)
+    if [ "$((${postgresql_version} < 13))" = 1 ]; then
+      rm sql/full-text-search/text/single/declarative-partitioning.sql
+    fi
+    ;;
+  fedora)
+    # Require Groonga 10.1.0 or later.
+    rm sql/function/highlight-html/one-keyword.sql
+    rm sql/function/match-positions-byte/one-keyword.sql
+    rm sql/function/match-positions-character/one-keyword.sql
+    ;;
+esac
 ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(${pg_config} --pgxs))/../test/regress/pg_regress
