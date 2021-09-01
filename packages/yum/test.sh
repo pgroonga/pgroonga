@@ -60,6 +60,7 @@ esac
 
 ${DNF} install -y \
        ${groonga_token_filter_stem_package_name} \
+       bc \
        diffutils \
        groonga-tokenizer-mecab \
        ruby \
