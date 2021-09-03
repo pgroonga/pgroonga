@@ -119,7 +119,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 										const char *indexName,
 										unsigned int indexNameSize)
 {
-	grn_column_flags column_flags =
+	grn_column_flags indexFlags =
 		GRN_OBJ_COLUMN_INDEX |
 		GRN_OBJ_WITH_POSITION;
 
@@ -128,7 +128,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 					   source == data->textsColumn));
 
 	if (grn_obj_is_vector_column(ctx, source))
-		column_flags |= GRN_OBJ_WITH_SECTION;
+		indexFlags |= GRN_OBJ_WITH_SECTION;
 
 	if (data->indexOID != indexOID)
 	{
@@ -137,7 +137,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizers = NULL;
 		grn_obj *tokenFilters = NULL;
-		grn_table_flags table_flags = 0;
+		grn_table_flags tableFlags = 0;
 
 		index = PGrnPGResolveIndexID(indexOID);
 		isPGroongaIndex = PGrnIndexIsPGroonga(index);
@@ -157,13 +157,14 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 							  &normalizers, PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
-							  &table_flags);
+							  &tableFlags,
+							  &indexFlags);
 		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
 		RelationClose(index);
 
 		data->lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
-										table_flags,
+										tableFlags,
 										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 										tokenizer,
 										normalizers,
@@ -172,7 +173,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
 							 "index",
-							 column_flags,
+							 indexFlags,
 							 data->table);
 		data->indexOID = indexOID;
 	}
@@ -181,13 +182,13 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	{
 		grn_obj *tokenizer;
 		grn_obj *normalizers = &(buffers->normalizers);
-		grn_table_flags table_flags = GRN_OBJ_TABLE_PAT_KEY;
+		grn_table_flags tableFlags = GRN_OBJ_TABLE_PAT_KEY;
 
 		tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
 		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
 		data->lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
-										table_flags,
+										tableFlags,
 										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 										tokenizer,
 										normalizers,
@@ -196,7 +197,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
 							 "index",
-							 column_flags,
+							 indexFlags,
 							 data->table);
 	}
 

@@ -28,6 +28,7 @@ typedef struct PGrnOptions
 	bool queryAllowColumn;
 	int normalizersOffset;
 	int normalizersMappingOffset;
+	int indexFlagsMappingOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -309,6 +310,93 @@ PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 					PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE)));
 }
 
+static void
+PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
+{
+	Jsonb *jsonb;
+	JsonbIterator *iter;
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	if (PGrnIsNoneValue(rawIndexFlagsMapping))
+		return;
+
+	jsonb = PGrnJSONBParse(rawIndexFlagsMapping);
+	iter = JsonbIteratorInit(&(jsonb->root));
+
+	token = JsonbIteratorNext(&iter, &value, false);
+	if (token != WJB_BEGIN_OBJECT)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: "
+						"index flags mapping must be object: %s: <%s>",
+						PGrnJSONBIteratorTokenToString(token),
+						rawIndexFlagsMapping)));
+	}
+
+	while (true) {
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token == WJB_END_OBJECT)
+			break;
+		if (token != WJB_KEY)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: "
+							"index flags mapping misses key: %s: <%s>",
+							PGrnJSONBIteratorTokenToString(token),
+							rawIndexFlagsMapping)));
+		}
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token != WJB_BEGIN_ARRAY)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: "
+							"index flags mapping's value must be array: "
+							"%s: <%s>",
+							PGrnJSONBIteratorTokenToString(token),
+							rawIndexFlagsMapping)));
+		}
+		while (true)
+		{
+			grn_raw_string rawFlag;
+			token = JsonbIteratorNext(&iter, &value, false);
+			if (token == WJB_END_ARRAY)
+				break;
+			if (value.type != jbvString)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						 errmsg("pgroonga: "
+								"index flags mapping's flag must be string: "
+								"%s: <%s>",
+								PGrnJSONBValueTypeToString(value.type),
+								rawIndexFlagsMapping)));
+			}
+			rawFlag.value = value.val.string.val;
+			rawFlag.length = value.val.string.len;
+			if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "SMALL") ||
+				GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "MEDIUM") ||
+				GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "LARGE") ||
+				GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WITH_WEIGHT") ||
+				GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WEIGHT_FLOAT32"))
+			{
+				continue;
+			}
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: "
+							"index flags mapping's flags have invalid flag: "
+							"<%.*s>: %s",
+							(int)(rawFlag.length),
+							rawFlag.value,
+							ctx->errbuf)));
+		}
+	}
+}
+
 void
 PGrnInitializeOptions(void)
 {
@@ -393,6 +481,13 @@ PGrnInitializeOptions(void)
 							  "for each target",
 							  NULL,
 							  PGrnOptionValidateNormalizersMapping,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "index_flags_mapping",
+							  "Mapping to specify index flags to be used "
+							  "for each target",
+							  NULL,
+							  PGrnOptionValidateIndexFlagsMapping,
 							  lock_mode);
 }
 
@@ -526,6 +621,69 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 	}
 }
 
+static void
+PGrnApplyOptionValuesIndexFlags(PGrnOptions *options,
+								Relation index,
+								int i,
+								grn_column_flags *indexFlags)
+{
+	if (!indexFlags)
+		return;
+
+	if (options->indexFlagsMappingOffset != 0 && i >= 0)
+	{
+		TupleDesc desc = RelationGetDescr(index);
+		Name name = &(TupleDescAttr(desc, i)->attname);
+		const char *rawIndexFlagsMapping =
+			((const char *) options) + options->indexFlagsMappingOffset;
+		Jsonb *jsonb = PGrnJSONBParse(rawIndexFlagsMapping);
+		JsonbIterator *iter;
+		JsonbValue value;
+
+		iter = JsonbIteratorInit(&(jsonb->root));
+		/* This JSON is validated. */
+		/* WJB_BEGIN_OBJECT */
+		JsonbIteratorNext(&iter, &value, false);
+		while (true)
+		{
+			bool isTarget;
+
+			/* WJB_KEY */
+			if (JsonbIteratorNext(&iter, &value, false) == WJB_END_OBJECT)
+				break;
+			isTarget = (value.val.string.len == strlen(name->data) &&
+						memcmp(value.val.string.val,
+							   name->data,
+							   value.val.string.len) == 0);
+			/* WJB_BEGIN_ARRAY */
+			JsonbIteratorNext(&iter, &value, false);
+			while (JsonbIteratorNext(&iter, &value, false) != WJB_END_ARRAY)
+			{
+				grn_raw_string rawFlag;
+
+				if (!isTarget)
+					continue;
+
+				/* WJB_VALUE/jbvString */
+				rawFlag.value = value.val.string.val;
+				rawFlag.length = value.val.string.len;
+				if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "SMALL"))
+					*indexFlags |= GRN_OBJ_INDEX_SMALL;
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "MEDIUM"))
+					*indexFlags |= GRN_OBJ_INDEX_MEDIUM;
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "LARGE"))
+					*indexFlags |= GRN_OBJ_INDEX_LARGE;
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WITH_WEIGHT"))
+					*indexFlags |= GRN_OBJ_WITH_WEIGHT;
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WEIGHT_FLOAT32"))
+					*indexFlags |= GRN_OBJ_WEIGHT_FLOAT32;
+			}
+			if (isTarget)
+				return;
+		}
+	}
+}
+
 void
 PGrnApplyOptionValues(Relation index,
 					  int i,
@@ -535,7 +693,8 @@ PGrnApplyOptionValues(Relation index,
 					  grn_obj **normalizers,
 					  const char *defaultNormalizers,
 					  grn_obj **tokenFilters,
-					  grn_table_flags *lexiconType)
+					  grn_table_flags *lexiconType,
+					  grn_column_flags *indexFlags)
 {
 	PGrnOptions *options;
 	const char *rawTokenizer;
@@ -625,6 +784,8 @@ PGrnApplyOptionValues(Relation index,
 	{
 		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 	}
+
+	PGrnApplyOptionValuesIndexFlags(options, index, i, indexFlags);
 }
 
 grn_expr_flags
@@ -671,6 +832,8 @@ pgroonga_options_raw(Datum reloptions,
 		 offsetof(PGrnOptions, normalizersOffset)},
 		{"normalizers_mapping", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizersMappingOffset)},
+		{"index_flags_mapping", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 	};
 
 #ifdef PGRN_HAVE_BUILD_RELOPTIONS

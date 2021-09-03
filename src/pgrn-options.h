@@ -23,7 +23,8 @@ void PGrnApplyOptionValues(Relation index,
 						   grn_obj **normalizer,
 						   const char *defaultNormalizerName,
 						   grn_obj **tokenFilters,
-						   grn_table_flags *lexiconType);
+						   grn_table_flags *lexiconType,
+						   grn_column_flags *indexFlags);
 
 grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);
 

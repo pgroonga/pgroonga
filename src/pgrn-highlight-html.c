@@ -216,7 +216,8 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
 							  &normalizers, PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
-							  &flags);
+							  &flags,
+							  NULL);
 		RelationClose(index);
 	}
 

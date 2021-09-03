@@ -161,7 +161,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  &tokenizer, tokenizerName,
 							  &normalizers, normalizersName,
 							  &tokenFilters,
-							  &flags);
+							  &flags,
+							  NULL);
 	}
 	else
 	{
@@ -199,6 +200,20 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 		{
 			flags |= GRN_OBJ_WITH_SECTION;
 		}
+	}
+	{
+		grn_obj *tokenizer = NULL;
+		grn_obj *normalizers = NULL;
+		grn_obj *tokenFilters = NULL;
+		grn_table_flags tableFlags = 0;
+		PGrnApplyOptionValues(data->index,
+							  data->i,
+							  PGRN_OPTION_USE_CASE_UNKNOWN,
+							  &tokenizer, NULL,
+							  &normalizers, NULL,
+							  &tokenFilters,
+							  &tableFlags,
+							  &flags);
 	}
 	PGrnCreateColumn(data->index,
 					 lexicon,
