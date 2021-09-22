@@ -541,10 +541,10 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 				continue;
 
 			*normalizers = &(buffers->normalizers);
-			GRN_TEXT_SET(ctx,
-						 *normalizers,
-						 value.val.string.val,
-						 value.val.string.len);
+			GRN_BULK_REWIND(*normalizers);
+			PGrnStringSubstituteVariables(value.val.string.val,
+										  value.val.string.len,
+										  *normalizers);
 			return;
 		}
 	}
