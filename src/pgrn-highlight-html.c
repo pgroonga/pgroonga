@@ -222,7 +222,10 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 	}
 
 	if (lexicon)
+	{
+		grn_highlighter_set_lexicon(ctx, highlighter, NULL);
 		grn_obj_close(ctx, lexicon);
+	}
 	lexicon = PGrnCreateTable(InvalidRelation,
 							  NULL,
 							  flags,
