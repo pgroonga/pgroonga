@@ -23,7 +23,8 @@ jobs:
           - PostgreSQL 11
           - PostgreSQL 12
           - PostgreSQL 13
-          - PostgreSQL 13 with Groonga master
+          - PostgreSQL 14
+          - PostgreSQL 14 with Groonga master
         include:
           - label: PostgreSQL 9.6
             postgresql-version: "9.6"
@@ -35,11 +36,16 @@ jobs:
             postgresql-version: "12"
           - label: PostgreSQL 13
             postgresql-version: "13"
-          - label: PostgreSQL 13 with Groonga master
-            postgresql-version: "13"
+          - label: PostgreSQL 14
+            postgresql-version: "14"
+            postgresql-unreleased: "yes"
+          - label: PostgreSQL 14 with Groonga master
+            postgresql-version: "14"
+            postgresql-unreleased: "yes"
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
+      POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
@@ -64,9 +70,15 @@ jobs:
         run: |
           sudo apt -y -V purge '^postgresql'
           ls -lah /etc/apt/sources.list.d/
+          if [ "${POSTGRESQL_UNRELASED}" = "yes" ]; then
+            component=${{ matrix.postgresql-version }}
+          else
+            component=main
+          fi
           sudo tee /etc/apt/sources.list.d/pgdg.list <<APT_SOURCE
-          deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main
+          deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ${component}
           APT_SOURCE
+          fi
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt update
           sudo apt -y -V install \

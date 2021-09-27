@@ -4035,6 +4035,10 @@ pgroonga_insert_raw(Relation index,
 					ItemPointer ctid,
 					Relation heap,
 					IndexUniqueCheck checkUnique
+#ifdef PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
+					,
+					bool indexUnchanged
+#endif
 #ifdef PGRN_AM_INSERT_HAVE_INDEX_INFO
 					,
 					struct IndexInfo *indexInfo
@@ -4094,6 +4098,10 @@ pgroonga_insert(PG_FUNCTION_ARGS)
 								   ctid,
 								   heap,
 								   uniqueCheck
+#ifdef PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
+								   ,
+								   false
+#endif
 #ifdef PGRN_AM_INSERT_HAVE_INDEX_INFO
 								   ,
 								   NULL

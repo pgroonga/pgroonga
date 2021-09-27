@@ -57,6 +57,10 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_SUPPORT_LOGICAL_REPLICATION
 #endif
 
+#if PG_VERSION_NUM >= 140000
+#	define PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
+#endif
+
 #define pgrn_array_create_iterator(array, slide_ndim)	\
 	array_create_iterator(array, slide_ndim, NULL)
 
