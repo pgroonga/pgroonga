@@ -70,7 +70,7 @@ jobs:
         run: |
           sudo apt -y -V purge '^postgresql'
           ls -lah /etc/apt/sources.list.d/
-          if [ "${POSTGRESQL_UNRELASED}" = "yes" ]; then
+          if [ "${POSTGRESQL_UNRELEASED}" = "yes" ]; then
             component=${{ matrix.postgresql-version }}
           else
             component=main
