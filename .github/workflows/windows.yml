@@ -23,33 +23,33 @@ jobs:
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 9.6 + Visual Studio 2019
             postgresql-version-major: "9.6"
-            postgresql-version: "9.6.22-1"
+            postgresql-version: "9.6.23-1"
           - artifact-id: "postgresql-10-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 10 + Visual Studio 2019
             postgresql-version-major: "10"
-            postgresql-version: "10.17-1"
+            postgresql-version: "10.18-1"
           - artifact-id: "postgresql-11-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 11 + Visual Studio 2019
             postgresql-version-major: "11"
-            postgresql-version: "11.12-1"
+            postgresql-version: "11.13-1"
           - artifact-id: "postgresql-12-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 12 + Visual Studio 2019
             postgresql-version-major: "12"
-            postgresql-version: "12.7-1"
+            postgresql-version: "12.8-1"
           - artifact-id: "postgresql-13-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 13 + Visual Studio 2019
             postgresql-version-major: "13"
-            postgresql-version: "13.3-1"
+            postgresql-version: "13.4-1"
           - artifact-id: "postgresql-13-x64-groonga-master"
             cmake-generator: "Visual Studio 16 2019"
             groonga-master: "yes"
             label: PostgreSQL 13 + Visual Studio 2019 + Groonga master
             postgresql-version-major: "13"
-            postgresql-version: "13.3-1"
+            postgresql-version: "13.4-1"
     env:
       PGROONGA_TEST_DATA: "test-data"
       PGROONGA_TEST_ENCODING: "UTF-8"
