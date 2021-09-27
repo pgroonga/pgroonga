@@ -78,7 +78,6 @@ jobs:
           sudo tee /etc/apt/sources.list.d/pgdg.list <<APT_SOURCE
           deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ${component}
           APT_SOURCE
-          fi
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt update
           sudo apt -y -V install \
