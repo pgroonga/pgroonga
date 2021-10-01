@@ -38,10 +38,8 @@ jobs:
             postgresql-version: "13"
           - label: PostgreSQL 14
             postgresql-version: "14"
-            postgresql-unreleased: "yes"
           - label: PostgreSQL 14 with Groonga master
             postgresql-version: "14"
-            postgresql-unreleased: "yes"
             groonga-master: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
