@@ -2,6 +2,9 @@
 
 set -eux
 
+
+echo "::group::Prepare APT repositories"
+
 echo "debconf debconf/frontend select Noninteractive" | \
   debconf-set-selections
 
@@ -33,10 +36,20 @@ if find ${repositories_dir} | grep -q "pgdg"; then
     apt-key add -
 fi
 
+echo "::endgroup::"
+
+
+echo "::group::Install built packages"
+
 apt update
 
 apt install -V -y \
   ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
+
+echo "::endgroup::"
+
+
+echo "::group::Install packages for test"
 
 postgresql_version=$(dpkg -l | \
                        grep pgroonga | \
@@ -58,6 +71,11 @@ apt install -V -y \
     ruby \
     sudo
 
+echo "::endgroup::"
+
+
+echo "::group::Prepare test"
+
 data_dir=/tmp/data
 sudo -u postgres -H \
      $(pg_config --bindir)/initdb \
@@ -67,7 +85,7 @@ sudo -u postgres -H \
      --username=root
 sudo -u postgres -H \
      $(pg_config --bindir)/pg_ctl start \
-     --pgdata=/${data_dir}
+     --pgdata=${data_dir}
 
 cp -a \
    /host/sql \
@@ -80,6 +98,12 @@ fi
 ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
+
+echo "::endgroup::"
+
+
+echo "::group::Run test"
+
 set +e
 ${pg_regress} \
   --launcher=/host/test/short-pgappname \
@@ -87,11 +111,22 @@ ${pg_regress} \
   --schedule=schedule
 pg_regress_status=$?
 set -e
+
+echo "::endgroup::"
+
+
 if [ ${pg_regress_status} -ne 0 ]; then
+  echo "::group::Diff"
   cat regression.diffs
+  echo "::endgroup::"
   exit ${pg_regress_status}
 fi
 
+
+echo "::group::Postpare"
+
 sudo -u postgres -H \
      $(pg_config --bindir)/pg_ctl stop \
-     --pgdata=/${data_dir}
+     --pgdata=${data_dir}
+
+echo "::endgroup::"

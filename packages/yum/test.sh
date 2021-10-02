@@ -2,6 +2,9 @@
 
 set -eux
 
+
+echo "::group::Prepare repositories"
+
 os=$(cut -d: -f4 /etc/system-release-cpe)
 version=$(cut -d: -f5 /etc/system-release-cpe)
 case ${os} in
@@ -25,9 +28,19 @@ case ${os} in
     ;;
 esac
 
+echo "::endgroup::"
+
+
+echo "::group::Install built packages"
+
 repositories_dir=/host/repositories
 ${DNF} install -y \
        ${repositories_dir}/${os}/${version}/x86_64/Packages/*.rpm
+
+echo "::endgroup::"
+
+
+echo "::group::Install packages for test"
 
 case ${os} in
   centos)
@@ -66,6 +79,11 @@ ${DNF} install -y \
        ruby \
        sudo
 
+echo "::endgroup::"
+
+
+echo "::group::Prepare test"
+
 data_dir=/tmp/data
 sudo -u postgres -H \
      $(${pg_config} --bindir)/initdb \
@@ -75,7 +93,7 @@ sudo -u postgres -H \
      --username=root
 sudo -u postgres -H \
      $(${pg_config} --bindir)/pg_ctl start \
-     --pgdata=/${data_dir}
+     --pgdata=${data_dir}
 
 cp -a \
    /host/sql \
@@ -98,6 +116,12 @@ esac
 ruby /host/test/prepare.rb > schedule
 export PG_REGRESS_DIFF_OPTS="-u --color=always"
 pg_regress=$(dirname $(${pg_config} --pgxs))/../test/regress/pg_regress
+
+echo "::endgroup::"
+
+
+echo "::group::Run test"
+
 set +e
 ${pg_regress} \
   --launcher=/host/test/short-pgappname \
@@ -105,11 +129,21 @@ ${pg_regress} \
   --schedule=schedule
 pg_regress_status=$?
 set -e
+
+echo "::endgroup::"
+
+
 if [ ${pg_regress_status} -ne 0 ]; then
+  echo "::group::Diff"
   cat regression.diffs
+  echo "::endgroup::"
   exit ${pg_regress_status}
 fi
 
+echo "::group::Postpare"
+
 sudo -u postgres -H \
      $(${pg_config} --bindir)/pg_ctl stop \
-     --pgdata=/${data_dir}
+     --pgdata=${data_dir}
+
+echo "::endgroup::"
