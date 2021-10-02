@@ -44,12 +44,17 @@ jobs:
             label: PostgreSQL 13 + Visual Studio 2019
             postgresql-version-major: "13"
             postgresql-version: "13.4-1"
-          - artifact-id: "postgresql-13-x64-groonga-master"
+          - artifact-id: "postgresql-14-x64"
+            cmake-generator: "Visual Studio 16 2019"
+            label: PostgreSQL 14 + Visual Studio 2019
+            postgresql-version-major: "14"
+            postgresql-version: "14.0-1"
+          - artifact-id: "postgresql-14-x64-groonga-master"
             cmake-generator: "Visual Studio 16 2019"
             groonga-master: "yes"
-            label: PostgreSQL 13 + Visual Studio 2019 + Groonga master
-            postgresql-version-major: "13"
-            postgresql-version: "13.4-1"
+            label: PostgreSQL 14 + Visual Studio 2019 + Groonga master
+            postgresql-version-major: "14"
+            postgresql-version: "14.0-1"
     env:
       PGROONGA_TEST_DATA: "test-data"
       PGROONGA_TEST_ENCODING: "UTF-8"
