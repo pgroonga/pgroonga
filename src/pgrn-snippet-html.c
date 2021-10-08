@@ -137,11 +137,13 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	{
 		PGrnCheck("%s failed to compute snippets", tag);
 	}
-	PG_FINALLY();
+	PG_CATCH();
 	{
 		grn_obj_close(ctx, snip);
+		PG_RE_THROW();
 	}
 	PG_END_TRY();
+	grn_obj_close(ctx, snip);
 
 	PG_RETURN_POINTER(snippets);
 }
