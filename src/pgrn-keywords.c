@@ -89,6 +89,8 @@ PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 void
 PGrnKeywordsUpdateTable(ArrayType *keywords, grn_obj *keywordsTable)
 {
+	const char *tag = "[keywords][update-table]";
+
 	{
 		int i, n;
 
@@ -132,11 +134,9 @@ PGrnKeywordsUpdateTable(ArrayType *keywords, grn_obj *keywordsTable)
 									   NULL, 0,
 									   0, -1, 0);
 		if (!cursor) {
-			ereport(ERROR,
-					(errcode(ERRCODE_OUT_OF_MEMORY),
-					 errmsg("pgroonga: "
-							"failed to create cursor for keywordsTable: %s",
-							ctx->errbuf)));
+			PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+						"%s failed to create cursor for keywordsTable",
+						tag);
 		}
 
 		nIDs = GRN_BULK_VSIZE(&keywordIDs) / sizeof(grn_id);

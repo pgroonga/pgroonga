@@ -94,8 +94,8 @@ PGrnOptionEnsureLexicon(const char *context)
 static void
 PGrnOptionValidateTokenizer(PGrnStringOptionValue rawTokenizer)
 {
+	const char *tag = "[option][tokenizer][validate]";
 	grn_obj *tokenizer = &(buffers->tokenizer);
-	grn_rc rc;
 
 	if (PGrnIsNoneValue(rawTokenizer))
 		return;
@@ -106,24 +106,20 @@ PGrnOptionValidateTokenizer(PGrnStringOptionValue rawTokenizer)
 	PGrnOptionEnsureLexicon("tokenizer");
 
 	GRN_TEXT_SETS(ctx, tokenizer, rawTokenizer);
-	rc = grn_obj_set_info(ctx,
-						  lexicon,
-						  GRN_INFO_DEFAULT_TOKENIZER,
-						  tokenizer);
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: invalid tokenizer: <%s>: %s",
-						rawTokenizer,
-						ctx->errbuf)));
-	}
+	grn_obj_set_info(ctx,
+					 lexicon,
+					 GRN_INFO_DEFAULT_TOKENIZER,
+					 tokenizer);
+	PGrnCheck("%s invalid tokenizer: <%s>",
+			  tag,
+			  rawTokenizer);
 }
 
 static void
 PGrnOptionValidateNormalizers(PGrnStringOptionValue rawNormalizers)
 {
+	const char *tag = "[option][normalizers][validate]";
 	grn_obj *normalizers = &(buffers->normalizers);
-	grn_rc rc;
 
 	if (PGrnIsNoneValue(rawNormalizers))
 		return;
@@ -134,22 +130,19 @@ PGrnOptionValidateNormalizers(PGrnStringOptionValue rawNormalizers)
 	PGrnOptionEnsureLexicon("normalizers");
 
 	GRN_TEXT_SETS(ctx, normalizers, rawNormalizers);
-	rc = grn_obj_set_info(ctx,
-						  lexicon,
-						  GRN_INFO_NORMALIZERS,
-						  normalizers);
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: invalid normalizers: <%s>: %s",
-						rawNormalizers,
-						ctx->errbuf)));
-	}
+	grn_obj_set_info(ctx,
+					 lexicon,
+					 GRN_INFO_NORMALIZERS,
+					 normalizers);
+	PGrnCheck("%s invalid normalizers: <%s>",
+			  tag,
+			  rawNormalizers);
 }
 
 static void
 PGrnOptionValidateNormalizersMapping(PGrnStringOptionValue rawNormalizersMapping)
 {
+	const char *tag = "[option][normalizers-mapping][validate]";
 	grn_obj *normalizers = &(buffers->normalizers);
 	Jsonb *jsonb;
 	JsonbIterator *iter;
@@ -167,75 +160,62 @@ PGrnOptionValidateNormalizersMapping(PGrnStringOptionValue rawNormalizersMapping
 	token = JsonbIteratorNext(&iter, &value, false);
 	if (token != WJB_BEGIN_OBJECT)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: "
-						"normalizers mapping must be object: %s: <%s>",
-						PGrnJSONBIteratorTokenToString(token),
-						rawNormalizersMapping)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s must be object: %s: <%s>",
+					tag,
+					PGrnJSONBIteratorTokenToString(token),
+					rawNormalizersMapping);
 	}
 
 	while (true) {
-		grn_rc rc;
-
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token == WJB_END_OBJECT)
 			break;
 		if (token != WJB_KEY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"normalizers mapping misses key: %s: <%s>",
-							PGrnJSONBIteratorTokenToString(token),
-							rawNormalizersMapping)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses key: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawNormalizersMapping);
 		}
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token != WJB_VALUE)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"normalizers mapping misses value: %s: <%s>",
-							PGrnJSONBIteratorTokenToString(token),
-							rawNormalizersMapping)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses value: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawNormalizersMapping);
 		}
 		if (value.type != jbvString)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"normalizers mapping's value must be string: "
-							"%s: <%s>",
-							PGrnJSONBValueTypeToString(value.type),
-							rawNormalizersMapping)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s value must be string: %s: <%s>",
+						tag,
+						PGrnJSONBValueTypeToString(value.type),
+						rawNormalizersMapping);
 		}
 		GRN_TEXT_SET(ctx,
 					 normalizers,
 					 value.val.string.val,
 					 value.val.string.len);
-		rc = grn_obj_set_info(ctx,
-							  lexicon,
-							  GRN_INFO_NORMALIZERS,
-							  normalizers);
-		if (rc != GRN_SUCCESS) {
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"normalizer mapping's value is "
-							"invalid normalizer: <%.*s>: %s",
-							(int)GRN_TEXT_LEN(normalizers),
-							GRN_TEXT_VALUE(normalizers),
-							ctx->errbuf)));
-		}
+		grn_obj_set_info(ctx,
+						 lexicon,
+						 GRN_INFO_NORMALIZERS,
+						 normalizers);
+		PGrnCheck("%s value is invalid normalizer: <%.*s>",
+				  tag,
+				  (int) GRN_TEXT_LEN(normalizers),
+				  GRN_TEXT_VALUE(normalizers));
 	}
 }
 
 static void
 PGrnOptionValidateTokenFilters(PGrnStringOptionValue rawTokenFilters)
 {
+	const char *tag = "[option][token-filters][validate]";
 	grn_obj *tokenFilters = &(buffers->tokenFilters);
-	grn_rc rc;
 
 	if (PGrnIsNoneValue(rawTokenFilters))
 		return;
@@ -243,17 +223,13 @@ PGrnOptionValidateTokenFilters(PGrnStringOptionValue rawTokenFilters)
 	PGrnOptionEnsureLexicon("token filters");
 
 	GRN_TEXT_SETS(ctx, tokenFilters, rawTokenFilters);
-	rc = grn_obj_set_info(ctx,
+	grn_obj_set_info(ctx,
 						  lexicon,
 						  GRN_INFO_TOKEN_FILTERS,
 						  tokenFilters);
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: invalid token filters: <%s>: %s",
-						rawTokenFilters,
-						ctx->errbuf)));
-	}
+	PGrnCheck("%s invalid token filters: <%s>",
+			  tag,
+			  rawTokenFilters);
 }
 
 static void
@@ -261,19 +237,15 @@ PGrnOptionValidatePlugin(const char *name,
 						 size_t nameSize,
 						 void *data)
 {
+	const char *tag = "[option][plugin][validate]";
 	char pluginName[MAXPGPATH];
 
 	grn_strncpy(pluginName, MAXPGPATH, name, nameSize);
 	pluginName[nameSize] = '\0';
 	grn_plugin_register(ctx, pluginName);
-	if (ctx->rc != GRN_SUCCESS)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: failed to register plugin: <%.*s>: %s",
-						(int)nameSize, name,
-						ctx->errbuf)));
-	}
+	PGrnCheck("%s failed to register plugin: <%.*s>",
+			  tag,
+			  (int) nameSize, name);
 }
 
 static void
@@ -287,6 +259,8 @@ PGrnOptionValidatePlugins(PGrnStringOptionValue names)
 static void
 PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 {
+	const char *tag = "[option][lexicon-type][validate]";
+
 	if (!name)
 		return;
 
@@ -299,20 +273,21 @@ PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 	if (strcmp(name, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) == 0)
 		return;
 
-	ereport(ERROR,
-			(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-			 errmsg("pgroonga: invalid lexicon type: <%s>: "
-					"available types: "
-					"[%s, %s, %s]",
-					name,
-					PGRN_LEXICON_TYPE_HASH_TABLE,
-					PGRN_LEXICON_TYPE_PATRICIA_TRIE,
-					PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE)));
+	PGrnCheckRC(GRN_INVALID_ARGUMENT,
+				"%s invalid lexicon type: <%s>: "
+				"available types: "
+				"[%s, %s, %s]",
+				tag,
+				name,
+				PGRN_LEXICON_TYPE_HASH_TABLE,
+				PGRN_LEXICON_TYPE_PATRICIA_TRIE,
+				PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE);
 }
 
 static void
 PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
 {
+	const char *tag = "[option][index-flags-mapping][validate]";
 	Jsonb *jsonb;
 	JsonbIterator *iter;
 	JsonbIteratorToken token;
@@ -327,12 +302,11 @@ PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
 	token = JsonbIteratorNext(&iter, &value, false);
 	if (token != WJB_BEGIN_OBJECT)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: "
-						"index flags mapping must be object: %s: <%s>",
-						PGrnJSONBIteratorTokenToString(token),
-						rawIndexFlagsMapping)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s must be object: %s: <%s>",
+					tag,
+					PGrnJSONBIteratorTokenToString(token),
+					rawIndexFlagsMapping);
 	}
 
 	while (true) {
@@ -341,23 +315,20 @@ PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
 			break;
 		if (token != WJB_KEY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"index flags mapping misses key: %s: <%s>",
-							PGrnJSONBIteratorTokenToString(token),
-							rawIndexFlagsMapping)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses key: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawIndexFlagsMapping);
 		}
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token != WJB_BEGIN_ARRAY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"index flags mapping's value must be array: "
-							"%s: <%s>",
-							PGrnJSONBIteratorTokenToString(token),
-							rawIndexFlagsMapping)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s value must be array: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawIndexFlagsMapping);
 		}
 		while (true)
 		{
@@ -367,13 +338,11 @@ PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
 				break;
 			if (value.type != jbvString)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: "
-								"index flags mapping's flag must be string: "
-								"%s: <%s>",
-								PGrnJSONBValueTypeToString(value.type),
-								rawIndexFlagsMapping)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s flags must be string: %s: <%s>",
+							tag,
+							PGrnJSONBValueTypeToString(value.type),
+							rawIndexFlagsMapping);
 			}
 			rawFlag.value = value.val.string.val;
 			rawFlag.length = value.val.string.len;
@@ -385,14 +354,12 @@ PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
 			{
 				continue;
 			}
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"index flags mapping's flags have invalid flag: "
-							"<%.*s>: %s",
-							(int)(rawFlag.length),
-							rawFlag.value,
-							ctx->errbuf)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s flags have invalid flag: <%.*s>: %s",
+						tag,
+						(int) (rawFlag.length),
+						rawFlag.value,
+						ctx->errbuf);
 		}
 	}
 }

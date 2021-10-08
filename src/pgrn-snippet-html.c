@@ -14,7 +14,7 @@ static grn_ctx *ctx = &PGrnContext;
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 
 static grn_obj *
-PGrnSnipCreate(ArrayType *keywords)
+PGrnSnipCreate(ArrayType *keywords, const char *tag)
 {
 	grn_obj *snip;
 	int flags = GRN_SNIP_SKIP_LEADING_SPACES;
@@ -30,10 +30,9 @@ PGrnSnipCreate(ArrayType *keywords)
 						 mapping);
 	if (!snip)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: "
-						"failed to allocate memory for generating snippet")));
+		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+					"%s failed to allocate memory for generating snippet",
+					tag);
 		return NULL;
 	}
 
@@ -108,7 +107,7 @@ PGrnSnipExec(grn_obj *snip, text *target, ArrayType **snippetArray)
 		}
 		snippets[i] = PointerGetDatum(cstring_to_text_with_len(buffer,
 															   snippetLength));
-    }
+	}
 	pfree(buffer);
 
 	dims[0] = nResults;
@@ -126,21 +125,23 @@ PGrnSnipExec(grn_obj *snip, text *target, ArrayType **snippetArray)
 Datum
 pgroonga_snippet_html(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[snippet-html]";
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	grn_obj *snip;
-	grn_rc rc;
 	ArrayType *snippets;
 
-	snip = PGrnSnipCreate(keywords);
-	rc = PGrnSnipExec(snip, target, &snippets);
-	grn_obj_close(ctx, snip);
-
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to compute snippets")));
+	snip = PGrnSnipCreate(keywords, tag);
+	PGrnSnipExec(snip, target, &snippets);
+	PG_TRY();
+	{
+		PGrnCheck("%s failed to compute snippets", tag);
 	}
+	PG_FINALLY();
+	{
+		grn_obj_close(ctx, snip);
+	}
+	PG_END_TRY();
 
 	PG_RETURN_POINTER(snippets);
 }

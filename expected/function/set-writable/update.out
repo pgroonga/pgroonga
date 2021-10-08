@@ -10,7 +10,7 @@ SELECT pgroonga_set_writable(false);
 (1 row)
 
 UPDATE memos SET content = 'PGroonga is fast!';
-ERROR:  pgroonga: can't insert a record while pgroonga.writable is false
+ERROR:  pgroonga: [insert] can't insert a record while pgroonga.writable is false
 SELECT * FROM memos;
      content      
 ------------------

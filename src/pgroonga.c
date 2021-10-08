@@ -536,7 +536,6 @@ PGrnEnsureDatabase(void)
 {
 	char *databasePath;
 	char path[MAXPGPATH];
-	grn_obj	*db;
 	pgrn_stat_buffer file_status;
 
 	if (grn_ctx_db(ctx))
@@ -554,21 +553,13 @@ PGrnEnsureDatabase(void)
 
 	if (pgrn_stat(path, &file_status) == 0)
 	{
-		db = grn_db_open(ctx, path);
-		if (!db)
-			ereport(ERROR,
-					(errcode(ERRCODE_IO_ERROR),
-					 errmsg("pgroonga: failed to open database: <%s>: %s",
-							path, ctx->errbuf)));
+		grn_db_open(ctx, path);
+		PGrnCheck("failed to open database: <%s>", path);
 	}
 	else
 	{
-		db = grn_db_create(ctx, path, NULL);
-		if (!db)
-			ereport(ERROR,
-					(errcode(ERRCODE_IO_ERROR),
-					 errmsg("pgroonga: failed to create database: <%s>: %s",
-							path, ctx->errbuf)));
+		grn_db_create(ctx, path, NULL);
+		PGrnCheck("failed to create database: <%s>", path);
 	}
 
 	PGrnInitializeDatabase();
@@ -577,10 +568,11 @@ PGrnEnsureDatabase(void)
 void
 _PG_init(void)
 {
+	grn_rc rc;
+
 	if (PGrnInitialized)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: already tried to initialize and failed")));
+		PGrnCheckRC(GRN_UNKNOWN_ERROR,
+					"already tried to initialize and failed");
 
 	PGrnInitialized = true;
 	PGrnGroongaInitialized = false;
@@ -591,10 +583,9 @@ _PG_init(void)
 
 	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
 
-	if (grn_init() != GRN_SUCCESS)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: failed to initialize Groonga")));
+	rc = grn_init();
+	PGrnCheckRC(rc,
+				"failed to initialize Groonga");
 
 	grn_set_segv_handler();
 
@@ -604,10 +595,9 @@ _PG_init(void)
 
 	grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
 
-	if (grn_ctx_init(&PGrnContext, 0))
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: failed to initialize Groonga context")));
+	rc = grn_ctx_init(&PGrnContext, 0);
+	PGrnCheckRC(rc,
+				"failed to initialize Groonga context");
 
 	PGrnGroongaInitialized = true;
 
@@ -641,6 +631,7 @@ static Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
 static Datum
 PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 {
+	const char *tag = "[vector][groonga->postgresql-type]";
 	Oid elementTypeID;
 	int elementLength;
 	bool elementByValue;
@@ -669,10 +660,10 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 		elementAlign = 'i';
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: unsupported datum array type: %u",
-						typeID)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported datum array type: %u",
+					tag,
+					typeID);
 		break;
 	}
 
@@ -731,6 +722,8 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 static Datum
 PGrnConvertToDatum(grn_obj *value, Oid typeID)
 {
+	const char *tag = "[data][groonga->postgresql]";
+
 	switch (typeID)
 	{
 	case BOOLOID:
@@ -808,12 +801,14 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		return PGrnConvertToDatumArrayType(value, typeID);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: unsupported datum type: %u",
-						typeID)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported datum type: %u",
+					tag,
+					typeID);
 		break;
 	}
+
+	return 0;
 }
 
 static bool
@@ -1022,6 +1017,7 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 static void
 PGrnCreateCheckType(PGrnCreateData *data)
 {
+	const char *tag = "[create][type][check]";
 	TupleDesc desc = RelationGetDescr(data->index);
 	Form_pg_attribute attr;
 	int32 maxLength;
@@ -1039,11 +1035,10 @@ PGrnCreateCheckType(PGrnCreateData *data)
 		maxLength = type_maximum_size(VARCHAROID, attr->atttypmod);
 		if (maxLength > 4096)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: "
-							"4097bytes over size varchar isn't supported: %d",
-							maxLength)));
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s 4097bytes over size varchar isn't supported: %d",
+						tag,
+						maxLength);
 		}
 		break;
 	default:
@@ -3043,9 +3038,10 @@ pgroonga_query_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 Datum
 pgroonga_similar_text(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: similar search available only in index scan")));
+	const char *tag = "[similar][text]";
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s similar search available only in index scan",
+				tag);
 
 	PG_RETURN_BOOL(false);
 }
@@ -3056,9 +3052,10 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_similar_text_array(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: similar search is available only in index scan")));
+	const char *tag = "[similar][text-array]";
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s similar search is available only in index scan",
+				tag);
 
 	PG_RETURN_BOOL(false);
 }
@@ -3069,9 +3066,10 @@ pgroonga_similar_text_array(PG_FUNCTION_ARGS)
 Datum
 pgroonga_similar_varchar(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: similar search is available only in index scan")));
+	const char *tag = "[similar][varchar]";
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s similar search is available only in index scan",
+				tag);
 
 	PG_RETURN_BOOL(false);
 }
@@ -3272,6 +3270,7 @@ pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 					   const char *prefix, unsigned int prefixSize,
 					   const char *indexName, unsigned int indexNameSize)
 {
+	const char *tag = "[prefix-rk]";
 	grn_obj *expression;
 	grn_obj *variable;
 	bool matched;
@@ -3285,10 +3284,9 @@ pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 							  variable);
 	if (!expression)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: failed to create expression: %s",
-						ctx->errbuf)));
+		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+					"%s failed to create expression",
+					tag);
 	}
 
 	grn_expr_append_obj(ctx, expression,
@@ -3895,7 +3893,7 @@ PGrnInsert(Relation index,
 		   bool *isnull,
 		   ItemPointer ht_ctid)
 {
-	const char *tag = "pgroonga: [insert]";
+	const char *tag = "[insert]";
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
 	PGrnWALData *walData;
@@ -3931,12 +3929,12 @@ PGrnInsert(Relation index,
 		if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
 		{
 			id = grn_table_add(ctx, sourcesTable, NULL, 0, NULL);
-			PGrnCheck("failed to add a record");
+			PGrnCheck("%s failed to add a record", tag);
 			if (id == GRN_ID_NIL)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INTERNAL_ERROR),
-						 errmsg("pgroonga: failed to add a record")));
+				PGrnCheckRC(GRN_UNKNOWN_ERROR,
+							"%s failed to add a record",
+							tag);
 			}
 			GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
 			grn_obj_set_value(ctx,
@@ -3944,11 +3942,13 @@ PGrnInsert(Relation index,
 							  id,
 							  &(buffers->ctid),
 							  GRN_OBJ_SET);
-			PGrnCheck("failed to set ctid value: <%u>: <%" PRIu64 ">",
+			PGrnCheck("%s failed to set ctid value: <%u>: <%" PRIu64 ">",
+					  tag,
 					  id,
 					  packedCtid);
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
+					"pgroonga: "
 					"%s[array] <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
 					tag,
 					index->rd_rel->relname.data,
@@ -3967,20 +3967,20 @@ PGrnInsert(Relation index,
 							   &packedCtid,
 							   sizeof(uint64),
 							   NULL);
-			PGrnCheck("failed to add a record: <%" PRIu64 ">",
+			PGrnCheck("%s failed to add a record: <%" PRIu64 ">",
+					  tag,
 					  packedCtid);
 			if (id == GRN_ID_NIL)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INTERNAL_ERROR),
-						 errmsg("pgroonga: "
-								"failed to add a record: <%" PRIu64 ">",
-								packedCtid)));
+				PGrnCheckRC(GRN_UNKNOWN_ERROR,
+							"%s failed to add a record: <%" PRIu64 ">",
+							tag,
+							packedCtid);
 			}
 			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
-					"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+					"pgroonga: %s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
 					tag,
 					index->rd_rel->relname.data,
 					index->rd_id,
@@ -4012,7 +4012,7 @@ PGrnInsert(Relation index,
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
 			recordSize += PGrnComputeSize(buffer);
 			PGrnWALInsertColumn(walData, dataColumn, buffer);
-			PGrnCheck("failed to set column value");
+			PGrnCheck("%s failed to set column value", tag);
 		}
 
 		PGrnWALInsertFinish(walData);
@@ -4045,6 +4045,7 @@ pgroonga_insert_raw(Relation index,
 #endif
 	)
 {
+	const char *tag = "[insert]";
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn = NULL;
 	uint32_t recordSize;
@@ -4053,9 +4054,10 @@ pgroonga_insert_raw(Relation index,
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: "
+				 errmsg("pgroonga: %s "
 						"can't insert a record "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	PGrnWALApply(index);
@@ -4386,6 +4388,8 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   grn_obj *targetColumn,
 						   Form_pg_attribute attribute)
 {
+	const char *tag = "[build-condition][in]";
+	const char *tag_any = "[build-condition][any]";
 	ArrayType *values;
 	int n_dimensions;
 	grn_id domain;
@@ -4404,18 +4408,18 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 							  &(buffers->general),
 							  GRN_OP_PUSH,
 							  0);
-		PGrnCheck("ANY: failed to push false value");
+		PGrnCheck("%s failed to push false value",
+				  tag_any);
 		return true;
 		break;
 	case 1 :
 		/* OK */
 		break;
 	default :
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: IN: "
-						"2 or more dimensions array isn't supported yet: %d",
-						n_dimensions)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s 2 or more dimensions array isn't supported yet: %d",
+					tag,
+					n_dimensions);
 		break;
 	}
 
@@ -4427,14 +4431,14 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						PGrnLookup("in_values", ERROR),
 						GRN_OP_PUSH,
 						1);
-	PGrnCheck("IN: failed to push in_values()");
+	PGrnCheck("%s failed to push in_values()", tag);
 	grn_expr_append_obj(ctx, data->expression,
 						targetColumn,
 						GRN_OP_PUSH,
 						1);
-	PGrnCheck("IN: failed to push target column");
+	PGrnCheck("%s failed to push target column", tag);
 	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
-	PGrnCheck("IN: failed to push GET_VALUE");
+	PGrnCheck("%s failed to push GET_VALUE", tag);
 
 	for (i = 1; i <= n; i++)
 	{
@@ -4457,11 +4461,11 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 							  &(buffers->general),
 							  GRN_OP_PUSH,
 							  1);
-		PGrnCheck("IN: failed to push a value");
+		PGrnCheck("%s failed to push a value", tag);
 	}
 
 	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2 + (n - 1));
-	PGrnCheck("IN: failed to push CALL");
+	PGrnCheck("%s failed to push CALL", tag);
 
 	return true;
 }
@@ -4552,7 +4556,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 						   GRN_OP_MATCH,
 						   GRN_OP_AND,
 						   GRN_EXPR_SYNTAX_SCRIPT);
-			PGrnCheck("%s: failed to parse scorer: <%s>[%d]: <%.*s>",
+			PGrnCheck("%s failed to parse scorer: <%s>[%d]: <%.*s>",
 					  tag,
 					  indexName, section,
 					  (int)VARSIZE_ANY_EXHDR(scorer),
@@ -4565,7 +4569,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 								indexData->index,
 								GRN_OP_PUSH,
 								1);
-			PGrnCheck("%s: failed to push index: <%s>[%d]",
+			PGrnCheck("%s failed to push index: <%s>[%d]",
 					  tag,
 					  indexName, section);
 			grn_expr_append_const_int(ctx,
@@ -4573,11 +4577,11 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 									  section,
 									  GRN_OP_PUSH,
 									  1);
-			PGrnCheck("%s: failed to push section of index: <%s>[%d]",
+			PGrnCheck("%s failed to push section of index: <%s>[%d]",
 					  tag,
 					  indexName, section);
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
-			PGrnCheck("%s: failed to push get-member operator: <%s>[%d]",
+			PGrnCheck("%s failed to push get-member operator: <%s>[%d]",
 					  tag,
 					  indexName, section);
 		}
@@ -4588,11 +4592,11 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 									  weight,
 									  GRN_OP_PUSH,
 									  1);
-			PGrnCheck("%s: failed to push weight: <%s>[%d] * <%d>",
+			PGrnCheck("%s failed to push weight: <%s>[%d] * <%d>",
 					  tag,
 					  indexName, section, weight);
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
-			PGrnCheck("%s: failed to push star operator for weight: "
+			PGrnCheck("%s failed to push star operator for weight: "
 					  "<%s>[%d] * <%d>",
 					  tag,
 					  indexName, section, weight);
@@ -4601,7 +4605,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 		if (nMatchColumns > 0)
 		{
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
-			PGrnCheck("%s: failed to push OR operator: <%s>[%d]",
+			PGrnCheck("%s failed to push OR operator: <%s>[%d]",
 					  tag,
 					  indexName, section);
 		}
@@ -4638,12 +4642,10 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 											1);
 	if (nIndexData == 0)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: %s: "
-						"index doesn't exist for target column: <%s>",
-						tag,
-						PGrnInspectName(targetColumn))));
+		PGrnCheckRC(GRN_OBJECT_CORRUPT,
+					"%s index doesn't exist for target column: <%s>",
+					tag,
+					PGrnInspectName(targetColumn));
 		return false;
 	}
 
@@ -4669,10 +4671,9 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 
 	if (!query)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: %s: query must not NULL",
-						tag)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s query must not NULL",
+					tag);
 		return false;
 	}
 
@@ -4684,10 +4685,9 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 
 	if (weights && ARR_NDIM(weights) == 0)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: %s: weights must not empty array",
-						tag)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s weights must not empty array",
+					tag);
 		return false;
 	}
 
@@ -4720,7 +4720,7 @@ PGrnSearchBuildConditionMatchCondition(PGrnSearchData *data,
 									   grn_obj *targetColumn,
 									   Form_pg_attribute attribute)
 {
-	const char *tag = "match-condition";
+	const char *tag = "[build-condition][match-condition]";
 	text *term;
 	grn_obj *matchTarget;
 
@@ -4742,13 +4742,13 @@ PGrnSearchBuildConditionMatchCondition(PGrnSearchData *data,
 						1);
 	if (matchTarget == targetColumn)
 	{
-		PGrnCheck("%s: failed to push column to be matched: <%s>",
+		PGrnCheck("%s failed to push column to be matched: <%s>",
 				  tag,
 				  PGrnInspectName(targetColumn));
 	}
 	else
 	{
-		PGrnCheck("%s: failed to push match columns",
+		PGrnCheck("%s failed to push match columns",
 				  tag);
 	}
 	grn_expr_append_const_str(ctx,
@@ -4757,7 +4757,7 @@ PGrnSearchBuildConditionMatchCondition(PGrnSearchData *data,
 							  VARSIZE_ANY_EXHDR(term),
 							  GRN_OP_PUSH,
 							  1);
-	PGrnCheck("%s: failed to push query: <%.*s>",
+	PGrnCheck("%s failed to push query: <%.*s>",
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(term),
 			  VARDATA_ANY(term));
@@ -4765,7 +4765,7 @@ PGrnSearchBuildConditionMatchCondition(PGrnSearchData *data,
 					   data->expression,
 					   GRN_OP_MATCH,
 					   1);
-	PGrnCheck("%s: failed to push MATCH operator",
+	PGrnCheck("%s failed to push MATCH operator",
 			  tag);
 
 	return true;
@@ -4777,7 +4777,7 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 									   grn_obj *targetColumn,
 									   Form_pg_attribute attribute)
 {
-	const char *tag = "query-condition";
+	const char *tag = "[build-condition][query-condition]";
 	text *query;
 	grn_obj *matchTarget;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
@@ -4802,7 +4802,7 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 				   GRN_OP_MATCH,
 				   GRN_OP_AND,
 				   flags);
-	PGrnCheck("%s: failed to parse query: <%.*s>",
+	PGrnCheck("%s failed to parse query: <%.*s>",
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(query),
 			  VARDATA_ANY(query));
@@ -4900,6 +4900,7 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 								   grn_obj *targetColumn,
 								   grn_obj *query)
 {
+	const char *tag = "[build-condition][like-regexp]";
 	grn_obj *expression;
 	const char *queryRaw;
 	const char *queryRawEnd;
@@ -4996,10 +4997,10 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 
 	if (queryRawCurrent != queryRawEnd)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("invalid encoding character exist: <%.*s>",
-						(int) querySize, queryRaw)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s invalid encoding character exist: <%.*s>",
+					tag,
+					(int) querySize, queryRaw);
 	}
 
 	if (!lastIsPercent)
@@ -5020,7 +5021,7 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 							  const char *query,
 							  unsigned int querySize)
 {
-	grn_rc rc;
+	const char *tag = "[build-condition][query]";
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
@@ -5030,17 +5031,13 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
-	rc = grn_expr_parse(ctx, data->expression,
-						query, querySize,
-						matchTarget, GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						ctx->errbuf)));
-	}
+	grn_expr_parse(ctx, data->expression,
+				   query, querySize,
+				   matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+				   flags);
+	PGrnCheck("%s failed to parse expression: <%.*s>",
+			  tag,
+			  (int) querySize, query);
 }
 
 static void
@@ -5077,7 +5074,7 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 							   const char *script,
 							   unsigned int scriptSize)
 {
-	grn_rc rc;
+	const char *tag = "[build-condition][script]";
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 
@@ -5086,17 +5083,11 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
-	rc = grn_expr_parse(ctx, data->expression,
-						script, scriptSize,
-						matchTarget, GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s",
-						ctx->errbuf)));
-	}
+	grn_expr_parse(ctx, data->expression,
+				   script, scriptSize,
+				   matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+				   flags);
+	PGrnCheck("%s failed to parse expression", tag);
 }
 
 void
@@ -5118,6 +5109,7 @@ PGrnSearchBuildCondition(Relation index,
 						 ScanKey key,
 						 PGrnSearchData *data)
 {
+	const char *tag = "[build-condition]";
 	TupleDesc desc;
 	Form_pg_attribute attribute;
 	const char *targetColumnName;
@@ -5262,10 +5254,10 @@ PGrnSearchBuildCondition(Relation index,
 		operator = GRN_OP_MATCH;
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("unexpected strategy number: %d",
-						key->sk_strategy)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unexpected strategy number: %d",
+					tag,
+					key->sk_strategy);
 		break;
 	}
 
@@ -5645,7 +5637,7 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 	so->tableCursor = grn_table_cursor_open(ctx, table,
 											NULL, 0, NULL, 0,
 											offset, limit, flags);
-	PGrnCheck("%s: failed to open cursor", tag);
+	PGrnCheck("%s failed to open cursor", tag);
 	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
 	{
 		so->ctidAccessor = grn_obj_column(ctx, table,
@@ -5706,6 +5698,7 @@ PGrnFillBorder(IndexScanDesc scan,
 			   void **max, unsigned int *maxSize,
 			   int *flags)
 {
+	const char *tag = "[range][fill-border]";
 	Relation index = scan->indexRelation;
 	TupleDesc desc;
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
@@ -5795,10 +5788,10 @@ PGrnFillBorder(IndexScanDesc scan,
 			}
 			break;
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("unexpected strategy number for range search: %d",
-							key->sk_strategy)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s unexpected strategy number for range search: %d",
+						tag,
+						key->sk_strategy);
 			break;
 		}
 	}
@@ -6453,6 +6446,7 @@ pgroonga_build_raw(Relation heap,
 				   Relation index,
 				   IndexInfo *indexInfo)
 {
+	const char *tag = "[build]";
 	IndexBuildResult *result;
 	double nHeapTuples = 0.0;
 	PGrnCreateData data;
@@ -6464,15 +6458,16 @@ pgroonga_build_raw(Relation heap,
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: "
+				 errmsg("pgroonga: %s "
 						"can't create an index "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	if (indexInfo->ii_Unique)
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: unique index isn't supported")));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unique index isn't supported",
+					tag);
 
 	PGrnAutoCloseUseIndex(index);
 
@@ -6573,6 +6568,7 @@ pgroonga_build(PG_FUNCTION_ARGS)
 static void
 pgroonga_buildempty_raw(Relation index)
 {
+	const char *tag = "[build-empty]";
 	PGrnCreateData data;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
@@ -6581,9 +6577,10 @@ pgroonga_buildempty_raw(Relation index)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: "
+				 errmsg("pgroonga: %s "
 						"can't create an empty index "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	PGrnAutoCloseUseIndex(index);
@@ -6671,7 +6668,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 						IndexBulkDeleteCallback callback,
 						void *callbackState)
 {
-	const char *tag = "pgroonga: [bulk-delete]";
+	const char *tag = "[bulk-delete]";
 	Relation index = info->index;
 	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
@@ -6681,9 +6678,10 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: "
+				 errmsg("pgroonga: %s "
 						"can't delete bulk records "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
@@ -6699,10 +6697,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	cursor = grn_table_cursor_open(ctx, sourcesTable,
 								   NULL, 0, NULL, 0,
 								   0, -1, 0);
-	if (!cursor)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg("pgroonga: failed to open cursor: %s", ctx->errbuf)));
+	PGrnCheck("%s failed to open cursor", tag);
 
 	PG_TRY();
 	{
@@ -6734,7 +6729,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 				{
 					GRN_LOG(ctx,
 							GRN_LOG_DEBUG,
-							"%s[nonexistent] <%s>(%u): <%u>",
+							"pgroonga: %s[nonexistent] <%s>(%u): <%u>",
 							tag,
 							index->rd_rel->relname.data,
 							index->rd_id,
@@ -6752,7 +6747,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 				{
 					GRN_LOG(ctx,
 							GRN_LOG_DEBUG,
-							"%s[nonexistent] <%s>(%u): <%u>",
+							"pgroonga: %s[nonexistent] <%s>(%u): <%u>",
 							tag,
 							index->rd_rel->relname.data,
 							index->rd_id,
@@ -6766,7 +6761,7 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 			{
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
-						"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+						"pgroonga: %s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
 						tag,
 						index->rd_rel->relname.data,
 						index->rd_id,

@@ -20,8 +20,15 @@ const char *PGrnInspect(grn_obj *object);
 const char *PGrnInspectName(grn_obj *object);
 
 int PGrnRCToPgErrorCode(grn_rc rc);
-grn_bool PGrnCheck(const char *format,
-				   ...) GRN_ATTRIBUTE_PRINTF(1);
+bool PGrnCheck(const char *format,
+			   ...) GRN_ATTRIBUTE_PRINTF(1);
+bool PGrnCheckRC(grn_rc rc,
+				 const char *format,
+				 ...) GRN_ATTRIBUTE_PRINTF(2);
+bool PGrnCheckRCLevel(grn_rc rc,
+					  int errorLevel,
+					  const char *format,
+					  ...) GRN_ATTRIBUTE_PRINTF(3);
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupWithSize(const char *name,

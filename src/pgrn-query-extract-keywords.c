@@ -50,43 +50,32 @@ PGrnFinalizeQueryExtractKeywords(void)
 static ArrayType *
 PGrnQueryExtractKeywords(text *query)
 {
+	const char *tag = "[query-extract-keywords]";
 	grn_obj *expression;
 	grn_obj *variable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
-	grn_rc rc;
 	ArrayType *keywords;
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, table, expression, variable);
 	if (!expression)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: query_extract_keywords: "
-						"failed to create expression: %s",
-						ctx->errbuf)));
+		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+					"%s failed to create expression",
+					tag);
 	}
 
-	rc = grn_expr_parse(ctx,
-						expression,
-						VARDATA_ANY(query),
-						VARSIZE_ANY_EXHDR(query),
-						textColumn,
-						GRN_OP_MATCH,
-						GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
-		grn_obj_close(ctx, expression);
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: query_extract_keywords: "
-						"failed to parse expression: %s",
-						message)));
-	}
+	grn_expr_parse(ctx,
+				   expression,
+				   VARDATA_ANY(query),
+				   VARSIZE_ANY_EXHDR(query),
+				   textColumn,
+				   GRN_OP_MATCH,
+				   GRN_OP_AND,
+				   flags);
+	PGrnCheck("%s failed to parse expression: <%.*s>",
+			  tag,
+			  (int) VARSIZE_ANY_EXHDR(query),
+			  VARDATA_ANY(query));
 
 	{
 		size_t i, nKeywords;

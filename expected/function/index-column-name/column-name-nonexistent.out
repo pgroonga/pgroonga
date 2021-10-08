@@ -8,5 +8,5 @@ CREATE INDEX pgroonga_index
           ON memos
        USING pgroonga (title, content, tag);
 SELECT pgroonga_index_column_name('pgroonga_index', 'nonexistent');
-ERROR:  pgroonga: index_column_name: nonexistent column is specified: <nonexistent>
+ERROR:  pgroonga: [index-column-name][name] nonexistent column is specified: <nonexistent>
 DROP TABLE memos;

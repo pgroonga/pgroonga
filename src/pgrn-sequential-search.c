@@ -119,6 +119,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 										const char *indexName,
 										unsigned int indexNameSize)
 {
+	const char *tag = "[sequential-search][index]";
 	grn_column_flags indexFlags =
 		GRN_OBJ_COLUMN_INDEX |
 		GRN_OBJ_WITH_POSITION;
@@ -143,12 +144,10 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		isPGroongaIndex = PGrnIndexIsPGroonga(index);
 		if (!isPGroongaIndex) {
 			RelationClose(index);
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: [sequential-search][index][invalid] "
-							"not PGroonga index: <%.*s>",
-							indexNameSize,
-							indexName)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[invalid] not PGroonga index: <%.*s>",
+						tag,
+						indexNameSize, indexName);
 		}
 
 		PGrnApplyOptionValues(index,
@@ -330,6 +329,7 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 										  unsigned int expressionDataSize,
 										  PGrnSequentialSearchType type)
 {
+	const char *tag = "[sequential-search][expression]";
 	uint64_t expressionHash;
 
 	if (data->type != type)
@@ -354,10 +354,9 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 							  data->variable);
 	if (!data->expression)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_OUT_OF_MEMORY),
-				 errmsg("pgroonga: failed to create expression: %s",
-						ctx->errbuf)));
+		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+					"%s failed to create expression",
+					tag);
 	}
 
 	data->expressionHash = expressionHash;
@@ -370,6 +369,8 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 									 const char *term,
 									 unsigned int termSize)
 {
+	const char *tag = "[sequential-search][match-term]";
+
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  term,
 												  termSize,
@@ -383,19 +384,19 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 						data->indexColumnSource,
 						GRN_OP_GET_VALUE,
 						1);
-	PGrnCheck("match-term: append match target column");
+	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
 							  data->expression,
 							  term,
 							  termSize,
 							  GRN_OP_PUSH,
 							  1);
-	PGrnCheck("match-term: append term to be matched");
+	PGrnCheck("%s append term to be matched", tag);
 	grn_expr_append_op(ctx,
 					   data->expression,
 					   GRN_OP_MATCH,
 					   2);
-	PGrnCheck("match-term: append match operator");
+	PGrnCheck("%s append match operator", tag);
 }
 
 void
@@ -403,7 +404,7 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
 								 unsigned int querySize)
 {
-	grn_rc rc;
+	const char *tag = "[sequential-search][query]";
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  query,
@@ -413,26 +414,17 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 		return;
 	}
 
-	rc = grn_expr_parse(ctx,
-						data->expression,
-						query, querySize,
-						data->indexColumnSource,
-						GRN_OP_MATCH, GRN_OP_AND,
-						data->exprFlags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
+	grn_expr_parse(ctx,
+				   data->expression,
+				   query, querySize,
+				   data->indexColumnSource,
+				   GRN_OP_MATCH, GRN_OP_AND,
+				   data->exprFlags);
+	if (ctx->rc != GRN_SUCCESS)
 		data->expressionHash = 0;
-
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s: <%.*s>",
-						message,
-						(int) querySize, query)));
-	}
+	PGrnCheck("%s failed to parse expression: <%.*s>",
+			  tag,
+			  (int) querySize, query);
 }
 
 void
@@ -440,8 +432,8 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 								  const char *script,
 								  unsigned int scriptSize)
 {
+	const char *tag = "[sequential-search][query]";
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
-	grn_rc rc;
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  script,
@@ -451,26 +443,17 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 		return;
 	}
 
-	rc = grn_expr_parse(ctx,
-						data->expression,
-						script, scriptSize,
-						data->indexColumnSource,
-						GRN_OP_MATCH, GRN_OP_AND,
-						flags);
-	if (rc != GRN_SUCCESS)
-	{
-		char message[GRN_CTX_MSGSIZE];
-		grn_strncpy(message, GRN_CTX_MSGSIZE,
-					ctx->errbuf, GRN_CTX_MSGSIZE);
-
+	grn_expr_parse(ctx,
+				   data->expression,
+				   script, scriptSize,
+				   data->indexColumnSource,
+				   GRN_OP_MATCH, GRN_OP_AND,
+				   flags);
+	if (ctx->rc != GRN_SUCCESS)
 		data->expressionHash = 0;
-
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: failed to parse expression: %s: <%.*s>",
-						message,
-						(int) scriptSize, script)));
-	}
+	PGrnCheck("%s failed to parse expression: <%.*s>",
+			  tag,
+			  (int) scriptSize, script);
 }
 
 bool

@@ -39,6 +39,7 @@ PGrnFinalizeMatchPositionsCharacter(void)
 static ArrayType *
 PGrnMatchPositionsCharacter(text *target)
 {
+	const char *tag = "[match-positions-character]";
 	grn_obj buffer;
 	ArrayType *positions;
 
@@ -79,10 +80,10 @@ PGrnMatchPositionsCharacter(text *target)
 												  end);
 					if (characterLength == 0) {
 						GRN_OBJ_FIN(ctx, &buffer);
-						ereport(ERROR,
-								(errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
-								 errmsg("pgroonga: invalid string: %s",
-										stringForNCharacters)));
+						PGrnCheckRC(GRN_INVALID_ARGUMENT,
+									"%s invalid string: <%s>",
+									tag,
+									stringForNCharacters);
 					}
 					if (stringForNCharacters == start) {
 						startNCharacters = nCharacters;

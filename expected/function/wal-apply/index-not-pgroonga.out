@@ -3,5 +3,5 @@ CREATE TABLE memos (
 );
 CREATE INDEX index ON memos (id);
 SELECT pgroonga_wal_apply('index');
-ERROR:  pgroonga: wal_apply: not PGroonga index: <index>
+ERROR:  pgroonga: [wal][apply][index] not PGroonga index: <index>
 DROP TABLE memos;

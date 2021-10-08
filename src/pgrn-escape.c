@@ -26,7 +26,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_timestamptz);
 Datum
 pgroonga_escape_string(PG_FUNCTION_ARGS)
 {
-	grn_rc rc = GRN_SUCCESS;
+	const char *tag = "[escape][string]";
 	text *value = PG_GETARG_TEXT_PP(0);
 	text *escapedValue;
 	grn_obj *escapedValueBuffer;
@@ -52,17 +52,16 @@ pgroonga_escape_string(PG_FUNCTION_ARGS)
 		GRN_TEXT_PUTC(ctx, specialCharactersBuffer, '\0');
 	}
 
-	rc = grn_expr_syntax_escape(ctx,
-								VARDATA_ANY(value),
-								VARSIZE_ANY_EXHDR(value),
-								GRN_TEXT_VALUE(specialCharactersBuffer),
-								'\\',
-								escapedValueBuffer);
-	if (rc != GRN_SUCCESS) {
-		ereport(ERROR,
-				(errcode(PGrnRCToPgErrorCode(rc)),
-				 errmsg("pgroonga: escape: failed to escape")));
-	}
+	 grn_expr_syntax_escape(ctx,
+							VARDATA_ANY(value),
+							VARSIZE_ANY_EXHDR(value),
+							GRN_TEXT_VALUE(specialCharactersBuffer),
+							'\\',
+							escapedValueBuffer);
+	 PGrnCheck("%s failed to escape: <%.*s>",
+			   tag,
+			   (int) VARSIZE_ANY_EXHDR(value),
+			   VARDATA_ANY(value));
 	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
 
 	escapedValue = cstring_to_text_with_len(GRN_TEXT_VALUE(escapedValueBuffer),

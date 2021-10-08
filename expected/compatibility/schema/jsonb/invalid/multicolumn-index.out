@@ -5,5 +5,5 @@ CREATE TABLE fruits (
 CREATE INDEX pgroonga_index ON fruits
   USING pgroonga (id pgroonga.int4_ops,
                   items pgroonga.jsonb_ops);
-ERROR:  pgroonga: multicolumn index for jsonb isn't supported: <pgroonga_index>
+ERROR:  pgroonga: [jsonb][create] multicolumn index isn't supported: <pgroonga_index>
 DROP TABLE fruits;

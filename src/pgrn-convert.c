@@ -4,6 +4,7 @@
 
 #include "pgrn-convert.h"
 #include "pgrn-global.h"
+#include "pgrn-groonga.h"
 #include "pgrn-pg.h"
 
 #include <catalog/pg_type.h>
@@ -14,7 +15,10 @@
 static grn_ctx *ctx = &PGrnContext;
 
 static void
-PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
+PGrnConvertFromDataArrayType(Datum datum,
+							 Oid typeID,
+							 grn_obj *buffer,
+							 const char *tag)
 {
 	ArrayType *value = DatumGetArrayTypeP(datum);
 	ArrayIterator iterator;
@@ -71,10 +75,10 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 			break;
 		}
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: unsupported datum array type: %u",
-							typeID)));
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s unsupported datum array type: %u",
+						tag,
+						typeID);
 			break;
 		}
 	}
@@ -84,6 +88,8 @@ PGrnConvertFromDataArrayType(Datum datum, Oid typeID, grn_obj *buffer)
 void
 PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 {
+	const char *tag = "[data][postgresql->groonga]";
+
 	switch (typeID)
 	{
 	case BOOLOID:
@@ -159,13 +165,13 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	case INT4ARRAYOID:
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
-		PGrnConvertFromDataArrayType(datum, typeID, buffer);
+		PGrnConvertFromDataArrayType(datum, typeID, buffer, tag);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: unsupported datum type: %u",
-						typeID)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported datum type: %u",
+					tag,
+					typeID);
 		break;
 	}
 }

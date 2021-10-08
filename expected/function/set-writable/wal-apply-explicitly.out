@@ -41,7 +41,7 @@ SELECT pgroonga_set_writable(false);
 (1 row)
 
 SELECT pgroonga_wal_apply('pgrn_index');
-ERROR:  pgroonga: wal_apply: can't apply WAL while pgroonga.writable is false
+ERROR:  pgroonga: [wal][apply][index] can't apply WAL while pgroonga.writable is false
 SELECT pgroonga_command('object_exist',
 			ARRAY[
 			  'name', pgroonga_table_name('pgrn_index')

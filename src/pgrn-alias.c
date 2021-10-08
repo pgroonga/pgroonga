@@ -124,6 +124,7 @@ PGrnAliasFillNewNameRaw(Oid indexFileNodeID, char *name, size_t nameSize)
 void
 PGrnAliasAdd(Relation index)
 {
+	const char *tag = "[alias][add]";
 	grn_obj *table;
 	grn_obj *column;
 	char old[GRN_TABLE_MAX_KEY_SIZE];
@@ -140,11 +141,13 @@ PGrnAliasAdd(Relation index)
 	id = grn_table_add(ctx, table, old, strlen(old), NULL);
 	if (id == GRN_ID_NIL)
 	{
-		PGrnCheck("alias: failed to add entry: <%s>", old);
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: alias: failed to add entry: <%s>",
-						old)));
+		PGrnCheck("%s failed to add entry: <%s>",
+				  tag,
+				  old);
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s failed to add entry: <%s>",
+					tag,
+					old);
 	}
 
 	walData = PGrnWALStart(index);
@@ -159,7 +162,8 @@ PGrnAliasAdd(Relation index)
 					   GRN_OBJ_DO_SHALLOW_COPY);
 		GRN_TEXT_SET(ctx, newValue, new, strlen(new));
 		grn_obj_set_value(ctx, column, id, newValue, GRN_OBJ_SET);
-		PGrnCheck("alias: failed to set entry: <%s>(%u) -> <%s>",
+		PGrnCheck("%s failed to set entry: <%s>(%u) -> <%s>",
+				  tag,
 				  old, id, new);
 		grn_db_touch(ctx, grn_ctx_db(ctx));
 

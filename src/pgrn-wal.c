@@ -570,6 +570,7 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 							const char *value,
 							size_t valueSize)
 {
+	const char *tag = "[wal][insert][column][value]";
 	msgpack_packer *packer;
 
 	packer = &(data->packer);
@@ -632,12 +633,11 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 											   domain,
 											   domainName,
 											   GRN_TABLE_MAX_KEY_SIZE);
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: WAL: insert: unsupported type: "
-							"<%.*s>: <%.*s>",
-							(int)nameSize, name,
-							domainNameSize, domainName)));
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s unsupported type: <%.*s>: <%.*s>",
+						tag,
+						(int) nameSize, name,
+						domainNameSize, domainName);
 		}
 		break;
 	}
@@ -729,6 +729,7 @@ PGrnWALInsertColumn(PGrnWALData *data,
 					grn_obj *value)
 {
 #ifdef PGRN_SUPPORT_WAL
+	const char *tag = "[wal][insert][column]";
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 	int nameSize;
 
@@ -751,12 +752,11 @@ PGrnWALInsertColumn(PGrnWALData *data,
 		PGrnWALInsertColumnUValueVector(data, name, nameSize, value);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: WAL: not bulk value isn't supported yet: "
-						"<%.*s>: <%s>",
-						(int)nameSize, name,
-						grn_obj_type_to_string(value->header.type))));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s not bulk value isn't supported yet: <%.*s>: <%s>",
+					tag,
+					(int) nameSize, name,
+					grn_obj_type_to_string(value->header.type));
 		break;
 	}
 
@@ -1068,17 +1068,17 @@ PGrnWALApplyKeyEqual(const char *context,
 					 msgpack_object *key,
 					 const char *name)
 {
+	const char *tag = "[wal][apply][key][equal]";
 	size_t nameSize;
 
 	if (key->type != MSGPACK_OBJECT_STR)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"key must be string: <%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						key->type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%skey must be string: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					key->type);
 	}
 
 	nameSize = strlen(name);
@@ -1094,18 +1094,17 @@ static uint64_t
 PGrnWALApplyValueGetPositiveInteger(const char *context,
 									msgpack_object_kv *kv)
 {
+	const char *tag = "[wal][apply][value][positive-integer][get]";
 	if (kv->val.type != MSGPACK_OBJECT_POSITIVE_INTEGER)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be positive integer: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be positive integer: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 	}
 
 	return kv->val.via.u64;
@@ -1117,18 +1116,17 @@ PGrnWALApplyValueGetString(const char *context,
 						   const char **string,
 						   size_t *stringSize)
 {
+	const char *tag = "[wal][apply][value][string][get]";
 	if (kv->val.type != MSGPACK_OBJECT_STR)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be string: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be string: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 	}
 
 	*string = MSGPACK_OBJECT_VIA_STR(kv->val).ptr;
@@ -1141,18 +1139,17 @@ PGrnWALApplyValueGetBinary(const char *context,
 						   const char **binary,
 						   size_t *binarySize)
 {
+	const char *tag = "[wal][apply][value][binary][get]";
 	if (kv->val.type != MSGPACK_OBJECT_BIN)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be binary: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_BIN(kv->key).size,
-						MSGPACK_OBJECT_VIA_BIN(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be binary: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_BIN(kv->key).size,
+					MSGPACK_OBJECT_VIA_BIN(kv->key).ptr,
+					kv->val.type);
 	}
 
 	*binary = MSGPACK_OBJECT_VIA_BIN(kv->val).ptr;
@@ -1163,6 +1160,7 @@ static grn_obj *
 PGrnWALApplyValueGetGroongaObject(const char *context,
 								  msgpack_object_kv *kv)
 {
+	const char *tag = "[wal][apply][value][groonga-object][get]";
 	grn_obj *object = NULL;
 
 	switch (kv->val.type)
@@ -1176,16 +1174,14 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 									ERROR);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be nil or string: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be nil or string: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 		break;
 	}
 
@@ -1197,21 +1193,20 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 									 msgpack_object_kv *kv,
 									 grn_obj *ids)
 {
+	const char *tag = "[wal][apply][value][groonga-object-ids][get]";
 	msgpack_object_array *array;
 	uint32_t i;
 
 	if (kv->val.type != MSGPACK_OBJECT_ARRAY)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be array: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be array: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 	}
 
 	array = &(kv->val.via.array);
@@ -1224,17 +1219,15 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 		element = &(array->ptr[i]);
 		if (element->type != MSGPACK_OBJECT_STR)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: %s%s"
-							"%.*s value must be array of string: "
-							"[%u]=<%#x>",
-							context ? context : "",
-							context ? ": " : "",
-							MSGPACK_OBJECT_VIA_STR(kv->key).size,
-							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-							i,
-							element->type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s%s%s%.*s value must be array of string: [%u]=<%#x>",
+						tag,
+						context ? context : "",
+						context ? " " : "",
+						MSGPACK_OBJECT_VIA_STR(kv->key).size,
+						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+						i,
+						element->type);
 		}
 
 		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(*element).ptr,
@@ -1250,6 +1243,7 @@ PGrnWALApplyValueGetTableModule(const char *context,
 								msgpack_object_kv *kv,
 								grn_obj *buffer)
 {
+	const char *tag = "[wal][apply][value][table-module][get]";
 	grn_obj *module = NULL;
 
 	switch (kv->val.type)
@@ -1265,16 +1259,14 @@ PGrnWALApplyValueGetTableModule(const char *context,
 					 MSGPACK_OBJECT_VIA_STR(kv->val).size);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be nil or string: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be nil or string: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 		break;
 	}
 
@@ -1286,6 +1278,7 @@ PGrnWALApplyValueGetTableModules(const char *context,
 								 msgpack_object_kv *kv,
 								 grn_obj *buffer)
 {
+	const char *tag = "[wal][apply][value][table-modules][get]";
 	grn_obj *modules = NULL;
 
 	switch (kv->val.type)
@@ -1314,17 +1307,17 @@ PGrnWALApplyValueGetTableModules(const char *context,
 			element = &(array->ptr[i]);
 			if (element->type != MSGPACK_OBJECT_STR)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: WAL: apply: %s%s"
-								"%.*s value must be string or array of string: "
-								"[%u]=<%#x>",
-								context ? context : "",
-								context ? ": " : "",
-								MSGPACK_OBJECT_VIA_STR(kv->key).size,
-								MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-								i,
-								element->type)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s%s%s"
+							"%.*s value must be string or array of string: "
+							"[%u]=<%#x>",
+							tag,
+							context ? context : "",
+							context ? " " : "",
+							MSGPACK_OBJECT_VIA_STR(kv->key).size,
+							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+							i,
+							element->type);
 			}
 
 			if (i > 0)
@@ -1337,16 +1330,14 @@ PGrnWALApplyValueGetTableModules(const char *context,
 		break;
 	}
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: %s%s"
-						"%.*s value must be string or array: "
-						"<%#x>",
-						context ? context : "",
-						context ? ": " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
-						kv->val.type)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s%s%s%.*s value must be string or array: <%#x>",
+					tag,
+					context ? context : "",
+					context ? " " : "",
+					MSGPACK_OBJECT_VIA_STR(kv->key).size,
+					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->val.type);
 		break;
 	}
 
@@ -1359,7 +1350,7 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 						grn_obj *value,
 						grn_id range_id)
 {
-	const char *context = "insert: array";
+	const char *tag = "[wal][apply][insert][array]";
 	grn_obj *range;
 	grn_id element_domain_id;
 	uint32_t i;
@@ -1449,12 +1440,10 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 								   element_domain_id);
 			break;
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: %s: "
-							"unexpected element type: <%#x>",
-							context,
-							element->type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s unexpected element type: <%#x>",
+						tag,
+						element->type);
 			break;
 		}
 	}
@@ -1465,7 +1454,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 				   msgpack_object_map *map,
 				   uint32_t currentElement)
 {
-	const char *context = "insert";
+	const char *tag = "[wal][apply]";
+	const char *context = "[insert]";
 	grn_obj *table = NULL;
 	const char *key = NULL;
 	size_t keySize = 0;
@@ -1515,12 +1505,11 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 
 		if (key->type != MSGPACK_OBJECT_STR)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: %s: "
-							"key must be map: <%#x>",
-							context,
-							key->type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s%s key must be map: <%#x>",
+						tag,
+						context,
+						key->type);
 		}
 
 		column = PGrnLookupColumnWithSize(table,
@@ -1566,12 +1555,11 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 			break;
 */
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: WAL: apply: %s: "
-							"unexpected value type: <%#x>",
-							context,
-							value->type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s%s unexpected value type: <%#x>",
+						tag,
+						context,
+						value->type);
 			break;
 		}
 		grn_obj_set_value(ctx, column, id, walValue, GRN_OBJ_SET);
@@ -1583,7 +1571,7 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 						msgpack_object_map *map,
 						uint32_t currentElement)
 {
-	const char *context = "create table";
+	const char *context = "[create-table]";
 	const char *name = NULL;
 	size_t nameSize = 0;
 	grn_table_flags flags = 0;
@@ -1646,7 +1634,7 @@ PGrnWALApplyCreateColumn(PGrnWALApplyData *data,
 						 msgpack_object_map *map,
 						 uint32_t currentElement)
 {
-	const char *context = "create column";
+	const char *context = "[create-column]";
 	grn_obj *table = NULL;
 	const char *name = NULL;
 	size_t nameSize = 0;
@@ -1685,7 +1673,7 @@ PGrnWALApplySetSources(PGrnWALApplyData *data,
 					   msgpack_object_map *map,
 					   uint32_t currentElement)
 {
-	const char *context = "set sources";
+	const char *context = "[set-sources]";
 	grn_obj *column = NULL;
 	grn_obj *sourceIDs = &(buffers->sourceIDs);
 	uint32_t i;
@@ -1714,7 +1702,7 @@ PGrnWALApplyRenameTable(PGrnWALApplyData *data,
 						msgpack_object_map *map,
 						uint32_t currentElement)
 {
-	const char *context = "rename table";
+	const char *context = "[rename-table]";
 	grn_obj *table = NULL;
 	const char *newName = NULL;
 	size_t newNameSize = 0;
@@ -1743,7 +1731,7 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 				   msgpack_object_map *map,
 				   uint32_t currentElement)
 {
-	const char *context = "delete";
+	const char *context = "[delete]";
 	grn_obj *table = NULL;
 	const char *key = NULL;
 	size_t keySize = 0;
@@ -1793,6 +1781,7 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
+	const char *tag = "[wal][apply][object]";
 	const char *context = NULL;
 	msgpack_object_map *map;
 	uint32_t currentElement = 0;
@@ -1800,8 +1789,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 
 	if (object->type != MSGPACK_OBJECT_MAP)
 	{
-		const char *message =
-			"pgroonga: WAL: apply: record must be map";
+		const char *message = "record must be map";
 		BlockNumber currentBlock;
 		LocationIndex currentOffset;
 
@@ -1811,87 +1799,87 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		switch (object->type)
 		{
 		case MSGPACK_OBJECT_NIL:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <nil>",
-							message,
-							currentBlock,
-							currentOffset)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <nil>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset);
 			break;
 		case MSGPACK_OBJECT_BOOLEAN:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <boolean>: <%s>",
-							message,
-							currentBlock,
-							currentOffset,
-							object->via.boolean ? "true" : "false")));
-			break;
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <boolean>: <%s>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						object->via.boolean ? "true" : "false");
+	break;
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <positive-integer>: <%" PRId64 ">",
-							message,
-							currentBlock,
-							currentOffset,
-							object->via.i64)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <positive-integer>: <%" PRId64 ">",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						object->via.i64);
 			break;
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <negative-integer>: <%" PRIu64 ">",
-							message,
-							currentBlock,
-							currentOffset,
-							object->via.u64)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <negative-integer>: <%" PRIu64 ">",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						object->via.u64);
 			break;
 		case MSGPACK_OBJECT_FLOAT:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <float>: <%g>",
-							message,
-							currentBlock,
-							currentOffset,
-							MSGPACK_OBJECT_VIA_FLOAT(*object))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <float>: <%g>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						MSGPACK_OBJECT_VIA_FLOAT(*object));
 			break;
 		case MSGPACK_OBJECT_STR:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <string>: <%.*s>",
-							message,
-							currentBlock,
-							currentOffset,
-							(int) MSGPACK_OBJECT_VIA_STR(*object).size,
-							MSGPACK_OBJECT_VIA_STR(*object).ptr)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <string>: <%.*s>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						(int) MSGPACK_OBJECT_VIA_STR(*object).size,
+						MSGPACK_OBJECT_VIA_STR(*object).ptr);
 			break;
 		case MSGPACK_OBJECT_ARRAY:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <array>: <%u>",
-							message,
-							currentBlock,
-							currentOffset,
-							object->via.array.size)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <array>: <%u>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						object->via.array.size);
 			break;
 #if MSGPACK_VERSION_MAJOR != 0
 		case MSGPACK_OBJECT_BIN:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <binary>: <%u>",
-							message,
-							currentBlock,
-							currentOffset,
-							MSGPACK_OBJECT_VIA_BIN(*object).size)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <binary>: <%u>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						MSGPACK_OBJECT_VIA_BIN(*object).size);
 			break;
 #endif
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("%s: <%u><%u>: <%#x>",
-							message,
-							currentBlock,
-							currentOffset,
-							object->type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s %s: <%u><%u>: <%#x>",
+						tag,
+						message,
+						currentBlock,
+						currentOffset,
+						object->type);
 			break;
 		}
 	}
@@ -1931,10 +1919,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		PGrnWALApplyDelete(data, map, currentElement);
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: WAL: apply: unexpected action: <%d>",
-						action)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unexpected action: <%d>",
+					tag,
+					action);
 		break;
 	}
 }
@@ -2025,6 +2013,7 @@ PGrnWALApply(Relation index)
 Datum
 pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[wal][apply][index]";
 	int64_t nAppliedOperations = 0;
 #ifdef PGRN_SUPPORT_WAL
 	Datum indexNameDatum = PG_GETARG_DATUM(0);
@@ -2036,19 +2025,20 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: wal_apply: "
+				 errmsg("pgroonga: %s "
 						"can't apply WAL "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
 	indexOid = DatumGetObjectId(indexOidDatum);
 	if (!OidIsValid(indexOid))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: wal_apply: unknown index name: <%s>",
-						DatumGetCString(indexNameDatum))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unknown index name: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
 	}
 
 	index = RelationIdGetRelation(indexOid);
@@ -2056,10 +2046,10 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	{
 		if (!PGrnIndexIsPGroonga(index))
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: wal_apply: not PGroonga index: <%s>",
-							DatumGetCString(indexNameDatum))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s not PGroonga index: <%s>",
+						tag,
+						DatumGetCString(indexNameDatum));
 		}
 		nAppliedOperations = PGrnWALApply(index);
 	}
@@ -2071,9 +2061,9 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL: not supported")));
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
@@ -2084,6 +2074,7 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 Datum
 pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[wal][apply][all]";
 	int64_t nAppliedOperations = 0;
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
@@ -2095,9 +2086,10 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
-				 errmsg("pgroonga: wal_apply: "
+				 errmsg("pgroonga: %s "
 						"can't apply WAL "
-						"while pgroonga.writable is false")));
+						"while pgroonga.writable is false",
+						tag)));
 	}
 
 	indexes = pgrn_table_open(IndexRelationId, lock);
@@ -2134,9 +2126,9 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	pgrn_table_close(indexes, lock);
 #else
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL: not supported")));
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
@@ -2229,6 +2221,7 @@ PGrnWALTruncate(Relation index)
 Datum
 pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[wal][truncate][index]";
 	int64_t nTruncatedBlocks = 0;
 #ifdef PGRN_SUPPORT_WAL
 	Datum indexNameDatum = PG_GETARG_DATUM(0);
@@ -2240,10 +2233,10 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	indexOid = DatumGetObjectId(indexOidDatum);
 	if (!OidIsValid(indexOid))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: wal_truncate: unknown index name: <%s>",
-						DatumGetCString(indexNameDatum))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unknown index name: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
 	}
 
 	index = RelationIdGetRelation(indexOid);
@@ -2251,10 +2244,10 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	{
 		if (!PGrnIndexIsPGroonga(index))
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: wal_truncate: not PGroonga index: <%s>",
-							DatumGetCString(indexNameDatum))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s not PGroonga index: <%s>",
+						tag,
+						DatumGetCString(indexNameDatum));
 		}
 		nTruncatedBlocks = PGrnWALTruncate(index);
 	}
@@ -2266,9 +2259,9 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL: not supported")));
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }
@@ -2320,9 +2313,10 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	pgrn_table_close(indexes, lock);
 #else
-	ereport(ERROR,
-			(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			 errmsg("pgroonga: WAL: not supported")));
+	const char *tag = "[wal][truncate][all]";
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }

@@ -109,6 +109,12 @@ PGrnRCToPgErrorCode(grn_rc rc)
 	case GRN_INVALID_ARGUMENT:
 		errorCode = ERRCODE_INVALID_PARAMETER_VALUE;
 		break;
+	case GRN_FUNCTION_NOT_IMPLEMENTED:
+		errorCode = ERRCODE_FEATURE_NOT_SUPPORTED;
+		break;
+	case GRN_NO_MEMORY_AVAILABLE:
+		errorCode = ERRCODE_OUT_OF_MEMORY;
+		break;
 	default:
 		break;
 	}
@@ -116,7 +122,7 @@ PGrnRCToPgErrorCode(grn_rc rc)
 	return errorCode;
 }
 
-grn_bool
+bool
 PGrnCheck(const char *format, ...)
 {
 #define MESSAGE_SIZE 4096
@@ -124,7 +130,7 @@ PGrnCheck(const char *format, ...)
 	char message[MESSAGE_SIZE];
 
 	if (ctx->rc == GRN_SUCCESS)
-		return GRN_TRUE;
+		return true;
 
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
@@ -132,7 +138,47 @@ PGrnCheck(const char *format, ...)
 	ereport(ERROR,
 			(errcode(PGrnRCToPgErrorCode(ctx->rc)),
 			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
-	return GRN_FALSE;
+	return false;
+#undef MESSAGE_SIZE
+}
+
+bool
+PGrnCheckRC(grn_rc rc, const char *format, ...)
+{
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
+	if (rc == GRN_SUCCESS)
+		return true;
+
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
+	ereport(ERROR,
+			(errcode(PGrnRCToPgErrorCode(rc)),
+			 errmsg("pgroonga: %s", message)));
+	return false;
+#undef MESSAGE_SIZE
+}
+
+bool
+PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
+{
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
+	if (rc == GRN_SUCCESS)
+		return true;
+
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
+	ereport(errorLevel,
+			(errcode(PGrnRCToPgErrorCode(rc)),
+			 errmsg("pgroonga: %s", message)));
+	return false;
 #undef MESSAGE_SIZE
 }
 
@@ -151,10 +197,9 @@ PGrnLookupWithSize(const char *name,
 	PGrnEnsureDatabase();
 	object = grn_ctx_get(ctx, name, nameSize);
 	if (!object)
-		ereport(errorLevel,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: object isn't found: <%.*s>",
-						(int)nameSize, name)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"object isn't found: <%.*s>",
+					(int)nameSize, name);
 	return object;
 }
 
@@ -182,11 +227,11 @@ PGrnLookupColumnWithSize(grn_obj *table,
 		int tableNameSize;
 
 		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
-		ereport(errorLevel,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: column isn't found: <%.*s>:<%.*s>",
-						tableNameSize, tableName,
-						(int)nameSize, name)));
+		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
+						 errorLevel,
+						 "column isn't found: <%.*s>:<%.*s>",
+						 tableNameSize, tableName,
+						 (int) nameSize, name);
 	}
 
 	return column;
@@ -400,7 +445,7 @@ PGrnCreateColumnWithSize(Relation	index,
 			path = pathBuffer;
 		}
 	}
-    column = grn_column_create(ctx,
+	column = grn_column_create(ctx,
 							   table,
 							   name,
 							   nameSize,
@@ -549,6 +594,7 @@ PGrnRemoveColumns(grn_obj *table)
 grn_id
 PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 {
+	const char *tag = "[type][postgresql->groonga]";
 	grn_id typeID = GRN_ID_NIL;
 	unsigned char typeFlags = 0;
 
@@ -601,10 +647,10 @@ PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 		typeFlags |= GRN_OBJ_VECTOR;
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("[pgroonga][type][postgresql->groonga] "
-						"unsupported type: %u", pgTypeID)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported type: %u",
+					tag,
+					pgTypeID);
 		break;
 	}
 
@@ -620,6 +666,7 @@ PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 Oid
 PGrnGrnTypeToPGType(grn_id typeID)
 {
+	const char *tag = "[type][groonga->postgresql]";
 	Oid pgTypeID = InvalidOid;
 
 	switch (typeID)
@@ -668,11 +715,10 @@ PGrnGrnTypeToPGType(grn_id typeID)
 			if (keyTypeID != GRN_ID_NIL)
 				return PGrnGrnTypeToPGType(keyTypeID);
 		}
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("[pgroonga][type][groonga->postgresql] "
-						"unsupported type: %d",
-						typeID)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported type: %d",
+					tag,
+					typeID);
 		break;
 	}
 

@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 
+#include "pgrn-groonga.h"
 #include "pgrn-pg.h"
 #include "pgrn-tablespace.h"
 
@@ -29,10 +30,9 @@ PGrnPGIndexNameToID(const char *name)
 	indexID = DatumGetObjectId(indexIDDatum);
 	if (!OidIsValid(indexID))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: unknown index name: <%s>",
-						name)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"unknown index name: <%s>",
+					name);
 	}
 
 	return indexID;
@@ -54,10 +54,9 @@ PGrnPGResolveIndexID(Oid id)
 	index = RelationIdGetRelation(id);
 	if (!RelationIsValid(index))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: unknown index ID: <%u>",
-						id)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"pgroonga: unknown index ID: <%u>",
+					id);
 	}
 
 	return index;
@@ -91,11 +90,9 @@ PGrnPGIndexIDToFileNodeID(Oid indexID)
 	tuple = SearchSysCache1(RELOID, indexID);
 	if (!HeapTupleIsValid(tuple))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: "
-						"failed to find file node ID for index: <%u>",
-						indexID)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"failed to find file node ID for index: <%u>",
+					indexID);
 	}
 
 	indexClass = (Form_pg_class) GETSTRUCT(tuple);

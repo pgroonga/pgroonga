@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-compatible.h"
+#include "pgrn-groonga.h"
 
 #include "pgrn-pg.h"
 
@@ -17,6 +18,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_index_column_name_index);
 Datum
 pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[index-column-name][name]";
 	const char *indexName = PG_GETARG_CSTRING(0);
 	const text *columnName = PG_GETARG_TEXT_PP(1);
 	const char *columnNameData = VARDATA_ANY(columnName);
@@ -40,12 +42,11 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 
 		if (i == desc->natts)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: index_column_name: "
-							"nonexistent column is specified: <%.*s>",
-							(const int)columnNameSize,
-							columnNameData)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s nonexistent column is specified: <%.*s>",
+						tag,
+						(const int) columnNameSize,
+						columnNameData);
 		}
 	}
 
@@ -71,6 +72,7 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 Datum
 pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[index-column-name][index]";
 	const char *indexName = PG_GETARG_CSTRING(0);
 	const int32 columnIndex = PG_GETARG_INT32(1);
 
@@ -85,11 +87,11 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 
 		if (columnIndex < 0 || n_attributes <= columnIndex)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: index_column_name: column index must be 0..%d: %d",
-							n_attributes - 1,
-							columnIndex)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s column index must be 0..%d: %d",
+						tag,
+						n_attributes - 1,
+						columnIndex);
 		}
 	}
 

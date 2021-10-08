@@ -8,5 +8,5 @@ CREATE INDEX pgroonga_index
           ON memos
        USING pgroonga (title, content, tag);
 SELECT pgroonga_index_column_name('pgroonga_index', -1);
-ERROR:  pgroonga: index_column_name: column index must be 0..2: -1
+ERROR:  pgroonga: [index-column-name][index] column index must be 0..2: -1
 DROP TABLE memos;

@@ -3,6 +3,7 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-global.h"
+#include "pgrn-groonga.h"
 #include "pgrn-query-expand.h"
 
 #include <access/genam.h>
@@ -246,7 +247,8 @@ static Form_pg_attribute
 PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 						  const char *tableName,
 						  const char *columnName,
-						  size_t columnNameSize)
+						  size_t columnNameSize,
+						  const char *tag)
 {
 	TupleDesc desc;
 	int i;
@@ -264,24 +266,22 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 		if (!(attribute->atttypid == TEXTOID ||
 			  attribute->atttypid == TEXTARRAYOID))
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: query_expand: "
-							"synonyms column isn't text type nor text[] type: "
-							"<%s>.<%.*s>",
-							tableName,
-							(int)columnNameSize, columnName)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s synonyms column isn't text type nor text[] type: "
+						"<%s>.<%.*s>",
+						tag,
+						tableName,
+						(int) columnNameSize, columnName);
 		}
 
 		return attribute;
 	}
 
-	ereport(ERROR,
-			(errcode(ERRCODE_INVALID_NAME),
-			 errmsg("pgroonga: query_expand: "
-					"synonyms column doesn't exist: <%s>.<%.*s>",
-					tableName,
-					(int)columnNameSize, columnName)));
+	PGrnCheckRC(GRN_INVALID_ARGUMENT,
+				"%s synonyms column doesn't exist: <%s>.<%.*s>",
+				tag,
+				tableName,
+				(int) columnNameSize, columnName);
 
 	return NULL;
 }
@@ -384,7 +384,8 @@ static void
 PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 							const char *tableName,
 							const char *columnName,
-							size_t columnNameSize)
+							size_t columnNameSize,
+							const char *tag)
 {
 	TupleDesc desc;
 	int i;
@@ -408,13 +409,12 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 			data->scanOperator = OID_ARRAY_CONTAINS_OP;
 			break;
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_NAME),
-					 errmsg("pgroonga: query_expand: "
-							"term column isn't text type nor text[] type: "
-							"<%s>.<%.*s>",
-							tableName,
-							(int)columnNameSize, columnName)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s term column isn't text type nor text[] type: "
+						"<%s>.<%.*s>",
+						tag,
+						tableName,
+						(int) columnNameSize, columnName);
 			break;
 		}
 
@@ -422,12 +422,11 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 		return;
 	}
 
-	ereport(ERROR,
-			(errcode(ERRCODE_INVALID_NAME),
-			 errmsg("pgroonga: query_expand: "
-					"term column doesn't exist: <%s>.<%.*s>",
-					tableName,
-					(int)columnNameSize, columnName)));
+	PGrnCheckRC(GRN_INVALID_ARGUMENT,
+				"%s term column doesn't exist: <%s>.<%.*s>",
+				tag,
+				tableName,
+				(int) columnNameSize, columnName);
 
 	data->termAttributeNumber = InvalidAttrNumber;
 	return;
@@ -442,6 +441,7 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 Datum
 pgroonga_query_expand(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[query-expand]";
 	Datum tableNameDatum = PG_GETARG_DATUM(0);
 	text *termColumnName = PG_GETARG_TEXT_PP(1);
 	text *synonymsColumnName = PG_GETARG_TEXT_PP(2);
@@ -454,10 +454,10 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	tableOIDDatum = DirectFunctionCall1(regclassin, tableNameDatum);
 	if (!OidIsValid(tableOIDDatum))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: query_expand: unknown table name: <%s>",
-						DatumGetCString(tableNameDatum))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s query_expand: unknown table name: <%s>",
+					tag,
+					DatumGetCString(tableNameDatum));
 	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
@@ -466,7 +466,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		PGrnFindSynonymsAttribute(&currentData,
 								  DatumGetCString(tableNameDatum),
 								  VARDATA_ANY(synonymsColumnName),
-								  VARSIZE_ANY_EXHDR(synonymsColumnName));
+								  VARSIZE_ANY_EXHDR(synonymsColumnName),
+								  tag);
 
 	index = PGrnFindTermIndex(&currentData,
 							  VARDATA_ANY(termColumnName),
@@ -475,7 +476,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		PGrnFindTermAttributeNumber(&currentData,
 									DatumGetCString(tableNameDatum),
 									VARDATA_ANY(termColumnName),
-									VARSIZE_ANY_EXHDR(termColumnName));
+									VARSIZE_ANY_EXHDR(termColumnName),
+									tag);
 
 	currentData.snapshot = GetActiveSnapshot();
 	if (index)

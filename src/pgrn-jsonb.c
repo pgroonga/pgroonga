@@ -672,6 +672,8 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 					 JsonbValue *value,
 					 PGrnJSONBInsertData *data)
 {
+	const char *tag = "[jsonb][insert]";
+
 	switch (value->type)
 	{
 	case jbvNull:
@@ -707,9 +709,9 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 		break;
 #ifdef PGRN_HAVE_JSONB_DATETIME
 	case jbvDatetime:
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: datetime value for jsonb isn't supported")));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s datetime value isn't supported",
+					tag);
 		break;
 #endif
 	case jbvArray:
@@ -727,6 +729,7 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 static void
 PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 {
+	const char *tag = "[jsonb][insert][container]";
 	JsonbIteratorToken token;
 	JsonbIteratorToken lastToken = WJB_DONE;
 	JsonbValue value;
@@ -810,10 +813,10 @@ PGrnJSONBInsertContainer(JsonbIterator **iter, PGrnJSONBInsertData *data)
 			break;
 		}
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_UNKNOWN_ERROR,
+						"%s iterator returns invalid token: %s",
+						tag,
+						PGrnJSONBIteratorTokenToString(token));
 			break;
 		}
 	}
@@ -862,6 +865,7 @@ static void
 PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
 										  PGrnJSONBInsertData *data)
 {
+	const char *tag = "[jsonb][insert][container][full-text-search]";
 	JsonbIteratorToken token;
 	JsonbValue value;
 
@@ -880,10 +884,10 @@ PGrnJSONBInsertContainerForFullTextSearch(JsonbIterator **iter,
 		case WJB_END_OBJECT:
 			break;
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_UNKNOWN_ERROR,
+						"%s iterator returns invalid token: %s",
+						tag,
+						PGrnJSONBIteratorTokenToString(token));
 			break;
 		}
 	}
@@ -1082,13 +1086,14 @@ PGrnJSONBIsForFullTextSearchOnly(Relation index, unsigned int nthAttribute)
 void
 PGrnJSONBCreate(PGrnCreateData *data)
 {
+	const char *tag = "[jsonb][create]";
+
 	if (data->desc->natts != 1)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("pgroonga: multicolumn index for jsonb "
-						"isn't supported: <%s>",
-						data->index->rd_rel->relname.data)));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s multicolumn index isn't supported: <%s>",
+					tag,
+					data->index->rd_rel->relname.data);
 	}
 
 	if (PGrnJSONBIsForFullTextSearchOnly(data->index, data->i))
@@ -1728,6 +1733,7 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 									grn_obj *targetColumn,
 									Jsonb *jsonb)
 {
+	const char *tag = "[build-condition][json-contain]";
 	unsigned int nthCondition = 0;
 	grn_obj components;
 	JsonbIterator *iter;
@@ -1802,10 +1808,10 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 		case WJB_END_OBJECT:
 			break;
 		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg("pgroonga: jsonb iterator returns invalid token: %s",
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_UNKNOWN_ERROR,
+						"%s iterator returns invalid token: %s",
+						tag,
+						PGrnJSONBIteratorTokenToString(token));
 			break;
 		}
 	}
@@ -1818,6 +1824,7 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 							  ScanKey key,
 							  grn_obj *targetColumn)
 {
+	const char *tag = "[build-condition][jsonb]";
 	unsigned int nthAttribute = 0;
 	grn_obj *subFilter;
 
@@ -1882,10 +1889,10 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 											DatumGetJsonbP(key->sk_argument));
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: jsonb: unsupported strategy number: %d",
-						key->sk_strategy)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unexpected strategy number: %d",
+					tag,
+					key->sk_strategy);
 		break;
 	}
 	return true;

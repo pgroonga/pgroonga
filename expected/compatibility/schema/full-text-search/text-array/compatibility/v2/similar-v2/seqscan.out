@@ -19,5 +19,5 @@ SET enable_bitmapscan = off;
 SELECT title, contents
   FROM memos
  WHERE contents &~? 'Mroonga: A MySQL plugin that uses Groonga';
-ERROR:  pgroonga: similar search is available only in index scan
+ERROR:  pgroonga: [similar][text-array] similar search is available only in index scan
 DROP TABLE memos;

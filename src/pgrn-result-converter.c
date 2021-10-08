@@ -42,12 +42,10 @@ PGrnResultConverterDetectCommandVersion(PGrnResultConverter *converter)
 		converter->commandVersion = GRN_COMMAND_VERSION_3;
 		break;
 	default:
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s "
-						"top-level must be array or object: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s top-level must be array or object: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 		break;
 	}
 }
@@ -65,34 +63,31 @@ PGrnResultConverterBuildTupleDesc1FillAttribute(PGrnResultConverter *converter,
 		token = JsonbIteratorNext(&(converter->iterator), &name, false);
 		if (token != WJB_ELEM)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"column name is missing: %s",
-							converter->tag,
-							i - 1,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"column name is missing: %s",
+						converter->tag,
+						i - 1,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		if (name.type != jbvString)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"column name must be string: %d",
-							converter->tag,
-							i - 1,
-							name.type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"column name must be string: %d",
+						converter->tag,
+						i - 1,
+						name.type);
 		}
 		if (name.val.string.len >= NAMEDATALEN - 1)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"column name is too long: %d: max=%d",
-							converter->tag,
-							i - 1,
-							name.val.string.len,
-							NAMEDATALEN - 1)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"column name is too long: %d: max=%d",
+						converter->tag,
+						i - 1,
+						name.val.string.len,
+						NAMEDATALEN - 1);
 		}
 		memcpy(NameStr(nameData), name.val.string.val, name.val.string.len);
 		NameStr(nameData)[name.val.string.len] = '\0';
@@ -106,37 +101,34 @@ PGrnResultConverterBuildTupleDesc1FillAttribute(PGrnResultConverter *converter,
 		token = JsonbIteratorNext(&(converter->iterator), &typeName, false);
 		if (token != WJB_ELEM)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"column type is missing: %s",
-							converter->tag,
-							i,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"column type is missing: %s",
+						converter->tag,
+						i,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		if (typeName.type != jbvString)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"column type must be string: %d",
-							converter->tag,
-							i,
-							typeName.type)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"column type must be string: %d",
+						converter->tag,
+						i,
+						typeName.type);
 		}
 		type = grn_ctx_get(ctx,
 						   typeName.val.string.val,
 						   typeName.val.string.len);
 		if (!type)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[1][select][column][%d] "
-							"unknown column type: <%.*s>",
-							converter->tag,
-							i,
-							typeName.val.string.len,
-							typeName.val.string.val)));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[1][select][column][%d] "
+						"unknown column type: <%.*s>",
+						converter->tag,
+						i,
+						typeName.val.string.len,
+						typeName.val.string.val);
 		}
 		typeID = grn_obj_id(ctx, type);
 		grn_obj_unref(ctx, type);
@@ -159,51 +151,45 @@ PGrnResultConverterBuildTupleDesc1(PGrnResultConverter *converter)
 	token = JsonbIteratorNext(&(converter->iterator), &value, true);
 	if (token != WJB_ELEM)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[1] header is missing: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[1] header is missing: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 	token = JsonbIteratorNext(&(converter->iterator), &value, false);
 	if (token != WJB_BEGIN_ARRAY)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("[pgroonga]%s[1] "
-						"select is only supported: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s[1] select is only supported: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 	token = JsonbIteratorNext(&(converter->iterator), &value, false);
 	if (token != WJB_BEGIN_ARRAY)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[1][select] "
-						"result set is missing: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[1][select] "
+					"result set is missing: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 	token = JsonbIteratorNext(&(converter->iterator), &value, true);
 	if (token != WJB_ELEM)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[1][select] "
-						"the number of hits is missing: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[1][select] "
+					"the number of hits is missing: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 	token = JsonbIteratorNext(&(converter->iterator), &value, false);
 	if (token != WJB_BEGIN_ARRAY)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[1][select] "
-						"column information set must be array: %s",
-						converter->tag,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[1][select] "
+					"column information set must be array: %s",
+					converter->tag,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 
 	converter->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
@@ -217,13 +203,12 @@ PGrnResultConverterBuildTupleDesc1(PGrnResultConverter *converter)
 
 			if (token != WJB_BEGIN_ARRAY)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[1][select][column][%d] "
-								"column information must be array: %s",
-								converter->tag,
-								i - 1,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[1][select][column][%d] "
+							"column information must be array: %s",
+							converter->tag,
+							i - 1,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			PGrnResultConverterBuildTupleDesc1FillAttribute(converter, i);
 			i++;
@@ -256,13 +241,12 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 			break;
 		if (token != WJB_KEY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[3][select][column][%d] "
-							"body.columns key is missing: %s",
-							converter->tag,
-							i - 1,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[3][select][column][%d] "
+						"body.columns key is missing: %s",
+						converter->tag,
+						i - 1,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		keyString.value = key.val.string.val;
 		keyString.length = key.val.string.len;
@@ -272,34 +256,31 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 			token = JsonbIteratorNext(&(converter->iterator), &value, false);
 			if (token != WJB_VALUE)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"body.columns.name must be scalar: %s",
-								converter->tag,
-								i - 1,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"body.columns.name must be scalar: %s",
+							converter->tag,
+							i - 1,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			if (value.type != jbvString)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"body.columns.name must be string: %d",
-								converter->tag,
-								i - 1,
-								value.type)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"body.columns.name must be string: %d",
+							converter->tag,
+							i - 1,
+							value.type);
 			}
 			if (value.val.string.len >= NAMEDATALEN - 1)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"body.columns.name is too long: %d: max=%d",
-								converter->tag,
-								i - 1,
-								value.val.string.len,
-								NAMEDATALEN - 1)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"body.columns.name is too long: %d: max=%d",
+							converter->tag,
+							i - 1,
+							value.val.string.len,
+							NAMEDATALEN - 1);
 			}
 			memcpy(NameStr(nameData),
 				   value.val.string.val,
@@ -315,37 +296,34 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 			token = JsonbIteratorNext(&(converter->iterator), &value, false);
 			if (token != WJB_VALUE)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"body.columns.type must be scalar: %s",
-								converter->tag,
-								i - 1,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"body.columns.type must be scalar: %s",
+							converter->tag,
+							i - 1,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			if (value.type != jbvString)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"body.columns.type must be string: %d",
-								converter->tag,
-								i - 1,
-								value.type)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"body.columns.type must be string: %d",
+							converter->tag,
+							i - 1,
+							value.type);
 			}
 			type = grn_ctx_get(ctx,
 							   value.val.string.val,
 							   value.val.string.len);
 			if (!type)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select][column][%d] "
-								"unknown column type: <%.*s>",
-								converter->tag,
-								i,
-								value.val.string.len,
-								value.val.string.val)));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select][column][%d] "
+							"unknown column type: <%.*s>",
+							converter->tag,
+							i,
+							value.val.string.len,
+							value.val.string.val);
 			}
 			typeID = grn_obj_id(ctx, type);
 			grn_obj_unref(ctx, type);
@@ -361,21 +339,19 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 
 	if (!haveName)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[3][select][column][%d] "
-						"column name is missing",
-						converter->tag,
-						i)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[3][select][column][%d] "
+					"column name is missing",
+					converter->tag,
+					i);
 	}
 	if (!haveType)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[3][select][column][%d] "
-						"column type is missing",
-						converter->tag,
-						i)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[3][select][column][%d] "
+					"column type is missing",
+					converter->tag,
+					i);
 	}
 
 	TupleDescInitEntry(converter->desc,
@@ -400,12 +376,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 		token = JsonbIteratorNext(&(converter->iterator), &key, false);
 		if (token != WJB_KEY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[3] "
-							"top-level key is missing: %s",
-							converter->tag,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[3] top-level key is missing: %s",
+						converter->tag,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		keyString.value = key.val.string.val;
 		keyString.length = key.val.string.len;
@@ -417,12 +391,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 		token = JsonbIteratorNext(&(converter->iterator), &value, false);
 		if (token != WJB_BEGIN_OBJECT)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("[pgroonga]%s[3] "
-							"select is only supported: %s",
-							converter->tag,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s[3] select is only supported: %s",
+						converter->tag,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		break;
 	}
@@ -436,12 +408,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 			break;
 		if (token != WJB_KEY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[3][select] "
-							"body key is missing: %s",
-							converter->tag,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[3][select] body key is missing: %s",
+						converter->tag,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 		keyString.value = key.val.string.val;
 		keyString.length = key.val.string.len;
@@ -451,12 +421,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 			token = JsonbIteratorNext(&(converter->iterator), &value, false);
 			if (token != WJB_BEGIN_ARRAY)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select] "
-								"body.records must be array: %s",
-								converter->tag,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select] body.records must be array: %s",
+							converter->tag,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			recordsIterator = JsonbIteratorInit(converter->iterator->container);
 			while (true)
@@ -472,12 +440,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 			token = JsonbIteratorNext(&(converter->iterator), &value, false);
 			if (token != WJB_BEGIN_ARRAY)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_DATA_EXCEPTION),
-						 errmsg("[pgroonga]%s[3][select] "
-								"body.columns must be array: %s",
-								converter->tag,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s[3][select] body.columns must be array: %s",
+							converter->tag,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			converter->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
 			{
@@ -489,13 +455,12 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 						break;
 					if (token != WJB_BEGIN_OBJECT)
 					{
-						ereport(ERROR,
-								(errcode(ERRCODE_DATA_EXCEPTION),
-								 errmsg("[pgroonga]%s[3][select][column][%d] "
-										"column information must be object: %s",
-										converter->tag,
-										i - 1,
-										PGrnJSONBIteratorTokenToString(token))));
+						PGrnCheckRC(GRN_INVALID_ARGUMENT,
+									"%s[3][select][column][%d] "
+									"column information must be object: %s",
+									converter->tag,
+									i - 1,
+									PGrnJSONBIteratorTokenToString(token));
 					}
 					PGrnResultConverterBuildTupleDesc3FillAttribute(converter, i);
 					i++;
@@ -510,19 +475,15 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 	}
 	if (!converter->desc)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[3][select] "
-						"body.columns is missing",
-						converter->tag)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[3][select] body.columns is missing",
+					converter->tag);
 	}
 	if (!recordsIterator)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[3][select] "
-						"body.records is missing",
-						converter->tag)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[3][select] body.records is missing",
+					converter->tag);
 	}
 
 	{
@@ -532,12 +493,10 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 		token = JsonbIteratorNext(&(converter->iterator), &value, false);
 		if (token != WJB_BEGIN_ARRAY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[3][select] "
-							"body.records must be array: %s",
-							converter->tag,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[3][select] body.records must be array: %s",
+						converter->tag,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 	}
 }
@@ -567,13 +526,11 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 		return NULL;
 	if (token != WJB_BEGIN_ARRAY)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_DATA_EXCEPTION),
-				 errmsg("[pgroonga]%s[%d][select] "
-						"record must be array: %s",
-						converter->tag,
-						converter->commandVersion,
-						PGrnJSONBIteratorTokenToString(token))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s[%d][select] record must be array: %s",
+					converter->tag,
+					converter->commandVersion,
+					PGrnJSONBIteratorTokenToString(token));
 	}
 
 	{
@@ -589,13 +546,12 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 				break;
 			if (token != WJB_ELEM)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						 errmsg("[pgroonga]%s[%d][select] "
-								"nested element value isn't supported yet: %s",
-								converter->tag,
-								converter->commandVersion,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+							"%s[%d][select] "
+							"nested element value isn't supported yet: %s",
+							converter->tag,
+							converter->commandVersion,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			switch (element.type)
 			{
@@ -682,13 +638,11 @@ PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 			break;
 		if (token != WJB_BEGIN_ARRAY)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_DATA_EXCEPTION),
-					 errmsg("[pgroonga]%s[%d][select] "
-							"record must be array: %s",
-							converter->tag,
-							converter->commandVersion,
-							PGrnJSONBIteratorTokenToString(token))));
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[%d][select] record must be array: %s",
+						converter->tag,
+						converter->commandVersion,
+						PGrnJSONBIteratorTokenToString(token));
 		}
 
 		pushJsonbValue(&state, WJB_BEGIN_OBJECT, NULL);
@@ -699,14 +653,13 @@ PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 				break;
 			if (token != WJB_ELEM)
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-						 errmsg("[pgroonga]%s[%d][select] "
-								"nested element value isn't supported yet: "
-								"%s",
-								converter->tag,
-								converter->commandVersion,
-								PGrnJSONBIteratorTokenToString(token))));
+				PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+							"%s[%d][select] "
+							"nested element value isn't supported yet: "
+							"%s",
+							converter->tag,
+							converter->commandVersion,
+							PGrnJSONBIteratorTokenToString(token));
 			}
 			{
 				Form_pg_attribute attribute = TupleDescAttr(converter->desc, i);

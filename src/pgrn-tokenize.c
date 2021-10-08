@@ -370,6 +370,7 @@ PGrnTokenize(text *target)
 Datum
 pgroonga_tokenize(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[tokenize]";
 	text *target;
 	ArrayType *options;
 	text *tokenizerName = NULL;
@@ -395,12 +396,11 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 
 			if (!array_iterate(iterator, &valueDatum, &isNULL))
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: tokenize: "
-								"parameter value is missing: <%.*s>",
-								(int) VARSIZE_ANY_EXHDR(name),
-								VARDATA_ANY(name))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s parameter value is missing: <%.*s>",
+							tag,
+							(int) VARSIZE_ANY_EXHDR(name),
+							VARDATA_ANY(name));
 			}
 
 			value = DatumGetTextPP(valueDatum);
@@ -423,18 +423,17 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 			}
 			else
 			{
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("pgroonga: tokenize: "
-								"unknown parameter name: <%.*s>",
-								(int) VARSIZE_ANY_EXHDR(name),
-								VARDATA_ANY(name))));
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s unknown parameter name: <%.*s>",
+							tag,
+							(int) VARSIZE_ANY_EXHDR(name),
+							VARDATA_ANY(name));
 			}
 #undef NAME_EQUAL
 		}
 
 		array_free_iterator(iterator);
-    }
+	}
 
 	PGrnTokenizeSetModule("tokenizer",
 						  GRN_INFO_DEFAULT_TOKENIZER,

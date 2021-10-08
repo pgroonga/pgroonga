@@ -19,6 +19,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_flush);
 Datum
 pgroonga_flush(PG_FUNCTION_ARGS)
 {
+	const char *tag = "[flush]";
 	Datum indexNameDatum = PG_GETARG_DATUM(0);
 	Datum indexOIDDatum;
 	Oid indexOID;
@@ -27,10 +28,10 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 	indexOIDDatum = DirectFunctionCall1(regclassin, indexNameDatum);
 	if (!OidIsValid(indexOIDDatum))
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: nonexistent index name: <%s>",
-						DatumGetCString(indexNameDatum))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s nonexistent index name: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
 	}
 	indexOID = DatumGetObjectId(indexOIDDatum);
 
@@ -39,10 +40,10 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 	if (!RelationIsValid(index))
 	{
 		UnlockRelationOid(indexOID, AccessShareLock);
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_NAME),
-				 errmsg("pgroonga: failed to find index: <%s>",
-						DatumGetCString(indexNameDatum))));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s failed to find index: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
 	}
 
 	PG_TRY();

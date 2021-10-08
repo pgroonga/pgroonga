@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-column-name.h"
+#include "pgrn-groonga.h"
 
 #include <groonga.h>
 
@@ -31,13 +32,13 @@ PGrnColumnNameEncodeCharacterUTF8(const char *utf8Character, char *encodedName)
 }
 
 static void
-checkSize(size_t size)
+checkSize(size_t size, const char *tag)
 {
 	if (size >= GRN_TABLE_MAX_KEY_SIZE)
-		ereport(ERROR,
-				(errcode(ERRCODE_NAME_TOO_LONG),
-				 errmsg("pgroonga: encoded column name >= %d",
-						GRN_TABLE_MAX_KEY_SIZE)));
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s encoded column name >= %d",
+					tag,
+					GRN_TABLE_MAX_KEY_SIZE);
 }
 
 static size_t
@@ -45,6 +46,7 @@ PGrnColumnNameEncodeUTF8WithSize(const char *name,
 								 size_t nameSize,
 								 char *encodedName)
 {
+	const char *tag = "[column-name][encode][utf8]";
 	const char *current;
 	const char *end;
 	char *encodedCurrent;
@@ -63,13 +65,13 @@ PGrnColumnNameEncodeUTF8WithSize(const char *name,
 			PGrnColumnNameIsUsableCharacterASCII(*current) &&
 			!(*current == '_' && current == name))
 		{
-			checkSize(encodedNameSize + length + 1);
+			checkSize(encodedNameSize + length + 1, tag);
 			*encodedCurrent++ = *current;
 			encodedNameSize++;
 		}
 		else
 		{
-			checkSize(encodedNameSize + ENCODED_CHARACTER_LENGTH + 1);
+			checkSize(encodedNameSize + ENCODED_CHARACTER_LENGTH + 1, tag);
 			PGrnColumnNameEncodeCharacterUTF8(current, encodedCurrent);
 			encodedCurrent += ENCODED_CHARACTER_LENGTH;
 			encodedNameSize += ENCODED_CHARACTER_LENGTH;
@@ -94,6 +96,7 @@ PGrnColumnNameEncodeWithSize(const char *name,
 							 size_t nameSize,
 							 char *encodedName)
 {
+	const char *tag = "[column-name][encode]";
 	const char *current;
 	const char *end;
 	char *encodedCurrent;
@@ -111,23 +114,23 @@ PGrnColumnNameEncodeWithSize(const char *name,
 
 		length = pg_mblen(current);
 		if (length != 1)
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("pgroonga: multibyte character isn't supported "
-							"for column name except UTF-8 encoding: <%s>(%s)",
-							name,
-							GetDatabaseEncodingName())));
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s multibyte character isn't supported "
+						"for column name except UTF-8 encoding: <%s>(%s)",
+						tag,
+						name,
+						GetDatabaseEncodingName());
 
 		if (PGrnColumnNameIsUsableCharacterASCII(*current) &&
 			!(*current == '_' && current == name))
 		{
-			checkSize(encodedNameSize + length + 1);
+			checkSize(encodedNameSize + length + 1, tag);
 			*encodedCurrent++ = *current;
 			encodedNameSize++;
 		}
 		else
 		{
-			checkSize(encodedNameSize + ENCODED_CHARACTER_LENGTH + 1);
+			checkSize(encodedNameSize + ENCODED_CHARACTER_LENGTH + 1, tag);
 			PGrnColumnNameEncodeCharacterUTF8(current, encodedCurrent);
 			encodedCurrent += ENCODED_CHARACTER_LENGTH;
 			encodedNameSize += ENCODED_CHARACTER_LENGTH;
