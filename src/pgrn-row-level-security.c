@@ -1,5 +1,7 @@
 #include "pgroonga.h"
 
+#include "pgrn-compatible.h"
+
 #include "pgrn-row-level-security.h"
 
 #include <executor/execExpr.h>
