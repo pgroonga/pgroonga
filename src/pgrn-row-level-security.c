@@ -94,6 +94,7 @@ PGrnCheckRLSEnabledSeqScan(FunctionCallInfo fcinfo)
 {
 	Portal portal = GetPortalByName("");
 	ExprContext *econtext;
+	Oid tableOid;
 
 	if (!portal) {
 		return false;
@@ -103,7 +104,12 @@ PGrnCheckRLSEnabledSeqScan(FunctionCallInfo fcinfo)
 		/* For safety */
 		return true;
 	}
-	return PGrnCheckRLSEnabled(econtext->ecxt_scantuple->tts_tableOid);
+#ifdef PGRN_HAVE_TUPLE_TABLE_SLOT_TABLE_OID
+	tableOid = econtext->ecxt_scantuple->tts_tableOid;
+#else
+	tableOid = econtext->ecxt_scantuple->tts_minhdr.t_tableOid;
+#endif
+	return PGrnCheckRLSEnabled(tableOid);
 }
 
 void
