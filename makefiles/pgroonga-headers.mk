@@ -25,6 +25,7 @@ HEADERS =					\
 	src/pgrn-query-expand.h			\
 	src/pgrn-query-extract-keywords.h	\
 	src/pgrn-result-converter.h		\
+	src/pgrn-row-level-security.h		\
 	src/pgrn-search.h			\
 	src/pgrn-sequential-search.h		\
 	src/pgrn-string.h			\

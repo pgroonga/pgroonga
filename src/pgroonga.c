@@ -24,6 +24,7 @@
 #include "pgrn-portable.h"
 #include "pgrn-query-expand.h"
 #include "pgrn-query-extract-keywords.h"
+#include "pgrn-row-level-security.h"
 #include "pgrn-search.h"
 #include "pgrn-sequential-search.h"
 #include "pgrn-string.h"
@@ -2075,14 +2076,14 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 }
 
 /**
- * pgroonga.match_term(target text, term text) : bool
+ * pgroonga_match_term(target text, term text) : bool
  */
 Datum
 pgroonga_match_term_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *term = PG_GETARG_TEXT_PP(1);
-	grn_bool matched;
+	bool matched;
 
 	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
 									  VARSIZE_ANY_EXHDR(target),
@@ -2090,11 +2091,12 @@ pgroonga_match_term_text(PG_FUNCTION_ARGS)
 									  VARSIZE_ANY_EXHDR(term),
 									  NULL,
 									  0);
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_term(target text[], term text) : bool
+ * pgroonga_match_term(target text[], term text) : bool
  */
 Datum
 pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
@@ -2104,13 +2106,15 @@ pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  NULL,
-													  0,
-													  pgroonga_match_term_raw,
-													  NULL);
+		pgroonga_execute_binary_operator_string_array(
+			targets,
+			VARDATA_ANY(term),
+			VARSIZE_ANY_EXHDR(term),
+			NULL,
+			0,
+			pgroonga_match_term_raw,
+			NULL);
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2139,14 +2143,14 @@ pgroonga_equal_raw(const char *text1, unsigned int text1Size,
 }
 
 /**
- * pgroonga.match_term(target varchar, term varchar) : bool
+ * pgroonga_match_term(target varchar, term varchar) : bool
  */
 Datum
 pgroonga_match_term_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
-	grn_bool matched;
+	bool matched;
 
 	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
 									  VARSIZE_ANY_EXHDR(target),
@@ -2154,11 +2158,12 @@ pgroonga_match_term_varchar(PG_FUNCTION_ARGS)
 									  VARSIZE_ANY_EXHDR(term),
 									  NULL,
 									  0);
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_term(target varchar[], term varchar) : bool
+ * pgroonga_match_term(target varchar[], term varchar) : bool
  */
 Datum
 pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
@@ -2168,13 +2173,15 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 	bool matched;
 
 	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  NULL,
-													  0,
-													  pgroonga_match_term_raw,
-													  NULL);
+		pgroonga_execute_binary_operator_string_array(
+			targets,
+			VARDATA_ANY(term),
+			VARSIZE_ANY_EXHDR(term),
+			NULL,
+			0,
+			pgroonga_match_term_raw,
+			NULL);
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2213,7 +2220,7 @@ pgroonga_match_query_string_array_raw(ArrayType *targets,
 }
 
 /**
- * pgroonga.match_query(target text, query text) : bool
+ * pgroonga_match_query(target text, query text) : bool
  */
 Datum
 pgroonga_match_query_text(PG_FUNCTION_ARGS)
@@ -2228,11 +2235,12 @@ pgroonga_match_query_text(PG_FUNCTION_ARGS)
 									   VARSIZE_ANY_EXHDR(query),
 									   NULL,
 									   0);
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_query(targets text[], query text) : bool
+ * pgroonga_match_query(targets text[], query text) : bool
  */
 Datum
 pgroonga_match_query_text_array(PG_FUNCTION_ARGS)
@@ -2247,18 +2255,19 @@ pgroonga_match_query_text_array(PG_FUNCTION_ARGS)
 													VARSIZE_ANY_EXHDR(query),
 													NULL,
 													0);
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_query(target varchar, query varchar) : bool
+ * pgroonga_match_query(target varchar, query varchar) : bool
  */
 Datum
 pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *query = PG_GETARG_VARCHAR_PP(1);
-	bool matched = false;
+	bool matched;
 
 	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
 									   VARSIZE_ANY_EXHDR(target),
@@ -2295,40 +2304,68 @@ pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
 }
 
 /**
- * pgroonga.match_regexp(target text, pattern text) : bool
+ * pgroonga_match_regexp(target text, pattern text) : bool
  */
 Datum
 pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										VARDATA_ANY(pattern),
-										VARSIZE_ANY_EXHDR(pattern),
-										NULL,
-										0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_regexp_varchar(target varchar, pattern varchar) : bool
+ * pgroonga_match_regexp_varchar(target varchar, pattern varchar) : bool
  */
 Datum
 pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										VARDATA_ANY(pattern),
-										VARSIZE_ANY_EXHDR(pattern),
-										NULL,
-										0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2341,15 +2378,81 @@ pgroonga_match_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *term = PG_GETARG_TEXT_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  NULL,
-									  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(term),
+										  VARSIZE_ANY_EXHDR(term),
+										  NULL,
+										  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(term),
+										  VARSIZE_ANY_EXHDR(term),
+										  NULL,
+										  0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_match_condition_raw(const char *target,
+							 unsigned int targetSize,
+							 HeapTupleHeader header,
+							 bool withScorers)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *term;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	GRN_BULK_REWIND(isTargets);
+
+	if (withScorers)
+	{
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  &term,
+														  NULL,
+														  NULL,
+														  &indexName,
+														  isTargets);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   &term,
+											   NULL,
+											   &indexName,
+											   isTargets);
+	}
+
+	if (!term)
+		return false;
+
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_match_term_raw(target,
+								   targetSize,
+								   VARDATA_ANY(term),
+								   VARSIZE_ANY_EXHDR(term),
+								   indexNameData,
+								   indexNameSize);
 }
 
 /**
@@ -2361,40 +2464,23 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
 	bool matched = false;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &term,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
 	}
-
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  indexNameData,
-									  indexNameSize);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2409,41 +2495,23 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &term,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
 	}
-
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  indexNameData,
-									  indexNameSize);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2458,15 +2526,82 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 	text *term = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  NULL,
-													  0,
-													  pgroonga_match_term_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(term),
+				VARSIZE_ANY_EXHDR(term),
+				NULL,
+				0,
+				pgroonga_match_term_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(term),
+				VARSIZE_ANY_EXHDR(term),
+				NULL,
+				0,
+				pgroonga_match_term_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_match_text_array_condition_raw(ArrayType *targets,
+										HeapTupleHeader header,
+										bool withScorers)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *term;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	GRN_BULK_REWIND(isTargets);
+
+	if (withScorers)
+	{
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  &term,
+														  NULL,
+														  NULL,
+														  &indexName,
+														  isTargets);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   &term,
+											   NULL,
+											   &indexName,
+											   isTargets);
+	}
+
+	if (!term)
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_execute_binary_operator_string_array(targets,
+														 VARDATA_ANY(term),
+														 VARSIZE_ANY_EXHDR(term),
+														 indexNameData,
+														 indexNameSize,
+														 pgroonga_match_term_raw,
+														 isTargets);
 }
 
 /**
@@ -2478,39 +2613,19 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &term,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched =
+			pgroonga_match_text_array_condition_raw(targets, header, false);
 	}
-
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  indexNameData,
-													  indexNameSize,
-													  pgroonga_match_term_raw,
-													  isTargets);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_match_text_array_condition_raw(targets, header, false);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2525,40 +2640,19 @@ pgroonga_match_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &term,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched =
+			pgroonga_match_text_array_condition_raw(targets, header, true);
 	}
-
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  indexNameData,
-													  indexNameSize,
-													  pgroonga_match_term_raw,
-													  isTargets);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_match_text_array_condition_raw(targets, header, true);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2573,12 +2667,26 @@ pgroonga_match_varchar(PG_FUNCTION_ARGS)
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
 	bool matched;
 
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  NULL,
-									  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(term),
+										  VARSIZE_ANY_EXHDR(term),
+										  NULL,
+										  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
+										  VARSIZE_ANY_EXHDR(target),
+										  VARDATA_ANY(term),
+										  VARSIZE_ANY_EXHDR(term),
+										  NULL,
+										  0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2591,39 +2699,24 @@ pgroonga_match_varchar_condition(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &term,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
 	}
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  indexNameData,
-									  indexNameSize);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2637,46 +2730,29 @@ pgroonga_match_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *term;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &term,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!term)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
 	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
+	}
+	PGRN_RLS_ENABLED_END();
 
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  VARDATA_ANY(term),
-									  VARSIZE_ANY_EXHDR(term),
-									  indexNameData,
-									  indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.contain_varchar_array(target varchar[], term varchar) : bool
+ * pgroonga_contain_varchar_array(target varchar[], term varchar) : bool
  */
 Datum
 pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
@@ -2685,14 +2761,32 @@ pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(term),
-													  VARSIZE_ANY_EXHDR(term),
-													  NULL,
-													  0,
-													  pgroonga_equal_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(term),
+				VARSIZE_ANY_EXHDR(term),
+				NULL,
+				0,
+				pgroonga_equal_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(term),
+				VARSIZE_ANY_EXHDR(term),
+				NULL,
+				0,
+				pgroonga_equal_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2706,14 +2800,79 @@ pgroonga_query_text(PG_FUNCTION_ARGS)
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   NULL,
-									   0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query),
+										   NULL,
+										   0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query),
+										   NULL,
+										   0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_query_condition_raw(const char *target,
+							 unsigned int targetSize,
+							 HeapTupleHeader header,
+							 bool withScorers)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *query;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	GRN_BULK_REWIND(isTargets);
+
+	if (withScorers)
+	{
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  &query,
+														  NULL,
+														  NULL,
+														  &indexName,
+														  isTargets);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   &query,
+											   NULL,
+											   &indexName,
+											   isTargets);
+	}
+
+	if (!query)
+		return false;
+
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_match_query_raw(target,
+									targetSize,
+									VARDATA_ANY(query),
+									VARSIZE_ANY_EXHDR(query),
+									indexNameData,
+									indexNameSize);
 }
 
 /**
@@ -2725,40 +2884,23 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &query,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
 	}
-
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   indexNameData,
-									   indexNameSize);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2773,41 +2915,23 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &query,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
 	}
-
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   indexNameData,
-									   indexNameSize);
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2822,13 +2946,74 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
 	text *query = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched = pgroonga_match_query_string_array_raw(targets,
-													NULL,
-													VARDATA_ANY(query),
-													VARSIZE_ANY_EXHDR(query),
-													NULL,
-													0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_query_string_array_raw(targets,
+														NULL,
+														VARDATA_ANY(query),
+														VARSIZE_ANY_EXHDR(query),
+														NULL,
+														0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_query_string_array_raw(targets,
+														NULL,
+														VARDATA_ANY(query),
+														VARSIZE_ANY_EXHDR(query),
+														NULL,
+														0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_query_text_array_condition_raw(ArrayType *targets,
+										HeapTupleHeader header,
+										bool withScorers)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *query;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	GRN_BULK_REWIND(isTargets);
+
+	if (withScorers) {
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  &query,
+														  NULL,
+														  NULL,
+														  &indexName,
+														  isTargets);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   &query,
+											   NULL,
+											   &indexName,
+											   isTargets);
+	}
+
+	if (!query)
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_match_query_string_array_raw(targets,
+												 isTargets,
+												 VARDATA_ANY(query),
+												 VARSIZE_ANY_EXHDR(query),
+												 indexNameData,
+												 indexNameSize);
 }
 
 /**
@@ -2840,37 +3025,22 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &query,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_text_array_condition_raw(targets,
+														  header,
+														  false);
 	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_text_array_condition_raw(targets,
+														  header,
+														  false);
+	}
+	PGRN_RLS_ENABLED_END();
 
-	matched = pgroonga_match_query_string_array_raw(targets,
-													isTargets,
-													VARDATA_ANY(query),
-													VARSIZE_ANY_EXHDR(query),
-													indexNameData,
-													indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2884,38 +3054,22 @@ pgroonga_query_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &query,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_text_array_condition_raw(targets,
+														  header,
+														  true);
 	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_text_array_condition_raw(targets,
+														  header,
+														  true);
+	}
+	PGRN_RLS_ENABLED_END();
 
-	matched = pgroonga_match_query_string_array_raw(targets,
-													isTargets,
-													VARDATA_ANY(query),
-													VARSIZE_ANY_EXHDR(query),
-													indexNameData,
-													indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2927,14 +3081,28 @@ pgroonga_query_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *query = PG_GETARG_VARCHAR_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   NULL,
-									   0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query),
+										   NULL,
+										   0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
+										   VARSIZE_ANY_EXHDR(target),
+										   VARDATA_ANY(query),
+										   VARSIZE_ANY_EXHDR(query),
+										   NULL,
+										   0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2947,40 +3115,24 @@ pgroonga_query_varchar_condition(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionDeconstruct(header,
-										   &query,
-										   NULL,
-										   &indexName,
-										   isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
 	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   false);
+	}
+	PGRN_RLS_ENABLED_END();
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   indexNameData,
-									   indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
@@ -2994,46 +3146,29 @@ pgroonga_query_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	text *query;
-	text *indexName;
-	const char *indexNameData = NULL;
-	unsigned int indexNameSize = 0;
-	grn_obj *isTargets;
-	bool matched = false;
+	bool matched;
 
-	isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(isTargets);
-
-	PGrnFullTextSearchConditionWithScorersDeconstruct(header,
-													  &query,
-													  NULL,
-													  NULL,
-													  &indexName,
-													  isTargets);
-
-	if (!query)
-		PG_RETURN_BOOL(false);
-
-	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
-		PG_RETURN_BOOL(false);
-
-	if (indexName)
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		indexNameData = VARDATA_ANY(indexName);
-		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
 	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
+											   VARSIZE_ANY_EXHDR(target),
+											   header,
+											   true);
+	}
+	PGRN_RLS_ENABLED_END();
 
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   VARDATA_ANY(query),
-									   VARSIZE_ANY_EXHDR(query),
-									   indexNameData,
-									   indexNameSize);
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.similar_text(target text, document text) : bool
+ * pgroonga_similar_text(target text, document text) : bool
  */
 Datum
 pgroonga_similar_text(PG_FUNCTION_ARGS)
@@ -3047,7 +3182,7 @@ pgroonga_similar_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.similar_text_array(targets text[], document text) : bool
+ * pgroonga_similar_text_array(targets text[], document text) : bool
  */
 Datum
 pgroonga_similar_text_array(PG_FUNCTION_ARGS)
@@ -3061,7 +3196,7 @@ pgroonga_similar_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.similar_varchar(target varchar, document varchar) : bool
+ * pgroonga_similar_varchar(target varchar, document varchar) : bool
  */
 Datum
 pgroonga_similar_varchar(PG_FUNCTION_ARGS)
@@ -3088,7 +3223,7 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 }
 
 /**
- * pgroonga.script_text(target text, script text) : bool
+ * pgroonga_script_text(target text, script text) : bool
  */
 Datum
 pgroonga_script_text(PG_FUNCTION_ARGS)
@@ -3097,18 +3232,31 @@ pgroonga_script_text(PG_FUNCTION_ARGS)
 	text *script = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
 
-	matched = pgroonga_script_raw(VARDATA_ANY(target),
-								  VARSIZE_ANY_EXHDR(target),
-								  VARDATA_ANY(script),
-								  VARSIZE_ANY_EXHDR(script),
-								  NULL,
-								  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_script_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(script),
+									  VARSIZE_ANY_EXHDR(script),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_script_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(script),
+									  VARSIZE_ANY_EXHDR(script),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.script_text_array(targets text[], script text) : bool
+ * pgroonga_script_text_array(targets text[], script text) : bool
  */
 Datum
 pgroonga_script_text_array(PG_FUNCTION_ARGS)
@@ -3117,33 +3265,64 @@ pgroonga_script_text_array(PG_FUNCTION_ARGS)
 	text *script = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(script),
-													  VARSIZE_ANY_EXHDR(script),
-													  NULL,
-													  0,
-													  pgroonga_script_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(script),
+				VARSIZE_ANY_EXHDR(script),
+				NULL,
+				0,
+				pgroonga_script_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(script),
+				VARSIZE_ANY_EXHDR(script),
+				NULL,
+				0,
+				pgroonga_script_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.script_varchar(target varchar, script varchar) : bool
+ * pgroonga_script_varchar(target varchar, script varchar) : bool
  */
 Datum
 pgroonga_script_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *script = PG_GETARG_VARCHAR_PP(1);
-	bool matched = false;
+	bool matched;
 
-	matched = pgroonga_script_raw(VARDATA_ANY(target),
-								  VARSIZE_ANY_EXHDR(target),
-								  VARDATA_ANY(script),
-								  VARSIZE_ANY_EXHDR(script),
-								  NULL,
-								  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_script_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(script),
+									  VARSIZE_ANY_EXHDR(script),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_script_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(script),
+									  VARSIZE_ANY_EXHDR(script),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
@@ -3173,27 +3352,40 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 }
 
 /**
- * pgroonga.prefix_text(target text, prefix text) : bool
+ * pgroonga_prefix_text(target text, prefix text) : bool
  */
 Datum
 pgroonga_prefix_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
+	bool matched;
 
-	matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-								  VARSIZE_ANY_EXHDR(target),
-								  VARDATA_ANY(prefix),
-								  VARSIZE_ANY_EXHDR(prefix),
-								  NULL,
-								  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(prefix),
+									  VARSIZE_ANY_EXHDR(prefix),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(prefix),
+									  VARSIZE_ANY_EXHDR(prefix),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_text_array(targets text[], prefix text) : bool
+ * pgroonga_prefix_text_array(targets text[], prefix text) : bool
  */
 Datum
 pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
@@ -3202,39 +3394,70 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 	text *prefix = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  NULL,
-													  0,
-													  pgroonga_prefix_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_varchar(target varchar, prefix varchar) : bool
+ * pgroonga_prefix_varchar(target varchar, prefix varchar) : bool
  */
 Datum
 pgroonga_prefix_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched = false;
+	bool matched;
 
-	matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-								  VARSIZE_ANY_EXHDR(target),
-								  VARDATA_ANY(prefix),
-								  VARSIZE_ANY_EXHDR(prefix),
-								  NULL,
-								  0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(prefix),
+									  VARSIZE_ANY_EXHDR(prefix),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
+									  VARSIZE_ANY_EXHDR(target),
+									  VARDATA_ANY(prefix),
+									  VARSIZE_ANY_EXHDR(prefix),
+									  NULL,
+									  0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_varchar_array(targets varchar[], prefix varchar) : bool
+ * pgroonga_prefix_varchar_array(targets varchar[], prefix varchar) : bool
  */
 Datum
 pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
@@ -3243,19 +3466,37 @@ pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  NULL,
-													  0,
-													  pgroonga_prefix_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_contain_text_array(targets text[], prefix text) : bool
+ * pgroonga_prefix_contain_text_array(targets text[], prefix text) : bool
  *
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
@@ -3322,27 +3563,40 @@ pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 }
 
 /**
- * pgroonga.prefix_rk_text(target text, prefix text) : bool
+ * pgroonga_prefix_rk_text(target text, prefix text) : bool
  */
 Datum
 pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched = false;
+	bool matched;
 
-	matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-									 VARSIZE_ANY_EXHDR(target),
-									 VARDATA_ANY(prefix),
-									 VARSIZE_ANY_EXHDR(prefix),
-									 NULL,
-									 0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+										 VARSIZE_ANY_EXHDR(target),
+										 VARDATA_ANY(prefix),
+										 VARSIZE_ANY_EXHDR(prefix),
+										 NULL,
+										 0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+										 VARSIZE_ANY_EXHDR(target),
+										 VARDATA_ANY(prefix),
+										 VARSIZE_ANY_EXHDR(prefix),
+										 NULL,
+										 0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_text_array(targets text[], prefix text) : bool
+ * pgroonga_prefix_rk_text_array(targets text[], prefix text) : bool
  */
 Datum
 pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
@@ -3351,39 +3605,70 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 	text *prefix = PG_GETARG_TEXT_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  NULL,
-													  0,
-													  pgroonga_prefix_rk_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_varchar(target varchar, prefix varchar) : bool
+ * pgroonga_prefix_rk_varchar(target varchar, prefix varchar) : bool
  */
 Datum
 pgroonga_prefix_rk_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched = false;
+	bool matched;
 
-	matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-									 VARSIZE_ANY_EXHDR(target),
-									 VARDATA_ANY(prefix),
-									 VARSIZE_ANY_EXHDR(prefix),
-									 NULL,
-									 0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+										 VARSIZE_ANY_EXHDR(target),
+										 VARDATA_ANY(prefix),
+										 VARSIZE_ANY_EXHDR(prefix),
+										 NULL,
+										 0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
+										 VARSIZE_ANY_EXHDR(target),
+										 VARDATA_ANY(prefix),
+										 VARSIZE_ANY_EXHDR(prefix),
+										 NULL,
+										 0);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_varchar_array(targets varchar[], prefix varchar) : bool
+ * pgroonga_prefix_rk_varchar_array(targets varchar[], prefix varchar) : bool
  */
 Datum
 pgroonga_prefix_rk_varchar_array(PG_FUNCTION_ARGS)
@@ -3392,19 +3677,37 @@ pgroonga_prefix_rk_varchar_array(PG_FUNCTION_ARGS)
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  VARDATA_ANY(prefix),
-													  VARSIZE_ANY_EXHDR(prefix),
-													  NULL,
-													  0,
-													  pgroonga_prefix_rk_raw,
-													  NULL);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array(
+				targets,
+				VARDATA_ANY(prefix),
+				VARSIZE_ANY_EXHDR(prefix),
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw,
+				NULL);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_contain_text_array(targets text[], prefix text) : bool
+ * pgroonga_prefix_rk_contain_text_array(targets text[], prefix text) : bool
  *
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
@@ -3415,7 +3718,7 @@ pgroonga_prefix_rk_contain_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_in_text(target text, keywords text[]) : bool
+ * pgroonga_match_in_text(target text, keywords text[]) : bool
  */
 Datum
 pgroonga_match_in_text(PG_FUNCTION_ARGS)
@@ -3424,18 +3727,33 @@ pgroonga_match_in_text(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   keywords,
-												   NULL,
-												   0,
-												   pgroonga_match_term_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   keywords,
+													   NULL,
+													   0,
+													   pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   keywords,
+													   NULL,
+													   0,
+													   pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_contain_text(target text, keywords text[]) : bool
+ * pgroonga_match_contain_text(target text, keywords text[]) : bool
  *
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
@@ -3446,7 +3764,7 @@ pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.match_in_text_array(targets text[], keywords text[]) : bool
+ * pgroonga_match_in_text_array(targets text[], keywords text[]) : bool
  */
 Datum
 pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
@@ -3455,17 +3773,33 @@ pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 keywords,
-														 NULL,
-														 0,
-														 pgroonga_match_term_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array
+			(targets,
+			 keywords,
+			 NULL,
+			 0,
+			 pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array
+			(targets,
+			 keywords,
+			 NULL,
+			 0,
+			 pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.match_in_varchar(target varchar, keywords varchar[]) : bool
+ * pgroonga_match_in_varchar(target varchar, keywords varchar[]) : bool
  */
 Datum
 pgroonga_match_in_varchar(PG_FUNCTION_ARGS)
@@ -3474,38 +3808,68 @@ pgroonga_match_in_varchar(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   keywords,
-												   NULL,
-												   0,
-												   pgroonga_match_term_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   keywords,
+													   NULL,
+													   0,
+													   pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   keywords,
+													   NULL,
+													   0,
+													   pgroonga_match_term_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.query_in_text(target text, queries text[]) : bool
+ * pgroonga_query_in_text(target text, queries text[]) : bool
  */
 Datum
 pgroonga_query_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   queries,
-												   NULL,
-												   0,
-												   pgroonga_match_query_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   queries,
+													   NULL,
+													   0,
+													   pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   queries,
+													   NULL,
+													   0,
+													   pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.query_in_text(target text, queries text[]) : bool
+ * pgroonga_query_in_text(target text, queries text[]) : bool
  *
  * It's deprecated since 1.2.1. Just for backward compatibility.
  */
@@ -3516,7 +3880,7 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.query_in_text_array(targets text[], queries text[]) : bool
+ * pgroonga_query_in_text_array(targets text[], queries text[]) : bool
  */
 Datum
 pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
@@ -3525,32 +3889,63 @@ pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 queries,
-														 NULL,
-														 0,
-														 pgroonga_match_query_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				queries,
+				NULL,
+				0,
+				pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				queries,
+				NULL,
+				0,
+				pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.query_in_varchar(target varchar, queries varchar[]) : bool
+ * pgroonga_query_in_varchar(target varchar, queries varchar[]) : bool
  */
 Datum
 pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	grn_bool matched;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   queries,
-												   NULL,
-												   0,
-												   pgroonga_match_query_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   queries,
+													   NULL,
+													   0,
+													   pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   queries,
+													   NULL,
+													   0,
+													   pgroonga_match_query_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3562,15 +3957,30 @@ pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched = false;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   prefixes,
-												   NULL,
-												   0,
-												   pgroonga_prefix_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3582,20 +3992,35 @@ pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched = false;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   prefixes,
-												   NULL,
-												   0,
-												   pgroonga_prefix_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(!matched);
 }
 
 /**
- * pgroonga.prefix_in_text_array(targets text[], prefixes text[]) : bool
+ * pgroonga_prefix_in_text_array(targets text[], prefixes text[]) : bool
  */
 Datum
 pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
@@ -3604,37 +4029,68 @@ pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 prefixes,
-														 NULL,
-														 0,
-														 pgroonga_prefix_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_in_varchar(target varchar, prefixes varchar[]) : bool
+ * pgroonga_prefix_in_varchar(target varchar, prefixes varchar[]) : bool
  */
 Datum
 pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched = false;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   prefixes,
-												   NULL,
-												   0,
-												   pgroonga_prefix_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ * pgroonga_prefix_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
  */
 Datum
 pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
@@ -3643,37 +4099,68 @@ pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 prefixes,
-														 NULL,
-														 0,
-														 pgroonga_prefix_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_in_text(target text, prefixes text[]) : bool
+ * pgroonga_prefix_rk_in_text(target text, prefixes text[]) : bool
  */
 Datum
 pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched = false;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   prefixes,
-												   NULL,
-												   0,
-												   pgroonga_prefix_rk_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_in_text_array(targets text[], prefixes text[]) : bool
+ * pgroonga_prefix_rk_in_text_array(targets text[], prefixes text[]) : bool
  */
 Datum
 pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
@@ -3682,37 +4169,68 @@ pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 prefixes,
-														 NULL,
-														 0,
-														 pgroonga_prefix_rk_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_in_varchar(target varchar, prefixes varchar[]) : bool
+ * pgroonga_prefix_rk_in_varchar(target varchar, prefixes varchar[]) : bool
  */
 Datum
 pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched = false;
+	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   prefixes,
-												   NULL,
-												   0,
-												   pgroonga_prefix_rk_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
+													   VARSIZE_ANY_EXHDR(target),
+													   prefixes,
+													   NULL,
+													   0,
+													   pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
 /**
- * pgroonga.prefix_rk_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ * pgroonga_prefix_rk_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
  */
 Datum
 pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
@@ -3721,12 +4239,28 @@ pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched;
 
-	matched =
-		pgroonga_execute_binary_operator_in_string_array(targets,
-														 prefixes,
-														 NULL,
-														 0,
-														 pgroonga_prefix_rk_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string_array(
+				targets,
+				prefixes,
+				NULL,
+				0,
+				pgroonga_prefix_rk_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3738,14 +4272,28 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										VARDATA_ANY(pattern),
-										VARSIZE_ANY_EXHDR(pattern),
-										NULL,
-										0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3757,14 +4305,28 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
-	grn_bool matched;
+	bool matched;
 
-	matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										VARDATA_ANY(pattern),
-										VARSIZE_ANY_EXHDR(pattern),
-										NULL,
-										0);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											VARDATA_ANY(pattern),
+											VARSIZE_ANY_EXHDR(pattern),
+											NULL,
+											0);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3776,14 +4338,30 @@ pgroonga_regexp_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
 
-	bool matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   patterns,
-												   NULL,
-												   0,
-												   pgroonga_match_regexp_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			patterns,
+			NULL,
+			0,
+			pgroonga_match_regexp_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			patterns,
+			NULL,
+			0,
+			pgroonga_match_regexp_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -3795,14 +4373,32 @@ pgroonga_regexp_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
+	bool matched;
 
-	bool matched =
-		pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-												   VARSIZE_ANY_EXHDR(target),
-												   patterns,
-												   NULL,
-												   0,
-												   pgroonga_match_regexp_raw);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(
+				VARDATA_ANY(target),
+				VARSIZE_ANY_EXHDR(target),
+				patterns,
+				NULL,
+				0,
+				pgroonga_match_regexp_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_in_string(
+				VARDATA_ANY(target),
+				VARSIZE_ANY_EXHDR(target),
+				patterns,
+				NULL,
+				0,
+				pgroonga_match_regexp_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
@@ -6041,8 +6637,8 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 }
 
 static bool
-pgroonga_gettuple_raw(IndexScanDesc scan,
-					  ScanDirection direction)
+pgroonga_gettuple_internal(IndexScanDesc scan,
+						   ScanDirection direction)
 {
 	const char *tag = "pgroonga: [get-tuple]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
@@ -6195,6 +6791,23 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 	return found;
 }
 
+static bool
+pgroonga_gettuple_raw(IndexScanDesc scan,
+					  ScanDirection direction)
+{
+	bool found;
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(scan->heapRelation->rd_id));
+	{
+		found = pgroonga_gettuple_internal(scan, direction);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		found = pgroonga_gettuple_internal(scan, direction);
+	}
+	PGRN_RLS_ENABLED_END();
+	return found;
+}
+
 /**
  * pgroonga.gettuple() -- amgettuple
  */
@@ -6211,8 +6824,8 @@ pgroonga_gettuple(PG_FUNCTION_ARGS)
 }
 
 static int64
-pgroonga_getbitmap_raw(IndexScanDesc scan,
-					   TIDBitmap *tbm)
+pgroonga_getbitmap_internal(IndexScanDesc scan,
+							TIDBitmap *tbm)
 {
 	const char *tag = "pgroonga: [get-bitmap]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
@@ -6320,6 +6933,24 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 		}
 	}
 
+	return nRecords;
+}
+
+static int64
+pgroonga_getbitmap_raw(IndexScanDesc scan,
+					   TIDBitmap *tbm)
+{
+	int64 nRecords;
+	bool enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
+	PGRN_RLS_ENABLED_IF(enabled);
+	{
+		nRecords = pgroonga_getbitmap_internal(scan, tbm);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		nRecords = pgroonga_getbitmap_internal(scan, tbm);
+	}
+	PGRN_RLS_ENABLED_END();
 	return nRecords;
 }
 
@@ -7107,15 +7738,14 @@ PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
 }
 
 static void
-PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
+PGrnCostEstimateUpdateSelectivity(Relation index,
+								  PlannerInfo *root,
+								  IndexPath *path)
 {
-	IndexOptInfo *indexInfo = path->indexinfo;
-	Relation index;
 	grn_obj *sourcesTable;
 	List *quals;
 	ListCell *cell;
 
-	index = RelationIdGetRelation(indexInfo->indexoid);
 	PGrnWALApply(index);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
@@ -7139,26 +7769,25 @@ PGrnCostEstimateUpdateSelectivity(PlannerInfo *root, IndexPath *path)
 											 sourcesTable,
 											 info);
 	}
-
-	RelationClose(index);
 }
 
 static void
-pgroonga_costestimate_raw(PlannerInfo *root,
-						  IndexPath *path,
-						  double loopCount,
-						  Cost *indexStartupCost,
-						  Cost *indexTotalCost,
-						  Selectivity *indexSelectivity,
-						  double *indexCorrelation
+pgroonga_costestimate_internal(Relation index,
+							   PlannerInfo *root,
+							   IndexPath *path,
+							   double loopCount,
+							   Cost *indexStartupCost,
+							   Cost *indexTotalCost,
+							   Selectivity *indexSelectivity,
+							   double *indexCorrelation
 #ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
-						  ,
-						  double *indexPages
+							   ,
+							   double *indexPages
 #endif
 	)
 {
 	List *quals;
-	PGrnCostEstimateUpdateSelectivity(root, path);
+	PGrnCostEstimateUpdateSelectivity(index, root, path);
 #ifdef PGRN_SUPPORT_INDEX_CLAUSE
 	{
 		List *indexQuals;
@@ -7180,6 +7809,58 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 #ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
 	*indexPages = 0.0; /* TODO */
 #endif
+}
+
+static void
+pgroonga_costestimate_raw(PlannerInfo *root,
+						  IndexPath *path,
+						  double loopCount,
+						  Cost *indexStartupCost,
+						  Cost *indexTotalCost,
+						  Selectivity *indexSelectivity,
+						  double *indexCorrelation
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+						  ,
+						  double *indexPages
+#endif
+	)
+{
+	IndexOptInfo *indexInfo = path->indexinfo;
+	Relation index = RelationIdGetRelation(indexInfo->indexoid);
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(index->rd_index->indrelid));
+	{
+		pgroonga_costestimate_internal(index,
+									   root,
+									   path,
+									   loopCount,
+									   indexStartupCost,
+									   indexTotalCost,
+									   indexSelectivity,
+									   indexCorrelation
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+									   ,
+									   indexPages
+#endif
+			);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		pgroonga_costestimate_internal(index,
+									   root,
+									   path,
+									   loopCount,
+									   indexStartupCost,
+									   indexTotalCost,
+									   indexSelectivity,
+									   indexCorrelation
+#ifdef PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
+									   ,
+									   indexPages
+#endif
+			);
+	}
+	PGRN_RLS_ENABLED_END();
+	RelationClose(index);
 }
 
 /**

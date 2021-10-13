@@ -5,6 +5,7 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
+#include "pgrn-row-level-security.h"
 #include "pgrn-wal.h"
 
 #include <catalog/catalog.h>
@@ -132,6 +133,9 @@ PGrnCheck(const char *format, ...)
 	if (ctx->rc == GRN_SUCCESS)
 		return true;
 
+	if (PGrnIsRLSEnabled)
+		PG_RE_THROW();
+
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 	va_end(args);
@@ -152,6 +156,9 @@ PGrnCheckRC(grn_rc rc, const char *format, ...)
 	if (rc == GRN_SUCCESS)
 		return true;
 
+	if (PGrnIsRLSEnabled)
+		PG_RE_THROW();
+
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 	va_end(args);
@@ -171,6 +178,18 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 
 	if (rc == GRN_SUCCESS)
 		return true;
+
+	if (PGrnIsRLSEnabled)
+	{
+		if (errorLevel == ERROR)
+		{
+			PG_RE_THROW();
+		}
+		else
+		{
+			return false;
+		}
+	}
 
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);

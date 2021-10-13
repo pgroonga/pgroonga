@@ -13,7 +13,7 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_escape);
 
 /**
- * pgroonga.query_escape(query text) : text
+ * pgroonga_query_escape(query text) : text
  */
 Datum
 pgroonga_query_escape(PG_FUNCTION_ARGS)
