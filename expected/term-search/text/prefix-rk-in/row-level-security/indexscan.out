@@ -17,20 +17,21 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT katakana
   FROM readings
  WHERE katakana &^~| ARRAY['po', 'gu']
- ORDER BY id;
-                      QUERY PLAN                       
--------------------------------------------------------
- Sort
-   Sort Key: id
-   ->  Index Scan using pgrn_index on readings
-         Index Cond: (katakana &^~| '{po,gu}'::text[])
-         Filter: (user_name = CURRENT_USER)
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Sort
+  Sort Key: id
+  ->  Index Scan using pgrn_index on readings
+        Index Cond: (katakana &^~| '{po,gu}'::text[])
+        Filter: (user_name = CURRENT_USER)
 (5 rows)
-
+\pset format aligned
 SELECT katakana
   FROM readings
  WHERE katakana &^~| ARRAY['po', 'gu']

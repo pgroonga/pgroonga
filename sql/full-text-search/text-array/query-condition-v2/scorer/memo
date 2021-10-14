@@ -1,0 +1,8 @@
+('アルゴリズム',
+  null,
+  'scorer_tf_at_most($index, 2)',
+  null)::pgroonga_full_text_search_condition_with_scorer
+にしたらすべてのtext[]のすべての要素に対してscorerできるようにする。
+
+ただ、↓が期待したスコアにならない（32とかになる）ので微妙かも。Groongaも改良した方がいいかも。
+select pgroonga_command('select Sources1251691 --match_columns "scorer_tf_at_most(content, 2)" --query "アルゴリズム 検索" --filter "pgroonga_tuple_is_alive(ctid)" --output_pretty yes --output_columns "id, _score"');

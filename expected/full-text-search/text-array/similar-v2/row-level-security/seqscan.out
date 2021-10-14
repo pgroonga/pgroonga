@@ -26,16 +26,17 @@ SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@* 'Mroonga: A MySQL plugin that uses Groonga';
-                                                 QUERY PLAN                                                  
--------------------------------------------------------------------------------------------------------------
- Seq Scan on memos
-   Filter: ((user_name = CURRENT_USER) AND (contents &@* 'Mroonga: A MySQL plugin that uses Groonga'::text))
+ WHERE contents &@* 'Mroonga: A MySQL plugin that uses Groonga'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Seq Scan on memos
+  Filter: ((user_name = CURRENT_USER) AND (contents &@* 'Mroonga: A MySQL plugin that uses Groonga'::text))
 (2 rows)
-
+\pset format aligned
 SELECT id, contents
   FROM memos
  WHERE contents &@* 'Mroonga: A MySQL plugin that uses Groonga';

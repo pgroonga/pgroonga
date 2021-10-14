@@ -19,17 +19,18 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &` 'content @ "rdbms" || content @ "engine"';
-                                 QUERY PLAN                                 
-----------------------------------------------------------------------------
- Index Scan using pgrn_index on memos
-   Index Cond: (content &` 'content @ "rdbms" || content @ "engine"'::text)
-   Filter: (user_name = CURRENT_USER)
+ WHERE content &` 'content @ "rdbms" || content @ "engine"'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Index Scan using pgrn_index on memos
+  Index Cond: (content &` 'content @ "rdbms" || content @ "engine"'::text)
+  Filter: (user_name = CURRENT_USER)
 (3 rows)
-
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" || content @ "engine"';
@@ -38,17 +39,18 @@ SELECT id, content
   2 | Groonga is fast full text search engine.
 (1 row)
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &` 'content @ "rdbms" ||';
-                       QUERY PLAN                        
----------------------------------------------------------
- Index Scan using pgrn_index on memos
-   Index Cond: (content &` 'content @ "rdbms" ||'::text)
-   Filter: (user_name = CURRENT_USER)
+ WHERE content &` 'content @ "rdbms" ||'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Index Scan using pgrn_index on memos
+  Index Cond: (content &` 'content @ "rdbms" ||'::text)
+  Filter: (user_name = CURRENT_USER)
 (3 rows)
-
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" ||';

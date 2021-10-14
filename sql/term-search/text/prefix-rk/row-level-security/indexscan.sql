@@ -23,11 +23,14 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT katakana
   FROM readings
  WHERE katakana &^~ 'p'
- ORDER BY id;
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT katakana
   FROM readings

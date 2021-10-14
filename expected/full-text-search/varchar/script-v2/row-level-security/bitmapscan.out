@@ -19,19 +19,20 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &` 'content @ "rdbms" || content @ "engine"';
-                                          QUERY PLAN                                           
------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (content &` 'content @ "rdbms" || content @ "engine"'::character varying)
-   Filter: (user_name = CURRENT_USER)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (content &` 'content @ "rdbms" || content @ "engine"'::character varying)
+ WHERE content &` 'content @ "rdbms" || content @ "engine"'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (content &` 'content @ "rdbms" || content @ "engine"'::character varying)
+  Filter: (user_name = CURRENT_USER)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (content &` 'content @ "rdbms" || content @ "engine"'::character varying)
 (5 rows)
-
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" || content @ "engine"';
@@ -40,19 +41,20 @@ SELECT id, content
   2 | Groonga is fast full text search engine.
 (1 row)
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &` 'content @ "rdbms" ||';
-                                 QUERY PLAN                                 
-----------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (content &` 'content @ "rdbms" ||'::character varying)
-   Filter: (user_name = CURRENT_USER)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (content &` 'content @ "rdbms" ||'::character varying)
+ WHERE content &` 'content @ "rdbms" ||'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (content &` 'content @ "rdbms" ||'::character varying)
+  Filter: (user_name = CURRENT_USER)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (content &` 'content @ "rdbms" ||'::character varying)
 (5 rows)
-
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" ||';

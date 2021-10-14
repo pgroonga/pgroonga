@@ -34,7 +34,7 @@ SELECT id, content
         NULL,
         NULL,
         'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
-\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT id, content

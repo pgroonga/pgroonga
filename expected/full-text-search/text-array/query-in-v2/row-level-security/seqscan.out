@@ -26,16 +26,17 @@ SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@~| Array['rdbms', 'groonga engine'];
-                                          QUERY PLAN                                           
------------------------------------------------------------------------------------------------
- Seq Scan on memos
-   Filter: ((user_name = CURRENT_USER) AND (contents &@~| '{rdbms,"groonga engine"}'::text[]))
+ WHERE contents &@~| Array['rdbms', 'groonga engine']
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Seq Scan on memos
+  Filter: ((user_name = CURRENT_USER) AND (contents &@~| '{rdbms,"groonga engine"}'::text[]))
 (2 rows)
-
+\pset format aligned
 SELECT id, contents
   FROM memos
  WHERE contents &@~| Array['rdbms', 'groonga engine'];

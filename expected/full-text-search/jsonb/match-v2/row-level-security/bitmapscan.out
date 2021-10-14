@@ -25,19 +25,20 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, record
   FROM memos
- WHERE record &@ 'groonga';
-                   QUERY PLAN                    
--------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (record &@ 'groonga'::text)
-   Filter: (user_name = CURRENT_USER)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (record &@ 'groonga'::text)
+ WHERE record &@ 'groonga'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (record &@ 'groonga'::text)
+  Filter: (user_name = CURRENT_USER)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (record &@ 'groonga'::text)
 (5 rows)
-
+\pset format aligned
 SELECT id, record
   FROM memos
  WHERE record &@ 'groonga';

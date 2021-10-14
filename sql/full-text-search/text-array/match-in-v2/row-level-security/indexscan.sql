@@ -34,10 +34,13 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@| Array['rdbms', 'engine'];
+ WHERE contents &@| Array['rdbms', 'engine']
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT id, contents
   FROM memos

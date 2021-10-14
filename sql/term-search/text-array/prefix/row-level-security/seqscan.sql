@@ -20,11 +20,14 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
  WHERE names &^ 'pG'
- ORDER BY id;
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT names
   FROM tags

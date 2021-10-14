@@ -31,10 +31,13 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@~ 'oss search full';
+ WHERE contents &@~ 'oss search full'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT id, contents
   FROM memos

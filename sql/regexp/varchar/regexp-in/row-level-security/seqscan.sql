@@ -22,10 +22,13 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &~| ARRAY['pgroonga', 'rdbms']::varchar[];
+ WHERE content &~| ARRAY['pgroonga', 'rdbms']::varchar[]
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT id, content
   FROM memos

@@ -28,7 +28,7 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
         NULL,
         NULL,
         'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
-\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Index Scan using pgrn_index on memos
   Index Cond: (content &@ pgroonga_full_text_search_condition_with_scorers)

@@ -15,19 +15,20 @@ SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
  WHERE names &^ 'pG'
- ORDER BY id;
-                               QUERY PLAN                               
-------------------------------------------------------------------------
- Sort
-   Sort Key: id
-   ->  Seq Scan on tags
-         Filter: ((user_name = CURRENT_USER) AND (names &^ 'pG'::text))
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Sort
+  Sort Key: id
+  ->  Seq Scan on tags
+        Filter: ((user_name = CURRENT_USER) AND (names &^ 'pG'::text))
 (4 rows)
-
+\pset format aligned
 SELECT names
   FROM tags
  WHERE names &^ 'pG'

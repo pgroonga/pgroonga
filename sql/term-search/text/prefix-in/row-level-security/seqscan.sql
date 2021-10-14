@@ -20,11 +20,14 @@ SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
  WHERE name &^| ARRAY['gro', 'pos']
- ORDER BY id;
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT name
   FROM tags

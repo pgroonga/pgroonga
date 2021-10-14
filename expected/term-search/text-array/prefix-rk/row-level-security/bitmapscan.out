@@ -17,22 +17,23 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT katakanas
   FROM readings
  WHERE katakanas &^~ 'p'
- ORDER BY id;
-                     QUERY PLAN                      
------------------------------------------------------
- Sort
-   Sort Key: id
-   ->  Bitmap Heap Scan on readings
-         Recheck Cond: (katakanas &^~ 'p'::text)
-         Filter: (user_name = CURRENT_USER)
-         ->  Bitmap Index Scan on pgrn_index
-               Index Cond: (katakanas &^~ 'p'::text)
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Sort
+  Sort Key: id
+  ->  Bitmap Heap Scan on readings
+        Recheck Cond: (katakanas &^~ 'p'::text)
+        Filter: (user_name = CURRENT_USER)
+        ->  Bitmap Index Scan on pgrn_index
+              Index Cond: (katakanas &^~ 'p'::text)
 (7 rows)
-
+\pset format aligned
 SELECT katakanas
   FROM readings
  WHERE katakanas &^~ 'p'

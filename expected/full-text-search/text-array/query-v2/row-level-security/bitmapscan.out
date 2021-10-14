@@ -28,19 +28,20 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@~ 'oss search full';
-                         QUERY PLAN                         
-------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (contents &@~ 'oss search full'::text)
-   Filter: (user_name = CURRENT_USER)
-   ->  Bitmap Index Scan on pgroonga_memos_index
-         Index Cond: (contents &@~ 'oss search full'::text)
+ WHERE contents &@~ 'oss search full'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (contents &@~ 'oss search full'::text)
+  Filter: (user_name = CURRENT_USER)
+  ->  Bitmap Index Scan on pgroonga_memos_index
+        Index Cond: (contents &@~ 'oss search full'::text)
 (5 rows)
-
+\pset format aligned
 SELECT id, contents
   FROM memos
  WHERE contents &@~ 'oss search full';

@@ -19,19 +19,20 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';
-                                             QUERY PLAN                                              
------------------------------------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::character varying)
-   Filter: (user_name = CURRENT_USER)
-   ->  Bitmap Index Scan on pgrn_index
-         Index Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::character varying)
+ WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+QUERY PLAN
+Bitmap Heap Scan on memos
+  Recheck Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::character varying)
+  Filter: (user_name = CURRENT_USER)
+  ->  Bitmap Index Scan on pgrn_index
+        Index Cond: (content &@* 'Mroonga is a MySQL plugin that uses Groonga.'::character varying)
 (5 rows)
-
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &@* 'Mroonga is a MySQL plugin that uses Groonga.';

@@ -31,10 +31,13 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT id, record
   FROM memos
- WHERE record &@ 'groonga';
+ WHERE record &@ 'groonga'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT id, record
   FROM memos

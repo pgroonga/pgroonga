@@ -22,11 +22,14 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SET SESSION AUTHORIZATION alice;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT tags
   FROM memos
  WHERE tags &> 'Groonga'
- ORDER BY id;
+ ORDER BY id
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\pset format aligned
 
 SELECT tags
   FROM memos
