@@ -294,9 +294,9 @@ PGrnInitializeVariables(void)
 							NULL);
 
 	DefineCustomBoolVariable("pgroonga.enable_wal",
-							 "Enable WAL. (experimental)",
-							 "It requires PostgreSQL 9.6 or later. "
-							 "It's an experimental feature.",
+							 "Enable WAL.",
+							 "You need to enable this "
+							 "to use streaming replication.",
 							 &PGrnEnableWAL,
 							 PGrnWALGetEnabled(),
 							 PGC_USERSET,
