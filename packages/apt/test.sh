@@ -96,7 +96,11 @@ if [ "$((${postgresql_version} < 13))" = 1 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi
 ruby /host/test/prepare.rb > schedule
-export PG_REGRESS_DIFF_OPTS="-u --color=always"
+PG_REGRESS_DIFF_OPTS="-u"
+if diff --help | grep -q color; then
+  PG_REGRESS_DIFF_OPTS="${PG_REGRESS_DIFF_OPTS} --color=always"
+fi
+export PG_REGRESS_DIFF_OPTS
 pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
 
 echo "::endgroup::"
