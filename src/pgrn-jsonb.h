@@ -11,7 +11,7 @@
 #include "pgrn-wal.h"
 
 const char *PGrnJSONBIteratorTokenToString(JsonbIteratorToken token);
-const char *PGrnJSONBValueTypeToString(PGRN_JBV_TYPE type);
+const char *PGrnJSONBValueTypeToString(enum jbvType type);
 
 Jsonb *PGrnJSONBParse(const char *jsonString);
 

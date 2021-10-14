@@ -61,7 +61,6 @@ jobs:
           - postgresql-10-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-10-pgdg-pgroonga-centos-7
           - postgresql-10-pgroonga-centos-7
-          - postgresql-9.6-pgroonga-centos-7
           # Groonga 11.0.5 or later is required
           # - pgroonga-fedora-33
     runs-on: ubuntu-latest

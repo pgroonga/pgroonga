@@ -96,7 +96,7 @@ PGrnJSONBIteratorTokenToString(JsonbIteratorToken token)
 }
 
 const char *
-PGrnJSONBValueTypeToString(PGRN_JBV_TYPE type)
+PGrnJSONBValueTypeToString(enum jbvType type)
 {
 	switch (type)
 	{

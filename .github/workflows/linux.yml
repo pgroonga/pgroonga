@@ -18,7 +18,6 @@ jobs:
       fail-fast: false
       matrix:
         label:
-          - PostgreSQL 9.6
           - PostgreSQL 10
           - PostgreSQL 11
           - PostgreSQL 12
@@ -26,8 +25,6 @@ jobs:
           - PostgreSQL 14
           - PostgreSQL 14 with Groonga master
         include:
-          - label: PostgreSQL 9.6
-            postgresql-version: "9.6"
           - label: PostgreSQL 10
             postgresql-version: "10"
           - label: PostgreSQL 11

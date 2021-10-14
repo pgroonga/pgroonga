@@ -50,13 +50,6 @@ typedef char *PGrnStringOptionValue;
 	ALLOCSET_DEFAULT_MAXSIZE
 #endif
 
-#if PG_VERSION_NUM >= 100000
-#	define PGRN_AM_INSERT_HAVE_INDEX_INFO
-#	define PGRN_AM_COST_ESTIMATE_HAVE_INDEX_PAGES
-#	define PGRN_SUPPORT_PARALLEL_SCAN
-#	define PGRN_SUPPORT_LOGICAL_REPLICATION
-#endif
-
 #if PG_VERSION_NUM >= 140000
 #	define PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
 #endif
@@ -194,12 +187,6 @@ typedef char *PGrnStringOptionValue;
 
 #if PG_VERSION_NUM < 110000
 #	define PG_RETURN_JSONB_P(x) PG_RETURN_JSONB(x)
-#endif
-
-#if PG_VERSION_NUM >= 100000
-#	define PGRN_JBV_TYPE enum jbvType
-#else
-#	define PGRN_JBV_TYPE int
 #endif
 
 #if PG_VERSION_NUM >= 120000

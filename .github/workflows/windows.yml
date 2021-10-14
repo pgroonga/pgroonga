@@ -19,11 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact-id: "postgresql-9.6-x64"
-            cmake-generator: "Visual Studio 16 2019"
-            label: PostgreSQL 9.6 + Visual Studio 2019
-            postgresql-version-major: "9.6"
-            postgresql-version: "9.6.23-1"
           - artifact-id: "postgresql-10-x64"
             cmake-generator: "Visual Studio 16 2019"
             label: PostgreSQL 10 + Visual Studio 2019
