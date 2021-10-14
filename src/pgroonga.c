@@ -2311,7 +2311,7 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2344,7 +2344,7 @@ pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2378,7 +2378,7 @@ pgroonga_match_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *term = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2495,7 +2495,7 @@ pgroonga_match_text_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2524,7 +2524,7 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *term = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2613,7 +2613,7 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2640,7 +2640,7 @@ pgroonga_match_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2665,7 +2665,7 @@ pgroonga_match_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2699,7 +2699,7 @@ pgroonga_match_varchar_condition(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2730,7 +2730,7 @@ pgroonga_match_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2759,7 +2759,7 @@ pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	VarChar *term = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2884,7 +2884,7 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2915,7 +2915,7 @@ pgroonga_query_text_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -2944,7 +2944,7 @@ pgroonga_query_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *query = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3025,7 +3025,7 @@ pgroonga_query_text_array_condition(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3054,7 +3054,7 @@ pgroonga_query_text_array_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3081,7 +3081,7 @@ pgroonga_query_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *query = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3115,7 +3115,7 @@ pgroonga_query_varchar_condition(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3146,7 +3146,7 @@ pgroonga_query_varchar_condition_with_scorers(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3263,7 +3263,7 @@ pgroonga_script_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *script = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3302,7 +3302,7 @@ pgroonga_script_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *script = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3359,7 +3359,7 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3392,7 +3392,7 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3431,7 +3431,7 @@ pgroonga_prefix_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3464,7 +3464,7 @@ pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3570,7 +3570,7 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3603,7 +3603,7 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *prefix = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3642,7 +3642,7 @@ pgroonga_prefix_rk_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3675,7 +3675,7 @@ pgroonga_prefix_rk_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	VarChar *prefix = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3725,7 +3725,7 @@ pgroonga_match_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3771,7 +3771,7 @@ pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3806,7 +3806,7 @@ pgroonga_match_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3841,7 +3841,7 @@ pgroonga_query_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3887,7 +3887,7 @@ pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3922,7 +3922,7 @@ pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3957,7 +3957,7 @@ pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -3992,7 +3992,7 @@ pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4027,7 +4027,7 @@ pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4062,7 +4062,7 @@ pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4097,7 +4097,7 @@ pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4132,7 +4132,7 @@ pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4167,7 +4167,7 @@ pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4202,7 +4202,7 @@ pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4237,7 +4237,7 @@ pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4272,7 +4272,7 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4305,7 +4305,7 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	VarChar *pattern = PG_GETARG_VARCHAR_PP(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4338,7 +4338,7 @@ pgroonga_regexp_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4373,7 +4373,7 @@ pgroonga_regexp_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
 	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
-	bool matched;
+	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -6795,7 +6795,7 @@ static bool
 pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
-	bool found;
+	bool found = false;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(scan->heapRelation->rd_id));
 	{
 		found = pgroonga_gettuple_internal(scan, direction);
@@ -6940,7 +6940,7 @@ static int64
 pgroonga_getbitmap_raw(IndexScanDesc scan,
 					   TIDBitmap *tbm)
 {
-	int64 nRecords;
+	int64 nRecords = 0;
 	bool enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
 	PGRN_RLS_ENABLED_IF(enabled);
 	{
