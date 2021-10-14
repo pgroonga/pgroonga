@@ -47,7 +47,11 @@ if [ "${NEED_SUDO:-no}" = "yes" ]; then
 else
   eval "run make PG_CONFIG=${PG_CONFIG} install ${OUTPUT}"
 fi
-export PG_REGRESS_DIFF_OPTS="-u --color=always"
+PG_REGRESS_DIFF_OPTS="-u"
+if diff --help | grep -q color; then
+  PG_REGRESS_DIFF_OPTS="${PG_REGRESS_DIFF_OPTS} --color=always"
+fi
+export PG_REGRESS_DIFF_OPTS
 launcher="--launcher=$(pwd)/test/short-pgappname"
 if [ -n "${test_names}" ]; then
   make installcheck \
