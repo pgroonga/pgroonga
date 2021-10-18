@@ -88,6 +88,7 @@ EOF
 %{pg_datadir}/extension/*.sql
 %if %{support_jit}
 %{pg_includedir}/server/contrib/pgroonga_check/
+%{pg_includedir}/server/contrib/pgroonga_wal_applier/
 %{pg_includedir}/server/extension/pgroonga/
 %{pg_includedir}/server/extension/pgroonga_database/
 %{pg_libdir}/bitcode/pgroonga*.index.bc
