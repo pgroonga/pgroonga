@@ -1,6 +1,6 @@
 #pragma once
 
-#include <postgres.h>
+#include "pgrn-compatible.h"
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
@@ -8,8 +8,6 @@
 #	include <access/tableam.h>
 #endif
 #include <catalog/pg_tablespace.h>
-
-#include "pgrn-compatible.h"
 
 typedef struct {
 	LOCKMODE lockMode;

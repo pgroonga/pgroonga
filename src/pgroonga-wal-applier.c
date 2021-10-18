@@ -1,11 +1,15 @@
-#include <postgres.h>
+#include "pgrn-compatible.h"
 
 #include <access/heapam.h>
 #include <access/relscan.h>
-#include <access/table.h>
-#include <access/tableam.h>
+#ifdef PGRN_SUPPORT_TABLEAM
+#	include <access/tableam.h>
+#endif
 #include <access/xact.h>
 #include <catalog/pg_database.h>
+#ifndef PGRN_FORM_PG_DATABASE_HAVE_OID
+#	include <commands/dbcommands.h>
+#endif
 #include <executor/spi.h>
 #include <fmgr.h>
 #include <miscadmin.h>
@@ -13,6 +17,7 @@
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
+#include <utils/guc.h>
 #include <utils/snapmgr.h>
 
 PG_MODULE_MAGIC;
@@ -56,7 +61,7 @@ void
 pgroonga_wal_applier_apply(Datum databaseOidDatum)
 {
 	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
-	BackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
 	StartTransactionCommand();
 	SPI_connect();
@@ -110,11 +115,11 @@ pgroonga_wal_applier_apply_all(void)
 	{
 		const LOCKMODE lock = AccessShareLock;
 		Relation pg_database;
-		TableScanDesc scan;
+		PGrnTableScanDesc scan;
 		HeapTuple tuple;
 
-		pg_database = table_open(DatabaseRelationId, lock);
-		scan = table_beginscan_catalog(pg_database, 0, NULL);
+		pg_database = pgrn_table_open(DatabaseRelationId, lock);
+		scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
 		for (tuple = heap_getnext(scan, ForwardScanDirection);
 			 HeapTupleIsValid(tuple);
 			 tuple = heap_getnext(scan, ForwardScanDirection))
@@ -122,18 +127,26 @@ pgroonga_wal_applier_apply_all(void)
 			Form_pg_database form = (Form_pg_database) GETSTRUCT(tuple);
 			BackgroundWorker worker = {0};
 			BackgroundWorkerHandle *handle;
+			Oid databaseOid;
 
 			if (strcmp(form->datname.data, "template0") == 0)
 				continue;
 			if (strcmp(form->datname.data, "template1") == 0)
 				continue;
 
+#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
+			databaseOid = form->oid;
+#else
+			databaseOid = get_database_oid(form->datname.data, true);
+#endif
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
 					 TAG ": %s(%u)",
 					 form->datname.data,
-					 form->oid);
+					 databaseOid);
+#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 			snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+#endif
 			worker.bgw_flags =
 				BGWORKER_SHMEM_ACCESS |
 				BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -145,14 +158,14 @@ pgroonga_wal_applier_apply_all(void)
 			snprintf(worker.bgw_function_name,
 					 BGW_MAXLEN,
 					 "pgroonga_wal_applier_apply");
-			worker.bgw_main_arg = DatumGetObjectId(form->oid);
+			worker.bgw_main_arg = DatumGetObjectId(databaseOid);
 			worker.bgw_notify_pid = MyProcPid;
 			if (!RegisterDynamicBackgroundWorker(&worker, &handle))
 				continue;
 			WaitForBackgroundWorkerShutdown(handle);
 		}
-		table_endscan(scan);
-		table_close(pg_database, lock);
+		pgrn_table_endscan(scan);
+		pgrn_table_close(pg_database, lock);
 	}
 
 	PopActiveSnapshot();
@@ -167,15 +180,14 @@ pgroonga_wal_applier_main(Datum arg)
 	pqsignal(SIGHUP, pgroonga_wal_applier_sighup);
 	BackgroundWorkerUnblockSignals();
 
-	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
+	PGrnBackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
 	while (!PGroongaWALApplierGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
 				  WL_LATCH_SET |
 				  WL_TIMEOUT |
-				  WL_POSTMASTER_DEATH |
-				  WL_EXIT_ON_PM_DEATH,
+				  PGRN_WL_EXIT_ON_PM_DEATH,
 				  PGroongaWALApplierNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
@@ -220,7 +232,9 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
+#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+#endif
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;

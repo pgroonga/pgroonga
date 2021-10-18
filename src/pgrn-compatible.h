@@ -1,5 +1,7 @@
 #pragma once
 
+#include <postgres.h>
+
 #ifdef WIN32
 #	define PRId64 "I64d"
 #	define PRIu64 "I64u"
@@ -191,4 +193,30 @@ typedef char *PGrnStringOptionValue;
 
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_HAVE_TUPLE_TABLE_SLOT_TABLE_OID
+#endif
+
+#if PG_VERSION_NUM < 110000
+#	define PGrnBackgroundWorkerInitializeConnection(dbname, username, flags) \
+	BackgroundWorkerInitializeConnection((dbname), (username))
+#	define PGrnBackgroundWorkerInitializeConnectionByOid(dboid, useroid, flags) \
+	BackgroundWorkerInitializeConnectionByOid((dboid), (useroid))
+#else
+#	define PGrnBackgroundWorkerInitializeConnection(dbname, username, flags) \
+	BackgroundWorkerInitializeConnection((dbname), (username), (flags))
+#	define PGrnBackgroundWorkerInitializeConnectionByOid(dboid, useroid, flags) \
+	BackgroundWorkerInitializeConnectionByOid((dboid), (useroid), (flags))
+#endif
+
+#if PG_VERSION_NUM >= 110000
+#	define PGRN_FORM_PG_DATABASE_HAVE_OID
+#endif
+
+#if PG_VERSION_NUM >= 110000
+#	define PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
+#endif
+
+#if PG_VERSION_NUM >= 130000
+#	define PGRN_WL_EXIT_ON_PM_DEATH WL_EXIT_ON_PM_DEATH
+#else
+#	define PGRN_WL_EXIT_ON_PM_DEATH WL_POSTMASTER_DEATH
 #endif
