@@ -183,7 +183,7 @@ set_source_files_properties(${PGRN_WAL_APPLIER_SOURCES}
   PROPERTIES
   COMPILE_FLAGS "/EHsc")
 configure_file(
-  "src/pgroonga-wal_applier.rc.in"
+  "src/pgroonga-wal-applier.rc.in"
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-wal-applier.rc"
   @ONLY)
 set(PGRN_WAL_APPLIER_SOURCES
