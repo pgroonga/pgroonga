@@ -22,10 +22,12 @@ set(PGRN_POSTGRESQL_VERSION_MAJOR "unknown"
 set(PGRN_DLL_NAME "${PGRN_PROJECT_ID}")
 set(PGRN_CHECK_DLL_NAME "${PGRN_PROJECT_ID}_check")
 set(PGRN_DATABASE_DLL_NAME "${PGRN_PROJECT_ID}_database")
+set(PGRN_WAL_APPLIER_DLL_NAME "${PGRN_PROJECT_ID}_wal_applier")
 
 set(PGRN_LIBRARY_NAME "lib${PGRN_DLL_NAME}")
 set(PGRN_CHECK_LIBRARY_NAME "lib${PGRN_CHECK_DLL_NAME}")
 set(PGRN_DATABASE_LIBRARY_NAME "lib${PGRN_DATABASE_DLL_NAME}")
+set(PGRN_WAL_APPLIER_LIBRARY_NAME "lib${PGRN_WAL_APPLIER_DLL_NAME}")
 
 set(PGRN_EXTENSION_DIR "lib")
 set(PGRN_EXTENSION_DATA_DIR "share/extension")
@@ -105,6 +107,16 @@ string(REGEX REPLACE "[ \t\n]" ""
 string(REGEX REPLACE "\\\\" ";"
   PGRN_DATABASE_SOURCES "${PGRN_DATABASE_SOURCES}")
 
+file(READ
+  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-wal-applier-sources.mk
+  PGRN_WAL_APPLIER_SOURCES)
+string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
+  PGRN_WAL_APPLIER_SOURCES "${PGRN_WAL_APPLIER_SOURCES}")
+string(REGEX REPLACE "[ \t\n]" ""
+  PGRN_WAL_APPLIER_SOURCES "${PGRN_WAL_APPLIER_SOURCES}")
+string(REGEX REPLACE "\\\\" ";"
+  PGRN_WAL_APPLIER_SOURCES "${PGRN_WAL_APPLIER_SOURCES}")
+
 set_source_files_properties(${PGRN_SOURCES}
   PROPERTIES
   COMPILE_FLAGS "/EHsc")
@@ -165,6 +177,27 @@ target_link_libraries("${PGRN_DATABASE_LIBRARY_NAME}"
   libgroonga
   "postgres.lib")
 install(TARGETS "${PGRN_DATABASE_LIBRARY_NAME}"
+  DESTINATION "${PGRN_EXTENSION_DIR}")
+
+set_source_files_properties(${PGRN_WAL_APPLIER_SOURCES}
+  PROPERTIES
+  COMPILE_FLAGS "/EHsc")
+configure_file(
+  "src/pgroonga-wal_applier.rc.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-wal-applier.rc"
+  @ONLY)
+set(PGRN_WAL_APPLIER_SOURCES
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-wal-applier.rc"
+  ${PGRN_WAL_APPLIER_SOURCES})
+add_library("${PGRN_WAL_APPLIER_LIBRARY_NAME}" SHARED
+  ${PGRN_WAL_APPLIER_SOURCES})
+set_target_properties("${PGRN_WAL_APPLIER_LIBRARY_NAME}"
+  PROPERTIES
+  OUTPUT_NAME "${PGRN_WAL_APPLIER_DLL_NAME}")
+target_link_libraries("${PGRN_WAL_APPLIER_LIBRARY_NAME}"
+  libgroonga
+  "postgres.lib")
+install(TARGETS "${PGRN_WAL_APPLIER_LIBRARY_NAME}"
   DESTINATION "${PGRN_EXTENSION_DIR}")
 
 install(FILES

@@ -76,6 +76,7 @@ module Helpers
     def initialize(base_dir)
       @base_dir = base_dir
       @dir = nil
+      @log_base_name = "postgresql.log"
       @log_path = nil
       @host = "127.0.0.1"
       @port = nil
@@ -91,8 +92,7 @@ module Helpers
 
     def initdb
       @dir = File.join(@base_dir, "db")
-      log_base_name = "postgresql.log"
-      @log_path = File.join(@dir, "log", log_base_name)
+      @log_path = File.join(@dir, "log", @log_base_name)
       socket_dir = File.join(@dir, "socket")
       @port = 15432
       @replication_user = "replicator"
@@ -110,10 +110,10 @@ module Helpers
           conf.puts("unix_socket_directories = '#{socket_dir}'")
         end
         conf.puts("logging_collector = on")
-        conf.puts("log_filename = '#{log_base_name}'")
+        conf.puts("log_filename = '#{@log_base_name}'")
         conf.puts("wal_level = replica")
         conf.puts("max_wal_senders = 4")
-        conf.puts("shared_preload_libraries = 'pgroonga_check.#{dll_extension}'")
+        conf.puts("shared_preload_libraries = 'pgroonga_check'")
         conf.puts("pgroonga.enable_wal = yes")
       end
       pg_hba_conf = File.join(@dir, "pg_hba.conf")
@@ -131,20 +131,27 @@ module Helpers
                   @replication_user)
     end
 
-    def init_replication(master)
+    def init_replication(primary)
       @dir = File.join(@base_dir, "db-standby")
-      @port = master.port + 1
+      @log_path = File.join(@dir, "log", @log_base_name)
+      @port = primary.port + 1
       run_command("pg_basebackup",
-                  "--host", master.host,
-                  "--port", master.port.to_s,
+                  "--host", primary.host,
+                  "--port", primary.port.to_s,
                   "--pgdata", @dir,
-                  "--username", master.replication_user,
+                  "--username", primary.replication_user,
                   "--write-recovery-conf")
       postgresql_conf = File.join(@dir, "postgresql.conf")
       File.open(postgresql_conf, "a") do |conf|
         conf.puts("hot_standby = on")
         conf.puts("port = #{@port}")
+        yield(conf) if block_given?
       end
+      conf = File.read(postgresql_conf)
+      conf = conf.gsub(/^shared_preload_libraries = '(.*?)'/) do
+        "shared_preload_libraries = '#{$1},pgroonga_wal_applier'"
+      end
+      File.write(postgresql_conf, conf)
     end
 
     def start
@@ -195,17 +202,6 @@ module Helpers
     end
 
     private
-    def dll_extension
-      case RUBY_PLATFORM
-      when /mingw|mswin|cygwin/
-        "dll"
-      when /darwin/
-        "dylib"
-      else
-        "so"
-      end
-    end
-
     def windows?
       /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
     end
@@ -277,8 +273,14 @@ module Helpers
 
     def setup_standby_db
       @postgresql_standby = PostgreSQL.new(@tmp_dir)
-      @postgresql_standby.init_replication(@postgresql)
+      @postgresql_standby.init_replication(@postgresql) do |conf|
+        conf.puts(additional_standby_configurations)
+      end
       @postgresql_standby.start
+    end
+
+    def additional_standby_configurations
+      ""
     end
 
     def teardown_standby_db

@@ -146,4 +146,64 @@ SELECT pgroonga_vacuum();
 
     OUTPUT
   end
+
+  sub_test_case "pgroonga_wal_applier" do
+    def naptime
+      1
+    end
+
+    def additional_standby_configurations
+      "pgroonga_wal_applier.naptime = #{naptime}"
+    end
+
+    test "auto apply" do
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+      sleep(naptime)
+
+      sql = <<-SQL
+SELECT jsonb_pretty(
+    pgroonga_command('select',
+                     ARRAY[
+                       'table', pgroonga_table_name('memos_content')
+                     ])::jsonb->1
+  ) AS select
+      SQL
+      assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+#{sql}
+             select              
+---------------------------------
+ [                              +
+     [                          +
+         [                      +
+             1                  +
+         ],                     +
+         [                      +
+             [                  +
+                 "_id",         +
+                 "UInt32"       +
+             ],                 +
+             [                  +
+                 "_key",        +
+                 "UInt64"       +
+             ],                 +
+             [                  +
+                 "content",     +
+                 "LongText"     +
+             ]                  +
+         ],                     +
+         [                      +
+             1,                 +
+             1,                 +
+             "PGroonga is good!"+
+         ]                      +
+     ]                          +
+ ]
+(1 row)
+
+      OUTPUT
+    end
+  end
 end
