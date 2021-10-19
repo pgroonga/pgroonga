@@ -13,6 +13,7 @@
 #endif
 
 static bool PGrnWALEnabled = false;
+static size_t PGrnWALMaxSize = 0;
 
 bool
 PGrnWALGetEnabled(void)
@@ -30,6 +31,18 @@ void
 PGrnWALDisable(void)
 {
 	PGrnWALEnabled = false;
+}
+
+size_t
+PGrnWALGetMaxSize(void)
+{
+	return PGrnWALMaxSize;
+}
+
+void
+PGrnWALSetMaxSize(size_t size)
+{
+	PGrnWALMaxSize = size;
 }
 
 #ifdef PGRN_SUPPORT_WAL
@@ -71,8 +84,8 @@ typedef enum {
 
 typedef struct {
 	BlockNumber next;
-	BlockNumber max; /* TODO */
-	uint8_t version;
+	BlockNumber max;
+	uint32_t version;
 } PGrnWALMetaPageSpecial;
 
 typedef struct {
@@ -266,9 +279,9 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 													GENERIC_XLOG_FULL_IMAGE);
 		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnWALMetaPageSpecial));
 		data->meta.pageSpecial =
-			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
+			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(data->meta.page);
 		data->meta.pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
-		data->meta.pageSpecial->max = 0;
+		data->meta.pageSpecial->max = data->meta.pageSpecial->next + 1;
 		data->meta.pageSpecial->version = PGRN_WAL_META_PAGE_SPECIAL_VERSION;
 	}
 	else
@@ -282,7 +295,7 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 													data->meta.buffer,
 													0);
 		data->meta.pageSpecial =
-			(PGrnWALMetaPageSpecial *)PageGetSpecialPointer(data->meta.page);
+			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(data->meta.page);
 	}
 }
 
@@ -343,6 +356,39 @@ PGrnWALPageAppend(Page page, const char *data, size_t dataSize)
 }
 
 static void
+PGrnWALPageFilled(PGrnWALData *data)
+{
+	data->current.page = NULL;
+	data->current.buffer = InvalidBuffer;
+	if (PGrnWALMaxSize == 0)
+	{
+		data->meta.pageSpecial->next++;
+		if (data->meta.pageSpecial->next >= data->meta.pageSpecial->max)
+			data->meta.pageSpecial->max = data->meta.pageSpecial->next + 1;
+	}
+	else
+	{
+		size_t currentSize =
+			(1 /* meta */ + data->meta.pageSpecial->next) * BLCKSZ;
+		size_t maxSize = PGrnWALMaxSize;
+		size_t minMaxSize = (1 /* meta */ + 2 /* at least two data */) * BLCKSZ;
+		if (maxSize < minMaxSize)
+			maxSize = minMaxSize;
+		if (currentSize < maxSize)
+		{
+			data->meta.pageSpecial->next++;
+			if (data->meta.pageSpecial->next >= data->meta.pageSpecial->max)
+				data->meta.pageSpecial->max = data->meta.pageSpecial->next + 1;
+		}
+		else
+		{
+			data->meta.pageSpecial->max = data->meta.pageSpecial->next + 1;
+			data->meta.pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
+		}
+	}
+}
+
+static void
 PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 {
 	PGrnWALMetaPageSpecial *meta;
@@ -381,6 +427,8 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 			GenericXLogRegisterBuffer(data->state,
 									  data->current.buffer,
 									  0);
+		if (PGrnWALPageGetFreeSize(data->current.page) == 0)
+			PageInit(data->current.page, BLCKSZ, 0);
 	}
 
 	data->nUsedPages++;
@@ -417,11 +465,10 @@ PGrnWALPageWriter(void *userData,
 			written += freeSize;
 			rest -= freeSize;
 			buffer += freeSize;
-
-			data->current.page = NULL;
-			data->current.buffer = InvalidBuffer;
-			data->meta.pageSpecial->next++;
 		}
+
+		if (PGrnWALPageGetFreeSize(data->current.page) == 0)
+			PGrnWALPageFilled(data);
 	}
 
 	return written;
@@ -1931,29 +1978,58 @@ static int64_t
 PGrnWALApplyConsume(PGrnWALApplyData *data)
 {
 	int64_t nAppliedOperations = 0;
+	Buffer metaBuffer;
+	Page metaPage;
+	PGrnWALMetaPageSpecial *meta;
 	BlockNumber i;
 	BlockNumber startBlock;
 	LocationIndex dataOffset;
 	BlockNumber nBlocks;
+	BlockNumber nextBlock;
+	BlockNumber maxBlock;
 	msgpack_unpacker unpacker;
 	msgpack_unpacked unpacked;
 
 	msgpack_unpacker_init(&unpacker, MSGPACK_UNPACKER_INIT_BUFFER_SIZE);
 	msgpack_unpacked_init(&unpacked);
+	metaBuffer = PGrnWALReadLockedBuffer(data->index,
+										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
+										 BUFFER_LOCK_SHARE);
+	metaPage = BufferGetPage(metaBuffer);
+	meta = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
 	startBlock = data->current.block;
 	dataOffset = data->current.offset;
 	if (startBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
 		startBlock++;
 	nBlocks = RelationGetNumberOfBlocks(data->index);
-	for (i = startBlock; i < nBlocks; i++)
+	nextBlock = meta->next;
+	maxBlock = meta->max;
+	if (maxBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
+		maxBlock = nBlocks;
+	for (i = 0; i < nBlocks; i++)
 	{
+		BlockNumber block;
 		Buffer buffer;
 		Page page;
+		LocationIndex lastOffset;
 		size_t dataSize;
 
-		buffer = PGrnWALReadLockedBuffer(data->index, i, BUFFER_LOCK_SHARE);
+		block = (startBlock + i) % nBlocks;
+		if (block == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
+			continue;
+		if (block > maxBlock)
+			continue;
+
+		buffer = PGrnWALReadLockedBuffer(data->index, block, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		dataSize = PGrnWALPageGetLastOffset(page) - dataOffset;
+		lastOffset = PGrnWALPageGetLastOffset(page);
+		if (dataOffset > lastOffset)
+			PGrnCheckRC(GRN_UNKNOWN_ERROR,
+						"[wal][apply][consume] "
+						"unconsumed WAL are overwritten: "
+						"pgroonga.max_wal_size should be increased or "
+						"pgroonga_wal_applier.naptime should be decreased");
+		dataSize = lastOffset - dataOffset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
 			   PGrnWALPageGetData(page) + dataOffset,
@@ -1972,12 +2048,17 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 				dataOffset +
 				dataSize - (unpacker.used - unpacker.off);
 			PGrnIndexStatusSetWALAppliedPosition(data->index,
-												 i,
+												 block,
 												 appliedOffset);
 			nAppliedOperations++;
 		}
+
+		if (block == nextBlock)
+			break;
+
 		dataOffset = 0;
 	}
+	UnlockReleaseBuffer(metaBuffer);
 	msgpack_unpacked_destroy(&unpacked);
 	msgpack_unpacker_destroy(&unpacker);
 

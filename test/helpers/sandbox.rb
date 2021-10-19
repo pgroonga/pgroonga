@@ -38,14 +38,20 @@ module Helpers
       output = ""
       error = ""
       status = nil
+      timeout = 1
       loop do
-        readables, = IO.select([output_read, error_read], nil, nil, 0)
-        (readables || []).each do |readable|
-          if readable == output_read
-            output << read_command_output(output_read)
-          else
-            error << read_command_output(error_read)
+        readables, = IO.select([output_read, error_read], nil, nil, timeout)
+        if readables
+          timeout = 0
+          readables.each do |readable|
+            if readable == output_read
+              output << read_command_output(output_read)
+            else
+              error << read_command_output(error_read)
+            end
           end
+        else
+          timeout = 1
         end
         _, status = Process.waitpid2(pid, Process::WNOHANG)
         break if status
@@ -115,6 +121,7 @@ module Helpers
         conf.puts("max_wal_senders = 4")
         conf.puts("shared_preload_libraries = 'pgroonga_check'")
         conf.puts("pgroonga.enable_wal = yes")
+        yield(conf) if block_given?
       end
       pg_hba_conf = File.join(@dir, "pg_hba.conf")
       File.open(pg_hba_conf, "a") do |conf|
@@ -140,7 +147,8 @@ module Helpers
                   "--port", primary.port.to_s,
                   "--pgdata", @dir,
                   "--username", primary.replication_user,
-                  "--write-recovery-conf")
+                  "--write-recovery-conf",
+                  "--verbose")
       postgresql_conf = File.join(@dir, "postgresql.conf")
       File.open(postgresql_conf, "a") do |conf|
         conf.puts("hot_standby = on")
@@ -265,7 +273,13 @@ module Helpers
 
     def setup_db
       @postgresql = PostgreSQL.new(@tmp_dir)
-      @postgresql.initdb
+      @postgresql.initdb do |conf|
+        conf.puts(additional_configurations)
+      end
+    end
+
+    def additional_configurations
+      ""
     end
 
     def teardown_db
@@ -308,6 +322,7 @@ module Helpers
       @test_db_name = "test"
       psql("postgres", "CREATE DATABASE #{@test_db_name}")
       run_sql("CREATE EXTENSION pgroonga")
+      run_sql("CHECKPOINT")
       Dir.glob(File.join(@postgresql.dir, "base", "*", "pgrn")) do |pgrn|
         @test_db_dir = File.dirname(pgrn)
       end

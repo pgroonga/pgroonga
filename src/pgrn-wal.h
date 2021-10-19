@@ -11,6 +11,9 @@ bool PGrnWALGetEnabled(void);
 void PGrnWALEnable(void);
 void PGrnWALDisable(void);
 
+size_t PGrnWALGetMaxSize(void);
+void PGrnWALSetMaxSize(size_t size);
+
 PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);
 void PGrnWALAbort(PGrnWALData *data);

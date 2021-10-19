@@ -47,6 +47,7 @@ static char *PGrnQueryLogPath;
 static int PGrnLockTimeout;
 
 static bool PGrnEnableWAL;
+static int PGrnMaxWALSizeKB;
 
 static bool PGrnForceMatchEscalation;
 
@@ -193,6 +194,12 @@ PGrnEnableWALAssign(bool new_value, void *extra)
 }
 
 static void
+PGrnMaxWALSizeAssign(int new_value, void *extra)
+{
+	PGrnWALSetMaxSize(new_value * 1024);
+}
+
+static void
 PGrnMatchEscalationThresholdAssignRaw(int new_value)
 {
 	if (!PGrnGroongaInitialized)
@@ -304,6 +311,21 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnEnableWALAssign,
 							 NULL);
+
+	DefineCustomIntVariable("pgroonga.max_wal_size",
+							"Max WAL size in KiB.",
+							"If WAL size is larger than this value, old WAL "
+							"are overwritten. The default is 0KiB. "
+							"It means that no size limit.",
+							&PGrnMaxWALSizeKB,
+							PGrnWALGetMaxSize() / 1024,
+							0,
+							MAX_KILOBYTES,
+							PGC_USERSET,
+							GUC_UNIT_KB,
+							NULL,
+							PGrnMaxWALSizeAssign,
+							NULL);
 
 	DefineCustomIntVariable("pgroonga.match_escalation_threshold",
 							"The threshold number of matched records "

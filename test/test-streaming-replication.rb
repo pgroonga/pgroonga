@@ -206,4 +206,46 @@ SELECT jsonb_pretty(
       OUTPUT
     end
   end
+
+  sub_test_case "pgroonga.max_wal_size" do
+    def additional_configurations
+      "pgroonga.max_wal_size = 32kB"
+    end
+
+    def additional_standby_configurations
+      "pgroonga_wal_applier.naptime = 1800"
+    end
+
+    test "rotated" do
+      run_sql("CREATE TABLE memos (title text, content text);")
+      run_sql("CREATE INDEX memos_content ON memos " +
+              "USING pgroonga (title, content);")
+      100.times do |i|
+        run_sql("INSERT INTO memos VALUES " +
+                "('#{i}KiB', '#{(i % 10).to_s * 1024}');")
+        run_sql_standby("SELECT pgroonga_wal_apply() as set#{i}")
+      end
+
+      sql = <<-SQL
+SELECT title FROM memos WHERE content &@~ '0'
+      SQL
+      assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+#{sql}
+ title 
+-------
+ 0KiB
+ 10KiB
+ 20KiB
+ 30KiB
+ 40KiB
+ 50KiB
+ 60KiB
+ 70KiB
+ 80KiB
+ 90KiB
+(10 rows)
+
+      OUTPUT
+    end
+  end
 end
