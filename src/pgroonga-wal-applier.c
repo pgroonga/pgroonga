@@ -7,9 +7,6 @@
 #endif
 #include <access/xact.h>
 #include <catalog/pg_database.h>
-#ifndef PGRN_FORM_PG_DATABASE_HAVE_OID
-#	include <commands/dbcommands.h>
-#endif
 #include <executor/spi.h>
 #include <fmgr.h>
 #include <miscadmin.h>
@@ -129,6 +126,9 @@ pgroonga_wal_applier_apply_all(void)
 			BackgroundWorkerHandle *handle;
 			Oid databaseOid;
 
+			if (PGroongaWALApplierGotSIGTERM)
+				break;
+
 			if (strcmp(form->datname.data, "template0") == 0)
 				continue;
 			if (strcmp(form->datname.data, "template1") == 0)
@@ -137,7 +137,7 @@ pgroonga_wal_applier_apply_all(void)
 #ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
 			databaseOid = form->oid;
 #else
-			databaseOid = get_database_oid(form->datname.data, true);
+			databaseOid = HeapTupleGetOid(tuple);
 #endif
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
