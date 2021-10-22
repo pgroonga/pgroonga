@@ -212,7 +212,7 @@ _PG_init(void)
 	BackgroundWorker worker = {0};
 
 	DefineCustomIntVariable("pgroonga_wal_applier.naptime",
-							"Duration between each check in seconds.",
+							"Duration between each WAL application in seconds.",
 							"The default is 60 seconds. "
 							"It means that PGroonga WAL applier tries to "
 							"apply all pending PGroonga WAL "
