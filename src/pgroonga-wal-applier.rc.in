@@ -15,8 +15,8 @@ BEGIN
       VALUE "CompanyName", "@PGRN_VENDOR@"
       VALUE "FileDescription", "@PGRN_DESCRIPTION@"
       VALUE "FileVersion", "@PGRN_VERSION@"
-      VALUE "InternalName", "@PGRN_WAL_DLL_NAME@"
-      VALUE "OriginalFilename", "@PGRN_WAL_DLL_NAME@.dll"
+      VALUE "InternalName", "@PGRN_WAL_APPLIER_DLL_NAME@"
+      VALUE "OriginalFilename", "@PGRN_WAL_APPLIER_DLL_NAME@.dll"
       VALUE "ProductName", "@PGRN_PROJECT_NAME@"
       VALUE "ProductVersion", "@PGRN_VERSION@"
     END
