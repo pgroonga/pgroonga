@@ -15,6 +15,7 @@
 #endif
 #include <catalog/pg_database.h>
 #include <executor/spi.h>
+#include <miscadmin.h>
 #include <pgstat.h>
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
