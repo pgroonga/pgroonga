@@ -16,6 +16,7 @@
 #	include <access/htup_details.h>
 #endif
 #include <catalog/pg_database.h>
+#include <common/hashfn.h>
 #include <executor/spi.h>
 #include <miscadmin.h>
 #include <pgstat.h>
@@ -29,6 +30,27 @@
 
 #include <groonga.h>
 
+
+PG_MODULE_MAGIC;
+
+extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void
+pgroonga_crash_safer_flush_one(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void
+pgroonga_crash_safer_detect_one(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void
+pgroonga_crash_safer_main(Datum datum) pg_attribute_noreturn();
+
+#define TAG "pgroonga: crash-safer"
+
+#define HANDLES_NAME "pgroonga-crash-safer-handles"
+
+static volatile sig_atomic_t PGroongaCrashSaferGotSIGTERM = false;
+static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
+static int PGroongaCrashSaferFlushNaptime = 60;
+static int PGroongaCrashSaferDetectNaptime = 60;
+static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
+
 #define PACK_DATABASE_INFO(oid, tablespace)			\
 	((((uint64)(oid)) << (sizeof(Oid) * 8)) + (tablespace))
 #define UNPACK_DATABASE_INFO(info, oid, tablespace)						\
@@ -37,41 +59,56 @@
 		tablespace = (info) & ((((uint64)1) << sizeof(Oid) * 8) - 1);	\
 	} while (false)
 
-typedef struct pgrn_hash_entry
+typedef struct pgrn_handles_entry
 {
 	uint64 key;
-	uint64 hash;
-	uint32 status;
-	pid_t pid;
-} pgrn_hash_entry;
+} pgrn_handles_entry;
 
-#define SH_PREFIX pgrn_hash
-#define SH_KEY_TYPE uint64
-#define SH_ELEMENT_TYPE pgrn_hash_entry
-#define SH_KEY key
-#define SH_EQUAL(table, a, b) ((a) == (b))
-#define SH_HASH_KEY(table, key) (key)
-#define SH_DECLARE
-#define SH_DEFINE
-#define SH_SCOPE static inline
-#include <lib/simplehash.h>
+static uint32
+pgrn_handles_hash(const void *key, Size keysize)
+{
+	Oid databaseOid;
+	Oid tablespace;
+	UNPACK_DATABASE_INFO(*((const uint64 *)key), databaseOid, tablespace);
+	return hash_combine(uint32_hash(&databaseOid, sizeof(Oid)),
+						uint32_hash(&tablespace, sizeof(Oid)));
+}
 
+static HTAB *
+pgrn_handles_get(void)
+{
+	HASHCTL handlesInfo;
+	handlesInfo.keysize = sizeof(uint64);
+	handlesInfo.entrysize = sizeof(pgrn_handles_entry);
+	handlesInfo.hash = pgrn_handles_hash;
+	return ShmemInitHash(HANDLES_NAME,
+						 1,
+						 32 /* TODO: configurable */,
+						 &handlesInfo,
+						 HASH_ELEM | HASH_FUNCTION);
+}
 
-PG_MODULE_MAGIC;
+static void
+pgrn_handles_start_processing(HTAB *handles, uint64 databaseInfo)
+{
+	bool found;
+	hash_search(handles, &databaseInfo, HASH_ENTER, &found);
+}
 
-extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT void
-pgroonga_crash_safer_main_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_crash_safer_main(Datum datum) pg_attribute_noreturn();
+static void
+pgrn_handles_stop_processing(HTAB *handles, uint64 databaseInfo)
+{
+	bool found;
+	hash_search(handles, &databaseInfo, HASH_REMOVE, &found);
+}
 
-#define TAG "pgroonga: crash-safer"
-
-static volatile sig_atomic_t PGroongaCrashSaferGotSIGTERM = false;
-static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
-static int PGroongaCrashSaferFlushNaptime = 60;
-static int PGroongaCrashSaferDetectNaptime = 60;
-static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
+static bool
+pgrn_handles_is_processing(HTAB *handles, uint64 databaseInfo)
+{
+	bool found;
+	hash_search(handles, &databaseInfo, HASH_FIND, &found);
+	return found;
+}
 
 static uint32_t
 pgroonga_crash_safer_get_thread_limit(void *data)
@@ -101,15 +138,23 @@ pgroonga_crash_safer_sighup(SIGNAL_ARGS)
 	errno = save_errno;
 }
 
-void
-pgroonga_crash_safer_main_one(Datum databaseInfoDatum)
+static bool
+pgrn_file_exist(const char *path)
 {
-	bool haveGroongaDB = false;
+	pgrn_stat_buffer fileStatus;
+	return (pgrn_stat(path, &fileStatus) == 0);
+}
+
+void
+pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
+{
 	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
 	Oid databaseOid;
 	Oid databaseTableSpace;
 	char *databasePath;
 	char pgrnDatabasePath[MAXPGPATH];
+	grn_ctx ctx;
+	grn_obj *db;
 
 	pqsignal(SIGTERM, pgroonga_crash_safer_sigterm);
 	pqsignal(SIGHUP, pgroonga_crash_safer_sighup);
@@ -117,50 +162,14 @@ pgroonga_crash_safer_main_one(Datum databaseInfoDatum)
 
 	UNPACK_DATABASE_INFO(databaseInfo, databaseOid, databaseTableSpace);
 
-	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
-
 	databasePath = GetDatabasePath(databaseOid, databaseTableSpace);
 	join_path_components(pgrnDatabasePath,
 						 databasePath,
 						 PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	StartTransactionCommand();
-	SPI_connect();
-	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, TAG ": checking");
-
+	PG_TRY();
 	{
-		int result;
-
-		SetCurrentStatementStartTimestamp();
-		result = SPI_execute("select extname "
-							 "from pg_extension "
-							 "where extname = 'pgroonga'",
-							 true,
-							 0);
-		if (result != SPI_OK_SELECT)
-		{
-			ereport(FATAL,
-					(errmsg(TAG ": failed to detect "
-							"whether PGroonga is installed or not: %d",
-							result)));
-		}
-		if (SPI_processed == 1) {
-			pgrn_stat_buffer fileStatus;
-			haveGroongaDB = (pgrn_stat(pgrnDatabasePath, &fileStatus) == 0);
-		}
-	}
-
-	PopActiveSnapshot();
-	SPI_finish();
-	CommitTransactionCommand();
-
-	if (haveGroongaDB)
-	{
-		grn_ctx ctx;
-		grn_obj *db;
-
 		pgstat_report_activity(STATE_RUNNING, TAG ": flushing");
 
 		grn_thread_set_get_limit_func(pgroonga_crash_safer_get_thread_limit,
@@ -219,6 +228,9 @@ pgroonga_crash_safer_main_one(Datum databaseInfoDatum)
 				ProcessConfigFile(PGC_SIGHUP);
 			}
 
+			if (!pgrn_file_exist(pgrnDatabasePath))
+				break;
+
 			grn_obj_flush_recursive(&ctx, db);
 		}
 
@@ -227,15 +239,87 @@ pgroonga_crash_safer_main_one(Datum databaseInfoDatum)
 		grn_ctx_fin(&ctx);
 
 		grn_fin();
+
+		pgstat_report_activity(STATE_IDLE, NULL);
+	}
+	PG_CATCH();
+	{
+		pgrn_handles_stop_processing(pgrn_handles_get(), databaseInfo);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+
+	pgrn_handles_stop_processing(pgrn_handles_get(), databaseInfo);
+
+	proc_exit(1);
+}
+
+void
+pgroonga_crash_safer_detect_one(Datum databaseInfoDatum)
+{
+	bool haveGroongaDB = false;
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid databaseTableSpace;
+	char *databasePath;
+	char pgrnDatabasePath[MAXPGPATH];
+
+	pqsignal(SIGTERM, pgroonga_crash_safer_sigterm);
+	pqsignal(SIGHUP, pgroonga_crash_safer_sighup);
+	BackgroundWorkerUnblockSignals();
+
+	UNPACK_DATABASE_INFO(databaseInfo, databaseOid, databaseTableSpace);
+
+	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+
+	databasePath = GetDatabasePath(databaseOid, databaseTableSpace);
+	join_path_components(pgrnDatabasePath,
+						 databasePath,
+						 PGrnDatabaseBasename);
+	pfree(databasePath);
+
+	StartTransactionCommand();
+	SPI_connect();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	pgstat_report_activity(STATE_RUNNING, TAG ": checking");
+
+	{
+		int result;
+
+		SetCurrentStatementStartTimestamp();
+		result = SPI_execute("select extname "
+							 "from pg_extension "
+							 "where extname = 'pgroonga'",
+							 true,
+							 0);
+		if (result != SPI_OK_SELECT)
+		{
+			ereport(FATAL,
+					(errmsg(TAG ": failed to detect "
+							"whether PGroonga is installed or not: %d",
+							result)));
+		}
+		if (SPI_processed == 1) {
+			haveGroongaDB = pgrn_file_exist(pgrnDatabasePath);
+		}
+	}
+
+	PopActiveSnapshot();
+	SPI_finish();
+	CommitTransactionCommand();
+
+	if (haveGroongaDB)
+	{
+		pgrn_handles_start_processing(pgrn_handles_get(), databaseInfo);
 	}
 
 	pgstat_report_activity(STATE_IDLE, NULL);
 
-	proc_exit(haveGroongaDB ? 1 : 0);
+	proc_exit(0);
 }
 
 static void
-pgroonga_crash_safer_detect(pgrn_hash_hash *handles)
+pgroonga_crash_safer_detect(HTAB *handles)
 {
 	StartTransactionCommand();
 	PushActiveSnapshot(GetTransactionSnapshot());
@@ -276,24 +360,13 @@ pgroonga_crash_safer_detect(pgrn_hash_hash *handles)
 			databaseInfo = PACK_DATABASE_INFO(databaseOid, form->dattablespace);
 
 			{
-				pgrn_hash_entry *entry;
-				entry = pgrn_hash_lookup(handles, databaseInfo);
-				if (entry)
-				{
-					if (GetBackgroundWorkerTypeByPid(entry->pid))
-					{
-						continue;
-					}
-					else
-					{
-						pgrn_hash_delete(handles, databaseInfo);
-					}
-				}
+				if (pgrn_handles_is_processing(handles, databaseInfo))
+					continue;
 			}
 
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
-					 TAG ": %s(%u/%u)",
+					 TAG ": detect: %s(%u/%u)",
 					 form->datname.data,
 					 databaseOid,
 					 form->dattablespace);
@@ -310,21 +383,42 @@ pgroonga_crash_safer_detect(pgrn_hash_hash *handles)
 					 "%s", PGroongaCrashSaferLibraryName);
 			snprintf(worker.bgw_function_name,
 					 BGW_MAXLEN,
-					 "pgroonga_crash_safer_main_one");
+					 "pgroonga_crash_safer_detect_one");
 			worker.bgw_main_arg = DatumGetUInt64(databaseInfo);
 			worker.bgw_notify_pid = MyProcPid;
 			if (!RegisterDynamicBackgroundWorker(&worker, &handle))
 				continue;
+			WaitForBackgroundWorkerShutdown(handle);
 
+			if (!pgrn_handles_is_processing(handles, databaseInfo))
+				continue;
+
+			snprintf(worker.bgw_name,
+					 BGW_MAXLEN,
+					 TAG ": flush: %s(%u/%u)",
+					 form->datname.data,
+					 databaseOid,
+					 form->dattablespace);
+			worker.bgw_flags = BGWORKER_SHMEM_ACCESS;
+			worker.bgw_start_time = BgWorkerStart_ConsistentState;
+			worker.bgw_restart_time = BGW_NEVER_RESTART;
+			snprintf(worker.bgw_library_name,
+					 BGW_MAXLEN,
+					 "%s", PGroongaCrashSaferLibraryName);
+			snprintf(worker.bgw_function_name,
+					 BGW_MAXLEN,
+					 "pgroonga_crash_safer_flush_one");
+			if (!RegisterDynamicBackgroundWorker(&worker, &handle))
 			{
-				bool found;
-				BgwHandleStatus status;
-				pgrn_hash_entry *entry;
-				entry = pgrn_hash_insert(handles, databaseInfo, &found);
-				status = WaitForBackgroundWorkerStartup(handle, &(entry->pid));
-				if (status != BGWH_STARTED)
+				pgrn_handles_stop_processing(handles, databaseInfo);
+				continue;
+			}
+			{
+				pid_t pid;
+				if (WaitForBackgroundWorkerStartup(handle, &pid) !=
+					BGWH_STARTED)
 				{
-					pgrn_hash_delete(handles, databaseInfo);
+					pgrn_handles_stop_processing(handles, databaseInfo);
 				}
 			}
 		}
@@ -340,7 +434,7 @@ pgroonga_crash_safer_detect(pgrn_hash_hash *handles)
 void
 pgroonga_crash_safer_main(Datum arg)
 {
-	pgrn_hash_hash *handles;
+	HTAB *handles;
 	TimestampTz lastDetectTime = 0;
 
 	pqsignal(SIGTERM, pgroonga_crash_safer_sigterm);
@@ -349,7 +443,7 @@ pgroonga_crash_safer_main(Datum arg)
 
 	PGrnBackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
-	handles = pgrn_hash_create(CurrentMemoryContext, 0, NULL);
+	handles = pgrn_handles_get();
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
 		int conditions;
@@ -382,7 +476,6 @@ pgroonga_crash_safer_main(Datum arg)
 			pgroonga_crash_safer_detect(handles);
 		}
 	}
-	pgrn_hash_destroy(handles);
 
 	proc_exit(1);
 }
