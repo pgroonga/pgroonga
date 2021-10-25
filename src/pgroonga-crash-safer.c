@@ -15,6 +15,7 @@
 #else
 #	include <access/htup_details.h>
 #endif
+#include <access/xact.h>
 #include <catalog/pg_database.h>
 #ifdef PGRN_HAVE_COMMON_HASHFN_H
 #	include <common/hashfn.h>
