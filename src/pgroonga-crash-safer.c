@@ -19,8 +19,6 @@
 #include <catalog/pg_database.h>
 #ifdef PGRN_HAVE_COMMON_HASHFN_H
 #	include <common/hashfn.h>
-#else
-#	include <utils/hsearch.h>
 #endif
 #include <executor/spi.h>
 #include <miscadmin.h>
@@ -75,8 +73,12 @@ pgrn_handles_hash(const void *key, Size keysize)
 	Oid databaseOid;
 	Oid tablespace;
 	UNPACK_DATABASE_INFO(*((const uint64 *)key), databaseOid, tablespace);
+#ifdef PGRN_HAVE_COMMON_HASHFN_H
 	return hash_combine(uint32_hash(&databaseOid, sizeof(Oid)),
 						uint32_hash(&tablespace, sizeof(Oid)));
+#else
+	return databaseOid ^ tablespace;
+#endif
 }
 
 static HTAB *
