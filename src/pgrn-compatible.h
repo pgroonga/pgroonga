@@ -220,3 +220,7 @@ typedef char *PGrnStringOptionValue;
 #else
 #	define PGRN_WL_EXIT_ON_PM_DEATH WL_POSTMASTER_DEATH
 #endif
+
+#if PG_VERSION_NUM >= 130000
+#	define PGRN_HAVE_COMMON_HASHFN_H
+#endif

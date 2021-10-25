@@ -16,7 +16,11 @@
 #	include <access/htup_details.h>
 #endif
 #include <catalog/pg_database.h>
-#include <common/hashfn.h>
+#ifdef PGRN_HAVE_COMMON_HASHFN_H
+#	include <common/hashfn.h>
+#else
+#	include <utils/hsearch.h>
+#endif
 #include <executor/spi.h>
 #include <miscadmin.h>
 #include <pgstat.h>
