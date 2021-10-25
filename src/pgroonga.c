@@ -7801,6 +7801,13 @@ pgroonga_costestimate_raw(PlannerInfo *root,
 {
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index = RelationIdGetRelation(indexInfo->indexoid);
+
+	*indexSelectivity = 0.0;
+	*indexStartupCost = 0.0;
+	*indexTotalCost = 0.0;
+	*indexCorrelation = 0.0;
+	*indexPages = 0.0;
+
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(index->rd_index->indrelid));
 	{
 		pgroonga_costestimate_internal(index,
