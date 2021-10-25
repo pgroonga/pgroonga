@@ -12,6 +12,8 @@
 #include <access/heapam.h>
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
+#else
+#	include <access/htup_details.h>
 #endif
 #include <catalog/pg_database.h>
 #include <executor/spi.h>
