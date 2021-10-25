@@ -49,6 +49,8 @@ static int PGrnLockTimeout;
 static bool PGrnEnableWAL;
 static int PGrnMaxWALSizeKB;
 
+static bool PGrnEnableCrashSafe;
+
 static bool PGrnForceMatchEscalation;
 
 static char *PGrnLibgroongaVersion;
@@ -327,6 +329,18 @@ PGrnInitializeVariables(void)
 							PGrnMaxWALSizeAssign,
 							NULL);
 
+	DefineCustomBoolVariable("pgroonga.enable_crash_safe",
+							 "Enable crash safe feature.",
+							 "You also need to add 'pgroonga_crash_safer' to "
+							 "#shared_preload_libraries.",
+							 &PGrnEnableCrashSafe,
+							 false,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
 	DefineCustomIntVariable("pgroonga.match_escalation_threshold",
 							"The threshold number of matched records "
 							"for determining whether "
@@ -384,4 +398,8 @@ void
 PGrnVariablesApplyInitialValues(void)
 {
 	grn_ctx_set_force_match_escalation(&PGrnContext, PGrnForceMatchEscalation);
+	if (PGrnEnableCrashSafe)
+	{
+		grn_ctx_set_wal_role(&PGrnContext, GRN_WAL_ROLE_SECONDARY);
+	}
 }
