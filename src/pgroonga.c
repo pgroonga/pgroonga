@@ -4963,6 +4963,8 @@ pgroonga_beginscan_raw(Relation index,
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
 
+	PGrnEnsureDatabase();
+
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
