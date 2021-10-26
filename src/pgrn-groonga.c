@@ -213,7 +213,6 @@ PGrnLookupWithSize(const char *name,
 				   int errorLevel)
 {
 	grn_obj *object;
-	PGrnEnsureDatabase();
 	object = grn_ctx_get(ctx, name, nameSize);
 	if (!object)
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
