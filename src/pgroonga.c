@@ -639,11 +639,6 @@ _PG_init(void)
 	PGrnVariablesApplyInitialValues();
 
 	PGrnInitializeOptions();
-
-	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
-	{
-		pgrn_crash_safer_statuses_wake(NULL);
-	}
 }
 
 static grn_id
