@@ -7105,6 +7105,8 @@ pgroonga_build_raw(Relation heap,
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
+	PGrnEnsureDatabase();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -7114,8 +7116,6 @@ pgroonga_build_raw(Relation heap,
 						"while pgroonga.writable is false",
 						tag)));
 	}
-
-	PGrnEnsureDatabase();
 
 	if (indexInfo->ii_Unique)
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
@@ -7226,6 +7226,8 @@ pgroonga_buildempty_raw(Relation index)
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
+	PGrnEnsureDatabase();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -7235,8 +7237,6 @@ pgroonga_buildempty_raw(Relation index)
 						"while pgroonga.writable is false",
 						tag)));
 	}
-
-	PGrnEnsureDatabase();
 
 	PGrnAutoCloseUseIndex(index);
 
@@ -7329,6 +7329,8 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
 
+	PGrnEnsureDatabase();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -7338,8 +7340,6 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 						"while pgroonga.writable is false",
 						tag)));
 	}
-
-	PGrnEnsureDatabase();
 
 	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
 
@@ -7561,10 +7561,10 @@ static IndexBulkDeleteResult *
 pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 						   IndexBulkDeleteResult *stats)
 {
+	PGrnEnsureDatabase();
+
 	if (!PGrnIsWritable())
 		return stats;
-
-	PGrnEnsureDatabase();
 
 	if (!stats)
 	{
