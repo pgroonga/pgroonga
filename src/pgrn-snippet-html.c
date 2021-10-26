@@ -131,6 +131,8 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	grn_obj *snip;
 	ArrayType *snippets;
 
+	PGrnEnsureDatabase();
+
 	snip = PGrnSnipCreate(keywords, tag);
 	PGrnSnipExec(snip, target, &snippets);
 	PG_TRY();

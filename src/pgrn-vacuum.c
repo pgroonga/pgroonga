@@ -10,6 +10,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_vacuum);
 Datum
 pgroonga_vacuum(PG_FUNCTION_ARGS)
 {
+	PGrnEnsureDatabase();
 	PGrnRemoveUnusedTables();
 	PG_RETURN_BOOL(true);
 }

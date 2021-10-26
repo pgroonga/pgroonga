@@ -16,6 +16,8 @@ pgroonga_result_to_jsonb_objects(PG_FUNCTION_ARGS)
 	PGrnResultConverter converter;
 	Jsonb *jsonbObjects;
 
+	PGrnEnsureDatabase();
+
 	PGrnResultConverterInit(&converter, jsonb, "[result-to-jsonb-objects]");
 	jsonbObjects = PGrnResultConverterBuildJSONBObjects(&converter);
 	PG_RETURN_JSONB_P(jsonbObjects);

@@ -1842,6 +1842,8 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
 	text *result;
 
+	PGrnEnsureDatabase();
+
 	GRN_BULK_REWIND(&(buffers->head));
 	GRN_BULK_REWIND(&(buffers->body));
 	GRN_BULK_REWIND(&(buffers->foot));
@@ -2089,6 +2091,8 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 		grn_obj targetBuffer;
 		grn_obj termBuffer;
 
+		PGrnEnsureDatabase();
+
 		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 		GRN_TEXT_SET(ctx, &targetBuffer, target, targetSize);
 
@@ -2316,6 +2320,8 @@ pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
 	grn_bool matched;
 	grn_obj targetBuffer;
 	grn_obj patternBuffer;
+
+	PGrnEnsureDatabase();
 
 	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
@@ -3365,6 +3371,8 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 	grn_obj targetBuffer;
 	grn_obj prefixBuffer;
 
+	PGrnEnsureDatabase();
+
 	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
 
@@ -3545,6 +3553,8 @@ pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 	grn_obj *variable;
 	bool matched;
 	grn_id id;
+
+	PGrnEnsureDatabase();
 
 	/* TODO: Use indexName */
 
@@ -7105,8 +7115,6 @@ pgroonga_build_raw(Relation heap,
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
-	PGrnEnsureDatabase();
-
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -7226,8 +7234,6 @@ pgroonga_buildempty_raw(Relation index)
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 
-	PGrnEnsureDatabase();
-
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -7328,8 +7334,6 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 	grn_obj	*sourcesTable;
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
-
-	PGrnEnsureDatabase();
 
 	if (!PGrnIsWritable())
 	{
@@ -7561,8 +7565,6 @@ static IndexBulkDeleteResult *
 pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 						   IndexBulkDeleteResult *stats)
 {
-	PGrnEnsureDatabase();
-
 	if (!PGrnIsWritable())
 		return stats;
 

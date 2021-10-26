@@ -25,6 +25,9 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 	const unsigned int columnNameSize = VARSIZE_ANY_EXHDR(columnName);
 
 	int i;
+
+	PGrnEnsureDatabase();
+
 	{
 		Relation index = PGrnPGResolveIndexName(indexName);
 		TupleDesc desc = RelationGetDescr(index);
@@ -75,6 +78,8 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 	const char *tag = "[index-column-name][index]";
 	const char *indexName = PG_GETARG_CSTRING(0);
 	const int32 columnIndex = PG_GETARG_INT32(1);
+
+	PGrnEnsureDatabase();
 
 	{
 		int n_attributes = 0;
