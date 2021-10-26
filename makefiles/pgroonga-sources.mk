@@ -34,7 +34,6 @@ SRCS =						\
 	src/pgrn-string.c			\
 	src/pgrn-tokenize.c			\
 	src/pgrn-vacuum.c			\
-	src/pgrn-value.c			\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\
 	src/pgrn-writable.c			\
