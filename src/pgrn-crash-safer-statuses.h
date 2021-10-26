@@ -36,7 +36,7 @@ pgrn_crash_safer_statuses_hash(const void *key, Size keysize)
 	return hash_combine(uint32_hash(&databaseOid, sizeof(Oid)),
 						uint32_hash(&tableSpaceOid, sizeof(Oid)));
 #else
-	return databaseOid ^ tableSpace;
+	return databaseOid ^ tableSpaceOid;
 #endif
 }
 
