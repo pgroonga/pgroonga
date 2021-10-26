@@ -4,6 +4,7 @@
 
 #include "pgrn-crash-safer-statuses.h"
 #include "pgrn-file.h"
+#include "pgrn-value.h"
 
 #include <access/heapam.h>
 #ifdef PGRN_SUPPORT_TABLEAM
@@ -47,6 +48,9 @@ static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGUSR1 = false;
 static int PGroongaCrashSaferFlushNaptime = 60;
 static int PGroongaCrashSaferDetectNaptime = 60;
+static char *PGroongaCrashSaferLogPath;
+static int PGroongaCrashSaferLogLevel;
+PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
 static uint32_t
@@ -124,6 +128,11 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 									  NULL);
 		grn_default_logger_set_flags(grn_default_logger_get_flags() |
 									 GRN_LOG_PID);
+		grn_default_logger_set_max_level(PGroongaCrashSaferLogLevel);
+		if (!PGrnIsNoneValue(PGroongaCrashSaferLogPath))
+		{
+			grn_default_logger_set_path(PGroongaCrashSaferLogPath);
+		}
 
 		if (grn_init() != GRN_SUCCESS)
 		{
@@ -521,6 +530,34 @@ _PG_init(void)
 							NULL,
 							NULL,
 							NULL);
+
+	DefineCustomStringVariable("pgroonga_crash_safer.log_path",
+							   "Log path for pgroonga-crash-safer.",
+							   "The default is "
+							   "\"${PG_DATA}/" PGrnLogPathDefault "\". "
+							   "Use \"none\" to disable file output.",
+							   &PGroongaCrashSaferLogPath,
+							   PGrnLogPathDefault,
+							   PGC_USERSET,
+							   0,
+							   NULL,
+							   NULL,
+							   NULL);
+
+	DefineCustomEnumVariable("pgroonga_crash_safer.log_level",
+							 "Log level for pgroonga-crash-safer.",
+							 "Available log levels: "
+							 "[none, emergency, alert, critical, "
+							 "error, warning, notice, info, debug, dump]. "
+							 "The default is notice.",
+							 &PGroongaCrashSaferLogLevel,
+							 GRN_LOG_DEFAULT_LEVEL,
+							 PGroongaCrashSaferLogLevelEntries,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
