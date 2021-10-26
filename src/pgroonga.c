@@ -6,8 +6,10 @@
 #include "pgrn-auto-close.h"
 #include "pgrn-command-escape-value.h"
 #include "pgrn-convert.h"
+#include "pgrn-crash-safer-statuses.h"
 #include "pgrn-create.h"
 #include "pgrn-ctid.h"
+#include "pgrn-file.h"
 #include "pgrn-full-text-search-condition.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
@@ -52,8 +54,10 @@
 #	include <optimizer/clauses.h>
 #	include <optimizer/cost.h>
 #endif
+#include <pgstat.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
+#include <storage/latch.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
@@ -70,11 +74,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifndef WIN32
-#	include <unistd.h>
-#endif
 
 PG_MODULE_MAGIC;
 
@@ -535,7 +534,6 @@ PGrnEnsureDatabase(void)
 {
 	char *databasePath;
 	char path[MAXPGPATH];
-	pgrn_stat_buffer file_status;
 
 	if (grn_ctx_db(ctx))
 		return;
@@ -550,7 +548,37 @@ PGrnEnsureDatabase(void)
 						 PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	if (pgrn_stat(path, &file_status) == 0)
+	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
+	{
+		while (true)
+		{
+			int conditions;
+			long timeout = 1000;
+
+			if (pgrn_crash_safer_statuses_is_processing(NULL,
+														MyDatabaseId,
+														MyDatabaseTableSpace))
+			{
+				break;
+			}
+
+			pgrn_crash_safer_statuses_wake(NULL);
+
+			conditions = WaitLatch(MyLatch,
+								   WL_LATCH_SET |
+								   WL_TIMEOUT |
+								   PGRN_WL_EXIT_ON_PM_DEATH,
+								   timeout,
+								   PG_WAIT_EXTENSION);
+			if (conditions & WL_LATCH_SET)
+			{
+				ResetLatch(MyLatch);
+			}
+			CHECK_FOR_INTERRUPTS();
+		}
+	}
+
+	if (pgrn_file_exist(path))
 	{
 		grn_db_open(ctx, path);
 		PGrnCheck("failed to open database: <%s>", path);
@@ -612,7 +640,10 @@ _PG_init(void)
 
 	PGrnInitializeOptions();
 
-	PGrnEnsureDatabase();
+	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
+	{
+		pgrn_crash_safer_statuses_wake(NULL);
+	}
 }
 
 static grn_id
@@ -6782,6 +6813,7 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
 	bool found = false;
+	PGrnEnsureDatabase();
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(scan->heapRelation->rd_id));
 	{
 		found = pgroonga_gettuple_internal(scan, direction);
@@ -6925,7 +6957,11 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 					   TIDBitmap *tbm)
 {
 	int64 nRecords = 0;
-	bool enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
+	bool enabled;
+
+	PGrnEnsureDatabase();
+
+	enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
 	PGRN_RLS_ENABLED_IF(enabled);
 	{
 		nRecords = pgroonga_getbitmap_internal(scan, tbm);
@@ -7079,6 +7115,8 @@ pgroonga_build_raw(Relation heap,
 						tag)));
 	}
 
+	PGrnEnsureDatabase();
+
 	if (indexInfo->ii_Unique)
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s unique index isn't supported",
@@ -7198,6 +7236,8 @@ pgroonga_buildempty_raw(Relation index)
 						tag)));
 	}
 
+	PGrnEnsureDatabase();
+
 	PGrnAutoCloseUseIndex(index);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -7298,6 +7338,8 @@ pgroonga_bulkdelete_raw(IndexVacuumInfo *info,
 						"while pgroonga.writable is false",
 						tag)));
 	}
+
+	PGrnEnsureDatabase();
 
 	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
 
@@ -7522,6 +7564,8 @@ pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 	if (!PGrnIsWritable())
 		return stats;
 
+	PGrnEnsureDatabase();
+
 	if (!stats)
 	{
 		grn_obj *sourcesTable;
@@ -7553,11 +7597,13 @@ pgroonga_canreturn_raw(Relation index,
 					   int nthAttribute)
 {
 	bool can_return = true;
-
 	Relation table = RelationIdGetRelation(index->rd_index->indrelid);
 	TupleDesc table_desc = RelationGetDescr(table);
 	TupleDesc desc = RelationGetDescr(index);
 	unsigned int i;
+
+	PGrnEnsureDatabase();
+
 	for (i = 0; i < desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
@@ -7767,6 +7813,7 @@ pgroonga_costestimate_internal(Relation index,
 							   double *indexPages)
 {
 	List *quals;
+	PGrnEnsureDatabase();
 	PGrnCostEstimateUpdateSelectivity(index, root, path);
 #ifdef PGRN_SUPPORT_INDEX_CLAUSE
 	{

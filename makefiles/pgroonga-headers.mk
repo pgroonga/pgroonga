@@ -5,8 +5,10 @@ HEADERS =					\
 	src/pgrn-command-escape-value.h		\
 	src/pgrn-compatible.h			\
 	src/pgrn-convert.h			\
+	src/pgrn-crash-safer-statuses.h		\
 	src/pgrn-create.h			\
 	src/pgrn-ctid.h				\
+	src/pgrn-file.h				\
 	src/pgrn-full-text-search-condition.h	\
 	src/pgrn-database.h			\
 	src/pgrn-global.h			\
