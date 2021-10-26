@@ -31,6 +31,13 @@
 #include <groonga.h>
 
 
+/* #define PGROONGA_CRASH_SAFER_DEBUG */
+#ifdef PGROONGA_CRASH_SAFER_DEBUG
+#	define P(...) ereport(LOG, (errmsg(TAG __VA_ARGS__)))
+#else
+#	define P(...)
+#endif
+
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
@@ -115,10 +122,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 						 PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	ereport(LOG,
-			(errmsg(TAG ": flush: %u/%u",
-					databaseOid,
-					tableSpaceOid)));
+	P(": flush: %u/%u", databaseOid, tableSpaceOid);
 
 	PG_TRY();
 	{
@@ -213,10 +217,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 	PG_END_TRY();
 
-	ereport(LOG,
-			(errmsg(TAG ": flush: done: %u/%u",
-					databaseOid,
-					tableSpaceOid)));
+	P(": flush: done: %u/%u", databaseOid, tableSpaceOid);
 
 	pgrn_crash_safer_statuses_stop(NULL, databaseOid, tableSpaceOid);
 
@@ -263,17 +264,11 @@ pgroonga_crash_safer_detect_one(Datum databaseInfoDatum)
 			pgrn_crash_safer_statuses_start(NULL,
 											databaseOid,
 											tableSpaceOid);
-			ereport(LOG,
-					(errmsg(TAG ": detect: detected: %u/%u",
-							databaseOid,
-							tableSpaceOid)));
+			P(": detect: detected: %u/%u", databaseOid, tableSpaceOid);
 		}
 		else
 		{
-			ereport(LOG,
-					(errmsg(TAG ": detect: not detected: %u/%u",
-							databaseOid,
-							tableSpaceOid)));
+			P(": detect: not detected: %u/%u", databaseOid, tableSpaceOid);
 		}
 	}
 
@@ -335,11 +330,10 @@ pgroonga_crash_safer_detect(HTAB *statuses)
 				continue;
 			}
 
-			ereport(LOG,
-					(errmsg(TAG ": detect: start: %s(%u/%u)",
-							form->datname.data,
-							databaseOid,
-							form->dattablespace)));
+			P(": detect: start: %s(%u/%u)",
+			  form->datname.data,
+			  databaseOid,
+			  form->dattablespace);
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
 					 TAG ": detect: %s(%u/%u)",
@@ -375,19 +369,17 @@ pgroonga_crash_safer_detect(HTAB *statuses)
 														 databaseOid,
 														 form->dattablespace))
 			{
-				ereport(LOG,
-						(errmsg(TAG ": detect: not processing: %s(%u/%u)",
-								form->datname.data,
-								databaseOid,
-								form->dattablespace)));
+				P(": detect: not processing: %s(%u/%u)",
+				  form->datname.data,
+				  databaseOid,
+				  form->dattablespace);
 				continue;
 			}
 
-			ereport(LOG,
-					(errmsg(TAG ": flush: start: %s(%u/%u)",
-							form->datname.data,
-							databaseOid,
-							form->dattablespace)));
+			P(": flush: start: %s(%u/%u)",
+			  form->datname.data,
+			  databaseOid,
+			  form->dattablespace);
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
 					 TAG ": flush: %s(%u/%u)",
