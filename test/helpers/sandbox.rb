@@ -323,9 +323,10 @@ module Helpers
       psql("postgres", "CREATE DATABASE #{@test_db_name}")
       run_sql("CREATE EXTENSION pgroonga")
       run_sql("CHECKPOINT")
-      Dir.glob(File.join(@postgresql.dir, "base", "*", "pgrn")) do |pgrn|
-        @test_db_dir = File.dirname(pgrn)
-      end
+      result, = run_sql("SELECT oid FROM pg_catalog.pg_database " +
+                        "WHERE datname = current_database()")
+      oid = result.lines[3].strip
+      @test_db_dir = File.join(@postgresql.dir, "base", oid)
     end
 
     def teardown_test_db
