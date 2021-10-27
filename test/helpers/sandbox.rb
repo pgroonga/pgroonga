@@ -96,7 +96,7 @@ module Helpers
       @running
     end
 
-    def initdb
+    def initdb(shared_preload_libraries: [])
       @dir = File.join(@base_dir, "db")
       @log_path = File.join(@dir, "log", @log_base_name)
       socket_dir = File.join(@dir, "socket")
@@ -119,7 +119,8 @@ module Helpers
         conf.puts("log_filename = '#{@log_base_name}'")
         conf.puts("wal_level = replica")
         conf.puts("max_wal_senders = 4")
-        conf.puts("shared_preload_libraries = 'pgroonga_check'")
+        conf.puts("shared_preload_libraries = " +
+                  "'#{shared_preload_libraries.join(",")}'")
         conf.puts("pgroonga.enable_wal = yes")
         yield(conf) if block_given?
       end
@@ -273,9 +274,16 @@ module Helpers
 
     def setup_db
       @postgresql = PostgreSQL.new(@tmp_dir)
-      @postgresql.initdb do |conf|
+      options = {
+        shared_preload_libraries: shared_preload_libraries,
+      }
+      @postgresql.initdb(**options) do |conf|
         conf.puts(additional_configurations)
       end
+    end
+
+    def shared_preload_libraries
+      ["pgroonga_check"]
     end
 
     def additional_configurations

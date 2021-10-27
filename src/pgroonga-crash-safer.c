@@ -3,6 +3,7 @@
 #include "pgrn-portable.h"
 
 #include "pgrn-crash-safer-statuses.h"
+#include "pgrn-database.h"
 #include "pgrn-file.h"
 #include "pgrn-value.h"
 
@@ -41,6 +42,8 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void
+pgroonga_crash_safer_reindex_one(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
 pgroonga_crash_safer_flush_one(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
@@ -96,6 +99,91 @@ pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 	errno = save_errno;
 }
 
+void
+pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
+{
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid tableSpaceOid;
+
+	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
+
+	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+
+	StartTransactionCommand();
+	SPI_connect();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	pgstat_report_activity(STATE_RUNNING, TAG ": reindexing");
+
+	{
+		int result;
+		StringInfoData buffer;
+		uint64 i;
+
+		SetCurrentStatementStartTimestamp();
+		result = SPI_execute("SELECT (namespace.nspname || "
+							 "        '.' || "
+							 "        class.relname) AS index_name "
+							 "  FROM pg_catalog.pg_class AS class "
+							 "  JOIN pg_catalog.pg_namespace AS namespace "
+							 "    ON class.relnamespace = namespace.oid "
+							 " WHERE class.relam = ("
+							 "   SELECT oid "
+							 "     FROM pg_catalog.pg_am "
+							 "    WHERE amname = 'pgroonga'"
+							 " )",
+							 true,
+							 0);
+		if (result != SPI_OK_SELECT)
+		{
+			ereport(FATAL,
+					(errmsg(TAG ": failed to detect PGroonga indexes: "
+							"%u/%u: %d",
+							databaseOid,
+							tableSpaceOid,
+							result)));
+		}
+
+		initStringInfo(&buffer);
+		for (i = 0; i < SPI_processed; i++)
+		{
+			bool isNull;
+			Datum indexName;
+
+			SetCurrentStatementStartTimestamp();
+			indexName = SPI_getbinval(SPI_tuptable->vals[0],
+									  SPI_tuptable->tupdesc,
+									  i + 1,
+									  &isNull);
+			resetStringInfo(&buffer);
+			appendStringInfo(&buffer,
+							 "REINDEX INDEX %.*s",
+							 (int) VARSIZE_ANY_EXHDR(indexName),
+							 VARDATA_ANY(indexName));
+			result = SPI_execute(buffer.data, false, 0);
+			if (result != SPI_OK_SELECT)
+			{
+				ereport(FATAL,
+						(errmsg(TAG ": failed to reindex PGroonga index: "
+								"%u/%u: <%.*s>: %d",
+								databaseOid,
+								tableSpaceOid,
+								(int) VARSIZE_ANY_EXHDR(indexName),
+								VARDATA_ANY(indexName),
+								result)));
+			}
+		}
+	}
+
+	PopActiveSnapshot();
+	SPI_finish();
+	CommitTransactionCommand();
+
+	pgstat_report_activity(STATE_IDLE, NULL);
+
+	proc_exit(0);
+}
+
 static void
 pgroonga_crash_safer_flush_one_remove_pid_on_exit(int code,
 												  Datum databaseInfoDatum)
@@ -134,6 +222,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	Oid tableSpaceOid;
 	char *databasePath;
 	char pgrnDatabasePath[MAXPGPATH];
+	bool pgrnDatabasePathExist;
+	bool needReindex = false;
 	grn_ctx ctx;
 	grn_obj *db;
 	HTAB *statuses;
@@ -152,7 +242,6 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	join_path_components(pgrnDatabasePath,
 						 databasePath,
 						 PGrnDatabaseBasename);
-	pfree(databasePath);
 
 	P(": flush: %u/%u", databaseOid, tableSpaceOid);
 
@@ -188,7 +277,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	grn_ctx_set_wal_role(&ctx, GRN_WAL_ROLE_PRIMARY);
 
-	if (pgrn_file_exist(pgrnDatabasePath))
+	pgrnDatabasePathExist = pgrn_file_exist(pgrnDatabasePath);
+	if (pgrnDatabasePathExist)
 	{
 		db = grn_db_open(&ctx, pgrnDatabasePath);
 	}
@@ -198,16 +288,64 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 	if (!db)
 	{
-		ereport(ERROR,
-				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg(TAG ": failed to open Groonga database: %s",
-						ctx.errbuf)));
+		GRN_LOG(&ctx,
+				GRN_LOG_WARNING,
+				TAG ": failed to %s database: <%s>",
+				pgrnDatabasePathExist ? "open" : "create",
+				pgrnDatabasePath);
+		PGrnDatabaseRemoveAllRelatedFiles(databasePath);
+		db = grn_db_create(&ctx, pgrnDatabasePath, NULL);
+		if (!db)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_SYSTEM_ERROR),
+					 errmsg(TAG ": failed to recreate Groonga database: %s",
+							ctx.errbuf)));
+		}
+		needReindex = true;
 	}
+	pfree(databasePath);
 
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
 	before_shmem_exit(pgroonga_crash_safer_flush_one_on_exit,
 					  databaseInfoDatum);
+
+	if (needReindex)
+	{
+		BackgroundWorker worker = {0};
+		BackgroundWorkerHandle *handle;
+
+		snprintf(worker.bgw_name,
+				 BGW_MAXLEN,
+				 TAG ": reindex: %u/%u",
+				 databaseOid,
+				 tableSpaceOid);
+#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
+		snprintf(worker.bgw_type,
+				 BGW_MAXLEN,
+				 TAG ": reindex: %u/%u",
+				 databaseOid,
+				 tableSpaceOid);
+#endif
+		worker.bgw_flags =
+			BGWORKER_SHMEM_ACCESS |
+			BGWORKER_BACKEND_DATABASE_CONNECTION;
+		worker.bgw_start_time = BgWorkerStart_ConsistentState;
+		worker.bgw_restart_time = BGW_NEVER_RESTART;
+		snprintf(worker.bgw_library_name,
+				 BGW_MAXLEN,
+				 "%s", PGroongaCrashSaferLibraryName);
+		snprintf(worker.bgw_function_name,
+				 BGW_MAXLEN,
+				 "pgroonga_crash_safer_reindex_one");
+		worker.bgw_main_arg = databaseInfoDatum;
+		worker.bgw_notify_pid = MyProcPid;
+		if (RegisterDynamicBackgroundWorker(&worker, &handle))
+		{
+			WaitForBackgroundWorkerShutdown(handle);
+		}
+	}
 
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
