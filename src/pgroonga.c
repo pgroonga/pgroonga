@@ -79,6 +79,7 @@ PG_MODULE_MAGIC;
 
 static bool PGrnInitialized = false;
 bool PGrnGroongaInitialized = false;
+static bool PGrnCrashSaferInitialized = false;
 
 typedef struct PGrnBuildStateData
 {
@@ -391,7 +392,7 @@ PGrnFinalizePrefixRKSequentialSearchData(void)
 }
 
 static void
-PGrnOnProcExit(int code, Datum arg)
+PGrnBeforeShmemExit(int code, Datum arg)
 {
 	const char *tag = "pgroonga: [exit]";
 
@@ -449,6 +450,14 @@ PGrnOnProcExit(int code, Datum arg)
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[db][close]", tag);
 			grn_obj_close(ctx, db);
+		}
+
+		if (PGrnCrashSaferInitialized)
+		{
+			pgrn_crash_safer_statuses_release(NULL,
+											  MyDatabaseId,
+											  MyDatabaseTableSpace);
+			PGrnCrashSaferInitialized = false;
 		}
 
 		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][buffers]", tag);
@@ -550,19 +559,25 @@ PGrnEnsureDatabase(void)
 
 	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
 	{
+		HTAB *statuses;
+		statuses = pgrn_crash_safer_statuses_get();
+		pgrn_crash_safer_statuses_use(statuses,
+									  MyDatabaseId,
+									  MyDatabaseTableSpace);
+		PGrnCrashSaferInitialized = true;
 		while (true)
 		{
 			int conditions;
 			long timeout = 1000;
 
-			if (pgrn_crash_safer_statuses_is_processing(NULL,
-														MyDatabaseId,
-														MyDatabaseTableSpace))
+			if (pgrn_crash_safer_statuses_is_flushing(statuses,
+													  MyDatabaseId,
+													  MyDatabaseTableSpace))
 			{
 				break;
 			}
 
-			pgrn_crash_safer_statuses_wake(NULL);
+			pgrn_crash_safer_statuses_wake(statuses);
 
 			conditions = WaitLatch(MyLatch,
 								   WL_LATCH_SET |
@@ -616,7 +631,7 @@ _PG_init(void)
 
 	grn_set_segv_handler();
 
-	on_proc_exit(PGrnOnProcExit, 0);
+	before_shmem_exit(PGrnBeforeShmemExit, 0);
 
 	RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
 
@@ -639,6 +654,8 @@ _PG_init(void)
 	PGrnVariablesApplyInitialValues();
 
 	PGrnInitializeOptions();
+
+	PGrnEnsureDatabase();
 }
 
 static grn_id
@@ -1837,8 +1854,6 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
 	text *result;
 
-	PGrnEnsureDatabase();
-
 	GRN_BULK_REWIND(&(buffers->head));
 	GRN_BULK_REWIND(&(buffers->body));
 	GRN_BULK_REWIND(&(buffers->foot));
@@ -2086,8 +2101,6 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 		grn_obj targetBuffer;
 		grn_obj termBuffer;
 
-		PGrnEnsureDatabase();
-
 		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 		GRN_TEXT_SET(ctx, &targetBuffer, target, targetSize);
 
@@ -2315,8 +2328,6 @@ pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
 	grn_bool matched;
 	grn_obj targetBuffer;
 	grn_obj patternBuffer;
-
-	PGrnEnsureDatabase();
 
 	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
@@ -3366,8 +3377,6 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 	grn_obj targetBuffer;
 	grn_obj prefixBuffer;
 
-	PGrnEnsureDatabase();
-
 	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
 
@@ -3548,8 +3557,6 @@ pgroonga_prefix_rk_raw(const char *text, unsigned int textSize,
 	grn_obj *variable;
 	bool matched;
 	grn_id id;
-
-	PGrnEnsureDatabase();
 
 	/* TODO: Use indexName */
 
@@ -4962,8 +4969,6 @@ pgroonga_beginscan_raw(Relation index,
 {
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
-
-	PGrnEnsureDatabase();
 
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
@@ -6820,7 +6825,6 @@ pgroonga_gettuple_raw(IndexScanDesc scan,
 					  ScanDirection direction)
 {
 	bool found = false;
-	PGrnEnsureDatabase();
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(scan->heapRelation->rd_id));
 	{
 		found = pgroonga_gettuple_internal(scan, direction);
@@ -6964,11 +6968,7 @@ pgroonga_getbitmap_raw(IndexScanDesc scan,
 					   TIDBitmap *tbm)
 {
 	int64 nRecords = 0;
-	bool enabled;
-
-	PGrnEnsureDatabase();
-
-	enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
+	bool enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
 	PGRN_RLS_ENABLED_IF(enabled);
 	{
 		nRecords = pgroonga_getbitmap_internal(scan, tbm);
@@ -7601,8 +7601,6 @@ pgroonga_canreturn_raw(Relation index,
 	TupleDesc desc = RelationGetDescr(index);
 	unsigned int i;
 
-	PGrnEnsureDatabase();
-
 	for (i = 0; i < desc->natts; i++)
 	{
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
@@ -7812,7 +7810,6 @@ pgroonga_costestimate_internal(Relation index,
 							   double *indexPages)
 {
 	List *quals;
-	PGrnEnsureDatabase();
 	PGrnCostEstimateUpdateSelectivity(index, root, path);
 #ifdef PGRN_SUPPORT_INDEX_CLAUSE
 	{

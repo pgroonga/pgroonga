@@ -56,8 +56,6 @@ PGrnQueryExtractKeywords(text *query)
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	ArrayType *keywords;
 
-	PGrnEnsureDatabase();
-
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, table, expression, variable);
 	if (!expression)
 	{

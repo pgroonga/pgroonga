@@ -803,8 +803,6 @@ pgroonga_options_raw(Datum reloptions,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 	};
 
-	PGrnEnsureDatabase();
-
 #ifdef PGRN_HAVE_BUILD_RELOPTIONS
 	grnOptions = build_reloptions(reloptions,
 								  validate,

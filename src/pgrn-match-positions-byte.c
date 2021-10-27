@@ -126,8 +126,6 @@ pgroonga_match_positions_byte(PG_FUNCTION_ARGS)
 	const char *indexName = NULL;
 	ArrayType *positions;
 
-	PGrnEnsureDatabase();
-
 	if (PG_NARGS() == 3)
 		indexName = PG_GETARG_CSTRING(2);
 	PGrnKeywordsSetNormalizer(keywordsTable, indexName, &previousIndexID);

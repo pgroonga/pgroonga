@@ -25,8 +25,6 @@ PGrnIsWritable(void)
 		return true;
 	}
 
-	PGrnEnsureDatabase();
-
 	grn_config_get(ctx, KEY, KEY_SIZE, &value, &valueSize);
 	return valueSize == 0;
 }
@@ -38,8 +36,6 @@ PGrnSetWritable(bool newWritable)
 	{
 		return;
 	}
-
-	PGrnEnsureDatabase();
 
 	if (newWritable)
 		grn_config_delete(ctx, KEY, KEY_SIZE);

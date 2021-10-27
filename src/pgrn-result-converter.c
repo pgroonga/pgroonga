@@ -21,7 +21,6 @@ PGrnResultConverterInit(PGrnResultConverter *converter,
 						Jsonb *jsonb,
 						const char *tag)
 {
-	PGrnEnsureDatabase();
 	converter->tag = tag;
 	converter->iterator = JsonbIteratorInit(&(jsonb->root));
 	converter->commandVersion = GRN_COMMAND_VERSION_DEFAULT;

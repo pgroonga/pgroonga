@@ -451,8 +451,6 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	Relation index;
 	grn_obj expandedQuery;
 
-	PGrnEnsureDatabase();
-
 	tableOIDDatum = DirectFunctionCall1(regclassin, tableNameDatum);
 	if (!OidIsValid(tableOIDDatum))
 	{

@@ -2102,8 +2102,6 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	Oid indexOid;
 	Relation index;
 
-	PGrnEnsureDatabase();
-
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -2164,8 +2162,6 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	Relation indexes;
 	PGrnTableScanDesc scan;
 	HeapTuple indexTuple;
-
-	PGrnEnsureDatabase();
 
 	if (!PGrnIsWritable())
 	{
@@ -2314,8 +2310,6 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	Oid indexOid;
 	Relation index;
 
-	PGrnEnsureDatabase();
-
 	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
 	indexOid = DatumGetObjectId(indexOidDatum);
 	if (!OidIsValid(indexOid))
@@ -2365,8 +2359,6 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 	Relation indexes;
 	PGrnTableScanDesc scan;
 	HeapTuple indexTuple;
-
-	PGrnEnsureDatabase();
 
 	indexes = pgrn_table_open(IndexRelationId, lock);
 	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);

@@ -261,8 +261,6 @@ PGrnSequentialSearchDataPrepareText(PGrnSequentialSearchData *data,
 {
 	grn_obj *text = &(buffers->text);
 
-	PGrnEnsureDatabase();
-
 	GRN_TEXT_SET(ctx, text, target, targetSize);
 	PGrnSequentialSearchDataPrepare(data,
 									data->textColumn,
@@ -284,8 +282,6 @@ PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
 	int nTargets = 0;
 	Datum datum;
 	bool isNULL;
-
-	PGrnEnsureDatabase();
 
 	GRN_BULK_REWIND(texts);
 	iterator = pgrn_array_create_iterator(targets, 0);

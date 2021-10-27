@@ -1256,8 +1256,6 @@ PGrnJSONBMatchExpression(Jsonb *target,
 	if (termSize == 0 && querySize == 0 && scriptSize == 0)
 		return false;
 
-	PGrnEnsureDatabase();
-
 	data.index = NULL;
 	data.isForFullTextSearchOnly = false;
 	data.pathsTable  = tmpPathsTable;

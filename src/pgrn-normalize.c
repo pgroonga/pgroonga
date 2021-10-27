@@ -47,8 +47,6 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 	const char *rawNormalizersData;
 	size_t rawNormalizersLength;
 
-	PGrnEnsureDatabase();
-
 	target = PG_GETARG_TEXT_PP(0);
 
 	if (PG_NARGS() == 2)

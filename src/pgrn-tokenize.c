@@ -378,8 +378,6 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 	text *tokenFiltersName = NULL;
 	ArrayType *pgTokens;
 
-	PGrnEnsureDatabase();
-
 	target = PG_GETARG_TEXT_PP(0);
 	options = PG_GETARG_ARRAYTYPE_P(1);
 

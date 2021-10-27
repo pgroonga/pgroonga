@@ -249,8 +249,6 @@ pgroonga_highlight_html(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	text *highlighted;
 
-	PGrnEnsureDatabase();
-
 	PGrnHighlightHTMLUpdateKeywords(keywords);
 
 	if (PG_NARGS() == 3)
