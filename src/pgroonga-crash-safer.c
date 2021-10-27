@@ -97,6 +97,26 @@ pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 }
 
 static void
+pgroonga_crash_safer_flush_one_remove_pid_on_exit(int code,
+												  Datum databaseInfoDatum)
+{
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid tableSpaceOid;
+	bool found;
+	pgrn_crash_safer_statuses_entry *entry;
+	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
+	entry = pgrn_crash_safer_statuses_search(NULL,
+											 databaseOid,
+											 tableSpaceOid,
+											 HASH_FIND,
+											 &found);
+	if (!found)
+		return;
+	entry->pid = 0;
+}
+
+static void
 pgroonga_crash_safer_flush_one_on_exit(int code, Datum databaseInfoDatum)
 {
 	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
@@ -116,9 +136,14 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	char pgrnDatabasePath[MAXPGPATH];
 	grn_ctx ctx;
 	grn_obj *db;
+	HTAB *statuses;
+
+	before_shmem_exit(pgroonga_crash_safer_flush_one_remove_pid_on_exit,
+					  databaseInfoDatum);
 
 	pqsignal(SIGTERM, pgroonga_crash_safer_sigterm);
 	pqsignal(SIGHUP, pgroonga_crash_safer_sighup);
+	pqsignal(SIGUSR1, pgroonga_crash_safer_sigusr1);
 	BackgroundWorkerUnblockSignals();
 
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
@@ -179,7 +204,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 						ctx.errbuf)));
 	}
 
-	pgrn_crash_safer_statuses_start(NULL, databaseOid, tableSpaceOid);
+	statuses = pgrn_crash_safer_statuses_get();
+	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
 	before_shmem_exit(pgroonga_crash_safer_flush_one_on_exit,
 					  databaseInfoDatum);
 
@@ -205,8 +231,21 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
+		if (PGroongaCrashSaferGotSIGUSR1)
+		{
+			PGroongaCrashSaferGotSIGUSR1 = false;
+		}
+
 		if (!pgrn_file_exist(pgrnDatabasePath))
 			break;
+
+		/* TODO: How to implement safe finish on no connection? */
+		/*
+		if (pgrn_crash_safer_statuses_get_n_using_processing(statuses,
+															 databaseOid,
+															 tableSpaceOid) == 0)
+			break;
+		*/
 
 		grn_obj_flush_recursive(&ctx, db);
 	}
@@ -278,7 +317,7 @@ pgroonga_crash_safer_main(Datum arg)
 				Oid databaseOid;
 				Oid tableSpaceOid;
 
-				if (entry->status != PGRN_CRASH_SAFER_STATUS_NONE)
+				if (entry->pid != 0)
 					continue;
 				if (pg_atomic_read_u32(&(entry->nUsingProcesses)) != 1)
 					continue;
@@ -314,17 +353,7 @@ pgroonga_crash_safer_main(Datum arg)
 				worker.bgw_notify_pid = MyProcPid;
 				if (!RegisterDynamicBackgroundWorker(&worker, &handle))
 					continue;
-
-				entry->status = PGRN_CRASH_SAFER_STATUS_OPENING;
-				{
-					pid_t pid;
-					BgwHandleStatus status;
-					status = WaitForBackgroundWorkerStartup(handle, &pid);
-					if (status != BGWH_STARTED)
-					{
-						entry->status = PGRN_CRASH_SAFER_STATUS_NONE;
-					}
-				}
+				WaitForBackgroundWorkerStartup(handle, &(entry->pid));
 			}
 		}
 	}
