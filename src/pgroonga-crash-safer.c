@@ -149,8 +149,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 		{
 			bool isNull;
 			Datum indexName;
+			bool readOnly;
 
-			SetCurrentStatementStartTimestamp();
 			indexName = SPI_getbinval(SPI_tuptable->vals[0],
 									  SPI_tuptable->tupdesc,
 									  i + 1,
@@ -160,7 +160,14 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 							 "REINDEX INDEX %.*s",
 							 (int) VARSIZE_ANY_EXHDR(indexName),
 							 VARDATA_ANY(indexName));
-			result = SPI_execute(buffer.data, false, 0);
+			SetCurrentStatementStartTimestamp();
+#if PG_VERSION_NUM >= 140000
+			readOnly = false;
+#else
+			/* Blocked with readOnly = false */
+			readOnly = true;
+#endif
+			result = SPI_execute(buffer.data, readOnly, 0);
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(FATAL,
