@@ -111,15 +111,6 @@ pgrn_crash_safer_statuses_get_main_pid(HTAB *statuses)
 }
 
 static inline void
-pgrn_crash_safer_statuses_wake(HTAB *statuses)
-{
-	pid_t pid = pgrn_crash_safer_statuses_get_main_pid(statuses);
-	if (pid == 0)
-		return;
-	kill(pid, SIGUSR1);
-}
-
-static inline void
 pgrn_crash_safer_statuses_use(HTAB *statuses,
 							  Oid databaseOid,
 							  Oid tableSpaceOid)

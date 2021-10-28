@@ -560,7 +560,18 @@ PGrnEnsureDatabase(void)
 	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
 	{
 		HTAB *statuses;
+		pid_t crashSaferPID;
 		statuses = pgrn_crash_safer_statuses_get();
+		crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
+		if (crashSaferPID == 0)
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+					 errmsg("pgroonga: "
+							"pgroonga_crash_safer process doesn't exist: "
+							"shared_preload_libraries may not include "
+							"pgroonga_crash_safer")));
+		}
 		pgrn_crash_safer_statuses_use(statuses,
 									  MyDatabaseId,
 									  MyDatabaseTableSpace);
@@ -577,7 +588,7 @@ PGrnEnsureDatabase(void)
 				break;
 			}
 
-			pgrn_crash_safer_statuses_wake(statuses);
+			kill(crashSaferPID, SIGUSR1);
 
 			conditions = WaitLatch(MyLatch,
 								   WL_LATCH_SET |
