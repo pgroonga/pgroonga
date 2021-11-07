@@ -101,6 +101,10 @@ PGrnCheckRLSEnabledSeqScan(FunctionCallInfo fcinfo)
 	if (!portal) {
 		return false;
 	}
+	if (!(portal->queryDesc)) {/* For EXPLAIN ANALYZE */
+		/* If portal->queryDesc is NULL, PostgreSQL's Executor is not active. */
+		return false;
+	}
 	econtext = PGrnFindTargetExprContext(portal->queryDesc->planstate, fcinfo);
 	if (!econtext) {
 		/* For safety */
