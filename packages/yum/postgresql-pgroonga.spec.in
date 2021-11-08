@@ -3,8 +3,6 @@
 # find-debuginfo.sh crashes on CentOS 8...
 %define debug_package %{nil}
 
-%define _centos_ver  %{?centos_ver:%{centos_ver}}%{!?centos_ver:7}
-
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
 %define pg_prefix          /usr/pgsql-%{pg_version}
@@ -30,7 +28,7 @@ BuildRequires:	groonga-devel >= @GROONGA_VERSION@
 BuildRequires:	msgpack-devel
 BuildRequires:	postgresql%{pg_package_version}-devel
 %if %{support_jit}
-%if %{_centos_ver} >= 8
+%if %{rhel} >= 8
 BuildRequires:	ccache
 BuildRequires:	llvm-devel
 BuildRequires:	llvm-toolset
