@@ -8,7 +8,7 @@ echo "::group::Prepare repositories"
 os=$(cut -d: -f4 /etc/system-release-cpe)
 version=$(cut -d: -f5 /etc/system-release-cpe)
 case ${os} in
-  centos)
+  almalinux|centos)
     case ${version} in
       7)
         DNF=yum
@@ -21,7 +21,7 @@ case ${os} in
 
     ${DNF} install -y \
            https://download.postgresql.org/pub/repos/yum/reporpms/EL-${version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
-           https://packages.groonga.org/centos/groonga-release-latest.noarch.rpm
+           https://packages.groonga.org/${os}/groonga-release-latest.noarch.rpm
     ;;
   fedora)
     DNF="dnf"
@@ -43,7 +43,7 @@ echo "::endgroup::"
 echo "::group::Install packages for test"
 
 case ${os} in
-  centos)
+  almalinux|centos)
     case ${version} in
       7)
         ${DNF} install -y centos-release-scl
@@ -101,7 +101,7 @@ cp -a \
    /tmp/
 cd /tmp
 case "${os}" in
-  centos)
+  almalinux|centos)
     if [ "$(echo "${postgresql_version} < 13" | bc)" = 1 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
     fi

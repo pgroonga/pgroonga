@@ -115,16 +115,16 @@ jobs:
         run: |
           set -eux
           package=$(echo ${{ matrix.package-id }} | \
-                      sed -E -e 's/-(debian|ubuntu|centos|fedora).*$//g')
+                      sed -E -e 's/-(debian|ubuntu|almalinux|centos|fedora).*$//g')
           os=$(echo ${{ matrix.package-id }} | \
-                 sed -E -e 's/^.*-((debian|ubuntu|centos|fedora).*)$/\1/g')
+                 sed -E -e 's/^.*-((debian|ubuntu|almalinux|centos|fedora).*)$/\1/g')
           echo "PACKAGE=${package}" >> ${GITHUB_ENV}
           echo "OS=${os}" >> ${GITHUB_ENV}
           case ${os} in
             debian-*|ubuntu-*)
               echo "PACKAGE_TYPE=apt" >> ${GITHUB_ENV}
               ;;
-            centos-*|fedora-*)
+            almalinux-*|centos-*|fedora-*)
               echo "PACKAGE_TYPE=yum" >> ${GITHUB_ENV}
               ;;
           esac
