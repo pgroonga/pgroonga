@@ -101,6 +101,12 @@ PGrnCheckRLSEnabledSeqScan(FunctionCallInfo fcinfo)
 	if (!portal) {
 		return false;
 	}
+	if (!portal->queryDesc) {
+		/* EXPLAIN ANALYZE for sequential scan doesn't create
+		   portal->queryDesc. */
+		/* For safety */
+		return true;
+	}
 	econtext = PGrnFindTargetExprContext(portal->queryDesc->planstate, fcinfo);
 	if (!econtext) {
 		/* For safety */

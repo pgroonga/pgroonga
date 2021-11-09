@@ -42,6 +42,14 @@ SELECT id, content
 \g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
+\pset format unaligned
+EXPLAIN (ANALYZE ON, COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &` 'content @ "rdbms" ||'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g" -e "s/actual time=[^ ]*/actual time=0..0/g" -e "s/time: [^ ]* ms/time: 0.0 ms/g"
+\pset format aligned
+
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" ||';

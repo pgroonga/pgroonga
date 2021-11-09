@@ -46,6 +46,20 @@ Seq Scan on memos
   Filter: ((user_name = CURRENT_USER) AND (content &` 'content @ "rdbms" ||'::text))
 (2 rows)
 \pset format aligned
+\pset format unaligned
+EXPLAIN (ANALYZE ON, COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &` 'content @ "rdbms" ||'
+\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g" -e "s/actual time=[^ ]*/actual time=0..0/g" -e "s/time: [^ ]* ms/time: 0.0 ms/g"
+QUERY PLAN
+Seq Scan on memos (actual time=0..0 rows=0 loops=1)
+  Filter: ((user_name = CURRENT_USER) AND (content &` 'content @ "rdbms" ||'::text))
+  Rows Removed by Filter: 3
+Planning time: 0.0 ms
+Execution time: 0.0 ms
+(5 rows)
+\pset format aligned
 SELECT id, content
   FROM memos
  WHERE content &` 'content @ "rdbms" ||';
