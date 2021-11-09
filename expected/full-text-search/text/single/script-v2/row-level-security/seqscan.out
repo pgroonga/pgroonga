@@ -56,8 +56,8 @@ QUERY PLAN
 Seq Scan on memos (actual time=0..0 rows=0 loops=1)
   Filter: ((user_name = CURRENT_USER) AND (content &` 'content @ "rdbms" ||'::text))
   Rows Removed by Filter: 3
-Planning time: 0.0 ms
-Execution time: 0.0 ms
+Planning Time: 0.0 ms
+Execution Time: 0.0 ms
 (5 rows)
 \pset format aligned
 SELECT id, content
