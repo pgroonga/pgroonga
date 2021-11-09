@@ -6,10 +6,10 @@ set -eux
 echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
-version=$(cut -d: -f5 /etc/system-release-cpe)
+major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
 case ${os} in
   almalinux|centos)
-    case ${version} in
+    case ${major_version} in
       7)
         DNF=yum
         ;;
@@ -20,7 +20,7 @@ case ${os} in
     esac
 
     ${DNF} install -y \
-           https://download.postgresql.org/pub/repos/yum/reporpms/EL-${version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+           https://download.postgresql.org/pub/repos/yum/reporpms/EL-${major_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
            https://packages.groonga.org/${os}/groonga-release-latest.noarch.rpm
     ;;
   fedora)
@@ -35,7 +35,7 @@ echo "::group::Install built packages"
 
 repositories_dir=/host/repositories
 ${DNF} install -y \
-       ${repositories_dir}/${os}/${version}/x86_64/Packages/*.rpm
+       ${repositories_dir}/${os}/${major_version}/x86_64/Packages/*.rpm
 
 echo "::endgroup::"
 
@@ -44,7 +44,7 @@ echo "::group::Install packages for test"
 
 case ${os} in
   almalinux|centos)
-    case ${version} in
+    case ${major_version} in
       7)
         ${DNF} install -y centos-release-scl
         ;;
