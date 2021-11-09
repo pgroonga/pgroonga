@@ -21,7 +21,7 @@ case ${os} in
 
     ${DNF} install -y \
            https://download.postgresql.org/pub/repos/yum/reporpms/EL-${major_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
-           https://packages.groonga.org/${os}/groonga-release-latest.noarch.rpm
+           https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
     ;;
   fedora)
     DNF="dnf"
