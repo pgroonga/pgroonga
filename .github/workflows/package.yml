@@ -75,29 +75,6 @@ jobs:
             ruby
           sudo gem install bundler
           bundle install
-      # qemu-user-static in Ubuntu 20.04 has the following bug.
-      # https://bugs.launchpad.net/qemu/+bug/1749393
-      # This bug has already fixed in Ubuntu 20.10.
-      # However, this fix is not included in Ubuntu 20.04.
-      # Therefore, we temporally use qemu-user-static in Ubuntu 21.04.
-      # We remove this step when qemu-user-static in Ubuntu 20.04 will include above remediation.
-      - name: Install QEMU from Groovy
-        run: |
-          sudo tee /etc/apt/preferences.d/qemu <<EOF
-          Package: *
-          Pin: release n=focal
-          Pin-Priority: 900
-          Package: *
-          Pin: release n=hirsute
-          Pin-Priority: 400
-          EOF
-          sudo tee /etc/apt/sources.list.d/hirsute.list <<EOF
-          deb http://jp.archive.ubuntu.com/ubuntu hirsute universe
-          deb http://jp.archive.ubuntu.com/ubuntu hirsute-updates universe
-          deb http://security.ubuntu.com/ubuntu hirsute-security universe
-          EOF
-          sudo apt update
-          sudo apt install -t hirsute qemu-user-static
       - name: Clone dependencies
         run: |
           cd ..
