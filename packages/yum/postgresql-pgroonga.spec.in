@@ -1,8 +1,5 @@
 # -*- rpm -*-
 
-# find-debuginfo.sh crashes on CentOS 8...
-%define debug_package %{nil}
-
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
 %define pg_prefix          /usr/pgsql-%{pg_version}
