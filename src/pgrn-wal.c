@@ -453,10 +453,6 @@ PGrnWALPageWriter(void *userData,
 		if (rest <= freeSize)
 		{
 			PGrnWALPageAppend(data->current.page, buffer, rest);
-			PGrnIndexStatusSetWALAppliedPosition(
-				data->index,
-				BufferGetBlockNumber(data->current.buffer),
-				PGrnWALPageGetLastOffset(data->current.page));
 			written += rest;
 		}
 		else
@@ -1063,6 +1059,9 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	BlockNumber nBlocks;
 
 	if (!PGrnWALEnabled)
+		return false;
+
+	if (!StandbyMode)
 		return false;
 
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
@@ -2285,10 +2284,6 @@ PGrnWALTruncate(Relation index)
 			UnlockReleaseBuffer(processingBuffers[j]);
 		}
 	}
-
-	PGrnIndexStatusSetWALAppliedPosition(index,
-										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
-										 0);
 
 	UnlockRelation(index, PGrnWALLockMode());
 
