@@ -76,7 +76,7 @@ jobs:
             component=main
           fi
           sudo tee /etc/apt/sources.list.d/pgdg.list <<APT_SOURCE
-          deb http://apt.postgresql.org/pub/repos/apt "$suite" "$component"
+          deb http://apt.postgresql.org/pub/repos/apt $suite $component
           APT_SOURCE
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt update
