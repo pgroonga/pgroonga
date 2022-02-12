@@ -38,6 +38,9 @@ jobs:
           - label: PostgreSQL 14 with Groonga master
             postgresql-version: "14"
             groonga-master: "yes"
+          - label: PostgreSQL 15 snapshot
+            postgresql-version: "15"
+            postgresql-unreleased: "yes"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
@@ -66,12 +69,14 @@ jobs:
           sudo apt -y -V purge '^postgresql'
           ls -lah /etc/apt/sources.list.d/
           if [ "${POSTGRESQL_UNRELEASED}" = "yes" ]; then
+            suite="$(lsb_release -cs)-pgdg-testing"
             component=${{ matrix.postgresql-version }}
           else
+            suite="$(lsb_release -cs)-pgdg"
             component=main
           fi
           sudo tee /etc/apt/sources.list.d/pgdg.list <<APT_SOURCE
-          deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg ${component}
+          deb http://apt.postgresql.org/pub/repos/apt "$suite" "$component"
           APT_SOURCE
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt update
