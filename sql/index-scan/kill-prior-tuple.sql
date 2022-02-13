@@ -30,9 +30,9 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
-DELETE FROM ids WHERE id = 10;
-DELETE FROM ids WHERE id = 5;
-DELETE FROM ids WHERE id = 6;
+UPDATE ids SET memo = 'b' WHERE id = 10;
+UPDATE ids SET memo = 'b' WHERE id = 5;
+UPDATE ids SET memo = 'b' WHERE id = 6;
 SELECT * FROM ids WHERE 2 <= id and memo &@~ 'a';
 
 DROP TABLE ids;
