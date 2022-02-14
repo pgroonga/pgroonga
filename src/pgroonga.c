@@ -1130,11 +1130,14 @@ PGrnCreate(PGrnCreateData *data)
 
 	for (data->i = 0; data->i < data->desc->natts; data->i++)
 	{
-		Form_pg_attribute attribute;
-
-		attribute = TupleDescAttr(data->desc, data->i);
+		bool forInclude =
+			(data->i >=
+			 IndexRelationGetNumberOfKeyAttributes(data->index));
+		Form_pg_attribute attribute = TupleDescAttr(data->desc, data->i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
+			if (forInclude)
+				continue;
 			data->forFullTextSearch = false;
 			data->forRegexpSearch = false;
 			data->forPrefixSearch = false;
@@ -1151,8 +1154,10 @@ PGrnCreate(PGrnCreateData *data)
 			data->attributeTypeID =
 				PGrnGetType(data->index, data->i, &(data->attributeFlags));
 			PGrnCreateCheckType(data);
-			PGrnCreateLexicon(data);
 			PGrnCreateDataColumn(data);
+			if (forInclude)
+				continue;
+			PGrnCreateLexicon(data);
 			PGrnCreateIndexColumn(data);
 		}
 	}
@@ -1167,10 +1172,15 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
+		bool forInclude =
+			(i >= IndexRelationGetNumberOfKeyAttributes(index));
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name = &(attribute->attname);
 		grn_obj *source;
 		grn_obj *indexColumn;
+
+		if (forInclude)
+			continue;
 
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
@@ -7995,6 +8005,9 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
+	routine->amcaninclude = true;
+#endif
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 	routine->amusemaintenanceworkmem = false;
 #endif

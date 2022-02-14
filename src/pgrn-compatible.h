@@ -207,6 +207,10 @@ typedef char *PGrnStringOptionValue;
 	BackgroundWorkerInitializeConnectionByOid((dboid), (useroid), (flags))
 #endif
 
+#if PG_VERSION_NUM >= 110000
+#	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
+#endif
+
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_FORM_PG_DATABASE_HAVE_OID
 #endif
