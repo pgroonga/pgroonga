@@ -231,6 +231,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	grn_ctx ctx;
 	grn_obj *db;
 	HTAB *statuses;
+	TimestampTz lastFlushTime = GetCurrentTimestamp();
 
 	before_shmem_exit(pgroonga_crash_safer_flush_one_remove_pid_on_exit,
 					  databaseInfoDatum);
@@ -353,14 +354,27 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
+		TimestampTz nextFlushTime =
+			TimestampTzPlusMilliseconds(
+				lastFlushTime,
+				PGroongaCrashSaferFlushNaptime * 1000);
+		long timeout =
+			TimestampDifferenceMilliseconds(GetCurrentTimestamp(),
+											nextFlushTime);
 		int conditions;
-
-		conditions = WaitLatch(MyLatch,
-							   WL_LATCH_SET |
-							   WL_TIMEOUT |
-							   PGRN_WL_EXIT_ON_PM_DEATH,
-							   PGroongaCrashSaferFlushNaptime * 1000L,
-							   PG_WAIT_EXTENSION);
+		if (timeout <= 0)
+		{
+			conditions = WL_TIMEOUT;
+		}
+		else
+		{
+			conditions = WaitLatch(MyLatch,
+								   WL_LATCH_SET |
+								   WL_TIMEOUT |
+								   PGRN_WL_EXIT_ON_PM_DEATH,
+								   timeout,
+								   PG_WAIT_EXTENSION);
+		}
 		if (conditions & WL_LATCH_SET)
 		{
 			ResetLatch(MyLatch);
@@ -377,6 +391,13 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		{
 			PGroongaCrashSaferGotSIGUSR1 = false;
 		}
+
+		if (!(conditions & WL_TIMEOUT))
+		{
+			continue;
+		}
+
+		lastFlushTime = GetCurrentTimestamp();
 
 		if (!pgrn_file_exist(pgrnDatabasePath))
 			break;
