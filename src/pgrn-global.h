@@ -5,6 +5,7 @@
 struct PGrnBuffers
 {
 	grn_obj general;
+	grn_obj cast;
 	grn_obj path;
 	grn_obj keyword;
 	grn_obj pattern;

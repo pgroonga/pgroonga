@@ -12,6 +12,7 @@ void
 PGrnInitializeBuffers(void)
 {
 	GRN_VOID_INIT(&(PGrnBuffers.general));
+	GRN_VOID_INIT(&(PGrnBuffers.cast));
 	GRN_TEXT_INIT(&(PGrnBuffers.path), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.keyword), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.pattern), 0);
@@ -42,6 +43,7 @@ void
 PGrnFinalizeBuffers(void)
 {
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.general));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.cast));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.path));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.keyword));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.pattern));

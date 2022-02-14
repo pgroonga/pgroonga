@@ -4669,6 +4669,7 @@ PGrnInsert(Relation index,
 			grn_id domain;
 			unsigned char flags;
 			grn_obj *buffer;
+			grn_id range;
 
 			name = &(attribute->attname);
 			if (isnull[i])
@@ -4679,10 +4680,33 @@ PGrnInsert(Relation index,
 			domain = PGrnGetType(index, i, &flags);
 			grn_obj_reinit(ctx, buffer, domain, flags);
 			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
+			range = grn_obj_get_range(ctx, dataColumn);
+			if (range != domain)
+			{
+				grn_obj *castedBuffer = &(buffers->cast);
+				grn_rc rc;
+				grn_obj_reinit(ctx, castedBuffer, range, 0);
+				rc = grn_obj_cast(ctx, buffer, castedBuffer, true);
+				if (rc != GRN_SUCCESS)
+				{
+					grn_obj *inspected = &(buffers->inspect);
+					GRN_BULK_REWIND(inspected);
+					grn_inspect(ctx, inspected, buffer);
+					elog(WARNING,
+						 "pgroonga: %s <%s.%s>: failed to cast: <%.*s>",
+						 tag,
+						 index->rd_rel->relname.data,
+						 name->data,
+						 (int)GRN_TEXT_LEN(inspected),
+						 GRN_TEXT_VALUE(inspected));
+					continue;
+				}
+				buffer = castedBuffer;
+			}
 			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
+			PGrnCheck("%s failed to set column value", tag);
 			recordSize += PGrnComputeSize(buffer);
 			PGrnWALInsertColumn(walData, dataColumn, buffer);
-			PGrnCheck("%s failed to set column value", tag);
 		}
 
 		PGrnWALInsertFinish(walData);
