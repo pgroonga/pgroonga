@@ -7995,7 +7995,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_HOT_BLOCKING
 	routine->amhotblocking = true;
 #endif
-	routine->amkeytype = 0;
+	routine->amkeytype = InvalidOid;
 
 	routine->aminsert = pgroonga_insert_raw;
 	routine->ambeginscan = pgroonga_beginscan_raw;
