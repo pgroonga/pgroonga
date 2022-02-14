@@ -1154,10 +1154,11 @@ PGrnCreate(PGrnCreateData *data)
 			data->attributeTypeID =
 				PGrnGetType(data->index, data->i, &(data->attributeFlags));
 			PGrnCreateCheckType(data);
+			if (!forInclude || data->forPrefixSearch)
+				PGrnCreateLexicon(data);
 			PGrnCreateDataColumn(data);
 			if (forInclude)
 				continue;
-			PGrnCreateLexicon(data);
 			PGrnCreateIndexColumn(data);
 		}
 	}
