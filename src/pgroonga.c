@@ -6647,7 +6647,7 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		NameData *name;
 		grn_obj *dataColumn;
 
-		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) < i) {
+		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) <= i) {
 			unsigned int j;
 			for (j = GRN_BOOL_VECTOR_SIZE(&(so->canReturns));
 				 j <= i;
