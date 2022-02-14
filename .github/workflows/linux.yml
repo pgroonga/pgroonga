@@ -24,6 +24,7 @@ jobs:
           - PostgreSQL 13
           - PostgreSQL 14
           - PostgreSQL 14 with Groonga master
+          - PostgreSQL 15 snapshot
         include:
           - label: PostgreSQL 10
             postgresql-version: "10"
