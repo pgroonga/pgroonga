@@ -7539,6 +7539,9 @@ PGrnRemoveUnusedTables(void)
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
 
+	if (!PGrnIsWritable())
+		return;
+
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
 								   NULL, 0,
@@ -7550,9 +7553,6 @@ PGrnRemoveUnusedTables(void)
 		char *idEnd = NULL;
 		int nameSize;
 		Oid relationFileNodeID;
-
-		if (!PGrnIsWritable())
-			break;
 
 		nameSize = grn_table_cursor_get_key(ctx, cursor, &key);
 		memcpy(name, key, nameSize);
