@@ -223,6 +223,7 @@ typedef char *PGrnStringOptionValue;
 
 #if PG_VERSION_NUM >= 130000
 #	define PGRN_HAVE_COMMON_HASHFN_H
+#	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 #endif
 
 #if PG_VERSION_NUM >= 150000

@@ -7992,6 +7992,9 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
+#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
+	routine->amusemaintenanceworkmem = false;
+#endif
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_HOT_BLOCKING
 	routine->amhotblocking = true;
 #endif
