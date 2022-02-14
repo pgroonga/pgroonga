@@ -224,3 +224,7 @@ typedef char *PGrnStringOptionValue;
 #if PG_VERSION_NUM >= 130000
 #	define PGRN_HAVE_COMMON_HASHFN_H
 #endif
+
+#if PG_VERSION_NUM >= 150000
+#	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_HOT_BLOCKING
+#endif
