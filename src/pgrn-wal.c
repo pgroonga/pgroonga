@@ -11,6 +11,7 @@
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
+#include <miscadmin.h>
 
 static bool PGrnWALEnabled = false;
 static size_t PGrnWALMaxSize = 0;
@@ -538,9 +539,12 @@ PGrnWALAbort(PGrnWALData *data)
 
 	GenericXLogAbort(data->state);
 
-	PGrnWALDataReleaseBuffers(data);
+	if (!INTERRUPTS_CAN_BE_PROCESSED())
+	{
+		PGrnWALDataReleaseBuffers(data);
 
-	UnlockRelation(data->index, PGrnWALLockMode());
+		UnlockRelation(data->index, PGrnWALLockMode());
+	}
 
 	pfree(data);
 #endif
