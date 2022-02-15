@@ -4556,6 +4556,133 @@ PGrnComputeSize(grn_obj *buffer)
 }
 
 static uint32_t
+PGrnInsertColumn(Relation index,
+				 grn_obj *sourcesTable,
+				 Datum *values,
+				 PGrnWALData *walData,
+				 unsigned int i,
+				 grn_id id,
+				 const char *tag)
+{
+	TupleDesc desc = RelationGetDescr(index);
+	Form_pg_attribute attribute = TupleDescAttr(desc, i);
+	NameData *name = &(attribute->attname);
+	grn_obj *dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
+	grn_obj *rawValue = &(buffers->general);
+	grn_obj *value;
+	grn_id rawDomain;
+	unsigned char flags;
+	grn_id domain;
+
+	rawDomain = PGrnGetType(index, i, &flags);
+	grn_obj_reinit(ctx, rawValue, rawDomain, flags);
+	PGrnConvertFromData(values[i], attribute->atttypid, rawValue);
+	domain = grn_obj_get_range(ctx, dataColumn);
+	if (domain == rawDomain)
+	{
+		value = rawValue;
+	}
+	else
+	{
+		grn_rc rc = GRN_SUCCESS;
+		grn_obj rawElement;
+		grn_obj *element = &(buffers->castElement);
+		GRN_VOID_INIT(&rawElement);
+		value = &(buffers->cast);
+		grn_obj_reinit(ctx, value, domain, flags);
+		if (grn_obj_is_vector(ctx, rawValue))
+		{
+			uint32_t n = grn_vector_size(ctx, rawValue);
+			uint32_t i;
+			for (i = 0; i < n; i++)
+			{
+				const char *elementValue;
+				float weight;
+				grn_id elementDomain;
+				uint32_t elementSize =
+					grn_vector_get_element_float(ctx,
+												 rawValue,
+												 i,
+												 &elementValue,
+												 &weight,
+												 &elementDomain);
+				GRN_OBJ_FIN(ctx, &rawElement);
+				GRN_VALUE_VAR_SIZE_INIT(&rawElement,
+										GRN_OBJ_DO_SHALLOW_COPY,
+										elementDomain);
+				GRN_TEXT_SET(ctx,
+							 &rawElement,
+							 elementValue,
+							 elementSize);
+				grn_obj_reinit(ctx, element, domain, 0);
+				rc = grn_obj_cast(ctx, &rawElement, element, true);
+				if (rc != GRN_SUCCESS)
+					break;
+				grn_vector_add_element_float(ctx,
+											 value,
+											 GRN_BULK_HEAD(element),
+											 GRN_BULK_VSIZE(element),
+											 weight,
+											 domain);
+			}
+		}
+		else if (grn_obj_is_uvector(ctx, value))
+		{
+			uint32_t elementSize = grn_uvector_element_size(ctx, rawValue);
+			uint32_t n = grn_uvector_size(ctx, rawValue);
+			uint32_t i;
+			GRN_OBJ_FIN(ctx, &rawElement);
+			GRN_VALUE_FIX_SIZE_INIT(&rawElement,
+									GRN_OBJ_DO_SHALLOW_COPY,
+									rawDomain);
+			grn_obj_reinit(ctx, element, domain, 0);
+			for (i = 0; i < n; i++)
+			{
+				GRN_TEXT_SET(ctx,
+							 &rawElement,
+							 GRN_BULK_HEAD(rawValue) + (elementSize * i),
+							 elementSize);
+				GRN_BULK_REWIND(element);
+				rc = grn_obj_cast(ctx, &rawElement, element, true);
+				if (rc != GRN_SUCCESS)
+					break;
+				grn_bulk_write(ctx,
+							   value,
+							   GRN_BULK_HEAD(element),
+							   GRN_BULK_VSIZE(element));
+			}
+		}
+		else
+		{
+			rc = grn_obj_cast(ctx, rawValue, value, true);
+		}
+		GRN_OBJ_FIN(ctx, &rawElement);
+
+		if (rc != GRN_SUCCESS)
+		{
+			grn_obj *inspected = &(buffers->inspect);
+			GRN_BULK_REWIND(inspected);
+			grn_inspect(ctx, inspected, rawValue);
+			elog(WARNING,
+				 "pgroonga: %s <%s.%s>: failed to cast: <%.*s>",
+				 tag,
+				 index->rd_rel->relname.data,
+				 name->data,
+				 (int)GRN_TEXT_LEN(inspected),
+				 GRN_TEXT_VALUE(inspected));
+			return 0;
+		}
+	}
+
+	grn_obj_set_value(ctx, dataColumn, id, value, GRN_OBJ_SET);
+	PGrnCheck("%s failed to set column value", tag);
+
+	PGrnWALInsertColumn(walData, dataColumn, rawValue);
+
+	return PGrnComputeSize(value);
+}
+
+static uint32_t
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
 		   grn_obj *sourcesCtidColumn,
@@ -4663,50 +4790,15 @@ PGrnInsert(Relation index,
 
 		for (i = 0; i < desc->natts; i++)
 		{
-			grn_obj *dataColumn;
-			Form_pg_attribute attribute = TupleDescAttr(desc, i);
-			NameData *name;
-			grn_id domain;
-			unsigned char flags;
-			grn_obj *buffer;
-			grn_id range;
-
-			name = &(attribute->attname);
 			if (isnull[i])
 				continue;
-
-			dataColumn = PGrnLookupColumn(sourcesTable, name->data, ERROR);
-			buffer = &(buffers->general);
-			domain = PGrnGetType(index, i, &flags);
-			grn_obj_reinit(ctx, buffer, domain, flags);
-			PGrnConvertFromData(values[i], attribute->atttypid, buffer);
-			range = grn_obj_get_range(ctx, dataColumn);
-			if (range != domain)
-			{
-				grn_obj *castedBuffer = &(buffers->cast);
-				grn_rc rc;
-				grn_obj_reinit(ctx, castedBuffer, range, 0);
-				rc = grn_obj_cast(ctx, buffer, castedBuffer, true);
-				if (rc != GRN_SUCCESS)
-				{
-					grn_obj *inspected = &(buffers->inspect);
-					GRN_BULK_REWIND(inspected);
-					grn_inspect(ctx, inspected, buffer);
-					elog(WARNING,
-						 "pgroonga: %s <%s.%s>: failed to cast: <%.*s>",
-						 tag,
-						 index->rd_rel->relname.data,
-						 name->data,
-						 (int)GRN_TEXT_LEN(inspected),
-						 GRN_TEXT_VALUE(inspected));
-					continue;
-				}
-				buffer = castedBuffer;
-			}
-			grn_obj_set_value(ctx, dataColumn, id, buffer, GRN_OBJ_SET);
-			PGrnCheck("%s failed to set column value", tag);
-			recordSize += PGrnComputeSize(buffer);
-			PGrnWALInsertColumn(walData, dataColumn, buffer);
+			recordSize += PGrnInsertColumn(index,
+										   sourcesTable,
+										   values,
+										   walData,
+										   i,
+										   id,
+										   tag);
 		}
 
 		PGrnWALInsertFinish(walData);
