@@ -88,6 +88,9 @@ jobs:
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Run regression test
         run: |
+          if [ "$(echo "${{ matrix.postgresql-version }} < 11" | bc)" = 1 ]; then
+            rm sql/index-only-scan/include.sql
+          fi
           if [ "$(echo "${{ matrix.postgresql-version }} < 13" | bc)" = 1 ]; then
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
