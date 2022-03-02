@@ -268,6 +268,9 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				(errcode(ERRCODE_SYSTEM_ERROR),
 				 errmsg(TAG ": failed to initialize Groonga")));
 	}
+
+	grn_set_segv_handler();
+
 	if (grn_ctx_init(&ctx, 0) != GRN_SUCCESS)
 	{
 		ereport(ERROR,
