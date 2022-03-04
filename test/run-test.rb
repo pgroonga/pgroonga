@@ -14,5 +14,7 @@ if ENV["NEED_MAKE"] == "yes"
   system(env, *command_line, out: IO::NULL) || exit(false)
 end
 
+ENV["TEST_UNIT_MAX_DIFF_TARGET_STRING_SIZE"] = "1_000_000"
+
 test_dir = __dir__
 exit(Test::Unit::AutoRunner.run(true, test_dir))
