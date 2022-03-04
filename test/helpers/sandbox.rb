@@ -77,6 +77,7 @@ module Helpers
     attr_reader :dir
     attr_reader :host
     attr_reader :port
+    attr_reader :user
     attr_reader :replication_user
     attr_reader :replication_password
     def initialize(base_dir)
@@ -96,11 +97,13 @@ module Helpers
       @running
     end
 
-    def initdb(shared_preload_libraries: [])
-      @dir = File.join(@base_dir, "db")
+    def initdb(shared_preload_libraries: [],
+               db_path: "db",
+               port: 15432)
+      @dir = File.join(@base_dir, db_path)
       @log_path = File.join(@dir, "log", @log_base_name)
       socket_dir = File.join(@dir, "socket")
-      @port = 15432
+      @port = port
       @replication_user = "replicator"
       run_command("initdb",
                   "--locale", "C",
@@ -309,6 +312,31 @@ module Helpers
       @postgresql_standby.stop
     end
 
+    def setup_reference_db
+      @postgresql_reference = PostgreSQL.new(@tmp_dir)
+      options = {
+        db_path: "db-reference",
+        port: 25432,
+        shared_preload_libraries: reference_shared_preload_libraries,
+      }
+      @postgresql_reference.initdb(**options) do |conf|
+        conf.puts(additional_reference_configurations)
+      end
+      @postgresql_reference.start
+    end
+
+    def reference_shared_preload_libraries
+      []
+    end
+
+    def additional_reference_configurations
+      ""
+    end
+
+    def teardown_reference_db
+      @postgresql_reference.stop
+    end
+
     def start_postgres
       @postgresql.start
     end
@@ -326,11 +354,15 @@ module Helpers
       stop_postgres
     end
 
+    def create_db(postgresql, db_name)
+      postgresql.psql("postgres", "CREATE DATABASE #{db_name}")
+      postgresql.psql(db_name, "CREATE EXTENSION pgroonga")
+      postgresql.psql(db_name, "CHECKPOINT")
+    end
+
     def setup_test_db
       @test_db_name = "test"
-      psql("postgres", "CREATE DATABASE #{@test_db_name}")
-      run_sql("CREATE EXTENSION pgroonga")
-      run_sql("CHECKPOINT")
+      create_db(@postgresql, @test_db_name)
       result, = run_sql("SELECT oid FROM pg_catalog.pg_database " +
                         "WHERE datname = current_database()")
       oid = result.lines[3].strip
@@ -338,6 +370,13 @@ module Helpers
     end
 
     def teardown_test_db
+    end
+
+    def setup_reference_test_db
+      create_db(@postgresql_reference, @test_db_name)
+    end
+
+    def teardown_reference_test_db
     end
   end
 end
