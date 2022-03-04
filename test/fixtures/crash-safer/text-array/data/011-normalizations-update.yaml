@@ -1,0 +1,18 @@
+source: faker
+faker:
+  locale: en
+  tables:
+    normalizations:
+      n_records: 100
+      primary_keys:
+        - id
+      columns:
+        id: |
+          100 + context.counter(:id).next
+        target: |
+          Faker::Name.name
+        normalized: |
+          self[:target].upcase
+      update_columns:
+        - target
+        - normalized

@@ -1,4 +1,9 @@
+require_relative "helpers/fixture"
 require_relative "helpers/sandbox"
+
+require "pgroonga-benchmark/config"
+require "pgroonga-benchmark/processor"
+require "pgroonga-benchmark/status"
 
 class PGroongaCrashSaferTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
@@ -8,7 +13,10 @@ class PGroongaCrashSaferTestCase < Test::Unit::TestCase
   end
 
   def additional_configurations
-    "pgroonga.enable_crash_safe = yes"
+    <<-CONFIG
+pgroonga.enable_crash_safe = yes
+pgroonga_crash_safer.log_level = debug
+    CONFIG
   end
 
   test "recover from WAL" do
@@ -64,5 +72,91 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
 (1 row)
 
     OUTPUT
+  end
+
+  sub_test_case("random crash") do
+    include Helpers::Fixture
+
+    def additional_configurations
+      super + <<-CONFIG
+autovacuum = no
+log_autovacuum_min_duration = 0
+      CONFIG
+    end
+
+    def additional_reference_configurations
+      <<-CONFIG
+autovacuum = no
+log_autovacuum_min_duration = 0
+      CONFIG
+    end
+
+    setup :setup_reference_db
+    teardown :teardown_reference_db
+
+    setup :setup_reference_test_db
+    teardown :teardown_reference_test_db
+
+    def check_groonga_version
+      base, tag = groonga("status")[1]["version"].split("-", 2)
+      base = Gem::Version.new(base)
+      if base >= Gem::Version.new("12.0.2")
+        return
+      end
+      if base == Gem::Version.new("12.0.1") and tag
+        return
+      end
+      omit("Groonga 12.0.2 or later is required")
+    end
+
+    setup :check_groonga_version
+
+    data(:scenario, ["text-array"])
+    test "scenario" do
+      dir = File.join(@tmp_dir, "pgroonga-benchmark")
+      FileUtils.cp_r(fixture_path("crash-safer", "text-array"),
+                     dir)
+      File.open(File.join(dir, "config.yaml"), "w") do |output|
+        config = {
+          "test_crash_safe" => true,
+          "postgresql" => {
+            "host" => @postgresql.host,
+            "port" => @postgresql.port,
+            "user" => @postgresql.user,
+            "database" => @test_db_name,
+          },
+          "reference_postgresql" => {
+            "host" => @postgresql_reference.host,
+            "port" => @postgresql_reference.port,
+            "user" => @postgresql_reference.user,
+            "database" => @test_db_name,
+          },
+        }
+        output.puts(config.to_yaml)
+      end
+      config = PGroongaBenchmark::Config.new(dir)
+      status = PGroongaBenchmark::Status.new(dir)
+      processor = PGroongaBenchmark::Processor.new(config, status)
+      begin
+        processor.process
+      rescue PGroongaBenchmark::VerifyError => error
+        puts "failed: #{error.message}"
+        pp error.index_column_name
+        pp error.index_column_diff
+        sleep
+        if error.index_column_name
+          assert_equal([0, []],
+                       [
+                         error.index_column_diff[0][0],
+                         error.index_column_diff[1],
+                       ],
+                       "#{error.message}: #{index_column_name}")
+        else
+          assert_equal(error.expected_dumps[0],
+                       error.actual_dumps[0],
+                       error.message)
+        end
+      end
+    end
   end
 end

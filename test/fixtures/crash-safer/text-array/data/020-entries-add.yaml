@@ -1,0 +1,15 @@
+source: faker
+faker:
+  locale: ja
+  tables:
+    entries:
+      n_records: 500
+      columns:
+        id: |
+          context.counter(:id).next
+        title: |
+          Faker::Name.name
+        description: |
+          Faker::Book.title
+        memo: |
+          Faker::Lorem.sentence
