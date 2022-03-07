@@ -2,11 +2,9 @@
 
 source "https://rubygems.org"
 
-gem "archive-zip"
-gem "mime-types"
 gem "octokit"
 gem "rake"
-gem "veyor"
+gem "test-unit"
 
 pgroonga_benchmark_gemfile = ENV["PGROONGA_BENCHMARK_GEMFILE"]
 if pgroonga_benchmark_gemfile
