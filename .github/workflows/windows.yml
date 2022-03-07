@@ -69,14 +69,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: actions/checkout@v3
-        with:
-          repository: pgroonga/benchmark
-          path: pgroonga-benchmark
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.1"
-          bundler-cache: true
       - name: Install Visual Studio
         if:
           matrix.visual-studio-package
@@ -240,6 +232,14 @@ jobs:
         if: failure()
         run: |
           Get-Content regression.diffs
+      - uses: actions/checkout@v3
+        with:
+          repository: pgroonga/benchmark
+          path: pgroonga-benchmark
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
       - name: Run unit test
         run: |
           $Env:PATH = "$(Get-Location)\..\pgsql\bin;${Env:PATH}"
