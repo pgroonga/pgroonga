@@ -18,6 +18,7 @@ class PostgreSQL12PGroongaPackageTask < VersionedPGroongaPackageTask
 
   def yum_targets_default
     [
+      "amazon-linux-2",
       "centos-7",
     ]
   end

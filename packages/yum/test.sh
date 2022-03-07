@@ -8,6 +8,15 @@ echo "::group::Prepare repositories"
 os=$(cut -d: -f4 /etc/system-release-cpe)
 major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
 case ${os} in
+  amazon)
+    os=amazon-linux
+    version=$(cut -d: -f6 /etc/system-release-cpe)
+    DNF=yum
+    amazon-linux-extras install -y epel
+    ${DNF} install -y ca-certificates
+    ${DNF} install -y \
+           https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
+    ;;
   almalinux|centos)
     case ${major_version} in
       7)
@@ -42,17 +51,25 @@ echo "::endgroup::"
 
 echo "::group::Install packages for test"
 
+postgresql_version=$(rpm -qa | \
+                       grep pgroonga | \
+                       grep -E -o '[0-9.]+' |
+                       head -n1)
 case ${os} in
+  amazon-linux)
+    amazon-linux-extras install -y postgresql${postgresql_version}
+    ${DNF} install -y \
+           libpq-devel \
+           postgresql-server-devel
+    pg_config=pg_config
+    groonga_token_filter_stem_package_name=groonga-token-filter-stem
+    ;;
   almalinux|centos)
     case ${major_version} in
       7)
         ${DNF} install -y centos-release-scl
         ;;
     esac
-    postgresql_version=$(rpm -qa | \
-                           grep pgroonga | \
-                           grep -E -o '[0-9.]+' |
-                           head -n1)
     postgresql_package_prefix=$(rpm -qa | \
                                   grep pgroonga | \
                                   grep -E -o '^postgresql[0-9.]+' | \
