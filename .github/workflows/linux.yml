@@ -50,7 +50,7 @@ jobs:
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
-      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
+      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -135,4 +135,6 @@ jobs:
       - name: Run unit test
         run: |
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
-            bundle exec test/run-test.rb
+            bundle exec ruby \
+              -I${{ github.workspace }}/pgroonga-benchmark/lib \
+              test/run-test.rb

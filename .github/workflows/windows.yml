@@ -245,4 +245,6 @@ jobs:
           $Env:PATH = "$(Get-Location)\..\pgsql\bin;${Env:PATH}"
           # TODO: Remove me when we fix test failure on Windows
           Remove-Item test\test-streaming-replication.rb
-          bundle exec ruby test\run-test.rb
+          bundle exec ruby `
+            -I${{ github.workspace }}\pgroonga-benchmark\lib `
+            test\run-test.rb
