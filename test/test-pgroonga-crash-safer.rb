@@ -143,10 +143,6 @@ log_autovacuum_min_duration = 0
       begin
         processor.process
       rescue PGroongaBenchmark::VerifyError => error
-        puts "failed: #{error.message}"
-        pp error.index_column_name
-        pp error.index_column_diff
-        sleep
         if error.index_column_name
           assert_equal([0, []],
                        [
