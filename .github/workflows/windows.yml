@@ -51,6 +51,7 @@ jobs:
             postgresql-version-major: "14"
             postgresql-version: "14.1-1"
     env:
+      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
       PGROONGA_TEST_DATA: "test-data"
       PGROONGA_TEST_ENCODING: "UTF-8"
       PGROONGA_TEST_USER: "pgroonga-test"
@@ -65,10 +66,17 @@ jobs:
       - name: Use JST
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
-      - uses: actions/setup-ruby@v1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - uses: actions/checkout@v3
+        with:
+          repository: pgroonga/benchmark
+          path: pgroonga-benchmark
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.1"
+          bundler-cache: true
       - name: Install Visual Studio
         if:
           matrix.visual-studio-package
@@ -237,4 +245,4 @@ jobs:
           $Env:PATH = "$(Get-Location)\..\pgsql\bin;${Env:PATH}"
           # TODO: Remove me when we fix test failure on Windows
           Remove-Item test\test-streaming-replication.rb
-          ruby test\run-test.rb
+          bundle exec ruby test\run-test.rb
