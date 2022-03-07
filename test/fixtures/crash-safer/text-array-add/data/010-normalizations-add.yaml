@@ -3,7 +3,7 @@ faker:
   locale: en
   tables:
     normalizations:
-      n_records: 100
+      n_records: 500
       columns:
         id: |
           context.counter(:id).next

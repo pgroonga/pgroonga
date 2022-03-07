@@ -111,10 +111,13 @@ log_autovacuum_min_duration = 0
 
     setup :check_groonga_version
 
-    data(:scenario, ["text-array"])
+    data(:scenario, [
+           "text-array-add",
+           "text-array-update",
+         ])
     test "scenario" do
       dir = File.join(@tmp_dir, "pgroonga-benchmark")
-      FileUtils.cp_r(fixture_path("crash-safer", "text-array"),
+      FileUtils.cp_r(fixture_path("crash-safer", data[:scenario]),
                      dir)
       File.open(File.join(dir, "config.yaml"), "w") do |output|
         config = {

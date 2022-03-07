@@ -1,21 +1,16 @@
 source: faker
 faker:
+  test_crash_safe: false
   locale: ja
   tables:
     entries:
       n_records: 500
-      primary_keys:
-        - id
       columns:
         id: |
-          500 + context.counter(:id).next
+          context.counter(:id).next
         title: |
           Faker::Name.name
         description: |
           Faker::Book.title
         memo: |
           Faker::Lorem.sentence
-      update_columns:
-        - title
-        - description
-        - memo

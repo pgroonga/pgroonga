@@ -1,0 +1,6 @@
+source: sql
+sql:
+  test_crash_safe: false
+  sqls:
+    - |
+      VACUUM normalizations;
