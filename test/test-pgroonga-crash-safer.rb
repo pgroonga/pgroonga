@@ -127,6 +127,10 @@ log_autovacuum_min_duration = 0
          ])
     data(:crash_ratio, [0.1, 0.5, 1.0])
     test "scenario" do
+      if ENV["CI"]
+        n_patterns = 6
+        omit("This test may take 2-60 min.") if rand < (1.0 / n_patterns)
+      end
       dir = File.join(@tmp_dir, "pgroonga-benchmark")
       FileUtils.cp_r(fixture_path("crash-safer", data[:scenario]),
                      dir)
