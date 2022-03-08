@@ -43,9 +43,9 @@ echo "::endgroup::"
 
 echo "::group::Install built packages"
 
-repositories_dir=/host/repositories
+packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 
-postgresql_version=$(basename ${repositories_dir}/${os}/${major_version}/x86_64/Packages/*-pgroonga-*.rpm | \
+postgresql_version=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
                        grep -E -o '[0-9.]+' |
                        head -n1)
 case ${os} in
@@ -54,8 +54,7 @@ case ${os} in
     ;;
 esac
 
-${DNF} install -y \
-       ${repositories_dir}/${os}/${major_version}/x86_64/Packages/*.rpm
+${DNF} install -y ${packages_dir}/*.rpm
 
 echo "::endgroup::"
 
