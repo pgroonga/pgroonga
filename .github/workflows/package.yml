@@ -103,7 +103,10 @@ jobs:
               echo "PACKAGE_TYPE=yum" >> ${GITHUB_ENV}
               ;;
           esac
-          test_docker_image=$(echo ${os} | sed -E -e 's/-/:/g')
+          test_docker_image=$(echo ${os} | \
+                                sed -E \
+                                    -e 's/amazon-linux/amazonlinux/g' \
+                                    -e 's/-/:/g')
           case ${test_docker_image} in
             *:arm64)
               echo "ARCHITECTURE=arm64" >> ${GITHUB_ENV}
