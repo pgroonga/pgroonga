@@ -310,7 +310,7 @@ module Helpers
     end
 
     def teardown_standby_db
-      @postgresql_standby.stop
+      @postgresql_standby.stop if @postgresql_standby
     end
 
     def setup_reference_db
@@ -335,7 +335,7 @@ module Helpers
     end
 
     def teardown_reference_db
-      @postgresql_reference.stop
+      @postgresql_reference.stop if @postgresql_reference
     end
 
     def start_postgres
@@ -352,7 +352,7 @@ module Helpers
     end
 
     def teardown_postgres
-      stop_postgres
+      stop_postgres if @postgresql
     end
 
     def create_db(postgresql, db_name)
