@@ -10,7 +10,7 @@ major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
 case ${os} in
   amazon)
     os=amazon-linux
-    version=$(cut -d: -f6 /etc/system-release-cpe)
+    major_version=$(cut -d: -f6 /etc/system-release-cpe)
     DNF=yum
     amazon-linux-extras install -y epel
     ${DNF} install -y ca-certificates
