@@ -539,6 +539,11 @@ PGrnWALAbort(PGrnWALData *data)
 
 	GenericXLogAbort(data->state);
 
+/* For PostgreSQL on Amazon Linux 2. PostgreSQL 12.8 or later provides this. */
+#	ifndef INTERRUPTS_CAN_BE_PROCESSED
+#		define INTERRUPTS_CAN_BE_PROCESSED() false
+#	endif
+
 	if (!INTERRUPTS_CAN_BE_PROCESSED())
 	{
 		PGrnWALDataReleaseBuffers(data);
