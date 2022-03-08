@@ -214,6 +214,12 @@ jobs:
           if (${{ matrix.postgresql-version-major }} -lt 13) {
             Remove-Item sql\full-text-search\text\single\declarative-partitioning.sql
           }
+          # TODO: PostgreSQL 14.3, 13.7, 12.11, 11.16 and 10.21 will fix
+          # PostgreSQL bug of them.
+          if (${{ matrix.postgresql-version-major }} -lt 15) {
+            Remove-Item sql\index-only-scan\count-star-large.sql
+            Remove-Item sql\jsonb\count-star\indexscan.sql
+          fi
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `

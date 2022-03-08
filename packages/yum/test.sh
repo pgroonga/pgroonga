@@ -118,12 +118,18 @@ cp -a \
    /tmp/
 cd /tmp
 case "${os}" in
-  almalinux|centos)
-    if [ "$(echo "${postgresql_version} < 11" | bc)" = 1 ]; then
+  almalinux|amazon-linux|centos)
+    if [ "$((${postgresql_version} < 11))" -eq 1 ]; then
       rm sql/index-only-scan/include.sql
     fi
-    if [ "$(echo "${postgresql_version} < 13" | bc)" = 1 ]; then
+    if [ "$((${postgresql_version} < 13))" -eq 1 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
+    fi
+    # TODO: PostgreSQL 14.3, 13.7, 12.11, 11.16 and 10.21 will fix
+    # PostgreSQL bug of them.
+    if [ "$((${postgresql_version} < 15))" -eq 1 ]; then
+      rm sql/index-only-scan/count-star-large.sql
+      rm sql/jsonb/count-star/indexscan.sql
     fi
     ;;
   fedora)
