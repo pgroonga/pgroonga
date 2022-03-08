@@ -9,6 +9,7 @@ module Helpers
     def spawn_process(*args)
       env = {
         "LC_ALL" => "C",
+        "PGCLIENTENCODING" => "UTF-8",
       }
       output_read, output_write = IO.pipe
       error_read, error_write = IO.pipe
