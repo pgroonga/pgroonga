@@ -125,6 +125,7 @@ log_autovacuum_min_duration = 0
            "text-array-add",
            "text-array-update",
          ])
+    data(:crash_ratio, [0.1, 0.5, 1.0])
     test "scenario" do
       dir = File.join(@tmp_dir, "pgroonga-benchmark")
       FileUtils.cp_r(fixture_path("crash-safer", data[:scenario]),
@@ -132,6 +133,7 @@ log_autovacuum_min_duration = 0
       File.open(File.join(dir, "config.yaml"), "w") do |output|
         config = {
           "test_crash_safe" => true,
+          "crash_ratio" => data[:crash_ratio],
           "postgresql" => {
             "host" => @postgresql.host,
             "port" => @postgresql.port,
