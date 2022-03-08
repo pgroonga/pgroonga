@@ -17,6 +17,9 @@ class QueryExpandTestCase < Test::Unit::TestCase
 
   sub_test_case("Sudachi") do
     setup do
+      if Gem.win_platform?
+        omit("Can't use multibyte characters on Windows")
+      end
       run_sql(<<-SQL)
 CREATE TABLE thesaurus (
   term text PRIMARY KEY,
