@@ -44,6 +44,16 @@ echo "::endgroup::"
 echo "::group::Install built packages"
 
 repositories_dir=/host/repositories
+
+postgresql_version=$(basename ${repositories_dir}/${os}/${major_version}/x86_64/Packages/*-pgroonga-*.rpm | \
+                       grep -E -o '[0-9.]+' |
+                       head -n1)
+case ${os} in
+  amazon-linux)
+    amazon-linux-extras install -y postgresql${postgresql_version}
+    ;;
+esac
+
 ${DNF} install -y \
        ${repositories_dir}/${os}/${major_version}/x86_64/Packages/*.rpm
 
@@ -52,13 +62,8 @@ echo "::endgroup::"
 
 echo "::group::Install packages for test"
 
-postgresql_version=$(rpm -qa | \
-                       grep pgroonga | \
-                       grep -E -o '[0-9.]+' |
-                       head -n1)
 case ${os} in
   amazon-linux)
-    amazon-linux-extras install -y postgresql${postgresql_version}
     ${DNF} install -y \
            libpq-devel \
            postgresql-server-devel
