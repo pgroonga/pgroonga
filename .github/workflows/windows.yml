@@ -219,7 +219,7 @@ jobs:
           if (${{ matrix.postgresql-version-major }} -lt 15) {
             Remove-Item sql\index-only-scan\count-star-large.sql
             Remove-Item sql\jsonb\count-star\indexscan.sql
-          fi
+          }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
