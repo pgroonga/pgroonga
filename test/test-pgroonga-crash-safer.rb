@@ -1,10 +1,6 @@
 require_relative "helpers/fixture"
 require_relative "helpers/sandbox"
 
-require "pgroonga-benchmark/config"
-require "pgroonga-benchmark/processor"
-require "pgroonga-benchmark/status"
-
 class PGroongaCrashSaferTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
@@ -76,6 +72,20 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
 
   sub_test_case("random crash") do
     include Helpers::Fixture
+
+    def setup_pgroonga_benchmark
+      begin
+        require "pgroonga-benchmark/config"
+        require "pgroonga-benchmark/processor"
+        require "pgroonga-benchmark/status"
+      rescue LoadError => error
+        message = "pgroonga-benchmark is required: #{error.message}"
+        message = [message, *error.backtrace].join("\n")
+        omit(message)
+      end
+    end
+
+    setup :setup_pgroonga_benchmark
 
     def additional_configurations
       super + <<-CONFIG
