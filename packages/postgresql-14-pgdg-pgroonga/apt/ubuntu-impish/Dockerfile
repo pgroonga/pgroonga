@@ -1,4 +1,4 @@
-ARG FROM=ubuntu:hirsute
+ARG FROM=ubuntu:impish
 FROM ${FROM}
 
 RUN \
