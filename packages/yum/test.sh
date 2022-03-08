@@ -6,7 +6,6 @@ set -eux
 echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
-major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
 case ${os} in
   amazon)
     os=amazon-linux
@@ -18,6 +17,7 @@ case ${os} in
            https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
     ;;
   almalinux|centos)
+    major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
     case ${major_version} in
       7)
         DNF=yum
@@ -33,6 +33,7 @@ case ${os} in
            https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
     ;;
   fedora)
+    major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
     DNF="dnf"
     ;;
 esac
