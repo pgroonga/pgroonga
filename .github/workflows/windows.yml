@@ -51,7 +51,7 @@ jobs:
             postgresql-version-major: "14"
             postgresql-version: "14.1-1"
     env:
-      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
+      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"
       PGROONGA_TEST_ENCODING: "UTF-8"
       PGROONGA_TEST_USER: "pgroonga-test"
