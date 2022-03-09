@@ -14,7 +14,7 @@ class PostgreSQL14PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
       "ubuntu-focal",
       "ubuntu-focal-arm64",
       "ubuntu-impish",
-      "ubuntu-impish-arm64",
+      # "ubuntu-impish-arm64",
     ]
   end
 

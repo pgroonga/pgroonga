@@ -12,7 +12,6 @@ class PostgreSQL12PGroongaPackageTask < VersionedPGroongaPackageTask
   def ubuntu_targets_default
     [
       ["focal", "20.04"],
-      ["groovy", "20.10"],
     ]
   end
 

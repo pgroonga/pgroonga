@@ -12,8 +12,10 @@ class PostgreSQL13PGroongaPackageTask < VersionedPGroongaPackageTask
     ]
   end
 
-  def enable_ubuntu?
-    false
+  def ubuntu_targets_default
+    [
+      ["impish", "21.10"],
+    ]
   end
 
   def yum_targets_default
