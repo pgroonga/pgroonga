@@ -165,7 +165,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			readOnly = true;
 #endif
 			result = SPI_execute(buffer.data, readOnly, 0);
-			if (result != SPI_OK_SELECT)
+			if (result != SPI_OK_UTILITY)
 			{
 				ereport(FATAL,
 						(errmsg(TAG ": failed to reindex PGroonga index: "
