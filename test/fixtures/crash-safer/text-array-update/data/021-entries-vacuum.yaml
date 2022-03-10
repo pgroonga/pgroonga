@@ -1,6 +1,6 @@
 source: sql
 sql:
-  test_crash_safe: false
+  crash_delay: 5.0
   sqls:
     - |
       VACUUM entries;
