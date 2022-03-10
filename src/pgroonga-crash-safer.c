@@ -128,7 +128,15 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 							 "   SELECT oid "
 							 "     FROM pg_catalog.pg_am "
 							 "    WHERE amname = 'pgroonga'"
-							 " )",
+							 " )"
+							 "ORDER BY "
+							 "  CASE "
+							 "  WHEN array_to_string(class.reloptions, ' ', ' ') "
+							 "       LIKE '%${%}%' "
+							 "    THEN 1 "
+							 "  ELSE 0 "
+							 "  END, "
+							 "  class.relname",
 							 true,
 							 0);
 		if (result != SPI_OK_SELECT)
