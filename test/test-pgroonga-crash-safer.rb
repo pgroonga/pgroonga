@@ -165,7 +165,7 @@ log_autovacuum_min_duration = 0
                          error.index_column_diff[0][0],
                          error.index_column_diff[1],
                        ],
-                       "#{error.message}: #{index_column_name}")
+                       "#{error.message}: #{error.index_column_name}")
         else
           assert_equal(error.expected_dumps[0],
                        error.actual_dumps[0],
