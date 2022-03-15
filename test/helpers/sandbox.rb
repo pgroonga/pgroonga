@@ -273,7 +273,13 @@ module Helpers
     end
 
     def teardown_tmp_dir
-      FileUtils.rm_rf(@tmp_dir)
+      debug_dir = ENV["PGROONGA_TEST_DEBUG_DIR"]
+      if debug_dir and File.exist?(@tmp_dir)
+        FileUtils.rm_rf(debug_dir)
+        FileUtils.mv(@tmp_dir, debug_dir)
+      else
+        FileUtils.rm_rf(@tmp_dir)
+      end
     end
 
     def setup_db
