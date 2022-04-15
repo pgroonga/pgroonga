@@ -94,7 +94,13 @@ jobs:
           sudo apt -y -V install \
             postgresql-${{ matrix.postgresql-version }} \
             postgresql-server-dev-${{ matrix.postgresql-version }}
-          sudo systemctl start postgresql
+          if [ ${{ matrix.postgresql-version }} -eq 15 ]; then
+            # It seems that PostgreSQL 15 dropped stats_temp_directory...?
+            sudo sed -i'' \
+              -e 's/^stats_temp_directory/#stats_temp_directory/g' \
+              /etc/postgresql/15/main/postgresql.conf
+          fi
+          sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Run regression test
         run: |
