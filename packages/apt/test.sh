@@ -98,12 +98,6 @@ fi
 if [ "$((${postgresql_version} < 13))" -eq 1 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi
-# TODO: PostgreSQL 14.3, 13.7, 12.11, 11.16 and 10.21 will fix
-# PostgreSQL bug of them.
-if [ "$((${postgresql_version} < 15))" -eq 1 ]; then
-  rm sql/index-only-scan/count-star-large.sql
-  rm sql/jsonb/count-star/indexscan.sql
-fi
 ruby /host/test/prepare.rb > schedule
 PG_REGRESS_DIFF_OPTS="-u"
 if diff --help | grep -q color; then
