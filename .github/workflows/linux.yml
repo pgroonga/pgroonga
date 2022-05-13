@@ -110,12 +110,6 @@ jobs:
           if [ "$(echo "${{ matrix.postgresql-version }} < 13" | bc)" -eq 1 ]; then
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
-          # TODO: PostgreSQL 14.3, 13.7, 12.11, 11.16 and 10.21 will fix
-          # PostgreSQL bug of them.
-          if [ "$(echo "${{ matrix.postgresql-version }} < 15" | bc)" -eq 1 ]; then
-            rm sql/index-only-scan/count-star-large.sql
-            rm sql/jsonb/count-star/indexscan.sql
-          fi
           if [ "${GROONGA_MASTER}" = "yes" ]; then
             # TODO: We don't know why this case doesn't use parallel scan...
             rm sql/full-text-search/text/single/declarative-partitioning.sql
