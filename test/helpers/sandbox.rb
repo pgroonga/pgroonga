@@ -196,14 +196,16 @@ module Helpers
     end
 
     def psql(db, sql)
-      run_command("psql",
-                  "--host", @host,
-                  "--port", @port.to_s,
-                  "--username", @user,
-                  "--dbname", db,
-                  "--echo-all",
-                  "--no-psqlrc",
-                  "--command", sql)
+      output, error = run_command("psql",
+                                  "--host", @host,
+                                  "--port", @port.to_s,
+                                  "--username", @user,
+                                  "--dbname", db,
+                                  "--echo-all",
+                                  "--no-psqlrc",
+                                  "--command", sql)
+      output = normalize_output(output)
+      [output, error]
     end
 
     def groonga(*command_line)
@@ -217,6 +219,18 @@ module Helpers
     private
     def windows?
       /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
+    end
+
+    def normalize_output(output)
+      normalized_output = ""
+      output.each_line do |line|
+        case line.chomp
+        when "SET", "CREATE EXTENSION"
+          next
+        end
+        normalized_output << line
+      end
+      normalized_output
     end
   end
 
