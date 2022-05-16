@@ -1,0 +1,5 @@
+postgresql-14-pgroonga (2.3.6-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Fri, 29 Apr 2022 21:13:34 -0000

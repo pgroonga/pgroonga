@@ -1,0 +1,34 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL14PGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("14")
+    @updating_debian_changelog = false
+  end
+
+  def enable_apt?
+    @updating_debian_changelog
+  end
+
+  def update_debian_changelog
+    @updating_debian_changelog = true
+    begin
+      super
+    ensure
+      @updating_debian_changelog = false
+    end
+  end
+
+  def ubuntu_targets_default
+    [
+      ["jammy", "22.04"],
+    ]
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL14PGroongaPackageTask.new
+task.define
