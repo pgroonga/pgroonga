@@ -65,9 +65,6 @@
 #include <storage/ipc.h>
 #include <storage/latch.h>
 #include <utils/array.h>
-#ifdef PGRN_SUPPORT_PROGRESS
-#	include <utils/backend_progress.h>
-#endif
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/memutils.h>
