@@ -70,7 +70,7 @@ typedef char *PGrnStringOptionValue;
 						   (index),					\
 						   (indexInfo),				\
 						   (allowSync),				\
-						   false,					\
+						   true,					\
 						   (callback),				\
 						   (callbackState),			\
 						   NULL)
@@ -211,12 +211,16 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
 #endif
 
+#if PG_VERSION_NUM >= 110000
+#	define PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
+#endif
+
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_FORM_PG_DATABASE_HAVE_OID
 #endif
 
-#if PG_VERSION_NUM >= 110000
-#	define PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
+#if PG_VERSION_NUM >= 120000
+#	define PGRN_SUPPORT_PROGRESS
 #endif
 
 #if PG_VERSION_NUM >= 130000
