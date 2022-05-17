@@ -21,6 +21,7 @@
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
+#include <storage/procsignal.h>
 #include <utils/snapmgr.h>
 #include <utils/guc.h>
 #include <utils/snapmgr.h>
@@ -112,12 +113,9 @@ pgroonga_crash_safer_sighup(SIGNAL_ARGS)
 static void
 pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	procsignal_sigusr1_handler(postgres_signal_arg);
 
 	PGroongaCrashSaferGotSIGUSR1 = true;
-	SetLatch(MyLatch);
-
-	errno = save_errno;
 }
 
 void
@@ -503,7 +501,8 @@ pgroonga_crash_safer_main(Datum arg)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
-		if (PGroongaCrashSaferGotSIGUSR1) {
+		if (PGroongaCrashSaferGotSIGUSR1)
+		{
 			HASH_SEQ_STATUS status;
 			pgrn_crash_safer_statuses_entry *entry;
 			PGroongaCrashSaferGotSIGUSR1 = false;
