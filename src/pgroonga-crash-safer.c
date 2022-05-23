@@ -59,7 +59,7 @@ PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
 
-#if PG_VERSION_NUM < 130000
+#if PG_VERSION_NUM < 140000
 /* Borrowed from src/backend/utils/adt/timestamp.c in PostgreSQL.
  *
  * Portions Copyright (c) 1996-2022, PostgreSQL Global Development Group
