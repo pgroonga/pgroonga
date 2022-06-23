@@ -64,10 +64,12 @@
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
+#include <storage/smgr.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
 #include <utils/memutils.h>
+#include <utils/rel.h>
 #include <utils/selfuncs.h>
 #include <utils/snapmgr.h>
 #include <utils/timestamp.h>
@@ -7351,6 +7353,15 @@ pgroonga_build_raw(Relation heap,
 					tag);
 
 	PGrnAutoCloseUseIndex(index);
+
+	if (index->rd_rel->relpersistence == RELPERSISTENCE_UNLOGGED)
+	{
+		/* We don't need this but this is required for UNLOGGED table.
+		 * index_build() calls smgrexists(indexRelation->rd_smgr,
+		 * INIT_FORKNUM) without indexRelation->rd_smgr != NULL check. */
+		RelationOpenSmgr(index);
+		smgrcreate(index->rd_smgr, INIT_FORKNUM, false);
+	}
 
 	data.sourcesTable = NULL;
 
