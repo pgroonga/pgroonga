@@ -7359,8 +7359,12 @@ pgroonga_build_raw(Relation heap,
 		/* We don't need this but this is required for UNLOGGED table.
 		 * index_build() calls smgrexists(indexRelation->rd_smgr,
 		 * INIT_FORKNUM) without indexRelation->rd_smgr != NULL check. */
+#if PG_VERSION_NUM >= 150000
+		smgrcreate(RelationGetSmgr(index), INIT_FORKNUM, false);
+#else
 		RelationOpenSmgr(index);
 		smgrcreate(index->rd_smgr, INIT_FORKNUM, false);
+#endif
 	}
 
 	data.sourcesTable = NULL;
