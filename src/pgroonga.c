@@ -8266,9 +8266,6 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 	routine->amparallelvacuumoptions = VACUUM_OPTION_PARALLEL_BULKDEL;
 #endif
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_HOT_BLOCKING
-	routine->amhotblocking = true;
-#endif
 	routine->amkeytype = InvalidOid;
 
 	routine->aminsert = pgroonga_insert_raw;
