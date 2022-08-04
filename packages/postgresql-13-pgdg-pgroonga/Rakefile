@@ -7,8 +7,6 @@ class PostgreSQL13PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
 
   def apt_targets_default
     [
-      "debian-buster",
-      "debian-buster-arm64",
       "debian-bullseye",
       "debian-bullseye-arm64",
       "ubuntu-bionic",

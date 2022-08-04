@@ -5,11 +5,8 @@ class PostgreSQL11PGroongaPackageTask < VersionedPGroongaPackageTask
     super("11")
   end
 
-  def apt_targets_default
-    [
-      "debian-buster",
-      "debian-buster-arm64",
-    ]
+  def enable_apt?
+    false
   end
 
   def enable_ubuntu?
