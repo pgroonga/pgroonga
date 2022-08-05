@@ -20,8 +20,6 @@ jobs:
           - postgresql-14-pgdg-pgroonga-ubuntu-bionic-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-focal
           - postgresql-14-pgdg-pgroonga-ubuntu-focal-arm64
-          - postgresql-14-pgdg-pgroonga-ubuntu-impish
-          # - postgresql-14-pgdg-pgroonga-ubuntu-impish-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-14-pgdg-pgroonga-almalinux-8
