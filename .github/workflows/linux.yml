@@ -29,37 +29,29 @@ jobs:
         include:
           - label: PostgreSQL 10
             postgresql-version: "10"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 11
             postgresql-version: "11"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 12
             postgresql-version: "12"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 13
             postgresql-version: "13"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 14
             postgresql-version: "14"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 14 with Groonga master
             groonga-master: "yes"
             postgresql-version: "14"
-            runs-os: ubuntu-20.04
           - label: PostgreSQL 15 snapshot
             postgresql-unreleased: "yes"
             postgresql-version: "15"
-            runs-os: ubuntu-22.10
           - label: PostgreSQL 15 snapshot with Groonga master
             groonga-master: "yes"
             postgresql-unreleased: "yes"
             postgresql-version: "15"
-            runs-os: ubuntu-22.10
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
-    runs-on: ${{ matrix.runs-os }}
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
         with:
