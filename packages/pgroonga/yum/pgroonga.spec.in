@@ -78,6 +78,9 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %{_datadir}/pgsql/extension/*.sql
 
 %changelog
+* Mon Aug 08 2022 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.3.8-1
+- New upstream release.
+
 * Tue Jun 07 2022 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.3.7-1
 - New upstream release.
 
