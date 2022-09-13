@@ -64,7 +64,6 @@ echo "::group::Install packages for test"
 case ${os} in
   amazon-linux)
     ${DNF} install -y \
-           libpq-devel \
            postgresql-server-devel
     pg_config=pg_config
     groonga_token_filter_stem_package_name=groonga-token-filter-stem
