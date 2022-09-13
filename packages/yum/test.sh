@@ -64,7 +64,7 @@ echo "::group::Install packages for test"
 case ${os} in
   amazon-linux)
     if [ "$((${postgresql_version} != 13))" -eq 1 ]; then
-      install -y libpq-devel
+      ${DNF} install -y libpq-devel
     fi
     ${DNF} install -y postgresql-server-devel
     pg_config=pg_config
