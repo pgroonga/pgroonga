@@ -5114,12 +5114,12 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	GRN_OBJ_FIN(ctx, &(so->canReturns));
 
-	free(so);
-
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [finalize][scan-opaque][end] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
+
+	free(so);
 }
 
 static IndexScanDesc
