@@ -249,7 +249,7 @@ typedef RelFileNumber PGrnRelFileNumber;
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
 	((relation)->rd_node.relNode)
 #	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
-	((relation)->rd_node.pscNode)
+	((relation)->rd_node.spcNode)
 typedef Oid PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenode((tablespaceOid), (fileNumber))
