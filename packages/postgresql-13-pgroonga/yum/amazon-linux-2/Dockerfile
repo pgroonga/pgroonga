@@ -16,7 +16,6 @@ RUN \
     ccache \
     clang \
     groonga-devel \
-    libpq-devel \
     llvm \
     msgpack-devel \
     postgresql-server-devel \
