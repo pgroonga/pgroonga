@@ -78,10 +78,16 @@ PGrnFindTargetExprContext(PlanState *state, FunctionCallInfo fcinfo)
 	case T_AppendState:
 	{
 		AppendState *appendState = castNode(AppendState, state);
-		PlanState *subState =
-			appendState->appendplans[appendState->as_whichplan];
-		if (subState)
-			return PGrnFindTargetExprContext(subState, fcinfo);
+/* defined in src/backend/nodeAppend.c */
+#define INVALID_SUBPLAN_INDEX -1
+		if (appendState->as_whichplan != INVALID_SUBPLAN_INDEX)
+#undef INVALID_SUBPLAN_INDEX
+		{
+			PlanState *subState =
+				appendState->appendplans[appendState->as_whichplan];
+			if (subState)
+				return PGrnFindTargetExprContext(subState, fcinfo);
+		}
 		break;
 	}
 	default:
