@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-column-name.h"
+#include "pgrn-compatible.h"
 #include "pgrn-convert.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
@@ -264,7 +265,7 @@ PGrnLookupSourcesTable(Relation index, int errorLevel)
 
 	snprintf(name, sizeof(name),
 			 PGrnSourcesTableNameFormat,
-			 index->rd_node.relNode);
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -275,7 +276,7 @@ PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
 
 	snprintf(name, sizeof(name),
 			 PGrnSourcesTableNameFormat "." PGrnSourcesCtidColumnName,
-			 index->rd_node.relNode);
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -286,7 +287,7 @@ PGrnLookupLexicon(Relation index, unsigned int nthAttribute, int errorLevel)
 
 	snprintf(name, sizeof(name),
 			 PGrnLexiconNameFormat,
-			 index->rd_node.relNode,
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index),
 			 nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
@@ -298,7 +299,7 @@ PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 
 	snprintf(name, sizeof(name),
 			 PGrnLexiconNameFormat ".%s",
-			 index->rd_node.relNode,
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index),
 			 nthAttribute,
 			 PGrnIndexColumnName);
 	return PGrnLookup(name, errorLevel);
@@ -358,13 +359,13 @@ PGrnCreateTableWithSize(Relation index,
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
-		if (index && index->rd_node.spcNode != MyDatabaseTableSpace)
+		if (index && PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
 		{
 			char *databasePath;
 			char filePath[MAXPGPATH];
 
 			databasePath =
-				GetDatabasePath(MyDatabaseId, index->rd_node.spcNode);
+				GetDatabasePath(MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
 			snprintf(filePath, sizeof(filePath),
 					 "%s.%.*s",
 					 PGrnDatabaseBasename,
@@ -437,7 +438,7 @@ PGrnCreateColumnWithSize(Relation	index,
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
-		if (index && index->rd_node.spcNode != MyDatabaseTableSpace)
+		if (index && PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
 		{
 			char *databasePath;
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
@@ -445,7 +446,7 @@ PGrnCreateColumnWithSize(Relation	index,
 			char filePath[MAXPGPATH];
 
 			databasePath =
-				GetDatabasePath(MyDatabaseId, index->rd_node.spcNode);
+				GetDatabasePath(MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
 			tableNameSize = grn_obj_name(ctx,
 										 table,
 										 tableName,

@@ -17,7 +17,11 @@
 #include <utils/builtins.h>
 #include <utils/datetime.h>
 #include <utils/rel.h>
-#include <utils/relfilenodemap.h>
+#if PG_VERSION_NUM >= 160000
+#	include <utils/relfilenumbermap.h>
+#else
+#	include <utils/relfilenodemap.h>
+#endif
 #include <utils/syscache.h>
 
 Oid
@@ -118,7 +122,7 @@ PGrnPGResolveFileNodeID(Oid fileNodeID,
 		if (!OidIsValid(tablespaceOid))
 			break;
 
-		*relationID = RelidByRelfilenode(tablespaceOid, fileNodeID);
+		*relationID = PGrnRelidByRelfilenumber(tablespaceOid, fileNodeID);
 		if (!OidIsValid(*relationID))
 			continue;
 

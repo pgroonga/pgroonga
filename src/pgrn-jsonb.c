@@ -140,7 +140,7 @@ PGrnJSONBLookupValuesTable(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValuesTableNameFormat,
-			 index->rd_node.relNode, nthAttribute);
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -153,7 +153,7 @@ PGrnJSONBLookupPathsTable(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONPathsTableNameFormat,
-			 index->rd_node.relNode, nthAttribute);
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -166,7 +166,7 @@ PGrnJSONBLookupTypesTable(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONTypesTableNameFormat,
-			 index->rd_node.relNode, nthAttribute);
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -179,7 +179,7 @@ PGrnJSONBLookupFullTextSearchLexicon(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValueLexiconNameFormat,
-			 "FullTextSearch", index->rd_node.relNode, nthAttribute);
+			 "FullTextSearch", PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -192,7 +192,7 @@ PGrnJSONBLookupStringLexicon(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValueLexiconNameFormat,
-			 "String", index->rd_node.relNode, nthAttribute);
+			 "String", PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -205,7 +205,7 @@ PGrnJSONBLookupNumberLexicon(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValueLexiconNameFormat,
-			 "Number", index->rd_node.relNode, nthAttribute);
+			 "Number", PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -218,7 +218,7 @@ PGrnJSONBLookupBooleanLexicon(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValueLexiconNameFormat,
-			 "Boolean", index->rd_node.relNode, nthAttribute);
+			 "Boolean", PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -231,7 +231,7 @@ PGrnJSONBLookupSizeLexicon(Relation index,
 
 	snprintf(name, sizeof(name),
 			 PGrnJSONValueLexiconNameFormat,
-			 "Size", index->rd_node.relNode, nthAttribute);
+			 "Size", PGRN_RELATION_GET_LOCATOR_NUMBER(index), nthAttribute);
 	return PGrnLookup(name, errorLevel);
 }
 
@@ -924,7 +924,7 @@ PGrnJSONBCreateTables(PGrnCreateData *data,
 		char jsonPathsTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonPathsTableName, sizeof(jsonPathsTableName),
 				 PGrnJSONPathsTableNameFormat,
-				 data->relNode, data->i);
+				 data->relNumber, data->i);
 		jsonbData->pathsTable =
 			PGrnJSONBCreatePathsTable(data->index, jsonPathsTableName);
 		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->pathsTable);
@@ -934,7 +934,7 @@ PGrnJSONBCreateTables(PGrnCreateData *data,
 		char jsonTypesTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonTypesTableName, sizeof(jsonTypesTableName),
 				 PGrnJSONTypesTableNameFormat,
-				 data->relNode, data->i);
+				 data->relNumber, data->i);
 		jsonbData->typesTable =
 			PGrnJSONBCreateTypesTable(data->index, jsonTypesTableName);
 		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->typesTable);
@@ -944,7 +944,7 @@ PGrnJSONBCreateTables(PGrnCreateData *data,
 		char jsonValuesTableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(jsonValuesTableName, sizeof(jsonValuesTableName),
 				 PGrnJSONValuesTableNameFormat,
-				 data->relNode, data->i);
+				 data->relNumber, data->i);
 		jsonbData->valuesTable =
 			PGrnJSONBCreateValuesTable(data->index, jsonValuesTableName);
 		GRN_PTR_PUT(ctx, data->supplementaryTables, jsonbData->valuesTable);
@@ -978,7 +978,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 
 	snprintf(lexiconName, sizeof(lexiconName),
 			 PGrnJSONValueLexiconNameFormat,
-			 "FullTextSearch", data->relNode, data->i);
+			 "FullTextSearch", data->relNumber, data->i);
 	type = grn_ctx_at(ctx, GRN_DB_SHORT_TEXT);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
@@ -1008,7 +1008,7 @@ PGrnJSONBCreateIndexColumn(PGrnCreateData *data,
 
 	snprintf(lexiconName, sizeof(lexiconName),
 			 PGrnJSONValueLexiconNameFormat,
-			 typeName, data->relNode, data->i);
+			 typeName, data->relNumber, data->i);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
 							  tableType,
@@ -1132,7 +1132,7 @@ PGrnJSONBValueSetSource(Relation index,
 	snprintf(indexName, sizeof(indexName),
 			 PGrnJSONValueLexiconNameFormat ".%s",
 			 typeName,
-			 index->rd_node.relNode,
+			 PGRN_RELATION_GET_LOCATOR_NUMBER(index),
 			 nthAttribute,
 			 PGrnIndexColumnName);
 	if (required)

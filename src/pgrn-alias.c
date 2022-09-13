@@ -1,8 +1,9 @@
 #include "pgroonga.h"
 
+#include "pgrn-alias.h"
+#include "pgrn-compatible.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
-#include "pgrn-alias.h"
 #include "pgrn-wal.h"
 
 static grn_ctx *ctx = &PGrnContext;
@@ -135,8 +136,8 @@ PGrnAliasAdd(Relation index)
 
 	table = PGrnAliasLookupTable();
 	column = PGrnAliasLookupColumn();
-	PGrnAliasFillOldNameRaw(index->rd_node.relNode, old, sizeof(old));
-	PGrnAliasFillNewNameRaw(index->rd_node.relNode, new, sizeof(new));
+	PGrnAliasFillOldNameRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index), old, sizeof(old));
+	PGrnAliasFillNewNameRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index), new, sizeof(new));
 
 	id = grn_table_add(ctx, table, old, strlen(old), NULL);
 	if (id == GRN_ID_NIL)
@@ -195,5 +196,5 @@ PGrnAliasDeleteRaw(Oid indexFileNodeID)
 void
 PGrnAliasDelete(Relation index)
 {
-	PGrnAliasDeleteRaw(index->rd_node.relNode);
+	PGrnAliasDeleteRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 }

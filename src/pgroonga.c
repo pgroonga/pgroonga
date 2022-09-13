@@ -1129,11 +1129,11 @@ PGrnCreate(PGrnCreateData *data)
 		grn_obj *sourcesTable;
 
 		snprintf(sourcesTableName, sizeof(sourcesTableName),
-				 PGrnSourcesTableNameFormat, data->relNode);
+				 PGrnSourcesTableNameFormat, data->relNumber);
 		sourcesTable = grn_ctx_get(ctx, sourcesTableName, -1);
 		if (sourcesTable) {
 			grn_obj_unlink(ctx, sourcesTable);
-			PGrnRemoveUnusedTable(data->relNode);
+			PGrnRemoveUnusedTable(data->relNumber);
 		}
 	}
 
@@ -7391,7 +7391,7 @@ pgroonga_build_raw(Relation heap,
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
 		data.desc = RelationGetDescr(index);
-		data.relNode = index->rd_node.relNode;
+		data.relNumber = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 		PGrnCreate(&data);
 		bs.sourcesTable = data.sourcesTable;
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
@@ -7509,7 +7509,7 @@ pgroonga_buildempty_raw(Relation index)
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
 		data.desc = RelationGetDescr(index);
-		data.relNode = index->rd_node.relNode;
+		data.relNumber = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 		PGrnCreate(&data);
 		PGrnSetSources(index, data.sourcesTable);
 		PGrnCreateSourcesTableFinish(&data);

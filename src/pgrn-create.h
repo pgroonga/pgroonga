@@ -1,7 +1,6 @@
 #pragma once
 
-#include <postgres.h>
-#include <utils/rel.h>
+#include "pgrn-compatible.h"
 
 #include <groonga.h>
 
@@ -13,7 +12,7 @@ typedef struct PGrnCreateData
 	grn_obj *supplementaryTables;
 	grn_obj *lexicons;
 	TupleDesc desc;
-	Oid relNode;
+	PGrnRelFileNumber relNumber;
 	int i;
 	bool forFullTextSearch;
 	bool forRegexpSearch;

@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-auto-close.h"
+#include "pgrn-compatible.h"
 #include "pgrn-global.h"
 
 static grn_ctx *ctx = &PGrnContext;
@@ -105,14 +106,14 @@ PGrnAutoCloseUseIndex(Relation index)
 						  NULL);
 		if (id == GRN_ID_NIL)
 			return;
-		*((Oid *)value) = index->rd_node.relNode;
+		*((PGrnRelFileNumber *)value) = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 	}
 	else
 	{
 		Oid currentNodeID = *((Oid *)value);
-		if (index->rd_node.relNode == currentNodeID)
+		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == currentNodeID)
 			return;
 		PGrnAutoCloseCloseUnusedObjects(currentNodeID);
-		*((Oid *)value) = index->rd_node.relNode;
+		*((PGrnRelFileNumber *)value) = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 	}
 }

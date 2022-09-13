@@ -234,3 +234,23 @@ typedef char *PGrnStringOptionValue;
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 #endif
+
+#if PG_VERSION_NUM >= 160000
+#	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
+#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
+	((relation)->rd_locator.relNumber)
+#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
+	((relation)->rd_locator.spcOid)
+typedef RelFileNumber PGrnRelFileNumber;
+#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
+	RelidByRelfilenumber((tablespaceOid), (fileNumber))
+#else
+#	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_node)
+#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
+	((relation)->rd_node.relNode)
+#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
+	((relation)->rd_node.pscNode)
+typedef Oid PGrnRelFileNumber;
+#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
+	RelidByRelfilenode((tablespaceOid), (fileNumber))
+#endif

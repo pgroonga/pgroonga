@@ -1,5 +1,6 @@
 #include "pgroonga.h"
 
+#include "pgrn-compatible.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-index-status.h"
@@ -79,7 +80,7 @@ PGrnIndexStatusDeleteRaw(Oid indexFileNodeID)
 void
 PGrnIndexStatusDelete(Relation index)
 {
-	PGrnIndexStatusDeleteRaw(index->rd_node.relNode);
+	PGrnIndexStatusDeleteRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 }
 
 static grn_id
@@ -93,7 +94,7 @@ PGrnIndexStatusGetRecordIDWithWAL(Relation index,
 	grn_id id;
 
 	table = PGrnLookupWithSize(TABLE_NAME, TABLE_NAME_SIZE, ERROR);
-	key = &(index->rd_node.relNode);
+	key = &PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 	keySize = sizeof(uint32_t);
 	id = grn_table_add(ctx, table, key, keySize, NULL);
 	if (id != GRN_ID_NIL && walData)
