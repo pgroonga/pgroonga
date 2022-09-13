@@ -35,7 +35,7 @@ BuildRequires:	groonga-devel >= @GROONGA_VERSION@
 BuildRequires:	msgpack-devel
 %if %{is_amazon_linux}
   %if (%{pg_package_version} != 13)
-BuildRequires: libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
+BuildRequires:  libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
   %endif
 BuildRequires:	postgresql-server-devel >= %{pg_package_version}, postgresql-server-devel < %(expr %{pg_package_version} + 1)
 %else
