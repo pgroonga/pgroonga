@@ -34,7 +34,9 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel >= @GROONGA_VERSION@
 BuildRequires:	msgpack-devel
 %if %{is_amazon_linux}
-BuildRequires:	libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
+  %if %{pg_package_version} != 13
+BuildRequires:  libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
+  %endif
 BuildRequires:	postgresql-server-devel >= %{pg_package_version}, postgresql-server-devel < %(expr %{pg_package_version} + 1)
 %else
 BuildRequires:	postgresql%{pg_package_version}-devel
