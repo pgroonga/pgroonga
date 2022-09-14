@@ -117,6 +117,9 @@ EOF
 %endif
 
 %changelog
+* Wed Sep 14 2022 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.3.9-1
+- New upstream release.
+
 * Mon Aug 08 2022 Horimoto Yasuhiro <horimoto@clear-code.com> - 2.3.8-1
 - New upstream release.
 
