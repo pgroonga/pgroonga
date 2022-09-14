@@ -63,7 +63,7 @@ echo "::group::Install packages for test"
 
 case ${os} in
   amazon-linux)
-    if [ "$((${postgresql_version} != 13))" -eq 1 ]; then
+    if [ ${postgresql_version} -ne 13 ]; then
       ${DNF} install -y libpq-devel
     fi
     ${DNF} install -y postgresql-server-devel
@@ -125,10 +125,10 @@ cp -a \
 cd /tmp
 case "${os}" in
   almalinux|amazon-linux|centos)
-    if [ "$((${postgresql_version} < 11))" -eq 1 ]; then
+    if [ ${postgresql_version} -lt 11 ]; then
       rm sql/index-only-scan/include.sql
     fi
-    if [ "$((${postgresql_version} < 13))" -eq 1 ]; then
+    if [ ${postgresql_version} -lt 13 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
     fi
     ;;
