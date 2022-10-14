@@ -248,4 +248,101 @@ SELECT title FROM memos WHERE content &@~ '0'
       OUTPUT
     end
   end
+
+  sub_test_case "pgroonga_standby_maintainer" do
+    def naptime
+      1
+    end
+
+    def additional_standby_configurations
+      "pgroonga_standby_maintainer.naptime = #{naptime}"
+    end
+
+    test "auto apply" do
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+      sleep(naptime)
+
+      sql = <<-SQL
+SELECT jsonb_pretty(
+    pgroonga_command('select',
+                     ARRAY[
+                       'table', pgroonga_table_name('memos_content')
+                     ])::jsonb->1
+  ) AS select
+      SQL
+      assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+#{sql}
+             select              
+---------------------------------
+ [                              +
+     [                          +
+         [                      +
+             1                  +
+         ],                     +
+         [                      +
+             [                  +
+                 "_id",         +
+                 "UInt32"       +
+             ],                 +
+             [                  +
+                 "_key",        +
+                 "UInt64"       +
+             ],                 +
+             [                  +
+                 "content",     +
+                 "LongText"     +
+             ]                  +
+         ],                     +
+         [                      +
+             1,                 +
+             1,                 +
+             "PGroonga is good!"+
+         ]                      +
+     ]                          +
+ ]
+(1 row)
+
+      OUTPUT
+    end
+
+    test "auto pgroonga_vacuum" do
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+      run_sql_standby("SELECT pgroonga_wal_apply();")
+      pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
+      pgroonga_table_name =
+        run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
+
+      run_sql("REINDEX INDEX memos_content;")
+      run_sql_standby("SELECT pgroonga_wal_apply();")
+
+      pgroonga_table_exist_sql =
+        "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
+        "::json->>1 AS exist;"
+      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+#{pgroonga_table_exist_sql}
+ exist 
+-------
+ true
+(1 row)
+
+    OUTPUT
+
+      sleep(naptime)
+
+      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+#{pgroonga_table_exist_sql}
+ exist 
+-------
+ false
+(1 row)
+
+    OUTPUT
+    end
+  end
 end
