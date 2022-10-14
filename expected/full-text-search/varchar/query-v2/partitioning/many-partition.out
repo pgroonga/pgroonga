@@ -116,8 +116,8 @@ CREATE TABLE infection_numbers_influenza_22_04 (
 );
 ALTER TABLE ONLY infection_numbers_influenza ATTACH PARTITION infection_numbers_influenza_22_04 FOR VALUES IN ('22-04');
 INSERT INTO infection_numbers_influenza_20_04 VALUES ('Japan','Mie','Ise','134','20-04','age: 30, gender:male, overseas travel history: true');
-INSERT INTO infection_numbers_influenza_22_04 VALUES ('U.S.A','NY','NY','10221','22-04','age: 10, gender:male, overseas travel history: false');
 INSERT INTO infection_numbers_influenza_21_04 VALUES ('Germany','BER','BER','221','21-04','age: 50, gender:male, overseas travel history: false');
+INSERT INTO infection_numbers_influenza_22_04 VALUES ('U.S.A','NY','NY','10221','22-04','age: 10, gender:male, overseas travel history: false');
 CREATE INDEX remarks_index ON infection_numbers_influenza USING pgroonga (remarks);
 SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
