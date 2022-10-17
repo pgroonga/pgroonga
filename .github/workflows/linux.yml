@@ -24,6 +24,8 @@ jobs:
           - PostgreSQL 14
           - PostgreSQL 15
           - PostgreSQL 15 with Groonga master
+          - PostgreSQL 16 snapshot
+          - PostgreSQL 16 snapshot with Groonga master
         include:
           - label: PostgreSQL 11
             postgresql-version: "11"
@@ -38,6 +40,13 @@ jobs:
           - label: PostgreSQL 15 with Groonga master
             groonga-master: "yes"
             postgresql-version: "15"
+          - label: PostgreSQL 16 snapshot
+            postgresql-unreleased: "yes"
+            postgresql-version: "16"
+          - label: PostgreSQL 16 snapshot with Groonga master
+            groonga-master: "yes"
+            postgresql-unreleased: "yes"
+            postgresql-version: "16"
     env:
       GROONGA_MASTER: ${{ matrix.groonga-master }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
