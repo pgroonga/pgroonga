@@ -18,6 +18,6 @@ RUN \
     llvm-toolset-7 \
     llvm5.0-devel \
     msgpack-devel \
-    postgresql14-devel \
+    postgresql15-devel \
     xxhash-devel && \
   yum clean -y ${quiet} all

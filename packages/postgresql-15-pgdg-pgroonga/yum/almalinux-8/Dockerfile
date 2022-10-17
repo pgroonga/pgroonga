@@ -18,6 +18,6 @@ RUN \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
-    postgresql14-devel \
+    postgresql15-devel \
     xxhash-devel && \
   dnf clean -y ${quiet} all
