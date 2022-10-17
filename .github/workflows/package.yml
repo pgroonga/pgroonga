@@ -14,6 +14,16 @@ jobs:
       fail-fast: false
       matrix:
         package-id:
+          - postgresql-15-pgdg-pgroonga-debian-bullseye
+          - postgresql-15-pgdg-pgroonga-debian-bullseye-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-bionic
+          - postgresql-15-pgdg-pgroonga-ubuntu-bionic-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-focal
+          - postgresql-15-pgdg-pgroonga-ubuntu-focal-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-jammy
+          - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-15-pgdg-pgroonga-almalinux-8
+          - postgresql-15-pgdg-pgroonga-centos-7
           - postgresql-14-pgdg-pgroonga-debian-bullseye
           - postgresql-14-pgdg-pgroonga-debian-bullseye-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-bionic

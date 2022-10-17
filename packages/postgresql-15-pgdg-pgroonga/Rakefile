@@ -1,0 +1,34 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL15PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("15", "-pgdg")
+  end
+
+  def apt_targets_default
+    [
+      "debian-bullseye",
+      "debian-bullseye-arm64",
+      "ubuntu-bionic",
+      "ubuntu-bionic-arm64",
+      "ubuntu-focal",
+      "ubuntu-focal-arm64",
+      "ubuntu-jammy",
+      "ubuntu-jammy-arm64",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def yum_targets_default
+    [
+      "almalinux-8",
+      "centos-7",
+    ]
+  end
+end
+
+task = PostgreSQL15PGDGPGroongaPackageTask.new
+task.define
