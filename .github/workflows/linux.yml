@@ -83,8 +83,8 @@ jobs:
           deb http://apt.postgresql.org/pub/repos/apt ${suite} main
           APT_SOURCE
           if [ "${POSTGRESQL_UNRELEASED}" = "yes" ]; then
-            suite="$(lsb_release -cs)-pgdg-testing"
-            sudo tee /etc/apt/sources.list.d/pgdg-testing.list <<APT_SOURCE
+            suite="$(lsb_release -cs)-pgdg-snapshot"
+            sudo tee /etc/apt/sources.list.d/pgdg-snapshot.list <<APT_SOURCE
           deb http://apt.postgresql.org/pub/repos/apt ${suite} ${{ matrix.postgresql-version }}
           APT_SOURCE
           fi
