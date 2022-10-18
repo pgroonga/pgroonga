@@ -12,12 +12,13 @@
 
 PG_MODULE_MAGIC;
 
-void _PG_init(void);
-void pgroonga_standby_maintainer_aply_all(void);
-void pgroonga_standby_maintainer_vacuum_all(void);
-void pgroonga_standby_maintainer_main(Datum arg);
-void pgroonga_standby_maintainer_apply(Datum databaseOidDatum);
-void pgroonga_standby_maintainer_apply_all(void);
+extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void
+pgroonga_standby_maintainer_apply(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void
+pgroonga_standby_maintainer_vacuum(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void
+pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
 
 #define TAG "pgroonga: standby-maintainer"
 
