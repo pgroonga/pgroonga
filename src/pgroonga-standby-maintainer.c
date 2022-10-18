@@ -1,4 +1,5 @@
 #include "pgrn-compatible.h"
+#include "pgrn-standby-maintainer.h"
 
 #include <access/heapam.h>
 #include <catalog/pg_database.h>
@@ -98,7 +99,7 @@ pgroonga_standby_maintainer_apply(Datum databaseOidDatum)
 	proc_exit(0);
 }
 
-static void
+void
 pgroonga_standby_maintainer_apply_all(void)
 {
 	StartTransactionCommand();
