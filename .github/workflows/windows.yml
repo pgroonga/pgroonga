@@ -19,11 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact-id: "postgresql-10-x64"
-            cmake-generator: "Visual Studio 17 2022"
-            label: PostgreSQL 10 + Visual Studio 2022
-            postgresql-version-major: "10"
-            postgresql-version: "10.19-1"
           - artifact-id: "postgresql-11-x64"
             cmake-generator: "Visual Studio 17 2022"
             label: PostgreSQL 11 + Visual Studio 2022
