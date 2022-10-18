@@ -23,8 +23,31 @@ pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
 #define TAG "pgroonga: standby-maintainer"
 
 static volatile sig_atomic_t PGroongaStandbyMaintainerGotSIGTERM = false;
+static volatile sig_atomic_t PGroongaStandbyMaintainerGotSIGHUP = false;
 static int PGroongaStandbyMaintainerNaptime = 60;
 static const char *PGroongaStandbyMaintainerLibraryName = "pgroonga_standby_maintainer";
+
+static void
+pgroonga_standby_maintainer_sigterm(SIGNAL_ARGS)
+{
+	int	save_errno = errno;
+
+	PGroongaStandbyMaintainerGotSIGTERM = true;
+	SetLatch(MyLatch);
+
+	errno = save_errno;
+}
+
+static void
+pgroonga_standby_maintainer_sighup(SIGNAL_ARGS)
+{
+	int	save_errno = errno;
+
+	PGroongaStandbyMaintainerGotSIGHUP = true;
+	SetLatch(MyLatch);
+
+	errno = save_errno;
+}
 
 void
 pgroonga_standby_maintainer_apply(Datum databaseOidDatum)
@@ -74,7 +97,7 @@ pgroonga_standby_maintainer_apply(Datum databaseOidDatum)
 	proc_exit(0);
 }
 
-void
+static void
 pgroonga_standby_maintainer_apply_all(void)
 {
 	StartTransactionCommand();
@@ -146,6 +169,7 @@ pgroonga_standby_maintainer_apply_all(void)
 }
 
 void
+static void
 pgroonga_standby_maintainer_vacuum_all(void)
 {
 
@@ -154,7 +178,36 @@ pgroonga_standby_maintainer_vacuum_all(void)
 void
 pgroonga_standby_maintainer_main(Datum arg)
 {
-	
+	pqsignal(SIGTERM, pgroonga_standby_maintainer_sigterm);
+	pqsignal(SIGHUP, pgroonga_standby_maintainer_sighup);
+	BackgroundWorkerUnblockSignals();
+
+	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
+
+	while (!PGroongaStandbyMaintainerGotSIGTERM)
+	{
+		WaitLatch(MyLatch,
+				  WL_LATCH_SET |
+				  WL_TIMEOUT |
+				  WL_POSTMASTER_DEATH |
+				  WL_EXIT_ON_PM_DEATH,
+				  PGroongaStandbyMaintainerNaptime * 1000L,
+				  PG_WAIT_EXTENSION);
+		ResetLatch(MyLatch);
+
+		CHECK_FOR_INTERRUPTS();
+
+		if (PGroongaStandbyMaintainerGotSIGHUP)
+		{
+			PGroongaStandbyMaintainerGotSIGHUP = false;
+			ProcessConfigFile(PGC_SIGHUP);
+		}
+
+		pgroonga_standby_maintainer_apply_all();
+		pgroonga_standby_maintainer_vacuum_all();
+	}
+
+	proc_exit(1);
 }
 
 void
