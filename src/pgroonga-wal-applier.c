@@ -58,7 +58,7 @@ pgroonga_wal_applier_sighup(SIGNAL_ARGS)
 void
 pgroonga_wal_applier_apply(Datum databaseOidDatum)
 {
-	pgroonga_standby_maintainer_apply(Datum databaseOidDatum);
+	pgroonga_standby_maintainer_apply(databaseOidDatum);
 }
 
 static void
