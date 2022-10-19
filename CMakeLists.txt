@@ -253,7 +253,7 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-standby-maintainer.rc"
   @ONLY)
 set(PGRN_STANDBY_MAINTAINER_SOURCES
-  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-standby-maintainer-applier.rc"
+  "${CMAKE_CURRENT_BINARY_DIR}/src/pgroonga-standby-maintainer.rc"
   ${PGRN_STANDBY_MAINTAINER_SOURCES})
 add_library("${PGRN_STANDBY_MAINTAINER_LIBRARY_NAME}" SHARED
   ${PGRN_STANDBY_MAINTAINER_SOURCES})
