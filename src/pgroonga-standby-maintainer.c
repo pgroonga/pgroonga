@@ -248,7 +248,7 @@ pgroonga_standby_maintainer_main(Datum arg)
 				  WL_LATCH_SET |
 				  WL_TIMEOUT |
 				  WL_POSTMASTER_DEATH |
-				  WL_EXIT_ON_PM_DEATH,
+				  PGRN_WL_EXIT_ON_PM_DEATH,
 				  PGroongaStandbyMaintainerNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
