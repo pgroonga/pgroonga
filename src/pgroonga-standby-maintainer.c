@@ -2,6 +2,7 @@
 #include "pgrn-standby-maintainer.h"
 
 #include <access/heapam.h>
+#include <access/xact.h>
 #include <catalog/pg_database.h>
 #include <executor/spi.h>
 #include <fmgr.h>
