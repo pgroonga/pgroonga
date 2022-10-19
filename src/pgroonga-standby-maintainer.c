@@ -11,6 +11,7 @@
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
+#include <utils/guc.h>
 #include <utils/snapmgr.h>
 
 PG_MODULE_MAGIC;
