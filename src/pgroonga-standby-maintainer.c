@@ -200,7 +200,7 @@ pgroonga_standby_maintainer_vacuum(Datum databaseOidDatum)
 	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
 	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
-	spi_connect("vacuuming");
+	spi_connect();
 	pgstat_report_activity(STATE_RUNNING, TAG ": vacuuming");
 
 	{
