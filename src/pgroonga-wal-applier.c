@@ -56,6 +56,18 @@ pgroonga_wal_applier_sighup(SIGNAL_ARGS)
 }
 
 void
+pgroonga_wal_applier_apply(Datum databaseOidDatum)
+{
+	pgroonga_standby_maintainer_apply();
+}
+
+static void
+pgroonga_wal_applier_apply_all(void)
+{
+	pgroonga_standby_maintainer_apply_all();
+}
+
+void
 pgroonga_wal_applier_main(Datum arg)
 {
 	pqsignal(SIGTERM, pgroonga_wal_applier_sigterm);
@@ -82,7 +94,7 @@ pgroonga_wal_applier_main(Datum arg)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
-		pgroonga_standby_maintainer_apply_all();
+		pgroonga_wal_applier_apply_all();
 	}
 
 	proc_exit(1);

@@ -16,8 +16,6 @@ PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
 extern PGDLLEXPORT void
-pgroonga_standby_maintainer_apply(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
 pgroonga_standby_maintainer_vacuum(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
 pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
