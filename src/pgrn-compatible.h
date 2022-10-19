@@ -236,15 +236,12 @@ typedef char *PGrnStringOptionValue;
 #endif
 
 #if PG_VERSION_NUM >= 160000
-#	define PGRN_USE_COMMON_RELPATH_H
-#endif
-
-#if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
 	((relation)->rd_locator.relNumber)
 #	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
 	((relation)->rd_locator.spcOid)
+#   include <common/relpath.h>
 typedef RelFileNumber PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenumber((tablespaceOid), (fileNumber))

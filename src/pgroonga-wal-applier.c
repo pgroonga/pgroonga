@@ -7,9 +7,6 @@
 #endif
 #include <access/xact.h>
 #include <catalog/pg_database.h>
-#ifdef PGRN_USE_COMMON_RELPATH_H
-#	include <common/relpath.h>
-#endif
 #include <executor/spi.h>
 #include <fmgr.h>
 #include <miscadmin.h>
