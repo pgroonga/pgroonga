@@ -36,6 +36,8 @@ SELECT t1.n_infection, t1.remarks
     ON t1.city = t2.prefecture
  WHERE t1.remarks  &@~ 'age';
 
+\g |sed -r -e "s/ t[1,2]_*[1-11]//g"
+
 \pset format aligned
 
 SELECT t1.n_infection, t1.remarks
