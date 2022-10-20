@@ -241,7 +241,7 @@ typedef char *PGrnStringOptionValue;
 	((relation)->rd_locator.relNumber)
 #	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
 	((relation)->rd_locator.spcOid)
-#   include <common/relpath.h>
+#	include <common/relpath.h>
 typedef RelFileNumber PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenumber((tablespaceOid), (fileNumber))
