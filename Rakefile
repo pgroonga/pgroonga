@@ -113,6 +113,7 @@ namespace :package do
     "postgresql-13-pgdg-pgroonga",
     "postgresql-14-pgroonga",
     "postgresql-14-pgdg-pgroonga",
+    "postgresql-15-pgdg-pgroonga",
   ]
 
   namespace :source do
