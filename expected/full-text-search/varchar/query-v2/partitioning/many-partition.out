@@ -29,7 +29,8 @@ SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
   INNER JOIN infection_numbers_influenza t2
     ON t1.city = t2.prefecture
- WHERE t1.remarks  &@~ 'age';
+ WHERE t1.remarks  &@~ 'age'
+\g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
 QUERY PLAN
 Hash Join
   Hash Cond: ((t1.city)::text = (t2.prefecture)::text)

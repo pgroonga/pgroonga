@@ -28,16 +28,13 @@ INSERT INTO infection_numbers_influenza_22_04 VALUES ('U.S.A','NY','NY','10221',
 CREATE INDEX remarks_index ON infection_numbers_influenza USING pgroonga (remarks);
 
 \pset format unaligned
-
 EXPLAIN (COSTS OFF)
 SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
   INNER JOIN infection_numbers_influenza t2
     ON t1.city = t2.prefecture
- WHERE t1.remarks  &@~ 'age';
-
+ WHERE t1.remarks  &@~ 'age'
 \g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
-
 \pset format aligned
 
 SELECT t1.n_infection, t1.remarks
