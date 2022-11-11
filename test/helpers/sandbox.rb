@@ -174,7 +174,7 @@ module Helpers
                     "-w",
                     "-D", @dir)
       rescue => error
-        error.message << "\nPostgreSQL log:\n#{File.read(@log_path)}"
+        error.message << "\nPostgreSQL log:\n#{read_log}"
         raise
       end
       loop do
@@ -215,6 +215,10 @@ module Helpers
                               pgrn,
                               *command_line)
       JSON.parse(output)
+    end
+
+    def read_log
+      File.read(@log_path)
     end
 
     private

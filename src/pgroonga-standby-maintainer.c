@@ -1,5 +1,4 @@
 #include "pgrn-compatible.h"
-#include "pgrn-standby-maintainer.h"
 
 #include <access/heapam.h>
 #include <access/relscan.h>
@@ -52,150 +51,126 @@ pgroonga_standby_maintainer_sighup(SIGNAL_ARGS)
 	errno = save_errno;
 }
 
-static void
-spi_connect()
-{
-	StartTransactionCommand();
-	SPI_connect();
-	PushActiveSnapshot(GetTransactionSnapshot());
-}
-
-static int
-spi_execute(const char *query)
-{
-	int result;
-
-	SetCurrentStatementStartTimestamp();
-	result = SPI_execute("SELECT extname "
-						 "FROM pg_extension "
-						 "WHERE extname = 'pgroonga'",
-						 true,
-						 0);
-	if (result != SPI_OK_SELECT)
-	{
-		ereport(FATAL,
-				(errmsg(TAG ": failed to detect "
-						"whether PGroonga is installed or not: %d",
-						result)));
-	}
-	if (SPI_processed == 1)
-	{
-		SetCurrentStatementStartTimestamp();
-		result = SPI_execute(query, true, 0);
-	}
-
-	return result;
-}
-
-static void
-spi_finish()
-{
-	PopActiveSnapshot();
-	SPI_finish();
-	CommitTransactionCommand();
-	pgstat_report_activity(STATE_IDLE, NULL);
-}
-
-static void
-execute_to_all_database(const char *function_name)
-{
-	const LOCKMODE lock = AccessShareLock;
-	Relation pg_database;
-	PGrnTableScanDesc scan;
-	HeapTuple tuple;
-
-	pg_database = pgrn_table_open(DatabaseRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
-	for (tuple = heap_getnext(scan, ForwardScanDirection);
-		 HeapTupleIsValid(tuple);
-		 tuple = heap_getnext(scan, ForwardScanDirection))
-	{
-		Form_pg_database form = (Form_pg_database) GETSTRUCT(tuple);
-		BackgroundWorker worker = {0};
-		BackgroundWorkerHandle *handle;
-		Oid databaseOid;
-
-		if (PGroongaStandbyMaintainerGotSIGTERM)
-			break;
-
-		if (strcmp(form->datname.data, "template0") == 0)
-			continue;
-		if (strcmp(form->datname.data, "template1") == 0)
-			continue;
-
-#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
-		databaseOid = form->oid;
-#else
-		databaseOid = HeapTupleGetOid(tuple);
-#endif
-		snprintf(worker.bgw_name,
-				 BGW_MAXLEN,
-				 TAG ": %s(%u)",
-				 form->datname.data,
-				 databaseOid);
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
-		snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
-#endif
-		worker.bgw_flags =
-			BGWORKER_SHMEM_ACCESS |
-			BGWORKER_BACKEND_DATABASE_CONNECTION;
-		worker.bgw_start_time = BgWorkerStart_ConsistentState;
-		worker.bgw_restart_time = BGW_NEVER_RESTART;
-		snprintf(worker.bgw_library_name,
-				 BGW_MAXLEN,
-				 "%s", PGroongaStandbyMaintainerLibraryName);
-		snprintf(worker.bgw_function_name,
-				 BGW_MAXLEN,
-				 "%s", function_name);
-		worker.bgw_main_arg = DatumGetObjectId(databaseOid);
-		worker.bgw_notify_pid = MyProcPid;
-		if (!RegisterDynamicBackgroundWorker(&worker, &handle))
-			continue;
-		WaitForBackgroundWorkerShutdown(handle);
-	}
-	pgrn_table_endscan(scan);
-	pgrn_table_close(pg_database, lock);
-}
-
 void
 pgroonga_standby_maintainer_maintain(Datum databaseOidDatum)
 {
 	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
 	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
-	spi_connect();
+	StartTransactionCommand();
+	SPI_connect();
+	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": maintaining");
 
 	{
-		int result = spi_execute("SELECT pgroonga_wal_apply()");
+		int result;
+
+		SetCurrentStatementStartTimestamp();
+		result = SPI_execute("select extname "
+							 "from pg_extension "
+							 "where extname = 'pgroonga'",
+							 true,
+							 0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
-					(errmsg(TAG ": failed to apply WAL: %d",
+					(errmsg(TAG ": failed to detect "
+							"whether PGroonga is installed or not: %d",
 							result)));
 		}
-		result = spi_execute("SELECT pgroonga_vacuum()");
-		if (result != SPI_OK_SELECT)
+		if (SPI_processed == 1)
 		{
-			ereport(FATAL,
-					(errmsg(TAG ": failed to vacuum: %d",
-							result)));
+			SetCurrentStatementStartTimestamp();
+			result = SPI_execute("select pgroonga_wal_apply()", true, 0);
+			if (result != SPI_OK_SELECT)
+			{
+				ereport(FATAL,
+						(errmsg(TAG ": failed to apply WAL: %d",
+								result)));
+			}
+			result = SPI_execute("select pgroonga_vacuum()", true, 0);
+			if (result != SPI_OK_SELECT)
+			{
+				ereport(FATAL,
+						(errmsg(TAG ": failed to vacuum: %d",
+								result)));
+			}
 		}
 	}
 
-	spi_finish();
+	PopActiveSnapshot();
+	SPI_finish();
+	CommitTransactionCommand();
+	pgstat_report_activity(STATE_IDLE, NULL);
 
 	proc_exit(0);
 }
 
-void
+static void
 pgroonga_standby_maintainer_maintain_all(void)
 {
 	StartTransactionCommand();
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": maintaining all databases");
 
-	execute_to_all_database("pgroonga_standby_maintainer_maintain");
+	{
+		const LOCKMODE lock = AccessShareLock;
+		Relation pg_database;
+		PGrnTableScanDesc scan;
+		HeapTuple tuple;
+
+		pg_database = pgrn_table_open(DatabaseRelationId, lock);
+		scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
+		for (tuple = heap_getnext(scan, ForwardScanDirection);
+			 HeapTupleIsValid(tuple);
+			 tuple = heap_getnext(scan, ForwardScanDirection))
+		{
+			Form_pg_database form = (Form_pg_database) GETSTRUCT(tuple);
+			BackgroundWorker worker = {0};
+			BackgroundWorkerHandle *handle;
+			Oid databaseOid;
+
+			if (PGroongaStandbyMaintainerGotSIGTERM)
+				break;
+
+			if (strcmp(form->datname.data, "template0") == 0)
+				continue;
+			if (strcmp(form->datname.data, "template1") == 0)
+				continue;
+
+#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
+			databaseOid = form->oid;
+#else
+			databaseOid = HeapTupleGetOid(tuple);
+#endif
+			snprintf(worker.bgw_name,
+					 BGW_MAXLEN,
+					 TAG ": %s(%u)",
+					 form->datname.data,
+					 databaseOid);
+#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
+			snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+#endif
+			worker.bgw_flags =
+				BGWORKER_SHMEM_ACCESS |
+				BGWORKER_BACKEND_DATABASE_CONNECTION;
+			worker.bgw_start_time = BgWorkerStart_ConsistentState;
+			worker.bgw_restart_time = BGW_NEVER_RESTART;
+			snprintf(worker.bgw_library_name,
+					 BGW_MAXLEN,
+					 "%s", PGroongaStandbyMaintainerLibraryName);
+			snprintf(worker.bgw_function_name,
+					 BGW_MAXLEN,
+					 "pgroonga_standby_maintainer_maintain");
+			worker.bgw_main_arg = DatumGetObjectId(databaseOid);
+			worker.bgw_notify_pid = MyProcPid;
+			if (!RegisterDynamicBackgroundWorker(&worker, &handle))
+				continue;
+			WaitForBackgroundWorkerShutdown(handle);
+		}
+		pgrn_table_endscan(scan);
+		pgrn_table_close(pg_database, lock);
+	}
 
 	PopActiveSnapshot();
 	CommitTransactionCommand();
@@ -209,14 +184,13 @@ pgroonga_standby_maintainer_main(Datum arg)
 	pqsignal(SIGHUP, pgroonga_standby_maintainer_sighup);
 	BackgroundWorkerUnblockSignals();
 
-	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
+	PGrnBackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
 	while (!PGroongaStandbyMaintainerGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
 				  WL_LATCH_SET |
 				  WL_TIMEOUT |
-				  WL_POSTMASTER_DEATH |
 				  PGRN_WL_EXIT_ON_PM_DEATH,
 				  PGroongaStandbyMaintainerNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
@@ -262,7 +236,9 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
+#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+#endif
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;

@@ -30,7 +30,6 @@ HEADERS =					\
 	src/pgrn-row-level-security.h		\
 	src/pgrn-search.h			\
 	src/pgrn-sequential-search.h		\
-	src/pgrn-standby-maintainer.h		\
 	src/pgrn-string.h			\
 	src/pgrn-tokenize.h			\
 	src/pgrn-value.h			\
