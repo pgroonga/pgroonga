@@ -1,4 +1,4 @@
-# -*- rpm -*-
+# -*- sh-shell: rpm -*-
 
 %define _amzn %{?amzn:%{amzn}}%{!?amzn:0}
 %define is_amazon_linux (%{_amzn} != 0)
@@ -109,6 +109,7 @@ EOF
 %if %{support_jit}
 %{pg_includedir}/server/contrib/pgroonga_check/
 %{pg_includedir}/server/contrib/pgroonga_crash_safer/
+%{pg_includedir}/server/contrib/pgroonga_standby_maintainer/
 %{pg_includedir}/server/contrib/pgroonga_wal_applier/
 %{pg_includedir}/server/extension/pgroonga/
 %{pg_includedir}/server/extension/pgroonga_database/
