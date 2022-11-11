@@ -148,6 +148,10 @@ SELECT pgroonga_vacuum();
   end
 
   sub_test_case "pgroonga_wal_applier" do
+    def shared_preload_libraries_standby
+      ["pgroonga_wal_applier"]
+    end
+
     def naptime
       1
     end
@@ -250,6 +254,10 @@ SELECT title FROM memos WHERE content &@~ '0'
   end
 
   sub_test_case "pgroonga_standby_maintainer" do
+    def shared_preload_libraries_standby
+      ["pgroonga_standby_maintainer"]
+    end
+
     def naptime
       1
     end
@@ -313,7 +321,8 @@ SELECT jsonb_pretty(
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
       run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-      run_sql_standby("SELECT pgroonga_wal_apply();")
+      sleep(naptime)
+
       pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
       pgroonga_table_name =
         run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
@@ -331,7 +340,7 @@ SELECT jsonb_pretty(
  true
 (1 row)
 
-    OUTPUT
+      OUTPUT
 
       sleep(naptime)
 
@@ -342,7 +351,7 @@ SELECT jsonb_pretty(
  false
 (1 row)
 
-    OUTPUT
+      OUTPUT
     end
   end
 end

@@ -19,7 +19,7 @@ PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
 extern PGDLLEXPORT void
-pgroonga_standby_maintainer_vacuum(Datum datum) pg_attribute_noreturn();
+pgroonga_standby_maintainer_maintain(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
 pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
 
@@ -33,7 +33,7 @@ static const char *PGroongaStandbyMaintainerLibraryName = "pgroonga_standby_main
 static void
 pgroonga_standby_maintainer_sigterm(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaStandbyMaintainerGotSIGTERM = true;
 	SetLatch(MyLatch);
@@ -44,7 +44,7 @@ pgroonga_standby_maintainer_sigterm(SIGNAL_ARGS)
 static void
 pgroonga_standby_maintainer_sighup(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaStandbyMaintainerGotSIGHUP = true;
 	SetLatch(MyLatch);
@@ -158,13 +158,13 @@ execute_to_all_database(const char *function_name)
 }
 
 void
-pgroonga_standby_maintainer_apply(Datum databaseOidDatum)
+pgroonga_standby_maintainer_maintain(Datum databaseOidDatum)
 {
 	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
 	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
 	spi_connect();
-	pgstat_report_activity(STATE_RUNNING, TAG ": applying");
+	pgstat_report_activity(STATE_RUNNING, TAG ": maintaining");
 
 	{
 		int result = spi_execute("SELECT pgroonga_wal_apply()");
@@ -174,38 +174,7 @@ pgroonga_standby_maintainer_apply(Datum databaseOidDatum)
 					(errmsg(TAG ": failed to apply WAL: %d",
 							result)));
 		}
-	}
-
-	spi_finish();
-
-	proc_exit(0);
-}
-
-void
-pgroonga_standby_maintainer_apply_all(void)
-{
-	StartTransactionCommand();
-	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, TAG ": applying all databases");
-
-	execute_to_all_database("pgroonga_standby_maintainer_apply");
-
-	PopActiveSnapshot();
-	CommitTransactionCommand();
-	pgstat_report_activity(STATE_IDLE, NULL);
-}
-
-void
-pgroonga_standby_maintainer_vacuum(Datum databaseOidDatum)
-{
-	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
-	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
-
-	spi_connect();
-	pgstat_report_activity(STATE_RUNNING, TAG ": vacuuming");
-
-	{
-		int result = spi_execute("SELECT pgroonga_vacuum()");
+		result = spi_execute("SELECT pgroonga_vacuum()");
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
@@ -219,15 +188,14 @@ pgroonga_standby_maintainer_vacuum(Datum databaseOidDatum)
 	proc_exit(0);
 }
 
-
-static void
-pgroonga_standby_maintainer_vacuum_all(void)
+void
+pgroonga_standby_maintainer_maintain_all(void)
 {
 	StartTransactionCommand();
 	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, TAG ": vacuuming all databases");
+	pgstat_report_activity(STATE_RUNNING, TAG ": maintaining all databases");
 
-	execute_to_all_database("pgroonga_standby_maintainer_vacuum");
+	execute_to_all_database("pgroonga_standby_maintainer_maintain");
 
 	PopActiveSnapshot();
 	CommitTransactionCommand();
@@ -262,8 +230,7 @@ pgroonga_standby_maintainer_main(Datum arg)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
-		pgroonga_standby_maintainer_apply_all();
-		pgroonga_standby_maintainer_vacuum_all();
+		pgroonga_standby_maintainer_maintain_all();
 	}
 
 	proc_exit(1);
@@ -274,22 +241,22 @@ _PG_init(void)
 {
 	BackgroundWorker worker = {0};
 
-	DefineCustomIntVariable("pgroonga_standby_maintainer.naptime",                // parameter name
-							"Duration between each check in seconds.",            // short discription
-							"The default is 60 seconds. "                         // long discription
+	DefineCustomIntVariable("pgroonga_standby_maintainer.naptime",
+							"Duration between each check in seconds.",
+							"The default is 60 seconds. "
 							"It means that PGroonga standby maintainer tries to "
 							"apply all pending PGroonga WAL and remove internal "
 							"unused Groonga tables, columns and records in all "
 							"PGroonga available databases per 1 minute.",
-							&PGroongaStandbyMaintainerNaptime,                    // name of variable to store value
-							PGroongaStandbyMaintainerNaptime,                     // default value
-							1,                                                    // minimal value
-							INT_MAX,                                              // maximun value
-							PGC_SIGHUP,                                           // timing of changing value
-							0,                                                    // flags
-							NULL,                                                 // process of checking (hook)
-							NULL,                                                 // process of assignment (hook)
-							NULL);                                                // process of showing (hook)
+							&PGroongaStandbyMaintainerNaptime,
+							PGroongaStandbyMaintainerNaptime,
+							1,
+							INT_MAX,
+							PGC_SIGHUP,
+							GUC_UNIT_S,
+							NULL,
+							NULL,
+							NULL);
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;

@@ -28,3 +28,4 @@ installcheck:
 	#$(MAKE) -f pgroonga-database.mk installcheck
 	#$(MAKE) -f pgroonga-wal-applier.mk installcheck
 	#$(MAKE) -f pgroonga-crash-safer.mk installcheck
+	#$(MAKE) -f pgroonga-standby-maintainer.mk installcheck
