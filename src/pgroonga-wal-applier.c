@@ -35,7 +35,7 @@ static const char *PGroongaWALApplierLibraryName = "pgroonga_wal_applier";
 static void
 pgroonga_wal_applier_sigterm(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaWALApplierGotSIGTERM = true;
 	SetLatch(MyLatch);
@@ -46,7 +46,7 @@ pgroonga_wal_applier_sigterm(SIGNAL_ARGS)
 static void
 pgroonga_wal_applier_sighup(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaWALApplierGotSIGHUP = true;
 	SetLatch(MyLatch);
