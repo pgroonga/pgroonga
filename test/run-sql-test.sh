@@ -22,10 +22,10 @@ while [ $# -gt 0 ]; do
       if [ -d "${arg}" ]; then
         for test_path in $(find ${arg} -name "*.sql"); do
           test_name=$(echo "${test_path}" | sed -e 's,^sql/\|\.sql,,g')
-	  test_names="${test_names[@]} ${test_name}"
+          test_names="${test_names[@]} ${test_name}"
         done
       else
-	test_names="${test_names[@]} ${arg}"
+        test_names="${test_names[@]} ${arg}"
       fi
       ;;
   esac

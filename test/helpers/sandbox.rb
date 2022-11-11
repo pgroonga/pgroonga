@@ -143,7 +143,7 @@ module Helpers
                   @replication_user)
     end
 
-    def init_replication(primary)
+    def init_replication(primary, shared_preload_libraries: [])
       @dir = File.join(@base_dir, "db-standby")
       @log_path = File.join(@dir, "log", @log_base_name)
       @port = primary.port + 1
@@ -162,7 +162,8 @@ module Helpers
       end
       conf = File.read(postgresql_conf)
       conf = conf.gsub(/^shared_preload_libraries = '(.*?)'/) do
-        "shared_preload_libraries = '#{$1},pgroonga_wal_applier'"
+        libraries = [$1, *shared_preload_libraries].join(",")
+        "shared_preload_libraries = '#{libraries}'"
       end
       File.write(postgresql_conf, conf)
     end
@@ -173,7 +174,7 @@ module Helpers
                     "-w",
                     "-D", @dir)
       rescue => error
-        error.message << "\nPostgreSQL log:\n#{File.read(@log_path)}"
+        error.message << "\nPostgreSQL log:\n#{read_log}"
         raise
       end
       loop do
@@ -214,6 +215,10 @@ module Helpers
                               pgrn,
                               *command_line)
       JSON.parse(output)
+    end
+
+    def read_log
+      File.read(@log_path)
     end
 
     private
@@ -317,9 +322,16 @@ module Helpers
     def teardown_db
     end
 
+    def shared_preload_libraries_standby
+      []
+    end
+
     def setup_standby_db
       @postgresql_standby = PostgreSQL.new(@tmp_dir)
-      @postgresql_standby.init_replication(@postgresql) do |conf|
+      options = {
+        shared_preload_libraries: shared_preload_libraries_standby,
+      }
+      @postgresql_standby.init_replication(@postgresql, **options) do |conf|
         conf.puts(additional_standby_configurations)
       end
       @postgresql_standby.start
