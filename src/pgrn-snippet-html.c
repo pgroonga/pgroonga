@@ -119,7 +119,7 @@ PGrnSnipExec(grn_obj *snip, text *target, ArrayType **snippetArray)
 }
 
 /**
- * pgroonga_snippet_html(target text, length integer DEFAULT 200, keywords text[]) : text[]
+ * pgroonga_snippet_html(target text, keywords text[], unsigned int width) : text[]
  */
 Datum
 pgroonga_snippet_html(PG_FUNCTION_ARGS)
