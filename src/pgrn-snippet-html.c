@@ -14,11 +14,10 @@ static grn_ctx *ctx = &PGrnContext;
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 
 static grn_obj *
-PGrnSnipCreate(ArrayType *keywords, const char *tag, int *length)
+PGrnSnipCreate(ArrayType *keywords, const char *tag, unsigned int width)
 {
 	grn_obj *snip;
 	int flags = GRN_SNIP_SKIP_LEADING_SPACES;
-	unsigned int width = length;
 	unsigned int maxNResults = 3;
 	const char *openTag = "<span class=\"keyword\">";
 	const char *closeTag = "</span>";
@@ -128,11 +127,12 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	const char *tag = "[snippet-html]";
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	int *length = PG_GETARG_ARRAYTYPE_P(2);
+	unsigned int width = PG_GETARG_INT32(2);
+
 	grn_obj *snip;
 	ArrayType *snippets;
 
-	snip = PGrnSnipCreate(keywords, tag, length);
+	snip = PGrnSnipCreate(keywords, tag, width);
 	PGrnSnipExec(snip, target, &snippets);
 	PG_TRY();
 	{
