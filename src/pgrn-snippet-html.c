@@ -134,10 +134,10 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	if (width <= 0)
 	{
 		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("%s width must be a positive number: %d",
-				        tag,
-				        width)));
+		        (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+		         errmsg("%s width must be a positive number: %d",
+		                tag,
+		                width)));
 	}
 
 	snip = PGrnSnipCreate(keywords, tag, width);
