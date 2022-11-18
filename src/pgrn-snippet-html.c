@@ -135,7 +135,7 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	{
 		ereport(ERROR,
 		        (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-		         errmsg("%s width must be a positive number: %d",
+		         errmsg("pgroonga: %s width must be a positive number: %d",
 		                tag,
 		                width)));
 	}
