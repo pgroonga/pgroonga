@@ -13,4 +13,4 @@ SELECT unnest(pgroonga_snippet_html(
   'row-oriented systems.',
   ARRAY['Groonga'],
   0));
-ERROR:  [snippet-html] width must be a positive number: 0
+ERROR:  pgroonga: [snippet-html] width must be a positive number: 0
