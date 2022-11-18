@@ -127,9 +127,18 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	const char *tag = "[snippet-html]";
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
-	unsigned int width = PG_GETARG_INT32(2);
+	int width = PG_GETARG_INT32(2);
 	grn_obj *snip;
 	ArrayType *snippets;
+
+	if (width <= 0)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("%s width must be a positive number: %d", 
+						tag, 
+						width)));
+	}
 
 	snip = PGrnSnipCreate(keywords, tag, width);
 	PGrnSnipExec(snip, target, &snippets);
