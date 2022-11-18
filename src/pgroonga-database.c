@@ -31,7 +31,7 @@ pgroonga_database_remove(PG_FUNCTION_ARGS)
 		if (!OidIsValid(tablespaceOid))
 			break;
 
-		if (!pg_tablespace_ownercheck(tablespaceOid, GetUserId()))
+		if (!pgrn_pg_tablespace_ownercheck(tablespaceOid, GetUserId()))
 			break;
 
 		if (tablespaceOid == GLOBALTABLESPACE_OID)

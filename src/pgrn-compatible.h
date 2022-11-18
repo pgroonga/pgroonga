@@ -245,6 +245,10 @@ typedef char *PGrnStringOptionValue;
 typedef RelFileNumber PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenumber((tablespaceOid), (fileNumber))
+#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)	\
+	object_ownercheck(TableSpaceRelationId, (tablespaceOid), (userOid))
+#	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
+	object_ownercheck(RelationRelationId, (relationOid), (userOid))
 #else
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_node)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
@@ -254,4 +258,8 @@ typedef RelFileNumber PGrnRelFileNumber;
 typedef Oid PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenode((tablespaceOid), (fileNumber))
+#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)	\
+	pg_tablespace_ownercheck((tablespaceOid), (userId))
+#	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
+	pg_class_ownercheck((relationOid), (userOid))
 #endif

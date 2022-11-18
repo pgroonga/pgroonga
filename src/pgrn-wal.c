@@ -2189,7 +2189,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
 		Relation index;
 
-		if (!pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+		if (!pgrn_pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
 			continue;
 
 		index = RelationIdGetRelation(indexForm->indexrelid);
@@ -2376,7 +2376,7 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
 		Relation index;
 
-		if (!pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+		if (!pgrn_pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
 			continue;
 
 		index = RelationIdGetRelation(indexForm->indexrelid);
