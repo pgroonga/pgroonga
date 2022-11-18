@@ -11,4 +11,5 @@ SELECT unnest(pgroonga_snippet_html(
   'PostgreSQL, column-oriented systems are more suited for aggregate ' ||
   'queries. Due to this advantage, Groonga can cover weakness of ' ||
   'row-oriented systems.',
-  ARRAY['Groonga'], 7));
+  ARRAY['Groonga'],
+  7));
