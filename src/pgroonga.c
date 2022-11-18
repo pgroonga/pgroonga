@@ -4604,8 +4604,8 @@ PGrnInsertColumn(Relation index,
 		if (grn_obj_is_vector(ctx, rawValue))
 		{
 			uint32_t n = grn_vector_size(ctx, rawValue);
-			uint32_t i;
-			for (i = 0; i < n; i++)
+			uint32_t j;
+			for (j = 0; j < n; j++)
 			{
 				const char *elementValue;
 				float weight;
@@ -4613,7 +4613,7 @@ PGrnInsertColumn(Relation index,
 				uint32_t elementSize =
 					grn_vector_get_element_float(ctx,
 												 rawValue,
-												 i,
+												 j,
 												 &elementValue,
 												 &weight,
 												 &elementDomain);
@@ -4641,17 +4641,17 @@ PGrnInsertColumn(Relation index,
 		{
 			uint32_t elementSize = grn_uvector_element_size(ctx, rawValue);
 			uint32_t n = grn_uvector_size(ctx, rawValue);
-			uint32_t i;
+			uint32_t j;
 			GRN_OBJ_FIN(ctx, &rawElement);
 			GRN_VALUE_FIX_SIZE_INIT(&rawElement,
 									GRN_OBJ_DO_SHALLOW_COPY,
 									rawDomain);
 			grn_obj_reinit(ctx, element, domain, 0);
-			for (i = 0; i < n; i++)
+			for (j = 0; j < n; j++)
 			{
 				GRN_TEXT_SET(ctx,
 							 &rawElement,
-							 GRN_BULK_HEAD(rawValue) + (elementSize * i),
+							 GRN_BULK_HEAD(rawValue) + (elementSize * j),
 							 elementSize);
 				GRN_BULK_REWIND(element);
 				rc = grn_obj_cast(ctx, &rawElement, element, true);

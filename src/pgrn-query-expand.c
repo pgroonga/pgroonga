@@ -125,7 +125,6 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	while (true)
 	{
 		Datum synonymsDatum;
-		bool isNULL;
 
 		if (currentData.scan)
 		{
@@ -148,12 +147,15 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		if (!tuple)
 			break;
 
-		synonymsDatum = heap_getattr(tuple,
-									 currentData.synonymsAttribute->attnum,
-									 RelationGetDescr(currentData.table),
-									 &isNULL);
-		if (isNULL)
-			continue;
+		{
+			bool isNULL;
+			synonymsDatum = heap_getattr(tuple,
+										 currentData.synonymsAttribute->attnum,
+										 RelationGetDescr(currentData.table),
+										 &isNULL);
+			if (isNULL)
+				continue;
+		}
 
 		if (currentData.synonymsAttribute->atttypid == TEXTOID)
 		{

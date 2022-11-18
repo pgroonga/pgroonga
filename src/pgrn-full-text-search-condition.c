@@ -114,12 +114,11 @@ PGrnFullTextSearchConditionDeconstructGeneric(HeapTupleHeader header,
 	if (isTargets && weightsLocal && ARR_NDIM(weightsLocal) == 1)
 	{
 		ArrayIterator iterator;
-		int i;
 		Datum datum;
 		bool isNULL;
 
 		iterator = pgrn_array_create_iterator(weightsLocal, 0);
-		for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
+		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			if (isNULL)
 			{

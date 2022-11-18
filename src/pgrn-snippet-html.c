@@ -96,7 +96,6 @@ PGrnSnipExec(grn_obj *snip, text *target, ArrayType **snippetArray)
 	snippets = palloc(sizeof(Datum) * nResults);
 	for (i = 0; i < nResults; i++)
 	{
-		grn_rc rc;
 		unsigned int snippetLength = 0;
 
 		rc = grn_snip_get_result(ctx, snip, i, buffer, &snippetLength);
