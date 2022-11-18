@@ -259,7 +259,7 @@ typedef Oid PGrnRelFileNumber;
 #	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
 	RelidByRelfilenode((tablespaceOid), (fileNumber))
 #	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)	\
-	pg_tablespace_ownercheck((tablespaceOid), (userId))
+	pg_tablespace_ownercheck((tablespaceOid), (userOid))
 #	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
 	pg_class_ownercheck((relationOid), (userOid))
 #endif
