@@ -133,7 +133,7 @@ jobs:
       - name: Build archive
         run: |
           rake dist
-      - name: Configure for archive
+      - name: Configure
         run: |
           set -eux
           package=$(echo ${{ matrix.package-id }} | \
