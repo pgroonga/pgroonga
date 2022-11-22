@@ -132,7 +132,7 @@ jobs:
         with:
           ruby-version: "3.1"
           bundler-cache: true
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/red-datasets
