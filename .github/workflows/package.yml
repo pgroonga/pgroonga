@@ -21,16 +21,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt -y -V install \
-            qemu-user-static \
             ruby
           sudo gem install bundler
           bundle install
-      - name: Clone dependencies
-        run: |
-          cd ..
-          git clone --depth 1 https://github.com/groonga/groonga.git
-          cd groonga
-          git submodule update --init --force --recursive --depth 1
       - name: Build archive
         run: |
           rake dist
@@ -51,6 +44,7 @@ jobs:
             pgroonga-*.tar.gz
   linux:
     name: Linux
+    needs: source
     # arm64 packages are often stuck.
     timeout-minutes: 60
     strategy:
@@ -130,9 +124,10 @@ jobs:
           git clone --depth 1 https://github.com/groonga/groonga.git
           cd groonga
           git submodule update --init --force --recursive --depth 1
-      - name: Build archive
-        run: |
-          rake dist
+      - name: Download archive
+        uses: actions/download-artifact@v2
+        with:
+          name: source
       - name: Configure
         run: |
           set -eux
