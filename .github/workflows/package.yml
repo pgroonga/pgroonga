@@ -10,8 +10,41 @@ on:
     - cron: |
         0 0 * * *
 jobs:
+  source:
+    name: Source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt -y -V install \
+            ruby
+          sudo gem install bundler
+          bundle install
+      - name: Build archive
+        run: |
+          rake dist
+
+      # Artifact
+      - uses: actions/upload-artifact@v2
+        with:
+          name: source
+          path: pgroonga-*.tar.gz
+
+      # Release
+      - name: Upload to release
+        uses: softprops/action-gh-release@v1
+        if: |
+          startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            pgroonga-*.tar.gz
   linux:
     name: Linux
+    needs: source
     # arm64 packages are often stuck.
     timeout-minutes: 60
     strategy:
@@ -91,9 +124,10 @@ jobs:
           git clone --depth 1 https://github.com/groonga/groonga.git
           cd groonga
           git submodule update --init --force --recursive --depth 1
-      - name: Build archive
-        run: |
-          rake dist
+      - name: Download archive
+        uses: actions/download-artifact@v2
+        with:
+          name: source
       - name: Configure
         run: |
           set -eux
