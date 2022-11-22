@@ -27,7 +27,7 @@ static struct config_enum_entry PGrnLogTypeEntries[] = {
 
 static char *PGrnLogPath;
 
-static int PGrnLogLevel;
+static int PGrnLogLevel = GRN_LOG_DEFAULT_LEVEL;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGrnLogLevelEntries);
 
 static char *PGrnQueryLogPath;
