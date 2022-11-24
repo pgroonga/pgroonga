@@ -266,22 +266,23 @@ SELECT title FROM memos WHERE content &@~ '0'
       "pgroonga_standby_maintainer.naptime = #{naptime}"
     end
 
-    test "auto apply" do
-      run_sql("CREATE TABLE memos (content text);")
-      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    sub_test_case "auto apply" do
+      test "no partition" do
+        run_sql("CREATE TABLE memos (content text);")
+        run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+        run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-      sleep(naptime)
+        sleep(naptime)
 
-      sql = <<-SQL
+        sql = <<-SQL
 SELECT jsonb_pretty(
     pgroonga_command('select',
                      ARRAY[
                        'table', pgroonga_table_name('memos_content')
                      ])::jsonb->1
   ) AS select
-      SQL
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+        SQL
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
 #{sql}
              select              
 ---------------------------------
@@ -313,149 +314,153 @@ SELECT jsonb_pretty(
  ]
 (1 row)
 
-      OUTPUT
-    end
+        OUTPUT
+      end
 
-    test "auto pgroonga_vacuum" do
-      run_sql("CREATE TABLE memos (content text);")
-      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+      test "partition" do
+        run_sql(<<-SQL)
+CREATE TABLE cities (
+  city_code varchar(5) NOT NULL,
+  summary text
+) PARTITION BY LIST (city_code)
+        SQL
+        run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
+        run_sql(<<-SQL)
+CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
+        SQL
+        run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
 
-      sleep(naptime)
+        sleep(naptime)
 
-      pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
-      pgroonga_table_name =
-        run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
-
-      run_sql("REINDEX INDEX memos_content;")
-      run_sql_standby("SELECT pgroonga_wal_apply();")
-
-      pgroonga_table_exist_sql =
-        "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
-        "::json->>1 AS exist;"
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
-#{pgroonga_table_exist_sql}
- exist 
--------
- true
-(1 row)
-
-      OUTPUT
-
-      sleep(naptime)
-
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
-#{pgroonga_table_exist_sql}
- exist 
--------
- false
-(1 row)
-
-      OUTPUT
-    end
-  end
-
-  sub_test_case "pgroonga_standby_maintainer with partition" do
-    def shared_preload_libraries_standby
-      ["pgroonga_standby_maintainer"]
-    end
-
-    def naptime
-      1
-    end
-
-    def additional_standby_configurations
-      "pgroonga_standby_maintainer.naptime = #{naptime}"
-    end
-
-    test "auto apply" do
-      run_sql("CREATE TABLE cities ( city_code varchar(5) NOT NULL, summary text) PARTITION BY LIST (city_code);")
-      run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
-      run_sql("CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01');");
-      run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
-
-      sleep(naptime)
-
-      sql = <<-SQL
+        sql = <<-SQL
 SELECT jsonb_pretty(
     pgroonga_command('select',
                      ARRAY[
-                       'table', pgroonga_table_name('summary_index')
+                       'table', pgroonga_table_name('cities_20_01_summary_idx')
                      ])::jsonb->1
   ) AS select
-      SQL
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+        SQL
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
 #{sql}
-             select              
----------------------------------
- [                              +
-     [                          +
-         [                      +
-             1                  +
-         ],                     +
-         [                      +
-             [                  +
-                 "_id",         +
-                 "UInt32"       +
-             ],                 +
-             [                  +
-                 "_key",        +
-                 "UInt64"       +
-             ],                 +
-             [                  +
-                 "summary",     +
-                 "LongText"     +
-             ]                  +
-         ],                     +
-         [                      +
-             1,                 +
-             1,                 +
-             "Osaka"            +
-         ]                      +
-     ]                          +
+           select           
+----------------------------
+ [                         +
+     [                     +
+         [                 +
+             1             +
+         ],                +
+         [                 +
+             [             +
+                 "_id",    +
+                 "UInt32"  +
+             ],            +
+             [             +
+                 "_key",   +
+                 "UInt64"  +
+             ],            +
+             [             +
+                 "summary",+
+                 "LongText"+
+             ]             +
+         ],                +
+         [                 +
+             1,            +
+             1,            +
+             "Osaka"       +
+         ]                 +
+     ]                     +
  ]
 (1 row)
 
-      OUTPUT
+        OUTPUT
+      end
     end
 
-    test "auto pgroonga_vacuum" do
-      run_sql("CREATE TABLE cities ( city_code varchar(5) NOT NULL, summary text) PARTITION BY LIST (city_code);")
-      run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
-      run_sql("CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01');");
-      run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
+    sub_test_case "auto pgroonga_vacuum" do
+      test "no partition" do
+        run_sql("CREATE TABLE memos (content text);")
+        run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+        run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-      sleep(naptime)
+        sleep(naptime)
 
-      pgroonga_table_name_sql = "SELECT pgroonga_table_name('summary_index');"
-      pgroonga_table_name =
-        run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
+        pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
+        pgroonga_table_name =
+          run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
 
-      run_sql("REINDEX INDEX summary_index;")
-      run_sql_standby("SELECT pgroonga_wal_apply();")
+        run_sql("REINDEX INDEX memos_content;")
+        run_sql_standby("SELECT pgroonga_wal_apply();")
 
-      pgroonga_table_exist_sql =
-        "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
-        "::json->>1 AS exist;"
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+        pgroonga_table_exist_sql =
+          "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
+          "::json->>1 AS exist;"
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
  exist 
 -------
  true
 (1 row)
 
-      OUTPUT
+         OUTPUT
 
-      sleep(naptime)
+        sleep(naptime)
 
-      assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
  exist 
 -------
  false
 (1 row)
 
-      OUTPUT
+        OUTPUT
+      end
+
+      test "partition" do
+        run_sql(<<-SQL)
+CREATE TABLE cities (
+  city_code varchar(5) NOT NULL,
+  summary text
+) PARTITION BY LIST (city_code)
+        SQL
+        run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
+        run_sql(<<-SQL)
+CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
+        SQL
+        run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
+
+        sleep(naptime)
+
+        pgroonga_table_name_sql =
+          "SELECT pgroonga_table_name('cities_20_01_summary_idx');"
+        pgroonga_table_name =
+          run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
+
+        run_sql("REINDEX INDEX summary_index;")
+        run_sql_standby("SELECT pgroonga_wal_apply();")
+
+        pgroonga_table_exist_sql =
+          "SELECT pgroonga_command('object_exist #{pgroonga_table_name}')" +
+          "::json->>1 AS exist;"
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+#{pgroonga_table_exist_sql}
+ exist 
+-------
+ true
+(1 row)
+
+        OUTPUT
+
+        sleep(naptime)
+
+        assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
+#{pgroonga_table_exist_sql}
+ exist 
+-------
+ false
+(1 row)
+
+        OUTPUT
+      end
     end
   end
 end
