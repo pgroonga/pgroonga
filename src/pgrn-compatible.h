@@ -263,3 +263,12 @@ typedef Oid PGrnRelFileNumber;
 #	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
 	pg_class_ownercheck((relationOid), (userOid))
 #endif
+
+#if PG_VERSION_NUM >= 150000
+#	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
+	RELKIND_HAS_PARTITIONS(relkind)
+#else
+#	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
+	((relkind) == RELKIND_PARTITIONED_TABLE ||	\
+	 (relkind) == RELKIND_PARTITIONED_INDEX)
+#endif

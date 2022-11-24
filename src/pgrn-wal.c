@@ -2198,7 +2198,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 			RelationClose(index);
 			continue;
 		}
-		if (RELKIND_HAS_PARTITIONS(index->rd_rel->relkind))
+		if (PGRN_RELKIND_HAS_PARTITIONS(index->rd_rel->relkind))
 		{
 			RelationClose(index);
 			continue;
