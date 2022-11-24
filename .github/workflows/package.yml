@@ -181,7 +181,7 @@ jobs:
           GROONGA_REPOSITORY: ../../../groonga
 
       # Artifact
-      - uses: actions/upload-artifact@3
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.package-id }}
           path: repositories/
