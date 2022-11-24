@@ -435,7 +435,8 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
         pgroonga_table_name =
           run_sql_standby(pgroonga_table_name_sql)[0].scan(/Sources\d+/)[0]
 
-        run_sql("REINDEX INDEX summary_index;")
+        run_sql("DROP INDEX summary_index;")
+        run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
         run_sql_standby("SELECT pgroonga_wal_apply();")
 
         pgroonga_table_exist_sql =
