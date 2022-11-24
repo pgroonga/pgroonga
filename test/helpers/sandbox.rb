@@ -218,6 +218,7 @@ module Helpers
     end
 
     def read_log
+      return "" unless File.exist?(@log_path)
       File.read(@log_path)
     end
 
