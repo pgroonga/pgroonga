@@ -145,4 +145,4 @@ jobs:
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
             bundle exec ruby \
               -I${{ github.workspace }}/pgroonga-benchmark/lib \
-              test/run-test.rb
+              test/run-test.rb -v
