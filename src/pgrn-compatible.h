@@ -17,6 +17,19 @@
 #	define PGRN_SUPPORT_WAL
 #endif
 
+#if PG_VERSION_NUM < 120000
+/* Borrowed from include/fmgr.h */
+#	define LOCAL_FCINFO(name, nargs) \
+	        /* use union with FunctionCallInfoBaseData to guarantee alignment */ \
+	        union \
+	        { \
+	                FunctionCallInfoBaseData fcinfo; \
+	                /* ensure enough space for nargs args is available */ \
+	                char fcinfo_data[SizeForFunctionCallInfo(nargs)]; \
+	        } name##data; \
+	        FunctionCallInfo name = &name##data.fcinfo
+#endif
+
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_SUPPORT_INDEX_CLAUSE
 #	define PGRN_SUPPORT_TABLEAM
