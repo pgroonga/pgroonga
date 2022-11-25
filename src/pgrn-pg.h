@@ -21,3 +21,4 @@ void PGrnPGDatumExtractString(Datum datum,
 							  Oid type,
 							  const char **string,
 							  unsigned int *size);
+bool PGrnPGHavePreparedTransaction(void);

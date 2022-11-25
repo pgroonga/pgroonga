@@ -12,7 +12,9 @@
 #	include <access/tableam.h>
 #endif
 #include <catalog/pg_type.h>
+#include <executor/executor.h>
 #include <pgtime.h>
+#include <nodes/execnodes.h>
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
 #include <utils/datetime.h>
@@ -239,4 +241,42 @@ PGrnPGDatumExtractString(Datum datum,
 	default:
 		break;
 	}
+}
+
+bool
+PGrnPGHavePreparedTransaction(void)
+{
+	FmgrInfo flinfo;
+	ReturnSetInfo rsinfo;
+	EState *estate = CreateExecutorState();
+	ExprContext *econtext = CreateExprContext(estate);
+	bool have = false;
+	LOCAL_FCINFO(fcinfo, 0);
+	fmgr_info(1065, &flinfo);
+	InitFunctionCallInfoData(*fcinfo,
+							 &flinfo,
+							 0,
+							 InvalidOid,
+							 NULL,
+							 (fmNodePtr) &rsinfo);
+	rsinfo.type = T_ReturnSetInfo;
+	rsinfo.econtext = econtext;
+	rsinfo.expectedDesc = NULL;
+	rsinfo.allowedModes = SFRM_ValuePerCall;
+	rsinfo.returnMode = SFRM_ValuePerCall;
+	rsinfo.setResult = NULL;
+	rsinfo.setDesc = NULL;
+	rsinfo.isDone = ExprSingleResult;
+
+	while (true) {
+		flinfo.fn_addr(fcinfo);
+		if (rsinfo.isDone == ExprEndResult) {
+			break;
+		}
+		have = true;
+	}
+
+	FreeExecutorState(estate);
+
+	return have;
 }

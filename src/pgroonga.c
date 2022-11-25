@@ -7787,6 +7787,10 @@ PGrnRemoveUnusedTables(void)
 	if (!PGrnIsWritable())
 		return;
 
+	/* We can't detect alive indexes in prepared transactions. */
+	if (PGrnPGHavePreparedTransaction())
+		return;
+
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
 								   NULL, 0,
@@ -7824,8 +7828,7 @@ pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 	if (!stats)
 	{
 		grn_obj *sourcesTable;
-		sourcesTable = PGrnLookupSourcesTable(info->index,
-											  PGRN_ERROR_LEVEL_IGNORE);
+		sourcesTable = PGrnLookupSourcesTable(info->index, WARNING);
 		stats = PGrnBulkDeleteResult(info, sourcesTable);
 	}
 
