@@ -14,6 +14,7 @@ on:
 jobs:
   test:
     name: ${{ matrix.label }}
+    timeout-minutes: 30
     runs-on: windows-latest
     strategy:
       fail-fast: false
