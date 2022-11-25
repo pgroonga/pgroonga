@@ -55,7 +55,7 @@ void
 pgroonga_standby_maintainer_maintain(Datum databaseOidDatum)
 {
 	Oid databaseOid = DatumGetObjectId(databaseOidDatum);
-	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+	BackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
 	StartTransactionCommand();
 	SPI_connect();
@@ -148,9 +148,7 @@ pgroonga_standby_maintainer_maintain_all(void)
 					 TAG ": %s(%u)",
 					 form->datname.data,
 					 databaseOid);
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 			snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
-#endif
 			worker.bgw_flags =
 				BGWORKER_SHMEM_ACCESS |
 				BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -184,7 +182,7 @@ pgroonga_standby_maintainer_main(Datum arg)
 	pqsignal(SIGHUP, pgroonga_standby_maintainer_sighup);
 	BackgroundWorkerUnblockSignals();
 
-	PGrnBackgroundWorkerInitializeConnection(NULL, NULL, 0);
+	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
 	while (!PGroongaStandbyMaintainerGotSIGTERM)
 	{
@@ -236,9 +234,7 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
-#endif
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;

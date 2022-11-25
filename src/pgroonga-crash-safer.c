@@ -127,7 +127,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
 
-	PGrnBackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+	BackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
 
 	StartTransactionCommand();
 	SPI_connect();
@@ -359,13 +359,11 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				 TAG ": reindex: %u/%u",
 				 databaseOid,
 				 tableSpaceOid);
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 		snprintf(worker.bgw_type,
 				 BGW_MAXLEN,
 				 TAG ": reindex: %u/%u",
 				 databaseOid,
 				 tableSpaceOid);
-#endif
 		worker.bgw_flags =
 			BGWORKER_SHMEM_ACCESS |
 			BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -475,7 +473,7 @@ pgroonga_crash_safer_main(Datum arg)
 	pqsignal(SIGUSR1, pgroonga_crash_safer_sigusr1);
 	BackgroundWorkerUnblockSignals();
 
-	PGrnBackgroundWorkerInitializeConnection(NULL, NULL, 0);
+	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_set_main_pid(statuses, MyProcPid);
@@ -530,13 +528,11 @@ pgroonga_crash_safer_main(Datum arg)
 						 TAG ": flush: %u/%u",
 						 databaseOid,
 						 tableSpaceOid);
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 				snprintf(worker.bgw_type,
 						 BGW_MAXLEN,
 						 TAG ": flush: %u/%u",
 						 databaseOid,
 						 tableSpaceOid);
-#endif
 				worker.bgw_flags = BGWORKER_SHMEM_ACCESS;
 				worker.bgw_start_time = BgWorkerStart_ConsistentState;
 				worker.bgw_restart_time = BGW_NEVER_RESTART;
@@ -611,9 +607,7 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
-#ifdef PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
-#endif
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;

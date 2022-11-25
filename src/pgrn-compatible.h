@@ -17,17 +17,6 @@
 #	define PGRN_SUPPORT_WAL
 #endif
 
-#if PG_VERSION_NUM < 110000
-#	define PG_GETARG_JSONB_P(n) PG_GETARG_JSONB((n))
-#	define DatumGetJsonbP(datum) DatumGetJsonb((datum))
-#endif
-
-#if PG_VERSION_NUM >= 110000
-typedef const char *PGrnStringOptionValue;
-#else
-typedef char *PGrnStringOptionValue;
-#endif
-
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_SUPPORT_INDEX_CLAUSE
 #	define PGRN_SUPPORT_TABLEAM
@@ -74,7 +63,7 @@ typedef char *PGrnStringOptionValue;
 						   (callback),				\
 						   (callbackState),			\
 						   NULL)
-#elif PG_VERSION_NUM >= 110000
+#else
 #	define PGrnIndexBuildHeapScan(heap,				\
 								  index,			\
 								  indexInfo,		\
@@ -88,19 +77,6 @@ typedef char *PGrnStringOptionValue;
 					   (callback),					\
 					   (callbackState),				\
 					   NULL)
-#else
-#	define PGrnIndexBuildHeapScan(heap,				\
-								  index,			\
-								  indexInfo,		\
-								  allowSync,		\
-								  callback,			\
-								  callbackState)	\
-	IndexBuildHeapScan((heap),						\
-					   (index),						\
-					   (indexInfo),					\
-					   (allowSync),					\
-					   (callback),					\
-					   (callbackState))
 #endif
 
 #if PG_VERSION_NUM >= 120000
@@ -187,32 +163,8 @@ typedef char *PGrnStringOptionValue;
 	CreateTemplateTupleDesc((natts), false)
 #endif
 
-#if PG_VERSION_NUM < 110000
-#	define PG_RETURN_JSONB_P(x) PG_RETURN_JSONB(x)
-#endif
-
 #if PG_VERSION_NUM >= 120000
 #	define PGRN_HAVE_TUPLE_TABLE_SLOT_TABLE_OID
-#endif
-
-#if PG_VERSION_NUM < 110000
-#	define PGrnBackgroundWorkerInitializeConnection(dbname, username, flags) \
-	BackgroundWorkerInitializeConnection((dbname), (username))
-#	define PGrnBackgroundWorkerInitializeConnectionByOid(dboid, useroid, flags) \
-	BackgroundWorkerInitializeConnectionByOid((dboid), (useroid))
-#else
-#	define PGrnBackgroundWorkerInitializeConnection(dbname, username, flags) \
-	BackgroundWorkerInitializeConnection((dbname), (username), (flags))
-#	define PGrnBackgroundWorkerInitializeConnectionByOid(dboid, useroid, flags) \
-	BackgroundWorkerInitializeConnectionByOid((dboid), (useroid), (flags))
-#endif
-
-#if PG_VERSION_NUM >= 110000
-#	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
-#endif
-
-#if PG_VERSION_NUM >= 110000
-#	define PGRN_BACKGROUND_WORKER_HAVE_BGW_TYPE
 #endif
 
 #if PG_VERSION_NUM >= 120000

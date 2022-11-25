@@ -92,7 +92,7 @@ PGrnOptionEnsureLexicon(const char *context)
 }
 
 static void
-PGrnOptionValidateTokenizer(PGrnStringOptionValue rawTokenizer)
+PGrnOptionValidateTokenizer(const char *rawTokenizer)
 {
 	const char *tag = "[option][tokenizer][validate]";
 	grn_obj *tokenizer = &(buffers->tokenizer);
@@ -116,7 +116,7 @@ PGrnOptionValidateTokenizer(PGrnStringOptionValue rawTokenizer)
 }
 
 static void
-PGrnOptionValidateNormalizers(PGrnStringOptionValue rawNormalizers)
+PGrnOptionValidateNormalizers(const char *rawNormalizers)
 {
 	const char *tag = "[option][normalizers][validate]";
 	grn_obj *normalizers = &(buffers->normalizers);
@@ -140,7 +140,7 @@ PGrnOptionValidateNormalizers(PGrnStringOptionValue rawNormalizers)
 }
 
 static void
-PGrnOptionValidateNormalizersMapping(PGrnStringOptionValue rawNormalizersMapping)
+PGrnOptionValidateNormalizersMapping(const char *rawNormalizersMapping)
 {
 	const char *tag = "[option][normalizers-mapping][validate]";
 	grn_obj *normalizers = &(buffers->normalizers);
@@ -212,7 +212,7 @@ PGrnOptionValidateNormalizersMapping(PGrnStringOptionValue rawNormalizersMapping
 }
 
 static void
-PGrnOptionValidateTokenFilters(PGrnStringOptionValue rawTokenFilters)
+PGrnOptionValidateTokenFilters(const char *rawTokenFilters)
 {
 	const char *tag = "[option][token-filters][validate]";
 	grn_obj *tokenFilters = &(buffers->tokenFilters);
@@ -249,7 +249,7 @@ PGrnOptionValidatePlugin(const char *name,
 }
 
 static void
-PGrnOptionValidatePlugins(PGrnStringOptionValue names)
+PGrnOptionValidatePlugins(const char *names)
 {
 	PGrnOptionParseNames(names,
 						 PGrnOptionValidatePlugin,
@@ -257,7 +257,7 @@ PGrnOptionValidatePlugins(PGrnStringOptionValue names)
 }
 
 static void
-PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
+PGrnOptionValidateLexiconType(const char *name)
 {
 	const char *tag = "[option][lexicon-type][validate]";
 
@@ -285,7 +285,7 @@ PGrnOptionValidateLexiconType(PGrnStringOptionValue name)
 }
 
 static void
-PGrnOptionValidateIndexFlagsMapping(PGrnStringOptionValue rawIndexFlagsMapping)
+PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 {
 	const char *tag = "[option][index-flags-mapping][validate]";
 	Jsonb *jsonb;

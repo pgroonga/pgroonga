@@ -92,9 +92,6 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
-if [ "$((${postgresql_version} < 11))" -eq 1 ]; then
-  rm sql/index-only-scan/include.sql
-fi
 if [ "$((${postgresql_version} < 13))" -eq 1 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi

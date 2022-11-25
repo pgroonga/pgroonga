@@ -125,9 +125,6 @@ cp -a \
 cd /tmp
 case "${os}" in
   almalinux|amazon-linux|centos)
-    if [ ${postgresql_version} -lt 11 ]; then
-      rm sql/index-only-scan/include.sql
-    fi
     if [ ${postgresql_version} -lt 13 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
     fi

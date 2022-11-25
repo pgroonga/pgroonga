@@ -1141,13 +1141,9 @@ PGrnCreate(PGrnCreateData *data)
 
 	for (data->i = 0; data->i < data->desc->natts; data->i++)
 	{
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
 		bool forInclude =
 			(data->i >=
 			 IndexRelationGetNumberOfKeyAttributes(data->index));
-#else
-		bool forInclude = false;
-#endif
 		Form_pg_attribute attribute = TupleDescAttr(data->desc, data->i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
@@ -1188,12 +1184,8 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
 		bool forInclude =
 			(i >= IndexRelationGetNumberOfKeyAttributes(index));
-#else
-		bool forInclude = false;
-#endif
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name = &(attribute->attname);
 		grn_obj *source;
@@ -8265,9 +8257,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_CAN_INCLUDE
 	routine->amcaninclude = true;
-#endif
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 	routine->amusemaintenanceworkmem = false;
 #endif
