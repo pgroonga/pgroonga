@@ -217,9 +217,10 @@ PGrnLookupWithSize(const char *name,
 	object = grn_ctx_get(ctx, name, nameSize);
 	if (!object)
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"object isn't found: <%.*s>",
-					(int)nameSize, name);
+		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
+						 errorLevel,
+						 "object isn't found: <%.*s>",
+						 (int)nameSize, name);
 	}
 	return object;
 }
