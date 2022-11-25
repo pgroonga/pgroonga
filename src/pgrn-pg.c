@@ -247,37 +247,61 @@ PGrnPGDatumExtractString(Datum datum,
 bool
 PGrnPGHavePreparedTransaction(void)
 {
+	MemoryContext memoryContext;
+	MemoryContext oldMemoryContext;
 	FmgrInfo flinfo;
 	ReturnSetInfo rsinfo;
-	EState *estate = CreateExecutorState();
-	ExprContext *econtext = CreateExprContext(estate);
+	EState *estate = NULL;
+	ExprContext *econtext;
 	bool have = false;
 	LOCAL_FCINFO(fcinfo, 0);
-	fmgr_info(F_PG_PREPARED_XACT, &flinfo);
-	InitFunctionCallInfoData(*fcinfo,
-							 &flinfo,
-							 0,
-							 InvalidOid,
-							 NULL,
-							 (fmNodePtr) &rsinfo);
-	rsinfo.type = T_ReturnSetInfo;
-	rsinfo.econtext = econtext;
-	rsinfo.expectedDesc = NULL;
-	rsinfo.allowedModes = SFRM_ValuePerCall;
-	rsinfo.returnMode = SFRM_ValuePerCall;
-	rsinfo.setResult = NULL;
-	rsinfo.setDesc = NULL;
-	rsinfo.isDone = ExprSingleResult;
 
-	while (true) {
-		flinfo.fn_addr(fcinfo);
-		if (rsinfo.isDone == ExprEndResult) {
-			break;
+	memoryContext = AllocSetContextCreate(CurrentMemoryContext,
+										  "PGrnPGHavePreparedTransaction",
+										  ALLOCSET_SMALL_SIZES);
+	oldMemoryContext = MemoryContextSwitchTo(memoryContext);
+	PG_TRY();
+	{
+		estate = CreateExecutorState();
+		econtext = CreateExprContext(estate);
+		fmgr_info(F_PG_PREPARED_XACT, &flinfo);
+		InitFunctionCallInfoData(*fcinfo,
+								 &flinfo,
+								 0,
+								 InvalidOid,
+								 NULL,
+								 (fmNodePtr) &rsinfo);
+		rsinfo.type = T_ReturnSetInfo;
+		rsinfo.econtext = econtext;
+		rsinfo.expectedDesc = NULL;
+		rsinfo.allowedModes = SFRM_ValuePerCall;
+		rsinfo.returnMode = SFRM_ValuePerCall;
+		rsinfo.setResult = NULL;
+		rsinfo.setDesc = NULL;
+		rsinfo.isDone = ExprSingleResult;
+
+		while (true) {
+			flinfo.fn_addr(fcinfo);
+			if (rsinfo.isDone == ExprEndResult) {
+				break;
+			}
+			have = true;
 		}
-		have = true;
 	}
+	PG_CATCH();
+	{
+		if (estate)
+			FreeExecutorState(estate);
+		MemoryContextSwitchTo(oldMemoryContext);
+		MemoryContextDelete(memoryContext);
+
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
 
 	FreeExecutorState(estate);
+	MemoryContextSwitchTo(oldMemoryContext);
+	MemoryContextDelete(memoryContext);
 
 	return have;
 }
