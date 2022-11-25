@@ -18,6 +18,7 @@
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
 #include <utils/datetime.h>
+#include <utils/fmgroids.h>
 #include <utils/rel.h>
 #if PG_VERSION_NUM >= 160000
 #	include <utils/relfilenumbermap.h>
@@ -252,7 +253,7 @@ PGrnPGHavePreparedTransaction(void)
 	ExprContext *econtext = CreateExprContext(estate);
 	bool have = false;
 	LOCAL_FCINFO(fcinfo, 0);
-	fmgr_info(1065, &flinfo);
+	fmgr_info(F_PG_PREPARED_XACT, &flinfo);
 	InitFunctionCallInfoData(*fcinfo,
 							 &flinfo,
 							 0,
