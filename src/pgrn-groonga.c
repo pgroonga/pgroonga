@@ -215,7 +215,7 @@ PGrnLookupWithSize(const char *name,
 {
 	grn_obj *object;
 	object = grn_ctx_get(ctx, name, nameSize);
-	if (!object)
+	if (!object && errorLevel != PGRN_ERROR_LEVEL_IGNORE)
 	{
 		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
 						 errorLevel,

@@ -6,6 +6,10 @@
 #include <fmgr.h>
 #include <utils/rel.h>
 
+/* Must not be the same value as one of error level codes in
+ * PostgreSQL such as ERROR and WARNING. */
+#define PGRN_ERROR_LEVEL_IGNORE 0
+
 /* Default values */
 #ifndef PGRN_DEFAULT_TOKENIZER
 #  define PGRN_DEFAULT_TOKENIZER "TokenBigram"

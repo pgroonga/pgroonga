@@ -7824,7 +7824,8 @@ pgroonga_vacuumcleanup_raw(IndexVacuumInfo *info,
 	if (!stats)
 	{
 		grn_obj *sourcesTable;
-		sourcesTable = PGrnLookupSourcesTable(info->index, WARNING);
+		sourcesTable = PGrnLookupSourcesTable(info->index,
+											  PGRN_ERROR_LEVEL_IGNORE);
 		stats = PGrnBulkDeleteResult(info, sourcesTable);
 	}
 
