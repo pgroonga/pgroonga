@@ -1,0 +1,17 @@
+CREATE TABLE memos (
+  content text
+);
+CREATE INDEX pgroonga_index ON memos USING pgroonga (content);
+
+BEGIN TRANSACTION;
+CREATE TABLE memos_prepared (
+  content text
+);
+CREATE INDEX pgroonga_index_prepared ON memos_prepared USING pgroonga (content);
+PREPARE TRANSACTION 'memo';
+VACUUM;
+COMMIT PREPARED 'memo';
+VACUUM;
+
+DROP TABLE memos_prepared;
+DROP TABLE memos;
