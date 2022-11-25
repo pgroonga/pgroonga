@@ -127,6 +127,9 @@ cp -a \
 cd /tmp
 case "${os}" in
   almalinux|amazon-linux|centos)
+    if [ ${postgresql_version} -lt 12 ]; then
+      rm sql/vacuum/two-phase-commit.sql
+    fi
     if [ ${postgresql_version} -lt 13 ]; then
       rm sql/full-text-search/text/single/declarative-partitioning.sql
     fi

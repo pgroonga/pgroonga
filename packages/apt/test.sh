@@ -94,7 +94,10 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
-if [ "$((${postgresql_version} < 13))" -eq 1 ]; then
+if [ ${postgresql_version} -lt 12 ]; then
+  rm sql/vacuum/two-phase-commit.sql
+fi
+if [ ${postgresql_version} -lt 13 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi
 ruby /host/test/prepare.rb > schedule
