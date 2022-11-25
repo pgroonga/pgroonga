@@ -100,6 +100,8 @@ jobs:
               -e 's/^stats_temp_directory/#stats_temp_directory/g' \
               /etc/postgresql/15/main/postgresql.conf
           fi
+          echo "max_prepared_transactions = 1" | \
+            sudo tee --append /etc/postgresql/*/main/postgresql.conf
           sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Run regression test

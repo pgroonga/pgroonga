@@ -114,6 +114,8 @@ sudo -u postgres -H \
      --locale=C \
      --pgdata=${data_dir} \
      --username=root
+echo "max_prepared_transactions = 1" | \
+  sudo -u postgres -H tee --append ${data_dir}/postgresql.conf
 sudo -u postgres -H \
      $(${pg_config} --bindir)/pg_ctl start \
      --pgdata=${data_dir}
