@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an idea for this project
+title: "[Feature request]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is your problem?
+      description: Tell us what problem you want to solve.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce it
+      description: Tell us how to reproduce the problem you want to solve.
+    validations:
+      required: false
