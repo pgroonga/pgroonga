@@ -25,7 +25,10 @@ static XXH64_hash_t keywordsHash = 0;
 static const char *keywordsHashDelimiter = "\0";
 static const size_t keywordsHashDelimiterSize = 1;
 
+/* For backward compatibility */
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_highlight_html);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_highlight_html_text);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_highlight_html_text_array);
 
 void
 PGrnInitializeHighlightHTML(void)
@@ -238,12 +241,19 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 	indexOID = oid;
 }
 
+/* For backward compatibility. */
+Datum
+pgroonga_highlight_html(PG_FUNCTION_ARGS)
+{
+	return pgroonga_highlight_html_text(fcinfo);
+}
+
 /**
  * pgroonga.highlight_html(target text, keywords text[]) : text
  * pgroonga.highlight_html(target text, keywords text[], indexName cstring) : text
  */
 Datum
-pgroonga_highlight_html(PG_FUNCTION_ARGS)
+pgroonga_highlight_html_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
@@ -264,4 +274,78 @@ pgroonga_highlight_html(PG_FUNCTION_ARGS)
 	highlighted = PGrnHighlightHTML(target);
 
 	PG_RETURN_TEXT_P(highlighted);
+}
+
+/**
+ * pgroonga.highlight_html(target text[], keywords text[]) : text[]
+ * pgroonga.highlight_html(target text[], keywords text[], indexName cstring) : text[]
+ */
+Datum
+pgroonga_highlight_html_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
+	int n;
+	Datum *highlights;
+	bool *nulls;
+
+	n = ARR_DIMS(targets)[0];
+
+	PGrnHighlightHTMLUpdateKeywords(keywords);
+
+	if (PG_NARGS() == 3)
+	{
+		const char *indexName = PG_GETARG_CSTRING(2);
+		PGrnHighlightHTMLSetLexicon(indexName);
+	}
+	else
+	{
+		PGrnHighlightHTMLSetLexicon(NULL);
+	}
+
+	{
+		int i = 0;
+		ArrayIterator iterator;
+		Datum datum;
+		bool isNULL;
+
+		highlights = palloc(sizeof(Datum) * n);
+		nulls = palloc(sizeof(bool) * n);
+		iterator = pgrn_array_create_iterator(targets, 0);
+		while (array_iterate(iterator, &datum, &isNULL))
+		{
+			nulls[i] = isNULL;
+			if (isNULL)
+			{
+				highlights[i] = (Datum) 0;
+			}
+			else
+			{
+				text *target;
+				text *highlighted;
+
+				target = DatumGetTextPP(datum);
+				highlighted = PGrnHighlightHTML(target);
+				highlights[i] = PointerGetDatum(highlighted);
+			}
+			i++;
+		}
+	}
+
+	{
+		int dims[1];
+		int lbs[1];
+
+		dims[0] = n;
+		lbs[0] = 1;
+		PG_RETURN_POINTER(construct_md_array(highlights,
+											 nulls,
+											 1,
+											 dims,
+											 lbs,
+											 TEXTOID,
+											 -1,
+											 false,
+											 'i'));
+	}
 }

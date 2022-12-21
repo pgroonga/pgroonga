@@ -72,7 +72,7 @@ CREATE FUNCTION pgroonga_snippet_html(target text, keywords text[], width intege
 
 CREATE FUNCTION pgroonga_highlight_html(target text, keywords text[])
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
+	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html_text'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
@@ -82,7 +82,25 @@ CREATE FUNCTION pgroonga_highlight_html(target text,
 				        keywords text[],
 				        indexName cstring)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
+	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html_text'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	PARALLEL SAFE;
+
+CREATE FUNCTION pgroonga_highlight_html(targets text[], keywords text[])
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	PARALLEL SAFE;
+
+CREATE FUNCTION pgroonga_highlight_html(targets text[],
+				        keywords text[],
+				        indexName cstring)
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_highlight_html_text_array'
 	LANGUAGE C
 	IMMUTABLE
 	STRICT
