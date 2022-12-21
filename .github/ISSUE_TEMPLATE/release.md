@@ -1,7 +1,7 @@
 ---
 name: Release
 about: Issue for release
-title: PGRoonga x.x.x
+title: PGroonga x.x.x
 labels: ''
 assignees: ''
 
