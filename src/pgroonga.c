@@ -7783,6 +7783,26 @@ PGrnRemoveUnusedTables(void)
 	if (PGrnPGHavePreparedTransaction())
 		return;
 
+	/* This is needed for preventing removing already removed objects.
+	 * Consider the following scenario:
+	 *
+	 * 1. Connection1: CREATE INDEX A
+	 * 2. Connection1: Groonga object A` (ID: 1000) is created
+	 * 3. Connection1: DROP INDEX A
+	 * 4. Connection1: (Groonga object A` (ID: 1000) isn't removed yet.)
+	 * 5. Connection2: VACUUM
+	 * 6. Connection2: Remove Groonga object A` (ID: 1000)
+	 * 7. Connection2: CREATE INDEX B
+	 * 8. Connection2: Groonga object B` (ID: 1000, reused) is created
+	 * 9. Connection2: DROP INDEX B
+	 * 10. Connection1: VACUUM
+	 * 11. Connection1: Groonga object (ID: 1000) is removed but its
+	 *     Groonga object A` not Groonga object B` because Groonga
+	 *     object A` is still open in connection1. This is the
+	 *     problem.
+	 */
+	grn_db_unmap(ctx, grn_ctx_db(ctx));
+
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
 								   NULL, 0,
