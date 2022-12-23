@@ -54,7 +54,7 @@ static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGUSR1 = false;
 static int PGroongaCrashSaferFlushNaptime = 60;
 static char *PGroongaCrashSaferLogPath;
-static int PGroongaCrashSaferLogLevel;
+static int PGroongaCrashSaferLogLevel = GRN_LOG_DEFAULT_LEVEL;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
