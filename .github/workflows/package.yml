@@ -18,16 +18,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt -y -V install \
-            ruby
-          sudo gem install bundler
-          bundle install
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler-cache: true
       - name: Build archive
         run: |
-          rake dist
+          bundle exec rake dist
 
       # Artifact
       - uses: actions/upload-artifact@v3
@@ -43,6 +40,7 @@ jobs:
         with:
           files: |
             pgroonga-*.tar.gz
+
   linux:
     name: Linux
     needs: source
