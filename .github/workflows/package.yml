@@ -118,7 +118,6 @@ jobs:
           sudo apt update
           sudo apt -y -V install \
             qemu-user-static
-          bundle install
       - name: Clone dependencies
         run: |
           cd ..
