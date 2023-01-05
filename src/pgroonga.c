@@ -5448,7 +5448,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 														  NULL);
 	}
 
-	if (!query)
+	if (!*query)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s query must not NULL",
