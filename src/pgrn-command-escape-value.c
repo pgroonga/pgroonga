@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+#include "varatt.h"
 
 #include "pgrn-compatible.h"
 
