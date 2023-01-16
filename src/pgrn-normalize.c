@@ -5,6 +5,9 @@
 #include "pgrn-normalize.h"
 #include "pgrn-string.h"
 
+#ifdef PGRN_HAVE_VARATT_H
+#include <varatt.h>
+#endif
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
