@@ -7,10 +7,10 @@
 
 #include <groonga.h>
 
-#ifdef PGRN_HAVE_VARATT_H
-#include <varatt.h>
-#endif
 #include <utils/builtins.h>
+#ifdef PGRN_HAVE_VARATT_H
+#	include <varatt.h>
+#endif
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_index_column_name_name);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_index_column_name_index);

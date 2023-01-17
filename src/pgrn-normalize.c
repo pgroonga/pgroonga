@@ -5,10 +5,10 @@
 #include "pgrn-normalize.h"
 #include "pgrn-string.h"
 
-#ifdef PGRN_HAVE_VARATT_H
-#include <varatt.h>
-#endif
 #include <utils/builtins.h>
+#ifdef PGRN_HAVE_VARATT_H
+#	include <varatt.h>
+#endif
 
 static grn_ctx *ctx = &PGrnContext;
 static grn_obj *lexicon = NULL;

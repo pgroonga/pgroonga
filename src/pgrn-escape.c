@@ -5,11 +5,11 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 
-#ifdef PGRN_HAVE_VARATT_H
-#include <varatt.h>
-#endif
 #include <utils/builtins.h>
 #include <utils/timestamp.h>
+#ifdef PGRN_HAVE_VARATT_H
+#	include <varatt.h>
+#endif
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
