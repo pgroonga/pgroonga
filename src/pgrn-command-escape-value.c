@@ -5,6 +5,9 @@
 #include "pgrn-command-escape-value.h"
 #include "pgrn-global.h"
 
+#ifdef PGRN_HAVE_VARATT_H
+#include <varatt.h>
+#endif
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;

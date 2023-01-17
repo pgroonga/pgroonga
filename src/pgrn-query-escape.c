@@ -5,6 +5,9 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 
+#ifdef PGRN_HAVE_VARATT_H
+#include <varatt.h>
+#endif
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
