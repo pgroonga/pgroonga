@@ -1120,7 +1120,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 }
 
 static bool
-PGrnWALApplyKeyEqual(const char *context,
+PGrnWALApplyKeyEqual(PGrnWALApplyData *data,
+					 const char *context,
 					 msgpack_object *key,
 					 const char *name)
 {
@@ -1130,9 +1131,11 @@ PGrnWALApplyKeyEqual(const char *context,
 	if (key->type != MSGPACK_OBJECT_STR)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%skey must be string: <%#x>",
+					"%s%s[%s(%u)]%skey must be string: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					key->type);
 	}
@@ -1147,16 +1150,19 @@ PGrnWALApplyKeyEqual(const char *context,
 }
 
 static uint64_t
-PGrnWALApplyValueGetPositiveInteger(const char *context,
+PGrnWALApplyValueGetPositiveInteger(PGrnWALApplyData *data,
+									const char *context,
 									msgpack_object_kv *kv)
 {
 	const char *tag = "[wal][apply][value][positive-integer][get]";
 	if (kv->val.type != MSGPACK_OBJECT_POSITIVE_INTEGER)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be positive integer: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be positive integer: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1167,7 +1173,8 @@ PGrnWALApplyValueGetPositiveInteger(const char *context,
 }
 
 static void
-PGrnWALApplyValueGetString(const char *context,
+PGrnWALApplyValueGetString(PGrnWALApplyData *data,
+						   const char *context,
 						   msgpack_object_kv *kv,
 						   const char **string,
 						   size_t *stringSize)
@@ -1176,9 +1183,11 @@ PGrnWALApplyValueGetString(const char *context,
 	if (kv->val.type != MSGPACK_OBJECT_STR)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be string: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be string: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1190,7 +1199,8 @@ PGrnWALApplyValueGetString(const char *context,
 }
 
 static void
-PGrnWALApplyValueGetBinary(const char *context,
+PGrnWALApplyValueGetBinary(PGrnWALApplyData *data,
+						   const char *context,
 						   msgpack_object_kv *kv,
 						   const char **binary,
 						   size_t *binarySize)
@@ -1199,9 +1209,11 @@ PGrnWALApplyValueGetBinary(const char *context,
 	if (kv->val.type != MSGPACK_OBJECT_BIN)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be binary: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be binary: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_BIN(kv->key).size,
 					MSGPACK_OBJECT_VIA_BIN(kv->key).ptr,
@@ -1213,7 +1225,8 @@ PGrnWALApplyValueGetBinary(const char *context,
 }
 
 static grn_obj *
-PGrnWALApplyValueGetGroongaObject(const char *context,
+PGrnWALApplyValueGetGroongaObject(PGrnWALApplyData *data,
+								  const char *context,
 								  msgpack_object_kv *kv)
 {
 	const char *tag = "[wal][apply][value][groonga-object][get]";
@@ -1231,9 +1244,11 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be nil or string: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be nil or string: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1245,7 +1260,8 @@ PGrnWALApplyValueGetGroongaObject(const char *context,
 }
 
 static void
-PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
+PGrnWALApplyValueGetGroongaObjectIDs(PGrnWALApplyData *data,
+									 const char *context,
 									 msgpack_object_kv *kv,
 									 grn_obj *ids)
 {
@@ -1256,9 +1272,11 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 	if (kv->val.type != MSGPACK_OBJECT_ARRAY)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be array: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be array: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1276,9 +1294,12 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 		if (element->type != MSGPACK_OBJECT_STR)
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s%s%s%.*s value must be array of string: [%u]=<%#x>",
+						"%s%s[%s(%u)]%s%.*s "
+						"value must be array of string: [%u]=<%#x>",
 						tag,
 						context ? context : "",
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						context ? " " : "",
 						MSGPACK_OBJECT_VIA_STR(kv->key).size,
 						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1295,7 +1316,8 @@ PGrnWALApplyValueGetGroongaObjectIDs(const char *context,
 }
 
 static grn_obj *
-PGrnWALApplyValueGetTableModule(const char *context,
+PGrnWALApplyValueGetTableModule(PGrnWALApplyData *data,
+								const char *context,
 								msgpack_object_kv *kv,
 								grn_obj *buffer)
 {
@@ -1316,9 +1338,11 @@ PGrnWALApplyValueGetTableModule(const char *context,
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be nil or string: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be nil or string: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1330,7 +1354,8 @@ PGrnWALApplyValueGetTableModule(const char *context,
 }
 
 static grn_obj *
-PGrnWALApplyValueGetTableModules(const char *context,
+PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
+								 const char *context,
 								 msgpack_object_kv *kv,
 								 grn_obj *buffer)
 {
@@ -1364,11 +1389,13 @@ PGrnWALApplyValueGetTableModules(const char *context,
 			if (element->type != MSGPACK_OBJECT_STR)
 			{
 				PGrnCheckRC(GRN_INVALID_ARGUMENT,
-							"%s%s%s"
+							"%s%s[%s(%u)]%s"
 							"%.*s value must be string or array of string: "
 							"[%u]=<%#x>",
 							tag,
 							context ? context : "",
+							RelationGetRelationName(data->index),
+							RelationGetRelid(data->index),
 							context ? " " : "",
 							MSGPACK_OBJECT_VIA_STR(kv->key).size,
 							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1387,9 +1414,11 @@ PGrnWALApplyValueGetTableModules(const char *context,
 	}
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s%s%s%.*s value must be string or array: <%#x>",
+					"%s%s[%s(%u)]%s%.*s value must be string or array: <%#x>",
 					tag,
 					context ? context : "",
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					context ? " " : "",
 					MSGPACK_OBJECT_VIA_STR(kv->key).size,
 					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
@@ -1497,8 +1526,10 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			break;
 		default:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s unexpected element type: <%#x>",
+						"%s[%s(%u)] unexpected element type: <%#x>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						element->type);
 			break;
 		}
@@ -1523,9 +1554,9 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[currentElement]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "_table"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "_table"))
 		{
-			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+			table = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 			currentElement++;
 		}
 	}
@@ -1541,9 +1572,9 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[currentElement]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), GRN_COLUMN_NAME_KEY))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), GRN_COLUMN_NAME_KEY))
 		{
-			PGrnWALApplyValueGetBinary(context, kv, &key, &keySize);
+			PGrnWALApplyValueGetBinary(data, context, kv, &key, &keySize);
 			currentElement++;
 		}
 	}
@@ -1562,9 +1593,11 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		if (key->type != MSGPACK_OBJECT_STR)
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s%s key must be map: <%#x>",
+						"%s%s[%s(%u)] key must be map: <%#x>",
 						tag,
 						context,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						key->type);
 		}
 
@@ -1612,9 +1645,11 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 */
 		default:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s%s unexpected value type: <%#x>",
+						"%s%s[%s(%u)] unexpected value type: <%#x>",
 						tag,
 						context,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						value->type);
 			break;
 		}
@@ -1642,34 +1677,37 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[i]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "name"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "name"))
 		{
-			PGrnWALApplyValueGetString(context, kv, &name, &nameSize);
+			PGrnWALApplyValueGetString(data, context, kv, &name, &nameSize);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "flags"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "flags"))
 		{
-			flags = PGrnWALApplyValueGetPositiveInteger(context, kv);
+			flags = PGrnWALApplyValueGetPositiveInteger(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "type"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "type"))
 		{
-			type = PGrnWALApplyValueGetGroongaObject(context, kv);
+			type = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "tokenizer"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "tokenizer"))
 		{
-			tokenizer = PGrnWALApplyValueGetTableModule(context,
+			tokenizer = PGrnWALApplyValueGetTableModule(data,
+														context,
 														kv,
 														&(buffers->tokenizer));
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "normalizer") ||
-				 PGrnWALApplyKeyEqual(context, &(kv->key), "normalizers"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "normalizer") ||
+				 PGrnWALApplyKeyEqual(data, context, &(kv->key), "normalizers"))
 		{
-			normalizers = PGrnWALApplyValueGetTableModule(context,
+			normalizers = PGrnWALApplyValueGetTableModule(data,
+														  context,
 														  kv,
 														  &(buffers->normalizers));
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "token_filters"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "token_filters"))
 		{
-			tokenFilters = PGrnWALApplyValueGetTableModules(context,
+			tokenFilters = PGrnWALApplyValueGetTableModules(data,
+															context,
 															kv,
 															&(buffers->tokenFilters));
 		}
@@ -1703,21 +1741,21 @@ PGrnWALApplyCreateColumn(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[i]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "table"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "table"))
 		{
-			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+			table = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "name"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "name"))
 		{
-			PGrnWALApplyValueGetString(context, kv, &name, &nameSize);
+			PGrnWALApplyValueGetString(data, context, kv, &name, &nameSize);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "flags"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "flags"))
 		{
-			flags = PGrnWALApplyValueGetPositiveInteger(context, kv);
+			flags = PGrnWALApplyValueGetPositiveInteger(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "type"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "type"))
 		{
-			type = PGrnWALApplyValueGetGroongaObject(context, kv);
+			type = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
 	}
 
@@ -1740,13 +1778,13 @@ PGrnWALApplySetSources(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[i]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "column"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "column"))
 		{
-			column = PGrnWALApplyValueGetGroongaObject(context, kv);
+			column = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "sources"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "sources"))
 		{
-			PGrnWALApplyValueGetGroongaObjectIDs(context, kv, sourceIDs);
+			PGrnWALApplyValueGetGroongaObjectIDs(data, context, kv, sourceIDs);
 		}
 	}
 
@@ -1769,13 +1807,13 @@ PGrnWALApplyRenameTable(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[i]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "name"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "name"))
 		{
-			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+			table = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "new_name"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "new_name"))
 		{
-			PGrnWALApplyValueGetString(context, kv, &newName, &newNameSize);
+			PGrnWALApplyValueGetString(data, context, kv, &newName, &newNameSize);
 		}
 	}
 
@@ -1798,13 +1836,13 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[i]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "table"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "table"))
 		{
-			table = PGrnWALApplyValueGetGroongaObject(context, kv);
+			table = PGrnWALApplyValueGetGroongaObject(data, context, kv);
 		}
-		else if (PGrnWALApplyKeyEqual(context, &(kv->key), "key"))
+		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "key"))
 		{
-			PGrnWALApplyValueGetBinary(context, kv, &key, &keySize);
+			PGrnWALApplyValueGetBinary(data, context, kv, &key, &keySize);
 			currentElement++;
 		}
 	}
@@ -1856,25 +1894,32 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		{
 		case MSGPACK_OBJECT_NIL:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <nil>",
+						"%s[%s(%u)] %s: <%u><%u>: <nil>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset);
 			break;
 		case MSGPACK_OBJECT_BOOLEAN:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <boolean>: <%s>",
+						"%s[%s(%u)] %s: <%u><%u>: <boolean>: <%s>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
 						object->via.boolean ? "true" : "false");
-	break;
+			break;
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <positive-integer>: <%" PRId64 ">",
+						"%s[%s(%u)] %s: <%u><%u>: "
+						"<positive-integer>: <%" PRId64 ">",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1882,8 +1927,11 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 			break;
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <negative-integer>: <%" PRIu64 ">",
+						"%s[%s(%u)] %s: <%u><%u>: "
+						"<negative-integer>: <%" PRIu64 ">",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1891,8 +1939,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <float>: <%g>",
+						"%s[%s(%u)] %s: <%u><%u>: <float>: <%g>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1900,8 +1950,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 			break;
 		case MSGPACK_OBJECT_STR:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <string>: <%.*s>",
+						"%s[%s(%u)] %s: <%u><%u>: <string>: <%.*s>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1910,8 +1962,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <array>: <%u>",
+						"%s[%s(%u)] %s: <%u><%u>: <array>: <%u>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1920,8 +1974,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 #if MSGPACK_VERSION_MAJOR != 0
 		case MSGPACK_OBJECT_BIN:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <binary>: <%u>",
+						"%s[%s(%u)] %s: <%u><%u>: <binary>: <%u>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1930,8 +1986,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 #endif
 		default:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s %s: <%u><%u>: <%#x>",
+						"%s[%s(%u)] %s: <%u><%u>: <%#x>",
 						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
 						message,
 						currentBlock,
 						currentOffset,
@@ -1947,9 +2005,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		msgpack_object_kv *kv;
 
 		kv = &(object->via.map.ptr[currentElement]);
-		if (PGrnWALApplyKeyEqual(context, &(kv->key), "_action"))
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "_action"))
 		{
-			action = PGrnWALApplyValueGetPositiveInteger(context, kv);
+			action = PGrnWALApplyValueGetPositiveInteger(data, context, kv);
 			currentElement++;
 		}
 	}
@@ -1976,8 +2034,10 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s unexpected action: <%d>",
+					"%s[%s(%u)] unexpected action: <%d>",
 					tag,
+					RelationGetRelationName(data->index),
+					RelationGetRelid(data->index),
 					action);
 		break;
 	}
@@ -2033,11 +2093,15 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		page = BufferGetPage(buffer);
 		lastOffset = PGrnWALPageGetLastOffset(page);
 		if (dataOffset > lastOffset)
+		{
 			PGrnCheckRC(GRN_UNKNOWN_ERROR,
-						"[wal][apply][consume] "
+						"[wal][apply][consume][%s(%u)] "
 						"unconsumed WAL are overwritten: "
 						"pgroonga.max_wal_size should be increased or "
-						"pgroonga_wal_applier.naptime should be decreased");
+						"pgroonga_wal_applier.naptime should be decreased",
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index));
+		}
 		dataSize = lastOffset - dataOffset;
 		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
 		memcpy(msgpack_unpacker_buffer(&unpacker),
