@@ -693,7 +693,11 @@ PGrnApplyOptionValues(Relation index,
 
 	rawTokenizer = ((const char *) options) + options->tokenizerOffset;
 
-	if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
+	if (useCase == PGRN_OPTION_USE_CASE_REGEXP_SEARCH)
+	{
+		*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
+	}
+	else if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
 	{
 		*tokenizer = NULL;
 	}
