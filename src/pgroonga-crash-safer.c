@@ -138,6 +138,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 		int result;
 		StringInfoData buffer;
 		uint64 i;
+		uint64 nIndexes;
+		char **indexNames;
 
 		SetCurrentStatementStartTimestamp();
 		result = SPI_execute("SELECT (namespace.nspname || "
@@ -172,41 +174,54 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 		}
 
 		initStringInfo(&buffer);
-		for (i = 0; i < SPI_processed; i++)
+		nIndexes = SPI_processed;
+		indexNames = palloc(sizeof(char *) * nIndexes);
+		for (i = 0; i < nIndexes; i++)
 		{
 			bool isNull;
 			Datum indexName;
-			bool readOnly;
 
 			indexName = SPI_getbinval(SPI_tuptable->vals[i],
 									  SPI_tuptable->tupdesc,
 									  1,
 									  &isNull);
+			if (isNull)
+			{
+				indexNames[i] = NULL;
+			}
+			else
+			{
+				indexNames[i] = pnstrdup(VARDATA_ANY(indexName),
+										 VARSIZE_ANY_EXHDR(indexName));
+			}
+		}
+
+		for (i = 0; i < nIndexes; i++)
+		{
+			/* Blocked with false */
+			bool readOnly = true;
+
+			if (!indexNames[i])
+				continue;
+
 			resetStringInfo(&buffer);
-			appendStringInfo(&buffer,
-							 "REINDEX INDEX %.*s",
-							 (int) VARSIZE_ANY_EXHDR(indexName),
-							 VARDATA_ANY(indexName));
+			appendStringInfo(&buffer, "REINDEX INDEX %s", indexNames[i]);
 			SetCurrentStatementStartTimestamp();
-#if PG_VERSION_NUM >= 140000
-			readOnly = false;
-#else
-			/* Blocked with readOnly = false */
-			readOnly = true;
-#endif
 			result = SPI_execute(buffer.data, readOnly, 0);
 			if (result != SPI_OK_UTILITY)
 			{
 				ereport(FATAL,
 						(errmsg(TAG ": failed to reindex PGroonga index: "
-								"%u/%u: <%.*s>: %d",
+								"%u/%u: <%s>: %d",
 								databaseOid,
 								tableSpaceOid,
-								(int) VARSIZE_ANY_EXHDR(indexName),
-								VARDATA_ANY(indexName),
+								indexNames[i],
 								result)));
 			}
+			pfree(indexNames[i]);
+			indexNames[i] = NULL;
 		}
+		pfree(indexNames);
 	}
 
 	PopActiveSnapshot();

@@ -48,9 +48,10 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
   end
 
   test "recover by REINDEX" do
-    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE TABLE memos (title text, content text);")
+    run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    run_sql("INSERT INTO memos VALUES ('PGroonga', 'PGroonga is good!');")
     stop_postgres
     File.open(File.join(@test_db_dir, "pgrn"), "w") do |pgrn|
       pgrn.puts("Broken")
@@ -58,13 +59,19 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
     start_postgres
     sql = <<-SQL
 SET enable_seqscan = no;
+SELECT * FROM memos WHERE title &@~ 'PGroonga';
 SELECT * FROM memos WHERE content &@~ 'PGroonga';
     SQL
     assert_equal([<<-OUTPUT, ""], run_sql(sql))
 #{sql}
-      content      
--------------------
- PGroonga is good!
+  title   |      content      
+----------+-------------------
+ PGroonga | PGroonga is good!
+(1 row)
+
+  title   |      content      
+----------+-------------------
+ PGroonga | PGroonga is good!
 (1 row)
 
     OUTPUT
