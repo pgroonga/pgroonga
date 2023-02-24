@@ -178,9 +178,9 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			Datum indexName;
 			bool readOnly;
 
-			indexName = SPI_getbinval(SPI_tuptable->vals[0],
+			indexName = SPI_getbinval(SPI_tuptable->vals[i],
 									  SPI_tuptable->tupdesc,
-									  i + 1,
+									  1,
 									  &isNull);
 			resetStringInfo(&buffer);
 			appendStringInfo(&buffer,
