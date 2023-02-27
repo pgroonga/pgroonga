@@ -5,8 +5,27 @@ require "stringio"
 require "tempfile"
 
 module Helpers
+  class CommandRunError < StandardError
+    attr_reader :commane_line
+    attr_reader :output
+    attr_reader :error
+    def initialize(command_line, output, error)
+      @command_line = command_line
+      @output = output
+      @error = error
+      message = "failed to run: "
+      message << command_line.join(" ")
+      message << "\n"
+      message << "output:\n"
+      message << output
+      message << "error:\n"
+      message << error
+      super(message)
+    end
+  end
+
   module CommandRunnable
-    def spawn_process(*args)
+    def spawn_process(*command_line)
       env = {
         "LC_ALL" => "C",
         "PGCLIENTENCODING" => "UTF-8",
@@ -17,7 +36,7 @@ module Helpers
         :out => output_write,
         :err => error_write,
       }
-      pid = spawn(env, *args, options)
+      pid = spawn(env, *command_line, options)
       output_write.close
       error_write.close
       [pid, output_read, error_read]
@@ -34,8 +53,8 @@ module Helpers
       end
     end
 
-    def run_command(*args)
-      pid, output_read, error_read = spawn_process(*args)
+    def run_command(*command_line)
+      pid, output_read, error_read = spawn_process(*command_line)
       output = ""
       error = ""
       status = nil
@@ -60,13 +79,7 @@ module Helpers
       output << read_command_output(output_read)
       error << read_command_output(error_read)
       unless status.success?
-        command_line = args.join(" ")
-        message = "failed to run: #{command_line}\n"
-        message << "output:\n"
-        message << output
-        message << "error:\n"
-        message << error
-        raise message
+        raise CommandRunError.new(command_line, output, error)
       end
       [output, error]
     end

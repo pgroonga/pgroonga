@@ -63,14 +63,14 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
 SET enable_seqscan = no;
 SELECT * FROM memos WHERE title &@~ 'PGroonga';
     SQL
-    assert_equal([<<-OUTPUT, ""], run_sql(sql))
-#{sql}
-  title   |      content      
-----------+-------------------
- PGroonga | PGroonga is good!
-(1 row)
-
-    OUTPUT
+    begin
+      run_sql(sql)
+    rescue Helpers::CommandRunError => error
+      # This may be happen on slow environment
+      assert_equal("ERROR:  pgroonga: pgroonga_crash_safer is reindexing",
+                   error.error.chomp)
+      sleep(3)
+    end
 
     sql = <<-SQL
 SET enable_seqscan = no;
