@@ -141,10 +141,10 @@ pgroonga_wal_applier_apply_all(void)
 #endif
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
-					 TAG ": %s(%u)",
+					 TAG ": apply: %s(%u)",
 					 form->datname.data,
 					 databaseOid);
-			snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+			snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 			worker.bgw_flags =
 				BGWORKER_SHMEM_ACCESS |
 				BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -230,7 +230,7 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
-	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;
