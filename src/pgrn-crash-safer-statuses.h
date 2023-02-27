@@ -6,6 +6,7 @@
 #ifdef PGRN_HAVE_COMMON_HASHFN_H
 #	include <common/hashfn.h>
 #endif
+#include <miscadmin.h>
 #include <port/atomics.h>
 #include <storage/shmem.h>
 
@@ -23,6 +24,7 @@ typedef struct pgrn_crash_safer_statuses_entry
 {
 	uint64 key;
 	pid_t pid;
+	pid_t reindexPID;
 	sig_atomic_t flushing;
 	pg_atomic_uint32 nUsingProcesses;
 } pgrn_crash_safer_statuses_entry;
@@ -69,14 +71,20 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 {
 	uint64 databaseInfo;
 	bool found_local;
+	pgrn_crash_safer_statuses_entry *entry;
 	if (!statuses) {
 		statuses = pgrn_crash_safer_statuses_get();
 	}
-	if (!found) {
-		found = &found_local;
-	}
 	databaseInfo = PGRN_DATABASE_INFO_PACK(databaseOid, tableSpaceOid);
-	return hash_search(statuses, &databaseInfo, action, found);
+	entry = hash_search(statuses, &databaseInfo, action, &found_local);
+	if (action == HASH_ENTER && !found_local) {
+		entry->pid = InvalidPid;
+		entry->reindexPID = InvalidPid;
+	}
+	if (found) {
+		*found = found_local;
+	}
+	return entry;
 }
 
 static inline void
@@ -106,7 +114,43 @@ pgrn_crash_safer_statuses_get_main_pid(HTAB *statuses)
 	}
 	else
 	{
-		return 0;
+		return InvalidPid;
+	}
+}
+
+static inline void
+pgrn_crash_safer_statuses_set_reindex_pid(HTAB *statuses,
+										  Oid databaseOid,
+										  Oid tableSpaceOid,
+										  pid_t pid)
+{
+	pgrn_crash_safer_statuses_entry *entry;
+	entry = pgrn_crash_safer_statuses_search(statuses,
+											 databaseOid,
+											 tableSpaceOid,
+											 HASH_ENTER,
+											 NULL);
+	entry->reindexPID = pid;
+}
+
+static inline pid_t
+pgrn_crash_safer_statuses_get_reindex_pid(HTAB *statuses,
+										  Oid databaseOid,
+										  Oid tableSpaceOid)
+{
+	bool found;
+	pgrn_crash_safer_statuses_entry *entry;
+	entry = pgrn_crash_safer_statuses_search(statuses,
+											 databaseOid,
+											 tableSpaceOid,
+											 HASH_FIND,
+											 &found);
+	if (found) {
+		return entry->reindexPID;
+	}
+	else
+	{
+		return InvalidPid;
 	}
 }
 
@@ -140,7 +184,7 @@ pgrn_crash_safer_statuses_release(HTAB *statuses,
 	{
 		uint32 nUsingProcesses =
 			pg_atomic_fetch_sub_u32(&(entry->nUsingProcesses), 1);
-		if (nUsingProcesses == 1 && entry->pid != 0)
+		if (nUsingProcesses == 1 && entry->pid != InvalidPid)
 		{
 			kill(entry->pid, SIGUSR1);
 		}
@@ -203,4 +247,19 @@ pgrn_crash_safer_statuses_is_flushing(HTAB *statuses,
 											 HASH_FIND,
 											 &found);
 	return found && entry->flushing;
+}
+
+static inline bool
+pgrn_crash_safer_statuses_is_reindexing(HTAB *statuses,
+										Oid databaseOid,
+										Oid tableSpaceOid)
+{
+	bool found;
+	pgrn_crash_safer_statuses_entry *entry;
+	entry = pgrn_crash_safer_statuses_search(statuses,
+											 databaseOid,
+											 tableSpaceOid,
+											 HASH_FIND,
+											 &found);
+	return found && entry->reindexPID != InvalidPid;
 }

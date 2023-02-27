@@ -575,9 +575,12 @@ PGrnEnsureDatabase(void)
 	{
 		HTAB *statuses;
 		pid_t crashSaferPID;
+		pid_t reindexPID;
+		bool waitFlushing = true;
+
 		statuses = pgrn_crash_safer_statuses_get();
 		crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
-		if (crashSaferPID == 0)
+		if (crashSaferPID == InvalidPid)
 		{
 			ereport(ERROR,
 					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -590,10 +593,30 @@ PGrnEnsureDatabase(void)
 									  MyDatabaseId,
 									  MyDatabaseTableSpace);
 		PGrnCrashSaferInitialized = true;
-		while (true)
+
+		reindexPID =
+			pgrn_crash_safer_statuses_get_reindex_pid(statuses,
+													  MyDatabaseId,
+													  MyDatabaseTableSpace);
+		if (reindexPID == MyProcPid)
+		{
+			waitFlushing = false;
+		}
+
+		while (waitFlushing)
 		{
 			int conditions;
 			long timeout = 1000;
+
+			if (pgrn_crash_safer_statuses_is_reindexing(statuses,
+														MyDatabaseId,
+														MyDatabaseTableSpace))
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_CANNOT_CONNECT_NOW),
+						 errmsg("pgroonga: "
+								"pgroonga_crash_safer is reindexing")));
+			}
 
 			if (pgrn_crash_safer_statuses_is_flushing(statuses,
 													  MyDatabaseId,

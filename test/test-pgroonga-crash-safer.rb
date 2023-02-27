@@ -52,15 +52,16 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
     run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
     run_sql("INSERT INTO memos VALUES ('PGroonga', 'PGroonga is good!');")
+    run_sql("SELECT pgroonga_wal_truncate();")
     stop_postgres
     File.open(File.join(@test_db_dir, "pgrn"), "w") do |pgrn|
       pgrn.puts("Broken")
     end
     start_postgres
+
     sql = <<-SQL
 SET enable_seqscan = no;
 SELECT * FROM memos WHERE title &@~ 'PGroonga';
-SELECT * FROM memos WHERE content &@~ 'PGroonga';
     SQL
     assert_equal([<<-OUTPUT, ""], run_sql(sql))
 #{sql}
@@ -69,6 +70,14 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
  PGroonga | PGroonga is good!
 (1 row)
 
+    OUTPUT
+
+    sql = <<-SQL
+SET enable_seqscan = no;
+SELECT * FROM memos WHERE content &@~ 'PGroonga';
+    SQL
+    assert_equal([<<-OUTPUT, ""], run_sql(sql))
+#{sql}
   title   |      content      
 ----------+-------------------
  PGroonga | PGroonga is good!

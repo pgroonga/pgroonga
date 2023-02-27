@@ -118,6 +118,19 @@ pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 	PGroongaCrashSaferGotSIGUSR1 = true;
 }
 
+static void
+pgroonga_crash_safer_reindex_one_on_exit(int code, Datum databaseInfoDatum)
+{
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid tableSpaceOid;
+	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
+	pgrn_crash_safer_statuses_set_reindex_pid(NULL,
+											  databaseOid,
+											  tableSpaceOid,
+											  InvalidPid);
+}
+
 void
 pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 {
@@ -133,6 +146,13 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 	SPI_connect();
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": reindexing");
+
+	pgrn_crash_safer_statuses_set_reindex_pid(NULL,
+											  databaseOid,
+											  tableSpaceOid,
+											  MyProcPid);
+	before_shmem_exit(pgroonga_crash_safer_reindex_one_on_exit,
+					  databaseInfoDatum);
 
 	{
 		int result;
@@ -198,16 +218,13 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 
 		for (i = 0; i < nIndexes; i++)
 		{
-			/* Blocked with false */
-			bool readOnly = true;
-
 			if (!indexNames[i])
 				continue;
 
 			resetStringInfo(&buffer);
 			appendStringInfo(&buffer, "REINDEX INDEX %s", indexNames[i]);
 			SetCurrentStatementStartTimestamp();
-			result = SPI_execute(buffer.data, readOnly, 0);
+			result = SPI_execute(buffer.data, false, 0);
 			if (result != SPI_OK_UTILITY)
 			{
 				ereport(FATAL,
@@ -250,7 +267,7 @@ pgroonga_crash_safer_flush_one_remove_pid_on_exit(int code,
 											 &found);
 	if (!found)
 		return;
-	entry->pid = 0;
+	entry->pid = InvalidPid;
 }
 
 static void
@@ -359,11 +376,6 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 	pfree(databasePath);
 
-	statuses = pgrn_crash_safer_statuses_get();
-	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
-	before_shmem_exit(pgroonga_crash_safer_flush_one_on_exit,
-					  databaseInfoDatum);
-
 	if (needReindex)
 	{
 		BackgroundWorker worker = {0};
@@ -374,11 +386,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				 TAG ": reindex: %u/%u",
 				 databaseOid,
 				 tableSpaceOid);
-		snprintf(worker.bgw_type,
-				 BGW_MAXLEN,
-				 TAG ": reindex: %u/%u",
-				 databaseOid,
-				 tableSpaceOid);
+		snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 		worker.bgw_flags =
 			BGWORKER_SHMEM_ACCESS |
 			BGWORKER_BACKEND_DATABASE_CONNECTION;
@@ -397,6 +405,11 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			WaitForBackgroundWorkerShutdown(handle);
 		}
 	}
+
+	statuses = pgrn_crash_safer_statuses_get();
+	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
+	before_shmem_exit(pgroonga_crash_safer_flush_one_on_exit,
+					  databaseInfoDatum);
 
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
@@ -469,13 +482,107 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	P(": flush: done: %u/%u", databaseOid, tableSpaceOid);
 
-	proc_exit(1);
+	proc_exit(0);
+}
+
+static void
+pgroonga_crash_safer_main_flush_one(pgrn_crash_safer_statuses_entry *entry)
+{
+	BackgroundWorker worker = {0};
+	BackgroundWorkerHandle *handle;
+	Oid databaseOid;
+	Oid tableSpaceOid;
+
+	PGRN_DATABASE_INFO_UNPACK(entry->key,
+							  databaseOid,
+							  tableSpaceOid);
+	P(": flush: start: %u/%u",
+	  databaseOid,
+	  tableSpaceOid);
+	snprintf(worker.bgw_name,
+			 BGW_MAXLEN,
+			 TAG ": flush: %u/%u",
+			 databaseOid,
+			 tableSpaceOid);
+	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
+	worker.bgw_flags = BGWORKER_SHMEM_ACCESS;
+	worker.bgw_start_time = BgWorkerStart_ConsistentState;
+	worker.bgw_restart_time = BGW_NEVER_RESTART;
+	snprintf(worker.bgw_library_name,
+			 BGW_MAXLEN,
+			 "%s", PGroongaCrashSaferLibraryName);
+	snprintf(worker.bgw_function_name,
+			 BGW_MAXLEN,
+			 "pgroonga_crash_safer_flush_one");
+	worker.bgw_main_arg = DatumGetUInt64(entry->key);
+	worker.bgw_notify_pid = MyProcPid;
+	if (!RegisterDynamicBackgroundWorker(&worker, &handle))
+		return;
+	WaitForBackgroundWorkerStartup(handle, &(entry->pid));
+}
+
+static void
+pgroonga_crash_safer_main_flush_all(void)
+{
+	HTAB *statuses;
+	const LOCKMODE lock = AccessShareLock;
+	Relation pg_database;
+	PGrnTableScanDesc scan;
+	HeapTuple tuple;
+
+	StartTransactionCommand();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	pgstat_report_activity(STATE_RUNNING,
+						   TAG ": start flush process for all databases");
+
+	statuses = pgrn_crash_safer_statuses_get();
+
+	pg_database = pgrn_table_open(DatabaseRelationId, lock);
+	scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
+	for (tuple = heap_getnext(scan, ForwardScanDirection);
+		 HeapTupleIsValid(tuple);
+		 tuple = heap_getnext(scan, ForwardScanDirection))
+	{
+		Form_pg_database form = (Form_pg_database) GETSTRUCT(tuple);
+		Oid databaseOid;
+		Oid tableSpaceOid;
+		char *databasePath;
+		char pgrnDatabasePath[MAXPGPATH];
+		pgrn_crash_safer_statuses_entry *entry;
+
+#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
+		databaseOid = form->oid;
+#else
+		databaseOid = HeapTupleGetOid(tuple);
+#endif
+		tableSpaceOid = form->dattablespace;
+
+		databasePath = GetDatabasePath(databaseOid, tableSpaceOid);
+		join_path_components(pgrnDatabasePath,
+							 databasePath,
+							 PGrnDatabaseBasename);
+		if (!pgrn_file_exist(pgrnDatabasePath))
+			continue;
+
+		entry = pgrn_crash_safer_statuses_search(statuses,
+												 databaseOid,
+												 tableSpaceOid,
+												 HASH_ENTER,
+												 NULL);
+		pgroonga_crash_safer_main_flush_one(entry);
+	}
+	pgrn_table_endscan(scan);
+	pgrn_table_close(pg_database, lock);
+
+	PopActiveSnapshot();
+	CommitTransactionCommand();
+	pgstat_report_activity(STATE_IDLE, NULL);
 }
 
 static void
 pgroonga_crash_safer_main_on_exit(int code, Datum arg)
 {
-	pgrn_crash_safer_statuses_set_main_pid(NULL, 0);
+	pgrn_crash_safer_statuses_set_main_pid(NULL, InvalidPid);
 }
 
 void
@@ -493,6 +600,9 @@ pgroonga_crash_safer_main(Datum arg)
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_set_main_pid(statuses, MyProcPid);
 	before_shmem_exit(pgroonga_crash_safer_main_on_exit, 0);
+
+	pgroonga_crash_safer_main_flush_all();
+
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
 		int conditions;
@@ -522,51 +632,16 @@ pgroonga_crash_safer_main(Datum arg)
 			hash_seq_init(&status, statuses);
 			while ((entry = hash_seq_search(&status)))
 			{
-				BackgroundWorker worker = {0};
-				BackgroundWorkerHandle *handle;
-				Oid databaseOid;
-				Oid tableSpaceOid;
-
-				if (entry->pid != 0)
+				if (entry->pid != InvalidPid)
 					continue;
 				if (pg_atomic_read_u32(&(entry->nUsingProcesses)) != 1)
 					continue;
-
-				PGRN_DATABASE_INFO_UNPACK(entry->key,
-										  databaseOid,
-										  tableSpaceOid);
-				P(": flush: start: %u/%u",
-				  databaseOid,
-				  tableSpaceOid);
-				snprintf(worker.bgw_name,
-						 BGW_MAXLEN,
-						 TAG ": flush: %u/%u",
-						 databaseOid,
-						 tableSpaceOid);
-				snprintf(worker.bgw_type,
-						 BGW_MAXLEN,
-						 TAG ": flush: %u/%u",
-						 databaseOid,
-						 tableSpaceOid);
-				worker.bgw_flags = BGWORKER_SHMEM_ACCESS;
-				worker.bgw_start_time = BgWorkerStart_ConsistentState;
-				worker.bgw_restart_time = BGW_NEVER_RESTART;
-				snprintf(worker.bgw_library_name,
-						 BGW_MAXLEN,
-						 "%s", PGroongaCrashSaferLibraryName);
-				snprintf(worker.bgw_function_name,
-						 BGW_MAXLEN,
-						 "pgroonga_crash_safer_flush_one");
-				worker.bgw_main_arg = DatumGetUInt64(entry->key);
-				worker.bgw_notify_pid = MyProcPid;
-				if (!RegisterDynamicBackgroundWorker(&worker, &handle))
-					continue;
-				WaitForBackgroundWorkerStartup(handle, &(entry->pid));
+				pgroonga_crash_safer_main_flush_one(entry);
 			}
 		}
 	}
 
-	proc_exit(1);
+	proc_exit(0);
 }
 
 void
@@ -622,7 +697,7 @@ _PG_init(void)
 		return;
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
-	snprintf(worker.bgw_type, BGW_MAXLEN, TAG);
+	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS |
 		BGWORKER_BACKEND_DATABASE_CONNECTION;
