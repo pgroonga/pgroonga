@@ -100,6 +100,8 @@ fi
 if [ ${postgresql_version} -lt 13 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi
+# TODO: Remove this after Groonga 13.0.1 is released.
+rm sql/function/highlight-html/term-search.sql
 ruby /host/test/prepare.rb > schedule
 PG_REGRESS_DIFF_OPTS="-u"
 if diff --help | grep -q color; then

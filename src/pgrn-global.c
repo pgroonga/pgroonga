@@ -21,7 +21,7 @@ PGrnInitializeBuffers(void)
 	GRN_UINT64_INIT(&(PGrnBuffers.ctid), 0);
 	GRN_FLOAT_INIT(&(PGrnBuffers.score), 0);
 	GRN_UINT32_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR);
-	GRN_TEXT_INIT(&(PGrnBuffers.tokenizer), GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&(PGrnBuffers.tokenizer), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.normalizers), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.tokenFilters), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.text), 0);

@@ -1,0 +1,16 @@
+CREATE TABLE tags (
+  name text
+);
+CREATE INDEX pgrn_index ON tags
+  USING pgroonga (name pgroonga_text_term_search_ops_v2)
+  WITH (normalizers='NormalizerNFKC130("unify_kana", true)');
+SELECT pgroonga_highlight_html(
+  'はろー ハロー',
+  ARRAY['は'],
+  'pgrn_index');
+                         pgroonga_highlight_html                         
+-------------------------------------------------------------------------
+ <span class="keyword">は</span>ろー <span class="keyword">ハ</span>ロー
+(1 row)
+
+DROP TABLE tags;

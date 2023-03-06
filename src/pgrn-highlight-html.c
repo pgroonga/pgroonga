@@ -213,14 +213,34 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 
 	{
 		Relation index = PGrnPGResolveIndexName(indexName);
-		PGrnApplyOptionValues(index,
-							  -1,
-							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
-							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-							  &normalizers, PGRN_DEFAULT_NORMALIZERS,
-							  &tokenFilters,
-							  &flags,
-							  NULL);
+		grn_obj *firstLexicon = PGrnLookupLexicon(index, 0, ERROR);
+		grn_obj *tokenizerBuffer = &(buffers->tokenizer);
+		grn_obj *normalizersBuffer = &(buffers->normalizers);
+		grn_obj *tokenFiltersBuffer = &(buffers->tokenFilters);
+
+		GRN_BULK_REWIND(tokenizerBuffer);
+		grn_table_get_default_tokenizer_string(ctx,
+											   firstLexicon,
+											   tokenizerBuffer);
+		if (GRN_TEXT_LEN(tokenizerBuffer) > 0) {
+			tokenizer = tokenizerBuffer;
+		}
+
+		GRN_BULK_REWIND(normalizersBuffer);
+		grn_table_get_normalizers_string(ctx, firstLexicon, normalizersBuffer);
+		if (GRN_TEXT_LEN(normalizersBuffer) > 0) {
+			normalizers = normalizersBuffer;
+		}
+
+		GRN_BULK_REWIND(tokenFiltersBuffer);
+		grn_table_get_token_filters_string(ctx,
+										   firstLexicon,
+										   tokenFiltersBuffer);
+		if (GRN_TEXT_LEN(tokenFiltersBuffer) > 0) {
+			tokenFilters = tokenFiltersBuffer;
+		}
+
+		grn_obj_unref(ctx, firstLexicon);
 		RelationClose(index);
 	}
 

@@ -115,6 +115,9 @@ jobs:
           if [ "${GROONGA_MASTER}" = "yes" ]; then
             # TODO: We don't know why this case doesn't use parallel scan...
             rm sql/full-text-search/text/single/declarative-partitioning.sql
+          else
+            # TODO: Remove this after Groonga 13.0.1 is released.
+            rm sql/function/highlight-html/term-search.sql
           fi
           test/run-sql-test.sh
         env:

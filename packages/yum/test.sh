@@ -141,6 +141,8 @@ case "${os}" in
     rm sql/function/match-positions-character/one-keyword.sql
     ;;
 esac
+# TODO: Remove this after Groonga 13.0.1 is released.
+rm sql/function/highlight-html/term-search.sql
 ruby /host/test/prepare.rb > schedule
 PG_REGRESS_DIFF_OPTS="-u"
 if diff --help | grep -q color; then
