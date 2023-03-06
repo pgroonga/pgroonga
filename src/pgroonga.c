@@ -243,8 +243,10 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
@@ -1083,6 +1085,13 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 											leftType,
 											rightType,
 											PGrnPrefixStrategyV2Number);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnPrefixConditionStrategyV2Number);
 	if (OidIsValid(prefixStrategyOID))
 		return true;
 
@@ -3432,23 +3441,34 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 					const char *prefix, unsigned int prefixSize,
 					const char *indexName, unsigned int indexNameSize)
 {
-	grn_bool matched;
-	grn_obj targetBuffer;
-	grn_obj prefixBuffer;
+	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
+											text, textSize,
+											indexName, indexNameSize);
+		PGrnSequentialSearchDataSetPrefix(&sequentialSearchData,
+										  prefix, prefixSize);
+		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+	}
+	else
+	{
+		grn_bool matched;
+		grn_obj targetBuffer;
+		grn_obj prefixBuffer;
 
-	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
+		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
 
-	GRN_TEXT_INIT(&prefixBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &prefixBuffer, prefix, prefixSize);
+		GRN_TEXT_INIT(&prefixBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &prefixBuffer, prefix, prefixSize);
 
-	/* TODO: Use indexName */
-	matched = grn_operator_exec_prefix(ctx, &targetBuffer, &prefixBuffer);
+		matched = grn_operator_exec_prefix(ctx, &targetBuffer, &prefixBuffer);
 
-	GRN_OBJ_FIN(ctx, &targetBuffer);
-	GRN_OBJ_FIN(ctx, &prefixBuffer);
+		GRN_OBJ_FIN(ctx, &targetBuffer);
+		GRN_OBJ_FIN(ctx, &prefixBuffer);
 
-	return matched;
+		return matched;
+	}
 }
 
 /**
@@ -3478,6 +3498,90 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 									  VARSIZE_ANY_EXHDR(prefix),
 									  NULL,
 									  0);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_prefix_condition_raw(const char *target,
+							  unsigned int targetSize,
+							  HeapTupleHeader header,
+							  bool withScorers)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *prefix;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	GRN_BULK_REWIND(isTargets);
+
+	if (withScorers)
+	{
+		PGrnFullTextSearchConditionWithScorersDeconstruct(header,
+														  &prefix,
+														  NULL,
+														  NULL,
+														  &indexName,
+														  isTargets);
+	}
+	else
+	{
+		PGrnFullTextSearchConditionDeconstruct(header,
+											   &prefix,
+											   NULL,
+											   &indexName,
+											   isTargets);
+	}
+
+	if (!prefix)
+		return false;
+
+	if (GRN_BULK_VSIZE(isTargets) > 0 && !GRN_BOOL_VALUE_AT(isTargets, 0))
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_prefix_raw(target,
+							   targetSize,
+							   VARDATA_ANY(prefix),
+							   VARSIZE_ANY_EXHDR(prefix),
+							   indexNameData,
+							   indexNameSize);
+}
+
+/**
+ * pgroonga_prefix_text_condition(
+ *   target text,
+ *   condition pgroonga_full_text_search_condition
+ * ) : bool
+ */
+Datum
+pgroonga_prefix_text_condition(PG_FUNCTION_ARGS)
+{
+	text *target = PG_GETARG_TEXT_PP(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool matched = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
+												VARSIZE_ANY_EXHDR(target),
+												header,
+												false);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
+												VARSIZE_ANY_EXHDR(target),
+												header,
+												false);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3550,6 +3654,38 @@ pgroonga_prefix_varchar(PG_FUNCTION_ARGS)
 									  VARSIZE_ANY_EXHDR(prefix),
 									  NULL,
 									  0);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_prefix_varchar_condition(
+ *   target varchar,
+ *   condition pgroonga_full_text_search_condition
+ * ) : bool
+ */
+Datum
+pgroonga_prefix_varchar_condition(PG_FUNCTION_ARGS)
+{
+	VarChar *target = PG_GETARG_VARCHAR_PP(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool matched = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
+												VARSIZE_ANY_EXHDR(target),
+												header,
+												false);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
+												VARSIZE_ANY_EXHDR(target),
+												header,
+												false);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -5433,13 +5569,16 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 {
 	grn_index_datum indexData;
 	unsigned int nIndexData;
+	grn_operator operator = GRN_OP_MATCH;
 	HeapTupleHeader header;
 	ArrayType *weights = NULL;
 	ArrayType *scorers = NULL;
 
+	if (key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
+		operator = GRN_OP_PREFIX;
 	nIndexData = grn_column_find_index_data(ctx,
 											targetColumn,
-											GRN_OP_MATCH,
+											operator,
 											&indexData,
 											1);
 	if (nIndexData == 0)
@@ -5453,7 +5592,8 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 
 	header = DatumGetHeapTupleHeader(key->sk_argument);
 	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
-		key->sk_strategy == PGrnMatchConditionStrategyV2Number)
+		key->sk_strategy == PGrnMatchConditionStrategyV2Number ||
+		key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
 	{
 		PGrnFullTextSearchConditionDeconstruct(header,
 											   query,
@@ -5608,6 +5748,63 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(query),
 			  VARDATA_ANY(query));
+
+	return true;
+}
+
+static bool
+PGrnSearchBuildConditionPrefixCondition(PGrnSearchData *data,
+										ScanKey key,
+										grn_obj *targetColumn,
+										Form_pg_attribute attribute)
+{
+	const char *tag = "[build-condition][prefix-condition]";
+	text *prefix;
+	grn_obj *matchTarget;
+
+	if (!PGrnSearchBuildConditionPrepareCondition(data,
+												  key,
+												  targetColumn,
+												  attribute,
+												  &prefix,
+												  &matchTarget,
+												  tag))
+	{
+		return false;
+	}
+
+	grn_expr_append_obj(ctx,
+						data->expression,
+						matchTarget,
+						GRN_OP_PUSH,
+						1);
+	if (matchTarget == targetColumn)
+	{
+		PGrnCheck("%s failed to push column for prefix search: <%s>",
+				  tag,
+				  PGrnInspectName(targetColumn));
+	}
+	else
+	{
+		PGrnCheck("%s failed to push match columns",
+				  tag);
+	}
+	grn_expr_append_const_str(ctx,
+							  data->expression,
+							  VARDATA_ANY(prefix),
+							  VARSIZE_ANY_EXHDR(prefix),
+							  GRN_OP_PUSH,
+							  1);
+	PGrnCheck("%s failed to push prefix: <%.*s>",
+			  tag,
+			  (int) VARSIZE_ANY_EXHDR(prefix),
+			  VARDATA_ANY(prefix));
+	grn_expr_append_op(ctx,
+					   data->expression,
+					   GRN_OP_PREFIX,
+					   1);
+	PGrnCheck("%s failed to push PREFIX operator",
+			  tag);
 
 	return true;
 }
@@ -5949,6 +6146,14 @@ PGrnSearchBuildCondition(Relation index,
 													  key,
 													  targetColumn,
 													  attribute);
+	}
+
+	if (key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
+	{
+		return PGrnSearchBuildConditionPrefixCondition(data,
+													   key,
+													   targetColumn,
+													   attribute);
 	}
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))

@@ -400,6 +400,41 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 }
 
 void
+PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
+								  const char *prefix,
+								  unsigned int prefixSize)
+{
+	const char *tag = "[sequential-search][prefix]";
+
+	if (PGrnSequentialSearchDataPrepareExpression(data,
+												  prefix,
+												  prefixSize,
+												  PGRN_SEQUENTIAL_SEARCH_PREFIX))
+	{
+		return;
+	}
+
+	grn_expr_append_obj(ctx,
+						data->expression,
+						data->indexColumnSource,
+						GRN_OP_GET_VALUE,
+						1);
+	PGrnCheck("%s append match target column", tag);
+	grn_expr_append_const_str(ctx,
+							  data->expression,
+							  prefix,
+							  prefixSize,
+							  GRN_OP_PUSH,
+							  1);
+	PGrnCheck("%s append prefix", tag);
+	grn_expr_append_op(ctx,
+					   data->expression,
+					   GRN_OP_PREFIX,
+					   2);
+	PGrnCheck("%s append prefix operator", tag);
+}
+
+void
 PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
 								 unsigned int querySize)

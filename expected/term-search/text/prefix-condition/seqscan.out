@@ -1,0 +1,38 @@
+CREATE TABLE tags (
+  name text
+);
+INSERT INTO tags VALUES ('PostgreSQL');
+INSERT INTO tags VALUES ('Groonga');
+INSERT INTO tags VALUES ('PGroonga');
+INSERT INTO tags VALUES ('pglogical');
+CREATE INDEX pgrn_index ON tags
+  USING pgroonga (name pgroonga_text_term_search_ops_v2)
+  WITH (normalizers='NormalizerNFKC130("remove_symbol", true)');
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+\pset format unaligned
+EXPLAIN (COSTS OFF)
+SELECT name
+  FROM tags
+ WHERE name &^ ('-p_G', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+QUERY PLAN
+Seq Scan on tags
+  Filter: (name &^ '(-p_G,,pgrn_index)'::pgroonga_full_text_search_condition)
+(2 rows)
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Seq Scan on tags
+  Filter: (name &^ pgroonga_full_text_search_condition)
+(2 rows)
+\pset format aligned
+SELECT name
+  FROM tags
+ WHERE name &^ ('-p_G', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+   name    
+-----------
+ PGroonga
+ pglogical
+(2 rows)
+
+DROP TABLE tags;

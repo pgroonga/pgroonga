@@ -1041,6 +1041,25 @@ CREATE OPERATOR &^ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_prefix_text_condition
+	(text, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &^ (
+	PROCEDURE = pgroonga_prefix_text_condition,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_prefix_text_array(text[], text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array'
@@ -1082,6 +1101,25 @@ CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar,
 	LEFTARG = varchar,
 	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_prefix_varchar_condition
+	(target varchar, conditoin pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_varchar_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &^ (
+	PROCEDURE = pgroonga_prefix_varchar_condition,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition,
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
@@ -1873,7 +1911,8 @@ CREATE OPERATOR CLASS pgroonga_text_term_search_ops_v2 FOR TYPE text
 		OPERATOR 17 &^~,
 		OPERATOR 20 &^| (text, text[]),
 		OPERATOR 21 &^~| (text, text[]),
-		OPERATOR 36 !&^| (text, text[]);
+		OPERATOR 36 !&^| (text, text[]),
+		OPERATOR 37 &^ (text, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_text_array_term_search_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
@@ -1904,7 +1943,8 @@ CREATE OPERATOR CLASS pgroonga_varchar_term_search_ops_v2
 		OPERATOR 16 &^,
 		OPERATOR 17 &^~,
 		OPERATOR 20 &^| (varchar, varchar[]),
-		OPERATOR 21 &^~| (varchar, varchar[]);
+		OPERATOR 21 &^~| (varchar, varchar[]),
+		OPERATOR 37 &^ (varchar, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_varchar_full_text_search_ops_v2
 	FOR TYPE varchar

@@ -57,20 +57,22 @@
 #define PGrnQueryStrategyV2Number	28	/* operator &@~  (query in Groonga) */
 #define PGrnSimilarStrategyV2Number	29	/* operator &@* (similar search) */
 #define PGrnQueryInStrategyV2Number	30	/* operator &@~| (multiple conditions of query in Groonga) */
-/* operator &@ with pgroonga_match_condition */
+/* operator &@ with pgroonga_full_text_search_condition */
 #define PGrnMatchConditionStrategyV2Number	31
-/* operator &@~ with pgroonga_match_condition */
+/* operator &@~ with pgroonga_full_text_search_condition */
 #define PGrnQueryConditionStrategyV2Number	32
-/* operator &@ with pgroonga_match_condition_with_scorers */
+/* operator &@ with pgroonga_full_text_search_condition_with_scorers */
 #define PGrnMatchConditionWithScorersStrategyV2Number	33
-/* operator &@~ with pgroonga_match_condition_with_scorers */
+/* operator &@~ with pgroonga_full_text_search_condition_with_scorers */
 #define PGrnQueryConditionWithScorersStrategyV2Number	34
 /* operator &~| (multiple conditions of @~ in Groonga) */
 #define PGrnRegexpInStrategyV2Number		35
 /* operator !&^| (multiple conditions of not prefix search) */
 #define PGrnNotPrefixInStrategyV2Number		36
+/* operator @^ with pgroonga_full_text_search_condition */
+#define PGrnPrefixConditionStrategyV2Number	37
 
-#define PGRN_N_STRATEGIES PGrnNotPrefixInStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnPrefixConditionStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

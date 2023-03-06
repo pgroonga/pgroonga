@@ -9,6 +9,7 @@
 typedef enum  {
 	PGRN_SEQUENTIAL_SEARCH_UNKNOWN,
 	PGRN_SEQUENTIAL_SEARCH_MATCH_TERM,
+	PGRN_SEQUENTIAL_SEARCH_PREFIX,
 	PGRN_SEQUENTIAL_SEARCH_QUERY,
 	PGRN_SEQUENTIAL_SEARCH_SCRIPT,
 } PGrnSequentialSearchType;
@@ -52,6 +53,10 @@ void
 PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 									 const char *term,
 									 unsigned int termSize);
+void
+PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
+								  const char *prefix,
+								  unsigned int prefixSize);
 void
 PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
