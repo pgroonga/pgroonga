@@ -410,6 +410,76 @@ PGrnCreateTableWithSize(Relation index,
 }
 
 grn_obj *
+PGrnCreateSimilarTemporaryLexicon(Relation index,
+								  unsigned int nthAttribute,
+								  int errorLevel)
+{
+	grn_obj *lexicon = PGrnLookupLexicon(index, 0, ERROR);
+	grn_table_flags flags = 0;
+	grn_obj *keyType = NULL;
+	grn_obj *tokenizer = NULL;
+	grn_obj *tokenizerBuffer = &(buffers->tokenizer);
+	grn_obj *normalizers = NULL;
+	grn_obj *normalizersBuffer = &(buffers->normalizers);
+	grn_obj *tokenFilters = NULL;
+	grn_obj *tokenFiltersBuffer = &(buffers->tokenFilters);
+	grn_obj *temporaryLexicon = NULL;
+
+	if (!lexicon)
+	{
+		return NULL;
+	}
+
+	switch (lexicon->header.type)
+	{
+	case GRN_TABLE_HASH_KEY:
+		flags |= GRN_OBJ_TABLE_HASH_KEY;
+		break;
+	case GRN_TABLE_PAT_KEY:
+		flags |= GRN_OBJ_TABLE_PAT_KEY;
+		break;
+	case GRN_TABLE_DAT_KEY:
+		flags |= GRN_OBJ_TABLE_DAT_KEY;
+		break;
+	default:
+		break;
+	}
+
+	keyType = grn_ctx_at(ctx, lexicon->header.domain);
+
+	GRN_BULK_REWIND(tokenizerBuffer);
+	grn_table_get_default_tokenizer_string(ctx, lexicon, tokenizerBuffer);
+	if (GRN_TEXT_LEN(tokenizerBuffer) > 0) {
+		tokenizer = tokenizerBuffer;
+	}
+
+	GRN_BULK_REWIND(normalizersBuffer);
+	grn_table_get_normalizers_string(ctx, lexicon, normalizersBuffer);
+	if (GRN_TEXT_LEN(normalizersBuffer) > 0) {
+		normalizers = normalizersBuffer;
+	}
+
+	GRN_BULK_REWIND(tokenFiltersBuffer);
+	grn_table_get_token_filters_string(ctx, lexicon, tokenFiltersBuffer);
+	if (GRN_TEXT_LEN(tokenFiltersBuffer) > 0) {
+		tokenFilters = tokenFiltersBuffer;
+	}
+
+	temporaryLexicon = PGrnCreateTable(index,
+									   NULL,
+									   flags,
+									   keyType,
+									   tokenizer,
+									   normalizers,
+									   tokenFilters);
+
+	grn_obj_unref(ctx, lexicon);
+	grn_obj_unref(ctx, keyType);
+
+	return temporaryLexicon;
+}
+
+grn_obj *
 PGrnCreateColumn(Relation	index,
 				 grn_obj	*table,
 				 const char *name,

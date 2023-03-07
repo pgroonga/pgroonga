@@ -188,10 +188,7 @@ static void
 PGrnHighlightHTMLSetLexicon(const char *indexName)
 {
 	Oid oid;
-	grn_obj *tokenizer = NULL;
-	grn_obj *normalizers = NULL;
-	grn_obj *tokenFilters = NULL;
-	grn_table_flags flags = 0;
+	Relation index;
 
 	if (!indexName || indexName[0] == '\0')
 	{
@@ -211,51 +208,15 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 		return;
 	}
 
-	{
-		Relation index = PGrnPGResolveIndexName(indexName);
-		grn_obj *firstLexicon = PGrnLookupLexicon(index, 0, ERROR);
-		grn_obj *tokenizerBuffer = &(buffers->tokenizer);
-		grn_obj *normalizersBuffer = &(buffers->normalizers);
-		grn_obj *tokenFiltersBuffer = &(buffers->tokenFilters);
-
-		GRN_BULK_REWIND(tokenizerBuffer);
-		grn_table_get_default_tokenizer_string(ctx,
-											   firstLexicon,
-											   tokenizerBuffer);
-		if (GRN_TEXT_LEN(tokenizerBuffer) > 0) {
-			tokenizer = tokenizerBuffer;
-		}
-
-		GRN_BULK_REWIND(normalizersBuffer);
-		grn_table_get_normalizers_string(ctx, firstLexicon, normalizersBuffer);
-		if (GRN_TEXT_LEN(normalizersBuffer) > 0) {
-			normalizers = normalizersBuffer;
-		}
-
-		GRN_BULK_REWIND(tokenFiltersBuffer);
-		grn_table_get_token_filters_string(ctx,
-										   firstLexicon,
-										   tokenFiltersBuffer);
-		if (GRN_TEXT_LEN(tokenFiltersBuffer) > 0) {
-			tokenFilters = tokenFiltersBuffer;
-		}
-
-		grn_obj_unref(ctx, firstLexicon);
-		RelationClose(index);
-	}
-
+	index = PGrnPGResolveIndexName(indexName);
 	if (lexicon)
 	{
 		grn_highlighter_set_lexicon(ctx, highlighter, NULL);
 		grn_obj_close(ctx, lexicon);
 	}
-	lexicon = PGrnCreateTable(InvalidRelation,
-							  NULL,
-							  flags,
-							  grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
-							  tokenizer,
-							  normalizers,
-							  tokenFilters);
+	lexicon = PGrnCreateSimilarTemporaryLexicon(index, 0, ERROR);
+	RelationClose(index);
+
 	grn_highlighter_set_lexicon(ctx, highlighter, lexicon);
 	PGrnCheck("highlight-html: failed to set lexicon");
 	indexOID = oid;

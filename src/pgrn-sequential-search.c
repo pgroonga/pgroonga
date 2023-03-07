@@ -135,10 +135,6 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 	{
 		Relation index;
 		bool isPGroongaIndex;
-		grn_obj *tokenizer = NULL;
-		grn_obj *normalizers = NULL;
-		grn_obj *tokenFilters = NULL;
-		grn_table_flags tableFlags = 0;
 
 		index = PGrnPGResolveIndexID(indexOID);
 		isPGroongaIndex = PGrnIndexIsPGroonga(index);
@@ -150,24 +146,12 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 						indexNameSize, indexName);
 		}
 
-		PGrnApplyOptionValues(index,
-							  -1,
-							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
-							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-							  &normalizers, PGRN_DEFAULT_NORMALIZERS,
-							  &tokenFilters,
-							  &tableFlags,
-							  &indexFlags);
+		data->lexicon = PGrnCreateSimilarTemporaryLexicon(index, 0, ERROR);
+
 		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
+
 		RelationClose(index);
 
-		data->lexicon = PGrnCreateTable(InvalidRelation,
-										NULL,
-										tableFlags,
-										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
-										tokenizer,
-										normalizers,
-										tokenFilters);
 		data->indexColumn =
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
