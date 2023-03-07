@@ -1,3 +1,4 @@
+-- This requires Groonga 13.0.1 or later
 CREATE TABLE tags (
   name text
 );
