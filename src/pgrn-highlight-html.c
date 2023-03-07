@@ -214,7 +214,7 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 		grn_highlighter_set_lexicon(ctx, highlighter, NULL);
 		grn_obj_close(ctx, lexicon);
 	}
-	lexicon = PGrnCreateSimilarTemporaryLexicon(index, 0, ERROR);
+	lexicon = PGrnCreateSimilarTemporaryLexicon(index);
 	RelationClose(index);
 
 	grn_highlighter_set_lexicon(ctx, highlighter, lexicon);
