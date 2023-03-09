@@ -1,6 +1,6 @@
 CREATE TABLE tags (
   id integer,
-  user_name varchar,
+  user_name text,
   name varchar
 );
 CREATE USER alice NOLOGIN;
@@ -30,7 +30,7 @@ Sort
   Sort Key: id
   ->  Bitmap Heap Scan on tags
         Recheck Cond: (name &^ pgroonga_full_text_search_condition)
-        Filter: ((user_name)::text = CURRENT_USER)
+        Filter: (user_name = CURRENT_USER)
         ->  Bitmap Index Scan on pgrn_index
               Index Cond: (name &^ pgroonga_full_text_search_condition)
 (7 rows)

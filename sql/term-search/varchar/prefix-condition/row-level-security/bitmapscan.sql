@@ -1,6 +1,6 @@
 CREATE TABLE tags (
   id integer,
-  user_name varchar,
+  user_name text,
   name varchar
 );
 

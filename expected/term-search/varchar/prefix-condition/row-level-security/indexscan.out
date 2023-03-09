@@ -1,6 +1,6 @@
 CREATE TABLE tags (
   id integer,
-  user_name varchar,
+  user_name text,
   name varchar
 );
 CREATE USER alice NOLOGIN;
@@ -30,7 +30,7 @@ Sort
   Sort Key: id
   ->  Index Scan using pgrn_index on tags
         Index Cond: (name &^ pgroonga_full_text_search_condition)
-        Filter: ((user_name)::text = CURRENT_USER)
+        Filter: (user_name = CURRENT_USER)
 (5 rows)
 \pset format aligned
 SELECT name
