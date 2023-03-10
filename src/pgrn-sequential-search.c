@@ -384,6 +384,41 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 }
 
 void
+PGrnSequentialSearchDataSetEqualText(PGrnSequentialSearchData *data,
+									 const char *other,
+									 unsigned int otherSize)
+{
+	const char *tag = "[sequential-search][equal-text]";
+
+	if (PGrnSequentialSearchDataPrepareExpression(data,
+												  other,
+												  otherSize,
+												  PGRN_SEQUENTIAL_SEARCH_EQUAL_TEXT))
+	{
+		return;
+	}
+
+	grn_expr_append_obj(ctx,
+						data->expression,
+						data->indexColumnSource,
+						GRN_OP_GET_VALUE,
+						1);
+	PGrnCheck("%s append match target column", tag);
+	grn_expr_append_const_str(ctx,
+							  data->expression,
+							  other,
+							  otherSize,
+							  GRN_OP_PUSH,
+							  1);
+	PGrnCheck("%s append equal text", tag);
+	grn_expr_append_op(ctx,
+					   data->expression,
+					   GRN_OP_EQUAL,
+					   2);
+	PGrnCheck("%s append equal operator", tag);
+}
+
+void
 PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
 								  const char *prefix,
 								  unsigned int prefixSize)

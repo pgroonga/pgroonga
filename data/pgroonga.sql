@@ -1701,6 +1701,81 @@ CREATE OPERATOR &~| (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_equal_text(target text, other text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_text'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &= (
+	PROCEDURE = pgroonga_equal_text,
+	LEFTARG = text,
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_equal_text_condition
+	(target text, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &= (
+	PROCEDURE = pgroonga_equal_text_condition,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_equal_varchar(target varchar, other varchar)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_varchar'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &= (
+	PROCEDURE = pgroonga_equal_varchar,
+	LEFTARG = varchar,
+	RIGHTARG = varchar,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_equal_varchar_condition
+	(target varchar, condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &= (
+	PROCEDURE = pgroonga_equal_varchar_condition,
+	LEFTARG = varchar,
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+
 DROP ACCESS METHOD IF EXISTS pgroonga CASCADE;
 CREATE FUNCTION pgroonga_handler(internal)
 	RETURNS index_am_handler
@@ -1912,7 +1987,9 @@ CREATE OPERATOR CLASS pgroonga_text_term_search_ops_v2 FOR TYPE text
 		OPERATOR 20 &^| (text, text[]),
 		OPERATOR 21 &^~| (text, text[]),
 		OPERATOR 36 !&^| (text, text[]),
-		OPERATOR 37 &^ (text, pgroonga_full_text_search_condition);
+		OPERATOR 37 &^ (text, pgroonga_full_text_search_condition),
+		OPERATOR 38 &=,
+		OPERATOR 39 &= (text, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_text_array_term_search_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
@@ -1944,7 +2021,9 @@ CREATE OPERATOR CLASS pgroonga_varchar_term_search_ops_v2
 		OPERATOR 17 &^~,
 		OPERATOR 20 &^| (varchar, varchar[]),
 		OPERATOR 21 &^~| (varchar, varchar[]),
-		OPERATOR 37 &^ (varchar, pgroonga_full_text_search_condition);
+		OPERATOR 37 &^ (varchar, pgroonga_full_text_search_condition),
+		OPERATOR 38 &=,
+		OPERATOR 39 &= (varchar, pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_varchar_full_text_search_ops_v2
 	FOR TYPE varchar

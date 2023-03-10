@@ -69,10 +69,14 @@
 #define PGrnRegexpInStrategyV2Number		35
 /* operator !&^| (multiple conditions of not prefix search) */
 #define PGrnNotPrefixInStrategyV2Number		36
-/* operator @^ with pgroonga_full_text_search_condition */
+/* operator &^ with pgroonga_full_text_search_condition */
 #define PGrnPrefixConditionStrategyV2Number	37
+/* operator &= */
+#define PGrnEqualStrategyV2Number	38
+/* operator &= with pgroonga_full_text_search_condition */
+#define PGrnEqualConditionStrategyV2Number	39
 
-#define PGRN_N_STRATEGIES PGrnPrefixConditionStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnEqualConditionStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"
