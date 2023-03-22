@@ -18,6 +18,7 @@ POSTGRESQL_MAJOR_VERSION=${POSTGRESQL_VERSION%%.*}
 if [ ${OS_VERSION} -lt 8 ]; then
   sudo yum install -y yum-utils
   DNF_DOWNLOAD="yumdownloader"
+  DNF_INFO="yum info"
 else
   sudo dnf install -y 'dnf-command(download)'
   DNF_DOWNLOAD="dnf download --arch x86_64"
@@ -27,10 +28,14 @@ list_dependencies()
 {
   local target=$1
   if [ ${OS_VERSION} -lt 8 ]; then
-    yum deplist ./${target} | \
+    yum deplist ${target} | \
       grep provider: | \
-      sed -e 's/^ *provider: //g'
+      sed -e 's/^ *provider: //g' | \
+      awk '{print $1}' | \
+      sed -e '/i686$/d' | \
+      sort | uniq
   else
+    :
   fi
 }
 
@@ -43,7 +48,21 @@ download_recursive()
 
   ${DNF_DOWNLOAD} ${target}
 
-  # list_dependencies ${target} | while read dependency; ...
+  list_dependencies ${target} | while read dependency; do
+    installed=$(${DNF_INFO} ${dependency} | \
+      grep Repo | \
+      sed -e 's/^Repo *: //g')
+    if [[ ${installed} =~ "installed" ]]; then
+      continue
+    fi
+#    if [[ ${dependency} =~ postgresql ]]; then
+#      POSTGRESQL_MEJOR_VERSION=$(awk -F "." '{print $1}')
+#      if [[ ! ${dependency} =~ "postgresql${POSTGRESQL_MEJOR_VERSION}" ]]; then
+#        continue
+#      fi
+#    fi
+    download_recursive ${dependency}
+  done
 }
 
 download_recursive \
