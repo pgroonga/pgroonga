@@ -751,6 +751,9 @@ PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 		typeID = GRN_DB_LONG_TEXT;
 		typeFlags |= GRN_OBJ_VECTOR;
 		break;
+	case UUIDOID:
+		typeID = GRN_DB_SHORT_TEXT;
+		break;
 	default:
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s unsupported type: %u",

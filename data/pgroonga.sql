@@ -1891,6 +1891,14 @@ CREATE OPERATOR CLASS pgroonga_timestamptz_ops DEFAULT FOR TYPE timestamptz
 		OPERATOR 4 >=,
 		OPERATOR 5 >;
 
+CREATE OPERATOR CLASS pgroonga_uuid_ops DEFAULT FOR TYPE uuid
+	USING pgroonga AS
+		OPERATOR 1 <,
+		OPERATOR 2 <=,
+		OPERATOR 3 =,
+		OPERATOR 4 >=,
+		OPERATOR 5 >;
+
 CREATE FUNCTION pgroonga_match_script_jsonb(jsonb, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'

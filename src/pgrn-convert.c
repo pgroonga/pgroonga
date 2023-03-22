@@ -167,6 +167,15 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	case TEXTARRAYOID:
 		PGrnConvertFromDataArrayType(datum, typeID, buffer, tag);
 		break;
+	case UUIDOID:
+	{
+		Datum uuidTextDatum = DirectFunctionCall1(uuid_out, datum);
+		GRN_TEXT_SET(ctx,
+					 buffer,
+					 VARDATA_ANY(uuidTextDatum),
+					 VARSIZE_ANY_EXHDR(uuidTextDatum));
+		break;
+	}
 	default:
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s unsupported datum type: %u",

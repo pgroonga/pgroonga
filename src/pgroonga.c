@@ -896,6 +896,20 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 	case TEXTARRAYOID:
 		return PGrnConvertToDatumArrayType(value, typeID);
 		break;
+	case UUIDOID:
+	{
+#define UUID_TEXT_SIZE 33 /* "12345678-abcd-bcde-cdef-123456789012" + '\0'*/
+		char uuid[UUID_TEXT_SIZE];
+		memcpy(uuid,
+			   GRN_TEXT_VALUE(value),
+			   GRN_TEXT_LEN(value) > UUID_TEXT_SIZE - 1 ?
+			   UUID_TEXT_SIZE - 1 :
+			   GRN_TEXT_LEN(value));
+		uuid[UUID_TEXT_SIZE - 1] = '\0';
+#undef UUID_TEXT_SIZE
+		return DirectFunctionCall1(uuid_in, CStringGetDatum(uuid));
+		break;
+	}
 	default:
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s unsupported datum type: %u",
