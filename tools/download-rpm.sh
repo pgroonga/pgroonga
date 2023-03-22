@@ -55,12 +55,11 @@ download_recursive()
     if [[ ${installed} =~ "installed" ]]; then
       continue
     fi
-#    if [[ ${dependency} =~ postgresql ]]; then
-#      POSTGRESQL_MEJOR_VERSION=$(awk -F "." '{print $1}')
-#      if [[ ! ${dependency} =~ "postgresql${POSTGRESQL_MEJOR_VERSION}" ]]; then
-#        continue
-#      fi
-#    fi
+    if [[ ${dependency} =~ postgresql ]]; then
+      if [[ ! ${dependency} =~ "postgresql${POSTGRESQL_MAJOR_VERSION}" ]]; then
+        continue
+      fi
+    fi
     download_recursive ${dependency}
   done
 }
