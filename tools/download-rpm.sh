@@ -18,72 +18,88 @@ POSTGRESQL_MAJOR_VERSION=${POSTGRESQL_VERSION%%.*}
 if [ ${OS_VERSION} -lt 8 ]; then
   sudo yum install -y yum-utils
   DNF_DOWNLOAD="yumdownloader"
-  DNF_INFO="yum info"
+  DNF_REPOQUERY_DEPLIST="yum deplist"
 else
   sudo dnf install -y 'dnf-command(download)'
-  DNF_DOWNLOAD="dnf download -y --arch x86_64"
-  DNF_INFO="dnf info --installed"
+  DNF_DOWNLOAD="dnf download -y"
+  DNF_REPOQUERY_DEPLIST="dnf repoquery --deplist"
 fi
 
 list_dependencies()
 {
-  local target=$1
-  if [ ${OS_VERSION} -lt 8 ]; then
-    yum deplist ${target} | \
-      grep provider: | \
-      sed -e 's/^ *provider: //g' | \
-      awk '{print $1}' | \
-      sed -e '/i686$/d' | \
-      sort | uniq
-  else
-    dnf repoquery --arch x86_64 --deplist ${target} | \
-      grep provider: | \
-      sed -e 's/^ *provider: //g' | \
-      awk '{print $1}' | \
-      sort | uniq
-  fi
+  local target="$1"
+  yum deplist "${target}" | \
+    grep provider: | \
+    sed -e 's/^ *provider: //g' | \
+    grep "\\.$(arch)" | \
+    sed -e "s/\\.$(arch) /-/" | \
+    sort | \
+    uniq
 }
 
-# TODO: Use this to prevent infinite loop
-processed=()
+system_libraries=(
+  bash
+  glibc
+  krb5-libs
+  libcurl
+  libgcc
+  libstdc++
+  ncurses-libs
+  openssl-libs
+  postgresql${POSTGRESQL_MAJOR_VERSION}-server
+)
+
+is_system_library()
+{
+  local target="$1"
+
+  for system_library in "${system_libraries[@]}"; do
+    case "${target}" in
+      ${system_library}-*)
+        return 0
+        ;;
+    esac
+  done
+
+  return 1
+}
+
+processed_dependencies=()
 
 download_recursive()
 {
-  local target=$1
+  local target=$(echo $1 | sed -e "s/\\.$(arch)\$//g").$(arch)
 
-  ${DNF_DOWNLOAD} ${target}
+  echo "Downloading: ${target}"
+  ${DNF_DOWNLOAD} "${target}"
+  processed_dependencies+=("${target}")
 
-  list_dependencies ${target} | while read dependency; do
-    if [ ${OS_VERSION} -lt 8 ]; then
-      installed=$(${DNF_INFO} ${dependency} | \
-                    grep Repo | \
-                    sed -e 's/^Repo *: //g')
-      if [[ ${installed} =~ "installed" ]]; then
-        continue
-      fi
-    else
-      installed=$(${DNF_INFO} ${dependency} | \
-                    grep Repository | \
-                    sed -e 's/^Repository *: //g')
-      if [ "${installed}" = "@System" ]; then
-        continue
-      fi
+  for dependency in $(list_dependencies "${target}"); do
+    echo "Dependency: ${target} -> ${dependency}"
 
-      conflicted=$(dnf repoquery --conflicts ${dependency})
-      if [ -n "${conflicted}" ]; then
-        continue
-      fi
-    fi
-
-    if [[ ${dependency} =~ libpq ]]; then
+    if is_system_library "${dependency}"; then
       continue
     fi
-    if [[ ${dependency} =~ postgresql ]]; then
-      if [[ ! ${dependency} =~ "postgresql${POSTGRESQL_MAJOR_VERSION}" ]]; then
-        continue
+
+    # Pin Groonga version
+    case "${dependency}" in
+      groonga-libs-*)
+        dependency="groonga-libs-${GROONGA_VERSION}-1.el${OS_VERSION}"
+        ;;
+    esac
+
+    local processed="false"
+    for processed_dependency in "${processed_dependencies[@]}"; do
+      if [ "${processed_dependency}" = "${dependency}" ]; then
+        processed="true"
+        break
       fi
+    done
+    if [ "${processed}" = "true" ]; then
+      continue
     fi
-    download_recursive ${dependency}
+
+    download_recursive "${dependency}"
   done
 }
 
