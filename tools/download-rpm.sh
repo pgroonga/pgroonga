@@ -21,7 +21,8 @@ if [ ${OS_VERSION} -lt 8 ]; then
   DNF_INFO="yum info"
 else
   sudo dnf install -y 'dnf-command(download)'
-  DNF_DOWNLOAD="dnf download --arch x86_64"
+  DNF_DOWNLOAD="dnf download -y --arch x86_64"
+  DNF_INFO="dnf info --installed"
 fi
 
 list_dependencies()
@@ -35,7 +36,11 @@ list_dependencies()
       sed -e '/i686$/d' | \
       sort | uniq
   else
-    :
+    dnf repoquery --arch x86_64 --deplist ${target} | \
+      grep provider: | \
+      sed -e 's/^ *provider: //g' | \
+      awk '{print $1}' | \
+      sort | uniq
   fi
 }
 
@@ -49,10 +54,28 @@ download_recursive()
   ${DNF_DOWNLOAD} ${target}
 
   list_dependencies ${target} | while read dependency; do
-    installed=$(${DNF_INFO} ${dependency} | \
-      grep Repo | \
-      sed -e 's/^Repo *: //g')
-    if [[ ${installed} =~ "installed" ]]; then
+    if [ ${OS_VERSION} -lt 8 ]; then
+      installed=$(${DNF_INFO} ${dependency} | \
+                    grep Repo | \
+                    sed -e 's/^Repo *: //g')
+      if [[ ${installed} =~ "installed" ]]; then
+        continue
+      fi
+    else
+      installed=$(${DNF_INFO} ${dependency} | \
+                    grep Repository | \
+                    sed -e 's/^Repository *: //g')
+      if [ "${installed}" = "@System" ]; then
+        continue
+      fi
+
+      conflicted=$(dnf repoquery --conflicts ${dependency})
+      if [ -n "${conflicted}" ]; then
+        continue
+      fi
+    fi
+
+    if [[ ${dependency} =~ libpq ]]; then
       continue
     fi
     if [[ ${dependency} =~ postgresql ]]; then

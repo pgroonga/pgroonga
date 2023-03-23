@@ -18,5 +18,7 @@ else
          https://dl.fedoraproject.org/pub/epel/epel-release-latest-${version}.noarch.rpm
   sudo -H dnf config-manager --set-enabled powertools || :
   sudo -H dnf install -y \
+       https://download.postgresql.org/pub/repos/yum/reporpms/EL-${version}-$(rpm -qf --queryformat="%{ARCH}" /etc/redhat-release)/pgdg-redhat-repo-latest.noarch.rpm
+  sudo -H dnf install -y \
        https://packages.groonga.org/almalinux/${version}/groonga-release-latest.noarch.rpm
 fi
