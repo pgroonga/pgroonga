@@ -13,6 +13,7 @@ GROONGA_VERSION=$2
 POSTGRESQL_VERSION=$3
 
 OS_VERSION=$(cut -d: -f5 /etc/system-release-cpe | cut -d. -f1)
+ARCH=$(rpm -qf --queryformat="%{ARCH}" /etc/redhat-release)
 POSTGRESQL_MAJOR_VERSION=${POSTGRESQL_VERSION%%.*}
 
 if [ ${OS_VERSION} -lt 8 ]; then
@@ -31,8 +32,9 @@ list_dependencies()
   yum deplist "${target}" | \
     grep provider: | \
     sed -e 's/^ *provider: //g' | \
-    grep "\\.$(arch)" | \
-    sed -e "s/\\.$(arch) /-/" | \
+    grep "\\.${ARCH}" | \
+    sed -e "s/\\.${ARCH} /-/g" \
+        -e "s/\\.${ARCH}$//g" | \
     sort | \
     uniq
 }
@@ -68,10 +70,10 @@ processed_dependencies=()
 
 download_recursive()
 {
-  local target=$(echo $1 | sed -e "s/\\.$(arch)\$//g").$(arch)
+  local target="$1"
 
   echo "Downloading: ${target}"
-  ${DNF_DOWNLOAD} "${target}"
+  ${DNF_DOWNLOAD} "${target}.${ARCH}"
   processed_dependencies+=("${target}")
 
   for dependency in $(list_dependencies "${target}"); do
