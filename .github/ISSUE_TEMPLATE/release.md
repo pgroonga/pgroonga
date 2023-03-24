@@ -38,4 +38,5 @@ assignees: ''
   - [ ] Twitter (Japanese/English)
   - [ ] Facebook (Japanese/English)
   - [ ] PostgreSQL Announce (pgsql-announce@lists.postgresql.org)
+- [ ] Update Docker image
 - [ ] Bump version for next release
