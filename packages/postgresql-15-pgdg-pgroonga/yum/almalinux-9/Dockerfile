@@ -10,7 +10,6 @@ RUN \
     https://packages.groonga.org/almalinux/9/groonga-release-latest.noarch.rpm \
     epel-release && \
   sed -i'' -e 's/k$//g' /etc/yum.repos.d/pgdg-redhat-all.repo && \
-  dnf module -y ${quiet} disable postgresql && \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=crb -y ${quiet} \
     ccache \

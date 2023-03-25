@@ -28,7 +28,6 @@ case ${os} in
         ;;
       *)
         DNF="dnf --enablerepo=crb"
-        ${DNF} module -y disable postgresql
         ;;
     esac
 
