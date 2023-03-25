@@ -28,6 +28,8 @@ case ${os} in
         ;;
       *)
         DNF="dnf --enablerepo=crb"
+        ${DNF} install -y \
+               https://apache.jfrog.io/artifactory/arrow/${os}/${major_version}/apache-arrow-release-latest.rpm
         ;;
     esac
 
