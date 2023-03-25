@@ -58,6 +58,7 @@ jobs:
           - postgresql-15-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-15-pgdg-pgroonga-almalinux-9
           - postgresql-15-pgdg-pgroonga-almalinux-8
           - postgresql-15-pgdg-pgroonga-centos-7
           - postgresql-14-pgdg-pgroonga-debian-bullseye

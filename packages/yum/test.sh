@@ -22,8 +22,12 @@ case ${os} in
       7)
         DNF=yum
         ;;
-      *)
+      8)
         DNF="dnf --enablerepo=powertools"
+        ${DNF} module -y disable postgresql
+        ;;
+      *)
+        DNF="dnf --enablerepo=crb"
         ${DNF} module -y disable postgresql
         ;;
     esac
