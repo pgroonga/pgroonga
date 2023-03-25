@@ -169,11 +169,10 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 		break;
 	case UUIDOID:
 	{
-		Datum uuidTextDatum = DirectFunctionCall1(uuid_out, datum);
-		GRN_TEXT_SET(ctx,
-					 buffer,
-					 VARDATA_ANY(uuidTextDatum),
-					 VARSIZE_ANY_EXHDR(uuidTextDatum));
+		Datum uuidCStringDatum = DirectFunctionCall1(uuid_out, datum);
+		GRN_TEXT_SETS(ctx,
+					  buffer,
+					  DatumGetCString(uuidCStringDatum));
 		break;
 	}
 	default:
