@@ -50,9 +50,9 @@ echo "::group::Install built packages"
 
 packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 
-postgresql_version=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
-                       grep -E -o '[0-9.]+' |
-                       head -n1)
+pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
+                     sed -e 's/-pgroonga-.*$/-pgroonga/g')
+postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 case ${os} in
   amazon-linux)
     amazon-linux-extras install -y postgresql${postgresql_version}
@@ -176,6 +176,19 @@ if [ ${pg_regress_status} -ne 0 ]; then
   echo "::endgroup::"
   exit ${pg_regress_status}
 fi
+
+
+echo "::group::Upgrade"
+
+${DNF} remove -y ${pgroonga_package}
+${DNF} install -y ${pgroonga_package}
+createdb upgrade
+psql upgrade -c 'CREATE EXTENSION pgroonga'
+${DNF} install -y ${packages_dir}/*.rpm
+psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
+
+echo "::endgroup::"
+
 
 echo "::group::Postpare"
 

@@ -51,14 +51,13 @@ echo "::endgroup::"
 
 echo "::group::Install packages for test"
 
-postgresql_version=$(dpkg -l | \
-                       grep pgroonga | \
-                       grep -E -o '[0-9.]+' |
-                       head -n1)
-postgresql_package_prefix=$(dpkg -l | \
-                              grep pgroonga | \
-                              grep -E -o 'postgresql-[0-9.]+(-pgdg)?' |
-                              head -n1)
+pgroonga_package=$(dpkg -l | \
+                     grep pgroonga | \
+                     head -n1 | \
+                     awk '{print $2}')
+postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
+postgresql_package_prefix=$(echo ${pgroonga_package} | \
+                              grep -E -o 'postgresql-[0-9.]+(-pgdg)?')
 if ! echo "${postgresql_package_prefix}" | grep -q pgdg; then
   apt install -V -y \
       $(echo ${postgresql_package_prefix} | \
@@ -130,6 +129,19 @@ if [ ${pg_regress_status} -ne 0 ]; then
   echo "::endgroup::"
   exit ${pg_regress_status}
 fi
+
+
+echo "::group::Upgrade"
+
+sudo apt purge -V -y ${pgroonga_package}
+sudo apt install -V -y ${pgroonga_package}
+createdb upgrade
+psql upgrade -c 'CREATE EXTENSION pgroonga'
+apt install -V -y \
+  ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
+psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
+
+echo "::endgroup::"
 
 
 echo "::group::Postpare"
