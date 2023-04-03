@@ -19,14 +19,7 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT id
   FROM data
- WHERE id = '12345670-ABCD-BCDE-CDEF-123456789012';
-QUERY PLAN
-Bitmap Heap Scan on data
-  Recheck Cond: (id = '12345670-abcd-bcde-cdef-123456789012'::uuid)
-  Filter: (user_name = CURRENT_USER)
-  ->  Bitmap Index Scan on pgrn_index
-        Index Cond: (id = '12345670-abcd-bcde-cdef-123456789012'::uuid)
-(5 rows)
+ WHERE id = '12345670-ABCD-BCDE-CDEF-123456789012'
 \g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Bitmap Heap Scan on data
