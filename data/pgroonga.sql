@@ -2320,40 +2320,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.%% (
-				PROCEDURE = pgroonga.match_term,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.%% (
-				PROCEDURE = pgroonga.match_term,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.%% (
-				PROCEDURE = pgroonga.match_term,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.%% (
-				PROCEDURE = pgroonga.match_term,
-				LEFTARG = varchar[],
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.match_query(text, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_query_text'
@@ -2378,32 +2344,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.@@ (
-				PROCEDURE = pgroonga.match_query,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.@@ (
-				PROCEDURE = pgroonga.match_query,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.@@ (
-				PROCEDURE = pgroonga.match_query,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.match_regexp(text, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_regexp_text'
@@ -2420,24 +2360,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.@~ (
-				PROCEDURE = pgroonga.match_regexp,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.@~ (
-				PROCEDURE = pgroonga.match_regexp,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		/* v2 */
 		CREATE FUNCTION pgroonga.match_text(text, text)
 			RETURNS bool
@@ -2447,16 +2369,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@ (
-				PROCEDURE = pgroonga.match_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.match_text_array(text[], text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_text_array'
@@ -2464,16 +2376,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@ (
-				PROCEDURE = pgroonga.match_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.match_varchar(varchar, varchar)
 			RETURNS bool
@@ -2483,16 +2385,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@ (
-				PROCEDURE = pgroonga.match_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.contain_varchar_array(varchar[], varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_contain_varchar_array'
@@ -2500,16 +2392,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&> (
-				PROCEDURE = pgroonga.contain_varchar_array,
-				LEFTARG = varchar[],
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.match_jsonb(jsonb, text)
 			RETURNS bool
@@ -2519,16 +2401,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@ (
-				PROCEDURE = pgroonga.match_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.query_text(text, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_query_text'
@@ -2536,25 +2408,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&? (
-				PROCEDURE = pgroonga.query_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~ (
-				PROCEDURE = pgroonga.query_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.query_text_array(text[], text)
 			RETURNS bool
@@ -2564,25 +2417,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&? (
-				PROCEDURE = pgroonga.query_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~ (
-				PROCEDURE = pgroonga.query_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.query_varchar(varchar, varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_query_varchar'
@@ -2590,25 +2424,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&? (
-				PROCEDURE = pgroonga.query_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~ (
-				PROCEDURE = pgroonga.query_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.query_jsonb(jsonb, text)
 			RETURNS bool
@@ -2618,25 +2433,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&? (
-				PROCEDURE = pgroonga.query_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~ (
-				PROCEDURE = pgroonga.query_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.similar_text(text, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_similar_text'
@@ -2644,25 +2440,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&~? (
-				PROCEDURE = pgroonga.similar_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@* (
-				PROCEDURE = pgroonga.similar_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.similar_text_array(text[], text)
 			RETURNS bool
@@ -2672,25 +2449,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&~? (
-				PROCEDURE = pgroonga.similar_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@* (
-				PROCEDURE = pgroonga.similar_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.similar_varchar(varchar, varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_similar_varchar'
@@ -2698,25 +2456,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&~? (
-				PROCEDURE = pgroonga.similar_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@* (
-				PROCEDURE = pgroonga.similar_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.prefix_text(text, text)
 			RETURNS bool
@@ -2726,16 +2465,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^ (
-				PROCEDURE = pgroonga.prefix_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.prefix_text_array(text[], text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array'
@@ -2743,25 +2472,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^ (
-				PROCEDURE = pgroonga.prefix_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			/* Deprecated since 1.2.1. */
-			CREATE OPERATOR public.&^> (
-				PROCEDURE = pgroonga.prefix_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.prefix_rk_text(text, text)
 			RETURNS bool
@@ -2771,16 +2481,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^~ (
-				PROCEDURE = pgroonga.prefix_rk_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.prefix_rk_text_array(text[], text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_text_array'
@@ -2788,25 +2488,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^~ (
-				PROCEDURE = pgroonga.prefix_rk_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			/* Deprecated since 1.2.1. */
-			CREATE OPERATOR public.&^~> (
-				PROCEDURE = pgroonga.prefix_rk_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.script_text(text, text)
 			RETURNS bool
@@ -2816,16 +2497,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&` (
-				PROCEDURE = pgroonga.script_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.script_text_array(text[], text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_script_text_array'
@@ -2833,16 +2504,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&` (
-				PROCEDURE = pgroonga.script_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.script_varchar(varchar, varchar)
 			RETURNS bool
@@ -2852,16 +2513,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&` (
-				PROCEDURE = pgroonga.script_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.script_jsonb(jsonb, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_script_jsonb'
@@ -2869,16 +2520,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&` (
-				PROCEDURE = pgroonga.script_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.match_in_text(text, text[])
 			RETURNS bool
@@ -2888,25 +2529,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			/* Deprecated since 1.2.1. */
-			CREATE OPERATOR public.&@> (
-				PROCEDURE = pgroonga.match_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@| (
-				PROCEDURE = pgroonga.match_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.match_in_text_array(text[], text[])
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_in_text_array'
@@ -2914,16 +2536,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@| (
-				PROCEDURE = pgroonga.match_in_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.match_in_varchar(varchar, varchar[])
 			RETURNS bool
@@ -2933,16 +2545,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&@| (
-				PROCEDURE = pgroonga.match_in_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.query_in_text(text, text[])
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_query_in_text'
@@ -2950,34 +2552,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			/* Deprecated since 1.2.1. */
-			CREATE OPERATOR public.&?> (
-				PROCEDURE = pgroonga.query_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&?| (
-				PROCEDURE = pgroonga.query_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~| (
-				PROCEDURE = pgroonga.query_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.query_in_text_array(text[], text[])
 			RETURNS bool
@@ -2987,25 +2561,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&?| (
-				PROCEDURE = pgroonga.query_in_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~| (
-				PROCEDURE = pgroonga.query_in_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.query_in_varchar(varchar, varchar[])
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_query_in_varchar'
@@ -3013,25 +2568,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			-- Deprecated since 1.2.2.
-			CREATE OPERATOR public.&?| (
-				PROCEDURE = pgroonga.query_in_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-
-			CREATE OPERATOR public.&@~| (
-				PROCEDURE = pgroonga.query_in_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.prefix_in_text(text, text[])
 			RETURNS bool
@@ -3041,16 +2577,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^| (
-				PROCEDURE = pgroonga.prefix_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.prefix_in_text_array(text[], text[])
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_in_text_array'
@@ -3058,16 +2584,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^| (
-				PROCEDURE = pgroonga.prefix_in_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.prefix_rk_in_text(text, text[])
 			RETURNS bool
@@ -3077,16 +2593,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^~| (
-				PROCEDURE = pgroonga.prefix_rk_in_text,
-				LEFTARG = text,
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.prefix_rk_in_text_array(text[], text[])
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_prefix_rk_in_text_array'
@@ -3094,16 +2600,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&^~| (
-				PROCEDURE = pgroonga.prefix_rk_in_text_array,
-				LEFTARG = text[],
-				RIGHTARG = text[],
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE FUNCTION pgroonga.regexp_text(text, text)
 			RETURNS bool
@@ -3113,16 +2609,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&~ (
-				PROCEDURE = pgroonga.regexp_text,
-				LEFTARG = text,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 		CREATE FUNCTION pgroonga.regexp_varchar(varchar, varchar)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_regexp_varchar'
@@ -3130,17 +2616,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.&~ (
-				PROCEDURE = pgroonga.regexp_varchar,
-				LEFTARG = varchar,
-				RIGHTARG = varchar,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
-
 
 		/* v1 */
 		CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops FOR TYPE text
@@ -3255,16 +2730,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		IF current_schema() <> 'public' THEN
-			CREATE OPERATOR public.@@ (
-				PROCEDURE = pgroonga.match_script_jsonb,
-				LEFTARG = jsonb,
-				RIGHTARG = text,
-				RESTRICT = contsel,
-				JOIN = contjoinsel
-			);
-		END IF;
 
 		CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
 			USING pgroonga AS
@@ -3385,5 +2850,6 @@ BEGIN
 				OPERATOR 15 &` (jsonb, text),
 				OPERATOR 28 &@~ (jsonb, text);
 	END IF;
+
 END;
 $$;
