@@ -220,10 +220,6 @@ jobs:
           if (${{ matrix.postgresql-version-major }} -lt 13) {
             Remove-Item sql\full-text-search\text\single\declarative-partitioning.sql
           }
-          if ("${{ matrix.groonga-master }}" -ne "yes") {
-            # TODO: Remove this after Groonga 13.0.1 is released.
-            Remove-Item sql\function\highlight-html\term-search.sql
-          }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           ..\pgsql\bin\pg_regress `
