@@ -4,6 +4,8 @@
 
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
+#include "pgrn-options.h"
+#include "pgrn-pg.h"
 #include "pgrn-query-extract-keywords.h"
 
 #include <catalog/pg_type.h>
@@ -48,15 +50,24 @@ PGrnFinalizeQueryExtractKeywords(void)
 }
 
 static ArrayType *
-PGrnQueryExtractKeywords(text *query)
+PGrnQueryExtractKeywords(text *query, text *indexName)
 {
 	const char *tag = "[query-extract-keywords]";
+	grn_obj *targetTable = table;
 	grn_obj *expression;
 	grn_obj *variable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	ArrayType *keywords;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, table, expression, variable);
+	if (VARSIZE_ANY_EXHDR(indexName) > 0)
+	{
+		Relation index = PGrnPGResolveIndexName(VARDATA_ANY(indexName));
+		flags |= PGrnOptionsGetExprParseFlags(index);
+		targetTable = PGrnLookupSourcesTable(index, ERROR);
+		RelationClose(index);
+	}
+
+	GRN_EXPR_CREATE_FOR_QUERY(ctx, targetTable, expression, variable);
 	if (!expression)
 	{
 		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
@@ -116,15 +127,17 @@ PGrnQueryExtractKeywords(text *query)
 }
 
 /**
- * pgroonga.query_extract_keywords(query text) : text[]
+ * pgroonga.query_extract_keywords(query text,
+ *                                 index_name text DEFAULT '') : text[]
  */
 Datum
 pgroonga_query_extract_keywords(PG_FUNCTION_ARGS)
 {
 	text *query = PG_GETARG_TEXT_PP(0);
+	text *indexName = PG_GETARG_TEXT_PP(1);
 	ArrayType *keywords;
 
-	keywords = PGrnQueryExtractKeywords(query);
+	keywords = PGrnQueryExtractKeywords(query, indexName);
 
 	PG_RETURN_POINTER(keywords);
 }

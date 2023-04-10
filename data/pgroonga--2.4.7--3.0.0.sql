@@ -85,3 +85,14 @@ BEGIN
 	END IF;
 END;
 $$;
+
+
+CREATE FUNCTION pgroonga_query_extract_keywords(query text,
+						index_name text DEFAULT '')
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	PARALLEL SAFE;
+DROP FUNCTION pgroonga_query_extract_keywords(query text);

@@ -142,7 +142,8 @@ CREATE FUNCTION pgroonga_match_positions_character(target text,
 	STRICT
 	PARALLEL SAFE;
 
-CREATE FUNCTION pgroonga_query_extract_keywords(query text)
+CREATE FUNCTION pgroonga_query_extract_keywords(query text,
+						index_name text DEFAULT '')
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
 	LANGUAGE C
