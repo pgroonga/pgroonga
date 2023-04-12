@@ -1776,6 +1776,42 @@ CREATE OPERATOR &= (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_equal_query_text_array(targets text[], query text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_query_text_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &=~ (
+	PROCEDURE = pgroonga_equal_query_text_array,
+	LEFTARG = text[],
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_equal_query_varchar_array(targets varchar[], query text)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_query_varchar_array'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &=~ (
+	PROCEDURE = pgroonga_equal_query_varchar_array,
+	LEFTARG = varchar[],
+	RIGHTARG = text,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 
 DROP ACCESS METHOD IF EXISTS pgroonga CASCADE;
 CREATE FUNCTION pgroonga_handler(internal)
@@ -2008,7 +2044,8 @@ CREATE OPERATOR CLASS pgroonga_text_array_term_search_ops_v2 FOR TYPE text[]
 		OPERATOR 20 &^| (text[], text[]),
 		OPERATOR 21 &^~| (text[], text[]),
 		OPERATOR 24 &^> (text[], text), -- For backward compatibility
-		OPERATOR 25 &^~> (text[], text); -- For backward compatibility
+		OPERATOR 25 &^~> (text[], text), -- For backward compatibility
+		OPERATOR 40 &=~ (text[], text);
 
 CREATE OPERATOR CLASS pgroonga_text_regexp_ops_v2 FOR TYPE text
 	USING pgroonga AS
@@ -2064,7 +2101,8 @@ CREATE OPERATOR CLASS pgroonga_varchar_array_term_search_ops_v2
 		OPERATOR 21 &^~| (varchar[], varchar[]),
 		OPERATOR 23 &> (varchar[], varchar),
 		OPERATOR 24 &^> (varchar[], varchar), -- For backward compatibility
-		OPERATOR 25 &^~> (varchar[], varchar); -- For backward compatibility
+		OPERATOR 25 &^~> (varchar[], varchar), -- For backward compatibility
+		OPERATOR 40 &=~ (varchar[], text);
 
 CREATE OPERATOR CLASS pgroonga_varchar_regexp_ops_v2 FOR TYPE varchar
 	USING pgroonga AS

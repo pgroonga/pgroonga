@@ -16,6 +16,7 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 void
 PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data)
 {
+	data->prepared = false;
 	data->table = grn_table_create(ctx,
 								   NULL, 0,
 								   NULL,
@@ -72,21 +73,8 @@ PGrnSequentialSearchDataFinalize(PGrnSequentialSearchData *data)
 }
 
 static void
-PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
-											Oid indexOID,
-											grn_obj *source)
+PGrnSequentialSearchDataExecuteClearIndex(PGrnSequentialSearchData *data)
 {
-	if (data->indexOID == indexOID)
-	{
-		if (data->indexColumnSource != source)
-		{
-			if (data->indexColumn)
-				PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
-			data->indexColumnSource = NULL;
-		}
-		return;
-	}
-
 	if (data->indexColumn)
 	{
 		grn_obj_remove(ctx, data->indexColumn);
@@ -107,28 +95,41 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 		data->expression = NULL;
 	}
 
-	data->indexColumnSource = NULL;
 	data->useIndex = false;
 	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
 static void
 PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
-										Oid indexOID,
-										grn_obj *source,
 										const char *indexName,
-										unsigned int indexNameSize)
+										unsigned int indexNameSize,
+										PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][index]";
-	grn_column_flags indexFlags =
-		GRN_OBJ_COLUMN_INDEX |
-		GRN_OBJ_WITH_POSITION;
+	Oid indexOID = InvalidOid;
+	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX;
 
+	if (indexNameSize > 0)
+	{
+		grn_obj *text = &(buffers->general);
+
+		grn_obj_reinit(ctx, text, GRN_DB_TEXT, 0);
+		GRN_TEXT_SET(ctx, text, indexName, indexNameSize);
+		GRN_TEXT_PUTC(ctx, text, '\0');
+		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
+	}
+
+	if (data->prepared && data->indexOID == indexOID)
+	{
+		return;
+	}
+
+	PGrnSequentialSearchDataExecuteClearIndex(data);
 	data->useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
 					  (OidIsValid(indexOID) ||
-					   source == data->textsColumn));
+					   data->indexColumnSource == data->textsColumn));
 
-	if (grn_obj_is_vector_column(ctx, source))
+	if (grn_obj_is_vector_column(ctx, data->indexColumnSource))
 		indexFlags |= GRN_OBJ_WITH_SECTION;
 
 	if (data->indexOID != indexOID)
@@ -152,6 +153,8 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 
 		RelationClose(index);
 
+		if (grn_obj_get_info(ctx, data->lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL))
+			indexFlags |= GRN_OBJ_WITH_POSITION;
 		data->indexColumn =
 			PGrnCreateColumn(InvalidRelation,
 							 data->lexicon,
@@ -163,11 +166,20 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 
 	if (!data->lexicon)
 	{
-		grn_obj *tokenizer;
+		grn_obj *tokenizer = NULL;
 		grn_obj *normalizers = &(buffers->normalizers);
 		grn_table_flags tableFlags = GRN_OBJ_TABLE_PAT_KEY;
 
-		tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
+		switch (type)
+		{
+		case PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY:
+			tokenizer = NULL;
+			break;
+		default:
+			tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
+			indexFlags |= GRN_OBJ_WITH_POSITION;
+			break;
+		}
 		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
 		data->lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
@@ -184,81 +196,49 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 							 data->table);
 	}
 
-	if (data->indexColumnSource != source)
+	if (data->useIndex)
 	{
-		if (data->useIndex)
-		{
-			PGrnIndexColumnSetSource(InvalidRelation,
-									 data->indexColumn,
-									 source);
-		}
-		else
-		{
-			PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
-		}
-		data->indexColumnSource = source;
+		PGrnIndexColumnSetSource(InvalidRelation,
+								 data->indexColumn,
+								 data->indexColumnSource);
 	}
+	else
+	{
+		PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
+	}
+
+	data->prepared = true;
 }
 
 static void
 PGrnSequentialSearchDataPrepare(PGrnSequentialSearchData *data,
 								grn_obj *column,
-								grn_obj *value,
-								const char *indexName,
-								unsigned int indexNameSize)
+								grn_obj *value)
 {
-	Oid indexOID = InvalidOid;
-
-	if (indexNameSize > 0)
-	{
-		grn_obj *text = &(buffers->general);
-
-		grn_obj_reinit(ctx, text, GRN_DB_TEXT, 0);
-		GRN_TEXT_SET(ctx, text, indexName, indexNameSize);
-		GRN_TEXT_PUTC(ctx, text, '\0');
-		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
-	}
-	PGrnSequentialSearchDataExecutePrepareIndex(data, indexOID, column);
-
 	grn_obj_set_value(ctx,
 					  column,
 					  data->recordID,
 					  value,
 					  GRN_OBJ_SET);
-
-	if (PGrnIsTemporaryIndexSearchAvailable)
-	{
-		PGrnSequentialSearchDataExecuteSetIndex(data,
-												indexOID,
-												column,
-												indexName,
-												indexNameSize);
-	}
+	data->indexColumnSource = column;
 }
 
 void
 PGrnSequentialSearchDataPrepareText(PGrnSequentialSearchData *data,
 									const char *target,
-									unsigned int targetSize,
-									const char *indexName,
-									unsigned int indexNameSize)
+									unsigned int targetSize)
 {
 	grn_obj *text = &(buffers->text);
-
 	GRN_TEXT_SET(ctx, text, target, targetSize);
 	PGrnSequentialSearchDataPrepare(data,
 									data->textColumn,
-									text,
-									indexName,
-									indexNameSize);
+									text);
 }
 
 void
 PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
 									 ArrayType *targets,
-									 grn_obj *isTargets,
-									 const char *indexName,
-									 unsigned int indexNameSize)
+									 grn_obj *isTargets)
 {
 	grn_obj *texts = &(buffers->texts);
 	ArrayIterator iterator;
@@ -302,15 +282,15 @@ PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
 
 	PGrnSequentialSearchDataPrepare(data,
 									data->textsColumn,
-									texts,
-									indexName,
-									indexNameSize);
+									texts);
 }
 
 static bool
 PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 										  const char *expressionData,
 										  unsigned int expressionDataSize,
+										  const char *indexName,
+										  unsigned int indexNameSize,
 										  PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][expression]";
@@ -325,6 +305,14 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 	expressionHash = XXH64(expressionData, expressionDataSize, 0);
 	if (data->expressionHash == expressionHash)
 		return true;
+
+	if (PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchDataExecuteSetIndex(data,
+												indexName,
+												indexNameSize,
+												type);
+	}
 
 	if (data->expression)
 	{
@@ -351,13 +339,17 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 void
 PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 									 const char *term,
-									 unsigned int termSize)
+									 unsigned int termSize,
+									 const char *indexName,
+									 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][match-term]";
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  term,
 												  termSize,
+												  indexName,
+												  indexNameSize,
 												  PGRN_SEQUENTIAL_SEARCH_MATCH_TERM))
 	{
 		return;
@@ -386,13 +378,17 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 void
 PGrnSequentialSearchDataSetEqualText(PGrnSequentialSearchData *data,
 									 const char *other,
-									 unsigned int otherSize)
+									 unsigned int otherSize,
+									 const char *indexName,
+									 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][equal-text]";
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  other,
 												  otherSize,
+												  indexName,
+												  indexNameSize,
 												  PGRN_SEQUENTIAL_SEARCH_EQUAL_TEXT))
 	{
 		return;
@@ -421,13 +417,17 @@ PGrnSequentialSearchDataSetEqualText(PGrnSequentialSearchData *data,
 void
 PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
 								  const char *prefix,
-								  unsigned int prefixSize)
+								  unsigned int prefixSize,
+								  const char *indexName,
+								  unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][prefix]";
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  prefix,
 												  prefixSize,
+												  indexName,
+												  indexNameSize,
 												  PGRN_SEQUENTIAL_SEARCH_PREFIX))
 	{
 		return;
@@ -456,23 +456,30 @@ PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
 void
 PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 								 const char *query,
-								 unsigned int querySize)
+								 unsigned int querySize,
+								 const char *indexName,
+								 unsigned int indexNameSize,
+								 PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][query]";
 
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  query,
 												  querySize,
-												  PGRN_SEQUENTIAL_SEARCH_QUERY))
+												  indexName,
+												  indexNameSize,
+												  type))
 	{
 		return;
 	}
 
 	grn_expr_parse(ctx,
 				   data->expression,
-				   query, querySize,
+				   query,
+				   querySize,
 				   data->indexColumnSource,
-				   GRN_OP_MATCH, GRN_OP_AND,
+				   GRN_OP_MATCH,
+				   GRN_OP_AND,
 				   data->exprFlags);
 	if (ctx->rc != GRN_SUCCESS)
 		data->expressionHash = 0;
@@ -484,7 +491,9 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 void
 PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 								  const char *script,
-								  unsigned int scriptSize)
+								  unsigned int scriptSize,
+								  const char *indexName,
+								  unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][query]";
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
@@ -492,6 +501,8 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 	if (PGrnSequentialSearchDataPrepareExpression(data,
 												  script,
 												  scriptSize,
+												  indexName,
+												  indexNameSize,
 												  PGRN_SEQUENTIAL_SEARCH_SCRIPT))
 	{
 		return;

@@ -1,0 +1,29 @@
+CREATE TABLE tags (
+  names varchar[]
+);
+INSERT INTO tags VALUES (ARRAY['PostgreSQL', 'PG']);
+INSERT INTO tags VALUES (ARRAY['Groonga', 'grn', 'groonga']);
+INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn', 'SQL']);
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT names
+  FROM tags
+ WHERE names &=~ 'grn OR sql';
+                QUERY PLAN                
+------------------------------------------
+ Seq Scan on tags
+   Filter: (names &=~ 'grn OR sql'::text)
+(2 rows)
+
+SELECT names
+  FROM tags
+ WHERE names &=~ 'grn OR sql';
+         names         
+-----------------------
+ {Groonga,grn,groonga}
+ {PGroonga,pgrn,SQL}
+(2 rows)
+
+DROP TABLE tags;

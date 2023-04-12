@@ -20,6 +20,10 @@ PGrnInitializeBuffers(void)
 	GRN_TEXT_INIT(&(PGrnBuffers.pattern), 0);
 	GRN_UINT64_INIT(&(PGrnBuffers.ctid), 0);
 	GRN_FLOAT_INIT(&(PGrnBuffers.score), 0);
+	/* We want to use GRN_RECORD_INIT() for source IDs but
+	 * grn_inspect(ctx, sourceIDs) is crashed with Groonga 13.0.2 or
+	 * older. */
+	/* GRN_RECORD_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR, GRN_ID_NIL); */
 	GRN_UINT32_INIT(&(PGrnBuffers.sourceIDs), GRN_OBJ_VECTOR);
 	GRN_TEXT_INIT(&(PGrnBuffers.tokenizer), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.normalizers), 0);

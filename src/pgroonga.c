@@ -279,6 +279,8 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_varchar_condition);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_text_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_varchar_array);
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_insert);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_beginscan);
@@ -2175,10 +2177,10 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
 		PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
-											target, targetSize,
-											indexName, indexNameSize);
+											target, targetSize);
 		PGrnSequentialSearchDataSetMatchTerm(&sequentialSearchData,
-											 term, termSize);
+											 term, termSize,
+											 indexName, indexNameSize);
 		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 	}
 	else
@@ -2318,10 +2320,11 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						 const char *indexName, unsigned int indexNameSize)
 {
 	PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
-										target, targetSize,
-										indexName, indexNameSize);
+										target, targetSize);
 	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
-									 query, querySize);
+									 query, querySize,
+									 indexName, indexNameSize,
+									 PGRN_SEQUENTIAL_SEARCH_QUERY);
 	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 }
 
@@ -2338,11 +2341,11 @@ pgroonga_match_query_string_array_raw(ArrayType *targets,
 
 	PGrnSequentialSearchDataPrepareTexts(&sequentialSearchData,
 										 targets,
-										 isTargets,
-										 indexName,
-										 indexNameSize);
+										 isTargets);
 	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
-									 query, querySize);
+									 query, querySize,
+									 indexName, indexNameSize,
+									 PGRN_SEQUENTIAL_SEARCH_QUERY);
 	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 }
 
@@ -3342,10 +3345,10 @@ pgroonga_script_raw(const char *target, unsigned int targetSize,
 					const char *indexName, unsigned int indexNameSize)
 {
 	PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
-										target, targetSize,
-										indexName, indexNameSize);
+										target, targetSize);
 	PGrnSequentialSearchDataSetScript(&sequentialSearchData,
-									  script, scriptSize);
+									  script, scriptSize,
+									  indexName, indexNameSize);
 	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 }
 
@@ -3462,10 +3465,10 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
 		PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
-											text, textSize,
-											indexName, indexNameSize);
+											text, textSize);
 		PGrnSequentialSearchDataSetPrefix(&sequentialSearchData,
-										  prefix, prefixSize);
+										  prefix, prefixSize,
+										  indexName, indexNameSize);
 		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 	}
 	else
@@ -4664,10 +4667,10 @@ pgroonga_equal_text_raw(const char *target, unsigned int targetSize,
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
 		PGrnSequentialSearchDataPrepareText(&sequentialSearchData,
-											target, targetSize,
-											indexName, indexNameSize);
+											target, targetSize);
 		PGrnSequentialSearchDataSetEqualText(&sequentialSearchData,
-											 other, otherSize);
+											 other, otherSize,
+											 indexName, indexNameSize);
 		return PGrnSequentialSearchDataExecute(&sequentialSearchData);
 	}
 	else
@@ -4863,6 +4866,93 @@ pgroonga_equal_varchar_condition(PG_FUNCTION_ARGS)
 											 VARSIZE_ANY_EXHDR(target),
 											 header,
 											 false);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(equal);
+}
+
+static bool
+pgroonga_equal_query_text_array_raw(ArrayType *targets,
+									grn_obj *isTargets,
+									const char *query,
+									unsigned int querySize,
+									const char *indexName,
+									unsigned int indexNameSize)
+{
+	if (ARR_NDIM(targets) == 0)
+		return false;
+
+	PGrnSequentialSearchDataPrepareTexts(&sequentialSearchData,
+										 targets,
+										 isTargets);
+	PGrnSequentialSearchDataSetQuery(&sequentialSearchData,
+									 query, querySize,
+									 indexName, indexNameSize,
+									 PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY);
+	return PGrnSequentialSearchDataExecute(&sequentialSearchData);
+}
+
+/**
+ * pgroonga_equal_query_text_array(targets text[], query text) : bool
+ */
+Datum
+pgroonga_equal_query_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool equal = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		equal = pgroonga_equal_query_text_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		equal = pgroonga_equal_query_text_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(equal);
+}
+
+/**
+ * pgroonga_equal_query_varchar_array(targets varchar[], query text) : bool
+ */
+Datum
+pgroonga_equal_query_varchar_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *query = PG_GETARG_TEXT_PP(1);
+	bool equal = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		equal = pgroonga_equal_query_text_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		equal = pgroonga_equal_query_text_array_raw(targets,
+													NULL,
+													VARDATA_ANY(query),
+													VARSIZE_ANY_EXHDR(query),
+													NULL,
+													0);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -6417,6 +6507,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
 	case PGrnQueryStrategyV2DeprecatedNumber:
+	case PGrnEqualQueryStrategyV2Number:
 		break;
 	case PGrnContainStrategyNumber:
 		operator = GRN_OP_MATCH;
@@ -6483,6 +6574,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
 	case PGrnQueryStrategyV2DeprecatedNumber:
+	case PGrnEqualQueryStrategyV2Number:
 		PGrnSearchBuildConditionQuery(data,
 									  targetColumn,
 									  GRN_TEXT_VALUE(&(buffers->general)),
