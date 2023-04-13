@@ -99,11 +99,11 @@ PGrnSequentialSearchDataExecuteClearIndex(PGrnSequentialSearchData *data)
 	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
-static void
-PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
-										const char *indexName,
-										unsigned int indexNameSize,
-										PGrnSequentialSearchType type)
+static bool
+PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
+											const char *indexName,
+											unsigned int indexNameSize,
+											PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][index]";
 	Oid indexOID = InvalidOid;
@@ -123,7 +123,7 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		data->indexColumnSource == data->targetColumn &&
 		data->type == type)
 	{
-		return;
+		return false;
 	}
 
 	PGrnSequentialSearchDataExecuteClearIndex(data);
@@ -209,6 +209,8 @@ PGrnSequentialSearchDataExecuteSetIndex(PGrnSequentialSearchData *data,
 		PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
 	}
 	data->indexColumnSource = data->targetColumn;
+
+	return true;
 }
 
 static void
@@ -295,15 +297,13 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 										  PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][expression]";
+	bool indexUpdated;
 	uint64_t expressionHash;
 
-	if (PGrnIsTemporaryIndexSearchAvailable)
-	{
-		PGrnSequentialSearchDataExecuteSetIndex(data,
-												indexName,
-												indexNameSize,
-												type);
-	}
+	indexUpdated = PGrnSequentialSearchDataExecutePrepareIndex(data,
+															   indexName,
+															   indexNameSize,
+															   type);
 
 	if (data->type != type)
 	{
@@ -312,7 +312,7 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 	}
 
 	expressionHash = XXH64(expressionData, expressionDataSize, 0);
-	if (data->expressionHash == expressionHash)
+	if (!indexUpdated && data->expressionHash == expressionHash)
 		return true;
 
 	if (data->expression)
