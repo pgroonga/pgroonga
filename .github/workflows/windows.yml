@@ -170,7 +170,7 @@ jobs:
         if: |
           startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
         run: |
-          gh release upload ${GITHUB_REF_NAME} \
+          gh release upload ${Env:GITHUB_REF_NAME} `
             artifacts\${{ env.ARTIFACT_BASENAME }}
         env:
           GH_TOKEN: ${{ github.token }}
