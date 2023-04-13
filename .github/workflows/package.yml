@@ -56,7 +56,8 @@ jobs:
             --discussion-category Releases \
             --notes-file release-note.md \
             --title "${title}" \
-            pgroonga-*.tar.gz
+            pgroonga-*.tar.gz \
+            pgroonga-*.zip
         env:
           GH_TOKEN: ${{ github.token }}
 
