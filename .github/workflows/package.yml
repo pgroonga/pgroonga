@@ -53,7 +53,7 @@ jobs:
         run: |
           gh release create ${GITHUB_REF_NAME} \
             --discussion-category Announcements \
-            --notes-file release-node.md
+            --notes-file release-note.md
             pgroonga-*.tar.gz
         env:
           GH_TOKEN: ${{ github.token }}
