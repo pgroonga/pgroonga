@@ -2,7 +2,7 @@ CREATE TABLE tags (
   names text[]
 );
 INSERT INTO tags VALUES (ARRAY['PostgreSQL', 'PG']);
-INSERT INTO tags VALUES (ARRAY['Groonga', 'grn', 'groonga']);
+INSERT INTO tags VALUES (ARRAY['Groonga', 'grn', 'groonga', 'Groonga is OSS']);
 INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn', 'SQL']);
 SET enable_seqscan = on;
 SET enable_indexscan = off;
@@ -20,10 +20,28 @@ SELECT names
 SELECT names
   FROM tags
  WHERE names &=~ 'grn OR sql';
-         names         
------------------------
- {Groonga,grn,groonga}
+                 names                  
+----------------------------------------
+ {Groonga,grn,groonga,"Groonga is OSS"}
  {PGroonga,pgrn,SQL}
 (2 rows)
+
+EXPLAIN (COSTS OFF)
+SELECT names
+  FROM tags
+ WHERE names &@~ 'oss';
+            QUERY PLAN             
+-----------------------------------
+ Seq Scan on tags
+   Filter: (names &@~ 'oss'::text)
+(2 rows)
+
+SELECT names
+  FROM tags
+ WHERE names &@~ 'oss';
+                 names                  
+----------------------------------------
+ {Groonga,grn,groonga,"Groonga is OSS"}
+(1 row)
 
 DROP TABLE tags;

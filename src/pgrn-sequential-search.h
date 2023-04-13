@@ -18,10 +18,10 @@ typedef enum  {
 
 typedef struct PGrnSequentialSearchData
 {
-	bool prepared;
 	grn_obj *table;
 	grn_obj *textColumn;
 	grn_obj *textsColumn;
+	grn_obj *targetColumn;
 	grn_id recordID;
 	Oid indexOID;
 	grn_obj *lexicon;

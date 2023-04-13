@@ -15,12 +15,14 @@ INSERT INTO memos
             ARRAY['PGroonga is an OSS PostgreSQL extension',
                   'PGroonga adds full full-text search support based on Groonga to PostgreSQL']);
 
-CREATE INDEX pgroonga_memos_index ON memos
-  USING pgroonga (contents pgroonga_text_array_full_text_search_ops_v2);
-
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
+
+EXPLAIN (COSTS OFF)
+SELECT title, contents
+  FROM memos
+ WHERE contents &@~ 'oss search partial';
 
 SELECT title, contents
   FROM memos
