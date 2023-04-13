@@ -1,0 +1,29 @@
+require_relative "pgroonga-package-task"
+
+class PGroongaSourcePackageTask < GenericPGroongaPackageTask
+  def initialize
+    super("pgroonga")
+  end
+
+  def enable_apt?
+    false
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def enable_yum?
+    false
+  end
+
+  def source_targets_default
+    [
+      "#{@archive_base_name}.tar.gz",
+      "#{@archive_base_name}.zip",
+    ]
+  end
+end
+
+task = PGroongaSourcePackageTask.new
+task.define

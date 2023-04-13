@@ -118,41 +118,6 @@ namespace :package do
 
   namespace :source do
     rsync_path = "#{rsync_base_path}/source/#{package}"
-    source_dir = "#{packages_dir}/source"
-
-    directory source_dir
-
-    desc "Clean sources"
-    task :clean do
-      rm_rf(source_dir)
-    end
-
-    desc "Upload sources"
-    task :upload => [archive_name, windows_archive_name, source_dir] do
-      groonga_repository = ENV["GROONGA_REPOSITORY"]
-      if groonga_repository.nil?
-        raise "Specify GROONGA_REPOSITORY environment variable"
-      end
-      gpg_uid = File.read(File.join(groonga_repository, "gpg_uid_rsa4096")).strip
-
-      prepare_archive = lambda do |archive, latest_archive|
-        cp(archive, source_dir)
-        cd(source_dir) do
-          ln_sf(archive, latest_archive)
-          sh("gpg",
-             "--local-user", gpg_uid,
-             "--armor",
-             "--detach-sign",
-             archive)
-          ln_sf("#{archive}.asc", "#{latest_archive}.asc")
-        end
-      end
-
-      prepare_archive.call(archive_name, "#{package}-latest.tar.gz")
-      prepare_archive.call(windows_archive_name, "#{package}-latest.zip")
-      sh("rsync", "-avz", "--progress", "#{source_dir}/", rsync_path)
-    end
-
     namespace :snapshot do
       desc "Upload snapshot sources"
       task :upload => [archive_name, windows_archive_name] do
@@ -163,11 +128,11 @@ namespace :package do
   end
 
   desc "Release sources"
-  source_tasks = [
-    "package:source:clean",
-    "package:source:upload",
-  ]
-  task :source => source_tasks
+  task :source do
+    cd("packages") do
+      ruby("-S", "rake", "source")
+    end
+  end
 
   desc "Release APT packages"
   task :apt do

@@ -87,6 +87,8 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
     case target_namespace
     when :apt, :yum
       url << "#{@package}-#{target}.tar.gz"
+    when :source
+      url << target
     else
       raise [url, target_namespace, target, @package].inspect
     end
@@ -95,6 +97,10 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
 
   def built_package_n_split_components
     1
+  end
+
+  def github_repository
+    "pgroonga/pgroonga"
   end
 end
 
