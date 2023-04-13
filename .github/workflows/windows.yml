@@ -166,32 +166,14 @@ jobs:
           path: artifacts
 
       # Release
-      - name: Ensure creating release
-        if: |
-          startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
-        id: create-release
-        uses: actions/github-script@v6.4.1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          result-encoding: string
-          script: |
-            const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
-            const fs = require("fs");
-            const path = ".github/workflows/ensure-creating-release.js";
-            const script = fs.readFileSync(path).toString();
-            const func = new AsyncFunction("require", "github", "context", script);
-            return await func(require, github, context);
       - name: Upload to release
-        uses: actions/upload-release-asset@v1.0.2
         if: |
           startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
+        run: |
+          gh release upload ${GITHUB_REF_NAME} \
+            artifacts\${{ env.ARTIFACT_BASENAME }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.result }}
-          asset_path: artifacts/${{ env.ARTIFACT_BASENAME }}
-          asset_name: ${{ env.ARTIFACT_BASENAME }}
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ github.token }}
 
       # Test
       - name: Run PostgreSQL for test
