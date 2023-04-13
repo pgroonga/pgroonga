@@ -45,7 +45,9 @@ jobs:
         run: |
           ruby \
             -e 'print("## PGroonga "); \
-                puts(ARGF.read.split(/^## /)[1].gsub(/ {.+?}/, ""))' \
+                puts(ARGF.read.split(/^## /)[1]. \
+                       gsub(/ {.+?}/, ""). \
+                       gsub(/\\[(.+?)\\]\\[.+?\\]/) {$1})' \
             pgroonga.github.io/news/index.md > release-note.md
       - name: Upload to release
         if: |
