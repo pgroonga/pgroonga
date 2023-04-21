@@ -209,15 +209,6 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 #define PGRN_WAL_META_PAGE_BLOCK_NUMBER 0
 
 #ifdef PGRN_SUPPORT_WAL
-static LOCKMODE
-PGrnWALLockMode(void)
-{
-	if (RecoveryInProgress())
-		return RowExclusiveLock;
-	else
-		return ShareUpdateExclusiveLock;
-}
-
 static Buffer
 PGrnWALReadLockedBuffer(Relation index,
 						BlockNumber blockNumber,
@@ -480,6 +471,36 @@ PGrnWALDataInitMessagePack(PGrnWALData *data)
 {
 	msgpack_packer_init(&(data->packer), data, PGrnWALPageWriter);
 }
+
+static LOCKMODE
+PGrnWALLockMode(void)
+{
+	if (RecoveryInProgress())
+		return RowExclusiveLock;
+	else
+		return ShareUpdateExclusiveLock;
+}
+
+static BlockNumber
+PGrnWALLockBlockNumber(void)
+{
+	/* We can use any block number for this. We just want an index
+	 * level lock but we can't use LockRelation(index) because it
+	 * conflicts with REINDEX INDEX CONCURRENTLY. */
+	return 0;
+}
+
+static void
+PGrnWALLock(Relation index)
+{
+	LockPage(index, PGrnWALLockBlockNumber(), PGrnWALLockMode());
+}
+
+static void
+PGrnWALUnlock(Relation index)
+{
+	UnlockPage(index, PGrnWALLockBlockNumber(), PGrnWALLockMode());
+}
 #endif
 
 PGrnWALData *
@@ -494,7 +515,7 @@ PGrnWALStart(Relation index)
 	if (!RelationIsValid(index))
 		return NULL;
 
-	LockRelation(index, PGrnWALLockMode());
+	PGrnWALLock(index);
 
 	data = palloc(sizeof(PGrnWALData));
 
@@ -524,7 +545,7 @@ PGrnWALFinish(PGrnWALData *data)
 
 	PGrnWALDataReleaseBuffers(data);
 
-	UnlockRelation(data->index, PGrnWALLockMode());
+	PGrnWALUnlock(data->index);
 
 	pfree(data);
 #endif
@@ -548,7 +569,7 @@ PGrnWALAbort(PGrnWALData *data)
 	{
 		PGrnWALDataReleaseBuffers(data);
 
-		UnlockRelation(data->index, PGrnWALLockMode());
+		PGrnWALUnlock(data->index);
 	}
 
 	pfree(data);
@@ -2150,13 +2171,13 @@ PGrnWALApply(Relation index)
 	if (!PGrnWALApplyNeeded(&data))
 		return 0;
 
-	LockRelation(index, PGrnWALLockMode());
+	PGrnWALLock(index);
 	PGrnIndexStatusGetWALAppliedPosition(data.index,
 										 &(data.current.block),
 										 &(data.current.offset));
 	data.sources = NULL;
 	nAppliedOperations = PGrnWALApplyConsume(&data);
-	UnlockRelation(index, PGrnWALLockMode());
+	PGrnWALUnlock(index);
 #endif
 	return nAppliedOperations;
 }
@@ -2303,11 +2324,11 @@ PGrnWALTruncate(Relation index)
 	uint32_t nProcessingBuffers = 0;
 	GenericXLogState *state;
 
-	LockRelation(index, PGrnWALLockMode());
+	PGrnWALLock(index);
 	nBlocks = RelationGetNumberOfBlocks(index);
 	if (nBlocks == 0)
 	{
-		UnlockRelation(index, PGrnWALLockMode());
+		PGrnWALUnlock(index);
 		return 0;
 	}
 
@@ -2368,7 +2389,7 @@ PGrnWALTruncate(Relation index)
 										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
 										 0);
 
-	UnlockRelation(index, PGrnWALLockMode());
+	PGrnWALUnlock(index);
 
 	return nTruncatedBlocks;
 }
