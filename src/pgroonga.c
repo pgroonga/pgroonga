@@ -95,6 +95,19 @@ static bool PGrnInitialized = false;
 bool PGrnGroongaInitialized = false;
 static bool PGrnCrashSaferInitialized = false;
 
+typedef struct PGrnProcessSharedData
+{
+	TimestampTz lastVacuumTimestamp;
+} PGrnProcessSharedData;
+
+typedef struct PGrnProcessLocalData
+{
+	TimestampTz lastDBUnmapTimestamp;
+} PGrnProcessLocalData;
+
+static PGrnProcessSharedData *processSharedData = NULL;
+static PGrnProcessLocalData processLocalData;
+
 typedef struct PGrnBuildStateData
 {
 	grn_obj	*sourcesTable;
@@ -675,6 +688,21 @@ _PG_init(void)
 
 	grn_set_segv_handler();
 
+	{
+		bool found;
+		LWLockAcquire(AddinShmemInitLock, LW_EXCLUSIVE);
+		processSharedData =
+			(PGrnProcessSharedData *) ShmemInitStruct("PGrnProcessSharedData",
+													  sizeof(PGrnProcessSharedData),
+													  &found);
+		if (!found)
+		{
+			processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
+		}
+		LWLockRelease(AddinShmemInitLock);
+	}
+	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
+
 	before_shmem_exit(PGrnBeforeShmemExit, 0);
 
 	RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
@@ -700,6 +728,22 @@ _PG_init(void)
 	PGrnInitializeOptions();
 
 	PGrnEnsureDatabase();
+}
+
+static void
+PGrnEnsureLatestDB()
+{
+	if (processLocalData.lastDBUnmapTimestamp >
+		processSharedData->lastVacuumTimestamp)
+	{
+		return;
+	}
+
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
+			"pgroonga: unmap DB because VACUUM was executed");
+	grn_db_unmap(ctx, grn_ctx_db(ctx));
+	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
 }
 
 static grn_id
@@ -5311,6 +5355,8 @@ pgroonga_insert(Relation index,
 						tag)));
 	}
 
+	PGrnEnsureLatestDB();
+
 	PGrnWALApply(index);
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -5560,6 +5606,8 @@ pgroonga_beginscan(Relation index,
 {
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
+
+	PGrnEnsureLatestDB();
 
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
@@ -7156,6 +7204,8 @@ PGrnEnsureCursorOpened(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+	PGrnEnsureLatestDB();
+
 	scan->xs_recheck = false;
 
 	{
@@ -7737,6 +7787,8 @@ pgroonga_build(Relation heap,
 					"%s unique index isn't supported",
 					tag);
 
+	PGrnEnsureLatestDB();
+
 	PGrnAutoCloseUseIndex(index);
 
 	if (index->rd_rel->relpersistence == RELPERSISTENCE_UNLOGGED)
@@ -7866,6 +7918,8 @@ pgroonga_buildempty(Relation index)
 						tag)));
 	}
 
+	PGrnEnsureLatestDB();
+
 	PGrnAutoCloseUseIndex(index);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -7953,6 +8007,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 						"while pgroonga.writable is false",
 						tag)));
 	}
+
+	PGrnEnsureLatestDB();
 
 	sourcesTable = PGrnLookupSourcesTable(index, WARNING);
 
@@ -8147,6 +8203,8 @@ PGrnRemoveUnusedTables(void)
 	 *     problem.
 	 */
 	grn_db_unmap(ctx, grn_ctx_db(ctx));
+
+	processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
@@ -8432,6 +8490,8 @@ pgroonga_costestimate(PlannerInfo *root,
 {
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index = RelationIdGetRelation(indexInfo->indexoid);
+
+	PGrnEnsureLatestDB();
 
 	*indexSelectivity = 0.0;
 	*indexStartupCost = 0.0;

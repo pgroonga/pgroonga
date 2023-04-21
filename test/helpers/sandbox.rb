@@ -116,6 +116,7 @@ module Helpers
                port: 15432)
       @dir = File.join(@base_dir, db_path)
       @log_path = File.join(@dir, "log", @log_base_name)
+      @pgroonga_log_path = File.join(@dir, "pgroonga.log")
       socket_dir = File.join(@dir, "socket")
       @port = port
       @replication_user = "replicator"
@@ -233,6 +234,11 @@ module Helpers
     def read_log
       return "" unless File.exist?(@log_path)
       File.read(@log_path)
+    end
+
+    def read_pgroonga_log
+      return "" unless File.exist?(@pgroonga_log_path)
+      File.read(@pgroonga_log_path)
     end
 
     private
