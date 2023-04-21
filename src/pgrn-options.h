@@ -28,5 +28,5 @@ void PGrnApplyOptionValues(Relation index,
 
 grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);
 
-bytea *pgroonga_options_raw(Datum reloptions,
-							bool validate);
+bytea *pgroonga_options(Datum reloptions,
+						bool validate);

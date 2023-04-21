@@ -37,8 +37,6 @@ static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj *lexicon = NULL;
 
-PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_options);
-
 typedef void (*PGrnOptionNameFunction)(const char *name,
 									   size_t nameSize,
 									   void *data);
@@ -776,8 +774,8 @@ PGrnOptionsGetExprParseFlags(Relation index)
 }
 
 bytea *
-pgroonga_options_raw(Datum reloptions,
-					 bool validate)
+pgroonga_options(Datum reloptions,
+				 bool validate)
 {
 	PGrnOptions *grnOptions;
 	const relopt_parse_elt optionsMap[] = {
@@ -837,19 +835,4 @@ pgroonga_options_raw(Datum reloptions,
 #endif
 
 	return (bytea *) grnOptions;
-}
-
-/**
- * pgroonga.options() -- amoptions
- */
-Datum
-pgroonga_options(PG_FUNCTION_ARGS)
-{
-	Datum reloptions = PG_GETARG_DATUM(0);
-	bool validate = PG_GETARG_BOOL(1);
-	bytea *grnOptions;
-
-	grnOptions = pgroonga_options_raw(reloptions, validate);
-
-	PG_RETURN_BYTEA_P(grnOptions);
 }
