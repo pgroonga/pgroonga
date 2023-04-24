@@ -94,6 +94,7 @@ module Helpers
     attr_reader :user
     attr_reader :replication_user
     attr_reader :replication_password
+    attr_reader :version
     def initialize(base_dir)
       @base_dir = base_dir
       @dir = nil
@@ -104,6 +105,7 @@ module Helpers
       @user = "pgroonga-test"
       @replication_user = nil
       @replication_password = nil
+      @version = nil
       @running = false
     end
 
@@ -146,6 +148,7 @@ module Helpers
       File.open(pg_hba_conf, "a") do |conf|
         conf.puts("host replication #{@replication_user} #{@host}/32 trust")
       end
+      @version = Integer(File.read(File.join(@dir, "PG_VERSION")).chomp, 10)
     end
 
     def create_replication_user
