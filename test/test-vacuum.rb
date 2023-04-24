@@ -11,11 +11,11 @@ class VacuumTestCase < Test::Unit::TestCase
     run_sql("INSERT INTO memos VALUES ('Groonga is good!');")
     thread = Thread.new do
       run_sql("SET pgroonga.log_level = debug; " +
-              "SELECT pg_sleep(5); " +
+              "SELECT pg_sleep(10); " +
               "SELECT * FROM memos WHERE content &@~ 'groonga';")
     end
     sleep(5)
-    run_sql("VACUUM;")
+    run_sql("VACUUM memos;")
     thread.join
     pgroonga_log = @postgresql.read_pgroonga_log
     assert_equal(["pgroonga: unmap DB because VACUUM was executed"],
