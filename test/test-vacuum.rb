@@ -10,15 +10,19 @@ class VacuumTestCase < Test::Unit::TestCase
     run_sql("DELETE FROM memos;")
     run_sql("INSERT INTO memos VALUES ('Groonga is good!');")
     thread = Thread.new do
-      run_sql("SET pgroonga.log_level = debug; " +
-              "SELECT pg_sleep(10); " +
-              "SELECT * FROM memos WHERE content &@~ 'groonga';")
+      run_sql("SET pgroonga.log_level = debug;",
+              "SELECT pgroonga_command('log_put debug \"before SELECT\"');",
+              "SELECT * FROM memos WHERE content &@~ 'groonga';",
+              "SELECT pgroonga_command('log_put debug \"after SELECT\"');")
     end
-    sleep(5)
-    run_sql("VACUUM memos;")
+    run_sql("SET pgroonga.log_level = debug;",
+            "SELECT pgroonga_command('log_put debug \"before VACUUM\"');",
+            "VACUUM memos;",
+            "SELECT pgroonga_command('log_put debug \"after VACUUM\"');")
     thread.join
     pgroonga_log = @postgresql.read_pgroonga_log
     assert_equal(["pgroonga: unmap DB because VACUUM was executed"],
-                 pgroonga_log.scan(/pgroonga: unmap.*$/))
+                 pgroonga_log.scan(/pgroonga: unmap.*$/),
+                 pgroonga_log)
   end
 end

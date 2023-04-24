@@ -210,15 +210,20 @@ module Helpers
                   "-D", @dir)
     end
 
-    def psql(db, sql)
-      output, error = run_command("psql",
-                                  "--host", @host,
-                                  "--port", @port.to_s,
-                                  "--username", @user,
-                                  "--dbname", db,
-                                  "--echo-all",
-                                  "--no-psqlrc",
-                                  "--command", sql)
+    def psql(db, *sqls)
+      command_line = [
+        "psql",
+        "--host", @host,
+        "--port", @port.to_s,
+        "--username", @user,
+        "--dbname", db,
+        "--echo-all",
+        "--no-psqlrc",
+      ]
+      sqls.each do |sql|
+        command_line << "--command" << sql
+      end
+      output, error = run_command(*command_line)
       output = normalize_output(output)
       [output, error]
     end
@@ -280,20 +285,20 @@ module Helpers
       end
     end
 
-    def psql(db, sql)
-      @postgresql.psql(db, sql)
+    def psql(db, *sqls)
+      @postgresql.psql(db, *sqls)
     end
 
-    def run_sql(sql)
-      psql(@test_db_name, sql)
+    def run_sql(*sqls)
+      psql(@test_db_name, *sqls)
     end
 
-    def psql_standby(db, sql)
-      @postgresql_standby.psql(db, sql)
+    def psql_standby(db, *sqls)
+      @postgresql_standby.psql(db, *sqls)
     end
 
-    def run_sql_standby(sql)
-      psql_standby(@test_db_name, sql)
+    def run_sql_standby(*sqls)
+      psql_standby(@test_db_name, *sqls)
     end
 
     def groonga(*command_line)
