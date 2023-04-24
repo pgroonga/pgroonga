@@ -11,6 +11,8 @@ class VacuumTestCase < Test::Unit::TestCase
     run_sql("INSERT INTO memos VALUES ('Groonga is good!');")
     thread = Thread.new do
       run_sql("SET pgroonga.log_level = debug;",
+              "SELECT pgroonga_command('status');",
+              "SELECT pg_sleep(3);",
               "SELECT pgroonga_command('log_put debug \"before SELECT\"');",
               "SELECT * FROM memos WHERE content &@~ 'groonga';",
               "SELECT pgroonga_command('log_put debug \"after SELECT\"');")
