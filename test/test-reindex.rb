@@ -4,7 +4,7 @@ class ReindexTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
   test "REINDEX CONCURRENTLY with UPDATE" do
-    unless @postgresql.version < 12
+    if @postgresql.version < 12
       omit("REINDEX CONCURRENTLY is available since PostgreSQL 12")
     end
     run_sql("CREATE TABLE memos (content text);")
