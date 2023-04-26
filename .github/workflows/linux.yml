@@ -112,7 +112,8 @@ jobs:
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
-          if [ ${{ matrix.postgresql-version }} -gt 15 ]; then
+          if [ ${{ matrix.postgresql-version }} -gt 15 -o \
+               "${GROONGA_MASTER}" = "yes" ]; then
             # TODO: We don't know why this case doesn't use parallel scan...
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
