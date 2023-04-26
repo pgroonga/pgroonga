@@ -11,6 +11,7 @@
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
+#include <catalog/pg_type.h>
 #include <funcapi.h>
 #include <miscadmin.h>
 
