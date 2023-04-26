@@ -128,7 +128,7 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	int width = PG_GETARG_INT32(2);
 	grn_obj *snip;
-	ArrayType *snippets;
+	ArrayType *snippets = NULL;
 
 	if (width <= 0)
 	{

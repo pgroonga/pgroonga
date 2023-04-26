@@ -762,10 +762,10 @@ static Datum
 PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 {
 	const char *tag = "[vector][groonga->postgresql-type]";
-	Oid elementTypeID;
-	int elementLength;
-	bool elementByValue;
-	char elementAlign;
+	Oid elementTypeID = InvalidOid;
+	int elementLength = 0;
+	bool elementByValue = false;
+	char elementAlign = '\0';
 	int i, n;
 	Datum *values;
 
