@@ -11,6 +11,7 @@
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
+#include <funcapi.h>
 #include <miscadmin.h>
 
 static bool PGrnWALEnabled = false;
@@ -63,6 +64,7 @@ PGrnWALSetMaxSize(size_t size)
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_apply_index);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_status);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_index);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_all);
 
@@ -2311,6 +2313,134 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 				tag);
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
+}
+
+typedef struct {
+	Relation indexes;
+	PGrnTableScanDesc scan;
+	TupleDesc desc;
+} PGrnWALStatusData;
+
+/**
+ * pgroonga_wal_status() : SETOF RECORD
+ */
+Datum
+pgroonga_wal_status(PG_FUNCTION_ARGS)
+{
+	FuncCallContext *context;
+	LOCKMODE lock = AccessShareLock;
+	PGrnWALStatusData *data;
+	HeapTuple indexTuple;
+
+	if (SRF_IS_FIRSTCALL())
+	{
+		MemoryContext oldContext;
+		context = SRF_FIRSTCALL_INIT();
+		oldContext = MemoryContextSwitchTo(context->multi_call_memory_ctx);
+		PG_TRY();
+		{
+			const int nAttributes = 8;
+			data = palloc(sizeof(PGrnWALStatusData));
+			data->indexes = pgrn_table_open(IndexRelationId, lock);
+			data->scan = pgrn_table_beginscan_catalog(data->indexes, 0, NULL);
+			data->desc = PGrnCreateTemplateTupleDesc(nAttributes);
+			TupleDescInitEntry(data->desc, 1, "name", TEXTOID, -1, 0);
+			TupleDescInitEntry(data->desc, 2, "oid", OIDOID, -1, 0);
+			TupleDescInitEntry(data->desc, 3, "current_block", INT8OID, -1, 0);
+			TupleDescInitEntry(data->desc, 4, "current_offset", INT8OID, -1, 0);
+			TupleDescInitEntry(data->desc, 5, "current_size", INT8OID, -1, 0);
+			TupleDescInitEntry(data->desc, 6, "last_block", INT8OID, -1, 0);
+			TupleDescInitEntry(data->desc, 7, "last_offset", INT8OID, -1, 0);
+			TupleDescInitEntry(data->desc, 8, "last_size", INT8OID, -1, 0);
+			BlessTupleDesc(data->desc);
+			context->user_fctx = data;
+		}
+		PG_CATCH();
+		{
+			MemoryContextSwitchTo(oldContext);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		MemoryContextSwitchTo(oldContext);
+		context->tuple_desc = data->desc;
+	}
+
+	context = SRF_PERCALL_SETUP();
+	data = context->user_fctx;
+
+	while ((indexTuple = heap_getnext(data->scan, ForwardScanDirection)))
+	{
+		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
+		Relation index;
+		BlockNumber currentBlock;
+		LocationIndex currentOffset;
+		Datum *values;
+		bool *nulls;
+		int i = 0;
+
+		if (!pgrn_pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+			continue;
+
+		index = RelationIdGetRelation(indexForm->indexrelid);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+		if (PGRN_RELKIND_HAS_PARTITIONS(index->rd_rel->relkind))
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		values = palloc(sizeof(Datum) * data->desc->natts);
+		/* All values are not NULL */
+		nulls = palloc0(sizeof(bool) * data->desc->natts);
+		values[i++] = PointerGetDatum(cstring_to_text(RelationGetRelationName(index)));
+		values[i++] = ObjectIdGetDatum(RelationGetRelid(index));
+		PGrnIndexStatusGetWALAppliedPosition(index, &currentBlock, &currentOffset);
+		values[i++] = Int64GetDatum(currentBlock);
+		values[i++] = Int64GetDatum(currentOffset);
+		values[i++] = Int64GetDatum(currentBlock * BLCKSZ + currentOffset);
+		if (PGrnWALEnabled && RelationGetNumberOfBlocks(index) > 0)
+		{
+			Buffer metaBuffer =
+				PGrnWALReadLockedBuffer(index,
+										PGRN_WAL_META_PAGE_BLOCK_NUMBER,
+										BUFFER_LOCK_SHARE);
+			Page metaPage = BufferGetPage(metaBuffer);
+			PGrnWALMetaPageSpecial *metaPageSpecial =
+				(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
+			BlockNumber lastBlock = metaPageSpecial->next;
+			Buffer lastBuffer =
+				PGrnWALReadLockedBuffer(index,
+										metaPageSpecial->next,
+										BUFFER_LOCK_SHARE);
+			Page lastPage = BufferGetPage(lastBuffer);
+			LocationIndex lastOffset = PGrnWALPageGetLastOffset(lastPage);
+			values[i++] = Int64GetDatum(lastBlock);
+			values[i++] = Int64GetDatum(lastOffset);
+			values[i++] = Int64GetDatum(lastBlock * BLCKSZ + lastOffset);
+			UnlockReleaseBuffer(lastBuffer);
+			UnlockReleaseBuffer(metaBuffer);
+		}
+		else
+		{
+			values[i++] = Int64GetDatum(0);
+			values[i++] = Int64GetDatum(0);
+			values[i++] = Int64GetDatum(0);
+		}
+		RelationClose(index);
+
+		{
+			HeapTuple tuple = heap_form_tuple(data->desc, values, nulls);
+			SRF_RETURN_NEXT(context, HeapTupleGetDatum(tuple));
+		}
+	}
+
+	heap_endscan(data->scan);
+	pgrn_table_close(data->indexes, lock);
+	SRF_RETURN_DONE(context);
 }
 
 #ifdef PGRN_SUPPORT_WAL

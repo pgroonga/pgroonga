@@ -1,0 +1,57 @@
+SET pgroonga.enable_wal = yes;
+CREATE TABLE memos (
+  content text
+);
+CREATE TABLE tags (
+  name text
+);
+CREATE INDEX pgrn_memos_index ON memos USING PGroonga (content);
+CREATE INDEX pgrn_tags_index ON tags USING PGroonga (name);
+SELECT name,
+       current_block,
+       current_offset,
+       current_size,
+       last_block,
+       last_offset,
+       last_size
+  FROM pgroonga_wal_status();
+       name       | current_block | current_offset | current_size | last_block | last_offset | last_size 
+------------------+---------------+----------------+--------------+------------+-------------+-----------
+ pgrn_memos_index |             1 |            566 |         8758 |          1 |         566 |      8758
+ pgrn_tags_index  |             1 |            560 |         8752 |          1 |         560 |      8752
+(2 rows)
+
+INSERT INTO memos VALUES ('Groonga is fast!');
+INSERT INTO tags VALUES ('Groonga');
+SELECT name,
+       current_block,
+       current_offset,
+       current_size,
+       last_block,
+       last_offset,
+       last_size
+  FROM pgroonga_wal_status();
+       name       | current_block | current_offset | current_size | last_block | last_offset | last_size 
+------------------+---------------+----------------+--------------+------------+-------------+-----------
+ pgrn_memos_index |             1 |            627 |         8819 |          1 |         627 |      8819
+ pgrn_tags_index  |             1 |            609 |         8801 |          1 |         609 |      8801
+(2 rows)
+
+INSERT INTO memos VALUES ('PGroonga is also fast!');
+INSERT INTO tags VALUES ('PGroonga');
+SELECT name,
+       current_block,
+       current_offset,
+       current_size,
+       last_block,
+       last_offset,
+       last_size
+  FROM pgroonga_wal_status();
+       name       | current_block | current_offset | current_size | last_block | last_offset | last_size 
+------------------+---------------+----------------+--------------+------------+-------------+-----------
+ pgrn_memos_index |             1 |            694 |         8886 |          1 |         694 |      8886
+ pgrn_tags_index  |             1 |            659 |         8851 |          1 |         659 |      8851
+(2 rows)
+
+DROP TABLE memos;
+DROP TABLE tags;

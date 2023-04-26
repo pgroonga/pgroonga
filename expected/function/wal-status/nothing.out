@@ -1,0 +1,6 @@
+SET pgroonga.enable_wal = yes;
+SELECT * FROM pgroonga_wal_status();
+ name | oid | current_block | current_offset | current_size | last_block | last_offset | last_size 
+------+-----+---------------+----------------+--------------+------------+-------------+-----------
+(0 rows)
+
