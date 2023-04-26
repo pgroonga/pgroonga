@@ -672,7 +672,9 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 					 JsonbValue *value,
 					 PGrnJSONBInsertData *data)
 {
+#ifdef PGRN_HAVE_JSONB_DATETIME
 	const char *tag = "[jsonb][insert]";
+#endif
 
 	switch (value->type)
 	{
