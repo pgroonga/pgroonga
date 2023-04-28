@@ -6,7 +6,7 @@ PGROONGA_LATEST_VERSION_AND_DATE=$(curl https://api.github.com/repos/pgroonga/pg
 PGROONGA_LATEST_VERSION=$(curl https://api.github.com/repos/pgroonga/pgroonga/releases/latest | jq -r '.tag_name')
 
 RELEASE_BLOG_BASE_URL="https://groonga.org"
-RELEASE_BLOG_DATE_PATH=$(echo $PGROONGA_LATEST_VERSION_AND_DATE | awk -F ":" '{print $2}' | sed -e 's/^ //' -e 's/"$//' | sed -e 's/-/\//g')
+RELEASE_BLOG_DATE_PATH=$(echo $PGROONGA_LATEST_VERSION_AND_DATE | cut -d ' ' -f 3 | tr - /)
 RELEASE_BLOG_VERSION="pgroonga-$PGROONGA_LATEST_VERSION"
 
 RELEASE_BLOG_URL_JA="$RELEASE_BLOG_BASE_URL/ja/blog/$RELEASE_BLOG_DATE_PATH/$RELEASE_BLOG_VERSION.html"
