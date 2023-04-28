@@ -2,8 +2,8 @@
 
 set -ue
 
-PGROONGA_LATEST_VERSION_AND_DATE=$(curl https://api.github.com/repos/pgroonga/pgroonga/releases/latest | jq '.name' | sed -e 's/^"//' -e 's/"$//')
-PGROONGA_LATEST_VERSION=$(curl https://api.github.com/repos/pgroonga/pgroonga/releases/latest | jq '.tag_name' | sed -e 's/^"//' -e 's/"$//')
+PGROONGA_LATEST_VERSION_AND_DATE=$(curl https://api.github.com/repos/pgroonga/pgroonga/releases/latest | jq -r '.name')
+PGROONGA_LATEST_VERSION=$(curl https://api.github.com/repos/pgroonga/pgroonga/releases/latest | jq -r '.tag_name')
 
 RELEASE_BLOG_BASE_URL="https://groonga.org"
 RELEASE_BLOG_DATE=$(echo $PGROONGA_LATEST_VERSION_AND_DATE | awk -F ":" '{print $2}' | sed -e 's/^ //' -e 's/"$//' | sed -e 's/-/\//g')
