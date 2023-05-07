@@ -2329,6 +2329,7 @@ Datum
 pgroonga_wal_status(PG_FUNCTION_ARGS)
 {
 	FuncCallContext *context;
+#ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	PGrnWALStatusData *data;
 	HeapTuple indexTuple;
@@ -2441,6 +2442,19 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 
 	heap_endscan(data->scan);
 	pgrn_table_close(data->indexes, lock);
+#else
+	if (SRF_IS_FIRSTCALL())
+	{
+		context = SRF_FIRSTCALL_INIT();
+	}
+	context = SRF_PERCALL_SETUP();
+	{
+		const char *tag = "[wal][status]";
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s not supported",
+					tag);
+	}
+#endif
 	SRF_RETURN_DONE(context);
 }
 
