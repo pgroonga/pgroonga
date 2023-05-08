@@ -122,7 +122,7 @@ Datum
 pgroonga_match_positions_byte(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
+	Datum keywords = PG_GETARG_DATUM(1);
 	const char *indexName = NULL;
 	ArrayType *positions;
 

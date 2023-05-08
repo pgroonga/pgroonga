@@ -87,19 +87,20 @@ PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 }
 
 void
-PGrnKeywordsUpdateTable(ArrayType *keywords, grn_obj *keywordsTable)
+PGrnKeywordsUpdateTable(Datum keywords, grn_obj *keywordsTable)
 {
 	const char *tag = "[keywords][update-table]";
 
 	{
+		AnyArrayType *keywordsArray = DatumGetAnyArrayP(keywords);
 		int i, n;
 
 		GRN_BULK_REWIND(&keywordIDs);
 
-		if (ARR_NDIM(keywords) == 0)
+		if (AARR_NDIM(keywordsArray) == 0)
 			n = 0;
 		else
-			n = ARR_DIMS(keywords)[0];
+			n = AARR_DIMS(keywordsArray)[0];
 		for (i = 1; i <= n; i++)
 		{
 			Datum keywordDatum;
@@ -107,8 +108,8 @@ PGrnKeywordsUpdateTable(ArrayType *keywords, grn_obj *keywordsTable)
 			bool isNULL;
 			grn_id id;
 
-			keywordDatum = array_ref(keywords, 1, &i, -1, -1, false,
-									 'i', &isNULL);
+			keywordDatum = array_get_element(keywords, 1, &i, -1, -1, false,
+											 'i', &isNULL);
 			if (isNULL)
 				continue;
 
