@@ -230,6 +230,30 @@ PGrnWALReadLockedBuffer(Relation index,
 	return buffer;
 }
 
+static char *
+PGrnWALPageGetData(Page page)
+{
+	return PageGetContents(page);
+}
+
+static size_t
+PGrnWALPageGetFreeSize(Page page)
+{
+	PageHeader pageHeader;
+
+	pageHeader = (PageHeader)page;
+	return pageHeader->pd_upper - pageHeader->pd_lower;
+}
+
+static LocationIndex
+PGrnWALPageGetLastOffset(Page page)
+{
+	PageHeader pageHeader;
+
+	pageHeader = (PageHeader)page;
+	return pageHeader->pd_lower - SizeOfPageHeaderData;
+}
+
 static void
 PGrnWALDataInitBuffers(PGrnWALData *data)
 {
@@ -302,9 +326,29 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 }
 
 static void
-PGrnWALDataRestart(PGrnWALData *data)
+PGrnWALDataFinish(PGrnWALData *data)
 {
 	GenericXLogFinish(data->state);
+	if (data->current.page)
+	{
+		PGrnIndexStatusSetWALAppliedPosition(
+			data->index,
+			BufferGetBlockNumber(data->current.buffer),
+			PGrnWALPageGetLastOffset(data->current.page));
+	}
+	else
+	{
+		PGrnIndexStatusSetWALAppliedPosition(
+			data->index,
+			data->meta.pageSpecial->next,
+			0);
+	}
+}
+
+static void
+PGrnWALDataRestart(PGrnWALData *data)
+{
+	PGrnWALDataFinish(data);
 
 	PGrnWALDataReleaseBuffers(data);
 
@@ -312,30 +356,6 @@ PGrnWALDataRestart(PGrnWALData *data)
 	PGrnWALDataInitNUsedPages(data);
 	PGrnWALDataInitMeta(data);
 	PGrnWALDataInitCurrent(data);
-}
-
-static char *
-PGrnWALPageGetData(Page page)
-{
-	return PageGetContents(page);
-}
-
-static size_t
-PGrnWALPageGetFreeSize(Page page)
-{
-	PageHeader pageHeader;
-
-	pageHeader = (PageHeader)page;
-	return pageHeader->pd_upper - pageHeader->pd_lower;
-}
-
-static LocationIndex
-PGrnWALPageGetLastOffset(Page page)
-{
-	PageHeader pageHeader;
-
-	pageHeader = (PageHeader)page;
-	return pageHeader->pd_lower - SizeOfPageHeaderData;
 }
 
 static void
@@ -448,10 +468,6 @@ PGrnWALPageWriter(void *userData,
 		if (rest <= freeSize)
 		{
 			PGrnWALPageAppend(data->current.page, buffer, rest);
-			PGrnIndexStatusSetWALAppliedPosition(
-				data->index,
-				BufferGetBlockNumber(data->current.buffer),
-				PGrnWALPageGetLastOffset(data->current.page));
 			written += rest;
 		}
 		else
@@ -544,7 +560,7 @@ PGrnWALFinish(PGrnWALData *data)
 	if (!data)
 		return;
 
-	GenericXLogFinish(data->state);
+	PGrnWALDataFinish(data);
 
 	PGrnWALDataReleaseBuffers(data);
 
@@ -2414,16 +2430,20 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 			PGrnWALMetaPageSpecial *metaPageSpecial =
 				(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
 			BlockNumber lastBlock = metaPageSpecial->next;
-			Buffer lastBuffer =
-				PGrnWALReadLockedBuffer(index,
-										metaPageSpecial->next,
-										BUFFER_LOCK_SHARE);
-			Page lastPage = BufferGetPage(lastBuffer);
-			LocationIndex lastOffset = PGrnWALPageGetLastOffset(lastPage);
+			LocationIndex lastOffset = 0;
+			if (lastBlock < RelationGetNumberOfBlocks(index))
+			{
+				Buffer lastBuffer =
+					PGrnWALReadLockedBuffer(index,
+											metaPageSpecial->next,
+											BUFFER_LOCK_SHARE);
+				Page lastPage = BufferGetPage(lastBuffer);
+				lastOffset = PGrnWALPageGetLastOffset(lastPage);
+				UnlockReleaseBuffer(lastBuffer);
+			}
 			values[i++] = Int64GetDatum(lastBlock);
 			values[i++] = Int64GetDatum(lastOffset);
 			values[i++] = Int64GetDatum(lastBlock * BLCKSZ + lastOffset);
-			UnlockReleaseBuffer(lastBuffer);
 			UnlockReleaseBuffer(metaBuffer);
 		}
 		else
