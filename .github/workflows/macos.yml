@@ -45,7 +45,7 @@ jobs:
       - name: Prepare PostgreSQL
         run: |
           echo "max_prepared_transactions = 1" >> \
-            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }})/postgresql.conf
+            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }}/postgresql.conf
           brew services start postgresql@${{ matrix.postgresql-version }}
       - name: Run regression test
         run: |
