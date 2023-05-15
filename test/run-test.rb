@@ -8,7 +8,11 @@ if ENV["NEED_MAKE"] == "yes"
     "HAVE_MSGPACK" => "1",
   }
   pg_config = ENV["PG_CONFIG"] || "pg_config"
-  n_cpus = Integer(`nproc`.chomp, 10)
+  if RUBY_PLATFORM.include?("darwin")
+    n_cpus = Integer(`sysctl -n hw.logicalcpu`.chomp, 10)
+  else
+    n_cpus = Integer(`nproc`.chomp, 10)
+  end
   command_line = ["make", "-j#{n_cpus}", "PG_CONFIG=#{pg_config}", "install"]
   command_line.prepend("sudo") if ENV["NEED_SUDO"] == "yes"
   system(env, *command_line, out: IO::NULL) || exit(false)
