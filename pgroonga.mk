@@ -25,7 +25,7 @@ DATA =						\
 	data/pgroonga--$(PGRN_VERSION).sql	\
 	$(shell echo data/pgroonga--*--*.sql)
 
-REGRESS = $(shell find sql -name '*.sql' | sed -e 's,\(^sql/\|\.sql$$\),,g')
+REGRESS = $(shell find sql -name '*.sql' | sed -E -e 's,(^sql/|\.sql$$),,g')
 REGRESS_OPTS = --load-extension=pgroonga
 
 ifdef HAVE_MSGPACK
@@ -41,12 +41,12 @@ all: data/pgroonga--$(PGRN_VERSION).sql
 data/pgroonga--$(PGRN_VERSION).sql: data/pgroonga.sql
 	@cp $< $@
 
-RESULT_DIRS = $(shell find sql/* -type d | sed -e 's,^sql/,results/,')
-EXPECTED_DIRS = $(shell find sql/* -type d | sed -e 's,^sql/,expected/,')
+RESULT_DIRS = $(shell find sql/* -type d | sed -E -e 's,^sql/,results/,')
+EXPECTED_DIRS = $(shell find sql/* -type d | sed -E -e 's,^sql/,expected/,')
 EXPECTED_FILES =				\
 	$(shell find sql -name '*.sql' |	\
-		sed -e 's,^sql/,expected/,'	\
-		    -e 's,sql$$,out,')
+		sed -E -e 's,^sql/,expected/,'	\
+		    -E -e 's,sql$$,out,')
 
 # installcheck: prepare-regress
 installcheck: $(RESULT_DIRS)
