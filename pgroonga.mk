@@ -1,6 +1,7 @@
 PACKAGES =
 ifdef HAVE_MSGPACK
-PACKAGES += msgpack
+MSGPACK_PACKAGE_NAME = msgpack
+PACKAGES += $(MSGPACK_PACKAGE_NAME)
 endif
 ifdef HAVE_XXHASH
 PACKAGES += libxxhash
