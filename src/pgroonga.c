@@ -1784,7 +1784,7 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 	const uint64 packedCtid = PGrnCtidPack(ctid);
 	double score = 0.0;
 	grn_id resolveID;
-	grn_id sourceID;
+	grn_id sourceID = GRN_ID_NIL;
 	grn_id searchedID;
 
 	if (!so->ctidResolveTable)
