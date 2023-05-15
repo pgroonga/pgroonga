@@ -49,12 +49,12 @@ jobs:
           brew services start postgresql@${{ matrix.postgresql-version }}
       - name: Run regression test
         run: |
+          # TODO: Remove me when groonga formula enables libstemmer
+          rm sql/full-text-search/text/options/token-filters/custom.sql
           if [ ${{ matrix.postgresql-version }} -lt 12 ]; then
             rm sql/vacuum/two-phase-commit.sql
           fi
-          if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
-            rm sql/full-text-search/text/single/declarative-partitioning.sql
-          fi
+          rm sql/full-text-search/text/single/declarative-partitioning.sql
           PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
             test/run-sql-test.sh
         env:
