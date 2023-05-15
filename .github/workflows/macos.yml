@@ -59,7 +59,7 @@ jobs:
             test/run-sql-test.sh
         env:
           HAVE_XXHASH: "1"
-          MSGPACK_PACKAGE_NAME: "msgpackc"
+          MSGPACK_PACKAGE_NAME: "msgpack-c"
           SUPPRESS_LOG: "no"
       - name: Show diff
         if: failure()
