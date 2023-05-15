@@ -6,6 +6,15 @@ CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 CREATE TABLE pgroonga_wal (
   applied_position bigint
 );
+SELECT pgroonga_command('object_exist',
+                        ARRAY[
+                          'name', 'IndexStatuses'
+                        ])::jsonb->>1;
+ ?column? 
+----------
+ true
+(1 row)
+
 INSERT INTO pgroonga_wal (
   SELECT (pgroonga_command(
     'select',

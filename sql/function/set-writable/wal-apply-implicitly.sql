@@ -10,6 +10,11 @@ CREATE TABLE pgroonga_wal (
   applied_position bigint
 );
 
+SELECT pgroonga_command('object_exist',
+                        ARRAY[
+                          'name', 'IndexStatuses'
+                        ])::jsonb->>1;
+
 INSERT INTO pgroonga_wal (
   SELECT (pgroonga_command(
     'select',

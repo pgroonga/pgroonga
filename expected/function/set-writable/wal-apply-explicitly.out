@@ -4,6 +4,15 @@ CREATE TABLE memos (
 );
 INSERT INTO memos VALUES ('Groonga is fast!');
 CREATE INDEX pgrn_index ON memos USING PGroonga (content);
+SELECT pgroonga_command('object_exist',
+                        ARRAY[
+                          'name', 'IndexStatuses'
+                        ])::jsonb->>1;
+ ?column? 
+----------
+ true
+(1 row)
+
 SELECT pgroonga_command('delete',
                         ARRAY[
                           'table', 'IndexStatuses',
