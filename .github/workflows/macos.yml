@@ -1,0 +1,86 @@
+name: macOS
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+  schedule:
+    - cron: |
+        0 0 * * *
+jobs:
+  test:
+    name: Test
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        postgresql-version:
+          - "11"
+          - "12"
+          - "13"
+          - "14"
+          - "15"
+    env:
+      PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/checkout@v3
+        with:
+          repository: pgroonga/benchmark
+          path: pgroonga-benchmark
+      - name: Install dependency
+        run: |
+          sed \
+            -i '' \
+            -e 's/postgresql/postgresql@${{ matrix.postgresql-version }}/g' \
+            Brewfile
+          brew bundle
+      - name: Prepare PostgreSQL
+        run: |
+          echo "max_prepared_transactions = 1" >> \
+            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }})/postgresql.conf
+          brew services start postgresql@${{ matrix.postgresql-version }}
+      - name: Run regression test
+        run: |
+          if [ ${{ matrix.postgresql-version }} -lt 12 ]; then
+            rm sql/vacuum/two-phase-commit.sql
+          fi
+          if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
+            rm sql/full-text-search/text/single/declarative-partitioning.sql
+          fi
+          PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config" \
+            test/run-sql-test.sh
+        env:
+          HAVE_XXHASH: "1"
+          SUPPRESS_LOG: "no"
+      - name: Show diff
+        if: failure()
+        run: |
+          cat regression.diffs
+      - name: Show pgroonga.log
+        if: failure()
+        run: |
+          cat \
+            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }})/pgroonga.log
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+          bundler-cache: true
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Caches/red-datasets
+          key: red-datasets-macos
+      - name: Run unit test
+        run: |
+          PATH="$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin:$PATH" \
+            bundle exec ruby \
+              -I${{ github.workspace }}/pgroonga-benchmark/lib \
+              test/run-test.rb -v
