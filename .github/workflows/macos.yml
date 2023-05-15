@@ -69,7 +69,7 @@ jobs:
         if: failure()
         run: |
           cat \
-            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }})/pgroonga.log
+            $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }}/pgroonga.log
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ruby
