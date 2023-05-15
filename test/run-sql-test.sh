@@ -39,9 +39,19 @@ fi
 
 : ${PG_CONFIG:=pg_config}
 
+n_jobs=1
+case $(uname) in
+  Linux)
+    n_jobs=$(nproc)
+    ;;
+  Darwin)
+    n_jobs=$(sysctl -n hw.logicalcpu)
+    ;;
+esac
+
 export PGRN_DEBUG=1
 export HAVE_MSGPACK=1
-eval "run make -j$(nproc) PG_CONFIG=${PG_CONFIG} ${OUTPUT}"
+eval "run make -j${n_jobs} PG_CONFIG=${PG_CONFIG} ${OUTPUT}"
 if [ "${NEED_SUDO:-no}" = "yes" ]; then
   eval "run sudo -H make PG_CONFIG=${PG_CONFIG} install ${OUTPUT}"
 else
