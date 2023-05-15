@@ -55,7 +55,7 @@ jobs:
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
-          PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config" \
+          PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
             test/run-sql-test.sh
         env:
           HAVE_XXHASH: "1"
