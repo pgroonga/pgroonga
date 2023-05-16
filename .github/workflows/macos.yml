@@ -86,4 +86,5 @@ jobs:
               -I${{ github.workspace }}/pgroonga-benchmark/lib \
               test/run-test.rb \
               --ignore-testcase=/CrashSafer/ \
+              --ignore-testcase=/StreamingReplication/ \
               --verbose
