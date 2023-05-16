@@ -328,21 +328,20 @@ PGrnWALDataInitCurrent(PGrnWALData *data)
 static void
 PGrnWALDataFinish(PGrnWALData *data)
 {
-	GenericXLogFinish(data->state);
+	BlockNumber block;
+	LocationIndex offset;
 	if (data->current.page)
 	{
-		PGrnIndexStatusSetWALAppliedPosition(
-			data->index,
-			BufferGetBlockNumber(data->current.buffer),
-			PGrnWALPageGetLastOffset(data->current.page));
+		block = BufferGetBlockNumber(data->current.buffer);
+		offset = PGrnWALPageGetLastOffset(data->current.page);
 	}
 	else
 	{
-		PGrnIndexStatusSetWALAppliedPosition(
-			data->index,
-			data->meta.pageSpecial->next,
-			0);
+		block = data->meta.pageSpecial->next;
+		offset = 0;
 	}
+	GenericXLogFinish(data->state);
+	PGrnIndexStatusSetWALAppliedPosition(data->index, block, offset);
 }
 
 static void
