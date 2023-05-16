@@ -688,7 +688,7 @@ _PG_init(void)
 
 	grn_set_segv_handler();
 
-	{
+	if (IsUnderPostmaster) {
 		bool found;
 		LWLockAcquire(AddinShmemInitLock, LW_EXCLUSIVE);
 		processSharedData =
@@ -733,6 +733,11 @@ _PG_init(void)
 static void
 PGrnEnsureLatestDB()
 {
+	if (!processSharedData)
+	{
+		return;
+	}
+
 	if (processLocalData.lastDBUnmapTimestamp >
 		processSharedData->lastVacuumTimestamp)
 	{
@@ -8221,7 +8226,10 @@ PGrnRemoveUnusedTables(void)
 	 */
 	grn_db_unmap(ctx, grn_ctx_db(ctx));
 
-	processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
+	if (processSharedData)
+	{
+		processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
+	}
 
 	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
 								   min, strlen(min),
