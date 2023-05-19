@@ -44,4 +44,4 @@ git add ja/upgrade/index.md
 git add upgrade/index.md
 
 git commit -m "upgrade: add $PREVIOUS_VERSION -> $LATEST_VERSION"
-#git push
+git push
