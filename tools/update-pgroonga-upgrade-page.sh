@@ -9,8 +9,6 @@ if [ $# -ne 1 ] && [ $# -ne 2 ]; then
   exit 1
 fi
 
-rm -rf pgroonga.github.io
-
 COMPATIBLE_OR_NOT=$1
 
 LATEST_VERSION=$(git tag --sort version:refname | tail -n 2 | sed -n '2p')
@@ -45,3 +43,6 @@ git add upgrade/index.md
 
 git commit -m "upgrade: add $PREVIOUS_VERSION -> $LATEST_VERSION"
 git push
+
+popd
+rm -rf pgroonga.github.io
