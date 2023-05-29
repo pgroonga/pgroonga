@@ -207,7 +207,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 				{
 					/* TODO: Reduce log level to GRN_LOG_DEBUG
 					 * in the next release. */
-					GRN_LOG(&ctx,
+					GRN_LOG(ctx,
 							GRN_LOG_NOTICE,
 							"[query-expander-postgresql] NULL element exists");
 					continue;
@@ -215,7 +215,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 				if (!synonymDatum)
 				{
 					/* TODO: Remove this in the next release. */
-					GRN_LOG(&ctx,
+					GRN_LOG(ctx,
 							GRN_LOG_NOTICE,
 							"[query-expander-postgresql] "
 							"NULL datum element exists");
