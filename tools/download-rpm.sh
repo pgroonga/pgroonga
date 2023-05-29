@@ -107,3 +107,8 @@ download_recursive()
 
 download_recursive \
   postgresql${POSTGRESQL_MAJOR_VERSION}-pgdg-pgroonga-${PGROONGA_VERSION}-1.el${OS_VERSION}
+
+if [ ${USE_MECAB:-no} = "yes" ]; then
+  download_recursive \
+    groonga-tokenizer-mecab-${GROONGA_VERSION}-1.el${OS_VERSION}
+fi
