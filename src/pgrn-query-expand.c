@@ -204,7 +204,23 @@ func_query_expander_postgresql(grn_ctx *ctx,
 										 currentData.synonymsAttribute->attalign,
 										 &isNULL);
 				if (isNULL)
+				{
+					/* TODO: Reduce log level to GRN_LOG_DEBUG
+					 * in the next release. */
+					GRN_LOG(&ctx,
+							GRN_LOG_NOTICE,
+							"[query-expander-postgresql] NULL element exists");
 					continue;
+				}
+				if (!synonymDatum)
+				{
+					/* TODO: Remove this in the next release. */
+					GRN_LOG(&ctx,
+							GRN_LOG_NOTICE,
+							"[query-expander-postgresql] "
+							"NULL datum element exists");
+					continue;
+				}
 				synonym = DatumGetTextP(synonymDatum);
 				if (nUsedSynonyms >= 1)
 					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
