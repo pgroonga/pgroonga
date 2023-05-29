@@ -14,7 +14,7 @@ static grn_ctx *ctx = &PGrnContext;
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 
 static grn_obj *
-PGrnSnipCreate(Datum keywords, const char *tag, unsigned int width)
+PGrnSnipCreate(ArrayType *keywords, const char *tag, unsigned int width)
 {
 	grn_obj *snip;
 	int flags = GRN_SNIP_SKIP_LEADING_SPACES;
@@ -38,21 +38,20 @@ PGrnSnipCreate(Datum keywords, const char *tag, unsigned int width)
 	grn_snip_set_normalizer(ctx, snip, GRN_NORMALIZER_AUTO);
 
 	{
-		AnyArrayType *keywordsArray = DatumGetAnyArrayP(keywords);
 		int i, n;
 
-		if (AARR_NDIM(keywordsArray) == 0)
+		if (ARR_NDIM(keywords) == 0)
 			n = 0;
 		else
-			n = AARR_DIMS(keywordsArray)[0];
+			n = ARR_DIMS(keywords)[0];
 		for (i = 1; i <= n; i++)
 		{
 			Datum keywordDatum;
 			text *keyword;
 			bool isNULL;
 
-			keywordDatum = array_get_element(keywords, 1, &i, -1, -1, false,
-											 'i', &isNULL);
+			keywordDatum = array_ref(keywords, 1, &i, -1, -1, false,
+									 'i', &isNULL);
 			if (isNULL)
 				continue;
 
@@ -126,7 +125,7 @@ pgroonga_snippet_html(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[snippet-html]";
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum keywords = PG_GETARG_DATUM(1);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	int width = PG_GETARG_INT32(2);
 	grn_obj *snip;
 	ArrayType *snippets = NULL;

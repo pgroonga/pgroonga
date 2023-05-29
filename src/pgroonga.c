@@ -1986,14 +1986,13 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	if (PG_NARGS() == 2)
 	{
 		grn_obj *command = &(buffers->general);
-		Datum arguments = PG_GETARG_DATUM(1);
-		AnyArrayType *argumentsArray = DatumGetAnyArrayP(arguments);
+		ArrayType *arguments = PG_GETARG_ARRAYTYPE_P(1);
 		int i, n;
 
-		if (AARR_NDIM(argumentsArray) == 0)
+		if (ARR_NDIM(arguments) == 0)
 			n = 0;
 		else
-			n = AARR_DIMS(argumentsArray)[0];
+			n = ARR_DIMS(arguments)[0];
 
 		grn_obj_reinit(ctx, command, GRN_DB_TEXT, 0);
 		GRN_TEXT_PUT(ctx,
@@ -2010,24 +2009,12 @@ pgroonga_command(PG_FUNCTION_ARGS)
 			text *value;
 			bool isNULL;
 
-			nameDatum = array_get_element(arguments,
-										  1,
-										  &nameIndex,
-										  -1,
-										  -1,
-										  false,
-										  'i',
-										  &isNULL);
+			nameDatum = array_ref(arguments, 1, &nameIndex, -1, -1, false,
+								  'i', &isNULL);
 			if (isNULL)
 				continue;
-			valueDatum = array_get_element(arguments,
-										   1,
-										   &valueIndex,
-										   -1,
-										   -1,
-										   false,
-										   'i',
-										   &isNULL);
+			valueDatum = array_ref(arguments, 1, &valueIndex, -1, -1, false,
+								   'i', &isNULL);
 			if (isNULL)
 				continue;
 
@@ -2138,18 +2125,17 @@ pgroonga_execute_binary_operator_string_array(ArrayType *operands1,
 static bool
 pgroonga_execute_binary_operator_in_string(const char *operand1,
 										   unsigned int operandSize1,
-										   Datum operands2,
+										   ArrayType *operands2,
 										   const char *indexName,
 										   unsigned int indexNameSize,
 										   PGrnBinaryOperatorStringFunction operator)
 {
-	AnyArrayType *operandsArray2 = DatumGetAnyArrayP(operands2);
 	int i, n;
 
-	if (AARR_NDIM(operandsArray2) == 0)
+	if (ARR_NDIM(operands2) == 0)
 		return false;
 
-	n = AARR_DIMS(operandsArray2)[0];
+	n = ARR_DIMS(operands2)[0];
 	for (i = 1; i <= n; i++)
 	{
 		Datum operandDatum2;
@@ -2157,13 +2143,12 @@ pgroonga_execute_binary_operator_in_string(const char *operand1,
 		unsigned int operandSize2 = 0;
 		bool isNULL;
 
-		operandDatum2 =
-			array_get_element(operands2, 1, &i, -1, -1, false, 'i', &isNULL);
+		operandDatum2 = array_ref(operands2, 1, &i, -1, -1, false, 'i', &isNULL);
 		if (isNULL)
 			continue;
 
 		PGrnPGDatumExtractString(operandDatum2,
-								 AARR_ELEMTYPE(operandsArray2),
+								 ARR_ELEMTYPE(operands2),
 								 &operand2,
 								 &operandSize2);
 		if (!operand2)
@@ -2179,19 +2164,18 @@ pgroonga_execute_binary_operator_in_string(const char *operand1,
 }
 
 static bool
-pgroonga_execute_binary_operator_in_string_array(Datum operands1,
-												 Datum operands2,
+pgroonga_execute_binary_operator_in_string_array(ArrayType *operands1,
+												 ArrayType *operands2,
 												 const char *indexName,
 												 unsigned int indexNameSize,
 												 PGrnBinaryOperatorStringFunction operator)
 {
-	AnyArrayType *operandsArray1 = DatumGetAnyArrayP(operands1);
 	int i, n;
 
-	if (AARR_NDIM(operandsArray1) == 0)
+	if (ARR_NDIM(operands1) == 0)
 		return false;
 
-	n = AARR_DIMS(operandsArray1)[0];
+	n = ARR_DIMS(operands1)[0];
 	for (i = 1; i <= n; i++)
 	{
 		Datum operandDatum1;
@@ -2199,13 +2183,12 @@ pgroonga_execute_binary_operator_in_string_array(Datum operands1,
 		unsigned int operandSize1 = 0;
 		bool isNULL;
 
-		operandDatum1 =
-			array_get_element(operands1, 1, &i, -1, -1, false, 'i', &isNULL);
+		operandDatum1 = array_ref(operands1, 1, &i, -1, -1, false, 'i', &isNULL);
 		if (isNULL)
 			continue;
 
 		PGrnPGDatumExtractString(operandDatum1,
-								 AARR_ELEMTYPE(operandsArray1),
+								 ARR_ELEMTYPE(operands1),
 								 &operand1,
 								 &operandSize1);
 		if (!operand1)
@@ -4035,7 +4018,7 @@ Datum
 pgroonga_match_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum keywords = PG_GETARG_DATUM(1);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4080,8 +4063,8 @@ pgroonga_match_contain_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum keywords = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4116,7 +4099,7 @@ Datum
 pgroonga_match_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	Datum keywords = PG_GETARG_DATUM(1);
+	ArrayType *keywords = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4151,7 +4134,7 @@ Datum
 pgroonga_query_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum queries = PG_GETARG_DATUM(1);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4196,8 +4179,8 @@ pgroonga_query_contain_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum queries = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4232,7 +4215,7 @@ Datum
 pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	Datum queries = PG_GETARG_DATUM(1);
+	ArrayType *queries = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4267,7 +4250,7 @@ Datum
 pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4302,7 +4285,7 @@ Datum
 pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4336,8 +4319,8 @@ pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4372,7 +4355,7 @@ Datum
 pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4406,8 +4389,8 @@ pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 Datum
 pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4442,7 +4425,7 @@ Datum
 pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4476,8 +4459,8 @@ pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 Datum
 pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4512,7 +4495,7 @@ Datum
 pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4546,8 +4529,8 @@ pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 Datum
 pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 {
-	Datum targets = PG_GETARG_DATUM(0);
-	Datum prefixes = PG_GETARG_DATUM(1);
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType *prefixes = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4648,7 +4631,7 @@ Datum
 pgroonga_regexp_in_text(PG_FUNCTION_ARGS)
 {
 	text *target = PG_GETARG_TEXT_PP(0);
-	Datum patterns = PG_GETARG_DATUM(1);
+	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4683,7 +4666,7 @@ Datum
 pgroonga_regexp_in_varchar(PG_FUNCTION_ARGS)
 {
 	VarChar *target = PG_GETARG_VARCHAR_PP(0);
-	Datum patterns = PG_GETARG_DATUM(1);
+	ArrayType *patterns = PG_GETARG_ARRAYTYPE_P(1);
 	bool matched = false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
