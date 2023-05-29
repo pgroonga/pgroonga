@@ -177,6 +177,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		{
 			ArrayType *synonymsArray;
 			int i, n;
+			int nUsedSynonyms = 0;
 
 			synonymsArray = DatumGetArrayTypeP(synonymsDatum);
 			if (ARR_NDIM(synonymsArray) == 0)
@@ -202,14 +203,17 @@ func_query_expander_postgresql(grn_ctx *ctx,
 										 currentData.synonymsAttribute->attbyval,
 										 currentData.synonymsAttribute->attalign,
 										 &isNULL);
+				if (isNULL)
+					continue;
 				synonym = DatumGetTextP(synonymDatum);
-				if (i > 1)
+				if (nUsedSynonyms >= 1)
 					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
 				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
 				GRN_TEXT_PUT(ctx, expandedTerm,
 							 VARDATA_ANY(synonym),
 							 VARSIZE_ANY_EXHDR(synonym));
 				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
+				nUsedSynonyms++;
 			}
 		}
 
