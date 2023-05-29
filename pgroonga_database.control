@@ -1,3 +1,3 @@
-default_version = '3.0.4'
+default_version = '3.0.5'
 comment = 'PGroonga database management module'
 module_pathname = '$libdir/pgroonga_database'
