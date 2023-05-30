@@ -43,17 +43,19 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
   end
 
   def define_archive_task
-    downloaded_original_archive_path =
-      top_directory +
-      "packages" +
-      "source" +
-      "tmp" +
-      "downloads" +
-      @version +
-      original_archive_path.basename
-    file original_archive_path.to_s => downloaded_original_archive_path.to_s do
-      ln_s(downloaded_original_archive_path,
-           original_archive_path)
+    unless original_archive_path.exist?
+      downloaded_original_archive_path =
+        top_directory +
+        "packages" +
+        "source" +
+        "tmp" +
+        "downloads" +
+        @version +
+        original_archive_path.basename
+      file original_archive_path.to_s => downloaded_original_archive_path.to_s do
+        ln_s(downloaded_original_archive_path,
+             original_archive_path)
+      end
     end
 
     [@archive_name, deb_archive_name, rpm_archive_name].each do |archive_name|
