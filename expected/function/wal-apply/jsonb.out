@@ -5,14 +5,10 @@ CREATE TABLE logs (
 INSERT INTO logs VALUES ('{"message": "Groonga is fast!"}');
 CREATE INDEX pgrn_index ON logs USING PGroonga (record);
 INSERT INTO logs VALUES ('{"message": "PGroonga is also fast!"}');
-SELECT pgroonga_command('delete',
-                        ARRAY[
-                          'table', 'IndexStatuses',
-                          'key', 'pgrn_index'::regclass::oid::text
-                        ])::jsonb->>1;
- ?column? 
-----------
- true
+SELECT pgroonga_wal_set_applied_position('pgrn_index', 0, 0);
+ pgroonga_wal_set_applied_position 
+-----------------------------------
+ t
 (1 row)
 
 SELECT pgroonga_command('table_remove',

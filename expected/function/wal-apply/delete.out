@@ -24,14 +24,10 @@ SELECT pgroonga_command('select',
  [[[1], [["_id", "UInt32"], ["content", "LongText"]], [2, "PGroonga is also fast!"]]]
 (1 row)
 
-SELECT pgroonga_command('delete',
-                        ARRAY[
-                          'table', 'IndexStatuses',
-                          'key', 'pgrn_index'::regclass::oid::text
-                        ])::jsonb->>1;
- ?column? 
-----------
- true
+SELECT pgroonga_wal_set_applied_position('pgrn_index', 0, 0);
+ pgroonga_wal_set_applied_position 
+-----------------------------------
+ t
 (1 row)
 
 SELECT pgroonga_command('table_remove',

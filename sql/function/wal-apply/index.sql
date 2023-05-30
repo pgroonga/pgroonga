@@ -10,11 +10,7 @@ CREATE INDEX pgrn_index ON memos USING PGroonga (content);
 
 INSERT INTO memos VALUES ('PGroonga is also fast!');
 
-SELECT pgroonga_command('delete',
-                        ARRAY[
-                          'table', 'IndexStatuses',
-                          'key', 'pgrn_index'::regclass::oid::text
-                        ])::jsonb->>1;
+SELECT pgroonga_wal_set_applied_position('pgrn_index', 0, 0);
 SELECT pgroonga_command('table_remove',
                         ARRAY[
                           'name', 'Lexicon' ||

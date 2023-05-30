@@ -68,6 +68,10 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_apply_all);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_status);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_index);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_truncate_all);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_index);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_index_last);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all_last);
 
 #ifdef PGRN_SUPPORT_WAL
 static grn_ctx *ctx = &PGrnContext;
@@ -2331,6 +2335,42 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	PG_RETURN_INT64(nAppliedOperations);
 }
 
+#ifdef PGRN_SUPPORT_WAL
+void
+PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset)
+{
+	BlockNumber nBlocks = RelationGetNumberOfBlocks(index);
+
+	*block = 0;
+	*offset = 0;
+
+	if (nBlocks == 0)
+		return;
+
+	{
+		Buffer metaBuffer =
+			PGrnWALReadLockedBuffer(index,
+									PGRN_WAL_META_PAGE_BLOCK_NUMBER,
+									BUFFER_LOCK_SHARE);
+		Page metaPage = BufferGetPage(metaBuffer);
+		PGrnWALMetaPageSpecial *metaPageSpecial =
+			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
+		*block = metaPageSpecial->next;
+		if (*block < nBlocks)
+		{
+			Buffer buffer =
+				PGrnWALReadLockedBuffer(index,
+										metaPageSpecial->next,
+										BUFFER_LOCK_SHARE);
+			Page page = BufferGetPage(buffer);
+			*offset = PGrnWALPageGetLastOffset(page);
+			UnlockReleaseBuffer(buffer);
+		}
+		UnlockReleaseBuffer(metaBuffer);
+	}
+}
+#endif
+
 typedef struct {
 	Relation indexes;
 	PGrnTableScanDesc scan;
@@ -2419,37 +2459,14 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 		values[i++] = Int64GetDatum(currentBlock);
 		values[i++] = Int64GetDatum(currentOffset);
 		values[i++] = Int64GetDatum(currentBlock * BLCKSZ + currentOffset);
-		if (PGrnWALEnabled && RelationGetNumberOfBlocks(index) > 0)
 		{
-			Buffer metaBuffer =
-				PGrnWALReadLockedBuffer(index,
-										PGRN_WAL_META_PAGE_BLOCK_NUMBER,
-										BUFFER_LOCK_SHARE);
-			Page metaPage = BufferGetPage(metaBuffer);
-			PGrnWALMetaPageSpecial *metaPageSpecial =
-				(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
-			BlockNumber lastBlock = metaPageSpecial->next;
+			BlockNumber lastBlock = 0;
 			LocationIndex lastOffset = 0;
-			if (lastBlock < RelationGetNumberOfBlocks(index))
-			{
-				Buffer lastBuffer =
-					PGrnWALReadLockedBuffer(index,
-											metaPageSpecial->next,
-											BUFFER_LOCK_SHARE);
-				Page lastPage = BufferGetPage(lastBuffer);
-				lastOffset = PGrnWALPageGetLastOffset(lastPage);
-				UnlockReleaseBuffer(lastBuffer);
-			}
+			if (PGrnWALEnabled)
+				PGrnWALGetLastPosition(index, &lastBlock, &lastOffset);
 			values[i++] = Int64GetDatum(lastBlock);
 			values[i++] = Int64GetDatum(lastOffset);
 			values[i++] = Int64GetDatum(lastBlock * BLCKSZ + lastOffset);
-			UnlockReleaseBuffer(metaBuffer);
-		}
-		else
-		{
-			values[i++] = Int64GetDatum(0);
-			values[i++] = Int64GetDatum(0);
-			values[i++] = Int64GetDatum(0);
 		}
 		RelationClose(index);
 
@@ -2663,4 +2680,275 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 				tag);
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
+}
+
+/**
+ * pgroonga_wal_set_applied_position(
+ *   indexName cstring,
+ *   block bigint,
+ *   offset bigint
+ * ) : bool
+ */
+Datum
+pgroonga_wal_set_applied_position_index(PG_FUNCTION_ARGS)
+{
+	const char *tag = "[wal][set-applied-position][index]";
+#ifdef PGRN_SUPPORT_WAL
+	Datum indexNameDatum = PG_GETARG_DATUM(0);
+	BlockNumber block = PG_GETARG_UINT32(1);
+	LocationIndex offset = PG_GETARG_UINT32(2);
+	Datum indexOidDatum;
+	Oid indexOid;
+	Relation index;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: %s "
+						"can't set WAL applied position "
+						"while pgroonga.writable is false",
+						tag)));
+	}
+
+	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
+	indexOid = DatumGetObjectId(indexOidDatum);
+	if (!OidIsValid(indexOid))
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unknown index name: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
+	}
+
+	index = RelationIdGetRelation(indexOid);
+	PG_TRY();
+	{
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s not PGroonga index: <%s>",
+						tag,
+						DatumGetCString(indexNameDatum));
+		}
+		PGrnWALLock(index);
+		PGrnIndexStatusSetWALAppliedPosition(index, block, offset);
+		PGrnWALUnlock(index);
+	}
+	PG_CATCH();
+	{
+		RelationClose(index);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+	RelationClose(index);
+#else
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
+#endif
+	PG_RETURN_BOOL(true);
+}
+
+/**
+ * pgroonga_wal_set_applied_position(indexName cstring) : bool
+ */
+Datum
+pgroonga_wal_set_applied_position_index_last(PG_FUNCTION_ARGS)
+{
+	const char *tag = "[wal][set-applied-position][index][last]";
+#ifdef PGRN_SUPPORT_WAL
+	Datum indexNameDatum = PG_GETARG_DATUM(0);
+	Datum indexOidDatum;
+	Oid indexOid;
+	Relation index;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: %s "
+						"can't set WAL applied position "
+						"while pgroonga.writable is false",
+						tag)));
+	}
+
+	indexOidDatum = DirectFunctionCall1(regclassin, indexNameDatum);
+	indexOid = DatumGetObjectId(indexOidDatum);
+	if (!OidIsValid(indexOid))
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s unknown index name: <%s>",
+					tag,
+					DatumGetCString(indexNameDatum));
+	}
+
+	index = RelationIdGetRelation(indexOid);
+	PG_TRY();
+	{
+		BlockNumber block = 0;
+		LocationIndex offset = 0;
+
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s not PGroonga index: <%s>",
+						tag,
+						DatumGetCString(indexNameDatum));
+		}
+		PGrnWALLock(index);
+		PGrnWALGetLastPosition(index, &block, &offset);
+		PGrnIndexStatusSetWALAppliedPosition(index, block, offset);
+		PGrnWALUnlock(index);
+	}
+	PG_CATCH();
+	{
+		RelationClose(index);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
+	RelationClose(index);
+#else
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
+#endif
+	PG_RETURN_BOOL(true);
+}
+
+/**
+ * pgroonga_wal_set_applied_position(block bigint, offset bigint) : bool
+ */
+Datum
+pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
+{
+	const char *tag = "[wal][set-applied-position][all]";
+#ifdef PGRN_SUPPORT_WAL
+	BlockNumber block = PG_GETARG_UINT32(0);
+	LocationIndex offset = PG_GETARG_UINT32(1);
+	LOCKMODE lock = AccessShareLock;
+	Relation indexes;
+	PGrnTableScanDesc scan;
+	HeapTuple indexTuple;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: %s "
+						"can't set WAL applied position "
+						"while pgroonga.writable is false",
+						tag)));
+	}
+
+	indexes = pgrn_table_open(IndexRelationId, lock);
+	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
+	{
+		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
+		Relation index;
+
+		if (!pgrn_pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+			continue;
+
+		index = RelationIdGetRelation(indexForm->indexrelid);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		PG_TRY();
+		{
+			PGrnWALLock(index);
+			PGrnIndexStatusSetWALAppliedPosition(index, block, offset);
+			PGrnWALUnlock(index);
+		}
+		PG_CATCH();
+		{
+			RelationClose(index);
+			heap_endscan(scan);
+			pgrn_table_close(indexes, lock);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		RelationClose(index);
+	}
+	heap_endscan(scan);
+	pgrn_table_close(indexes, lock);
+#else
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
+#endif
+	PG_RETURN_BOOL(true);
+}
+
+/**
+ * pgroonga_wal_set_applied_position() : bool
+ */
+Datum
+pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
+{
+	const char *tag = "[wal][set-applied-position][all][last]";
+#ifdef PGRN_SUPPORT_WAL
+	LOCKMODE lock = AccessShareLock;
+	Relation indexes;
+	PGrnTableScanDesc scan;
+	HeapTuple indexTuple;
+
+	if (!PGrnIsWritable())
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_E_R_E_MODIFYING_SQL_DATA_NOT_PERMITTED),
+				 errmsg("pgroonga: %s "
+						"can't set WAL applied position "
+						"while pgroonga.writable is false",
+						tag)));
+	}
+
+	indexes = pgrn_table_open(IndexRelationId, lock);
+	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
+	{
+		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
+		Relation index;
+
+		if (!pgrn_pg_class_ownercheck(indexForm->indexrelid, GetUserId()))
+			continue;
+
+		index = RelationIdGetRelation(indexForm->indexrelid);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		PG_TRY();
+		{
+			BlockNumber block = 0;
+			LocationIndex offset = 0;
+			PGrnWALLock(index);
+			PGrnWALGetLastPosition(index, &block, &offset);
+			PGrnIndexStatusSetWALAppliedPosition(index, block, offset);
+			PGrnWALUnlock(index);
+		}
+		PG_CATCH();
+		{
+			RelationClose(index);
+			heap_endscan(scan);
+			pgrn_table_close(indexes, lock);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		RelationClose(index);
+	}
+	heap_endscan(scan);
+	pgrn_table_close(indexes, lock);
+#else
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s not supported",
+				tag);
+#endif
+	PG_RETURN_BOOL(true);
 }

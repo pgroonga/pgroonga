@@ -17,16 +17,8 @@ CREATE INDEX pgrn_tags_index ON tags USING PGroonga (name);
 INSERT INTO memos VALUES ('PGroonga is also fast!');
 INSERT INTO tags VALUES ('PGroonga');
 
-SELECT pgroonga_command('delete',
-                        ARRAY[
-                          'table', 'IndexStatuses',
-                          'key', 'pgrn_memos_index'::regclass::oid::text
-                        ])::jsonb->>1;
-SELECT pgroonga_command('delete',
-                        ARRAY[
-                          'table', 'IndexStatuses',
-                          'key', 'pgrn_tags_index'::regclass::oid::text
-                        ])::jsonb->>1;
+SELECT pgroonga_wal_set_applied_position('pgrn_memos_index', 0, 0);
+SELECT pgroonga_wal_set_applied_position('pgrn_tags_index', 0, 0);
 SELECT pgroonga_command('table_remove',
                         ARRAY[
                           'name', 'Lexicon' ||
