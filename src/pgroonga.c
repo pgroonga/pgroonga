@@ -7209,8 +7209,6 @@ PGrnEnsureCursorOpened(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
-	PGrnEnsureLatestDB();
-
 	scan->xs_recheck = false;
 
 	{
@@ -7513,6 +7511,8 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 			return 0;
 	}
 
+	PGrnEnsureLatestDB();
+
 	PGrnEnsureCursorOpened(scan, ForwardScanDirection, false);
 
 	if (so->indexCursor)
@@ -7642,6 +7642,8 @@ pgroonga_rescan(IndexScanDesc scan,
 
 	if (keys && scan->numberOfKeys > 0)
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
+
+	PGrnEnsureLatestDB();
 }
 
 static void
