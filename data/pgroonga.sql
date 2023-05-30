@@ -1,14 +1,14 @@
 CREATE TYPE pgroonga_full_text_search_condition AS (
-  query text,
-  weigths int[],
-  indexName text
+	query text,
+	weigths int[],
+	indexName text
 );
 
 CREATE TYPE pgroonga_full_text_search_condition_with_scorers AS (
-  query text,
-  weigths int[],
-  scorers text[],
-  indexName text
+	query text,
+	weigths int[],
+	scorers text[],
+	indexName text
 );
 
 CREATE FUNCTION pgroonga_score("row" record)
