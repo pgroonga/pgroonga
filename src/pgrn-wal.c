@@ -2336,7 +2336,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 }
 
 #ifdef PGRN_SUPPORT_WAL
-void
+static void
 PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset)
 {
 	BlockNumber nBlocks = RelationGetNumberOfBlocks(index);
