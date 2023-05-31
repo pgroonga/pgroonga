@@ -2182,15 +2182,15 @@ PGrnWALApply(Relation index)
 
 	data.index = index;
 
+	if (!PGrnWALApplyNeeded(&data))
+		return 0;
+
 	PGrnWALLock(index);
-	if (PGrnWALApplyNeeded(&data))
-	{
-		PGrnIndexStatusGetWALAppliedPosition(data.index,
-											 &(data.current.block),
-											 &(data.current.offset));
-		data.sources = NULL;
-		nAppliedOperations = PGrnWALApplyConsume(&data);
-	}
+	PGrnIndexStatusGetWALAppliedPosition(data.index,
+										 &(data.current.block),
+										 &(data.current.offset));
+	data.sources = NULL;
+	nAppliedOperations = PGrnWALApplyConsume(&data);
 	PGrnWALUnlock(index);
 #endif
 	return nAppliedOperations;
