@@ -149,10 +149,17 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 						indexNameSize, indexName);
 		}
 
-		data->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
-
-		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
-
+		PG_TRY();
+		{
+			data->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+			data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
+		}
+		PG_CATCH();
+		{
+			RelationClose(index);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
 		RelationClose(index);
 
 		if (grn_obj_get_info(ctx, data->lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL))
