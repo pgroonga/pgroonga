@@ -149,7 +149,7 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 						indexNameSize, indexName);
 		}
 
-		data->lexicon = PGrnCreateSimilarTemporaryLexicon(index);
+		data->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
 
 		data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
 

@@ -309,3 +309,9 @@ PGrnPGHavePreparedTransaction(void)
 	return false;
 #endif
 }
+
+bool
+PGrnPGIsParentIndex(Relation index)
+{
+	return PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid;
+}

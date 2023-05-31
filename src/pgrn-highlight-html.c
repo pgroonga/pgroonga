@@ -187,6 +187,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 static void
 PGrnHighlightHTMLSetLexicon(const char *indexName)
 {
+	const char *tag = "[highlight-html]";
 	Oid oid;
 	Relation index;
 
@@ -214,11 +215,20 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 		grn_highlighter_set_lexicon(ctx, highlighter, NULL);
 		grn_obj_close(ctx, lexicon);
 	}
-	lexicon = PGrnCreateSimilarTemporaryLexicon(index);
+	PG_TRY();
+	{
+		lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+	}
+	PG_CATCH();
+	{
+		RelationClose(index);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
 	RelationClose(index);
 
 	grn_highlighter_set_lexicon(ctx, highlighter, lexicon);
-	PGrnCheck("highlight-html: failed to set lexicon");
+	PGrnCheck("%s failed to set lexicon", tag);
 	indexOID = oid;
 }
 

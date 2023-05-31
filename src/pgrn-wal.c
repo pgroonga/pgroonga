@@ -5,6 +5,7 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-index-status.h"
+#include "pgrn-pg.h"
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
@@ -2722,8 +2723,7 @@ pgroonga_wal_set_applied_position_index(PG_FUNCTION_ARGS)
 						tag,
 						DatumGetCString(indexNameDatum));
 		}
-		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
+		if (PGrnPGIsParentIndex(index))
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s parent index for declarative partitioning: <%s>",
@@ -2795,8 +2795,7 @@ pgroonga_wal_set_applied_position_index_last(PG_FUNCTION_ARGS)
 						tag,
 						DatumGetCString(indexNameDatum));
 		}
-		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
+		if (PGrnPGIsParentIndex(index))
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s parent index for declarative partitioning: <%s>",
@@ -2930,8 +2929,7 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 			RelationClose(index);
 			continue;
 		}
-		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
+		if (PGrnPGIsParentIndex(index))
 		{
 			RelationClose(index);
 			continue;

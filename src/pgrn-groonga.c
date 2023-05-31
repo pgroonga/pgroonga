@@ -410,7 +410,7 @@ PGrnCreateTableWithSize(Relation index,
 }
 
 grn_obj *
-PGrnCreateSimilarTemporaryLexicon(Relation index)
+PGrnCreateSimilarTemporaryLexicon(Relation index, const char *tag)
 {
 	unsigned int i;
 	grn_obj *lexicon;
@@ -423,6 +423,16 @@ PGrnCreateSimilarTemporaryLexicon(Relation index)
 	grn_obj *tokenFilters = NULL;
 	grn_obj *tokenFiltersBuffer = &(buffers->tokenFilters);
 	grn_obj *temporaryLexicon = NULL;
+
+	if (PGrnPGIsParentIndex(index))
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: %s PGrnCreateSimilarTemporaryLexicon: "
+						"index must not a parent index: <%s>",
+						tag,
+						RelationGetRelationName(index))));
+	}
 
 	for (i = 0; i < index->rd_att->natts; i++)
 	{
@@ -438,8 +448,9 @@ PGrnCreateSimilarTemporaryLexicon(Relation index)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("pgroonga: PGrnCreateSimilarTemporaryLexicon: "
+				 errmsg("pgroonga: %s PGrnCreateSimilarTemporaryLexicon: "
 						"index doesn't have a lexicon for text: <%s>",
+						tag,
 						RelationGetRelationName(index))));
 	}
 

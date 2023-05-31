@@ -22,3 +22,4 @@ void PGrnPGDatumExtractString(Datum datum,
 							  const char **string,
 							  unsigned int *size);
 bool PGrnPGHavePreparedTransaction(void);
+bool PGrnPGIsParentIndex(Relation index);
