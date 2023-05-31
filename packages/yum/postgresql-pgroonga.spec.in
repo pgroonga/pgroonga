@@ -118,6 +118,9 @@ EOF
 %endif
 
 %changelog
+* Wed May 31 2023 Sutou Kouhei <kou@clear-code.com> - 3.0.6-1
+- New upstream release.
+
 * Tue May 30 2023 Sutou Kouhei <kou@clear-code.com> - 3.0.5-1
 - New upstream release.
 
