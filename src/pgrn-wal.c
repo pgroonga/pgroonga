@@ -482,7 +482,10 @@ PGrnWALPageWriter(void *userData,
 		}
 
 		if (PGrnWALPageGetFreeSize(data->current.page) == 0)
+		{
 			PGrnWALPageFilled(data);
+			PGrnWALPageWriterEnsureCurrent(data);
+		}
 	}
 
 	return written;
@@ -1114,9 +1117,6 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	LocationIndex currentOffset;
 	BlockNumber nBlocks;
 
-	if (!PGrnWALEnabled)
-		return false;
-
 	PGrnIndexStatusGetWALAppliedPosition(data->index,
 										 &currentBlock,
 										 &currentOffset);
@@ -1128,32 +1128,19 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	{
 		return false;
 	}
-	else if (currentBlock == (nBlocks - 1))
-	{
-		Buffer buffer;
-		Page page;
-		bool needToApply;
-
-		buffer = PGrnWALReadLockedBuffer(data->index,
-										 currentBlock,
-										 BUFFER_LOCK_SHARE);
-		page = BufferGetPage(buffer);
-		needToApply = (PGrnWALPageGetLastOffset(page) > currentOffset);
-		UnlockReleaseBuffer(buffer);
-		if (!needToApply)
-			return false;
-	}
 	else
 	{
 		Buffer buffer;
 		Page page;
+		LocationIndex offset;
 		bool needToApply;
 
 		buffer = PGrnWALReadLockedBuffer(data->index,
 										 currentBlock,
 										 BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		needToApply = (PGrnWALPageGetLastOffset(page) > 0);
+		offset = PGrnWALPageGetLastOffset(page);
+		needToApply = (offset > currentOffset);
 		UnlockReleaseBuffer(buffer);
 		if (!needToApply)
 			return false;
@@ -2189,16 +2176,20 @@ PGrnWALApply(Relation index)
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALApplyData data;
 
-	data.index = index;
-	if (!PGrnWALApplyNeeded(&data))
+	if (!PGrnWALEnabled)
 		return 0;
 
+	data.index = index;
+
 	PGrnWALLock(index);
-	PGrnIndexStatusGetWALAppliedPosition(data.index,
-										 &(data.current.block),
-										 &(data.current.offset));
-	data.sources = NULL;
-	nAppliedOperations = PGrnWALApplyConsume(&data);
+	if (PGrnWALApplyNeeded(&data))
+	{
+		PGrnIndexStatusGetWALAppliedPosition(data.index,
+											 &(data.current.block),
+											 &(data.current.offset));
+		data.sources = NULL;
+		nAppliedOperations = PGrnWALApplyConsume(&data);
+	}
 	PGrnWALUnlock(index);
 #endif
 	return nAppliedOperations;
