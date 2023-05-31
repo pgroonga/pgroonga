@@ -34,7 +34,7 @@ EXPLAIN (COSTS OFF)
 SELECT count(id)
   FROM memos
  WHERE content &@~ 'data 1*'
-\g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
+\g |sed -r -e "s/ memos_[123]$//g"
 \pset format aligned
 
 SELECT count(id)

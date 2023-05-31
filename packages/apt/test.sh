@@ -93,6 +93,9 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
+if [ ${postgresql_version} -lt 12 ]; then
+  rm sql/function/wal-set-applied-position/declarative-partitioning.sql
+fi
 if [ ${postgresql_version} -lt 13 ]; then
   rm sql/full-text-search/text/single/declarative-partitioning.sql
 fi
