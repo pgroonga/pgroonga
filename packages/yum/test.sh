@@ -133,6 +133,7 @@ cd /tmp
 case "${os}" in
   almalinux|amazon-linux|centos)
     if [ ${postgresql_version} -lt 12 ]; then
+      rm sql/function/highlight-html/declarative-partitioning.sql
       rm sql/function/wal-set-applied-position/declarative-partitioning.sql
       rm sql/vacuum/two-phase-commit.sql
     fi

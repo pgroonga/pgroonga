@@ -94,6 +94,7 @@ cp -a \
    /tmp/
 cd /tmp
 if [ ${postgresql_version} -lt 12 ]; then
+  rm sql/function/highlight-html/declarative-partitioning.sql
   rm sql/function/wal-set-applied-position/declarative-partitioning.sql
 fi
 if [ ${postgresql_version} -lt 13 ]; then
