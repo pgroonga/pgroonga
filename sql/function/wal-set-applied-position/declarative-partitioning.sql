@@ -29,10 +29,13 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT count(id)
   FROM memos
- WHERE content &@~ 'data 1*';
+ WHERE content &@~ 'data 1*'
+\g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
+\pset format aligned
 
 SELECT count(id)
   FROM memos

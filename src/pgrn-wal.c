@@ -2732,7 +2732,7 @@ pgroonga_wal_set_applied_position_index(PG_FUNCTION_ARGS)
 						DatumGetCString(indexNameDatum));
 		}
 		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (RelationGetRelid(index) == InvalidOid)
+		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s parent index for declarative partitioning: <%s>",
@@ -2805,7 +2805,7 @@ pgroonga_wal_set_applied_position_index_last(PG_FUNCTION_ARGS)
 						DatumGetCString(indexNameDatum));
 		}
 		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (RelationGetRelid(index) == InvalidOid)
+		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s parent index for declarative partitioning: <%s>",
@@ -2940,7 +2940,7 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 			continue;
 		}
 		/* PostgreSQL < 15: Parent index for declarative partitioning */
-		if (RelationGetRelid(index) == InvalidOid)
+		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid)
 		{
 			RelationClose(index);
 			continue;

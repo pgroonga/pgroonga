@@ -39,22 +39,23 @@ SELECT pgroonga_wal_set_applied_position();
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT count(id)
   FROM memos
- WHERE content &@~ 'data 1*';
-                                 QUERY PLAN                                  
------------------------------------------------------------------------------
- Aggregate
-   ->  Append
-         ->  Index Scan using memos_0_10_content_idx on memos_0_10 memos_1
-               Index Cond: (content &@~ 'data 1*'::text)
-         ->  Index Scan using memos_10_20_content_idx on memos_10_20 memos_2
-               Index Cond: (content &@~ 'data 1*'::text)
-         ->  Index Scan using memos_20_30_content_idx on memos_20_30 memos_3
-               Index Cond: (content &@~ 'data 1*'::text)
+ WHERE content &@~ 'data 1*'
+\g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
+QUERY PLAN
+Aggregate
+  ->  Append
+        ->  Index Scan using memos_0_10_content_idx on memos_0_10
+              Index Cond: (content &@~ 'data 1*'::text)
+        ->  Index Scan using memos_10_20_content_idx on memos_10_20
+              Index Cond: (content &@~ 'data 1*'::text)
+        ->  Index Scan using memos_20_30_content_idx on memos_20_30
+              Index Cond: (content &@~ 'data 1*'::text)
 (8 rows)
-
+\pset format aligned
 SELECT count(id)
   FROM memos
  WHERE content &@~ 'data 1*';
