@@ -94,6 +94,8 @@ void PGrnRenameTable(Relation index,
 
 void PGrnRemoveObject(const char *name);
 void PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
+void PGrnRemoveObjectForce(const char *name);
+void PGrnRemoveObjectForceWithSize(const char *name, size_t nameSize);
 
 void PGrnRemoveColumns(grn_obj *table);
 

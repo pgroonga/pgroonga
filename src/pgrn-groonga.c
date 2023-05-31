@@ -655,6 +655,33 @@ PGrnRemoveObjectWithSize(const char *name,
 }
 
 void
+PGrnRemoveObjectForce(const char *name)
+{
+	PGrnRemoveObjectForceWithSize(name, strlen(name));
+}
+
+void
+PGrnRemoveObjectForceWithSize(const char *name,
+							  size_t nameSize)
+{
+	grn_obj *object;
+
+	object = PGrnLookupWithSize(name, nameSize, PGRN_ERROR_LEVEL_IGNORE);
+	if (object)
+	{
+		if (grn_obj_remove(ctx, object) != GRN_SUCCESS)
+		{
+			object = NULL;
+		}
+	}
+	if (!object) {
+		grn_obj_remove_force(ctx, name, nameSize);
+	}
+	PGrnCheck("failed to remove: <%.*s>",
+			  (int)nameSize, name);
+}
+
+void
 PGrnFlushObject(grn_obj *object, bool recursive)
 {
 	grn_rc rc;

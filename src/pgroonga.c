@@ -8156,7 +8156,7 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];
 		snprintf(tableName, sizeof(tableName),
 				 PGrnSourcesTableNameFormat, relationFileNodeID);
-		PGrnRemoveObject(tableName);
+		PGrnRemoveObjectForce(tableName);
 		PGrnAliasDeleteRaw(relationFileNodeID);
 		PGrnIndexStatusDeleteRaw(relationFileNodeID);
 	}
@@ -8172,7 +8172,7 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		if (!lexicon)
 			break;
 
-		PGrnRemoveObject(tableName);
+		PGrnRemoveObjectForce(tableName);
 	}
 
 	PGrnJSONBRemoveUnusedTables(relationFileNodeID);
