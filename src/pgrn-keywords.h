@@ -12,5 +12,5 @@ void PGrnFinalizeKeywords(void);
 void PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 							   const char *indexName,
 							   Oid *previousIndexID);
-void PGrnKeywordsUpdateTable(ArrayType *keywords,
+void PGrnKeywordsUpdateTable(Datum keywords,
 							 grn_obj *keywordsTable);
