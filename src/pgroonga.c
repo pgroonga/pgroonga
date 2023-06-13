@@ -1792,41 +1792,46 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 	grn_id sourceID = GRN_ID_NIL;
 	grn_id searchedID;
 
-	if (!so->ctidResolveTable)
-		PGrnScanOpaqueCreateCtidResolveTable(so);
-
-	resolveID = grn_table_get(ctx,
-							  so->ctidResolveTable,
-							  &packedCtid,
-							  sizeof(uint64));
-	if (resolveID != GRN_ID_NIL)
-	{
-		{
-			NameData soTableName;
-			GRN_LOG(ctx,
-					GRN_LOG_DEBUG,
-					"%s[hot-resolved] <%s>(%u):<(%u,%u),%u>:<%u>",
-					tag,
-					PGrnPGGetRelationNameByID(so->dataTableID, soTableName.data),
-					so->dataTableID,
-					ctid->ip_blkid.bi_hi,
-					ctid->ip_blkid.bi_lo,
-					ctid->ip_posid,
-					resolveID);
-		}
-		GRN_BULK_REWIND(&(buffers->general));
-		grn_obj_get_value(ctx,
-						  so->ctidResolveTable,
-						  resolveID,
-						  &(buffers->general));
-		sourceID = GRN_RECORD_VALUE(&(buffers->general));
-	}
-	else if (so->sourcesTable->header.type != GRN_TABLE_NO_KEY)
+	if (so->sourcesTable->header.type != GRN_TABLE_NO_KEY)
 	{
 		sourceID = grn_table_get(ctx,
 								 so->sourcesTable,
 								 &packedCtid,
 								 sizeof(uint64));
+	}
+
+	if (sourceID == GRN_ID_NIL)
+	{
+		if (!so->ctidResolveTable)
+			PGrnScanOpaqueCreateCtidResolveTable(so);
+
+		resolveID = grn_table_get(ctx,
+								  so->ctidResolveTable,
+								  &packedCtid,
+								  sizeof(uint64));
+		if (resolveID != GRN_ID_NIL)
+		{
+			{
+				NameData soTableName;
+				GRN_LOG(ctx,
+						GRN_LOG_DEBUG,
+						"%s[hot-resolved] <%s>(%u):<(%u,%u),%u>:<%u>",
+						tag,
+						PGrnPGGetRelationNameByID(so->dataTableID,
+												  soTableName.data),
+						so->dataTableID,
+						ctid->ip_blkid.bi_hi,
+						ctid->ip_blkid.bi_lo,
+						ctid->ip_posid,
+						resolveID);
+			}
+			GRN_BULK_REWIND(&(buffers->general));
+			grn_obj_get_value(ctx,
+							  so->ctidResolveTable,
+							  resolveID,
+							  &(buffers->general));
+			sourceID = GRN_RECORD_VALUE(&(buffers->general));
+		}
 	}
 
 	if (sourceID == GRN_ID_NIL)
