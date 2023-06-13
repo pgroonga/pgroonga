@@ -11,7 +11,9 @@
 /data/pgroonga_database--*.sql
 !/data/pgroonga_database--*--*.sql
 /examples/completion/edict.gz
+!/packages/pgroonga/yum/*.spec.in
 /expected/vacuum/tablespace.out
+/null
 /packages/*/apt/build.sh
 /packages/*/apt/env.sh
 /packages/*/apt/repositories/
@@ -23,7 +25,6 @@
 /packages/*/yum/env.sh
 /packages/*/yum/repositories/
 /packages/*/yum/tmp/
-!/packages/pgroonga/yum/*.spec.in
 /packages/apt/repositories/
 /packages/source/
 /packages/yum/repositories/
