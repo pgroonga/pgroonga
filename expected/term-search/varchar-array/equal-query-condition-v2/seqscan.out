@@ -10,23 +10,21 @@ CREATE INDEX pgroonga_index ON tags
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
-                                                  QUERY PLAN                                                   
----------------------------------------------------------------------------------------------------------------
- Seq Scan on tags
-   Filter: (names &=~ '("ぽすぐれ OR ぐるんが",,pgroonga_index)'::pgroonga_full_text_search_condition)
+QUERY PLAN
+Seq Scan on tags
+  Filter: (names &=~ '("ぽすぐれ OR ぐるんが",,pgroonga_index)'::pgroonga_full_text_search_condition)
 (2 rows)
-
 SELECT names
   FROM tags
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
-           names           
----------------------------
- {PostgreSQL,ポスグレ}
- {Groonga,グルンガ}
+names
+{PostgreSQL,ポスグレ}
+{Groonga,グルンガ}
 (2 rows)
-
+\pset format aligned
 DROP TABLE tags;

@@ -31,17 +31,15 @@ Sort
   ->  Seq Scan on tags
         Filter: ((user_name = CURRENT_USER) AND (names &=~ '("ぽすぐれ OR ぐるんが",,pgroonga_index)'::pgroonga_full_text_search_condition))
 (4 rows)
-\pset format aligned
 SELECT names
   FROM tags
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
  ORDER BY id;
-           names           
----------------------------
- {PostgreSQL,ポスグレ}
- {Groonga,グルンガ}
+names
+{PostgreSQL,ポスグレ}
+{Groonga,グルンガ}
 (2 rows)
-
+\pset format aligned
 RESET SESSION AUTHORIZATION;
 DROP TABLE tags;
 DROP USER alice;

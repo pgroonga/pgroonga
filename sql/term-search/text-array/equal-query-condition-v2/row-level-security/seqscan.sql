@@ -31,12 +31,12 @@ SELECT names
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
  ORDER BY id
 \g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
-\pset format aligned
 
 SELECT names
   FROM tags
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
  ORDER BY id;
+\pset format aligned
 RESET SESSION AUTHORIZATION;
 
 DROP TABLE tags;

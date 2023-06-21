@@ -14,6 +14,7 @@ SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
@@ -22,5 +23,6 @@ SELECT names
 SELECT names
   FROM tags
  WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+\pset format aligned
 
 DROP TABLE tags;
