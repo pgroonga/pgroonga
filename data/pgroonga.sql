@@ -1834,6 +1834,25 @@ CREATE OPERATOR &=~ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_equal_query_text_array_condition
+	(targets text[], condition pgroonga_full_text_search_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_equal_query_text_array_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &=~ (
+	PROCEDURE = pgroonga_equal_query_text_array_condition,
+	LEFTARG = text[],
+	RIGHTARG = pgroonga_full_text_search_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_equal_query_varchar_array(targets varchar[], query text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_equal_query_varchar_array'
@@ -2085,7 +2104,8 @@ CREATE OPERATOR CLASS pgroonga_text_array_term_search_ops_v2 FOR TYPE text[]
 		OPERATOR 21 &^~| (text[], text[]),
 		OPERATOR 24 &^> (text[], text), -- For backward compatibility
 		OPERATOR 25 &^~> (text[], text), -- For backward compatibility
-		OPERATOR 40 &=~ (text[], text);
+		OPERATOR 40 &=~ (text[], text),
+		OPERATOR 41 &=~ (text[], pgroonga_full_text_search_condition);
 
 CREATE OPERATOR CLASS pgroonga_text_regexp_ops_v2 FOR TYPE text
 	USING pgroonga AS

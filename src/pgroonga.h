@@ -77,8 +77,10 @@
 #define PGrnEqualConditionStrategyV2Number	39
 /* operator &=~ */
 #define PGrnEqualQueryStrategyV2Number	40
+/* operator &=~ with pgroonga_full_text_search_condition */
+#define PGrnEqualQueryConditionStrategyV2Number	41
 
-#define PGRN_N_STRATEGIES PGrnEqualQueryStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnEqualQueryConditionStrategyV2Number
 
 /* file and table names */
 #define PGrnLogPathDefault				"pgroonga.log"

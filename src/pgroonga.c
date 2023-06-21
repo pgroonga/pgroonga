@@ -293,6 +293,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_text_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_text_array_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_varchar_array);
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_handler);
@@ -4985,6 +4986,68 @@ pgroonga_equal_query_text_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(equal);
 }
 
+static bool
+pgroonga_equal_query_text_array_condition_raw(ArrayType *targets,
+											  HeapTupleHeader header)
+{
+	grn_obj *isTargets = &(buffers->isTargets);
+	text *query;
+	text *indexName;
+	const char *indexNameData = NULL;
+	unsigned int indexNameSize = 0;
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
+
+	PGrnFullTextSearchConditionDeconstruct(header,
+										   &query,
+										   NULL,
+										   &indexName,
+										   isTargets);
+
+	if (!query)
+		return false;
+
+	if (indexName)
+	{
+		indexNameData = VARDATA_ANY(indexName);
+		indexNameSize = VARSIZE_ANY_EXHDR(indexName);
+	}
+
+	return pgroonga_equal_query_text_array_raw(targets,
+											   isTargets,
+											   VARDATA_ANY(query),
+											   VARSIZE_ANY_EXHDR(query),
+											   indexNameData,
+											   indexNameSize);
+}
+
+/**
+ * pgroonga_equal_query_text_array_condition(
+ *   targets text[],
+ *   condition pgroonga_full_text_search_condition
+ * ) : bool
+ */
+Datum
+pgroonga_equal_query_text_array_condition(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool equal = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		equal = pgroonga_equal_query_text_array_condition_raw(targets, header);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		equal = pgroonga_equal_query_text_array_condition_raw(targets, header);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(equal);
+}
+
 /**
  * pgroonga_equal_query_varchar_array(targets varchar[], query text) : bool
  */
@@ -5929,7 +5992,8 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
 		key->sk_strategy == PGrnMatchConditionStrategyV2Number ||
 		key->sk_strategy == PGrnPrefixConditionStrategyV2Number ||
-		key->sk_strategy == PGrnEqualConditionStrategyV2Number)
+		key->sk_strategy == PGrnEqualConditionStrategyV2Number ||
+		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
 		PGrnFullTextSearchConditionDeconstruct(header,
 											   query,
@@ -6066,6 +6130,7 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 	const char *tag = "[build-condition][query-condition]";
 	text *query;
 	grn_obj *matchTarget;
+	grn_operator defaultOperator;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
 	if (!PGrnSearchBuildConditionPrepareCondition(data,
@@ -6080,13 +6145,21 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 		return false;
 	}
 
+	if (key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
+	{
+		defaultOperator = GRN_OP_EQUAL;
+	}
+	else
+	{
+		defaultOperator = GRN_OP_MATCH;
+	}
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	grn_expr_parse(ctx,
 				   data->expression,
 				   VARDATA_ANY(query),
 				   VARSIZE_ANY_EXHDR(query),
 				   matchTarget,
-				   GRN_OP_MATCH,
+				   defaultOperator,
 				   GRN_OP_AND,
 				   flags);
 	PGrnCheck("%s failed to parse query: <%.*s>",
@@ -6429,7 +6502,8 @@ PGrnSearchBuildCondition(Relation index,
 	}
 
 	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
-		key->sk_strategy == PGrnQueryConditionWithScorersStrategyV2Number)
+		key->sk_strategy == PGrnQueryConditionWithScorersStrategyV2Number ||
+		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionQueryCondition(data,
 													  key,
