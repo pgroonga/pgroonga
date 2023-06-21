@@ -295,6 +295,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_text_array_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_varchar_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_varchar_array_condition);
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_handler);
 
@@ -5075,6 +5076,32 @@ pgroonga_equal_query_varchar_array(PG_FUNCTION_ARGS)
 													VARSIZE_ANY_EXHDR(query),
 													NULL,
 													0);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(equal);
+}
+
+/**
+ * pgroonga_equal_query_varchar_array_condition(
+ *   targets varchar[],
+ *   condition pgroonga_full_text_search_condition
+ * ) : bool
+ */
+Datum
+pgroonga_equal_query_varchar_array_condition(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool equal = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		equal = pgroonga_equal_query_text_array_condition_raw(targets, header);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		equal = pgroonga_equal_query_text_array_condition_raw(targets, header);
 	}
 	PGRN_RLS_ENABLED_END();
 
