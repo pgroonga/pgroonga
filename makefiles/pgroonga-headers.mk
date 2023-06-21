@@ -32,6 +32,7 @@ HEADERS =					\
 	src/pgrn-sequential-search.h		\
 	src/pgrn-string.h			\
 	src/pgrn-tokenize.h			\
+	src/pgrn-trace-log.h			\
 	src/pgrn-value.h			\
 	src/pgrn-variables.h			\
 	src/pgrn-wal.h				\

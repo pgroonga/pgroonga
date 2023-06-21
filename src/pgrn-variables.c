@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
+#include "pgrn-trace-log.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
@@ -214,6 +215,12 @@ PGrnForceMatchEscalationAssign(bool new_value, void *extra)
 	grn_ctx_set_force_match_escalation(&PGrnContext, new_value);
 }
 
+static void
+PGrnEnableTraceLogAssign(bool newValue, void *extra)
+{
+	PGrnEnableTraceLog = newValue;
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -378,6 +385,17 @@ PGrnInitializeVariables(void)
 							   NULL,
 							   NULL,
 							   NULL);
+
+	DefineCustomBoolVariable("pgroonga.enable_trace_log",
+							 "Enable trace log.",
+							 "Trace logs are logged by NOTICE log level.",
+							 &PGrnEnableTraceLog,
+							 PGrnEnableTraceLog,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnEnableTraceLogAssign,
+							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

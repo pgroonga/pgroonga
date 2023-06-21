@@ -33,6 +33,7 @@ SRCS =						\
 	src/pgrn-snippet-html.c			\
 	src/pgrn-string.c			\
 	src/pgrn-tokenize.c			\
+	src/pgrn-trace-log.c			\
 	src/pgrn-vacuum.c			\
 	src/pgrn-variables.c			\
 	src/pgrn-wal.c				\

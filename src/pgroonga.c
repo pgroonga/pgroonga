@@ -31,6 +31,7 @@
 #include "pgrn-sequential-search.h"
 #include "pgrn-string.h"
 #include "pgrn-tokenize.h"
+#include "pgrn-trace-log.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
@@ -735,14 +736,18 @@ _PG_init(void)
 static void
 PGrnEnsureLatestDB()
 {
+	PGRN_TRACE_LOG_ENTER();
+
 	if (!processSharedData)
 	{
+		PGRN_TRACE_LOG_EXIT();
 		return;
 	}
 
 	if (processLocalData.lastDBUnmapTimestamp >
 		processSharedData->lastVacuumTimestamp)
 	{
+		PGRN_TRACE_LOG_EXIT();
 		return;
 	}
 
@@ -751,6 +756,8 @@ PGrnEnsureLatestDB()
 			"pgroonga: unmap DB because VACUUM was executed");
 	grn_db_unmap(ctx, grn_ctx_db(ctx));
 	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static grn_id
@@ -5462,6 +5469,8 @@ pgroonga_insert(Relation index,
 	grn_obj *sourcesCtidColumn = NULL;
 	uint32_t recordSize;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -5490,6 +5499,8 @@ pgroonga_insert(Relation index,
 	if (PGrnNeedMaxRecordSizeUpdate(index))
 		PGrnUpdateMaxRecordSize(index, recordSize);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
+
+	PGRN_TRACE_LOG_EXIT();
 
 	return false;
 }
@@ -5724,6 +5735,8 @@ pgroonga_beginscan(Relation index,
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	PGrnEnsureLatestDB();
 
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
@@ -5736,6 +5749,8 @@ pgroonga_beginscan(Relation index,
 			so);
 
 	scan->opaque = so;
+
+	PGRN_TRACE_LOG_EXIT();
 
 	return scan;
 }
@@ -7608,6 +7623,10 @@ pgroonga_gettuple(IndexScanDesc scan,
 				  ScanDirection direction)
 {
 	bool found = false;
+
+	/* This may slow down with large result set. */
+	/* PGRN_TRACE_LOG_ENTER(); */
+
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabled(scan->heapRelation->rd_id));
 	{
 		found = pgroonga_gettuple_internal(scan, direction);
@@ -7617,6 +7636,10 @@ pgroonga_gettuple(IndexScanDesc scan,
 		found = pgroonga_gettuple_internal(scan, direction);
 	}
 	PGRN_RLS_ENABLED_END();
+
+	/* This may slow down with large result set. */
+	/* PGRN_TRACE_LOG_EXIT(); */
+
 	return found;
 }
 
@@ -7631,7 +7654,10 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 	if (scan->parallel_scan)
 	{
 		if (!PGrnParallelScanAcquire(scan))
+		{
+			PGRN_TRACE_LOG_EXIT();
 			return 0;
+		}
 	}
 
 	PGrnEnsureLatestDB();
@@ -7738,7 +7764,11 @@ pgroonga_getbitmap(IndexScanDesc scan,
 				   TIDBitmap *tbm)
 {
 	int64 nRecords = 0;
-	bool enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
+	bool enabled;
+
+	PGRN_TRACE_LOG_ENTER();
+
+	enabled = PGrnCheckRLSEnabled(scan->indexRelation->rd_index->indrelid);
 	PGRN_RLS_ENABLED_IF(enabled);
 	{
 		nRecords = pgroonga_getbitmap_internal(scan, tbm);
@@ -7748,6 +7778,9 @@ pgroonga_getbitmap(IndexScanDesc scan,
 		nRecords = pgroonga_getbitmap_internal(scan, tbm);
 	}
 	PGRN_RLS_ENABLED_END();
+
+	PGRN_TRACE_LOG_EXIT();
+
 	return nRecords;
 }
 
@@ -7760,6 +7793,8 @@ pgroonga_rescan(IndexScanDesc scan,
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	MemoryContextReset(so->memoryContext);
 	PGrnScanOpaqueReinit(so);
 
@@ -7767,6 +7802,8 @@ pgroonga_rescan(IndexScanDesc scan,
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
 
 	PGrnEnsureLatestDB();
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static void
@@ -7775,12 +7812,16 @@ pgroonga_endscan(IndexScanDesc scan)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	MemoryContext memoryContext = so->memoryContext;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
 			"pgroonga: [scan][end] <%p>",
 			so);
 
 	PGrnScanOpaqueFin(so);
 	MemoryContextDelete(memoryContext);
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static void
@@ -7901,6 +7942,8 @@ pgroonga_build(Relation heap,
 	PGrnBuildStateData bs;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	if (!PGrnIsWritable())
 	{
@@ -8027,6 +8070,8 @@ pgroonga_build(Relation heap,
 		PGrnUpdateMaxRecordSize(index, bs.maxRecordSize);
 	}
 
+	PGRN_TRACE_LOG_EXIT();
+
 	return result;
 }
 
@@ -8037,6 +8082,8 @@ pgroonga_buildempty(Relation index)
 	PGrnCreateData data;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	if (!PGrnIsWritable())
 	{
@@ -8097,6 +8144,8 @@ pgroonga_buildempty(Relation index)
 	PG_END_TRY();
 	GRN_OBJ_FIN(ctx, &lexicons);
 	GRN_OBJ_FIN(ctx, &supplementaryTables);
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static IndexBulkDeleteResult *
@@ -8128,6 +8177,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -8146,7 +8197,10 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 		stats = PGrnBulkDeleteResult(info, sourcesTable);
 
 	if (!sourcesTable || !callback)
+	{
+		PGRN_TRACE_LOG_EXIT();
 		return stats;
+	}
 
 	nRemovedTuples = 0;
 
@@ -8253,6 +8307,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 
 	stats->tuples_removed = nRemovedTuples;
 
+	PGRN_TRACE_LOG_EXIT();
+
 	return stats;
 }
 
@@ -8307,12 +8363,20 @@ PGrnRemoveUnusedTables(void)
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	if (!PGrnIsWritable())
+	{
+		PGRN_TRACE_LOG_EXIT();
 		return;
+	}
 
 	/* We can't detect alive indexes in prepared transactions. */
 	if (PGrnPGHavePreparedTransaction())
+	{
+		PGRN_TRACE_LOG_EXIT();
 		return;
+	}
 
 	/* This is needed for preventing removing already removed objects.
 	 * Consider the following scenario:
@@ -8364,14 +8428,21 @@ PGrnRemoveUnusedTables(void)
 		PGrnRemoveUnusedTable(relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static IndexBulkDeleteResult *
 pgroonga_vacuumcleanup(IndexVacuumInfo *info,
 					   IndexBulkDeleteResult *stats)
 {
+	PGRN_TRACE_LOG_ENTER();
+
 	if (!PGrnIsWritable())
+	{
+		PGRN_TRACE_LOG_EXIT();
 		return stats;
+	}
 
 	if (!stats)
 	{
@@ -8381,6 +8452,8 @@ pgroonga_vacuumcleanup(IndexVacuumInfo *info,
 	}
 
 	PGrnRemoveUnusedTables();
+
+	PGRN_TRACE_LOG_EXIT();
 
 	return stats;
 }
@@ -8394,6 +8467,8 @@ pgroonga_canreturn(Relation index,
 	TupleDesc table_desc = RelationGetDescr(table);
 	TupleDesc desc = RelationGetDescr(index);
 	unsigned int i;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	for (i = 0; i < desc->natts; i++)
 	{
@@ -8432,13 +8507,15 @@ pgroonga_canreturn(Relation index,
 	}
 	RelationClose(table);
 
-	if (!can_return)
+	if (can_return)
 	{
-		return false;
+		can_return = PGrnIndexStatusGetMaxRecordSize(index) <
+			PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE;
 	}
 
-	return PGrnIndexStatusGetMaxRecordSize(index) <
-		PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE;
+	PGRN_TRACE_LOG_EXIT();
+
+	return can_return;
 }
 
 static void
@@ -8624,6 +8701,8 @@ pgroonga_costestimate(PlannerInfo *root,
 	IndexOptInfo *indexInfo = path->indexinfo;
 	Relation index = RelationIdGetRelation(indexInfo->indexoid);
 
+	PGRN_TRACE_LOG_ENTER();
+
 	PGrnEnsureLatestDB();
 
 	*indexSelectivity = 0.0;
@@ -8658,6 +8737,8 @@ pgroonga_costestimate(PlannerInfo *root,
 	}
 	PGRN_RLS_ENABLED_END();
 	RelationClose(index);
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 #ifdef PGRN_SUPPORT_PROGRESS
@@ -8701,8 +8782,12 @@ pgroonga_initparallelscan(void *target)
 {
 	PGrnParallelScanDesc pgrnParallelScan = (PGrnParallelScanDesc) target;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	SpinLockInit(&(pgrnParallelScan->mutex));
 	pgrnParallelScan->scanning = false;
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static void
@@ -8713,7 +8798,11 @@ pgroonga_parallelrescan(IndexScanDesc scan)
 		OffsetToPointer((void *) (parallelScan),
 						parallelScan->ps_offset);
 
+	PGRN_TRACE_LOG_ENTER();
+
 	pgrnParallelScan->scanning = false;
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static bool
