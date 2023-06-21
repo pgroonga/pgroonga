@@ -2167,6 +2167,7 @@ CREATE OPERATOR CLASS pgroonga_jsonb_full_text_search_ops_v2
 		OPERATOR 28 &@~ (jsonb, text);
 
 -- For backward compatibility
+-- TODO: We must remove this when we release 4.0.0.
 
 DO LANGUAGE plpgsql $$
 BEGIN
