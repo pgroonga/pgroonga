@@ -88,6 +88,7 @@ pgroonga_standby_maintainer_maintain(Datum databaseOidDatum)
 						(errmsg(TAG ": failed to apply WAL: %d",
 								result)));
 			}
+			SetCurrentStatementStartTimestamp();
 			result = SPI_execute("select pgroonga_vacuum()", true, 0);
 			if (result != SPI_OK_SELECT)
 			{
