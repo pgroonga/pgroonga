@@ -5,6 +5,7 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-query-expand.h"
+#include "pgrn-trace-log.h"
 
 #include <access/genam.h>
 #include <access/heapam.h>
@@ -279,6 +280,8 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 	TupleDesc desc;
 	int i;
 
+	PGRN_TRACE_LOG_ENTER();
+
 	desc = RelationGetDescr(data->table);
 	for (i = 1; i <= desc->natts; i++)
 	{
@@ -300,6 +303,7 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 						(int) columnNameSize, columnName);
 		}
 
+		PGRN_TRACE_LOG_EXIT();
 		return attribute;
 	}
 
@@ -309,6 +313,7 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 				tableName,
 				(int) columnNameSize, columnName);
 
+	PGRN_TRACE_LOG_EXIT();
 	return NULL;
 }
 
@@ -321,6 +326,8 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 	Relation preferedIndex = InvalidRelation;
 	List *indexOIDList;
 	ListCell *cell;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	indexOIDList = RelationGetIndexList(data->table);
 	foreach(cell, indexOIDList)
@@ -398,10 +405,12 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 	{
 		if (RelationIsValid(termIndex) && termIndex != preferedIndex)
 			index_close(termIndex, lockMode);
+		PGRN_TRACE_LOG_EXIT();
 		return preferedIndex;
 	}
 	else
 	{
+		PGRN_TRACE_LOG_EXIT();
 		return termIndex;
 	}
 }
@@ -415,6 +424,8 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 {
 	TupleDesc desc;
 	int i;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	desc = RelationGetDescr(data->table);
 	for (i = 1; i <= desc->natts; i++)
@@ -445,6 +456,7 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 		}
 
 		data->termAttributeNumber = attribute->attnum;
+		PGRN_TRACE_LOG_EXIT();
 		return;
 	}
 
@@ -455,6 +467,7 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 				(int) columnNameSize, columnName);
 
 	data->termAttributeNumber = InvalidAttrNumber;
+	PGRN_TRACE_LOG_EXIT();
 	return;
 }
 
@@ -476,6 +489,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	Oid tableOID;
 	Relation index;
 	grn_obj expandedQuery;
+
+	PGRN_TRACE_LOG_ENTER();
 
 	tableOIDDatum = DirectFunctionCall1(regclassin, tableNameDatum);
 	if (!OidIsValid(tableOIDDatum))
@@ -510,6 +525,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	{
 		int nKeys = 1;
 		int nOrderBys = 0;
+		PGRN_TRACE_LOG("index_begin_scan");
 		currentData.scan = index_beginscan(currentData.table,
 										   index,
 										   currentData.snapshot,
@@ -532,6 +548,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	GRN_TEXT_INIT(&expandedQuery, 0);
 	{
 		grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+		PGRN_TRACE_LOG("grn_expr_syntax_expand_query");
 		grn_expr_syntax_expand_query(ctx,
 									 VARDATA_ANY(query),
 									 VARSIZE_ANY_EXHDR(query),
@@ -543,6 +560,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	}
 	if (currentData.scan)
 	{
+		PGRN_TRACE_LOG("index_close");
 #ifdef PGRN_SUPPORT_TABLEAM
 		ExecDropSingleTupleTableSlot(currentData.slot);
 #endif
@@ -550,6 +568,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		index_close(index, lockMode);
 	}
 
+	PGRN_TRACE_LOG("RelationClose");
 	RelationClose(currentData.table);
 
 	{
@@ -559,6 +578,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 			cstring_to_text_with_len(GRN_TEXT_VALUE(&expandedQuery),
 									 GRN_TEXT_LEN(&expandedQuery));
 		GRN_OBJ_FIN(ctx, &expandedQuery);
+
+		PGRN_TRACE_LOG_EXIT();
 
 		PG_RETURN_TEXT_P(expandedQueryText);
 	}
