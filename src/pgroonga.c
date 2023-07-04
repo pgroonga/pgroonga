@@ -733,7 +733,7 @@ _PG_init(void)
 	PGrnEnsureDatabase();
 }
 
-static void
+static bool
 PGrnEnsureLatestDB()
 {
 	PGRN_TRACE_LOG_ENTER();
@@ -741,14 +741,14 @@ PGrnEnsureLatestDB()
 	if (!processSharedData)
 	{
 		PGRN_TRACE_LOG_EXIT();
-		return;
+		return false;
 	}
 
 	if (processLocalData.lastDBUnmapTimestamp >
 		processSharedData->lastVacuumTimestamp)
 	{
 		PGRN_TRACE_LOG_EXIT();
-		return;
+		return false;
 	}
 
 	GRN_LOG(ctx,
@@ -758,6 +758,7 @@ PGrnEnsureLatestDB()
 	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
 
 	PGRN_TRACE_LOG_EXIT();
+	return true;
 }
 
 static grn_id
@@ -5602,6 +5603,20 @@ PGrnScanOpaqueInitPrimaryKeyColumns(PGrnScanOpaque so)
 }
 
 static void
+PGrnScanOpaqueInitSources(PGrnScanOpaque so)
+{
+	so->sourcesTable = PGrnLookupSourcesTable(so->index, ERROR);
+	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
+	{
+		so->sourcesCtidColumn = PGrnLookupSourcesCtidColumn(so->index, ERROR);
+	}
+	else
+	{
+		so->sourcesCtidColumn = NULL;
+	}
+}
+
+static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
 	GRN_LOG(ctx, GRN_LOG_DEBUG,
@@ -5616,15 +5631,7 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 							  ALLOCSET_DEFAULT_SIZES);
 
 	so->dataTableID = index->rd_index->indrelid;
-	so->sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
-	{
-		so->sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
-	}
-	else
-	{
-		so->sourcesCtidColumn = NULL;
-	}
+	PGrnScanOpaqueInitSources(so);
 	so->ctidResolveTable = NULL;
 	GRN_VOID_INIT(&(so->minBorderValue));
 	GRN_VOID_INIT(&(so->maxBorderValue));
@@ -5653,6 +5660,11 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 static void
 PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [reinitialize][scan-opaque][start] %u: <%p>",
+			PGrnNScanOpaques,
+			so);
+
 	so->currentID = GRN_ID_NIL;
 	if (so->scoreAccessor)
 	{
@@ -5692,6 +5704,16 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		so->searched = NULL;
 	}
 	GRN_BULK_REWIND(&(so->canReturns));
+
+	if (PGrnEnsureLatestDB())
+	{
+		PGrnScanOpaqueInitSources(so);
+	}
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG,
+			"pgroonga: [reinitialize][scan-opaque][end] %u: <%p>",
+			PGrnNScanOpaques,
+			so);
 }
 
 static void
@@ -7808,8 +7830,6 @@ pgroonga_rescan(IndexScanDesc scan,
 
 	if (keys && scan->numberOfKeys > 0)
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
-
-	PGrnEnsureLatestDB();
 
 	PGRN_TRACE_LOG_EXIT();
 }
