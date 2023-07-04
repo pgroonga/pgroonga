@@ -7624,6 +7624,11 @@ pgroonga_gettuple(IndexScanDesc scan,
 {
 	bool found = false;
 
+	/* We should not call PGrnEnsureLatestDB() here because
+	 * PGrnScanOpaque refers Groonga objects and PGrnEnsureLatestDB()
+	 * may close referred Groonga objects. */
+	/* PGrnEnsureLatestDB(); */
+
 	/* This may slow down with large result set. */
 	/* PGRN_TRACE_LOG_ENTER(); */
 
@@ -7660,7 +7665,10 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 		}
 	}
 
-	PGrnEnsureLatestDB();
+	/* We should not call PGrnEnsureLatestDB() here because
+	 * PGrnScanOpaque refers Groonga objects and PGrnEnsureLatestDB()
+	 * may close referred Groonga objects. */
+	/* PGrnEnsureLatestDB(); */
 
 	PGrnEnsureCursorOpened(scan, ForwardScanDirection, false);
 
