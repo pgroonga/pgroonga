@@ -690,6 +690,7 @@ _PG_init(void)
 				"failed to initialize Groonga");
 
 	grn_set_segv_handler();
+	grn_set_abrt_handler();
 
 	if (IsUnderPostmaster) {
 		bool found;

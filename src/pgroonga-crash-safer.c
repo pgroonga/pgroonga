@@ -332,6 +332,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 
 	grn_set_segv_handler();
+	grn_set_abrt_handler();
 
 	if (grn_ctx_init(&ctx, 0) != GRN_SUCCESS)
 	{
