@@ -19,6 +19,21 @@ def export_source(base_name)
      "tar xf -")
 end
 
+def package_names
+  [
+    "pgroonga",
+    "postgresql-11-pgroonga",
+    "postgresql-12-pgroonga",
+    "postgresql-12-pgdg-pgroonga",
+    "postgresql-13-pgroonga",
+    "postgresql-13-pgdg-pgroonga",
+    "postgresql-14-pgroonga",
+    "postgresql-14-pgdg-pgroonga",
+    "postgresql-15-pgdg-pgroonga",
+  ]
+end
+
+
 version = Helper.detect_version(package)
 
 archive_base_name = "#{package}-#{version}"
@@ -70,6 +85,20 @@ task :dist => [archive_name, windows_archive_name]
 
 desc "Tag #{version}"
 task :tag do
+  package_names.each do |package_name|
+    changelog = "packages/#{package_name}/debian/changelog"
+    next unless File.exist?(changelog)
+    case File.readlines(changelog)[0]
+    when /\((.+)-1\)/
+      package_version = $1
+      unless package_version == version
+        raise "package version isn't updated: #{package_version}"
+      end
+    else
+      raise "failed to detect deb package version: #{changelog}"
+    end
+  end
+
   sh("git", "tag",
      "-a", version,
      "-m", "#{package_label} #{version} has been released!!!")
@@ -101,21 +130,7 @@ namespace :version do
   end
 end
 
-packages_dir = "packages"
-
 namespace :package do
-  package_names = [
-    "pgroonga",
-    "postgresql-11-pgroonga",
-    "postgresql-12-pgroonga",
-    "postgresql-12-pgdg-pgroonga",
-    "postgresql-13-pgroonga",
-    "postgresql-13-pgdg-pgroonga",
-    "postgresql-14-pgroonga",
-    "postgresql-14-pgdg-pgroonga",
-    "postgresql-15-pgdg-pgroonga",
-  ]
-
   namespace :source do
     rsync_path = "#{rsync_base_path}/source/#{package}"
     namespace :snapshot do
