@@ -32,12 +32,10 @@ module Helper
   end
 
   def detect_latest_groonga_version
-    URI("https://packages.groonga.org/source/groonga/").open do |groonga_sources|
-      versions = groonga_sources.read.scan(/<a href="groonga-([\d.]+).zip">/)
-      sorted_versions = versions.flatten.sort_by do |version|
-        version.split(".").collect(&:to_i)
-      end
-      sorted_versions.last
+    releases_uri = URI("https://api.github.com/repos/groonga/groonga/releases")
+    releases_uri.open do |releases_output|
+      releases = JSON.parse(releases_output.read)
+      releases[0]["tag_name"].delete_prefix("v")
     end
   end
 end
