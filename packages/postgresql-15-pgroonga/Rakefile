@@ -1,28 +1,19 @@
 require_relative "../pgroonga-package-task"
 
-class PostgreSQL14PGroongaPackageTask < VersionedPGroongaPackageTask
+class PostgreSQL15PGroongaPackageTask < VersionedPGroongaPackageTask
   def initialize
-    super("14")
-    @updating_debian_changelog = false
+    super("15")
   end
 
-  def enable_apt?
-    @updating_debian_changelog
-  end
-
-  def update_debian_changelog
-    @updating_debian_changelog = true
-    begin
-      super
-    ensure
-      @updating_debian_changelog = false
-    end
-  end
-
-  def ubuntu_targets_default
+  def apt_targets_default
     [
-      ["jammy", "22.04"],
+      "debian-bookworm",
+      "debian-bookworm-arm64",
     ]
+  end
+
+  def enable_ubuntu?
+    false
   end
 
   def enable_yum?
@@ -30,5 +21,5 @@ class PostgreSQL14PGroongaPackageTask < VersionedPGroongaPackageTask
   end
 end
 
-task = PostgreSQL14PGroongaPackageTask.new
+task = PostgreSQL15PGroongaPackageTask.new
 task.define
