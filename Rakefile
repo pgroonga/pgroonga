@@ -29,6 +29,7 @@ def package_names
     "postgresql-13-pgdg-pgroonga",
     "postgresql-14-pgroonga",
     "postgresql-14-pgdg-pgroonga",
+    "postgresql-15-pgroonga",
     "postgresql-15-pgdg-pgroonga",
   ]
 end

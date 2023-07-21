@@ -7,6 +7,8 @@ class PostgreSQL14PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
 
   def apt_targets_default
     [
+      "debian-bookworm",
+      "debian-bookworm-arm64",
       "debian-bullseye",
       "debian-bullseye-arm64",
       "ubuntu-focal",
