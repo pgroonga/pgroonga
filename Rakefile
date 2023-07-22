@@ -63,12 +63,14 @@ file windows_archive_name => dist_files do
     groonga_base_name << groonga_suffix
     groonga_archive_name = "#{groonga_base_name}.zip"
     sh("curl",
-       "-O",
+       "--location",
+       "--remote-name",
        "https://packages.groonga.org/tmp/#{groonga_archive_name}")
   else
     groonga_archive_name = "#{groonga_base_name}.zip"
     sh("curl",
-       "-O",
+       "--location",
+       "--remote-name",
        "https://packages.groonga.org/source/groonga/#{groonga_archive_name}")
   end
   rm_rf(groonga_base_name)
