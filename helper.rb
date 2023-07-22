@@ -1,3 +1,5 @@
+require "json"
+
 module Helper
   module_function
   def env_value(name)
