@@ -9,8 +9,6 @@ ARG DEBUG
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
-  grep '^deb ' /etc/apt/sources.list | \
-    sed -e 's/^deb /deb-src /' > /etc/apt/sources.list.d/base-source.list && \
   apt update ${quiet} && \
   apt install -y -V ${quiet} lsb-release wget && \
   wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb && \
