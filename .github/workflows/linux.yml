@@ -7,10 +7,9 @@ on:
       - "*"
   pull_request:
     branches:
+      - master
+    tags:
       - "*"
-  schedule:
-    - cron: |
-        0 0 * * *
 jobs:
   test:
     name: Test
