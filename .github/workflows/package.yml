@@ -6,9 +6,11 @@ on:
     tags:
       - "*"
   pull_request:
-  schedule:
-    - cron: |
-        0 0 * * *
+    branches:
+      - master
+    tags:
+      - "*"
+  
 jobs:
   source:
     name: Source
