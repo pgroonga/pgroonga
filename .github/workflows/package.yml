@@ -11,6 +11,10 @@ on:
         0 0 * * *
 jobs:
   source:
+    if: >-
+      github.event_name != 'schedule' ||
+      (github.event_name == 'schedule' &&
+       github.repository_owner == 'pgroonga')
     name: Source
     timeout-minutes: 5
     runs-on: ubuntu-latest

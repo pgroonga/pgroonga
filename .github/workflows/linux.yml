@@ -13,6 +13,10 @@ on:
         0 0 * * *
 jobs:
   test:
+    if: >-
+      github.event_name != 'schedule' ||
+      (github.event_name == 'schedule' &&
+       github.repository_owner == 'pgroonga')
     name: Test
     timeout-minutes: 30
     strategy:
