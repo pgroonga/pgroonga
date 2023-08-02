@@ -14,6 +14,7 @@
 #	include <access/htup_details.h>
 #endif
 #include <access/xact.h>
+#include <access/xlog.h>
 #include <catalog/pg_database.h>
 #include <executor/spi.h>
 #include <miscadmin.h>
@@ -40,6 +41,8 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void
+pgroonga_crash_safer_reset_position_one(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
 pgroonga_crash_safer_reindex_one(Datum datum) pg_attribute_noreturn();
 extern PGDLLEXPORT void
@@ -119,16 +122,71 @@ pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 }
 
 static void
-pgroonga_crash_safer_reindex_one_on_exit(int code, Datum databaseInfoDatum)
+pgroonga_crash_safer_prepare_one_on_exit(int code, Datum databaseInfoDatum)
 {
 	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
 	Oid databaseOid;
 	Oid tableSpaceOid;
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
-	pgrn_crash_safer_statuses_set_reindex_pid(NULL,
+	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
 											  databaseOid,
 											  tableSpaceOid,
 											  InvalidPid);
+}
+
+void
+pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
+{
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid tableSpaceOid;
+
+	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
+
+	BackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+
+	StartTransactionCommand();
+	SPI_connect();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	pgstat_report_activity(STATE_RUNNING, TAG ": resetting position");
+
+	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
+											  databaseOid,
+											  tableSpaceOid,
+											  MyProcPid);
+	before_shmem_exit(pgroonga_crash_safer_prepare_one_on_exit,
+					  databaseInfoDatum);
+
+	{
+		int result;
+		StringInfoData buffer;
+		uint64 i;
+		uint64 nIndexes;
+		char **indexNames;
+
+		SetCurrentStatementStartTimestamp();
+		result = SPI_execute("SELECT pgroonga_wal_set_applied_position()",
+							 false,
+							 0);
+		if (result != SPI_OK_SELECT)
+		{
+			ereport(FATAL,
+					(errmsg(TAG ": failed to reset WAL applied positions "
+							"of all PGroonga indexes: "
+							"%u/%u: %d",
+							databaseOid,
+							tableSpaceOid,
+							result)));
+		}
+	}
+
+	PopActiveSnapshot();
+	SPI_finish();
+	CommitTransactionCommand();
+
+	pgstat_report_activity(STATE_IDLE, NULL);
+
+	proc_exit(0);
 }
 
 void
@@ -147,11 +205,11 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": reindexing");
 
-	pgrn_crash_safer_statuses_set_reindex_pid(NULL,
+	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
 											  databaseOid,
 											  tableSpaceOid,
 											  MyProcPid);
-	before_shmem_exit(pgroonga_crash_safer_reindex_one_on_exit,
+	before_shmem_exit(pgroonga_crash_safer_prepare_one_on_exit,
 					  databaseInfoDatum);
 
 	{
@@ -289,6 +347,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	char *databasePath;
 	char pgrnDatabasePath[MAXPGPATH];
 	bool pgrnDatabasePathExist;
+	/* Only on the primary. */
+	bool needResetPosition = !RecoveryInProgress();
 	bool needReindex = false;
 	grn_ctx ctx;
 	grn_obj *db;
@@ -377,14 +437,15 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 	pfree(databasePath);
 
-	if (needReindex)
+	if (needResetPosition || needReindex)
 	{
 		BackgroundWorker worker = {0};
 		BackgroundWorkerHandle *handle;
 
 		snprintf(worker.bgw_name,
 				 BGW_MAXLEN,
-				 TAG ": reindex: %u/%u",
+				 TAG ": prepare: %s: %u/%u",
+				 needResetPosition ? "reset-position" : "reindex",
 				 databaseOid,
 				 tableSpaceOid);
 		snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
@@ -396,8 +457,9 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		snprintf(worker.bgw_library_name,
 				 BGW_MAXLEN,
 				 "%s", PGroongaCrashSaferLibraryName);
-		snprintf(worker.bgw_function_name,
-				 BGW_MAXLEN,
+		snprintf(worker.bgw_function_name, BGW_MAXLEN,
+				 needResetPosition ?
+				 "pgroonga_crash_safer_reset_position_one" :
 				 "pgroonga_crash_safer_reindex_one");
 		worker.bgw_main_arg = databaseInfoDatum;
 		worker.bgw_notify_pid = MyProcPid;

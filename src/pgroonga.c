@@ -587,7 +587,7 @@ PGrnEnsureDatabase(void)
 	{
 		HTAB *statuses;
 		pid_t crashSaferPID;
-		pid_t reindexPID;
+		pid_t preparePID;
 		bool waitFlushing = true;
 
 		statuses = pgrn_crash_safer_statuses_get();
@@ -606,11 +606,11 @@ PGrnEnsureDatabase(void)
 									  MyDatabaseTableSpace);
 		PGrnCrashSaferInitialized = true;
 
-		reindexPID =
-			pgrn_crash_safer_statuses_get_reindex_pid(statuses,
+		preparePID =
+			pgrn_crash_safer_statuses_get_prepare_pid(statuses,
 													  MyDatabaseId,
 													  MyDatabaseTableSpace);
-		if (reindexPID == MyProcPid)
+		if (preparePID == MyProcPid)
 		{
 			waitFlushing = false;
 		}
@@ -620,14 +620,14 @@ PGrnEnsureDatabase(void)
 			int conditions;
 			long timeout = 1000;
 
-			if (pgrn_crash_safer_statuses_is_reindexing(statuses,
-														MyDatabaseId,
-														MyDatabaseTableSpace))
+			if (pgrn_crash_safer_statuses_is_preparing(statuses,
+													   MyDatabaseId,
+													   MyDatabaseTableSpace))
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_CANNOT_CONNECT_NOW),
 						 errmsg("pgroonga: "
-								"pgroonga_crash_safer is reindexing")));
+								"pgroonga_crash_safer is preparing")));
 			}
 
 			if (pgrn_crash_safer_statuses_is_flushing(statuses,

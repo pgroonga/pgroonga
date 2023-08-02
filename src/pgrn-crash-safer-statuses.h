@@ -24,7 +24,7 @@ typedef struct pgrn_crash_safer_statuses_entry
 {
 	uint64 key;
 	pid_t pid;
-	pid_t reindexPID;
+	pid_t preparePID;
 	sig_atomic_t flushing;
 	pg_atomic_uint32 nUsingProcesses;
 } pgrn_crash_safer_statuses_entry;
@@ -79,7 +79,7 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 	entry = hash_search(statuses, &databaseInfo, action, &found_local);
 	if (action == HASH_ENTER && !found_local) {
 		entry->pid = InvalidPid;
-		entry->reindexPID = InvalidPid;
+		entry->preparePID = InvalidPid;
 	}
 	if (found) {
 		*found = found_local;
@@ -119,7 +119,7 @@ pgrn_crash_safer_statuses_get_main_pid(HTAB *statuses)
 }
 
 static inline void
-pgrn_crash_safer_statuses_set_reindex_pid(HTAB *statuses,
+pgrn_crash_safer_statuses_set_prepare_pid(HTAB *statuses,
 										  Oid databaseOid,
 										  Oid tableSpaceOid,
 										  pid_t pid)
@@ -130,11 +130,11 @@ pgrn_crash_safer_statuses_set_reindex_pid(HTAB *statuses,
 											 tableSpaceOid,
 											 HASH_ENTER,
 											 NULL);
-	entry->reindexPID = pid;
+	entry->preparePID = pid;
 }
 
 static inline pid_t
-pgrn_crash_safer_statuses_get_reindex_pid(HTAB *statuses,
+pgrn_crash_safer_statuses_get_prepare_pid(HTAB *statuses,
 										  Oid databaseOid,
 										  Oid tableSpaceOid)
 {
@@ -146,7 +146,7 @@ pgrn_crash_safer_statuses_get_reindex_pid(HTAB *statuses,
 											 HASH_FIND,
 											 &found);
 	if (found) {
-		return entry->reindexPID;
+		return entry->preparePID;
 	}
 	else
 	{
@@ -250,9 +250,9 @@ pgrn_crash_safer_statuses_is_flushing(HTAB *statuses,
 }
 
 static inline bool
-pgrn_crash_safer_statuses_is_reindexing(HTAB *statuses,
-										Oid databaseOid,
-										Oid tableSpaceOid)
+pgrn_crash_safer_statuses_is_preparing(HTAB *statuses,
+									   Oid databaseOid,
+									   Oid tableSpaceOid)
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
@@ -261,5 +261,5 @@ pgrn_crash_safer_statuses_is_reindexing(HTAB *statuses,
 											 tableSpaceOid,
 											 HASH_FIND,
 											 &found);
-	return found && entry->reindexPID != InvalidPid;
+	return found && entry->preparePID != InvalidPid;
 }

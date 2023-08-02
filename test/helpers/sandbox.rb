@@ -213,22 +213,21 @@ module Helpers
                   "-D", @dir)
     end
 
-    def psql(db, *sqls)
-      command_line = [
-        "psql",
-        "--host", @host,
-        "--port", @port.to_s,
-        "--username", @user,
-        "--dbname", db,
-        "--echo-all",
-        "--no-psqlrc",
-      ]
-      sqls.each do |sql|
-        command_line << "--command" << sql
+    def psql(db, *sqls, may_wait_crash_safer_preparing: false)
+      if may_wait_crash_safer_preparing
+        begin
+          return psql_internal(db, *sqls)
+        rescue Helpers::CommandRunError => error
+          case error.error.chomp
+          when "ERROR:  pgroonga: pgroonga_crash_safer is preparing"
+            # This may be happen on slow environment
+            sleep(3)
+          else
+            raise
+          end
+        end
       end
-      output, error = run_command(*command_line)
-      output = normalize_output(output)
-      [output, error]
+      psql_internal(db, *sqls)
     end
 
     def groonga(*command_line)
@@ -252,6 +251,24 @@ module Helpers
     private
     def windows?
       /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
+    end
+
+    def psql_internal(db, *sqls)
+      command_line = [
+        "psql",
+        "--host", @host,
+        "--port", @port.to_s,
+        "--username", @user,
+        "--dbname", db,
+        "--echo-all",
+        "--no-psqlrc",
+      ]
+      sqls.each do |sql|
+        command_line << "--command" << sql
+      end
+      output, error = run_command(*command_line)
+      output = normalize_output(output)
+      [output, error]
     end
 
     def normalize_output(output)
@@ -288,20 +305,20 @@ module Helpers
       end
     end
 
-    def psql(db, *sqls)
-      @postgresql.psql(db, *sqls)
+    def psql(db, *sqls, **options)
+      @postgresql.psql(db, *sqls, **options)
     end
 
-    def run_sql(*sqls)
-      psql(@test_db_name, *sqls)
+    def run_sql(*sqls, **options)
+      psql(@test_db_name, *sqls, **options)
     end
 
-    def psql_standby(db, *sqls)
-      @postgresql_standby.psql(db, *sqls)
+    def psql_standby(db, *sqls, **options)
+      @postgresql_standby.psql(db, *sqls, **options)
     end
 
-    def run_sql_standby(*sqls)
-      psql_standby(@test_db_name, *sqls)
+    def run_sql_standby(*sqls, **options)
+      psql_standby(@test_db_name, *sqls, **options)
     end
 
     def groonga(*command_line)
@@ -371,6 +388,14 @@ module Helpers
 
     def teardown_standby_db
       @postgresql_standby.stop if @postgresql_standby
+    end
+
+    def start_postgres_standby
+      @postgresql_standby.start
+    end
+
+    def stop_postgres_standby
+      @postgresql_standby.stop
     end
 
     def setup_reference_db

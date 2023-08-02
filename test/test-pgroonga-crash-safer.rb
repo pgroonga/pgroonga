@@ -15,6 +15,42 @@ pgroonga_crash_safer.log_level = debug
     CONFIG
   end
 
+  test "reset positions on primary" do
+    run_sql("CREATE TABLE memos (title text, content text);")
+    run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga', 'PGroonga is good!');")
+    status_sql = "SELECT pgroonga_wal_status();"
+    status = run_sql(status_sql)
+    run_sql("SELECT pgroonga_wal_set_applied_position(100, 100);")
+    assert_not_equal(status, run_sql(status_sql))
+    stop_postgres
+    start_postgres
+    assert_equal(status,
+                 run_sql(status_sql, may_wait_crash_safer_preparing: true))
+  end
+
+  sub_test_case "standby" do
+    setup :setup_standby_db
+    teardown :teardown_standby_db
+
+    test "not reset positions" do
+      run_sql("CREATE TABLE memos (title text, content text);")
+      run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga', 'PGroonga is good!');")
+      status_sql = "SELECT pgroonga_wal_status();"
+      original_status = run_sql_standby(status_sql)
+      run_sql_standby("SELECT pgroonga_wal_set_applied_position(100, 100);")
+      changed_status = run_sql_standby(status_sql)
+      assert_not_equal(changed_status, original_status)
+      stop_postgres_standby
+      start_postgres_standby
+      assert_equal(changed_status,
+                   run_sql_standby(status_sql, may_wait_crash_safer_preparing: true))
+    end
+  end
+
   test "recover from WAL" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
@@ -58,25 +94,11 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
       pgrn.puts("Broken")
     end
     start_postgres
-
-    sql = <<-SQL
-SET enable_seqscan = no;
-SELECT * FROM memos WHERE title &@~ 'PGroonga';
-    SQL
-    begin
-      run_sql(sql)
-    rescue Helpers::CommandRunError => error
-      # This may be happen on slow environment
-      assert_equal("ERROR:  pgroonga: pgroonga_crash_safer is reindexing",
-                   error.error.chomp)
-      sleep(3)
-    end
-
     sql = <<-SQL
 SET enable_seqscan = no;
 SELECT * FROM memos WHERE content &@~ 'PGroonga';
     SQL
-    assert_equal([<<-OUTPUT, ""], run_sql(sql))
+    assert_equal([<<-OUTPUT, ""], run_sql(sql, may_wait_crash_safer_preparing: true))
 #{sql}
   title   |      content      
 ----------+-------------------
