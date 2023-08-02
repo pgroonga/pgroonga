@@ -347,9 +347,9 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	char *databasePath;
 	char pgrnDatabasePath[MAXPGPATH];
 	bool pgrnDatabasePathExist;
+	bool needReindex = false;
 	/* Only on the primary. */
 	bool needResetPosition = !RecoveryInProgress();
-	bool needReindex = false;
 	grn_ctx ctx;
 	grn_obj *db;
 	HTAB *statuses;
@@ -437,7 +437,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	}
 	pfree(databasePath);
 
-	if (needResetPosition || needReindex)
+	if (needReindex || needResetPosition)
 	{
 		BackgroundWorker worker = {0};
 		BackgroundWorkerHandle *handle;
@@ -445,7 +445,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		snprintf(worker.bgw_name,
 				 BGW_MAXLEN,
 				 TAG ": prepare: %s: %u/%u",
-				 needResetPosition ? "reset-position" : "reindex",
+				 needReindex ? "reindex" : "reset-position",
 				 databaseOid,
 				 tableSpaceOid);
 		snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
@@ -458,9 +458,9 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				 BGW_MAXLEN,
 				 "%s", PGroongaCrashSaferLibraryName);
 		snprintf(worker.bgw_function_name, BGW_MAXLEN,
-				 needResetPosition ?
-				 "pgroonga_crash_safer_reset_position_one" :
-				 "pgroonga_crash_safer_reindex_one");
+				 needReindex ?
+				 "pgroonga_crash_safer_reindex_one" :
+				 "pgroonga_crash_safer_reset_position_one");
 		worker.bgw_main_arg = databaseInfoDatum;
 		worker.bgw_notify_pid = MyProcPid;
 		if (RegisterDynamicBackgroundWorker(&worker, &handle))
