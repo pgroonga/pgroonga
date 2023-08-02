@@ -85,8 +85,16 @@ module Helpers
     end
   end
 
+  module PlatformDetectable
+    private
+    def windows?
+      /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
+    end
+  end
+
   class PostgreSQL
     include CommandRunnable
+    include PlatformDetectable
 
     attr_reader :dir
     attr_reader :host
@@ -249,10 +257,6 @@ module Helpers
     end
 
     private
-    def windows?
-      /mingw|mswin|cygwin/.match?(RUBY_PLATFORM)
-    end
-
     def psql_internal(db, *sqls)
       command_line = [
         "psql",
@@ -286,6 +290,7 @@ module Helpers
 
   module Sandbox
     include CommandRunnable
+    include PlatformDetectable
 
     class << self
       def included(base)
@@ -372,6 +377,8 @@ module Helpers
     end
 
     def setup_standby_db
+      @postgresql_standby = nil
+      omit("TODO: Support Windows") if windows?
       @postgresql_standby = PostgreSQL.new(@tmp_dir)
       options = {
         shared_preload_libraries: shared_preload_libraries_standby,
