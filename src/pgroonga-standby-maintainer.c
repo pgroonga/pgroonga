@@ -5,6 +5,7 @@
 #include <access/relscan.h>
 #include <access/xact.h>
 #include <catalog/pg_database.h>
+#include <catalog/pg_type.h>
 #include <executor/spi.h>
 #include <fmgr.h>
 #include <miscadmin.h>
