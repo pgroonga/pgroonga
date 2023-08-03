@@ -262,8 +262,17 @@ SELECT title FROM memos WHERE content &@~ '0'
       1
     end
 
+    def max_parallel_wal_appliers_per_db
+      0
+    end
+
     def additional_standby_configurations
-      "pgroonga_standby_maintainer.naptime = #{naptime}"
+      [
+        "pgroonga_standby_maintainer.naptime = #{naptime}",
+        "pgroonga_standby_maintainer." +
+        "max_parallel_wal_appliers_per_db = " +
+        "#{max_parallel_wal_appliers_per_db}",
+      ].join("\n")
     end
 
     sub_test_case "auto apply" do
@@ -373,6 +382,82 @@ SELECT jsonb_pretty(
 (1 row)
 
         OUTPUT
+      end
+    end
+
+    sub_test_case "auto apply parallel" do
+      def max_parallel_wal_appliers_per_db
+        3
+      end
+
+      test "partition" do
+        run_sql(<<-SQL)
+CREATE TABLE cities (
+  city_code varchar(5) NOT NULL,
+  summary text
+) PARTITION BY LIST (city_code)
+        SQL
+        run_sql("CREATE INDEX summary_index ON cities USING pgroonga (summary);")
+        n_partitions = 30
+        n_partitions.times do |i|
+          city_code_id = "%02d_01" % i
+          city_code = "%02d-01" % i
+          run_sql(<<-SQL)
+CREATE TABLE cities_#{city_code_id} PARTITION OF cities
+  FOR VALUES IN ('#{city_code}')
+          SQL
+          run_sql("INSERT INTO cities_#{city_code_id} " +
+                  "VALUES ('#{city_code}','City #{city_code}');")
+        end
+
+        estimated_wal_apply_time_per_partition = 0.5
+        sleep(naptime + estimated_wal_apply_time_per_partition * n_partitions)
+
+        n_partitions.times do |i|
+          city_code_id = "%02d_01" % i
+          city_code = "%02d-01" % i
+          sql = <<-SQL
+SELECT jsonb_pretty(
+    pgroonga_command('select',
+                     ARRAY[
+                       'table', pgroonga_table_name('cities_#{city_code_id}_summary_idx')
+                     ])::jsonb->1
+  ) AS select
+          SQL
+          assert_equal([<<-OUTPUT, ""], run_sql_standby(sql))
+#{sql}
+           select           
+----------------------------
+ [                         +
+     [                     +
+         [                 +
+             1             +
+         ],                +
+         [                 +
+             [             +
+                 "_id",    +
+                 "UInt32"  +
+             ],            +
+             [             +
+                 "_key",   +
+                 "UInt64"  +
+             ],            +
+             [             +
+                 "summary",+
+                 "LongText"+
+             ]             +
+         ],                +
+         [                 +
+             1,            +
+             1,            +
+             "City #{city_code}"  +
+         ]                 +
+     ]                     +
+ ]
+(1 row)
+
+          OUTPUT
+        end
       end
     end
 

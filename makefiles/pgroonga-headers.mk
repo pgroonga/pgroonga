@@ -8,6 +8,7 @@ HEADERS =					\
 	src/pgrn-crash-safer-statuses.h		\
 	src/pgrn-create.h			\
 	src/pgrn-ctid.h				\
+	src/pgrn-database-info.h		\
 	src/pgrn-file.h				\
 	src/pgrn-full-text-search-condition.h	\
 	src/pgrn-database.h			\
