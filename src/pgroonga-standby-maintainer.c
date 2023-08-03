@@ -289,7 +289,7 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 			while (nRunningWorkers >= nMaxWorkers)
 			{
 				int events;
-				uint64_t j;
+				uint64 j;
 
 				for (j = 0; j < i; j++)
 				{
