@@ -2240,7 +2240,10 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 						tag,
 						DatumGetCString(indexNameDatum));
 		}
-		nAppliedOperations = PGrnWALApply(index);
+		if (!PGRN_RELKIND_HAS_PARTITIONS(index->rd_rel->relkind))
+		{
+			nAppliedOperations = PGrnWALApply(index);
+		}
 	}
 	PG_CATCH();
 	{
