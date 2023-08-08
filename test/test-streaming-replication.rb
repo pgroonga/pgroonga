@@ -281,7 +281,7 @@ SELECT title FROM memos WHERE content &@~ '0'
         run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
         run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         sql = <<-SQL
 SELECT jsonb_pretty(
@@ -339,7 +339,7 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
         SQL
         run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         sql = <<-SQL
 SELECT jsonb_pretty(
@@ -411,7 +411,8 @@ CREATE TABLE cities_#{city_code_id} PARTITION OF cities
         end
 
         estimated_wal_apply_time_per_partition = 0.5
-        sleep(naptime + estimated_wal_apply_time_per_partition * n_partitions)
+        sleep(naptime * 2 +
+              estimated_wal_apply_time_per_partition * n_partitions)
 
         n_partitions.times do |i|
           city_code_id = "%02d_01" % i
@@ -467,7 +468,7 @@ SELECT jsonb_pretty(
         run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
         run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         pgroonga_table_name_sql = "SELECT pgroonga_table_name('memos_content');"
         pgroonga_table_name =
@@ -488,7 +489,7 @@ SELECT jsonb_pretty(
 
          OUTPUT
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
@@ -513,7 +514,7 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
         SQL
         run_sql("INSERT INTO cities_20_01 VALUES ('20-01','Osaka');")
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         pgroonga_table_name_sql =
           "SELECT pgroonga_table_name('cities_20_01_summary_idx');"
@@ -538,7 +539,7 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01')
 
         OUTPUT
 
-        sleep(naptime)
+        sleep(naptime * 2)
 
         assert_equal([<<-OUTPUT, ""], run_sql_standby(pgroonga_table_exist_sql))
 #{pgroonga_table_exist_sql}
