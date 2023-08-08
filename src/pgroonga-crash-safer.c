@@ -159,10 +159,6 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 
 	{
 		int result;
-		StringInfoData buffer;
-		uint64 i;
-		uint64 nIndexes;
-		char **indexNames;
 
 		SetCurrentStatementStartTimestamp();
 		result = SPI_execute("SELECT pgroonga_wal_set_applied_position()",
