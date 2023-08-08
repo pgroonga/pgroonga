@@ -30,16 +30,23 @@ module Helpers
         "LC_ALL" => "C",
         "PGCLIENTENCODING" => "UTF-8",
       }
-      output_read, output_write = IO.pipe
-      error_read, error_write = IO.pipe
-      options = {
-        :out => output_write,
-        :err => error_write,
-      }
-      pid = spawn(env, *command_line, options)
-      output_write.close
-      error_write.close
-      [pid, output_read, error_read]
+      IO.pipe do |input_read, input_write|
+        input_write.sync = true
+        IO.pipe do |output_read, output_write|
+          IO.pipe do |error_read, error_write|
+            options = {
+              in: input_read,
+              out: output_write,
+              err: error_write,
+            }
+            pid = spawn(env, *command_line, options)
+            input_read.close
+            output_write.close
+            error_write.close
+            yield(pid, input_write, output_read, error_read)
+          end
+        end
+      end
     end
 
     def read_command_output(input)
@@ -54,34 +61,36 @@ module Helpers
     end
 
     def run_command(*command_line)
-      pid, output_read, error_read = spawn_process(*command_line)
-      output = ""
-      error = ""
-      status = nil
-      timeout = 1
-      loop do
-        readables, = IO.select([output_read, error_read], nil, nil, timeout)
-        if readables
-          timeout = 0
-          readables.each do |readable|
-            if readable == output_read
-              output << read_command_output(output_read)
-            else
-              error << read_command_output(error_read)
+      spawn_process(*command_line) do |pid, input_write, output_read, error_read|
+        output = ""
+        error = ""
+        status = nil
+        timeout = 1
+        yield(input_write, output_read, output_read) if block_given?
+        loop do
+          readables, = IO.select([output_read, error_read], nil, nil, timeout)
+          if readables
+            timeout = 0
+            readables.each do |readable|
+              if readable == output_read
+                output << read_command_output(output_read)
+              else
+                error << read_command_output(error_read)
+              end
             end
+          else
+            timeout = 1
           end
-        else
-          timeout = 1
+          _, status = Process.waitpid2(pid, Process::WNOHANG)
+          break if status
         end
-        _, status = Process.waitpid2(pid, Process::WNOHANG)
-        break if status
+        output << read_command_output(output_read)
+        error << read_command_output(error_read)
+        unless status.success?
+          raise CommandRunError.new(command_line, output, error)
+        end
+        [output, error]
       end
-      output << read_command_output(output_read)
-      error << read_command_output(error_read)
-      unless status.success?
-        raise CommandRunError.new(command_line, output, error)
-      end
-      [output, error]
     end
   end
 
@@ -221,10 +230,10 @@ module Helpers
                   "-D", @dir)
     end
 
-    def psql(db, *sqls, may_wait_crash_safer_preparing: false)
+    def psql(db, *sqls, may_wait_crash_safer_preparing: false, &block)
       if may_wait_crash_safer_preparing
         begin
-          return psql_internal(db, *sqls)
+          return psql_internal(db, *sqls, &block)
         rescue Helpers::CommandRunError => error
           case error.error.chomp
           when "ERROR:  pgroonga: pgroonga_crash_safer is preparing"
@@ -235,7 +244,7 @@ module Helpers
           end
         end
       end
-      psql_internal(db, *sqls)
+      psql_internal(db, *sqls, &block)
     end
 
     def groonga(*command_line)
@@ -257,7 +266,7 @@ module Helpers
     end
 
     private
-    def psql_internal(db, *sqls)
+    def psql_internal(db, *sqls, &block)
       command_line = [
         "psql",
         "--host", @host,
@@ -270,7 +279,7 @@ module Helpers
       sqls.each do |sql|
         command_line << "--command" << sql
       end
-      output, error = run_command(*command_line)
+      output, error = run_command(*command_line, &block)
       output = normalize_output(output)
       [output, error]
     end
@@ -310,20 +319,20 @@ module Helpers
       end
     end
 
-    def psql(db, *sqls, **options)
-      @postgresql.psql(db, *sqls, **options)
+    def psql(db, *sqls, **options, &block)
+      @postgresql.psql(db, *sqls, **options, &block)
     end
 
-    def run_sql(*sqls, **options)
-      psql(@test_db_name, *sqls, **options)
+    def run_sql(*sqls, **options, &block)
+      psql(@test_db_name, *sqls, **options, &block)
     end
 
-    def psql_standby(db, *sqls, **options)
-      @postgresql_standby.psql(db, *sqls, **options)
+    def psql_standby(db, *sqls, **options, &block)
+      @postgresql_standby.psql(db, *sqls, **options, &block)
     end
 
-    def run_sql_standby(*sqls, **options)
-      psql_standby(@test_db_name, *sqls, **options)
+    def run_sql_standby(*sqls, **options, &block)
+      psql_standby(@test_db_name, *sqls, **options, &block)
     end
 
     def groonga(*command_line)

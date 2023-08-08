@@ -734,8 +734,16 @@ _PG_init(void)
 	PGrnEnsureDatabase();
 }
 
+static void
+PGrnUnmapDB(void)
+{
+	PGrnFinalizeSequentialSearchData();
+	grn_db_unmap(ctx, grn_ctx_db(ctx));
+	PGrnInitializeSequentialSearchData();
+}
+
 static bool
-PGrnEnsureLatestDB()
+PGrnEnsureLatestDB(void)
 {
 	PGRN_TRACE_LOG_ENTER();
 
@@ -755,7 +763,7 @@ PGrnEnsureLatestDB()
 	GRN_LOG(ctx,
 			GRN_LOG_DEBUG,
 			"pgroonga: unmap DB because VACUUM was executed");
-	grn_db_unmap(ctx, grn_ctx_db(ctx));
+	PGrnUnmapDB();
 	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
 
 	PGRN_TRACE_LOG_EXIT();
@@ -8425,7 +8433,7 @@ PGrnRemoveUnusedTables(void)
 	 *     object A` is still open in connection1. This is the
 	 *     problem.
 	 */
-	grn_db_unmap(ctx, grn_ctx_db(ctx));
+	PGrnUnmapDB();
 
 	if (processSharedData)
 	{
