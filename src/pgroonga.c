@@ -620,16 +620,6 @@ PGrnEnsureDatabase(void)
 			int conditions;
 			long timeout = 1000;
 
-			if (pgrn_crash_safer_statuses_is_preparing(statuses,
-													   MyDatabaseId,
-													   MyDatabaseTableSpace))
-			{
-				ereport(ERROR,
-						(errcode(ERRCODE_CANNOT_CONNECT_NOW),
-						 errmsg("pgroonga: "
-								"pgroonga_crash_safer is preparing")));
-			}
-
 			if (pgrn_crash_safer_statuses_is_flushing(statuses,
 													  MyDatabaseId,
 													  MyDatabaseTableSpace))
