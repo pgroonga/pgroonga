@@ -620,6 +620,10 @@ PGrnEnsureDatabase(void)
 			int conditions;
 			long timeout = 1000;
 
+			/* We need to reject any connections while preparing. If
+			 * we accept a new connection and block the connection
+			 * here, REINDEX by pgroonga-crash-safer may be blocked by
+			 * the connection. */
 			if (pgrn_crash_safer_statuses_is_preparing(statuses,
 													   MyDatabaseId,
 													   MyDatabaseTableSpace))
