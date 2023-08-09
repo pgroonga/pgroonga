@@ -8,9 +8,14 @@ class PGroongaCrashSaferTestCase < Test::Unit::TestCase
     ["pgroonga_crash_safer"]
   end
 
+  def flush_naptime
+    1
+  end
+
   def additional_configurations
     <<-CONFIG
 pgroonga.enable_crash_safe = yes
+pgroonga_crash_safer.flush_naptime = #{flush_naptime}
 pgroonga_crash_safer.log_level = debug
     CONFIG
   end
@@ -54,8 +59,15 @@ pgroonga_crash_safer.log_level = debug
   test "recover from WAL" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    max_n_tries = flush_naptime * 60
+    n_tries = 0
     until Dir.glob(File.join(@test_db_dir, "pgrn*.wal")).empty? do
       sleep(0.1)
+      n_tries += 1
+      if n_tries >= max_n_tries
+        files = Dir.glob(File.join(@test_db_dir, "pgrn*"))
+        raise "pgrn*.wal aren't flushed: #{files.join(", ")}"
+      end
     end
     Dir.glob(File.join(@test_db_dir, "pgrn*")) do |path|
       FileUtils.cp(path, "#{path}.bak")
@@ -73,7 +85,7 @@ pgroonga_crash_safer.log_level = debug
 SET enable_seqscan = no;
 SELECT * FROM memos WHERE content &@~ 'PGroonga';
     SQL
-    assert_equal([<<-OUTPUT, ""], run_sql(sql))
+    assert_equal([<<-OUTPUT, ""], run_sql(sql, may_wait_crash_safer_preparing: true))
 #{sql}
       content      
 -------------------
