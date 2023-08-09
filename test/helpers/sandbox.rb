@@ -230,22 +230,21 @@ module Helpers
                   "-D", @dir)
     end
 
-    def psql(db, *sqls, &block)
-      command_line = [
-        "psql",
-        "--host", @host,
-        "--port", @port.to_s,
-        "--username", @user,
-        "--dbname", db,
-        "--echo-all",
-        "--no-psqlrc",
-      ]
-      sqls.each do |sql|
-        command_line << "--command" << sql
+    def psql(db, *sqls, may_wait_crash_safer_preparing: false, &block)
+      if may_wait_crash_safer_preparing
+        begin
+          return psql_internal(db, *sqls, &block)
+        rescue Helpers::CommandRunError => error
+          case error.error.chomp
+          when "ERROR:  pgroonga: pgroonga_crash_safer is preparing"
+            # This may be happen on slow environment
+            sleep(3)
+          else
+            raise
+          end
+        end
       end
-      output, error = run_command(*command_line, &block)
-      output = normalize_output(output)
-      [output, error]
+      psql_internal(db, *sqls, &block)
     end
 
     def groonga(*command_line)
@@ -267,6 +266,24 @@ module Helpers
     end
 
     private
+    def psql_internal(db, *sqls, &block)
+      command_line = [
+        "psql",
+        "--host", @host,
+        "--port", @port.to_s,
+        "--username", @user,
+        "--dbname", db,
+        "--echo-all",
+        "--no-psqlrc",
+      ]
+      sqls.each do |sql|
+        command_line << "--command" << sql
+      end
+      output, error = run_command(*command_line, &block)
+      output = normalize_output(output)
+      [output, error]
+    end
+
     def normalize_output(output)
       normalized_output = ""
       output.each_line do |line|

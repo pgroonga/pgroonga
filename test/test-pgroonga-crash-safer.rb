@@ -26,7 +26,8 @@ pgroonga_crash_safer.log_level = debug
     assert_not_equal(status, run_sql(status_sql))
     stop_postgres
     start_postgres
-    assert_equal(status, run_sql(status_sql))
+    assert_equal(status,
+                 run_sql(status_sql, may_wait_crash_safer_preparing: true))
   end
 
   sub_test_case "standby" do
@@ -45,7 +46,8 @@ pgroonga_crash_safer.log_level = debug
       assert_not_equal(changed_status, original_status)
       stop_postgres_standby
       start_postgres_standby
-      assert_equal(changed_status, run_sql_standby(status_sql))
+      assert_equal(changed_status,
+                   run_sql_standby(status_sql, may_wait_crash_safer_preparing: true))
     end
   end
 
@@ -96,7 +98,7 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
 SET enable_seqscan = no;
 SELECT * FROM memos WHERE content &@~ 'PGroonga';
     SQL
-    assert_equal([<<-OUTPUT, ""], run_sql(sql))
+    assert_equal([<<-OUTPUT, ""], run_sql(sql, may_wait_crash_safer_preparing: true))
 #{sql}
   title   |      content      
 ----------+-------------------
