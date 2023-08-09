@@ -161,18 +161,39 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		int result;
 
 		SetCurrentStatementStartTimestamp();
-		result = SPI_execute("SELECT pgroonga_wal_set_applied_position()",
-							 false,
+		result = SPI_execute("SELECT proname "
+							 "  FROM pg_catalog.pg_proc "
+							 "  WHERE "
+							 "    proname = 'pgroonga_wal_set_applied_position'",
+							 true,
 							 0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
-					(errmsg(TAG ": failed to reset WAL applied positions "
-							"of all PGroonga indexes: "
+					(errmsg(TAG ": failed to detect "
+							"pgroonga_wal_set_applied_position(): "
 							"%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
+		}
+
+		if (SPI_processed > 0)
+		{
+			SetCurrentStatementStartTimestamp();
+			result = SPI_execute("SELECT pgroonga_wal_set_applied_position()",
+								 false,
+								 0);
+			if (result != SPI_OK_SELECT)
+			{
+				ereport(FATAL,
+						(errmsg(TAG ": failed to reset WAL applied positions "
+								"of all PGroonga indexes: "
+								"%u/%u: %d",
+								databaseOid,
+								tableSpaceOid,
+								result)));
+			}
 		}
 	}
 
