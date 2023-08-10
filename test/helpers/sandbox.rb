@@ -40,10 +40,21 @@ module Helpers
               err: error_write,
             }
             pid = spawn(env, *command_line, options)
-            input_read.close
-            output_write.close
-            error_write.close
-            yield(pid, input_write, output_read, error_read)
+            begin
+              input_read.close
+              output_write.close
+              error_write.close
+              yield(pid, input_write, output_read, error_read)
+            ensure
+              begin
+                Process.waitpid(pid, Process::WNOHANG)
+              rescue SystemCallError
+                # Finished
+              else
+                Process.kill(:KILL, pid)
+                Process.waitpid(pid)
+              end
+            end
           end
         end
       end
