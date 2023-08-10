@@ -123,7 +123,7 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
   sub_test_case("random crash") do
     include Helpers::Fixture
 
-    def setup_pgroonga_benchmark
+    setup def setup_pgroonga_benchmark
       begin
         require "pgroonga-benchmark/config"
         require "pgroonga-benchmark/processor"
@@ -135,7 +135,12 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
       end
     end
 
-    setup :setup_pgroonga_benchmark
+    setup def omit_on_ci
+      if ENV["CI"]
+        n_patterns = 6
+        omit("This test may take 2-60 min.") if rand >= (1.0 / n_patterns)
+      end
+    end
 
     def additional_configurations
       super + <<-CONFIG
@@ -157,7 +162,7 @@ log_autovacuum_min_duration = 0
     setup :setup_reference_test_db
     teardown :teardown_reference_test_db
 
-    def check_groonga_version
+    setup def check_groonga_version
       base, tag = groonga("status")[1]["version"].split("-", 2)
       base = Gem::Version.new(base)
       if base >= Gem::Version.new("12.0.2")
@@ -169,18 +174,12 @@ log_autovacuum_min_duration = 0
       omit("Groonga 12.0.2 or later is required")
     end
 
-    setup :check_groonga_version
-
     data(:scenario, [
            "text-array-add",
            "text-array-update",
          ])
     data(:crash_ratio, [0.1, 0.5, 1.0])
     test "scenario" do
-      if ENV["CI"]
-        n_patterns = 6
-        omit("This test may take 2-60 min.") if rand >= (1.0 / n_patterns)
-      end
       dir = File.join(@tmp_dir, "pgroonga-benchmark")
       FileUtils.cp_r(fixture_path("crash-safer", data[:scenario]),
                      dir)
