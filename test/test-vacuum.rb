@@ -98,4 +98,70 @@ SELECT * FROM memos
 
     OUTPUT
   end
+
+  test "highlight_html + NormalizerTable" do
+    run_sql("CREATE TABLE normalizations (target text, normalized text);")
+    run_sql(<<-SQL)
+CREATE INDEX pgroonga_normalizations_index ON normalizations
+  USING pgroonga (target pgroonga_text_term_search_ops_v2,
+                  normalized);
+    SQL
+    run_sql("INSERT INTO normalizations VALUES ('o', '0');")
+    run_sql("INSERT INTO normalizations VALUES ('ss', '55');")
+
+    run_sql("CREATE TABLE memos (id integer, content text);")
+    run_sql(<<-SQL)
+CREATE INDEX pgroonga_memos_content ON memos
+ USING pgroonga (content)
+  WITH (normalizers='
+          NormalizerNFKC150,
+          NormalizerTable(
+            "normalized", "${table:pgroonga_normalizations_index}.normalized",
+            "target", "target"
+          )
+        ');
+    SQL
+    run_sql("INSERT INTO memos VALUES (1, '0123455');")
+    run_sql("INSERT INTO memos VALUES (2, '01234ss');")
+
+    highlight = <<-HIGHLIGHT.chomp
+SELECT pgroonga_highlight_html(
+         content,
+         ARRAY['o12', '455'],
+         'pgroonga_memos_content'
+       )
+  FROM memos;
+    HIGHLIGHT
+    result = run_sql do |input, output, error|
+      input.puts(highlight)
+      output.each_line do |line|
+        break if line.strip.empty?
+      end
+      run_sql("VACUUM memos;")
+      input.puts(<<-SELECT_TO_INVOKE_UNMAP)
+SET enable_indexscan = no;
+SET enable_bitmapscan = no;
+SELECT * FROM memos
+ WHERE content &@~ (
+       'o123455',
+       NULL,
+       'pgroonga_memos_content'
+     )::pgroonga_full_text_search_condition;
+      SELECT_TO_INVOKE_UNMAP
+      output.each_line do |line|
+        break if line.strip.empty?
+      end
+      input.puts(highlight)
+      input.close
+    end
+    assert_equal([<<-OUTPUT, ""], result)
+#{highlight}
+ pgroonga_highlight_html 
+-------------------------
+ 0123455
+ 01234ss
+(2 rows)
+
+    OUTPUT
+  end
 end

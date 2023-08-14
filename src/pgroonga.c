@@ -742,8 +742,12 @@ static void
 PGrnUnmapDB(void)
 {
 	PGrnFinalizeSequentialSearchData();
+	PGrnFinalizeHighlightHTML();
+
 	grn_db_unmap(ctx, grn_ctx_db(ctx));
+
 	PGrnInitializeSequentialSearchData();
+	PGrnInitializeHighlightHTML();
 }
 
 static bool
