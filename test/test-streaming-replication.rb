@@ -103,6 +103,81 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
+  test "apply: just full page" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga: old');")
+    # Use full 1 page
+    run_sql("INSERT INTO memos VALUES ('#{"X" * 7445}');")
+    wal_status = <<-WAL_STATUS
+SELECT current_block, current_offset
+  FROM pgroonga_wal_status();
+    WAL_STATUS
+    assert_equal([<<-OUTPUT, ""], run_sql(wal_status))
+#{wal_status}
+ current_block | current_offset 
+---------------+----------------
+             2 |              0
+(1 row)
+
+    OUTPUT
+
+    select = "SELECT * FROM memos WHERE content &@ 'PGroonga';"
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(select))
+#{select}
+    content    
+---------------
+ PGroonga: old
+(1 row)
+
+    OUTPUT
+
+    # One more WAL application after just full page
+    run_sql("INSERT INTO memos VALUES ('PGroonga: new');")
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(select))
+#{select}
+    content    
+---------------
+ PGroonga: old
+ PGroonga: new
+(2 rows)
+
+    OUTPUT
+  end
+
+  test "apply: 2 pages at once" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga: 1');")
+    # Use full 1 page
+    run_sql("INSERT INTO memos VALUES ('#{"X" * 7447}');")
+    wal_status = <<-WAL_STATUS
+SELECT current_block, current_offset
+  FROM pgroonga_wal_status();
+    WAL_STATUS
+    assert_equal([<<-OUTPUT, ""], run_sql(wal_status))
+#{wal_status}
+ current_block | current_offset 
+---------------+----------------
+             2 |              0
+(1 row)
+
+    OUTPUT
+    # Use the 2nd page
+    run_sql("INSERT INTO memos VALUES ('PGroonga: 2');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'PGroonga';"
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(select))
+#{select}
+   content   
+-------------
+ PGroonga: 1
+ PGroonga: 2
+(2 rows)
+
+    OUTPUT
+  end
+
   test "pgroonga_vacuum" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
@@ -227,7 +302,10 @@ SELECT jsonb_pretty(
       100.times do |i|
         run_sql("INSERT INTO memos VALUES " +
                 "('#{i}KiB', '#{(i % 10).to_s * 1024}');")
-        run_sql_standby("SELECT pgroonga_wal_apply() as set#{i}")
+        status = "SELECT #{i}, * FROM pgroonga_wal_status();"
+        status_result = run_sql(status)
+        run_sql_standby("SELECT pgroonga_wal_apply() as set#{i};")
+        assert_equal(status_result, run_sql_standby(status))
       end
 
       sql = <<-SQL

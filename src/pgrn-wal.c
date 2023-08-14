@@ -1133,16 +1133,42 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
+		size_t freeSize;
 		LocationIndex offset;
+		bool haveDataInCurrentPage;
 		bool needToApply;
 
 		buffer = PGrnWALReadLockedBuffer(data->index,
 										 currentBlock,
 										 BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
+		freeSize = PGrnWALPageGetFreeSize(page);
 		offset = PGrnWALPageGetLastOffset(page);
-		needToApply = (offset > currentOffset);
 		UnlockReleaseBuffer(buffer);
+		haveDataInCurrentPage = (offset > currentOffset);
+		if (haveDataInCurrentPage)
+		{
+			needToApply = true;
+		}
+		else
+		{
+			BlockNumber nextBlock;
+			Buffer nextBuffer;
+			Page nextPage;
+
+			nextBlock = currentBlock + 1;
+			if (nextBlock == nBlocks)
+			{
+				/* 0 is the meta page. 1 is the first page that has data. */
+				nextBlock = 1;
+			}
+			nextBuffer = PGrnWALReadLockedBuffer(data->index,
+												 nextBlock,
+												 BUFFER_LOCK_SHARE);
+			nextPage = BufferGetPage(nextBuffer);
+			needToApply = (PGrnWALPageGetLastOffset(nextPage) > 0);
+			UnlockReleaseBuffer(nextBuffer);
+		}
 		if (!needToApply)
 			return false;
 	}
@@ -2139,8 +2165,6 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			   PGrnWALPageGetData(page) + dataOffset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
-		if (dataSize == 0)
-			break;
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
 		while (MSGPACK_UNPACKER_NEXT(&unpacker, &unpacked))
