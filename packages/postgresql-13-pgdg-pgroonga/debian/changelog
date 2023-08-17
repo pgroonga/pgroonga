@@ -1,3 +1,9 @@
+postgresql-13-pgdg-pgroonga (3.1.3-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Sutou Kouhei <kou@clear-code.com>  Thu, 17 Aug 2023 08:44:31 -0000
+
 postgresql-13-pgdg-pgroonga (3.1.2-1) unstable; urgency=low
 
   * New upstream release.
