@@ -9,19 +9,21 @@ class VacuumTestCase < Test::Unit::TestCase
     run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
     run_sql("DELETE FROM memos;")
     run_sql("INSERT INTO memos VALUES ('Groonga is good!');")
-    thread = Thread.new do
+    run_sql do |input, output, error|
+      input.puts("SET pgroonga.log_level = debug;")
+      input.puts("SELECT pgroonga_command('status');")
+      output.each_line do |line|
+        break if line.strip.empty?
+      end
       run_sql("SET pgroonga.log_level = debug;",
-              "SELECT pgroonga_command('status');",
-              "SELECT pg_sleep(3);",
-              "SELECT pgroonga_command('log_put debug \"before SELECT\"');",
-              "SELECT * FROM memos WHERE content &@~ 'groonga';",
-              "SELECT pgroonga_command('log_put debug \"after SELECT\"');")
+              "SELECT pgroonga_command('log_put debug \"before VACUUM\"');",
+              "VACUUM memos;",
+              "SELECT pgroonga_command('log_put debug \"after VACUUM\"');")
+      input.puts("SELECT pgroonga_command('log_put debug \"before SELECT\"');")
+      input.puts("SELECT * FROM memos WHERE content &@~ 'groonga';")
+      input.puts("SELECT pgroonga_command('log_put debug \"after SELECT\"');")
+      input.close
     end
-    run_sql("SET pgroonga.log_level = debug;",
-            "SELECT pgroonga_command('log_put debug \"before VACUUM\"');",
-            "VACUUM memos;",
-            "SELECT pgroonga_command('log_put debug \"after VACUUM\"');")
-    thread.join
     pgroonga_log = @postgresql.read_pgroonga_log
     assert_equal(["pgroonga: unmap DB because VACUUM was executed"],
                  pgroonga_log.scan(/pgroonga: unmap.*$/),

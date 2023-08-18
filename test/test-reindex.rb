@@ -11,19 +11,20 @@ class ReindexTestCase < Test::Unit::TestCase
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
     run_sql("INSERT INTO memos " +
             "SELECT i::text FROM generate_series(1, 1000) AS i;")
-    3.times do |i|
-      reindex_finished = false
-      reindex_thread = Thread.new do
-        begin
-          run_sql("REINDEX INDEX CONCURRENTLY memos_content;")
-        ensure
-          reindex_finished = true
+    3.times do
+      result = run_sql do |input, output, error|
+        input.puts("REINDEX INDEX CONCURRENTLY memos_content;")
+        output.gets
+        loop do
+          readables, = IO.select([output, error], nil, nil, 0)
+          break if readables
+          run_sql("UPDATE memos SET content = content || content;")
         end
+        input.close
       end
-      until reindex_finished
-        run_sql("UPDATE memos SET content = content || content;")
-      end
-      reindex_thread.join
+      assert_equal([<<-OUTPUT, ""], result)
+REINDEX
+      OUTPUT
     end
   end
 end
