@@ -134,6 +134,7 @@ module Helpers
       @replication_user = nil
       @replication_password = nil
       @version = nil
+      @pid = nil
       @running = false
     end
 
@@ -233,12 +234,32 @@ module Helpers
         end
       end
       @running = true
+      pid_path = File.join(@dir, "postmaster.pid")
+      if File.exist?(pid_path)
+        first_line = File.readlines(pid_path, chomp: true)[0]
+        begin
+          @pid = Integer(first_line, 10)
+        rescue ArgumentError
+        end
+      end
     end
 
     def stop
       return unless running?
-      run_command("pg_ctl", "stop",
-                  "-D", @dir)
+      begin
+        run_command("pg_ctl", "stop",
+                    "-D", @dir)
+      rescue CommandRunError
+        if @pid
+          Process.kill(:KILL, @pid)
+          @pid = nil
+          @running = false
+        end
+        raise
+      else
+        @pid = nil
+        @running = false
+      end
     end
 
     def psql(db, *sqls, may_wait_crash_safer_preparing: false, &block)
