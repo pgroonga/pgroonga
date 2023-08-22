@@ -10,98 +10,118 @@
 
 #include <xxhash.h>
 
+typedef struct PGrnSequentialSearchData
+{
+	grn_obj *table;
+	grn_obj *textColumn;
+	grn_obj *textsColumn;
+	grn_obj *targetColumn;
+	grn_id recordID;
+	Oid indexOID;
+	grn_obj *lexicon;
+	grn_obj *indexColumn;
+	grn_obj *indexColumnSource;
+	grn_obj *matched;
+	PGrnSequentialSearchType type;
+	XXH64_hash_t expressionHash;
+	grn_obj *expression;
+	grn_obj *variable;
+	bool useIndex;
+	grn_expr_flags exprFlags;
+} PGrnSequentialSearchData;
+
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
+static PGrnSequentialSearchData data;
 
 void
-PGrnSequentialSearchDataInitialize(PGrnSequentialSearchData *data)
+PGrnInitializeSequentialSearchData(void)
 {
-	data->table = grn_table_create(ctx,
-								   NULL, 0,
-								   NULL,
-								   GRN_OBJ_TABLE_NO_KEY,
-								   NULL, NULL);
-	data->textColumn = grn_column_create(ctx,
-										 data->table,
-										 "text", strlen("text"),
+	data.table = grn_table_create(ctx,
+								  NULL, 0,
+								  NULL,
+								  GRN_OBJ_TABLE_NO_KEY,
+								  NULL, NULL);
+	data.textColumn = grn_column_create(ctx,
+										data.table,
+										"text", strlen("text"),
+										NULL,
+										GRN_OBJ_COLUMN_SCALAR,
+										grn_ctx_at(ctx, GRN_DB_TEXT));
+	data.textsColumn = grn_column_create(ctx,
+										 data.table,
+										 "texts", strlen("texts"),
 										 NULL,
-										 GRN_OBJ_COLUMN_SCALAR,
+										 GRN_OBJ_COLUMN_VECTOR,
 										 grn_ctx_at(ctx, GRN_DB_TEXT));
-	data->textsColumn = grn_column_create(ctx,
-										  data->table,
-										  "texts", strlen("texts"),
-										  NULL,
-										  GRN_OBJ_COLUMN_VECTOR,
-										  grn_ctx_at(ctx, GRN_DB_TEXT));
-	data->targetColumn = NULL;
-	data->recordID = grn_table_add(ctx,
-								   data->table,
-								   NULL, 0,
-								   NULL);
-	data->indexOID = InvalidOid;
-	data->lexicon = NULL;
-	data->indexColumn = NULL;
-	data->indexColumnSource = NULL;
-	data->matched =
+	data.targetColumn = NULL;
+	data.recordID = grn_table_add(ctx,
+								  data.table,
+								  NULL, 0,
+								  NULL);
+	data.indexOID = InvalidOid;
+	data.lexicon = NULL;
+	data.indexColumn = NULL;
+	data.indexColumnSource = NULL;
+	data.matched =
 		grn_table_create(ctx,
 						 NULL, 0,
 						 NULL,
 						 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-						 data->table,
+						 data.table,
 						 NULL);
-	data->type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
-	data->expressionHash = 0;
-	data->expression = NULL;
-	data->variable = NULL;
-	data->useIndex = false;
-	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+	data.type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
+	data.expressionHash = 0;
+	data.expression = NULL;
+	data.variable = NULL;
+	data.useIndex = false;
+	data.exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
 void
-PGrnSequentialSearchDataFinalize(PGrnSequentialSearchData *data)
+PGrnFinalizeSequentialSearchData(void)
 {
-	if (data->expression)
-		grn_obj_close(ctx, data->expression);
-	grn_obj_close(ctx, data->matched);
-	if (data->indexColumn)
-		grn_obj_remove(ctx, data->indexColumn);
-	if (data->lexicon)
-		grn_obj_close(ctx, data->lexicon);
-	grn_obj_close(ctx, data->textsColumn);
-	grn_obj_close(ctx, data->textColumn);
-	grn_obj_close(ctx, data->table);
+	if (data.expression)
+		grn_obj_close(ctx, data.expression);
+	grn_obj_close(ctx, data.matched);
+	if (data.indexColumn)
+		grn_obj_remove(ctx, data.indexColumn);
+	if (data.lexicon)
+		grn_obj_close(ctx, data.lexicon);
+	grn_obj_close(ctx, data.textsColumn);
+	grn_obj_close(ctx, data.textColumn);
+	grn_obj_close(ctx, data.table);
 }
 
 static void
-PGrnSequentialSearchDataExecuteClearIndex(PGrnSequentialSearchData *data)
+PGrnSequentialSearchDataExecuteClearIndex(void)
 {
-	if (data->indexColumn)
+	if (data.indexColumn)
 	{
-		grn_obj_remove(ctx, data->indexColumn);
-		data->indexColumn = NULL;
+		grn_obj_remove(ctx, data.indexColumn);
+		data.indexColumn = NULL;
 	}
-	if (data->lexicon)
+	if (data.lexicon)
 	{
-		grn_obj_close(ctx, data->lexicon);
-		data->lexicon = NULL;
+		grn_obj_close(ctx, data.lexicon);
+		data.lexicon = NULL;
 	}
-	data->indexOID = InvalidOid;
+	data.indexOID = InvalidOid;
 
-	data->type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
-	data->expressionHash = 0;
-	if (data->expression)
+	data.type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
+	data.expressionHash = 0;
+	if (data.expression)
 	{
-		grn_obj_close(ctx, data->expression);
-		data->expression = NULL;
+		grn_obj_close(ctx, data.expression);
+		data.expression = NULL;
 	}
 
-	data->useIndex = false;
-	data->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+	data.useIndex = false;
+	data.exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 }
 
 static bool
-PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
-											const char *indexName,
+PGrnSequentialSearchDataExecutePrepareIndex(const char *indexName,
 											unsigned int indexNameSize,
 											PGrnSequentialSearchType type)
 {
@@ -119,22 +139,22 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
 	}
 
-	if (data->indexOID == indexOID &&
-		data->indexColumnSource == data->targetColumn &&
-		data->type == type)
+	if (data.indexOID == indexOID &&
+		data.indexColumnSource == data.targetColumn &&
+		data.type == type)
 	{
 		return false;
 	}
 
-	PGrnSequentialSearchDataExecuteClearIndex(data);
-	data->useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
-					  (OidIsValid(indexOID) ||
-					   data->targetColumn == data->textsColumn));
+	PGrnSequentialSearchDataExecuteClearIndex();
+	data.useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
+					 (OidIsValid(indexOID) ||
+					  data.targetColumn == data.textsColumn));
 
-	if (grn_obj_is_vector_column(ctx, data->targetColumn))
+	if (grn_obj_is_vector_column(ctx, data.targetColumn))
 		indexFlags |= GRN_OBJ_WITH_SECTION;
 
-	if (data->indexOID != indexOID)
+	if (data.indexOID != indexOID)
 	{
 		Relation index;
 		bool isPGroongaIndex;
@@ -151,8 +171,8 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 
 		PG_TRY();
 		{
-			data->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
-			data->exprFlags |= PGrnOptionsGetExprParseFlags(index);
+			data.lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+			data.exprFlags |= PGrnOptionsGetExprParseFlags(index);
 		}
 		PG_CATCH();
 		{
@@ -162,18 +182,18 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 		PG_END_TRY();
 		RelationClose(index);
 
-		if (grn_obj_get_info(ctx, data->lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL))
+		if (grn_obj_get_info(ctx, data.lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL))
 			indexFlags |= GRN_OBJ_WITH_POSITION;
-		data->indexColumn =
+		data.indexColumn =
 			PGrnCreateColumn(InvalidRelation,
-							 data->lexicon,
+							 data.lexicon,
 							 "index",
 							 indexFlags,
-							 data->table);
-		data->indexOID = indexOID;
+							 data.table);
+		data.indexOID = indexOID;
 	}
 
-	if (!data->lexicon)
+	if (!data.lexicon)
 	{
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizers = &(buffers->normalizers);
@@ -190,64 +210,60 @@ PGrnSequentialSearchDataExecutePrepareIndex(PGrnSequentialSearchData *data,
 			break;
 		}
 		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
-		data->lexicon = PGrnCreateTable(InvalidRelation,
+		data.lexicon = PGrnCreateTable(InvalidRelation,
 										NULL,
 										tableFlags,
 										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 										tokenizer,
 										normalizers,
 										NULL);
-		data->indexColumn =
+		data.indexColumn =
 			PGrnCreateColumn(InvalidRelation,
-							 data->lexicon,
+							 data.lexicon,
 							 "index",
 							 indexFlags,
-							 data->table);
+							 data.table);
 	}
 
-	if (data->useIndex)
+	if (data.useIndex)
 	{
 		PGrnIndexColumnSetSource(InvalidRelation,
-								 data->indexColumn,
-								 data->targetColumn);
+								 data.indexColumn,
+								 data.targetColumn);
 	}
 	else
 	{
-		PGrnIndexColumnClearSources(InvalidRelation, data->indexColumn);
+		PGrnIndexColumnClearSources(InvalidRelation, data.indexColumn);
 	}
-	data->indexColumnSource = data->targetColumn;
+	data.indexColumnSource = data.targetColumn;
 
 	return true;
 }
 
 static void
-PGrnSequentialSearchDataPrepare(PGrnSequentialSearchData *data,
-								grn_obj *column,
+PGrnSequentialSearchDataPrepare(grn_obj *column,
 								grn_obj *value)
 {
 	grn_obj_set_value(ctx,
 					  column,
-					  data->recordID,
+					  data.recordID,
 					  value,
 					  GRN_OBJ_SET);
-	data->targetColumn = column;
+	data.targetColumn = column;
 }
 
 void
-PGrnSequentialSearchDataPrepareText(PGrnSequentialSearchData *data,
-									const char *target,
+PGrnSequentialSearchDataPrepareText(const char *target,
 									unsigned int targetSize)
 {
 	grn_obj *text = &(buffers->text);
 	GRN_TEXT_SET(ctx, text, target, targetSize);
-	PGrnSequentialSearchDataPrepare(data,
-									data->textColumn,
+	PGrnSequentialSearchDataPrepare(data.textColumn,
 									text);
 }
 
 void
-PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
-									 ArrayType *targets,
+PGrnSequentialSearchDataPrepareTexts(ArrayType *targets,
 									 grn_obj *isTargets)
 {
 	grn_obj *texts = &(buffers->texts);
@@ -290,14 +306,12 @@ PGrnSequentialSearchDataPrepareTexts(PGrnSequentialSearchData *data,
 	}
 	array_free_iterator(iterator);
 
-	PGrnSequentialSearchDataPrepare(data,
-									data->textsColumn,
+	PGrnSequentialSearchDataPrepare(data.textsColumn,
 									texts);
 }
 
 static bool
-PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
-										  const char *expressionData,
+PGrnSequentialSearchDataPrepareExpression(const char *expressionData,
 										  unsigned int expressionDataSize,
 										  const char *indexName,
 										  unsigned int indexNameSize,
@@ -305,56 +319,53 @@ PGrnSequentialSearchDataPrepareExpression(PGrnSequentialSearchData *data,
 {
 	const char *tag = "[sequential-search][expression]";
 	bool indexUpdated;
-	uint64_t expressionHash;
+	XXH64_hash_t expressionHash;
 
-	indexUpdated = PGrnSequentialSearchDataExecutePrepareIndex(data,
-															   indexName,
+	indexUpdated = PGrnSequentialSearchDataExecutePrepareIndex(indexName,
 															   indexNameSize,
 															   type);
 
-	if (data->type != type)
+	if (data.type != type)
 	{
-		data->expressionHash = 0;
-		data->type = type;
+		data.expressionHash = 0;
+		data.type = type;
 	}
 
-	expressionHash = XXH64(expressionData, expressionDataSize, 0);
-	if (!indexUpdated && data->expressionHash == expressionHash)
+	expressionHash = XXH3_64bits(expressionData, expressionDataSize);
+	if (!indexUpdated && data.expressionHash == expressionHash)
 		return true;
 
-	if (data->expression)
+	if (data.expression)
 	{
-		grn_obj_close(ctx, data->expression);
-		data->expression = NULL;
+		grn_obj_close(ctx, data.expression);
+		data.expression = NULL;
 	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  data->table,
-							  data->expression,
-							  data->variable);
-	if (!data->expression)
+							  data.table,
+							  data.expression,
+							  data.variable);
+	if (!data.expression)
 	{
 		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
 					"%s failed to create expression",
 					tag);
 	}
 
-	data->expressionHash = expressionHash;
+	data.expressionHash = expressionHash;
 
 	return false;
 }
 
 void
-PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
-									 const char *term,
+PGrnSequentialSearchDataSetMatchTerm(const char *term,
 									 unsigned int termSize,
 									 const char *indexName,
 									 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][match-term]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(data,
-												  term,
+	if (PGrnSequentialSearchDataPrepareExpression(term,
 												  termSize,
 												  indexName,
 												  indexNameSize,
@@ -364,36 +375,34 @@ PGrnSequentialSearchDataSetMatchTerm(PGrnSequentialSearchData *data,
 	}
 
 	grn_expr_append_obj(ctx,
-						data->expression,
-						data->targetColumn,
+						data.expression,
+						data.targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data->expression,
+							  data.expression,
 							  term,
 							  termSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append term to be matched", tag);
 	grn_expr_append_op(ctx,
-					   data->expression,
+					   data.expression,
 					   GRN_OP_MATCH,
 					   2);
 	PGrnCheck("%s append match operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetEqualText(PGrnSequentialSearchData *data,
-									 const char *other,
+PGrnSequentialSearchDataSetEqualText(const char *other,
 									 unsigned int otherSize,
 									 const char *indexName,
 									 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][equal-text]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(data,
-												  other,
+	if (PGrnSequentialSearchDataPrepareExpression(other,
 												  otherSize,
 												  indexName,
 												  indexNameSize,
@@ -403,36 +412,34 @@ PGrnSequentialSearchDataSetEqualText(PGrnSequentialSearchData *data,
 	}
 
 	grn_expr_append_obj(ctx,
-						data->expression,
-						data->targetColumn,
+						data.expression,
+						data.targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data->expression,
+							  data.expression,
 							  other,
 							  otherSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append equal text", tag);
 	grn_expr_append_op(ctx,
-					   data->expression,
+					   data.expression,
 					   GRN_OP_EQUAL,
 					   2);
 	PGrnCheck("%s append equal operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
-								  const char *prefix,
+PGrnSequentialSearchDataSetPrefix(const char *prefix,
 								  unsigned int prefixSize,
 								  const char *indexName,
 								  unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][prefix]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(data,
-												  prefix,
+	if (PGrnSequentialSearchDataPrepareExpression(prefix,
 												  prefixSize,
 												  indexName,
 												  indexNameSize,
@@ -442,28 +449,27 @@ PGrnSequentialSearchDataSetPrefix(PGrnSequentialSearchData *data,
 	}
 
 	grn_expr_append_obj(ctx,
-						data->expression,
-						data->targetColumn,
+						data.expression,
+						data.targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data->expression,
+							  data.expression,
 							  prefix,
 							  prefixSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append prefix", tag);
 	grn_expr_append_op(ctx,
-					   data->expression,
+					   data.expression,
 					   GRN_OP_PREFIX,
 					   2);
 	PGrnCheck("%s append prefix operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
-								 const char *query,
+PGrnSequentialSearchDataSetQuery(const char *query,
 								 unsigned int querySize,
 								 const char *indexName,
 								 unsigned int indexNameSize,
@@ -471,8 +477,7 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 {
 	const char *tag = "[sequential-search][query]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(data,
-												  query,
+	if (PGrnSequentialSearchDataPrepareExpression(query,
 												  querySize,
 												  indexName,
 												  indexNameSize,
@@ -482,23 +487,22 @@ PGrnSequentialSearchDataSetQuery(PGrnSequentialSearchData *data,
 	}
 
 	grn_expr_parse(ctx,
-				   data->expression,
+				   data.expression,
 				   query,
 				   querySize,
-				   data->targetColumn,
+				   data.targetColumn,
 				   GRN_OP_MATCH,
 				   GRN_OP_AND,
-				   data->exprFlags);
+				   data.exprFlags);
 	if (ctx->rc != GRN_SUCCESS)
-		data->expressionHash = 0;
+		data.expressionHash = 0;
 	PGrnCheck("%s failed to parse expression: <%.*s>",
 			  tag,
 			  (int) querySize, query);
 }
 
 void
-PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
-								  const char *script,
+PGrnSequentialSearchDataSetScript(const char *script,
 								  unsigned int scriptSize,
 								  const char *indexName,
 								  unsigned int indexNameSize)
@@ -506,8 +510,7 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 	const char *tag = "[sequential-search][query]";
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 
-	if (PGrnSequentialSearchDataPrepareExpression(data,
-												  script,
+	if (PGrnSequentialSearchDataPrepareExpression(script,
 												  scriptSize,
 												  indexName,
 												  indexNameSize,
@@ -517,37 +520,37 @@ PGrnSequentialSearchDataSetScript(PGrnSequentialSearchData *data,
 	}
 
 	grn_expr_parse(ctx,
-				   data->expression,
+				   data.expression,
 				   script, scriptSize,
-				   data->targetColumn,
+				   data.targetColumn,
 				   GRN_OP_MATCH, GRN_OP_AND,
 				   flags);
 	if (ctx->rc != GRN_SUCCESS)
-		data->expressionHash = 0;
+		data.expressionHash = 0;
 	PGrnCheck("%s failed to parse expression: <%.*s>",
 			  tag,
 			  (int) scriptSize, script);
 }
 
 bool
-PGrnSequentialSearchDataExecute(PGrnSequentialSearchData *data)
+PGrnSequentialSearchDataExecute(void)
 {
 	bool matched = false;
 
-	if (data->useIndex)
+	if (data.useIndex)
 	{
 		grn_table_select(ctx,
-						 data->table,
-						 data->expression,
-						 data->matched,
+						 data.table,
+						 data.expression,
+						 data.matched,
 						 GRN_OP_OR);
 
-		if (grn_table_size(ctx, data->matched) == 1)
+		if (grn_table_size(ctx, data.matched) == 1)
 		{
 			matched = true;
 			grn_table_delete(ctx,
-							 data->matched,
-							 &(data->recordID),
+							 data.matched,
+							 &(data.recordID),
 							 sizeof(grn_id));
 		}
 	}
@@ -555,8 +558,8 @@ PGrnSequentialSearchDataExecute(PGrnSequentialSearchData *data)
 	{
 		grn_obj *result;
 
-		GRN_RECORD_SET(ctx, data->variable, data->recordID);
-		result = grn_expr_exec(ctx, data->expression, 0);
+		GRN_RECORD_SET(ctx, data.variable, data.recordID);
+		result = grn_expr_exec(ctx, data.expression, 0);
 		GRN_OBJ_IS_TRUE(ctx, result, matched);
 	}
 

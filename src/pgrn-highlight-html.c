@@ -19,8 +19,7 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_highlighter *highlighter = NULL;
 static Oid indexOID = InvalidOid;
 static grn_obj *lexicon = NULL;
-static XXH64_state_t *hashState = NULL;
-static uint64_t hashStateSeed = 0;
+static XXH3_state_t *hashState = NULL;
 static XXH64_hash_t keywordsHash = 0;
 static const char *keywordsHashDelimiter = "\0";
 static const size_t keywordsHashDelimiterSize = 1;
@@ -34,7 +33,7 @@ void
 PGrnInitializeHighlightHTML(void)
 {
 	highlighter = grn_highlighter_open(ctx);
-	hashState = XXH64_createState();
+	hashState = XXH3_createState();
 }
 
 void
@@ -56,7 +55,7 @@ PGrnFinalizeHighlightHTML(void)
 
 	if (hashState)
 	{
-		XXH64_freeState(hashState);
+		XXH3_freeState(hashState);
 		hashState = NULL;
 	}
 }
@@ -103,7 +102,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 		bool isNULL;
 
 		PGrnHighlightHTMLClearKeywords();
-		XXH64_reset(hashState, hashStateSeed);
+		XXH3_64bits_reset(hashState);
 		iterator = pgrn_array_create_iterator(keywords, 0);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
@@ -117,15 +116,15 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 										highlighter,
 										VARDATA_ANY(keyword),
 										VARSIZE_ANY_EXHDR(keyword));
-			XXH64_update(hashState,
-						 VARDATA_ANY(keyword),
-						 VARSIZE_ANY_EXHDR(keyword));
-			XXH64_update(hashState,
-						 keywordsHashDelimiter,
-						 keywordsHashDelimiterSize);
+			XXH3_64bits_update(hashState,
+							   VARDATA_ANY(keyword),
+							   VARSIZE_ANY_EXHDR(keyword));
+			XXH3_64bits_update(hashState,
+							   keywordsHashDelimiter,
+							   keywordsHashDelimiterSize);
 		}
 		array_free_iterator(iterator);
-		keywordsHash = XXH64_digest(hashState);
+		keywordsHash = XXH3_64bits_digest(hashState);
 		return;
 	}
 
@@ -135,7 +134,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 		bool isNULL;
 		XXH64_hash_t newKeywordsHash;
 
-		XXH64_reset(hashState, hashStateSeed);
+		XXH3_64bits_reset(hashState);
 		iterator = pgrn_array_create_iterator(keywords, 0);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
@@ -145,15 +144,15 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 				continue;
 
 			keyword = DatumGetTextPP(datum);
-			XXH64_update(hashState,
-						 VARDATA_ANY(keyword),
-						 VARSIZE_ANY_EXHDR(keyword));
-			XXH64_update(hashState,
-						 keywordsHashDelimiter,
-						 keywordsHashDelimiterSize);
+			XXH3_64bits_update(hashState,
+							   VARDATA_ANY(keyword),
+							   VARSIZE_ANY_EXHDR(keyword));
+			XXH3_64bits_update(hashState,
+							   keywordsHashDelimiter,
+							   keywordsHashDelimiterSize);
 		}
 		array_free_iterator(iterator);
-		newKeywordsHash = XXH64_digest(hashState);
+		newKeywordsHash = XXH3_64bits_digest(hashState);
 		if (keywordsHash == newKeywordsHash)
 			return;
 
