@@ -41,7 +41,6 @@ jobs:
           path: pgroonga-benchmark
       - name: Install dependency
         run: |
-          brew update
           sed \
             -i '' \
             -e 's/postgresql/postgresql@${{ matrix.postgresql-version }}/g' \
