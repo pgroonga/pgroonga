@@ -129,53 +129,6 @@ struct PGrnWALData_
 };
 
 #ifdef PGRN_SUPPORT_WAL
-#	if MSGPACK_VERSION_MAJOR == 0
-#		define MSGPACK_OBJECT_FLOAT MSGPACK_OBJECT_DOUBLE
-#		define MSGPACK_OBJECT_STR   MSGPACK_OBJECT_RAW
-#		define MSGPACK_OBJECT_BIN   MSGPACK_OBJECT_RAW
-#	endif
-
-#	if MSGPACK_VERSION_MAJOR == 0
-#		define MSGPACK_OBJECT_VIA_FLOAT(object) ((object).via.dec)
-#		define MSGPACK_OBJECT_VIA_STR(object)   ((object).via.raw)
-#		define MSGPACK_OBJECT_VIA_BIN(object)   ((object).via.raw)
-#	else
-#		define MSGPACK_OBJECT_VIA_FLOAT(object) ((object).via.f64)
-#		define MSGPACK_OBJECT_VIA_STR(object)   ((object).via.str)
-#		define MSGPACK_OBJECT_VIA_BIN(object)   ((object).via.bin)
-#	endif
-#endif
-
-#ifdef PGRN_SUPPORT_WAL
-#	if MSGPACK_VERSION_MAJOR == 0
-#		define msgpack_pack_str(packer, size) \
-	msgpack_pack_raw((packer), (size))
-#		define msgpack_pack_str_body(packer, data, size) \
-	msgpack_pack_raw_body((packer), (data), (size))
-#		define msgpack_pack_bin(packer, size) \
-	msgpack_pack_raw((packer), (size))
-#		define msgpack_pack_bin_body(packer, data, size) \
-	msgpack_pack_raw_body((packer), (data), (size))
-#	endif
-
-#ifdef PGRN_SUPPORT_WAL
-#	if MSGPACK_VERSION_MAJOR == 0
-#		define MSGPACK_UNPACKER_NEXT(unpacker, unpacked) \
-	msgpack_unpacker_next((unpacker), (unpacked))
-#	else
-#		define MSGPACK_UNPACKER_NEXT(unpacker, unpacked) \
-	msgpack_unpacker_next((unpacker), (unpacked)) == MSGPACK_UNPACK_SUCCESS
-#	endif
-#endif
-
-#ifdef PGRN_SUPPORT_WAL
-#	if MSGPACK_VERSION_MAJOR == 0
-#		define MSGPACK_PACKER_WRITE_LENGTH_TYPE unsigned int
-#	else
-#		define MSGPACK_PACKER_WRITE_LENGTH_TYPE size_t
-#	endif
-#endif
-
 static void
 msgpack_pack_cstr(msgpack_packer *packer, const char *string)
 {
@@ -456,7 +409,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 static int
 PGrnWALPageWriter(void *userData,
 				  const char *buffer,
-				  MSGPACK_PACKER_WRITE_LENGTH_TYPE length)
+				  size_t length)
 {
 	PGrnWALData *data = userData;
 	int written = 0;
@@ -1198,9 +1151,9 @@ PGrnWALApplyKeyEqual(PGrnWALApplyData *data,
 	}
 
 	nameSize = strlen(name);
-	if (MSGPACK_OBJECT_VIA_STR(*key).size != nameSize)
+	if (key->via.str.size != nameSize)
 		return false;
-	if (memcmp(MSGPACK_OBJECT_VIA_STR(*key).ptr, name, nameSize) != 0)
+	if (memcmp(key->via.str.ptr, name, nameSize) != 0)
 		return false;
 
 	return true;
@@ -1221,8 +1174,8 @@ PGrnWALApplyValueGetPositiveInteger(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 	}
 
@@ -1246,13 +1199,13 @@ PGrnWALApplyValueGetString(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 	}
 
-	*string = MSGPACK_OBJECT_VIA_STR(kv->val).ptr;
-	*stringSize = MSGPACK_OBJECT_VIA_STR(kv->val).size;
+	*string = kv->val.via.str.ptr;
+	*stringSize = kv->val.via.str.size;
 }
 
 static void
@@ -1272,13 +1225,13 @@ PGrnWALApplyValueGetBinary(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_BIN(kv->key).size,
-					MSGPACK_OBJECT_VIA_BIN(kv->key).ptr,
+					kv->key.via.bin.size,
+					kv->key.via.bin.ptr,
 					kv->val.type);
 	}
 
-	*binary = MSGPACK_OBJECT_VIA_BIN(kv->val).ptr;
-	*binarySize = MSGPACK_OBJECT_VIA_BIN(kv->val).size;
+	*binary = kv->val.via.bin.ptr;
+	*binarySize = kv->val.via.bin.size;
 }
 
 static grn_obj *
@@ -1295,8 +1248,8 @@ PGrnWALApplyValueGetGroongaObject(PGrnWALApplyData *data,
 		object = NULL;
 		break;
 	case MSGPACK_OBJECT_STR:
-		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
-									MSGPACK_OBJECT_VIA_STR(kv->val).size,
+		object = PGrnLookupWithSize(kv->val.via.str.ptr,
+									kv->val.via.str.size,
 									ERROR);
 		break;
 	default:
@@ -1307,8 +1260,8 @@ PGrnWALApplyValueGetGroongaObject(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 		break;
 	}
@@ -1335,8 +1288,8 @@ PGrnWALApplyValueGetGroongaObjectIDs(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 	}
 
@@ -1358,14 +1311,14 @@ PGrnWALApplyValueGetGroongaObjectIDs(PGrnWALApplyData *data,
 						RelationGetRelationName(data->index),
 						RelationGetRelid(data->index),
 						context ? " " : "",
-						MSGPACK_OBJECT_VIA_STR(kv->key).size,
-						MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+						kv->key.via.str.size,
+						kv->key.via.str.ptr,
 						i,
 						element->type);
 		}
 
-		object = PGrnLookupWithSize(MSGPACK_OBJECT_VIA_STR(*element).ptr,
-									MSGPACK_OBJECT_VIA_STR(*element).size,
+		object = PGrnLookupWithSize(element->via.str.ptr,
+									element->via.str.size,
 									ERROR);
 		objectID = grn_obj_id(ctx, object);
 		GRN_RECORD_PUT(ctx, ids, objectID);
@@ -1390,8 +1343,8 @@ PGrnWALApplyValueGetTableModule(PGrnWALApplyData *data,
 		GRN_BULK_REWIND(module);
 		GRN_TEXT_SET(ctx,
 					 module,
-					 MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
-					 MSGPACK_OBJECT_VIA_STR(kv->val).size);
+					 kv->val.via.str.ptr,
+					 kv->val.via.str.size);
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -1401,8 +1354,8 @@ PGrnWALApplyValueGetTableModule(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 		break;
 	}
@@ -1428,8 +1381,8 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 		GRN_BULK_REWIND(modules);
 		GRN_TEXT_SET(ctx,
 					 modules,
-					 MSGPACK_OBJECT_VIA_STR(kv->val).ptr,
-					 MSGPACK_OBJECT_VIA_STR(kv->val).size);
+					 kv->val.via.str.ptr,
+					 kv->val.via.str.size);
 		break;
 	case MSGPACK_OBJECT_ARRAY:
 	{
@@ -1454,8 +1407,8 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 							RelationGetRelationName(data->index),
 							RelationGetRelid(data->index),
 							context ? " " : "",
-							MSGPACK_OBJECT_VIA_STR(kv->key).size,
-							MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+							kv->key.via.str.size,
+							kv->key.via.str.ptr,
 							i,
 							element->type);
 			}
@@ -1464,8 +1417,8 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 				GRN_TEXT_PUTS(ctx, modules, ", ");
 			GRN_TEXT_PUT(ctx,
 						 modules,
-						 MSGPACK_OBJECT_VIA_STR(*element).ptr,
-						 MSGPACK_OBJECT_VIA_STR(*element).size);
+						 element->via.str.ptr,
+						 element->via.str.size);
 		}
 		break;
 	}
@@ -1477,8 +1430,8 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 					RelationGetRelationName(data->index),
 					RelationGetRelid(data->index),
 					context ? " " : "",
-					MSGPACK_OBJECT_VIA_STR(kv->key).size,
-					MSGPACK_OBJECT_VIA_STR(kv->key).ptr,
+					kv->key.via.str.size,
+					kv->key.via.str.ptr,
 					kv->val.type);
 		break;
 	}
@@ -1571,13 +1524,13 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			break;
 #undef ELEMENT_VALUE
 		case MSGPACK_OBJECT_FLOAT:
-			GRN_FLOAT_PUT(ctx, value, MSGPACK_OBJECT_VIA_FLOAT(*element));
+			GRN_FLOAT_PUT(ctx, value, element->via.f64);
 			break;
 		case MSGPACK_OBJECT_STR:
 			grn_vector_add_element(ctx,
 								   value,
-								   MSGPACK_OBJECT_VIA_STR(*element).ptr,
-								   MSGPACK_OBJECT_VIA_STR(*element).size,
+								   element->via.str.ptr,
+								   element->via.str.size,
 								   0,
 								   element_domain_id);
 			break;
@@ -1659,8 +1612,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		}
 
 		column = PGrnLookupColumnWithSize(table,
-										  MSGPACK_OBJECT_VIA_STR(*key).ptr,
-										  MSGPACK_OBJECT_VIA_STR(*key).size,
+										  key->via.str.ptr,
+										  key->via.str.size,
 										  ERROR);
 		switch (value->type)
 		{
@@ -1678,13 +1631,13 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			grn_obj_reinit(ctx, walValue, GRN_DB_FLOAT, 0);
-			GRN_FLOAT_SET(ctx, walValue, MSGPACK_OBJECT_VIA_FLOAT(*value));
+			GRN_FLOAT_SET(ctx, walValue, value->via.f64);
 			break;
 		case MSGPACK_OBJECT_STR:
 			grn_obj_reinit(ctx, walValue, GRN_DB_TEXT, 0);
 			GRN_TEXT_SET(ctx, walValue,
-						 MSGPACK_OBJECT_VIA_STR(*value).ptr,
-						 MSGPACK_OBJECT_VIA_STR(*value).size);
+						 value->via.str.ptr,
+						 value->via.str.size);
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			PGrnWALApplyInsertArray(data,
@@ -2003,7 +1956,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						message,
 						currentBlock,
 						currentOffset,
-						MSGPACK_OBJECT_VIA_FLOAT(*object));
+						object->via.f64);
 			break;
 		case MSGPACK_OBJECT_STR:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -2014,8 +1967,8 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						message,
 						currentBlock,
 						currentOffset,
-						(int) MSGPACK_OBJECT_VIA_STR(*object).size,
-						MSGPACK_OBJECT_VIA_STR(*object).ptr);
+						(int) object->via.str.size,
+						object->via.str.ptr);
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -2038,7 +1991,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						message,
 						currentBlock,
 						currentOffset,
-						MSGPACK_OBJECT_VIA_BIN(*object).size);
+						object->via.bin.size);
 			break;
 #endif
 		default:
@@ -2160,14 +2113,22 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 						RelationGetRelid(data->index));
 		}
 		dataSize = lastOffset - dataOffset;
-		msgpack_unpacker_reserve_buffer(&unpacker, dataSize);
+		if (!msgpack_unpacker_reserve_buffer(&unpacker, dataSize))
+		{
+			PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+						"[wal][apply][consume][%s(%u)] "
+						"failed to allocate buffer to unpack msgpack data",
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index));
+		}
 		memcpy(msgpack_unpacker_buffer(&unpacker),
 			   PGrnWALPageGetData(page) + dataOffset,
 			   dataSize);
 		UnlockReleaseBuffer(buffer);
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
-		while (MSGPACK_UNPACKER_NEXT(&unpacker, &unpacked))
+		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
+			   MSGPACK_UNPACK_SUCCESS)
 		{
 			LocationIndex appliedOffset;
 
