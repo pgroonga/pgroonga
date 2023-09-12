@@ -2105,21 +2105,27 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		if (dataOffset > lastOffset)
 		{
 			PGrnCheckRC(GRN_UNKNOWN_ERROR,
-						"[wal][apply][consume][%s(%u)] "
+						"[wal][apply][consume][%s(%u)][%u/%u/%" PGRN_PRIuSIZE "] "
 						"unconsumed WAL are overwritten: "
 						"pgroonga.max_wal_size should be increased or "
 						"pgroonga_wal_applier.naptime should be decreased",
 						RelationGetRelationName(data->index),
-						RelationGetRelid(data->index));
+						RelationGetRelid(data->index),
+						block,
+						dataOffset,
+						dataSize);
 		}
 		dataSize = lastOffset - dataOffset;
 		if (!msgpack_unpacker_reserve_buffer(&unpacker, dataSize))
 		{
 			PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
-						"[wal][apply][consume][%s(%u)] "
+						"[wal][apply][consume][%s(%u)][%u/%u/%" PGRN_PRIuSIZE "] "
 						"failed to allocate buffer to unpack msgpack data",
 						RelationGetRelationName(data->index),
-						RelationGetRelid(data->index));
+						RelationGetRelid(data->index),
+						block,
+						dataOffset,
+						dataSize);
 		}
 		memcpy(msgpack_unpacker_buffer(&unpacker),
 			   PGrnWALPageGetData(page) + dataOffset,
