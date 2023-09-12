@@ -1,8 +1,26 @@
 #!/usr/bin/env ruby
 
+require "optparse"
+require "ostruct"
 require "pp"
 
 require "msgpack"
+
+options = OpenStruct.new
+options.start_block = 1
+options.start_offset = 0
+option_parser = OptionParser.new
+option_parser.on("--start-block=BLOCK",
+                 Integer,
+                 "Start from the BLOCK") do |block|
+  options.start_block = block
+end
+option_parser.on("--start-offset=OFFSET",
+                 Integer,
+                 "Start from the OFFSET in BLOCK") do |offset|
+  options.start_offset = offset
+end
+option_parser.parse!(ARGV)
 
 page_header_size = [
   8, # PageXLogRecPtr pd_lsn;
@@ -56,14 +74,22 @@ while page = ARGF.read(block_size)
       puts("  #{key}: #{value}")
     end
   else
-    puts("Page#{i}")
-    header.each do |key, value|
-      puts("  #{key}: #{value}")
-    end
+    need_output = true
     data = page.byteslice(page_header_size,
                           header["lower"] - page_header_size)
-    unpacker.feed_each(data) do |object|
-      puts(PP.pp(object, ""))
+    if i < options.start_block
+      need_output = false
+    elsif i == options.start_block
+      data = data[options.start_offset, data.bytesize - options.start_offset]
+    end
+    if need_output
+      puts("Page#{i}")
+      header.each do |key, value|
+        puts("  #{key}: #{value}")
+      end
+      unpacker.feed_each(data) do |object|
+        puts(PP.pp(object, ""))
+      end
     end
   end
   i += 1
