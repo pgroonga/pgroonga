@@ -2068,6 +2068,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	BlockNumber maxBlock;
 	msgpack_unpacker unpacker;
 	msgpack_unpacked unpacked;
+	size_t bufferedSize = 0;
 
 	msgpack_unpacker_init(&unpacker, MSGPACK_UNPACKER_INIT_BUFFER_SIZE);
 	msgpack_unpacked_init(&unpacked);
@@ -2092,6 +2093,7 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		Page page;
 		LocationIndex lastOffset;
 		size_t dataSize;
+		size_t parsedSize;
 
 		block = (startBlock + i) % nBlocks;
 		if (block == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
@@ -2130,18 +2132,37 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 		memcpy(msgpack_unpacker_buffer(&unpacker),
 			   PGrnWALPageGetData(page) + dataOffset,
 			   dataSize);
+		bufferedSize += dataSize;
 		UnlockReleaseBuffer(buffer);
 
 		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
-		while (msgpack_unpacker_next(&unpacker, &unpacked) ==
-			   MSGPACK_UNPACK_SUCCESS)
+		while (true)
 		{
+			msgpack_unpack_return unpackResult =
+				msgpack_unpacker_next_with_size(&unpacker, &unpacked, &parsedSize);
 			LocationIndex appliedOffset;
 
+			if (unpackResult < 0)
+			{
+				PGrnCheckRC(GRN_UNKNOWN_ERROR,
+							"[wal][apply][consume][%s(%u)]"
+							"[%u/%u/%" PGRN_PRIuSIZE "] "
+							"failed to unpack WAL: %d: ",
+							RelationGetRelationName(data->index),
+							RelationGetRelid(data->index),
+							block,
+							dataOffset,
+							dataSize,
+							unpackResult);
+			}
+			if (unpackResult != MSGPACK_UNPACK_SUCCESS)
+			{
+				break;
+			}
+
 			PGrnWALApplyObject(data, &unpacked.data);
-			appliedOffset =
-				dataOffset +
-				dataSize - (unpacker.used - unpacker.off);
+			bufferedSize -= parsedSize;
+			appliedOffset = dataOffset + dataSize - bufferedSize;
 			PGrnIndexStatusSetWALAppliedPosition(data->index,
 												 block,
 												 appliedOffset);
