@@ -49,12 +49,17 @@ jobs:
             label: PostgreSQL 15 + Visual Studio 2022
             postgresql-version-major: "15"
             postgresql-version: "15.3-1"
-          - artifact-id: "postgresql-15-x64-groonga-main"
+          - artifact-id: "postgresql-16-x64"
+            cmake-generator: "Visual Studio 17 2022"
+            label: PostgreSQL 16 + Visual Studio 2022
+            postgresql-version-major: "16"
+            postgresql-version: "16.0-1"
+          - artifact-id: "postgresql-16-x64-groonga-main"
             cmake-generator: "Visual Studio 17 2022"
             groonga-main: "yes"
-            label: PostgreSQL 15 + Visual Studio 2022 + Groonga main
-            postgresql-version-major: "15"
-            postgresql-version: "15.3-1"
+            label: PostgreSQL 16 + Visual Studio 2022 + Groonga main
+            postgresql-version-major: "16"
+            postgresql-version: "16.0-1"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"

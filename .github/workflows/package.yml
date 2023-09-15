@@ -77,6 +77,17 @@ jobs:
       fail-fast: false
       matrix:
         package-id:
+          - postgresql-16-pgdg-pgroonga-debian-bookworm
+          - postgresql-16-pgdg-pgroonga-debian-bookworm-arm64
+          - postgresql-16-pgdg-pgroonga-debian-bullseye
+          - postgresql-16-pgdg-pgroonga-debian-bullseye-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-focal
+          - postgresql-16-pgdg-pgroonga-ubuntu-focal-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-jammy
+          - postgresql-16-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-16-pgdg-pgroonga-almalinux-9
+          - postgresql-16-pgdg-pgroonga-almalinux-8
+          - postgresql-16-pgdg-pgroonga-centos-7
           - postgresql-15-pgdg-pgroonga-debian-bookworm
           - postgresql-15-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-15-pgdg-pgroonga-debian-bullseye
