@@ -23,7 +23,17 @@ SET parallel_setup_cost = 0;
 SET parallel_tuple_cost = 0;
 SET min_parallel_table_scan_size = 0;
 SET max_parallel_workers_per_gather = 4;
-SET force_parallel_mode = on;
+DO LANGUAGE plpgsql $$
+BEGIN
+        PERFORM 1
+                WHERE current_setting('server_version_num')::int >= 160000;
+        IF FOUND THEN
+                SET debug_parallel_query = on;
+        ELSE
+                SET force_parallel_mode = on;
+        END IF;
+END;
+$$;
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
