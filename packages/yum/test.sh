@@ -183,6 +183,14 @@ fi
 echo "::group::Upgrade"
 
 ${DNF} remove -y ${pgroonga_package}
+
+# Disable upgrade test for first time packages.
+case ${postgresql_version} in
+  16) # TODO: Remove this after 3.1.4 release.
+    exit
+    ;;
+esac
+
 ${DNF} install -y ${pgroonga_package}
 createdb upgrade
 psql upgrade -c 'CREATE EXTENSION pgroonga'
