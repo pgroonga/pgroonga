@@ -9,8 +9,6 @@ class PostgreSQL16PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "debian-bookworm",
       "debian-bookworm-arm64",
-      "debian-bullseye",
-      "debian-bullseye-arm64",
       "ubuntu-focal",
       "ubuntu-focal-arm64",
       "ubuntu-jammy",
@@ -26,7 +24,6 @@ class PostgreSQL16PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "almalinux-9",
       "almalinux-8",
-      "centos-7",
     ]
   end
 end
