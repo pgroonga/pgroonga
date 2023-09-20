@@ -12,6 +12,7 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 
+#define XXH_INLINE_ALL
 #include <xxhash.h>
 
 static grn_ctx *ctx = &PGrnContext;
