@@ -6,14 +6,11 @@
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
-export XXHASH_MAJOR_VERSION := $(apt-cache show libxxhash-dev | grep Version | awk '{print $$2}' | awk -F '-' '{print $$1}' | awk -F '.' '{print $$1}')
-export XXHASH_MINOR_VERSION := $(apt-cache show libxxhash-dev | grep Version | awk '{print $$2}' | awk -F '-' '{print $$1}' | awk -F '.' '{print $$2}')
-
 %:
 	dh $@
 
 override_dh_auto_build:
-	if [ $(XXHASH_MAJOR_VERSION) >= 0 ] && [ $(XXHASH_MINOR_VERSION) > 7 ]; then
+	if pkg-config --exists "libxxhash >= 0.8.0"; then
 		dh_auto_build -- HAVE_MSGPACK=1 HAVE_XXHASH=1
 	else
 		dh_auto_build -- HAVE_MSGPACK=1
