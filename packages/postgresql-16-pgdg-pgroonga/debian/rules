@@ -10,10 +10,10 @@ export DH_OPTIONS
 	dh $@
 
 override_dh_auto_build:
-	if pkg-config --exists "libxxhash >= 0.8.0"; then
-		dh_auto_build -- HAVE_MSGPACK=1 HAVE_XXHASH=1
-	else
-		dh_auto_build -- HAVE_MSGPACK=1
+	if pkg-config --exists "libxxhash >= 0.8.0"; then	\
+		dh_auto_build -- HAVE_MSGPACK=1 HAVE_XXHASH=1	\
+	else							\
+		dh_auto_build -- HAVE_MSGPACK=1			\
 	fi
 
 # disable 'make check'.
