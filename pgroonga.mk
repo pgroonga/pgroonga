@@ -7,7 +7,7 @@ PACKAGES += msgpack
 endif
 endif
 ifdef HAVE_XXHASH
-PACKAGES += libxxhash
+PACKAGES += libxxhash>=0.8.0
 endif
 
 MODULE_big = pgroonga
