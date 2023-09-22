@@ -145,6 +145,14 @@ fi
 echo "::group::Upgrade"
 
 sudo apt purge -V -y ${pgroonga_package}
+
+# Disable upgrade test for first time packages.
+case ${postgresql_version} in
+  16) # TODO: Remove this after 3.1.4 release.
+    exit
+    ;;
+esac
+
 sudo apt install -V -y ${pgroonga_package}
 createdb upgrade
 psql upgrade -c 'CREATE EXTENSION pgroonga'
