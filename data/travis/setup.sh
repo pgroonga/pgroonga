@@ -4,7 +4,7 @@
 set -e
 
 curl --silent --location --fail \
-  https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | \
+  https://github.com/groonga/groonga/raw/HEAD/data/travis/setup.sh | \
   sh
 
 pg_version=$(ruby -r yaml \

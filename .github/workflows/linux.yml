@@ -2,7 +2,7 @@ name: Linux
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - "*"
   pull_request:
@@ -28,9 +28,9 @@ jobs:
           - PostgreSQL 13
           - PostgreSQL 14
           - PostgreSQL 15
-          - PostgreSQL 15 with Groonga master
+          - PostgreSQL 15 with Groonga main
           - PostgreSQL 16 snapshot
-          - PostgreSQL 16 snapshot with Groonga master
+          - PostgreSQL 16 snapshot with Groonga main
         include:
           - label: PostgreSQL 11
             postgresql-version: "11"
@@ -42,18 +42,18 @@ jobs:
             postgresql-version: "14"
           - label: PostgreSQL 15
             postgresql-version: "15"
-          - label: PostgreSQL 15 with Groonga master
-            groonga-master: "yes"
+          - label: PostgreSQL 15 with Groonga main
+            groonga-main: "yes"
             postgresql-version: "15"
           - label: PostgreSQL 16 snapshot
             postgresql-unreleased: "yes"
             postgresql-version: "16"
-          - label: PostgreSQL 16 snapshot with Groonga master
-            groonga-master: "yes"
+          - label: PostgreSQL 16 snapshot with Groonga main
+            groonga-main: "yes"
             postgresql-unreleased: "yes"
             postgresql-version: "16"
     env:
-      GROONGA_MASTER: ${{ matrix.groonga-master }}
+      GROONGA_MAIN: ${{ matrix.groonga-main }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
     runs-on: ubuntu-latest
@@ -70,9 +70,9 @@ jobs:
           curl \
             --silent \
             --location \
-            https://github.com/groonga/groonga/raw/master/data/travis/setup.sh | \
+            https://github.com/groonga/groonga/raw/HEAD/data/travis/setup.sh | \
             sh
-          if [ "${GROONGA_MASTER}" != "yes" ]; then
+          if [ "${GROONGA_MAIN}" != "yes" ]; then
             sudo apt -y -V install \
               groonga-token-filter-stem \
               groonga-tokenizer-mecab \
@@ -119,7 +119,7 @@ jobs:
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
           if [ ${{ matrix.postgresql-version }} -gt 15 -o \
-               "${GROONGA_MASTER}" = "yes" ]; then
+               "${GROONGA_MAIN}" = "yes" ]; then
             # TODO: We don't know why this case doesn't use parallel scan...
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi

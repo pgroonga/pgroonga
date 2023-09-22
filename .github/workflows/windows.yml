@@ -2,7 +2,7 @@ name: Windows
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - "*"
   pull_request:
@@ -49,10 +49,10 @@ jobs:
             label: PostgreSQL 15 + Visual Studio 2022
             postgresql-version-major: "15"
             postgresql-version: "15.3-1"
-          - artifact-id: "postgresql-15-x64-groonga-master"
+          - artifact-id: "postgresql-15-x64-groonga-main"
             cmake-generator: "Visual Studio 17 2022"
-            groonga-master: "yes"
-            label: PostgreSQL 15 + Visual Studio 2022 + Groonga master
+            groonga-main: "yes"
+            label: PostgreSQL 15 + Visual Studio 2022 + Groonga main
             postgresql-version-major: "15"
             postgresql-version: "15.3-1"
     env:
@@ -90,7 +90,7 @@ jobs:
           Expand-Archive -Path $POSTGRESQL_ARCHIVE_NAME -DestinationPath .
       - name: Download Groonga
         run: |
-          if ("${{ matrix.groonga-master }}" -eq "yes") {
+          if ("${{ matrix.groonga-main }}" -eq "yes") {
             git clone --depth 1 `
               https://github.com/groonga/groonga.git `
             vendor\groonga
@@ -172,7 +172,7 @@ jobs:
       # Release
       - name: Upload to release
         if: |
-          startsWith(github.ref, 'refs/tags/') && matrix.groonga-master != 'yes'
+          startsWith(github.ref, 'refs/tags/') && matrix.groonga-main != 'yes'
         run: |
           gh release upload ${Env:GITHUB_REF_NAME} `
             artifacts\${{ env.ARTIFACT_BASENAME }}

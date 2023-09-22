@@ -2086,94 +2086,111 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 	maxBlock = meta->max;
 	if (maxBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
 		maxBlock = nBlocks;
-	for (i = 0; i < nBlocks; i++)
+	PG_TRY();
 	{
-		BlockNumber block;
-		Buffer buffer;
-		Page page;
-		LocationIndex lastOffset;
-		size_t dataSize;
-		size_t parsedSize;
-
-		block = (startBlock + i) % nBlocks;
-		if (block == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
-			continue;
-		if (block > maxBlock)
-			continue;
-
-		buffer = PGrnWALReadLockedBuffer(data->index, block, BUFFER_LOCK_SHARE);
-		page = BufferGetPage(buffer);
-		lastOffset = PGrnWALPageGetLastOffset(page);
-		if (dataOffset > lastOffset)
+		for (i = 0; i < nBlocks; i++)
 		{
-			PGrnCheckRC(GRN_UNKNOWN_ERROR,
-						"[wal][apply][consume][%s(%u)][%u/%u/%" PGRN_PRIuSIZE "] "
-						"unconsumed WAL are overwritten: "
-						"pgroonga.max_wal_size should be increased or "
-						"pgroonga_wal_applier.naptime should be decreased",
-						RelationGetRelationName(data->index),
-						RelationGetRelid(data->index),
-						block,
-						dataOffset,
-						dataSize);
-		}
-		dataSize = lastOffset - dataOffset;
-		if (!msgpack_unpacker_reserve_buffer(&unpacker, dataSize))
-		{
-			PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
-						"[wal][apply][consume][%s(%u)][%u/%u/%" PGRN_PRIuSIZE "] "
-						"failed to allocate buffer to unpack msgpack data",
-						RelationGetRelationName(data->index),
-						RelationGetRelid(data->index),
-						block,
-						dataOffset,
-						dataSize);
-		}
-		memcpy(msgpack_unpacker_buffer(&unpacker),
-			   PGrnWALPageGetData(page) + dataOffset,
-			   dataSize);
-		bufferedSize += dataSize;
-		UnlockReleaseBuffer(buffer);
+			BlockNumber block;
+			Buffer buffer;
+			Page page;
+			LocationIndex lastOffset;
+			size_t dataSize;
+			size_t parsedSize;
 
-		msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
-		while (true)
-		{
-			msgpack_unpack_return unpackResult =
-				msgpack_unpacker_next_with_size(&unpacker, &unpacked, &parsedSize);
-			LocationIndex appliedOffset;
+			block = (startBlock + i) % nBlocks;
+			if (block == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
+				continue;
+			if (block > maxBlock)
+				continue;
 
-			if (unpackResult < 0)
+			buffer = PGrnWALReadLockedBuffer(data->index,
+											 block,
+											 BUFFER_LOCK_SHARE);
+			page = BufferGetPage(buffer);
+			lastOffset = PGrnWALPageGetLastOffset(page);
+			if (dataOffset > lastOffset)
 			{
 				PGrnCheckRC(GRN_UNKNOWN_ERROR,
 							"[wal][apply][consume][%s(%u)]"
 							"[%u/%u/%" PGRN_PRIuSIZE "] "
-							"failed to unpack WAL: %d: ",
+							"unconsumed WAL are overwritten: "
+							"pgroonga.max_wal_size should be increased or "
+							"pgroonga_wal_applier.naptime should be decreased",
 							RelationGetRelationName(data->index),
 							RelationGetRelid(data->index),
 							block,
 							dataOffset,
-							dataSize,
-							unpackResult);
+							dataSize);
 			}
-			if (unpackResult != MSGPACK_UNPACK_SUCCESS)
+			dataSize = lastOffset - dataOffset;
+			if (!msgpack_unpacker_reserve_buffer(&unpacker, dataSize))
 			{
-				break;
+				PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
+							"[wal][apply][consume][%s(%u)]"
+							"[%u/%u/%" PGRN_PRIuSIZE "] "
+							"failed to allocate buffer to unpack msgpack data",
+							RelationGetRelationName(data->index),
+							RelationGetRelid(data->index),
+							block,
+							dataOffset,
+							dataSize);
+			}
+			memcpy(msgpack_unpacker_buffer(&unpacker),
+				   PGrnWALPageGetData(page) + dataOffset,
+				   dataSize);
+			bufferedSize += dataSize;
+			UnlockReleaseBuffer(buffer);
+
+			msgpack_unpacker_buffer_consumed(&unpacker, dataSize);
+			while (true)
+			{
+				msgpack_unpack_return unpackResult =
+					msgpack_unpacker_next_with_size(&unpacker,
+													&unpacked,
+													&parsedSize);
+				LocationIndex appliedOffset;
+
+				if (unpackResult < 0)
+				{
+					PGrnCheckRC(GRN_UNKNOWN_ERROR,
+								"[wal][apply][consume][%s(%u)]"
+								"[%u/%u/%" PGRN_PRIuSIZE "] "
+								"failed to unpack WAL: %d: ",
+								RelationGetRelationName(data->index),
+								RelationGetRelid(data->index),
+								block,
+								dataOffset,
+								dataSize,
+								unpackResult);
+				}
+				if (unpackResult != MSGPACK_UNPACK_SUCCESS)
+				{
+					break;
+				}
+
+				PGrnWALApplyObject(data, &unpacked.data);
+				bufferedSize -= parsedSize;
+				appliedOffset = dataOffset + dataSize - bufferedSize;
+				PGrnIndexStatusSetWALAppliedPosition(data->index,
+													 block,
+													 appliedOffset);
+				nAppliedOperations++;
 			}
 
-			PGrnWALApplyObject(data, &unpacked.data);
-			bufferedSize -= parsedSize;
-			appliedOffset = dataOffset + dataSize - bufferedSize;
-			PGrnIndexStatusSetWALAppliedPosition(data->index,
-												 block,
-												 appliedOffset);
-			nAppliedOperations++;
+			if (block == nextBlock)
+				break;
+
+			dataOffset = 0;
 		}
-
-		if (block == nextBlock)
-			break;
-
-		dataOffset = 0;
 	}
+	PG_CATCH();
+	{
+		UnlockReleaseBuffer(metaBuffer);
+		msgpack_unpacked_destroy(&unpacked);
+		msgpack_unpacker_destroy(&unpacker);
+		PG_RE_THROW();
+	}
+	PG_END_TRY();
 	UnlockReleaseBuffer(metaBuffer);
 	msgpack_unpacked_destroy(&unpacked);
 	msgpack_unpacker_destroy(&unpacker);

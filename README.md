@@ -13,7 +13,7 @@ See Web site for more details:
 
 PGroonga is released under [PostgreSQL license](http://opensource.org/licenses/postgresql) that is similar to BSD license and MIT license.
 
-See [COPYING](https://github.com/pgroonga/pgroonga/blob/master/COPYING) file for details such as copyright holders.
+See [COPYING](https://github.com/pgroonga/pgroonga/blob/HEAD/COPYING) file for details such as copyright holders.
 
 Bundled software is released under different license. Here are bundled software and license information:
 
