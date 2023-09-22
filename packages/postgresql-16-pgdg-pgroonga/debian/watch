@@ -1,2 +1,2 @@
 version=3
-https://packages.groonga.org/source/pgroonga/pgroonga-(.+).tar.gz
+https://github.com/pgroonga/pgroonga/releases /pgroonga/pgroonga/releases/download/.+/pgroonga-(.+)\.tar\.gz
