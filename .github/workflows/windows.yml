@@ -131,12 +131,12 @@ jobs:
             -G "${{ matrix.cmake-generator }}" ^
             -S . ^
             -DCMAKE_INSTALL_PREFIX="..\pgsql" ^
-            -DGRN_WITH_BUNDLED_LZ4=yes ^
-            -DGRN_WITH_BUNDLED_MECAB=yes ^
-            -DGRN_WITH_BUNDLED_MESSAGE_PACK=yes ^
-            -DGRN_WITH_BUNDLED_RAPIDJSON=yes ^
-            -DGRN_WITH_BUNDLED_ZSTD=yes ^
+            -DGRN_WITH_LZ4=bundled ^
+            -DGRN_WITH_MECAB=bundled ^
+            -DGRN_WITH_MESSAGE_PACK=bundled ^
             -DGRN_WITH_MRUBY=yes ^
+            -DGRN_WITH_RAPIDJSON=bundled ^
+            -DGRN_WITH_ZSTD=bundled ^
             -DPGRN_POSTGRESQL_VERSION_MAJOR=${{ matrix.postgresql-version-major }}
       - name: Build
         shell: cmd
