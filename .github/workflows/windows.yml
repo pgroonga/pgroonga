@@ -130,7 +130,7 @@ jobs:
             -B ..\build ^
             -G Ninja ^
             -S . ^
-            -DCMAKE_BUILD_CONFIG=RelWithDebInfo ^
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
             -DCMAKE_INSTALL_PREFIX="..\pgsql" ^
             -DGRN_WITH_LZ4=bundled ^
             -DGRN_WITH_MECAB=bundled ^
@@ -154,7 +154,6 @@ jobs:
           New-Item artifacts -ItemType Directory
           cmake `
             --build ..\build `
-            --config RelWithDebInfo `
             --target package `
             --verbose
           Copy-Item -Path ..\build\*.zip -Destination artifacts
