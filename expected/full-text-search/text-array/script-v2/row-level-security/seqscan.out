@@ -40,10 +40,7 @@ Seq Scan on memos
 SELECT id, contents
   FROM memos
  WHERE contents &` 'contents @ "rdbms" || contents @ "engine"';
- id | contents 
-----+----------
-(0 rows)
-
+ERROR:  pgroonga: [script][text-array] script syntax search is available only in index scan
 RESET SESSION AUTHORIZATION;
 DROP TABLE memos;
 DROP USER alice;

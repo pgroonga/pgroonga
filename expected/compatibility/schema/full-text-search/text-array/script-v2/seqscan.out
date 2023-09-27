@@ -21,10 +21,5 @@ SET enable_bitmapscan = off;
 SELECT title, text
   FROM memos
  WHERE text &` 'text @ "rdbms" || text @ "engine"';
-   title    |                                           text                                            
-------------+-------------------------------------------------------------------------------------------
- PostgreSQL | {"PostgreSQL is an OSS RDBMS","PostgreSQL has partial full-text search support"}
- Groonga    | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}
-(2 rows)
-
+ERROR:  pgroonga: [script][text-array] script syntax search is available only in index scan
 DROP TABLE memos;

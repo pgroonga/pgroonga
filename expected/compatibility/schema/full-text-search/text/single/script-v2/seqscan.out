@@ -11,10 +11,5 @@ SET enable_bitmapscan = off;
 SELECT id, text
   FROM memos
  WHERE text &` 'text @ "rdbms" || text @ "engine"';
- id |                   text                   
-----+------------------------------------------
-  1 | PostgreSQL is a RDBMS.
-  2 | Groonga is fast full text search engine.
-(2 rows)
-
+ERROR:  pgroonga: [script][text] script syntax search is available only in index scan
 DROP TABLE memos;
