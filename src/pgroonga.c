@@ -459,7 +459,7 @@ PGrnBeforeShmemExit(int code, Datum arg)
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
 					"%s[finalize][sequential-search-data]", tag);
-			PGrnFinalizeSequentialSearchData();
+			PGrnFinalizeSequentialSearch();
 			GRN_LOG(ctx, GRN_LOG_DEBUG,
 					"%s[finalize][prefix-rk-sequential-search-data]", tag);
 			PGrnFinalizePrefixRKSequentialSearchData();
@@ -528,7 +528,7 @@ PGrnInitializeDatabase(void)
 
 	PGrnInitializeIndexStatus();
 
-	PGrnInitializeSequentialSearchData();
+	PGrnInitializeSequentialSearch();
 	PGrnInitializePrefixRKSequentialSearchData();
 
 	PGrnInitializeJSONB();
@@ -701,6 +701,7 @@ _PG_init(void)
 	before_shmem_exit(PGrnBeforeShmemExit, 0);
 
 	RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
+	RegisterResourceReleaseCallback(PGrnReleaseSequentialSearch, NULL);
 
 	grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
 
@@ -728,12 +729,12 @@ _PG_init(void)
 static void
 PGrnUnmapDB(void)
 {
-	PGrnFinalizeSequentialSearchData();
+	PGrnFinalizeSequentialSearch();
 	PGrnFinalizeHighlightHTML();
 
 	grn_db_unmap(ctx, grn_ctx_db(ctx));
 
-	PGrnInitializeSequentialSearchData();
+	PGrnInitializeSequentialSearch();
 	PGrnInitializeHighlightHTML();
 }
 
@@ -2249,10 +2250,10 @@ pgroonga_match_term_raw(const char *target, unsigned int targetSize,
 {
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
-		PGrnSequentialSearchDataPrepareText(target, targetSize);
-		PGrnSequentialSearchDataSetMatchTerm(term, termSize,
-											 indexName, indexNameSize);
-		return PGrnSequentialSearchDataExecute();
+		PGrnSequentialSearchSetTargetText(target, targetSize);
+		PGrnSequentialSearchSetMatchTerm(term, termSize,
+										 indexName, indexNameSize);
+		return PGrnSequentialSearchExecute();
 	}
 	else
 	{
@@ -2390,11 +2391,11 @@ pgroonga_match_query_raw(const char *target, unsigned int targetSize,
 						 const char *query, unsigned int querySize,
 						 const char *indexName, unsigned int indexNameSize)
 {
-	PGrnSequentialSearchDataPrepareText(target, targetSize);
-	PGrnSequentialSearchDataSetQuery(query, querySize,
-									 indexName, indexNameSize,
-									 PGRN_SEQUENTIAL_SEARCH_QUERY);
-	return PGrnSequentialSearchDataExecute();
+	PGrnSequentialSearchSetTargetText(target, targetSize);
+	PGrnSequentialSearchSetQuery(query, querySize,
+								 indexName, indexNameSize,
+								 PGRN_SEQUENTIAL_SEARCH_QUERY);
+	return PGrnSequentialSearchExecute();
 }
 
 static bool
@@ -2408,12 +2409,11 @@ pgroonga_match_query_string_array_raw(ArrayType *targets,
 	if (ARR_NDIM(targets) == 0)
 		return false;
 
-	PGrnSequentialSearchDataPrepareTexts(targets,
-										 isTargets);
-	PGrnSequentialSearchDataSetQuery(query, querySize,
-									 indexName, indexNameSize,
-									 PGRN_SEQUENTIAL_SEARCH_QUERY);
-	return PGrnSequentialSearchDataExecute();
+	PGrnSequentialSearchSetTargetTexts(targets, isTargets);
+	PGrnSequentialSearchSetQuery(query, querySize,
+								 indexName, indexNameSize,
+								 PGRN_SEQUENTIAL_SEARCH_QUERY);
+	return PGrnSequentialSearchExecute();
 }
 
 /**
@@ -3455,10 +3455,10 @@ pgroonga_prefix_raw(const char *text, unsigned int textSize,
 {
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
-		PGrnSequentialSearchDataPrepareText(text, textSize);
-		PGrnSequentialSearchDataSetPrefix(prefix, prefixSize,
-										  indexName, indexNameSize);
-		return PGrnSequentialSearchDataExecute();
+		PGrnSequentialSearchSetTargetText(text, textSize);
+		PGrnSequentialSearchSetPrefix(prefix, prefixSize,
+									  indexName, indexNameSize);
+		return PGrnSequentialSearchExecute();
 	}
 	else
 	{
@@ -4655,10 +4655,10 @@ pgroonga_equal_text_raw(const char *target, unsigned int targetSize,
 {
 	if (indexNameSize > 0 && PGrnIsTemporaryIndexSearchAvailable)
 	{
-		PGrnSequentialSearchDataPrepareText(target, targetSize);
-		PGrnSequentialSearchDataSetEqualText(other, otherSize,
-											 indexName, indexNameSize);
-		return PGrnSequentialSearchDataExecute();
+		PGrnSequentialSearchSetTargetText(target, targetSize);
+		PGrnSequentialSearchSetEqualText(other, otherSize,
+										 indexName, indexNameSize);
+		return PGrnSequentialSearchExecute();
 	}
 	else
 	{
@@ -4870,12 +4870,11 @@ pgroonga_equal_query_text_array_raw(ArrayType *targets,
 	if (ARR_NDIM(targets) == 0)
 		return false;
 
-	PGrnSequentialSearchDataPrepareTexts(targets,
-										 isTargets);
-	PGrnSequentialSearchDataSetQuery(query, querySize,
-									 indexName, indexNameSize,
-									 PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY);
-	return PGrnSequentialSearchDataExecute();
+	PGrnSequentialSearchSetTargetTexts(targets, isTargets);
+	PGrnSequentialSearchSetQuery(query, querySize,
+								 indexName, indexNameSize,
+								 PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY);
+	return PGrnSequentialSearchExecute();
 }
 
 /**

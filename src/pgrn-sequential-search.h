@@ -5,6 +5,7 @@
 #include <groonga.h>
 
 #include <utils/array.h>
+#include <utils/resowner.h>
 
 typedef enum  {
 	PGRN_SEQUENTIAL_SEARCH_UNKNOWN,
@@ -17,40 +18,45 @@ typedef enum  {
 } PGrnSequentialSearchType;
 
 void
-PGrnInitializeSequentialSearchData(void);
+PGrnInitializeSequentialSearch(void);
 void
-PGrnFinalizeSequentialSearchData(void);
+PGrnFinalizeSequentialSearch(void);
 void
-PGrnSequentialSearchDataPrepareText(const char *target,
-									unsigned int targetSize);
+PGrnReleaseSequentialSearch(ResourceReleasePhase phase,
+							bool isCommit,
+							bool isTopLevel,
+							void *arg);
 void
-PGrnSequentialSearchDataPrepareTexts(ArrayType *targets,
-									 grn_obj *isTargets);
+PGrnSequentialSearchSetTargetText(const char *target,
+								  unsigned int targetSize);
 void
-PGrnSequentialSearchDataSetMatchTerm(const char *term,
-									 unsigned int termSize,
-									 const char *indexName,
-									 unsigned int indexNameSize);
+PGrnSequentialSearchSetTargetTexts(ArrayType *targets,
+								   grn_obj *isTargets);
 void
-PGrnSequentialSearchDataSetEqualText(const char *other,
-									 unsigned int otherSize,
-									 const char *indexName,
-									 unsigned int indexNameSize);
-void
-PGrnSequentialSearchDataSetPrefix(const char *prefix,
-								  unsigned int prefixSize,
-								  const char *indexName,
-								  unsigned int indexNameSize);
-void
-PGrnSequentialSearchDataSetQuery(const char *query,
-								 unsigned int querySize,
+PGrnSequentialSearchSetMatchTerm(const char *term,
+								 unsigned int termSize,
 								 const char *indexName,
-								 unsigned int indexNameSize,
-								 PGrnSequentialSearchType type);
+								 unsigned int indexNameSize);
 void
-PGrnSequentialSearchDataSetScript(const char *script,
-								  unsigned int scriptSize,
-								  const char *indexName,
-								  unsigned int indexNameSize);
+PGrnSequentialSearchSetEqualText(const char *other,
+								 unsigned int otherSize,
+								 const char *indexName,
+								 unsigned int indexNameSize);
+void
+PGrnSequentialSearchSetPrefix(const char *prefix,
+							  unsigned int prefixSize,
+							  const char *indexName,
+							  unsigned int indexNameSize);
+void
+PGrnSequentialSearchSetQuery(const char *query,
+							 unsigned int querySize,
+							 const char *indexName,
+							 unsigned int indexNameSize,
+							 PGrnSequentialSearchType type);
+void
+PGrnSequentialSearchSetScript(const char *script,
+							  unsigned int scriptSize,
+							  const char *indexName,
+							  unsigned int indexNameSize);
 bool
-PGrnSequentialSearchDataExecute(void);
+PGrnSequentialSearchExecute(void);

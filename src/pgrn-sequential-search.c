@@ -10,17 +10,28 @@
 
 #include <xxhash.h>
 
-typedef struct PGrnSequentialSearchData
+typedef enum {
+	PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT,
+	PGRN_SEQUENTIAL_SEARCH_TARGET_TEXTS,
+} PGrnSequentialSearchTargetType;
+
+typedef struct PGrnSequentialSearchDatumKey
+{
+	Oid indexOID;
+	PGrnSequentialSearchTargetType targetType;
+	bool useIndex;
+	PGrnSequentialSearchType type;
+} PGrnSequentialSearchDatumKey;
+
+typedef struct PGrnSequentialSearchDatum
 {
 	grn_obj *table;
-	grn_obj *textColumn;
-	grn_obj *textsColumn;
+	PGrnSequentialSearchTargetType targetType;
 	grn_obj *targetColumn;
 	grn_id recordID;
 	Oid indexOID;
 	grn_obj *lexicon;
 	grn_obj *indexColumn;
-	grn_obj *indexColumnSource;
 	grn_obj *matched;
 	PGrnSequentialSearchType type;
 	XXH64_hash_t expressionHash;
@@ -28,243 +39,155 @@ typedef struct PGrnSequentialSearchData
 	grn_obj *variable;
 	bool useIndex;
 	grn_expr_flags exprFlags;
-} PGrnSequentialSearchData;
+	bool used;
+} PGrnSequentialSearchDatum;
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
-static PGrnSequentialSearchData data;
+static PGrnSequentialSearchTargetType currentTargetType =
+	PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT;
+static PGrnSequentialSearchDatum *currentDatum = NULL;
+static grn_hash *data = NULL;
+static uint32_t nExecutions = 0;
+/* Remove unused PGrnSequentialSearchDatum per 100 executions. */
+static const uint32_t vacuumFrequency = 100;
 
-void
-PGrnInitializeSequentialSearchData(void)
+static void
+PGrnSequentialSearchDatumInitialize(PGrnSequentialSearchDatum *datum)
 {
-	data.table = grn_table_create(ctx,
-								  NULL, 0,
-								  NULL,
-								  GRN_OBJ_TABLE_NO_KEY,
-								  NULL, NULL);
-	data.textColumn = grn_column_create(ctx,
-										data.table,
-										"text", strlen("text"),
-										NULL,
-										GRN_OBJ_COLUMN_SCALAR,
-										grn_ctx_at(ctx, GRN_DB_TEXT));
-	data.textsColumn = grn_column_create(ctx,
-										 data.table,
-										 "texts", strlen("texts"),
-										 NULL,
-										 GRN_OBJ_COLUMN_VECTOR,
-										 grn_ctx_at(ctx, GRN_DB_TEXT));
-	data.targetColumn = NULL;
-	data.recordID = grn_table_add(ctx,
-								  data.table,
-								  NULL, 0,
-								  NULL);
-	data.indexOID = InvalidOid;
-	data.lexicon = NULL;
-	data.indexColumn = NULL;
-	data.indexColumnSource = NULL;
-	data.matched =
+	grn_column_flags flags = 0;
+	datum->table = grn_table_create(ctx,
+									NULL, 0,
+									NULL,
+									GRN_OBJ_TABLE_NO_KEY,
+									NULL, NULL);
+	datum->targetType = currentTargetType;
+	if (datum->targetType == PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT)
+	{
+		flags = GRN_OBJ_COLUMN_SCALAR;
+	}
+	else
+	{
+		flags = GRN_OBJ_COLUMN_VECTOR;
+	}
+	datum->targetColumn = grn_column_create(ctx,
+											datum->table,
+											"target", strlen("target"),
+											NULL,
+											flags,
+											grn_ctx_at(ctx, GRN_DB_TEXT));
+	datum->recordID = grn_table_add(ctx,
+									datum->table,
+									NULL, 0,
+									NULL);
+	datum->indexOID = InvalidOid;
+	datum->lexicon = NULL;
+	datum->indexColumn = NULL;
+	datum->matched =
 		grn_table_create(ctx,
 						 NULL, 0,
 						 NULL,
 						 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-						 data.table,
+						 datum->table,
 						 NULL);
-	data.type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
-	data.expressionHash = 0;
-	data.expression = NULL;
-	data.variable = NULL;
-	data.useIndex = false;
-	data.exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
-}
-
-void
-PGrnFinalizeSequentialSearchData(void)
-{
-	if (data.expression)
-		grn_obj_close(ctx, data.expression);
-	grn_obj_close(ctx, data.matched);
-	if (data.indexColumn)
-		grn_obj_remove(ctx, data.indexColumn);
-	if (data.lexicon)
-		grn_obj_close(ctx, data.lexicon);
-	grn_obj_close(ctx, data.textsColumn);
-	grn_obj_close(ctx, data.textColumn);
-	grn_obj_close(ctx, data.table);
+	datum->type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
+	datum->expressionHash = 0;
+	datum->expression = NULL;
+	datum->variable = NULL;
+	datum->useIndex = false;
+	datum->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+	datum->used = true;
 }
 
 static void
-PGrnSequentialSearchDataExecuteClearIndex(void)
+PGrnSequentialSearchDatumFinalize(PGrnSequentialSearchDatum *datum)
 {
-	if (data.indexColumn)
-	{
-		grn_obj_remove(ctx, data.indexColumn);
-		data.indexColumn = NULL;
-	}
-	if (data.lexicon)
-	{
-		grn_obj_close(ctx, data.lexicon);
-		data.lexicon = NULL;
-	}
-	data.indexOID = InvalidOid;
-
-	data.type = PGRN_SEQUENTIAL_SEARCH_UNKNOWN;
-	data.expressionHash = 0;
-	if (data.expression)
-	{
-		grn_obj_close(ctx, data.expression);
-		data.expression = NULL;
-	}
-
-	data.useIndex = false;
-	data.exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
-}
-
-static bool
-PGrnSequentialSearchDataExecutePrepareIndex(const char *indexName,
-											unsigned int indexNameSize,
-											PGrnSequentialSearchType type)
-{
-	const char *tag = "[sequential-search][index]";
-	Oid indexOID = InvalidOid;
-	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX;
-
-	if (indexNameSize > 0)
-	{
-		grn_obj *text = &(buffers->general);
-
-		grn_obj_reinit(ctx, text, GRN_DB_TEXT, 0);
-		GRN_TEXT_SET(ctx, text, indexName, indexNameSize);
-		GRN_TEXT_PUTC(ctx, text, '\0');
-		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
-	}
-
-	if (data.indexOID == indexOID &&
-		data.indexColumnSource == data.targetColumn &&
-		data.type == type)
-	{
-		return false;
-	}
-
-	PGrnSequentialSearchDataExecuteClearIndex();
-	data.useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
-					 (OidIsValid(indexOID) ||
-					  data.targetColumn == data.textsColumn));
-
-	if (grn_obj_is_vector_column(ctx, data.targetColumn))
-		indexFlags |= GRN_OBJ_WITH_SECTION;
-
-	if (data.indexOID != indexOID)
-	{
-		Relation index;
-		bool isPGroongaIndex;
-
-		index = PGrnPGResolveIndexID(indexOID);
-		isPGroongaIndex = PGrnIndexIsPGroonga(index);
-		if (!isPGroongaIndex) {
-			RelationClose(index);
-			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s[invalid] not PGroonga index: <%.*s>",
-						tag,
-						indexNameSize, indexName);
-		}
-
-		PG_TRY();
-		{
-			data.lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
-			data.exprFlags |= PGrnOptionsGetExprParseFlags(index);
-		}
-		PG_CATCH();
-		{
-			RelationClose(index);
-			PG_RE_THROW();
-		}
-		PG_END_TRY();
-		RelationClose(index);
-
-		if (grn_obj_get_info(ctx, data.lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL))
-			indexFlags |= GRN_OBJ_WITH_POSITION;
-		data.indexColumn =
-			PGrnCreateColumn(InvalidRelation,
-							 data.lexicon,
-							 "index",
-							 indexFlags,
-							 data.table);
-		data.indexOID = indexOID;
-	}
-
-	if (!data.lexicon)
-	{
-		grn_obj *tokenizer = NULL;
-		grn_obj *normalizers = &(buffers->normalizers);
-		grn_table_flags tableFlags = GRN_OBJ_TABLE_PAT_KEY;
-
-		switch (type)
-		{
-		case PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY:
-			tokenizer = NULL;
-			break;
-		default:
-			tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
-			indexFlags |= GRN_OBJ_WITH_POSITION;
-			break;
-		}
-		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
-		data.lexicon = PGrnCreateTable(InvalidRelation,
-										NULL,
-										tableFlags,
-										grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
-										tokenizer,
-										normalizers,
-										NULL);
-		data.indexColumn =
-			PGrnCreateColumn(InvalidRelation,
-							 data.lexicon,
-							 "index",
-							 indexFlags,
-							 data.table);
-	}
-
-	if (data.useIndex)
-	{
-		PGrnIndexColumnSetSource(InvalidRelation,
-								 data.indexColumn,
-								 data.targetColumn);
-	}
-	else
-	{
-		PGrnIndexColumnClearSources(InvalidRelation, data.indexColumn);
-	}
-	data.indexColumnSource = data.targetColumn;
-
-	return true;
-}
-
-static void
-PGrnSequentialSearchDataPrepare(grn_obj *column,
-								grn_obj *value)
-{
-	grn_obj_set_value(ctx,
-					  column,
-					  data.recordID,
-					  value,
-					  GRN_OBJ_SET);
-	data.targetColumn = column;
+	if (datum->expression)
+		grn_obj_close(ctx, datum->expression);
+	grn_obj_close(ctx, datum->matched);
+	if (datum->indexColumn)
+		grn_obj_remove(ctx, datum->indexColumn);
+	if (datum->lexicon)
+		grn_obj_close(ctx, datum->lexicon);
+	grn_obj_close(ctx, datum->targetColumn);
+	grn_obj_close(ctx, datum->table);
 }
 
 void
-PGrnSequentialSearchDataPrepareText(const char *target,
-									unsigned int targetSize)
+PGrnInitializeSequentialSearch(void)
+{
+	currentTargetType = PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT;
+	currentDatum = NULL;
+	data = grn_hash_create(ctx,
+						   NULL,
+						   sizeof(PGrnSequentialSearchDatumKey),
+						   sizeof(PGrnSequentialSearchDatum),
+						   GRN_TABLE_HASH_KEY);
+}
+
+void
+PGrnFinalizeSequentialSearch(void)
+{
+	GRN_HASH_EACH_BEGIN(ctx, data, cursor, id) {
+		void *value;
+		PGrnSequentialSearchDatum *datum;
+		grn_hash_cursor_get_value(ctx, cursor, &value);
+		datum = value;
+		PGrnSequentialSearchDatumFinalize(datum);
+	} GRN_HASH_EACH_END(ctx, cursor);
+	grn_hash_close(ctx, data);
+}
+
+void
+PGrnReleaseSequentialSearch(ResourceReleasePhase phase,
+							bool isCommit,
+							bool isTopLevel,
+							void *arg)
+{
+	const char *tag = "pgroonga: [release][sequential-search]";
+
+	if (!(isTopLevel && phase == RESOURCE_RELEASE_AFTER_LOCKS))
+	{
+		return;
+	}
+
+	nExecutions++;
+	if ((nExecutions % vacuumFrequency) != 0)
+	{
+		return;
+	}
+
+	GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[start] %u", tag, grn_hash_size(ctx, data));
+	GRN_HASH_EACH_BEGIN(ctx, data, cursor, id) {
+		void *value;
+		PGrnSequentialSearchDatum *datum;
+		grn_hash_cursor_get_value(ctx, cursor, &value);
+		datum = value;
+		if (datum->used)
+		{
+			datum->used = false;
+		}
+		else
+		{
+			PGrnSequentialSearchDatumFinalize(datum);
+			grn_hash_cursor_delete(ctx, cursor, NULL);
+		}
+	} GRN_HASH_EACH_END(ctx, cursor);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[end] %u", tag, grn_hash_size(ctx, data));
+}
+
+void
+PGrnSequentialSearchSetTargetText(const char *target,
+								  unsigned int targetSize)
 {
 	grn_obj *text = &(buffers->text);
 	GRN_TEXT_SET(ctx, text, target, targetSize);
-	PGrnSequentialSearchDataPrepare(data.textColumn,
-									text);
+	currentTargetType = PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT;
 }
 
 void
-PGrnSequentialSearchDataPrepareTexts(ArrayType *targets,
-									 grn_obj *isTargets)
+PGrnSequentialSearchSetTargetTexts(ArrayType *targets,
+								   grn_obj *isTargets)
 {
 	grn_obj *texts = &(buffers->texts);
 	ArrayIterator iterator;
@@ -306,251 +229,433 @@ PGrnSequentialSearchDataPrepareTexts(ArrayType *targets,
 	}
 	array_free_iterator(iterator);
 
-	PGrnSequentialSearchDataPrepare(data.textsColumn,
-									texts);
+	currentTargetType = PGRN_SEQUENTIAL_SEARCH_TARGET_TEXTS;
 }
 
 static bool
-PGrnSequentialSearchDataPrepareExpression(const char *expressionData,
-										  unsigned int expressionDataSize,
-										  const char *indexName,
-										  unsigned int indexNameSize,
-										  PGrnSequentialSearchType type)
+PGrnSequentialSearchPrepareIndex(const char *indexName,
+								 unsigned int indexNameSize,
+								 PGrnSequentialSearchType type)
+{
+	const char *tag = "[sequential-search][index]";
+	Oid indexOID = InvalidOid;
+	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX;
+	bool targetIsVector =
+		(currentTargetType == PGRN_SEQUENTIAL_SEARCH_TARGET_TEXTS);
+	PGrnSequentialSearchDatumKey key;
+
+	if (indexNameSize > 0)
+	{
+		grn_obj *text = &(buffers->general);
+
+		grn_obj_reinit(ctx, text, GRN_DB_TEXT, 0);
+		GRN_TEXT_SET(ctx, text, indexName, indexNameSize);
+		GRN_TEXT_PUTC(ctx, text, '\0');
+		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
+	}
+
+	key.indexOID = indexOID;
+	key.targetType = currentTargetType;
+	key.useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
+					(OidIsValid(indexOID) || targetIsVector));
+	key.type = type;
+	if (currentDatum &&
+		currentDatum->indexOID == key.indexOID &&
+		currentDatum->targetType == key.targetType &&
+		currentDatum->useIndex == key.useIndex &&
+		currentDatum->type == key.type)
+	{
+		return false;
+	}
+
+	{
+		grn_id id;
+		void *value;
+		id = grn_hash_get(ctx, data, &key, sizeof(key), &value);
+		if (id != GRN_ID_NIL)
+		{
+			currentDatum = value;
+			currentDatum->used = true;
+			return false;
+		}
+
+		id = grn_hash_add(ctx, data, &key, sizeof(key), &value, NULL);
+		currentDatum = value;
+		PGrnSequentialSearchDatumInitialize(currentDatum);
+	}
+
+	currentDatum->indexOID = key.indexOID;
+	currentDatum->useIndex = key.useIndex;
+	if (!currentDatum->useIndex)
+	{
+		return true;
+	}
+
+	if (targetIsVector)
+		indexFlags |= GRN_OBJ_WITH_SECTION;
+
+	if (OidIsValid(currentDatum->indexOID))
+	{
+		Relation index;
+		bool isPGroongaIndex;
+
+		index = PGrnPGResolveIndexID(currentDatum->indexOID);
+		isPGroongaIndex = PGrnIndexIsPGroonga(index);
+		if (!isPGroongaIndex) {
+			PGrnSequentialSearchDatumFinalize(currentDatum);
+			grn_hash_delete(ctx, data, &key, sizeof(key), NULL);
+			currentDatum = NULL;
+			RelationClose(index);
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[invalid] not PGroonga index: <%.*s>",
+						tag,
+						indexNameSize, indexName);
+		}
+
+		PG_TRY();
+		{
+			currentDatum->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+			currentDatum->exprFlags |= PGrnOptionsGetExprParseFlags(index);
+		}
+		PG_CATCH();
+		{
+			PGrnSequentialSearchDatumFinalize(currentDatum);
+			grn_hash_delete(ctx, data, &key, sizeof(key), NULL);
+			currentDatum = NULL;
+			RelationClose(index);
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+		RelationClose(index);
+
+		if (grn_obj_get_info(ctx,
+							 currentDatum->lexicon,
+							 GRN_INFO_DEFAULT_TOKENIZER,
+							 NULL))
+		{
+			indexFlags |= GRN_OBJ_WITH_POSITION;
+		}
+
+		PG_TRY();
+		{
+			currentDatum->indexColumn =
+				PGrnCreateColumn(InvalidRelation,
+								 currentDatum->lexicon,
+								 "index",
+								 indexFlags,
+								 currentDatum->table);
+			PGrnIndexColumnSetSource(InvalidRelation,
+									 currentDatum->indexColumn,
+									 currentDatum->targetColumn);
+		}
+		PG_CATCH();
+		{
+			PGrnSequentialSearchDatumFinalize(currentDatum);
+			grn_hash_delete(ctx, data, &key, sizeof(key), NULL);
+			currentDatum = NULL;
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+	}
+	else
+	{
+		PG_TRY();
+		{
+			grn_obj *tokenizer = NULL;
+			grn_obj *normalizers = &(buffers->normalizers);
+			grn_table_flags tableFlags = GRN_OBJ_TABLE_PAT_KEY;
+
+			switch (type)
+			{
+			case PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY:
+				tokenizer = NULL;
+				break;
+			default:
+				tokenizer = PGrnLookup(PGRN_DEFAULT_TOKENIZER, ERROR);
+				indexFlags |= GRN_OBJ_WITH_POSITION;
+				break;
+			}
+			GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
+			currentDatum->lexicon =
+				PGrnCreateTable(InvalidRelation,
+								NULL,
+								tableFlags,
+								grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
+								tokenizer,
+								normalizers,
+								NULL);
+			currentDatum->indexColumn =
+				PGrnCreateColumn(InvalidRelation,
+								 currentDatum->lexicon,
+								 "index",
+								 indexFlags,
+								 currentDatum->table);
+			PGrnIndexColumnSetSource(InvalidRelation,
+									 currentDatum->indexColumn,
+									 currentDatum->targetColumn);
+		}
+		PG_CATCH();
+		{
+			PGrnSequentialSearchDatumFinalize(currentDatum);
+			grn_hash_delete(ctx, data, &key, sizeof(key), NULL);
+			currentDatum = NULL;
+			PG_RE_THROW();
+		}
+		PG_END_TRY();
+	}
+
+	return true;
+}
+
+static bool
+PGrnSequentialSearchPrepareExpression(const char *expressionData,
+									  unsigned int expressionDataSize,
+									  const char *indexName,
+									  unsigned int indexNameSize,
+									  PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][expression]";
 	bool indexUpdated;
 	XXH64_hash_t expressionHash;
 
-	indexUpdated = PGrnSequentialSearchDataExecutePrepareIndex(indexName,
-															   indexNameSize,
-															   type);
-
-	if (data.type != type)
-	{
-		data.expressionHash = 0;
-		data.type = type;
-	}
-
+	indexUpdated = PGrnSequentialSearchPrepareIndex(indexName,
+													indexNameSize,
+													type);
 	expressionHash = XXH3_64bits(expressionData, expressionDataSize);
-	if (!indexUpdated && data.expressionHash == expressionHash)
+	if (!indexUpdated && currentDatum->expressionHash == expressionHash)
 		return true;
 
-	if (data.expression)
+	if (currentDatum->expression)
 	{
-		grn_obj_close(ctx, data.expression);
-		data.expression = NULL;
+		grn_obj_close(ctx, currentDatum->expression);
+		currentDatum->expression = NULL;
 	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  data.table,
-							  data.expression,
-							  data.variable);
-	if (!data.expression)
+							  currentDatum->table,
+							  currentDatum->expression,
+							  currentDatum->variable);
+	if (!currentDatum->expression)
 	{
 		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
 					"%s failed to create expression",
 					tag);
 	}
 
-	data.expressionHash = expressionHash;
+	currentDatum->expressionHash = expressionHash;
 
 	return false;
 }
 
 void
-PGrnSequentialSearchDataSetMatchTerm(const char *term,
-									 unsigned int termSize,
-									 const char *indexName,
-									 unsigned int indexNameSize)
+PGrnSequentialSearchSetMatchTerm(const char *term,
+								 unsigned int termSize,
+								 const char *indexName,
+								 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][match-term]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(term,
-												  termSize,
-												  indexName,
-												  indexNameSize,
-												  PGRN_SEQUENTIAL_SEARCH_MATCH_TERM))
+	if (PGrnSequentialSearchPrepareExpression(term,
+											  termSize,
+											  indexName,
+											  indexNameSize,
+											  PGRN_SEQUENTIAL_SEARCH_MATCH_TERM))
 	{
 		return;
 	}
 
 	grn_expr_append_obj(ctx,
-						data.expression,
-						data.targetColumn,
+						currentDatum->expression,
+						currentDatum->targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data.expression,
+							  currentDatum->expression,
 							  term,
 							  termSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append term to be matched", tag);
 	grn_expr_append_op(ctx,
-					   data.expression,
+					   currentDatum->expression,
 					   GRN_OP_MATCH,
 					   2);
 	PGrnCheck("%s append match operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetEqualText(const char *other,
-									 unsigned int otherSize,
-									 const char *indexName,
-									 unsigned int indexNameSize)
+PGrnSequentialSearchSetEqualText(const char *other,
+								 unsigned int otherSize,
+								 const char *indexName,
+								 unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][equal-text]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(other,
-												  otherSize,
-												  indexName,
-												  indexNameSize,
-												  PGRN_SEQUENTIAL_SEARCH_EQUAL_TEXT))
+	if (PGrnSequentialSearchPrepareExpression(other,
+											  otherSize,
+											  indexName,
+											  indexNameSize,
+											  PGRN_SEQUENTIAL_SEARCH_EQUAL_TEXT))
 	{
 		return;
 	}
 
 	grn_expr_append_obj(ctx,
-						data.expression,
-						data.targetColumn,
+						currentDatum->expression,
+						currentDatum->targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data.expression,
+							  currentDatum->expression,
 							  other,
 							  otherSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append equal text", tag);
 	grn_expr_append_op(ctx,
-					   data.expression,
+					   currentDatum->expression,
 					   GRN_OP_EQUAL,
 					   2);
 	PGrnCheck("%s append equal operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetPrefix(const char *prefix,
-								  unsigned int prefixSize,
-								  const char *indexName,
-								  unsigned int indexNameSize)
+PGrnSequentialSearchSetPrefix(const char *prefix,
+							  unsigned int prefixSize,
+							  const char *indexName,
+							  unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][prefix]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(prefix,
-												  prefixSize,
-												  indexName,
-												  indexNameSize,
-												  PGRN_SEQUENTIAL_SEARCH_PREFIX))
+	if (PGrnSequentialSearchPrepareExpression(prefix,
+											  prefixSize,
+											  indexName,
+											  indexNameSize,
+											  PGRN_SEQUENTIAL_SEARCH_PREFIX))
 	{
 		return;
 	}
 
 	grn_expr_append_obj(ctx,
-						data.expression,
-						data.targetColumn,
+						currentDatum->expression,
+						currentDatum->targetColumn,
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
 	grn_expr_append_const_str(ctx,
-							  data.expression,
+							  currentDatum->expression,
 							  prefix,
 							  prefixSize,
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append prefix", tag);
 	grn_expr_append_op(ctx,
-					   data.expression,
+					   currentDatum->expression,
 					   GRN_OP_PREFIX,
 					   2);
 	PGrnCheck("%s append prefix operator", tag);
 }
 
 void
-PGrnSequentialSearchDataSetQuery(const char *query,
-								 unsigned int querySize,
-								 const char *indexName,
-								 unsigned int indexNameSize,
-								 PGrnSequentialSearchType type)
+PGrnSequentialSearchSetQuery(const char *query,
+							 unsigned int querySize,
+							 const char *indexName,
+							 unsigned int indexNameSize,
+							 PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][query]";
 
-	if (PGrnSequentialSearchDataPrepareExpression(query,
-												  querySize,
-												  indexName,
-												  indexNameSize,
-												  type))
+	if (PGrnSequentialSearchPrepareExpression(query,
+											  querySize,
+											  indexName,
+											  indexNameSize,
+											  type))
 	{
 		return;
 	}
 
 	grn_expr_parse(ctx,
-				   data.expression,
+				   currentDatum->expression,
 				   query,
 				   querySize,
-				   data.targetColumn,
+				   currentDatum->targetColumn,
 				   GRN_OP_MATCH,
 				   GRN_OP_AND,
-				   data.exprFlags);
+				   currentDatum->exprFlags);
 	if (ctx->rc != GRN_SUCCESS)
-		data.expressionHash = 0;
+		currentDatum->expressionHash = 0;
 	PGrnCheck("%s failed to parse expression: <%.*s>",
 			  tag,
 			  (int) querySize, query);
 }
 
 void
-PGrnSequentialSearchDataSetScript(const char *script,
-								  unsigned int scriptSize,
-								  const char *indexName,
-								  unsigned int indexNameSize)
+PGrnSequentialSearchSetScript(const char *script,
+							  unsigned int scriptSize,
+							  const char *indexName,
+							  unsigned int indexNameSize)
 {
 	const char *tag = "[sequential-search][query]";
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 
-	if (PGrnSequentialSearchDataPrepareExpression(script,
-												  scriptSize,
-												  indexName,
-												  indexNameSize,
-												  PGRN_SEQUENTIAL_SEARCH_SCRIPT))
+	if (PGrnSequentialSearchPrepareExpression(script,
+											  scriptSize,
+											  indexName,
+											  indexNameSize,
+											  PGRN_SEQUENTIAL_SEARCH_SCRIPT))
 	{
 		return;
 	}
 
 	grn_expr_parse(ctx,
-				   data.expression,
+				   currentDatum->expression,
 				   script, scriptSize,
-				   data.targetColumn,
+				   currentDatum->targetColumn,
 				   GRN_OP_MATCH, GRN_OP_AND,
 				   flags);
 	if (ctx->rc != GRN_SUCCESS)
-		data.expressionHash = 0;
+		currentDatum->expressionHash = 0;
 	PGrnCheck("%s failed to parse expression: <%.*s>",
 			  tag,
 			  (int) scriptSize, script);
 }
 
 bool
-PGrnSequentialSearchDataExecute(void)
+PGrnSequentialSearchExecute(void)
 {
 	bool matched = false;
+	grn_obj *value;
 
-	if (data.useIndex)
+	if (currentTargetType == PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT)
+	{
+		value = &(buffers->text);
+	}
+	else
+	{
+		value = &(buffers->texts);
+	}
+	grn_obj_set_value(ctx,
+					  currentDatum->targetColumn,
+					  currentDatum->recordID,
+					  value,
+					  GRN_OBJ_SET);
+
+	if (currentDatum->useIndex)
 	{
 		grn_table_select(ctx,
-						 data.table,
-						 data.expression,
-						 data.matched,
+						 currentDatum->table,
+						 currentDatum->expression,
+						 currentDatum->matched,
 						 GRN_OP_OR);
 
-		if (grn_table_size(ctx, data.matched) == 1)
+		if (grn_table_size(ctx, currentDatum->matched) == 1)
 		{
 			matched = true;
 			grn_table_delete(ctx,
-							 data.matched,
-							 &(data.recordID),
+							 currentDatum->matched,
+							 &(currentDatum->recordID),
 							 sizeof(grn_id));
 		}
 	}
@@ -558,8 +663,8 @@ PGrnSequentialSearchDataExecute(void)
 	{
 		grn_obj *result;
 
-		GRN_RECORD_SET(ctx, data.variable, data.recordID);
-		result = grn_expr_exec(ctx, data.expression, 0);
+		GRN_RECORD_SET(ctx, currentDatum->variable, currentDatum->recordID);
+		result = grn_expr_exec(ctx, currentDatum->expression, 0);
 		GRN_OBJ_IS_TRUE(ctx, result, matched);
 	}
 

@@ -60,6 +60,17 @@ module Helpers
       end
     end
 
+    def read_command_output_all(input, initial_timeout: 1)
+      all_output = ""
+      timeout = initial_timeout
+      loop do
+        break unless IO.select([input], nil, nil, timeout)
+        all_output << read_command_output(input)
+        timeout = 0
+      end
+      all_output
+    end
+
     def read_command_output(input)
       return "" unless IO.select([input], nil, nil, 0)
       begin
