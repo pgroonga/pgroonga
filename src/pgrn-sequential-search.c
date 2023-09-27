@@ -265,6 +265,7 @@ PGrnSequentialSearchPrepareIndex(const char *indexName,
 		currentDatum->useIndex == key.useIndex &&
 		currentDatum->type == key.type)
 	{
+		currentDatum->used = true;
 		return false;
 	}
 
@@ -286,6 +287,7 @@ PGrnSequentialSearchPrepareIndex(const char *indexName,
 
 	currentDatum->indexOID = key.indexOID;
 	currentDatum->useIndex = key.useIndex;
+	currentDatum->type = key.type;
 	if (!currentDatum->useIndex)
 	{
 		return true;
