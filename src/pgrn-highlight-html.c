@@ -184,19 +184,38 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 }
 
 static void
-PGrnHighlightHTMLSetLexicon(const char *indexName)
+PGrnHighlightHTMLSetLexicon(const char *fullIndexName)
 {
 	const char *tag = "[highlight-html]";
+	grn_obj *buffer = &(buffers->general);
+	const char *indexName;
+	const char *indexNameData = NULL;
+	size_t indexNameSize = 0;
+	const char *attributeNameData = NULL;
+	size_t attributeNameSize = 0;
 	Oid oid;
 	Relation index;
 
-	if (!indexName || indexName[0] == '\0')
+	if (fullIndexName)
+	{
+		PGrnPGFullIndexNameSplit(fullIndexName,
+								 strlen(fullIndexName),
+								 &indexNameData,
+								 &indexNameSize,
+								 &attributeNameData,
+								 &attributeNameSize);
+	}
+	if (indexNameSize == 0)
 	{
 		indexOID = InvalidOid;
 		grn_highlighter_set_lexicon(ctx, highlighter, NULL);
 		return;
 	}
 
+	grn_obj_reinit(ctx, buffer, GRN_DB_TEXT, 0);
+	GRN_TEXT_SET(ctx, buffer, indexNameData, indexNameSize);
+	GRN_TEXT_PUTC(ctx, buffer, '\0');
+	indexName = GRN_TEXT_VALUE(buffer);
 	oid = PGrnPGIndexNameToID(indexName);
 	if (indexOID == oid)
 		return;
@@ -216,7 +235,10 @@ PGrnHighlightHTMLSetLexicon(const char *indexName)
 	}
 	PG_TRY();
 	{
-		lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+		lexicon = PGrnCreateSimilarTemporaryLexicon(index,
+													attributeNameData,
+													attributeNameSize,
+													tag);
 	}
 	PG_CATCH();
 	{

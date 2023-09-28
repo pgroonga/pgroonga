@@ -18,6 +18,7 @@ typedef enum {
 typedef struct PGrnSequentialSearchDatumKey
 {
 	Oid indexOID;
+	int attributeIndex;
 	PGrnSequentialSearchTargetType targetType;
 	bool useIndex;
 	PGrnSequentialSearchType type;
@@ -30,6 +31,7 @@ typedef struct PGrnSequentialSearchDatum
 	grn_obj *targetColumn;
 	grn_id recordID;
 	Oid indexOID;
+	int attributeIndex;
 	grn_obj *lexicon;
 	grn_obj *indexColumn;
 	grn_obj *matched;
@@ -233,17 +235,28 @@ PGrnSequentialSearchSetTargetTexts(ArrayType *targets,
 }
 
 static bool
-PGrnSequentialSearchPrepareIndex(const char *indexName,
-								 unsigned int indexNameSize,
+PGrnSequentialSearchPrepareIndex(const char *fullIndexName,
+								 unsigned int fullIndexNameSize,
 								 PGrnSequentialSearchType type)
 {
 	const char *tag = "[sequential-search][index]";
+	const char *indexName;
+	size_t indexNameSize;
+	const char *attributeName;
+	size_t attributeNameSize;
 	Oid indexOID = InvalidOid;
+	int attributeIndex = -1;
 	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX;
 	bool targetIsVector =
 		(currentTargetType == PGRN_SEQUENTIAL_SEARCH_TARGET_TEXTS);
 	PGrnSequentialSearchDatumKey key;
 
+	PGrnPGFullIndexNameSplit(fullIndexName,
+							 fullIndexNameSize,
+							 &indexName,
+							 &indexNameSize,
+							 &attributeName,
+							 &attributeNameSize);
 	if (indexNameSize > 0)
 	{
 		grn_obj *text = &(buffers->general);
@@ -253,14 +266,25 @@ PGrnSequentialSearchPrepareIndex(const char *indexName,
 		GRN_TEXT_PUTC(ctx, text, '\0');
 		indexOID = PGrnPGIndexNameToID(GRN_TEXT_VALUE(text));
 	}
+	if (OidIsValid(indexOID) && attributeNameSize > 0)
+	{
+		Relation index;
+		index = PGrnPGResolveIndexID(indexOID);
+		attributeIndex = PGrnPGResolveAttributeIndex(index,
+													 attributeName,
+													 attributeNameSize);
+		RelationClose(index);
+	}
 
 	key.indexOID = indexOID;
+	key.attributeIndex = attributeIndex;
 	key.targetType = currentTargetType;
 	key.useIndex = (PGrnIsTemporaryIndexSearchAvailable &&
 					(OidIsValid(indexOID) || targetIsVector));
 	key.type = type;
 	if (currentDatum &&
 		currentDatum->indexOID == key.indexOID &&
+		currentDatum->attributeIndex == key.attributeIndex &&
 		currentDatum->targetType == key.targetType &&
 		currentDatum->useIndex == key.useIndex &&
 		currentDatum->type == key.type)
@@ -286,6 +310,7 @@ PGrnSequentialSearchPrepareIndex(const char *indexName,
 	}
 
 	currentDatum->indexOID = key.indexOID;
+	currentDatum->attributeIndex = key.attributeIndex;
 	currentDatum->useIndex = key.useIndex;
 	currentDatum->type = key.type;
 	if (!currentDatum->useIndex)
@@ -311,12 +336,16 @@ PGrnSequentialSearchPrepareIndex(const char *indexName,
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s[invalid] not PGroonga index: <%.*s>",
 						tag,
-						indexNameSize, indexName);
+						fullIndexNameSize, fullIndexName);
 		}
 
 		PG_TRY();
 		{
-			currentDatum->lexicon = PGrnCreateSimilarTemporaryLexicon(index, tag);
+			currentDatum->lexicon =
+				PGrnCreateSimilarTemporaryLexicon(index,
+												  attributeName,
+												  attributeNameSize,
+												  tag);
 			currentDatum->exprFlags |= PGrnOptionsGetExprParseFlags(index);
 		}
 		PG_CATCH();

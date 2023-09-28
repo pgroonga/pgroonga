@@ -66,7 +66,10 @@ grn_obj *PGrnCreateTableWithSize(Relation index,
 								 grn_obj *tokenizer,
 								 grn_obj *normalizers,
 								 grn_obj *tokenFilters);
-grn_obj *PGrnCreateSimilarTemporaryLexicon(Relation index, const char *tag);
+grn_obj *PGrnCreateSimilarTemporaryLexicon(Relation index,
+										   const char *attributeName,
+										   size_t attributeNameSize,
+										   const char *tag);
 grn_obj *PGrnCreateColumn(Relation index,
 						  grn_obj *table,
 						  const char*name,

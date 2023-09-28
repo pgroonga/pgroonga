@@ -19,8 +19,8 @@ class SequentialScanTestCase < Test::Unit::TestCase
       input.puts("CREATE INDEX memos_title ON memos " +
                  "USING pgroonga (title);")
       read_command_output_all(output)
-      input.puts("CREATE INDEX memos_content ON memos " +
-                 "USING pgroonga (content);")
+      input.puts("CREATE INDEX memos_index ON memos " +
+                 "USING pgroonga (title, content);")
       read_command_output_all(output)
       input.puts("INSERT INTO memos VALUES ('hello', 'world');")
       read_command_output_all(output)
@@ -39,7 +39,19 @@ SELECT * FROM memos
       # New cache is created for different index.
       input.puts(<<-SELECT)
 SELECT * FROM memos
- WHERE content &@ ('world', null, 'memos_content')::pgroonga_full_text_search_condition;
+ WHERE content &@ ('world', null, 'memos_index')::pgroonga_full_text_search_condition;
+      SELECT
+      read_command_output_all(output)
+      # New cache is created for different attribute name.
+      input.puts(<<-SELECT)
+SELECT * FROM memos
+ WHERE content &@ ('world', null, 'memos_index.title')::pgroonga_full_text_search_condition;
+      SELECT
+      read_command_output_all(output)
+      # The same cache is used with the same index and attribute.
+      input.puts(<<-SELECT)
+SELECT * FROM memos
+ WHERE content &@ ('pen', null, 'memos_index.title')::pgroonga_full_text_search_condition;
       SELECT
       read_command_output_all(output)
       # 100 queries are needed to trigger a "vacuum".
@@ -51,14 +63,19 @@ SELECT * FROM memos
       log = @postgresql.read_pgroonga_log
       assert_equal([
                      # All caches are remained.
-                     "[release][sequential-search][start] 2",
-                     "[release][sequential-search][end] 2",
+                     "[release][sequential-search][start] 3",
+                     "[release][sequential-search][end] 3",
                    ],
                    log.scan(pattern))
-      # 1 cache is used again.
+      # cache #1 is used again.
       input.puts(<<-SELECT)
 SELECT * FROM memos
  WHERE content &@ ('world', null, 'memos_content')::pgroonga_full_text_search_condition;
+      SELECT
+      # cache #3 is used again.
+      input.puts(<<-SELECT)
+SELECT * FROM memos
+ WHERE content &@ ('world', null, 'memos_index.title')::pgroonga_full_text_search_condition;
       SELECT
       read_command_output_all(output)
       100.times do
@@ -68,10 +85,10 @@ SELECT * FROM memos
       log = @postgresql.read_pgroonga_log
       assert_equal([
                      # The previous log.
-                     "[release][sequential-search][start] 2",
-                     "[release][sequential-search][end] 2",
+                     "[release][sequential-search][start] 3",
+                     "[release][sequential-search][end] 3",
                      # Used cache is remained.
-                     "[release][sequential-search][start] 2",
+                     "[release][sequential-search][start] 3",
                      "[release][sequential-search][end] 1",
                    ],
                    log.scan(pattern))

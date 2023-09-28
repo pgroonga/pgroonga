@@ -5,6 +5,12 @@
 #include <utils/relcache.h>
 #include <utils/timestamp.h>
 
+void PGrnPGFullIndexNameSplit(const char *fullName,
+							  size_t fullNameSize,
+							  const char **indexName,
+							  size_t *indexNameSize,
+							  const char **attributeName,
+							  size_t *attributeNameSize);
 Oid PGrnPGIndexNameToID(const char *name);
 Relation PGrnPGResolveIndexName(const char *name);
 Relation PGrnPGResolveIndexID(Oid id);
@@ -23,3 +29,6 @@ void PGrnPGDatumExtractString(Datum datum,
 							  unsigned int *size);
 bool PGrnPGHavePreparedTransaction(void);
 bool PGrnPGIsParentIndex(Relation index);
+int PGrnPGResolveAttributeIndex(Relation index,
+								const char *name,
+								size_t nameSize);

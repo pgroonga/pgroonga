@@ -410,7 +410,10 @@ PGrnCreateTableWithSize(Relation index,
 }
 
 grn_obj *
-PGrnCreateSimilarTemporaryLexicon(Relation index, const char *tag)
+PGrnCreateSimilarTemporaryLexicon(Relation index,
+								  const char *attributeName,
+								  size_t attributeNameSize,
+								  const char *tag)
 {
 	unsigned int i;
 	grn_obj *lexicon;
@@ -429,29 +432,52 @@ PGrnCreateSimilarTemporaryLexicon(Relation index, const char *tag)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: %s PGrnCreateSimilarTemporaryLexicon: "
-						"index must not a parent index: <%s>",
+						"index must not a parent index: <%s%s%.*s>",
 						tag,
-						RelationGetRelationName(index))));
+						RelationGetRelationName(index),
+						attributeNameSize > 0 ? "." : "",
+						attributeNameSize > 0 ? (int) attributeNameSize : 0,
+						attributeName)));
 	}
 
-	for (i = 0; i < index->rd_att->natts; i++)
+	if (attributeNameSize > 0)
 	{
-		lexicon = PGrnLookupLexicon(index, i, ERROR);
-		if (grn_type_id_is_text_family(ctx, lexicon->header.domain))
+		i = PGrnPGResolveAttributeIndex(index, attributeName, attributeNameSize);
+		if (i != -1)
 		{
-			break;
+			lexicon = PGrnLookupLexicon(index, i, ERROR);
+			if (!grn_type_id_is_text_family(ctx, lexicon->header.domain))
+			{
+				grn_obj_unref(ctx, lexicon);
+				lexicon = NULL;
+			}
 		}
-		grn_obj_unref(ctx, lexicon);
-		lexicon = NULL;
+	}
+	else
+	{
+		for (i = 0; i < index->rd_att->natts; i++)
+		{
+			lexicon = PGrnLookupLexicon(index, i, ERROR);
+			if (grn_type_id_is_text_family(ctx, lexicon->header.domain))
+			{
+				break;
+			}
+			grn_obj_unref(ctx, lexicon);
+			lexicon = NULL;
+		}
 	}
 	if (!lexicon)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("pgroonga: %s PGrnCreateSimilarTemporaryLexicon: "
-						"index doesn't have a lexicon for text: <%s>",
+						"index doesn't have a lexicon for text: "
+						"<%s%s%.*s>",
 						tag,
-						RelationGetRelationName(index))));
+						RelationGetRelationName(index),
+						attributeNameSize > 0 ? "." : "",
+						attributeNameSize > 0 ? (int) attributeNameSize : 0,
+						attributeName)));
 	}
 
 	switch (lexicon->header.type)

@@ -27,6 +27,46 @@
 #endif
 #include <utils/syscache.h>
 
+#include <string.h>
+
+void
+PGrnPGFullIndexNameSplit(const char *fullName,
+						 size_t fullNameSize,
+						 const char **indexName,
+						 size_t *indexNameSize,
+						 const char **attributeName,
+						 size_t *attributeNameSize)
+{
+	*indexName = NULL;
+	*indexNameSize = 0;
+	*attributeName = NULL;
+	*attributeNameSize = 0;
+
+	if (fullNameSize == 0)
+	{
+		return;
+	}
+
+	/* Should we use database encoding? */
+	{
+		const char *current = fullName;
+		const char *end = fullName + fullNameSize;
+		for (; current < end; current++)
+		{
+			if (current[0] == '.')
+				break;
+		}
+		*indexName = fullName;
+		*indexNameSize = current - fullName;
+		if (current == end) {
+			return;
+		}
+		/* +1/-1 is for '.' */
+		*attributeName = current + 1;
+		*attributeNameSize = end - current - 1;
+	}
+}
+
 Oid
 PGrnPGIndexNameToID(const char *name)
 {
@@ -314,4 +354,34 @@ bool
 PGrnPGIsParentIndex(Relation index)
 {
 	return PGRN_RELATION_GET_LOCATOR_NUMBER(index) == InvalidOid;
+}
+
+int
+PGrnPGResolveAttributeIndex(Relation index,
+							const char *name,
+							size_t nameSize)
+{
+	int i;
+
+	if (nameSize == 0)
+	{
+		return -1;
+	}
+
+	for (i = 0; i < index->rd_att->natts; i++)
+	{
+		const char *attributeName =
+			TupleDescAttr(index->rd_att, i)->attname.data;
+		if (strlen(attributeName) != nameSize)
+		{
+			continue;
+		}
+		if (memcmp(attributeName, name, nameSize) != 0)
+		{
+			continue;
+		}
+		return i;
+	}
+
+	return -1;
 }
