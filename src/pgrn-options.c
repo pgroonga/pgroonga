@@ -18,6 +18,7 @@ typedef struct PGrnOptions
 {
 	int32 vl_len_;
 	int tokenizerOffset;
+	int tokenizerMappingOffset;
 	int normalizerOffset;
 	int tokenFiltersOffset;
 	int pluginsOffset;
@@ -111,6 +112,78 @@ PGrnOptionValidateTokenizer(const char *rawTokenizer)
 	PGrnCheck("%s invalid tokenizer: <%s>",
 			  tag,
 			  rawTokenizer);
+}
+
+static void
+PGrnOptionValidateTokenizerMapping(const char *rawTokenizerMapping)
+{
+	const char *tag = "[option][tokenizer-mapping][validate]";
+	grn_obj *tokenizer = &(buffers->tokenizer);
+	Jsonb *jsonb;
+	JsonbIterator *iter;
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	if (PGrnIsNoneValue(rawTokenizerMapping))
+		return;
+
+	jsonb = PGrnJSONBParse(rawTokenizerMapping);
+	iter = JsonbIteratorInit(&(jsonb->root));
+
+	PGrnOptionEnsureLexicon("tokenizer");
+
+	token = JsonbIteratorNext(&iter, &value, false);
+	if (token != WJB_BEGIN_OBJECT)
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s must be object: %s: <%s>",
+					tag,
+					PGrnJSONBIteratorTokenToString(token),
+					rawTokenizerMapping);
+	}
+
+	while (true) {
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token == WJB_END_OBJECT)
+			break;
+		if (token != WJB_KEY)
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses key: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawTokenizerMapping);
+		}
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token != WJB_VALUE)
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses value: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawTokenizerMapping);
+		}
+		if (value.type != jbvString)
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s value must be string: %s: <%s>",
+						tag,
+						PGrnJSONBValueTypeToString(value.type),
+						rawTokenizerMapping);
+		}
+		GRN_TEXT_SET(ctx,
+					 tokenizer,
+					 value.val.string.val,
+					 value.val.string.len);
+		grn_obj_set_info(ctx,
+						 lexicon,
+						 GRN_INFO_DEFAULT_TOKENIZER,
+						 tokenizer);
+		PGrnCheck("%s value is invalid tokenizer: <%.*s>",
+				  tag,
+				  (int) GRN_TEXT_LEN(tokenizer),
+				  GRN_TEXT_VALUE(tokenizer));
+	}
 }
 
 static void
@@ -379,6 +452,13 @@ PGrnInitializeOptions(void)
 							  PGrnOptionValidateTokenizer,
 							  lock_mode);
 	pgrn_add_string_reloption(PGrnReloptionKind,
+							  "tokenizer_mapping",
+							  "Mapping to specify tokenizer to be used "
+							  "for each target",
+							  NULL,
+							  PGrnOptionValidateTokenizerMapping,
+							  lock_mode);
+	pgrn_add_string_reloption(PGrnReloptionKind,
 							  "normalizer",
 							  "Normalizers to be used as fallback. "
 							  "This is deprecated since 2.3.1. "
@@ -462,6 +542,85 @@ PGrnFinalizeOptions(void)
 	if (lexicon)
 	{
 		grn_obj_close(ctx, lexicon);
+	}
+}
+
+static void
+PGrnApplyOptionValuesTokenizer(PGrnOptions *options,
+							   Relation index,
+							   int i,
+							   PGrnOptionUseCase useCase,
+							   grn_obj **tokenizer,
+							   const char *defaultTokenizer)
+{
+	const char *rawTokenizer;
+
+	if (options->tokenizerMappingOffset != 0 && i >= 0)
+	{
+		TupleDesc desc = RelationGetDescr(index);
+		Name name = &(TupleDescAttr(desc, i)->attname);
+		const char *rawTokenizerMapping =
+			((const char *) options) + options->tokenizerMappingOffset;
+		Jsonb *jsonb = PGrnJSONBParse(rawTokenizerMapping);
+		JsonbIterator *iter;
+		JsonbValue value;
+
+		iter = JsonbIteratorInit(&(jsonb->root));
+		/* This JSON is validated. */
+		/* WJB_BEGIN_OBJECT */
+		JsonbIteratorNext(&iter, &value, false);
+		while (true)
+		{
+			bool isTarget;
+
+			/* WJB_KEY */
+			if (JsonbIteratorNext(&iter, &value, false) == WJB_END_OBJECT)
+				break;
+			isTarget = (value.val.string.len == strlen(name->data) &&
+						memcmp(value.val.string.val,
+							   name->data,
+							   value.val.string.len) == 0);
+			/* WJB_VALUE */
+			JsonbIteratorNext(&iter, &value, false);
+			if (!isTarget)
+				continue;
+
+			*tokenizer = &(buffers->tokenizer);
+			GRN_BULK_REWIND(*tokenizer);
+			PGrnStringSubstituteVariables(value.val.string.val,
+										  value.val.string.len,
+										  *tokenizer);
+			return;
+		}
+	}
+
+	rawTokenizer = ((const char *) options) + options->tokenizerOffset;
+	if (useCase == PGRN_OPTION_USE_CASE_REGEXP_SEARCH)
+	{
+		*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
+	}
+	else if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
+	{
+		*tokenizer = NULL;
+	}
+	else
+	{
+		if (PGrnIsExplicitNoneValue(rawTokenizer))
+		{
+			*tokenizer = NULL;
+		}
+		else if (PGrnIsNoneValue(rawTokenizer))
+		{
+			if (defaultTokenizer)
+				*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
+			else
+				*tokenizer = NULL;
+		}
+		else
+		{
+			*tokenizer = &(buffers->tokenizer);
+			GRN_TEXT_SETS(ctx, *tokenizer, rawTokenizer);
+		}
 	}
 }
 
@@ -654,7 +813,7 @@ PGrnApplyOptionValues(Relation index,
 					  int i,
 					  PGrnOptionUseCase useCase,
 					  grn_obj **tokenizer,
-					  const char *defaultTokenizerName,
+					  const char *defaultTokenizer,
 					  grn_obj **normalizers,
 					  const char *defaultNormalizers,
 					  grn_obj **tokenFilters,
@@ -662,15 +821,14 @@ PGrnApplyOptionValues(Relation index,
 					  grn_column_flags *indexFlags)
 {
 	PGrnOptions *options;
-	const char *rawTokenizer;
 	const char *rawTokenFilters;
 	const char *lexiconTypeName;
 
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
 	{
-		if (defaultTokenizerName)
-			*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
+		if (defaultTokenizer)
+			*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
 		else
 			*tokenizer = NULL;
 
@@ -689,35 +847,12 @@ PGrnApplyOptionValues(Relation index,
 		return;
 	}
 
-	rawTokenizer = ((const char *) options) + options->tokenizerOffset;
-
-	if (useCase == PGRN_OPTION_USE_CASE_REGEXP_SEARCH)
-	{
-		*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
-	}
-	else if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
-	{
-		*tokenizer = NULL;
-	}
-	else
-	{
-		if (PGrnIsExplicitNoneValue(rawTokenizer))
-		{
-			*tokenizer = NULL;
-		}
-		else if (PGrnIsNoneValue(rawTokenizer))
-		{
-			if (defaultTokenizerName)
-				*tokenizer = PGrnLookup(defaultTokenizerName, ERROR);
-			else
-				*tokenizer = NULL;
-		}
-		else
-		{
-			*tokenizer = &(buffers->tokenizer);
-			GRN_TEXT_SETS(ctx, *tokenizer, rawTokenizer);
-		}
-	}
+	PGrnApplyOptionValuesTokenizer(options,
+								   index,
+								   i,
+								   useCase,
+								   tokenizer,
+								   defaultTokenizer);
 
 	PGrnApplyOptionValuesNormalizers(options,
 									 index,
@@ -781,6 +916,8 @@ pgroonga_options(Datum reloptions,
 	const relopt_parse_elt optionsMap[] = {
 		{"tokenizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenizerOffset)},
+		{"tokenizer_mapping", RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, tokenizerMappingOffset)},
 		{"normalizer", RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizerOffset)},
 		{"token_filters", RELOPT_TYPE_STRING,
