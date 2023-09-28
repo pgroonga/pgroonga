@@ -10,7 +10,7 @@ export DH_OPTIONS
 	dh $@
 
 override_dh_auto_build:
-	dh_auto_build -- HAVE_MSGPACK=1 HAVE_XXHASH=1
+	dh_auto_build -- HAVE_MSGPACK=1
 
 # disable 'make check'.
 override_dh_auto_test:
