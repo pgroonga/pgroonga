@@ -16,10 +16,8 @@ class PostgreSQL13PGroongaPackageTask < VersionedPGroongaPackageTask
     false
   end
 
-  def yum_targets_default
-    [
-      "amazon-linux-2",
-    ]
+  def enable_yum?
+    false
   end
 end
 

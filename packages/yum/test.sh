@@ -7,15 +7,6 @@ echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
-  amazon)
-    os=amazon-linux
-    major_version=$(cut -d: -f6 /etc/system-release-cpe)
-    DNF=yum
-    amazon-linux-extras install -y epel
-    ${DNF} install -y ca-certificates
-    ${DNF} install -y \
-           https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
-    ;;
   almalinux|centos)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
     case ${major_version} in
@@ -53,11 +44,6 @@ packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
-case ${os} in
-  amazon-linux)
-    amazon-linux-extras install -y postgresql${postgresql_version}
-    ;;
-esac
 
 ${DNF} install -y ${packages_dir}/*.rpm
 
@@ -67,14 +53,6 @@ echo "::endgroup::"
 echo "::group::Install packages for test"
 
 case ${os} in
-  amazon-linux)
-    if [ ${postgresql_version} -ne 13 ]; then
-      ${DNF} install -y libpq-devel
-    fi
-    ${DNF} install -y postgresql-server-devel
-    pg_config=pg_config
-    groonga_token_filter_stem_package_name=groonga-token-filter-stem
-    ;;
   almalinux|centos)
     case ${major_version} in
       7)
@@ -131,7 +109,7 @@ cp -a \
    /tmp/
 cd /tmp
 case "${os}" in
-  almalinux|amazon-linux|centos)
+  almalinux|centos)
     if [ ${postgresql_version} -lt 12 ]; then
       rm sql/function/highlight-html/declarative-partitioning.sql
       rm sql/function/wal-set-applied-position/declarative-partitioning.sql
