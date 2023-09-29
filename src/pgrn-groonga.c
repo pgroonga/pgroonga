@@ -415,8 +415,7 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 								  size_t attributeNameSize,
 								  const char *tag)
 {
-	unsigned int i;
-	grn_obj *lexicon;
+	grn_obj *lexicon = NULL;
 	grn_table_flags flags = 0;
 	grn_obj *keyType = NULL;
 	grn_obj *tokenizer = NULL;
@@ -442,7 +441,8 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 
 	if (attributeNameSize > 0)
 	{
-		i = PGrnPGResolveAttributeIndex(index, attributeName, attributeNameSize);
+		int i =
+			PGrnPGResolveAttributeIndex(index, attributeName, attributeNameSize);
 		if (i != -1)
 		{
 			lexicon = PGrnLookupLexicon(index, i, ERROR);
@@ -455,6 +455,7 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 	}
 	else
 	{
+		int i;
 		for (i = 0; i < index->rd_att->natts; i++)
 		{
 			lexicon = PGrnLookupLexicon(index, i, ERROR);
