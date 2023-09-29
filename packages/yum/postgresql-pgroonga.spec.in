@@ -118,6 +118,9 @@ EOF
 %endif
 
 %changelog
+* Fri Sep 29 2023 Sutou Kouhei <kou@clear-code.com> - 3.1.5-1
+- New upstream release.
+
 * Thu Sep 28 2023 Horimoto Yasuhiro <horimoto@clear-code.com> - 3.1.4-1
 - New upstream release.
 
