@@ -58,9 +58,14 @@ case "${distribution}-${code_name}" in
                                     sort | \
                                     tail -n 1)
     sudo apt install -y -V \
+         gcc \
          groonga-token-filter-stem \
          groonga-tokenizer-mecab \
          libgroonga-dev \
+         libmsgpack-dev \
+         libxxhash-dev \
+         make \
+         postgresql-${latest_postgresql_version} \
          postgresql-server-dev-${latest_postgresql_version}
     ;;
 esac
