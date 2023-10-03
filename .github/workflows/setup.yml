@@ -1,0 +1,39 @@
+name: Setup
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - "ubuntu:22.04"
+          - "images:debian/12"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          path: "groonga"
+          repository: "groonga/groonga"
+          submodules: recursive
+      - uses: canonical/setup-lxd@v0.1.1
+      - name: Setup
+        run: |
+          set -x
+          lxc launch ${{ matrix.image }} target
+          lxc config device add target host disk source=$PWD path=/host
+          lxc exec target -- /host/setup.sh
+          lxc exec target -- sh -c 'cd /host && test/run-sql-test.sh'
+          lxc stop target
+          lxc delete target
