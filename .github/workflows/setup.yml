@@ -39,6 +39,7 @@ jobs:
                      EDITOR='tee -a' visudo -f /etc/sudoers.d/pgroonga-nopasswd"
           lxc exec target -- /host/setup.sh
           lxc exec target --user 1000 --group 1000 -- \
-            /host/build.sh /host /tmp/build
+            /host/build.sh /host /tmp/build \
+              sql/full-text-search/text/single/query-v2/indexscan.sql
           lxc stop target
           lxc delete target
