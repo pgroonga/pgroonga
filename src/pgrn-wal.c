@@ -1086,7 +1086,6 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	{
 		Buffer buffer;
 		Page page;
-		size_t freeSize;
 		LocationIndex offset;
 		bool haveDataInCurrentPage;
 		bool needToApply;
@@ -1095,7 +1094,6 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 										 currentBlock,
 										 BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
-		freeSize = PGrnWALPageGetFreeSize(page);
 		offset = PGrnWALPageGetLastOffset(page);
 		UnlockReleaseBuffer(buffer);
 		haveDataInCurrentPage = (offset > currentOffset);
