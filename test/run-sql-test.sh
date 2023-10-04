@@ -62,15 +62,19 @@ if diff --help | grep -q color; then
   PG_REGRESS_DIFF_OPTS="${PG_REGRESS_DIFF_OPTS} --color=always"
 fi
 export PG_REGRESS_DIFF_OPTS
-launcher="--launcher=$(pwd)/test/short-pgappname"
+extra_regress_opts=""
+extra_regress_opts+=" --launcher=$(pwd)/test/short-pgappname"
+if [ -n "${TEMP_INSTANCE:-}" ]; then
+  extra_regress_opts+=" --temp-instance=${TEMP_INSTANCE}"
+fi
 if [ -n "${test_names}" ]; then
   make installcheck \
-       EXTRA_REGRESS_OPTS="${launcher}" \
+       EXTRA_REGRESS_OPTS="${extra_regress_opts}" \
        PG_CONFIG="${PG_CONFIG}" \
        REGRESS="${test_names}"
 else
   make installcheck \
-       EXTRA_REGRESS_OPTS="${launcher}" \
+       EXTRA_REGRESS_OPTS="${extra_regress_opts}" \
        PG_CONFIG="${PG_CONFIG}"
 fi
 success=$?

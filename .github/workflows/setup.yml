@@ -1,0 +1,45 @@
+name: Setup
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - "ubuntu:22.04"
+          - "images:debian/12"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          path: "groonga"
+          repository: "groonga/groonga"
+          submodules: recursive
+      - uses: canonical/setup-lxd@v0.1.1
+      - name: Setup
+        run: |
+          set -x
+          lxc launch ${{ matrix.image }} target
+          lxc config device add target host disk source=$PWD path=/host
+          lxc exec target -- adduser --uid 1000 pgroonga
+          lxc exec target -- \
+            sh -c "echo 'pgroonga ALL=(ALL:ALL) NOPASSWD:ALL' | \
+                     EDITOR='tee -a' visudo -f /etc/sudoers.d/pgroonga-nopasswd"
+          lxc exec target -- /host/setup.sh
+          lxc exec target --user 1000 --group 1000 -- \
+            /host/build.sh /host /tmp/build \
+              sql/full-text-search/text/single/query-v2/indexscan.sql
+          lxc stop target
+          lxc delete target
