@@ -29,7 +29,7 @@ fi
 list_dependencies()
 {
   local target="$1"
-  yum deplist "${target}" | \
+  ${DNF_REPOQUERY_DEPLIST} "${target}" | \
     grep provider: | \
     sed -e 's/^ *provider: //g' | \
     grep "\\.${ARCH}" | \
