@@ -20,6 +20,10 @@ if [ ${OS_VERSION} -lt 8 ]; then
   sudo yum install -y yum-utils
   DNF_DOWNLOAD="yumdownloader"
   DNF_REPOQUERY_DEPLIST="yum deplist"
+elif [ ${OS_VERSION} -eq 8 ]; then
+  sudo dnf install -y 'dnf-command(download)'
+  DNF_DOWNLOAD="dnf download -y"
+  DNF_REPOQUERY_DEPLIST="dnf repoquery --deplist --enable-repo powertools"
 else
   sudo dnf install -y 'dnf-command(download)'
   DNF_DOWNLOAD="dnf download -y"
