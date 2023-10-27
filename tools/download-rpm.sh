@@ -21,6 +21,9 @@ if [ ${OS_VERSION} -lt 8 ]; then
   DNF_DOWNLOAD="yumdownloader"
   DNF_REPOQUERY_DEPLIST="yum deplist"
 else
+  if [ ${OS_VERSION} -eq 8 ]; then
+    sudo dnf config-manager --set-enabled powertools || :
+  fi
   sudo dnf install -y 'dnf-command(download)'
   DNF_DOWNLOAD="dnf download -y"
   DNF_REPOQUERY_DEPLIST="dnf repoquery --deplist"
