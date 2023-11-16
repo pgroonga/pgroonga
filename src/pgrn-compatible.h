@@ -192,7 +192,13 @@
 #endif
 
 #if PG_VERSION_NUM >= 150000
-#   define PGRN_HAVE_RELKIND_HAS_TABLE_AM
+#   define PGRN_RELKIND_HAS_TABLE_AM(relkind) \
+	RELKIND_HAS_TABLE_AM(relkind)
+#else
+#   define PGRN_RELKIND_HAS_TABLE_AM(relkind) \
+	((relkind) == RELKIND_RELATION || \
+	 (relkind) == RELKIND_TOASTVALUE || \
+	 (relkind) == RELKIND_MATVIEW)
 #endif
 
 #if PG_VERSION_NUM >= 160000
