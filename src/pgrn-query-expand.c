@@ -500,21 +500,15 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 					tag,
 					DatumGetCString(tableNameDatum));
 	}
-	{
-		const char *tableName = DatumGetCString(tableNameDatum);
-		char sourceTableName[GRN_TABLE_MAX_KEY_SIZE];
-		PGrnFormatSourcesTableName(tableName, sourceTableName);
-		grn_obj *table = grn_ctx_get(ctx, sourceTableName, strlen(sourceTableName));
-		if (grn_obj_is_table_with_key(ctx, table))
-		{
-			PGrnCheckRC(GRN_INVALID_ARGUMENT,
-						"%s query_expand: invalid table name in the first argument: <%s>",
-						tag,
-						DatumGetCString(tableNameDatum));
-		}
-	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
+	if(!RELKIND_HAS_TABLE_AM(currentData.table->rd_rel->relkind))
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s the value of table_name argument isn't table object: <%s>",
+					tag,
+					DatumGetCString(tableNameDatum));
+	}
 
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
