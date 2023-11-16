@@ -506,7 +506,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	if (!PGRN_RELKIND_HAS_TABLE_AM(currentData.table->rd_rel->relkind))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s the value of table_name argument isn't table object: <%s>, <%s>",
+					"%s the specified table isn't table: <%s>, <%s>",
 					tag,
 					DatumGetCString(tableNameDatum),
 					currentData.table->rd_rel->relkind);
