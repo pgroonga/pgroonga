@@ -506,9 +506,10 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	if (!PGRN_RELKIND_HAS_TABLE_AM(currentData.table->rd_rel->relkind))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s the value of table_name argument isn't table object: <%s>",
+					"%s the value of table_name argument isn't table object: <%s>, <%s>",
 					tag,
-					DatumGetCString(tableNameDatum));
+					DatumGetCString(tableNameDatum),
+					currentData.table->rd_rel->relkind);
 	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
