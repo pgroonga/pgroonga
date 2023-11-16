@@ -9,6 +9,6 @@ SELECT pgroonga_query_expand('synonym_groups_synonyms_index',
                              'synonyms',
                              'synonyms',
                              'groonga');
-ERROR:  pgroonga: query_expand: invalid table name in the first argument: <synonym_groups_synonyms_index>
+ERROR:  pgroonga: [query-expand] the value of table_name argument isn't table object: <synonym_groups_synonyms_index>
 
 DROP TABLE synonym_groups;
