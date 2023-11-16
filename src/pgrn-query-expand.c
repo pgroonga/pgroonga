@@ -13,6 +13,7 @@
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
+#include <catalog/pg_class.h>
 #include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
 #include <utils/array.h>
