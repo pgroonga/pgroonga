@@ -503,13 +503,13 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
-	if (!PGRN_RELKIND_HAS_TABLE_AM(currentData.table->rd_rel->relkind))
+	if (!PGRN_RELKIND_HAS_TABLE_AM(RelationGetForm(currentData.table)->relkind))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s the specified table isn't table: <%s>, <%s>",
 					tag,
 					DatumGetCString(tableNameDatum),
-					currentData.table->rd_rel->relkind);
+					RelationGetForm(currentData.table)->relkind);
 	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
