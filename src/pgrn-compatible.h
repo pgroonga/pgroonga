@@ -191,6 +191,10 @@
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 #endif
 
+#if PG_VERSION_NUM >= 150000
+#   define PGRN_HAVE_RELKIND_HAS_TABLE_AM
+#endif
+
 #if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\

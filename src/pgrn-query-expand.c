@@ -503,14 +503,19 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
+#ifdef PGRN_HAVE_RELKIND_HAS_TABLE_AM
 	if(!RELKIND_HAS_TABLE_AM(currentData.table->rd_rel->relkind))
+#else
+	if((currentData.table->rd_rel->relkind != RELKIND_RELATION)
+	   && (currentData.table->rd_rel->relkind != RELKIND_TOASTVALUE)
+	   && (currentData.table->rd_rel->relkind != RELKIND_MATVIEW))
+#endif
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s the value of table_name argument isn't table object: <%s>",
 					tag,
 					DatumGetCString(tableNameDatum));
 	}
-
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
 								  DatumGetCString(tableNameDatum),
