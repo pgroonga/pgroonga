@@ -191,16 +191,6 @@
 #	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 #endif
 
-#if PG_VERSION_NUM >= 150000
-#   define PGRN_RELKIND_HAS_TABLE_AM(relkind) \
-	RELKIND_HAS_TABLE_AM(relkind)
-#else
-#   define PGRN_RELKIND_HAS_TABLE_AM(relkind) \
-	((relkind) == RELKIND_RELATION || \
-	 (relkind) == RELKIND_TOASTVALUE || \
-	 (relkind) == RELKIND_MATVIEW)
-#endif
-
 #if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
@@ -233,8 +223,14 @@ typedef Oid PGrnRelFileNumber;
 #if PG_VERSION_NUM >= 150000
 #	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
 	RELKIND_HAS_PARTITIONS(relkind)
+#   define PGRN_RELKIND_HAS_TABLE_AM(relkind)	\
+	RELKIND_HAS_TABLE_AM(relkind)
 #else
 #	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
 	((relkind) == RELKIND_PARTITIONED_TABLE ||	\
 	 (relkind) == RELKIND_PARTITIONED_INDEX)
+#   define PGRN_RELKIND_HAS_TABLE_AM(relkind)	\
+	((relkind) == RELKIND_RELATION ||			\
+	 (relkind) == RELKIND_TOASTVALUE ||			\
+	 (relkind) == RELKIND_MATVIEW)
 #endif
