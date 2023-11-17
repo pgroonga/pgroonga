@@ -14,3 +14,4 @@ SELECT pgroonga_query_expand('synonym_groups',
                              'groonga');
 
 DROP TABLE synonym_groups;
+DROP EXTENSION postgres_fdw;

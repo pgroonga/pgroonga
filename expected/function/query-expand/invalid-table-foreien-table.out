@@ -11,3 +11,4 @@ SELECT pgroonga_query_expand('synonym_groups',
                              'groonga');
 ERROR:  pgroonga: [query-expand] the specified table isn't table: <synonym_groups>: <Foreign Table>
 DROP TABLE synonym_groups;
+DROP EXTENSION postgres_fdw;
