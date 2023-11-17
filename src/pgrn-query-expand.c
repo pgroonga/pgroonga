@@ -472,6 +472,13 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 	return;
 }
 
+
+static bool
+PGrnRelationIsTable(Relation relation)
+{
+	return PGRN_RELKIND_HAS_TABLE_AM(RelationGetForm(relation)->relkind);
+}
+
 /**
  * pgroonga_query_expand(tableName cstring,
  *                       termColumnName text,
@@ -503,7 +510,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
-	if (!PGRN_RELKIND_HAS_TABLE_AM(RelationGetForm(currentData.table)->relkind))
+	if (!PGrnRelationIsTable(currentData.table))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s the specified table isn't table: <%s>, <%s>",
