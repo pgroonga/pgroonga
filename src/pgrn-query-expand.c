@@ -552,7 +552,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	if (!PGrnRelationIsTable(currentData.table))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s the specified table isn't table: <%s>, <%s>",
+					"%s the specified table isn't table: <%s>: <%s>",
 					tag,
 					DatumGetCString(tableNameDatum),
 					PGrnConvertRelationKind(RelationGetForm(currentData.table)->relkind));
