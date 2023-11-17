@@ -91,6 +91,7 @@ jobs:
           sudo apt update
           sudo apt -y -V -t ${suite} install \
             postgresql-${{ matrix.postgresql-version }} \
+            postgresql${{ matrix.postgresql-version }}-contrib \
             postgresql-server-dev-${{ matrix.postgresql-version }}
           if [ ${{ matrix.postgresql-version }} -eq 15 ]; then
             # It seems that PostgreSQL 15 dropped stats_temp_directory...?
