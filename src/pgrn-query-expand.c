@@ -472,6 +472,45 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 	return;
 }
 
+static const char*
+PGrnConvertRelationKind(char relkind)
+{
+	const char *relationKind;
+	switch(relkind) {
+	case 'r':
+		relationKind = "Ordinary Table";
+		break;
+	case 'i':
+		relationKind = "Index";
+		break;
+	case 'S':
+		relationKind = "Sequence";
+		break;
+	case 't':
+		relationKind = "TOAST";
+		break;
+	case 'v':
+		relationKind = "View";
+		break;
+	case 'm':
+		relationKind = "Materialized View";
+		break;
+	case 'c':
+		relationKind = "Composite Type";
+		break;
+	case 'f':
+		relationKind = "Foreign Table";
+		break;
+	case 'p':
+		relationKind = "Partitioned Table";
+		break;
+	case 'I':
+		relationKind = "Partitioned Index";
+		break;
+	}
+
+	return relationKind;
+}
 
 static bool
 PGrnRelationIsTable(Relation relation)
@@ -516,7 +555,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 					"%s the specified table isn't table: <%s>, <%s>",
 					tag,
 					DatumGetCString(tableNameDatum),
-					RelationGetForm(currentData.table)->relkind);
+					PGrnConvertRelationKind(RelationGetForm(currentData.table)->relkind));
 	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,

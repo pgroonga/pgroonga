@@ -9,5 +9,5 @@ SELECT pgroonga_query_expand('synonym_groups_synonyms_index',
                              'synonyms',
                              'synonyms',
                              'groonga');
-ERROR:  pgroonga: [query-expand] the specified table isn't table: <synonym_groups_synonyms_index>, <i>
+ERROR:  pgroonga: [query-expand] the specified table isn't table: <synonym_groups_synonyms_index>, <Index>
 DROP TABLE synonym_groups;
