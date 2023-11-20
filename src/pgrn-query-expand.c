@@ -475,7 +475,6 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 static const char*
 PGrnConvertRelationKind(char relkind)
 {
-	const char *relationKind;
 	switch(relkind) {
 	case RELKIND_RELATION:
 		relationKind = "ordinary table";
