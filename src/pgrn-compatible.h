@@ -230,7 +230,7 @@ typedef Oid PGrnRelFileNumber;
 	((relkind) == RELKIND_PARTITIONED_TABLE ||	\
 	 (relkind) == RELKIND_PARTITIONED_INDEX)
 #	define PGRN_RELKIND_HAS_TABLE_AM(relkind)	\
-	((relkind) == RELKIND_RELATION ||			\
-	 (relkind) == RELKIND_TOASTVALUE ||			\
+	((relkind) == RELKIND_RELATION ||		\
+	 (relkind) == RELKIND_TOASTVALUE ||		\
 	 (relkind) == RELKIND_MATVIEW)
 #endif
