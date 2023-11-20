@@ -27,6 +27,8 @@ case ${os} in
     ${DNF} install -y \
            https://download.postgresql.org/pub/repos/yum/reporpms/EL-${major_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
            https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
+
+    ${DNF} install -y postgresql${postgresql_version}-contrib
     ;;
   fedora)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
