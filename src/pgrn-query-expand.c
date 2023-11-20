@@ -496,7 +496,7 @@ PGrnConvertRelationKind(char relkind)
 		return "partitioned table";
 	case RELKIND_PARTITIONED_INDEX:
 		return "partitioned index";
-	defult:
+	default:
 		GRN_LOG(ctx,
 				GRN_LOG_ERROR,
 				"[query-expand] Don't convert relkind to string: <%c>",
