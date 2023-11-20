@@ -477,34 +477,34 @@ PGrnConvertRelationKind(char relkind)
 {
 	const char *relationKind;
 	switch(relkind) {
-	case 'r':
-		relationKind = "Ordinary Table";
+	case RELKIND_RELATION:
+		relationKind = "ordinary table";
 		break;
-	case 'i':
+	case RELKIND_INDEX:
 		relationKind = "Index";
 		break;
-	case 'S':
+	case RELKIND_SEQUENCE:
 		relationKind = "Sequence";
 		break;
-	case 't':
+	case RELKIND_TOASTVALUE:
 		relationKind = "TOAST";
 		break;
-	case 'v':
+	case RELKIND_VIEW:
 		relationKind = "View";
 		break;
-	case 'm':
+	case RELKIND_MATVIEW:
 		relationKind = "Materialized View";
 		break;
-	case 'c':
+	case RELKIND_COMPOSITE_TYPE:
 		relationKind = "Composite Type";
 		break;
-	case 'f':
+	case RELKIND_FOREIGN_TABLE:
 		relationKind = "Foreign Table";
 		break;
-	case 'p':
+	case RELKIND_PARTITIONED_TABLE:
 		relationKind = "Partitioned Table";
 		break;
-	case 'I':
+	case RELKIND_PARTITIONED_INDEX:
 		relationKind = "Partitioned Index";
 		break;
 	}
