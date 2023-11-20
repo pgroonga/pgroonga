@@ -473,7 +473,7 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 }
 
 static const char*
-PGrnConvertRelationKind(char relkind)
+PGrnRelkindToString(char relkind)
 {
 	switch (relkind)
 	{
@@ -549,7 +549,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 					"%s the specified table isn't table: <%s>: <%s>",
 					tag,
 					DatumGetCString(tableNameDatum),
-					PGrnConvertRelationKind(RelationGetForm(currentData.table)->relkind));
+					PGrnRelkindToString(RelationGetForm(currentData.table)->relkind));
 	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
