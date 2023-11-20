@@ -5,6 +5,9 @@ set -eux
 
 echo "::group::Prepare repositories"
 
+pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
+                     sed -e 's/-pgroonga-.*$/-pgroonga/g')
+postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
   almalinux|centos)
@@ -43,9 +46,11 @@ echo "::group::Install built packages"
 
 packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 
-pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
-                     sed -e 's/-pgroonga-.*$/-pgroonga/g')
-postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
+case ${os} in
+  amazon-linux)
+    amazon-linux-extras install -y postgresql${postgresql_version}
+    ;;
+esac
 
 ${DNF} install -y ${packages_dir}/*.rpm
 
