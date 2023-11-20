@@ -45,7 +45,6 @@ echo "::endgroup::"
 echo "::group::Install built packages"
 
 packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
-
 case ${os} in
   amazon-linux)
     amazon-linux-extras install -y postgresql${postgresql_version}
