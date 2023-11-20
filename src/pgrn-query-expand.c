@@ -477,38 +477,26 @@ PGrnConvertRelationKind(char relkind)
 {
 	switch(relkind) {
 	case RELKIND_RELATION:
-		relationKind = "ordinary table";
-		break;
+		return "ordinary table";
 	case RELKIND_INDEX:
-		relationKind = "Index";
-		break;
+		return "index";
 	case RELKIND_SEQUENCE:
-		relationKind = "Sequence";
-		break;
+		return "sequence";
 	case RELKIND_TOASTVALUE:
-		relationKind = "TOAST";
-		break;
+		return "toast";
 	case RELKIND_VIEW:
-		relationKind = "View";
-		break;
+		return "view";
 	case RELKIND_MATVIEW:
-		relationKind = "Materialized View";
-		break;
+		return "materialized view";
 	case RELKIND_COMPOSITE_TYPE:
-		relationKind = "Composite Type";
-		break;
+		return "composite type";
 	case RELKIND_FOREIGN_TABLE:
-		relationKind = "Foreign Table";
-		break;
+		return "foreign table";
 	case RELKIND_PARTITIONED_TABLE:
-		relationKind = "Partitioned Table";
-		break;
+		return "partitioned table";
 	case RELKIND_PARTITIONED_INDEX:
-		relationKind = "Partitioned Index";
-		break;
+		return "partitioned index";
 	}
-
-	return relationKind;
 }
 
 static bool
