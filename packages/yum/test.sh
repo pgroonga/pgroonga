@@ -39,7 +39,6 @@ echo "::endgroup::"
 
 echo "::group::Install built packages"
 
-
 packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 
 pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
