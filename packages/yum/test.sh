@@ -6,10 +6,6 @@ set -eux
 echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
-packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
-pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
-                     sed -e 's/-pgroonga-.*$/-pgroonga/g')
-postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 case ${os} in
   almalinux|centos)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
@@ -31,8 +27,6 @@ case ${os} in
     ${DNF} install -y \
            https://download.postgresql.org/pub/repos/yum/reporpms/EL-${major_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
            https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
-
-    ${DNF} install -y postgresql${postgresql_version}-contrib
     ;;
   fedora)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
@@ -42,14 +36,17 @@ esac
 
 echo "::endgroup::"
 
+
 echo "::group::Install built packages"
 
-case ${os} in
-  amazon-linux)
-    amazon-linux-extras install -y postgresql${postgresql_version}
-    ;;
-esac
 
+packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
+
+pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
+                     sed -e 's/-pgroonga-.*$/-pgroonga/g')
+postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
+
+${DNF} install -y postgresql${postgresql_version}-contrib
 ${DNF} install -y ${packages_dir}/*.rpm
 
 echo "::endgroup::"
