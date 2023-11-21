@@ -5,11 +5,11 @@ set -eux
 
 echo "::group::Prepare repositories"
 
+os=$(cut -d: -f4 /etc/system-release-cpe)
 packages_dir=/host/repositories/${os}/${major_version}/x86_64/Packages
 pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | \
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
-os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
   almalinux|centos)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
@@ -41,7 +41,6 @@ case ${os} in
 esac
 
 echo "::endgroup::"
-
 
 echo "::group::Install built packages"
 
