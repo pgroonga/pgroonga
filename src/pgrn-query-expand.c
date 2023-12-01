@@ -472,7 +472,7 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 	return;
 }
 
-static const char*
+static const char *
 PGrnRelkindToString(char relkind)
 {
 	switch (relkind)
