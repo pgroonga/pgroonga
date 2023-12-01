@@ -1,0 +1,15 @@
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE SERVER remote_server
+    FOREIGN DATA WRAPPER postgres_fdw
+    OPTIONS (host 'localhost', port '5432', dbname 'remote_database');
+CREATE FOREIGN TABLE synonym_groups (
+  synonyms text[]
+) SERVER remote_server;
+SELECT pgroonga_query_expand('synonym_groups',
+                             'synonyms',
+                             'synonyms',
+                             'groonga');
+ERROR:  pgroonga: [query-expand] the specified table isn't table: <synonym_groups>: <foreign table>
+DROP FOREIGN TABLE synonym_groups;
+DROP SERVER remote_server;
+DROP EXTENSION postgres_fdw;

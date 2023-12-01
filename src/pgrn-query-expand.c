@@ -13,6 +13,7 @@
 #ifdef PGRN_SUPPORT_TABLEAM
 #	include <access/tableam.h>
 #endif
+#include <catalog/pg_class.h>
 #include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
 #include <utils/array.h>
@@ -471,6 +472,42 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 	return;
 }
 
+static const char *
+PGrnRelkindToString(char relkind)
+{
+	switch (relkind)
+	{
+	case RELKIND_RELATION:
+		return "ordinary table";
+	case RELKIND_INDEX:
+		return "index";
+	case RELKIND_SEQUENCE:
+		return "sequence";
+	case RELKIND_TOASTVALUE:
+		return "toast";
+	case RELKIND_VIEW:
+		return "view";
+	case RELKIND_MATVIEW:
+		return "materialized view";
+	case RELKIND_COMPOSITE_TYPE:
+		return "composite type";
+	case RELKIND_FOREIGN_TABLE:
+		return "foreign table";
+	case RELKIND_PARTITIONED_TABLE:
+		return "partitioned table";
+	case RELKIND_PARTITIONED_INDEX:
+		return "partitioned index";
+	default:
+		return "unknown";
+	}
+}
+
+static bool
+PGrnRelationIsTable(Relation relation)
+{
+	return PGRN_RELKIND_HAS_TABLE_AM(RelationGetForm(relation)->relkind);
+}
+
 /**
  * pgroonga_query_expand(tableName cstring,
  *                       termColumnName text,
@@ -502,7 +539,14 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	}
 	tableOID = DatumGetObjectId(tableOIDDatum);
 	currentData.table = RelationIdGetRelation(tableOID);
-
+	if (!PGrnRelationIsTable(currentData.table))
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s the specified table isn't table: <%s>: <%s>",
+					tag,
+					DatumGetCString(tableNameDatum),
+					PGrnRelkindToString(RelationGetForm(currentData.table)->relkind));
+	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
 								  DatumGetCString(tableNameDatum),

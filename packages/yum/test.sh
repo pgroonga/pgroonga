@@ -45,6 +45,7 @@ pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | 
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 
+${DNF} install -y postgresql${postgresql_version}-contrib
 ${DNF} install -y ${packages_dir}/*.rpm
 
 echo "::endgroup::"
