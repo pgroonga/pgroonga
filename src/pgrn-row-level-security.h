@@ -20,7 +20,7 @@ void PGrnResetRLSEnabled(void);
 		{															\
 			grn_log_level _logLevel =								\
 				grn_logger_get_max_level(&PGrnContext);				\
-			grn_logger_set_max_level(&PGrnContext, GRN_LOG_NONE);	\
+			grn_logger_set_max_level(&PGrnContext, GRN_LOG_CRIT);	\
 			PG_TRY()
 
 #define PGRN_RLS_ENABLED_ELSE()									\
