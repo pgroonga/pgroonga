@@ -28,6 +28,7 @@ void PGrnResetRLSEnabled(void);
 			{													\
 			}													\
 			PG_END_TRY();										\
+			FlushErrorState();									\
 			grn_logger_set_max_level(&PGrnContext, _logLevel);	\
 			PGrnResetRLSEnabled();								\
 		}														\
