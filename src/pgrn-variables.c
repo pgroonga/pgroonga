@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
+#include "pgrn-row-level-security.h"
 #include "pgrn-trace-log.h"
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
@@ -221,6 +222,12 @@ PGrnEnableTraceLogAssign(bool newValue, void *extra)
 	PGrnEnableTraceLog = newValue;
 }
 
+static void
+PGrnEnableRLSAssign(bool newValue, void *extra)
+{
+	PGrnEnableRLS = newValue;
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -395,6 +402,19 @@ PGrnInitializeVariables(void)
 							 0,
 							 NULL,
 							 PGrnEnableTraceLogAssign,
+							 NULL);
+
+	DefineCustomBoolVariable("pgroonga.enable_row_level_security",
+							 "Enable row level security support.",
+							 "Disabling row level security support "
+							 "may improve performance but it has a "
+							 "security risk.",
+							 &PGrnEnableRLS,
+							 PGrnEnableRLS,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnEnableRLSAssign,
 							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");

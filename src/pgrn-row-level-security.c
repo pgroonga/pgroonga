@@ -8,6 +8,7 @@
 #include <utils/portal.h>
 #include <utils/rls.h>
 
+bool PGrnEnableRLS = true;
 bool PGrnIsRLSEnabled = false;
 
 bool

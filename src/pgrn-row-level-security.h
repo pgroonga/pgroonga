@@ -7,6 +7,7 @@
 
 #include "pgrn-global.h"
 
+extern bool PGrnEnableRLS;
 extern bool PGrnIsRLSEnabled;
 
 bool PGrnCheckRLSEnabled(Oid relationID);
@@ -15,7 +16,7 @@ void PGrnResetRLSEnabled(void);
 
 #define PGRN_RLS_ENABLED_IF(enabled)								\
 	do {															\
-		bool _enabled = (enabled);									\
+		bool _enabled = PGrnEnableRLS && (enabled);					\
 		if (_enabled)												\
 		{															\
 			grn_log_level _logLevel =								\
