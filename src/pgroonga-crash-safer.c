@@ -420,8 +420,10 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	GRN_LOG(&ctx,
 			GRN_LOG_NOTICE,
-			TAG ": initialize: <%s>",
-			PGRN_VERSION);
+			TAG ": initialize: <%s>: %u/%u",
+			PGRN_VERSION,
+			databaseOid,
+			tableSpaceOid);
 
 	grn_ctx_set_wal_role(&ctx, GRN_WAL_ROLE_PRIMARY);
 
@@ -552,7 +554,17 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		grn_obj_flush_recursive(&ctx, db);
 	}
 
+	GRN_LOG(&ctx,
+			GRN_LOG_NOTICE,
+			TAG ": closing database: %u/%u",
+			databaseOid,
+			tableSpaceOid);
 	grn_obj_close(&ctx, db);
+	GRN_LOG(&ctx,
+			GRN_LOG_NOTICE,
+			TAG ": closed database: %u/%u",
+			databaseOid,
+			tableSpaceOid);
 
 	grn_ctx_fin(&ctx);
 
