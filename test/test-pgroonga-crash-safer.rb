@@ -15,6 +15,7 @@ class PGroongaCrashSaferTestCase < Test::Unit::TestCase
   def additional_configurations
     <<-CONFIG
 pgroonga.enable_crash_safe = yes
+pgroonga.log_level = debug
 pgroonga_crash_safer.flush_naptime = #{flush_naptime}
 pgroonga_crash_safer.log_level = debug
     CONFIG
@@ -118,6 +119,67 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
 (1 row)
 
     OUTPUT
+  end
+
+  test "ensure no .wal after normal shutdown" do
+    run_sql("CREATE TABLE memos (title text, content text);")
+    run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga', 'PGroonga is good!');")
+    insert_connection_pid = nil
+    begin
+      run_sql do |input, output, error|
+        input.puts("\\pset format csv")
+        output.gets # \pset format csv
+        output.gets # Output format is csv.
+        input.puts("\\pset tuples_only on")
+        output.gets # \pset tuples_only on
+        input.puts("SELECT pg_backend_pid();")
+        output.gets # SELECT pg_backend_pid();
+        insert_connection_pid = Integer(output.gets.chomp, 10)
+        # Shutdown while INSERT-ing.
+        input.puts(<<-INSERT)
+INSERT INTO memos
+  SELECT md5(clock_timestamp()::text),
+         md5(clock_timestamp()::text)
+    FROM generate_series(1, 10000);
+        INSERT
+        sleep(1)
+        stop_postgres
+        input.close
+        output.read
+      end
+    rescue Helpers::CommandRunError
+      # Ignore "terminating connection due to administrator command" error.
+      # It's happen because shutdown is executed while INSERT-ing.
+    end
+    assert_equal([],
+                 Dir.glob("#{@test_db_dir}/pgrn.*.wal"))
+    crash_safer_pid = nil
+    crash_safer_flushing_log_line = nil
+    insert_connection_release_log_line = nil
+    target_finish_log_lines = []
+    @postgresql.read_pgroonga_log.each_line(chomp: true) do |line|
+      case line
+      when /\|(\d+): pgroonga: crash-safer: initialize/
+        crash_safer_pid = Integer($1, 10)
+      when /\|(\d+): pgroonga: crash-safer: flushing database before closing/
+        if Integer($1, 10) == crash_safer_pid
+          crash_safer_flushing_log_line = line
+          target_finish_log_lines << line
+        end
+      when /\|(\d+): pgroonga: \[exit\]\[finalize\]\[crash-safer\]\[release\]/
+        if Integer($1, 10) == insert_connection_pid
+          insert_connection_release_log_line = line
+          target_finish_log_lines << line
+        end
+      end
+    end
+    assert_equal([
+                   insert_connection_release_log_line,
+                   crash_safer_flushing_log_line,
+                 ],
+                 target_finish_log_lines)
   end
 
   sub_test_case("random crash") do

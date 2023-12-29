@@ -473,6 +473,10 @@ PGrnBeforeShmemExit(int code, Datum arg)
 
 		if (PGrnCrashSaferInitialized)
 		{
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][crash-safer][release]",
+					tag);
 			pgrn_crash_safer_statuses_release(NULL,
 											  MyDatabaseId,
 											  MyDatabaseTableSpace);

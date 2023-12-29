@@ -46,13 +46,16 @@ module Helpers
               error_write.close
               yield(pid, input_write, output_read, error_read)
             ensure
+              finished = false
               begin
-                Process.waitpid(pid, Process::WNOHANG)
+                finished = !Process.waitpid(pid, Process::WNOHANG).nil?
               rescue SystemCallError
                 # Finished
               else
-                Process.kill(:KILL, pid)
-                Process.waitpid(pid)
+                unless finished
+                  Process.kill(:KILL, pid)
+                  Process.waitpid(pid)
+                end
               end
             end
           end

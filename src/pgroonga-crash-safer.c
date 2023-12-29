@@ -545,13 +545,64 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 		/* TODO: How to implement safe finish on no connection? */
 		/*
-		if (pgrn_crash_safer_statuses_get_n_using_processing(statuses,
-															 databaseOid,
-															 tableSpaceOid) == 0)
+		if (pgrn_crash_safer_statuses_get_n_using_processes(statuses,
+															databaseOid,
+															tableSpaceOid) == 0)
 			break;
 		*/
 
 		grn_obj_flush_recursive(&ctx, db);
+	}
+
+	PGroongaCrashSaferGotSIGTERM = false;
+	while (!PGroongaCrashSaferGotSIGTERM && pgrn_file_exist(pgrnDatabasePath))
+	{
+		int conditions;
+		uint32 n_using_processes =
+			pgrn_crash_safer_statuses_get_n_using_processes(statuses,
+															databaseOid,
+															tableSpaceOid);
+		if (n_using_processes == 0)
+			break;
+
+		GRN_LOG(&ctx,
+				GRN_LOG_NOTICE,
+				TAG ": waiting for connections to finish: %u: %u/%u",
+				n_using_processes,
+				databaseOid,
+				tableSpaceOid);
+		conditions = WaitLatch(MyLatch,
+							   WL_LATCH_SET |
+							   WL_TIMEOUT |
+							   PGRN_WL_EXIT_ON_PM_DEATH,
+							   PGroongaCrashSaferFlushNaptime * 1000,
+							   PG_WAIT_EXTENSION);
+		if (conditions & WL_LATCH_SET)
+		{
+			ResetLatch(MyLatch);
+			CHECK_FOR_INTERRUPTS();
+		}
+
+		if (PGroongaCrashSaferGotSIGHUP)
+		{
+			PGroongaCrashSaferGotSIGHUP = false;
+			ProcessConfigFile(PGC_SIGHUP);
+		}
+	}
+
+	if (pgrn_file_exist(pgrnDatabasePath))
+	{
+		GRN_LOG(&ctx,
+				GRN_LOG_NOTICE,
+				TAG ": flushing database before closing: %u/%u",
+				databaseOid,
+				tableSpaceOid);
+		grn_obj_flush_recursive(&ctx, db);
+		GRN_LOG(&ctx,
+				GRN_LOG_NOTICE,
+				TAG ": flushed database before closing: %u/%u",
+				databaseOid,
+				tableSpaceOid);
 	}
 
 	GRN_LOG(&ctx,
