@@ -129,14 +129,11 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
     insert_connection_pid = nil
     begin
       run_sql do |input, output, error|
-        input.puts("\\pset format csv")
-        output.gets # \pset format csv
-        output.gets # Output format is csv.
         input.puts("\\pset tuples_only on")
         output.gets # \pset tuples_only on
         input.puts("SELECT pg_backend_pid();")
         output.gets # SELECT pg_backend_pid();
-        insert_connection_pid = Integer(output.gets.chomp, 10)
+        insert_connection_pid = Integer(output.gets.strip, 10)
         # Shutdown while INSERT-ing.
         input.puts(<<-INSERT)
 INSERT INTO memos
