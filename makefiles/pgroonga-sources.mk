@@ -8,7 +8,7 @@ SRCS =						\
 	src/pgrn-ctid.c				\
 	src/pgrn-escape.c			\
 	src/pgrn-flush.c			\
-	src/pgrn-full-text-search-condition.c	\
+	src/pgrn-condition.c			\
 	src/pgrn-global.c			\
 	src/pgrn-groonga.c			\
 	src/pgrn-groonga-tuple-is-alive.c	\

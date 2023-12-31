@@ -10,7 +10,7 @@ HEADERS =					\
 	src/pgrn-ctid.h				\
 	src/pgrn-database-info.h		\
 	src/pgrn-file.h				\
-	src/pgrn-full-text-search-condition.h	\
+	src/pgrn-condition.h			\
 	src/pgrn-database.h			\
 	src/pgrn-global.h			\
 	src/pgrn-groonga-tuple-is-alive.h	\

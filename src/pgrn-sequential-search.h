@@ -1,10 +1,7 @@
 #pragma once
 
-#include <postgres.h>
+#include "pgrn-condition.h"
 
-#include <groonga.h>
-
-#include <utils/array.h>
 #include <utils/resowner.h>
 
 typedef enum  {
@@ -31,32 +28,17 @@ PGrnSequentialSearchSetTargetText(const char *target,
 								  unsigned int targetSize);
 void
 PGrnSequentialSearchSetTargetTexts(ArrayType *targets,
-								   grn_obj *isTargets);
+								   PGrnCondition *condition);
 void
-PGrnSequentialSearchSetMatchTerm(const char *term,
-								 unsigned int termSize,
-								 const char *indexName,
-								 unsigned int indexNameSize);
+PGrnSequentialSearchSetMatchTerm(PGrnCondition *condition);
 void
-PGrnSequentialSearchSetEqualText(const char *other,
-								 unsigned int otherSize,
-								 const char *indexName,
-								 unsigned int indexNameSize);
+PGrnSequentialSearchSetEqualText(PGrnCondition *condition);
 void
-PGrnSequentialSearchSetPrefix(const char *prefix,
-							  unsigned int prefixSize,
-							  const char *indexName,
-							  unsigned int indexNameSize);
+PGrnSequentialSearchSetPrefix(PGrnCondition *condition);
 void
-PGrnSequentialSearchSetQuery(const char *query,
-							 unsigned int querySize,
-							 const char *indexName,
-							 unsigned int indexNameSize,
+PGrnSequentialSearchSetQuery(PGrnCondition *condition,
 							 PGrnSequentialSearchType type);
 void
-PGrnSequentialSearchSetScript(const char *script,
-							  unsigned int scriptSize,
-							  const char *indexName,
-							  unsigned int indexNameSize);
+PGrnSequentialSearchSetScript(PGrnCondition *condition);
 bool
 PGrnSequentialSearchExecute(void);

@@ -4,6 +4,17 @@
 #include <storage/lock.h>
 #include <utils/relcache.h>
 #include <utils/timestamp.h>
+#include <varatt.h>
+
+static inline bool
+PGrnPGTextIsEmpty(text *text)
+{
+  if (!text)
+	  return true;
+  if (VARSIZE_ANY_EXHDR(text) == 0)
+	  return true;
+  return false;
+}
 
 void PGrnPGFullIndexNameSplit(const char *fullName,
 							  size_t fullNameSize,
