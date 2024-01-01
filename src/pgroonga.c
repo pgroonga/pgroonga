@@ -8372,7 +8372,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 bool
 PGrnIndexIsPGroonga(Relation index)
 {
-	if (!PGRN_RELATION_GET_RD_INDAM(index))
+	if (!index->rd_indam)
 		return false;
-	return PGRN_RELATION_GET_RD_INDAM(index)->aminsert == pgroonga_insert;
+	return index->rd_indam->aminsert == pgroonga_insert;
 }

@@ -46,12 +46,6 @@
 #define pgrn_array_create_iterator(array, slide_ndim)	\
 	array_create_iterator(array, slide_ndim, NULL)
 
-#if PG_VERSION_NUM >= 120000
-#	define PGRN_RELATION_GET_RD_INDAM(relation) (relation)->rd_indam
-#else
-#	define PGRN_RELATION_GET_RD_INDAM(relation) (relation)->rd_amroutine
-#endif
-
 #ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
 #	define pgrn_add_string_reloption(kinds,			\
 									 name,			\
