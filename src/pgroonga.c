@@ -2167,8 +2167,6 @@ pgroonga_execute_binary_operator_in_string(const char *leftOperand,
 	for (i = 1; i <= n; i++)
 	{
 		Datum rightOperandDatum;
-		const char *rightOperand = NULL;
-		unsigned int rightOperandSize = 0;
 		bool isNULL;
 
 		rightOperandDatum =
