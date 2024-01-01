@@ -16,11 +16,14 @@ CREATE FUNCTION pgroonga_condition(query text = null,
 				   index_name text = null,
 				   column_name text = null)
 	RETURNS pgroonga_condition
-	RETURN (
-		query,
-		weights,
-		scorers,
-		schema_name,
-		index_name,
-		column_name
-	)::pgroonga_condition;
+	LANGUAGE SQL
+	AS $$
+		SELECT (
+			query,
+			weights,
+			scorers,
+			schema_name,
+			index_name,
+			column_name
+		)::pgroonga_condition
+	$$;
