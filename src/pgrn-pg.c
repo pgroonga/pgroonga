@@ -285,7 +285,6 @@ PGrnPGDatumExtractString(Datum datum,
 bool
 PGrnPGHavePreparedTransaction(void)
 {
-#if PG_VERSION_NUM >= 120000
 	MemoryContext memoryContext;
 	MemoryContext oldMemoryContext;
 	FmgrInfo flinfo;
@@ -343,9 +342,6 @@ PGrnPGHavePreparedTransaction(void)
 	MemoryContextDelete(memoryContext);
 
 	return have;
-#else
-	return false;
-#endif
 }
 
 bool
