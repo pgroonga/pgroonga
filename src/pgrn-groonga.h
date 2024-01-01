@@ -5,10 +5,6 @@
 
 #include <groonga.h>
 
-#ifndef GRN_VERSION_OR_LATER
-#	define GRN_VERSION_OR_LATER(major, minor, micro) 0
-#endif
-
 extern bool PGrnIsLZ4Available;
 extern bool PGrnIsZlibAvailable;
 extern bool PGrnIsZstdAvailable;

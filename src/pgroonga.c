@@ -44,9 +44,7 @@
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_type.h>
-#ifdef PGRN_SUPPORT_PROGRESS
-#	include <commands/progress.h>
-#endif
+#include <commands/progress.h>
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 #	include <commands/vacuum.h>
 #endif
@@ -7359,7 +7357,6 @@ PGrnBuildCallback(Relation index,
 	MemoryContextReset(bs->memoryContext);
 }
 
-#if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 typedef struct PGrnProgressState
 {
 	grn_progress_index_phase phase;
@@ -7422,7 +7419,6 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 	}
 	state->phase = phase;
 }
-#endif
 
 static IndexBuildResult *
 pgroonga_build(Relation heap,
@@ -7487,10 +7483,8 @@ pgroonga_build(Relation heap,
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
-#if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 		PGrnProgressState state = {0};
 		state.phase = GRN_PROGRESS_INDEX_INVALID;
-#endif
 		data.index = index;
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
@@ -7499,10 +7493,8 @@ pgroonga_build(Relation heap,
 		PGrnCreate(&data);
 		bs.sourcesTable = data.sourcesTable;
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
-#ifdef PGRN_SUPPORT_PROGRESS
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
-#endif
 		nHeapTuples = table_index_build_scan(heap,
 											 index,
 											 indexInfo,
@@ -7511,13 +7503,9 @@ pgroonga_build(Relation heap,
 											 PGrnBuildCallback,
 											 &bs,
 											 NULL);
-#if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 		grn_ctx_set_progress_callback(ctx, PGrnProgressCallback, &state);
-#endif
 		PGrnSetSources(index, bs.sourcesTable);
-#if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 		grn_ctx_set_progress_callback(ctx, NULL, NULL);
-#endif
 		PGrnCreateSourcesTableFinish(&data);
 	}
 	PG_CATCH();
@@ -7545,9 +7533,7 @@ pgroonga_build(Relation heap,
 		if (data.sourcesTable)
 			grn_obj_remove(ctx, data.sourcesTable);
 
-#if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 		grn_ctx_set_progress_callback(ctx, NULL, NULL);
-#endif
 
 		PG_RE_THROW();
 	}
@@ -8227,7 +8213,6 @@ pgroonga_costestimate(PlannerInfo *root,
 	PGRN_TRACE_LOG_EXIT();
 }
 
-#ifdef PGRN_SUPPORT_PROGRESS
 static char *
 pgroonga_buildphrasename(int64 phrase)
 {
@@ -8249,7 +8234,6 @@ pgroonga_buildphrasename(int64 phrase)
 		return NULL;
 	}
 }
-#endif
 
 static bool
 pgroonga_validate(Oid opClassOid)
@@ -8358,9 +8342,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amcanreturn = pgroonga_canreturn;
 	routine->amcostestimate = pgroonga_costestimate;
 	routine->amoptions = pgroonga_options;
-#ifdef PGRN_SUPPORT_PROGRESS
 	routine->ambuildphasename = pgroonga_buildphrasename;
-#endif
 	routine->amvalidate = pgroonga_validate;
 	routine->amestimateparallelscan = pgroonga_estimateparallelscan;
 	routine->aminitparallelscan = pgroonga_initparallelscan;

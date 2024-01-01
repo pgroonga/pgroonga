@@ -92,10 +92,6 @@
 					   (default_value))
 #endif
 
-#if PG_VERSION_NUM >= 120000
-#	define PGRN_SUPPORT_PROGRESS
-#endif
-
 #if PG_VERSION_NUM >= 130000
 #	define PGRN_WL_EXIT_ON_PM_DEATH WL_EXIT_ON_PM_DEATH
 #else
