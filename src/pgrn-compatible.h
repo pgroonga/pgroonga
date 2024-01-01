@@ -47,14 +47,6 @@
 	array_create_iterator(array, slide_ndim, NULL)
 
 #if PG_VERSION_NUM >= 120000
-#	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
-	((scan)->xs_heaptid = (ctid))
-#else
-#	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
-	((scan)->xs_ctup.t_self = (ctid))
-#endif
-
-#if PG_VERSION_NUM >= 120000
 #	define PGRN_RELATION_GET_RD_INDAM(relation) (relation)->rd_indam
 #else
 #	define PGRN_RELATION_GET_RD_INDAM(relation) (relation)->rd_amroutine

@@ -7094,7 +7094,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 			if (!valid)
 				continue;
 
-			PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid);
+			scan->xs_heaptid = ctid;
 		}
 
 		if (scan->xs_want_itup)
