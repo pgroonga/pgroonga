@@ -32,9 +32,6 @@
 #	define PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
 #endif
 
-#define pgrn_array_create_iterator(array, slide_ndim)	\
-	array_create_iterator(array, slide_ndim, NULL)
-
 #ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
 #	define pgrn_add_string_reloption(kinds,			\
 									 name,			\

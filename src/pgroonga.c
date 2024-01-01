@@ -2109,7 +2109,7 @@ pgroonga_execute_binary_operator_string_array(ArrayType *leftOperands,
 	if (ARR_NDIM(leftOperands) == 0)
 		return false;
 
-	iterator = pgrn_array_create_iterator(leftOperands, 0);
+	iterator = array_create_iterator(leftOperands, 0, NULL);
 	if (condition->isTargets)
 		nTargets = GRN_BULK_VSIZE(condition->isTargets) / sizeof(bool);
 	for (i = 0; array_iterate(iterator, &leftOperandDatum, &isNULL); i++)
@@ -5384,9 +5384,9 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 	}
 
 	if (weights)
-		weightsIterator = pgrn_array_create_iterator(weights, 0);
+		weightsIterator = array_create_iterator(weights, 0, NULL);
 	if (scorers)
-		scorersIterator = pgrn_array_create_iterator(scorers, 0);
+		scorersIterator = array_create_iterator(scorers, 0, NULL);
 
 	section = -1;
 	grn_obj_reinit(ctx, substitutedScorer, GRN_DB_TEXT, 0);

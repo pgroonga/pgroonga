@@ -176,7 +176,7 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 		Datum datum;
 		bool isNULL;
 
-		iterator = pgrn_array_create_iterator(condition->weights, 0);
+		iterator = array_create_iterator(condition->weights, 0, NULL);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			if (isNULL)

@@ -199,7 +199,7 @@ PGrnSequentialSearchSetTargetTexts(ArrayType *targets,
 	bool isNULL;
 
 	GRN_BULK_REWIND(texts);
-	iterator = pgrn_array_create_iterator(targets, 0);
+	iterator = array_create_iterator(targets, 0, NULL);
 	if (condition->isTargets)
 		nTargets = GRN_BULK_VSIZE(condition->isTargets) / sizeof(bool);
 	for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)

@@ -387,7 +387,7 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 		Datum nameDatum;
 		bool isNULL;
 
-		iterator = pgrn_array_create_iterator(options, 0);
+		iterator = array_create_iterator(options, 0, NULL);
 		while (array_iterate(iterator, &nameDatum, &isNULL))
 		{
 			text *name = DatumGetTextPP(nameDatum);

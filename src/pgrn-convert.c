@@ -28,7 +28,7 @@ PGrnConvertFromDataArrayType(Datum datum,
 	if (ARR_NDIM(value) == 0)
 		return;
 
-	iterator = pgrn_array_create_iterator(value, 0);
+	iterator = array_create_iterator(value, 0, NULL);
 	while (array_iterate(iterator, &elementDatum, &isNULL))
 	{
 		int weight = 0;

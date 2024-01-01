@@ -103,7 +103,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 
 		PGrnHighlightHTMLClearKeywords();
 		XXH3_64bits_reset(hashState);
-		iterator = pgrn_array_create_iterator(keywords, 0);
+		iterator = array_create_iterator(keywords, 0, NULL);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			text *keyword;
@@ -135,7 +135,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 		XXH64_hash_t newKeywordsHash;
 
 		XXH3_64bits_reset(hashState);
-		iterator = pgrn_array_create_iterator(keywords, 0);
+		iterator = array_create_iterator(keywords, 0, NULL);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			text *keyword;
@@ -165,7 +165,7 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 		bool isNULL;
 
 		PGrnHighlightHTMLClearKeywords();
-		iterator = pgrn_array_create_iterator(keywords, 0);
+		iterator = array_create_iterator(keywords, 0, NULL);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			text *keyword;
@@ -323,7 +323,7 @@ pgroonga_highlight_html_text_array(PG_FUNCTION_ARGS)
 
 		highlights = palloc(sizeof(Datum) * n);
 		nulls = palloc(sizeof(bool) * n);
-		iterator = pgrn_array_create_iterator(targets, 0);
+		iterator = array_create_iterator(targets, 0, NULL);
 		while (array_iterate(iterator, &datum, &isNULL))
 		{
 			nulls[i] = isNULL;
