@@ -1,6 +1,7 @@
 #pragma once
 
-#include <postgres.h>
+#include "pgrn-compatible.h"
+
 #include <storage/lock.h>
 #include <utils/relcache.h>
 #include <utils/timestamp.h>
