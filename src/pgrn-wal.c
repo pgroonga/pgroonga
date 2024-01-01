@@ -9,9 +9,7 @@
 #include "pgrn-wal.h"
 #include "pgrn-writable.h"
 
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <catalog/pg_type.h>
 #include <funcapi.h>
 #include <miscadmin.h>
@@ -2298,7 +2296,7 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	HeapTuple indexTuple;
 
 	if (!PGrnIsWritable())
@@ -2311,8 +2309,8 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 						tag)));
 	}
 
-	indexes = pgrn_table_open(IndexRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	indexes = table_open(IndexRelationId, lock);
+	scan = table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
@@ -2341,14 +2339,14 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			pgrn_table_close(indexes, lock);
+			table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	pgrn_table_close(indexes, lock);
+	table_close(indexes, lock);
 #else
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 				"%s not supported",
@@ -2395,7 +2393,7 @@ PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset
 
 typedef struct {
 	Relation indexes;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	TupleDesc desc;
 } PGrnWALStatusData;
 
@@ -2420,8 +2418,8 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 		{
 			const int nAttributes = 8;
 			data = palloc(sizeof(PGrnWALStatusData));
-			data->indexes = pgrn_table_open(IndexRelationId, lock);
-			data->scan = pgrn_table_beginscan_catalog(data->indexes, 0, NULL);
+			data->indexes = table_open(IndexRelationId, lock);
+			data->scan = table_beginscan_catalog(data->indexes, 0, NULL);
 			data->desc = PGrnCreateTemplateTupleDesc(nAttributes);
 			TupleDescInitEntry(data->desc, 1, "name", TEXTOID, -1, 0);
 			TupleDescInitEntry(data->desc, 2, "oid", OIDOID, -1, 0);
@@ -2499,7 +2497,7 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 	}
 
 	heap_endscan(data->scan);
-	pgrn_table_close(data->indexes, lock);
+	table_close(data->indexes, lock);
 #else
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -2659,11 +2657,11 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	HeapTuple indexTuple;
 
-	indexes = pgrn_table_open(IndexRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	indexes = table_open(IndexRelationId, lock);
+	scan = table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
@@ -2687,14 +2685,14 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			pgrn_table_close(indexes, lock);
+			table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	pgrn_table_close(indexes, lock);
+	table_close(indexes, lock);
 #else
 	const char *tag = "[wal][truncate][all]";
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
@@ -2864,7 +2862,7 @@ pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
 	LocationIndex offset = PG_GETARG_UINT32(1);
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	HeapTuple indexTuple;
 
 	if (!PGrnIsWritable())
@@ -2877,8 +2875,8 @@ pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
 						tag)));
 	}
 
-	indexes = pgrn_table_open(IndexRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	indexes = table_open(IndexRelationId, lock);
+	scan = table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
@@ -2904,14 +2902,14 @@ pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			pgrn_table_close(indexes, lock);
+			table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	pgrn_table_close(indexes, lock);
+	table_close(indexes, lock);
 #else
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 				"%s not supported",
@@ -2930,7 +2928,7 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 #ifdef PGRN_SUPPORT_WAL
 	LOCKMODE lock = AccessShareLock;
 	Relation indexes;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	HeapTuple indexTuple;
 
 	if (!PGrnIsWritable())
@@ -2943,8 +2941,8 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 						tag)));
 	}
 
-	indexes = pgrn_table_open(IndexRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(indexes, 0, NULL);
+	indexes = table_open(IndexRelationId, lock);
+	scan = table_beginscan_catalog(indexes, 0, NULL);
 	while ((indexTuple = heap_getnext(scan, ForwardScanDirection)))
 	{
 		Form_pg_index indexForm = (Form_pg_index) GETSTRUCT(indexTuple);
@@ -2978,14 +2976,14 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 		{
 			RelationClose(index);
 			heap_endscan(scan);
-			pgrn_table_close(indexes, lock);
+			table_close(indexes, lock);
 			PG_RE_THROW();
 		}
 		PG_END_TRY();
 		RelationClose(index);
 	}
 	heap_endscan(scan);
-	pgrn_table_close(indexes, lock);
+	table_close(indexes, lock);
 #else
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 				"%s not supported",

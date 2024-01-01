@@ -8,9 +8,7 @@
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <catalog/pg_type.h>
 #include <executor/executor.h>
 #include <pgtime.h>

@@ -8,11 +8,7 @@
 #include "pgrn-value.h"
 
 #include <access/heapam.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#else
-#	include <access/htup_details.h>
-#endif
+#include <access/tableam.h>
 #include <access/xact.h>
 #include <access/xlog.h>
 #include <catalog/pg_database.h>
@@ -670,7 +666,7 @@ pgroonga_crash_safer_main_flush_all(void)
 	HTAB *statuses;
 	const LOCKMODE lock = AccessShareLock;
 	Relation pg_database;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 	HeapTuple tuple;
 
 	StartTransactionCommand();
@@ -680,8 +676,8 @@ pgroonga_crash_safer_main_flush_all(void)
 
 	statuses = pgrn_crash_safer_statuses_get();
 
-	pg_database = pgrn_table_open(DatabaseRelationId, lock);
-	scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
+	pg_database = table_open(DatabaseRelationId, lock);
+	scan = table_beginscan_catalog(pg_database, 0, NULL);
 	for (tuple = heap_getnext(scan, ForwardScanDirection);
 		 HeapTupleIsValid(tuple);
 		 tuple = heap_getnext(scan, ForwardScanDirection))
@@ -714,8 +710,8 @@ pgroonga_crash_safer_main_flush_all(void)
 												 NULL);
 		pgroonga_crash_safer_main_flush_one(entry);
 	}
-	pgrn_table_endscan(scan);
-	pgrn_table_close(pg_database, lock);
+	table_endscan(scan);
+	table_close(pg_database, lock);
 
 	PopActiveSnapshot();
 	CommitTransactionCommand();

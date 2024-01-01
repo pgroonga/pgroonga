@@ -10,9 +10,7 @@
 #include <access/genam.h>
 #include <access/heapam.h>
 #include <access/relscan.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <catalog/pg_class.h>
 #include <catalog/pg_operator.h>
 #include <catalog/pg_type.h>
@@ -33,9 +31,7 @@ typedef struct {
 	Form_pg_attribute synonymsAttribute;
 	Snapshot snapshot;
 	IndexScanDesc scan;
-#ifdef PGRN_SUPPORT_TABLEAM
 	TupleTableSlot *slot;
-#endif
 	StrategyNumber scanStrategy;
 	Oid scanOperator;
 	RegProcedure scanProcedure;
@@ -61,7 +57,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	Datum scanKeyDatum = 0;
 	ScanKeyData scanKeys[1];
 	int nKeys = 1;
-	PGrnTableScanDesc heapScan = NULL;
+	TableScanDesc heapScan = NULL;
 	HeapTuple tuple;
 	int ith_synonyms = 0;
 
@@ -118,7 +114,7 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					InvalidStrategy,
 					currentData.scanProcedure,
 					scanKeyDatum);
-		heapScan = pgrn_table_beginscan(currentData.table,
+		heapScan = table_beginscan(currentData.table,
 										currentData.snapshot,
 										nKeys,
 										scanKeys);
@@ -130,16 +126,12 @@ func_query_expander_postgresql(grn_ctx *ctx,
 
 		if (currentData.scan)
 		{
-#ifdef PGRN_SUPPORT_TABLEAM
 			if (index_getnext_slot(currentData.scan,
 								   ForwardScanDirection,
 								   currentData.slot))
 				tuple = ExecFetchSlotHeapTuple(currentData.slot, false, NULL);
 			else
 				tuple = NULL;
-#else
-			tuple = index_getnext(currentData.scan, ForwardScanDirection);
-#endif
 		}
 		else
 		{
@@ -575,16 +567,12 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 										   currentData.snapshot,
 										   nKeys,
 										   nOrderBys);
-#ifdef PGRN_SUPPORT_TABLEAM
 		currentData.slot = table_slot_create(currentData.table, NULL);
-#endif
 	}
 	else
 	{
 		currentData.scan = NULL;
-#ifdef PGRN_SUPPORT_TABLEAM
 		currentData.slot = NULL;
-#endif
 	}
 
 	currentData.scanProcedure = get_opcode(currentData.scanOperator);
@@ -605,9 +593,7 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	if (currentData.scan)
 	{
 		PGRN_TRACE_LOG("index_close");
-#ifdef PGRN_SUPPORT_TABLEAM
 		ExecDropSingleTupleTableSlot(currentData.slot);
-#endif
 		index_endscan(currentData.scan);
 		index_close(index, lockMode);
 	}

@@ -4,15 +4,13 @@
 
 #include <access/heapam.h>
 #include <access/htup_details.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <catalog/pg_tablespace.h>
 
 typedef struct {
 	LOCKMODE lockMode;
 	Relation tablespaces;
-	PGrnTableScanDesc scan;
+	TableScanDesc scan;
 } PGrnTablespaceIterator;
 
 static inline void
@@ -20,8 +18,8 @@ PGrnTablespaceIteratorInitialize(PGrnTablespaceIterator *iterator,
 								 LOCKMODE lockMode)
 {
 	iterator->lockMode = lockMode;
-	iterator->tablespaces = pgrn_table_open(TableSpaceRelationId, lockMode);
-	iterator->scan = pgrn_table_beginscan_catalog(iterator->tablespaces,
+	iterator->tablespaces = table_open(TableSpaceRelationId, lockMode);
+	iterator->scan = table_beginscan_catalog(iterator->tablespaces,
 												  0,
 												  NULL);
 }
@@ -35,20 +33,16 @@ PGrnTablespaceIteratorNext(PGrnTablespaceIterator *iterator)
 	if (!HeapTupleIsValid(tuple))
 		return InvalidOid;
 
-#ifdef PGRN_SUPPORT_TABLEAM
 	{
 		Form_pg_tablespace form = (Form_pg_tablespace) GETSTRUCT(tuple);
 		return form->oid;
 	}
-#else
-	return HeapTupleGetOid(tuple);
-#endif
 }
 
 static inline void
 PGrnTablespaceIteratorFinalize(PGrnTablespaceIterator *iterator)
 {
 	heap_endscan(iterator->scan);
-	pgrn_table_close(iterator->tablespaces, iterator->lockMode);
+	table_close(iterator->tablespaces, iterator->lockMode);
 }
 

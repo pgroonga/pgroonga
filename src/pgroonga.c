@@ -40,9 +40,7 @@
 #include <access/amapi.h>
 #include <access/reloptions.h>
 #include <access/relscan.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_type.h>

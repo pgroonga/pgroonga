@@ -2,9 +2,7 @@
 
 #include <access/heapam.h>
 #include <access/relscan.h>
-#ifdef PGRN_SUPPORT_TABLEAM
-#	include <access/tableam.h>
-#endif
+#include <access/tableam.h>
 #include <access/xact.h>
 #include <catalog/pg_database.h>
 #include <executor/spi.h>
@@ -112,11 +110,11 @@ pgroonga_wal_applier_apply_all(void)
 	{
 		const LOCKMODE lock = AccessShareLock;
 		Relation pg_database;
-		PGrnTableScanDesc scan;
+		TableScanDesc scan;
 		HeapTuple tuple;
 
-		pg_database = pgrn_table_open(DatabaseRelationId, lock);
-		scan = pgrn_table_beginscan_catalog(pg_database, 0, NULL);
+		pg_database = table_open(DatabaseRelationId, lock);
+		scan = table_beginscan_catalog(pg_database, 0, NULL);
 		for (tuple = heap_getnext(scan, ForwardScanDirection);
 			 HeapTupleIsValid(tuple);
 			 tuple = heap_getnext(scan, ForwardScanDirection))
@@ -162,8 +160,8 @@ pgroonga_wal_applier_apply_all(void)
 				continue;
 			WaitForBackgroundWorkerShutdown(handle);
 		}
-		pgrn_table_endscan(scan);
-		pgrn_table_close(pg_database, lock);
+		table_endscan(scan);
+		table_close(pg_database, lock);
 	}
 
 	PopActiveSnapshot();
