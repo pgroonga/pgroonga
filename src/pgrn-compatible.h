@@ -93,14 +93,6 @@
 #endif
 
 #if PG_VERSION_NUM >= 120000
-#	define PGrnCreateTemplateTupleDesc(natts)	\
-	CreateTemplateTupleDesc((natts))
-#else
-#	define PGrnCreateTemplateTupleDesc(natts)	\
-	CreateTemplateTupleDesc((natts), false)
-#endif
-
-#if PG_VERSION_NUM >= 120000
 #	define PGRN_HAVE_TUPLE_TABLE_SLOT_TABLE_OID
 #endif
 

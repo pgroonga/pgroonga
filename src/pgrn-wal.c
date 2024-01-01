@@ -2420,7 +2420,7 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 			data = palloc(sizeof(PGrnWALStatusData));
 			data->indexes = table_open(IndexRelationId, lock);
 			data->scan = table_beginscan_catalog(data->indexes, 0, NULL);
-			data->desc = PGrnCreateTemplateTupleDesc(nAttributes);
+			data->desc = CreateTemplateTupleDesc(nAttributes);
 			TupleDescInitEntry(data->desc, 1, "name", TEXTOID, -1, 0);
 			TupleDescInitEntry(data->desc, 2, "oid", OIDOID, -1, 0);
 			TupleDescInitEntry(data->desc, 3, "current_block", INT8OID, -1, 0);

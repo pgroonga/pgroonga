@@ -192,7 +192,7 @@ PGrnResultConverterBuildTupleDesc1(PGrnResultConverter *converter)
 					PGrnJSONBIteratorTokenToString(token));
 	}
 
-	converter->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
+	converter->desc = CreateTemplateTupleDesc(value.val.array.nElems);
 	{
 		AttrNumber i = 1;
 		while (true)
@@ -445,7 +445,7 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 							converter->tag,
 							PGrnJSONBIteratorTokenToString(token));
 			}
-			converter->desc = PGrnCreateTemplateTupleDesc(value.val.array.nElems);
+			converter->desc = CreateTemplateTupleDesc(value.val.array.nElems);
 			{
 				AttrNumber i = 1;
 				while (true)
