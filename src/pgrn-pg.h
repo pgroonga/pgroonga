@@ -4,7 +4,9 @@
 #include <storage/lock.h>
 #include <utils/relcache.h>
 #include <utils/timestamp.h>
-#include <varatt.h>
+#ifdef PGRN_HAVE_VARATT_H
+#	include <varatt.h>
+#endif
 
 static inline bool
 PGrnPGTextIsEmpty(text *text)
