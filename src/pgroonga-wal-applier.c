@@ -132,11 +132,7 @@ pgroonga_wal_applier_apply_all(void)
 			if (strcmp(form->datname.data, "template1") == 0)
 				continue;
 
-#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
 			databaseOid = form->oid;
-#else
-			databaseOid = HeapTupleGetOid(tuple);
-#endif
 			snprintf(worker.bgw_name,
 					 BGW_MAXLEN,
 					 TAG ": apply: %s(%u)",

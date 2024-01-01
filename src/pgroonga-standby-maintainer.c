@@ -420,11 +420,7 @@ pgroonga_standby_maintainer_maintain_all(void)
 			if (strcmp(form->datname.data, "template1") == 0)
 				continue;
 
-#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
 			databaseOid = form->oid;
-#else
-			databaseOid = HeapTupleGetOid(tuple);
-#endif
 			tableSpaceOid = form->dattablespace;
 
 			snprintf(worker.bgw_name,

@@ -93,10 +93,6 @@
 #endif
 
 #if PG_VERSION_NUM >= 120000
-#	define PGRN_FORM_PG_DATABASE_HAVE_OID
-#endif
-
-#if PG_VERSION_NUM >= 120000
 #	define PGRN_SUPPORT_PROGRESS
 #endif
 

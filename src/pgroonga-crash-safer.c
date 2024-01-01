@@ -689,11 +689,7 @@ pgroonga_crash_safer_main_flush_all(void)
 		char pgrnDatabasePath[MAXPGPATH];
 		pgrn_crash_safer_statuses_entry *entry;
 
-#ifdef PGRN_FORM_PG_DATABASE_HAVE_OID
 		databaseOid = form->oid;
-#else
-		databaseOid = HeapTupleGetOid(tuple);
-#endif
 		tableSpaceOid = form->dattablespace;
 
 		databasePath = GetDatabasePath(databaseOid, tableSpaceOid);
