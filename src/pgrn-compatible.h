@@ -47,37 +47,6 @@
 	array_create_iterator(array, slide_ndim, NULL)
 
 #if PG_VERSION_NUM >= 120000
-#	define PGrnIndexBuildHeapScan(heap,				\
-								  index,			\
-								  indexInfo,		\
-								  allowSync,		\
-								  callback,			\
-								  callbackState)	\
-	table_index_build_scan((heap),					\
-						   (index),					\
-						   (indexInfo),				\
-						   (allowSync),				\
-						   true,					\
-						   (callback),				\
-						   (callbackState),			\
-						   NULL)
-#else
-#	define PGrnIndexBuildHeapScan(heap,				\
-								  index,			\
-								  indexInfo,		\
-								  allowSync,		\
-								  callback,			\
-								  callbackState)	\
-	IndexBuildHeapScan((heap),						\
-					   (index),						\
-					   (indexInfo),					\
-					   (allowSync),					\
-					   (callback),					\
-					   (callbackState),				\
-					   NULL)
-#endif
-
-#if PG_VERSION_NUM >= 120000
 #	define PGRN_INDEX_SCAN_DESC_SET_FOUND_CTID(scan, ctid) \
 	((scan)->xs_heaptid = (ctid))
 #else

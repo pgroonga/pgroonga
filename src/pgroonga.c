@@ -7503,12 +7503,14 @@ pgroonga_build(Relation heap,
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
 #endif
-		nHeapTuples = PGrnIndexBuildHeapScan(heap,
+		nHeapTuples = table_index_build_scan(heap,
 											 index,
 											 indexInfo,
 											 true,
+											 true,
 											 PGrnBuildCallback,
-											 &bs);
+											 &bs,
+											 NULL);
 #if defined(PGRN_SUPPORT_PROGRESS) && GRN_VERSION_OR_LATER(12, 0, 4)
 		grn_ctx_set_progress_callback(ctx, PGrnProgressCallback, &state);
 #endif
