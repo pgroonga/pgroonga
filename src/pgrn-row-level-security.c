@@ -119,11 +119,7 @@ PGrnCheckRLSEnabledSeqScan(FunctionCallInfo fcinfo)
 		/* For safety */
 		return true;
 	}
-#ifdef PGRN_HAVE_TUPLE_TABLE_SLOT_TABLE_OID
 	tableOid = econtext->ecxt_scantuple->tts_tableOid;
-#else
-	tableOid = econtext->ecxt_scantuple->tts_tuple->t_tableOid;
-#endif
 	return PGrnCheckRLSEnabled(tableOid);
 }
 
