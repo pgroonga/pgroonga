@@ -8133,11 +8133,7 @@ PGrnCostEstimateUpdateSelectivity(Relation index,
 	PGrnWALApply(index);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
-#ifdef PGRN_SUPPORT_INDEX_CLAUSE
 	quals = get_quals_from_indexclauses(path->indexclauses);
-#else
-	quals = path->indexquals;
-#endif
 	foreach(cell, quals)
 	{
 		Node *clause = (Node *) lfirst(cell);
@@ -8166,17 +8162,11 @@ pgroonga_costestimate_internal(Relation index,
 							   double *indexCorrelation,
 							   double *indexPages)
 {
+	List *indexQuals;
 	List *quals;
 	PGrnCostEstimateUpdateSelectivity(index, root, path);
-#ifdef PGRN_SUPPORT_INDEX_CLAUSE
-	{
-		List *indexQuals;
-		indexQuals = get_quals_from_indexclauses(path->indexclauses);
-		quals = add_predicate_to_index_quals(path->indexinfo, indexQuals);
-	}
-#else
-	quals = path->indexquals;
-#endif
+	indexQuals = get_quals_from_indexclauses(path->indexclauses);
+	quals = add_predicate_to_index_quals(path->indexinfo, indexQuals);
 	*indexSelectivity = clauselist_selectivity(root,
 											   quals,
 											   path->indexinfo->rel->relid,
