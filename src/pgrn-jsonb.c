@@ -1486,10 +1486,10 @@ PGrnJSONBInsertRecord(Relation index,
 	}
 	else
 	{
-		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64), NULL);
+		id = grn_table_add(ctx, sourcesTable, &packedCtid, sizeof(uint64_t), NULL);
 		PGrnWALInsertKeyRaw(walData,
 							&packedCtid,
-							sizeof(uint64));
+							sizeof(uint64_t));
 	}
 
 	attribute = TupleDescAttr(desc, 0);

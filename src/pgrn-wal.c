@@ -1855,7 +1855,7 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 
 	if (table->header.type == GRN_TABLE_NO_KEY)
 	{
-		const uint64 packedCtid = *((uint64 *)key);
+		const uint64_t packedCtid = *((uint64_t *)key);
 		grn_obj *ctidColumn = grn_obj_column(ctx, table, "ctid", strlen("ctid"));
 		grn_obj ctidValue;
 		GRN_UINT64_INIT(&ctidValue, 0);

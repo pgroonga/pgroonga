@@ -34,7 +34,7 @@ PGrnCtidIsAlive(Relation table, ItemPointer ctid)
 	return found;
 }
 
-uint64
+uint64_t
 PGrnCtidPack(ItemPointer ctid)
 {
 	BlockNumber blockNumber;
@@ -42,11 +42,11 @@ PGrnCtidPack(ItemPointer ctid)
 
 	blockNumber = ItemPointerGetBlockNumber(ctid);
 	offsetNumber = ItemPointerGetOffsetNumber(ctid);
-	return (((uint64)blockNumber << 16) | ((uint64)offsetNumber));
+	return (((uint64_t)blockNumber << 16) | ((uint64_t)offsetNumber));
 }
 
 ItemPointerData
-PGrnCtidUnpack(uint64 packedCtid)
+PGrnCtidUnpack(uint64_t packedCtid)
 {
 	ItemPointerData	ctid;
 	ItemPointerSet(&ctid,

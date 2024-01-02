@@ -5,5 +5,5 @@
 #include <utils/relcache.h>
 
 bool PGrnCtidIsAlive(Relation table, ItemPointer ctid);
-uint64 PGrnCtidPack(ItemPointer ctid);
-ItemPointerData PGrnCtidUnpack(uint64 packedCtid);
+uint64_t PGrnCtidPack(ItemPointer ctid);
+ItemPointerData PGrnCtidUnpack(uint64_t packedCtid);

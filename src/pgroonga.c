@@ -1664,10 +1664,10 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 	{
 		void *key;
 		grn_id sourceID;
-		uint64 packedCtid = 0;
+		uint64_t packedCtid = 0;
 		ItemPointerData ctid;
 		ItemPointerData resolvedCtid;
-		uint64 resolvedPackedCtid;
+		uint64_t resolvedPackedCtid;
 		grn_id resolvedID;
 
 		grn_table_cursor_get_key(ctx, cursor, &key);
@@ -1681,7 +1681,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 												   sourcesCtidColumnCache,
 												   sourceID,
 												   &ctidColumnValueSize);
-			if (ctidColumnValueSize != sizeof(uint64))
+			if (ctidColumnValueSize != sizeof(uint64_t))
 			{
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
@@ -1692,10 +1692,10 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 						so->dataTableID,
 						sourceID,
 						ctidColumnValueSize,
-						sizeof(uint64));
+						sizeof(uint64_t));
 				continue;
 			}
-			packedCtid = *((uint64 *) ctidColumnValue);
+			packedCtid = *((uint64_t *) ctidColumnValue);
 		}
 		else
 		{
@@ -1705,8 +1705,8 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 										so->sourcesTable,
 										sourceID,
 										&packedCtid,
-										sizeof(uint64));
-			if (keySize != sizeof(uint64))
+										sizeof(uint64_t));
+			if (keySize != sizeof(uint64_t))
 			{
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
@@ -1717,7 +1717,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 						so->dataTableID,
 						sourceID,
 						keySize,
-						sizeof(uint64));
+						sizeof(uint64_t));
 				continue;
 			}
 		}
@@ -1755,7 +1755,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		resolvedID = grn_table_add(ctx,
 								   so->ctidResolveTable,
 								   &resolvedPackedCtid,
-								   sizeof(uint64),
+								   sizeof(uint64_t),
 								   NULL);
 		GRN_RECORD_SET(ctx, sourceRecord, sourceID);
 		grn_obj_set_value(ctx,
@@ -1796,7 +1796,7 @@ static double
 PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 {
 	const char *tag = "pgroonga: [score][ctid][collect]";
-	const uint64 packedCtid = PGrnCtidPack(ctid);
+	const uint64_t packedCtid = PGrnCtidPack(ctid);
 	double score = 0.0;
 	grn_id resolveID;
 	grn_id sourceID = GRN_ID_NIL;
@@ -1807,7 +1807,7 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 		sourceID = grn_table_get(ctx,
 								 so->sourcesTable,
 								 &packedCtid,
-								 sizeof(uint64));
+								 sizeof(uint64_t));
 	}
 
 	if (sourceID == GRN_ID_NIL)
@@ -1818,7 +1818,7 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 		resolveID = grn_table_get(ctx,
 								  so->ctidResolveTable,
 								  &packedCtid,
-								  sizeof(uint64));
+								  sizeof(uint64_t));
 		if (resolveID != GRN_ID_NIL)
 		{
 			{
@@ -4820,7 +4820,7 @@ PGrnInsert(Relation index,
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
 	PGrnWALData *walData;
-	uint64 packedCtid = PGrnCtidPack(ht_ctid);
+	uint64_t packedCtid = PGrnCtidPack(ht_ctid);
 	unsigned int i;
 	uint32_t recordSize = 0;
 
@@ -4888,7 +4888,7 @@ PGrnInsert(Relation index,
 			id = grn_table_add(ctx,
 							   sourcesTable,
 							   &packedCtid,
-							   sizeof(uint64),
+							   sizeof(uint64_t),
 							   NULL);
 			PGrnCheck("%s failed to add a record: <%" PRIu64 ">",
 					  tag,
@@ -4900,7 +4900,7 @@ PGrnInsert(Relation index,
 							tag,
 							packedCtid);
 			}
-			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64));
+			PGrnWALInsertKeyRaw(walData, &packedCtid, sizeof(uint64_t));
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
 					"pgroonga: %s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
@@ -6972,7 +6972,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 		PGrnIsWritable())
 	{
 		grn_id recordID;
-		uint64 packedCtid;
+		uint64_t packedCtid;
 
 		recordID = PGrnScanOpaqueResolveID(so);
 		GRN_BULK_REWIND(&(buffers->ctid));
@@ -7018,7 +7018,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 			PGrnWALDelete(so->index,
 						  so->sourcesTable,
 						  (const char *) &packedCtid,
-						  sizeof(uint64));
+						  sizeof(uint64_t));
 		}
 	}
 
@@ -7043,7 +7043,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 			break;
 
 		{
-			uint64 packedCtid;
+			uint64_t packedCtid;
 			ItemPointerData ctid;
 			bool valid;
 
@@ -7164,7 +7164,7 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 		grn_id termID;
 		while ((posting = grn_index_cursor_next(ctx, so->indexCursor, &termID)))
 		{
-			uint64 packedCtid;
+			uint64_t packedCtid;
 			ItemPointerData ctid;
 
 			so->currentID = posting->rid;
@@ -7207,7 +7207,7 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 	{
 		while (true)
 		{
-			uint64 packedCtid;
+			uint64_t packedCtid;
 			ItemPointerData ctid;
 
 			so->currentID = grn_table_cursor_next(ctx, so->tableCursor);
@@ -7708,7 +7708,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
-			uint64 packedCtid;
+			uint64_t packedCtid;
 			ItemPointerData	ctid;
 
 			CHECK_FOR_INTERRUPTS();
@@ -7746,7 +7746,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 							id);
 					continue;
 				}
-				packedCtid = *((uint64 *) key);
+				packedCtid = *((uint64_t *) key);
 			}
 			ctid = PGrnCtidUnpack(packedCtid);
 			if (callback(&ctid, callbackState))
@@ -7770,7 +7770,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 				PGrnWALDelete(index,
 							  sourcesTable,
 							  (const char *) &packedCtid,
-							  sizeof(uint64));
+							  sizeof(uint64_t));
 
 				nRemovedTuples += 1;
 			}
