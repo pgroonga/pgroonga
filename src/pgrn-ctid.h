@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include <postgres.h>
 #include <storage/itemptr.h>
 #include <utils/relcache.h>
