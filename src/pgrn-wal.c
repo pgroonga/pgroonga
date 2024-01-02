@@ -2108,15 +2108,14 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			{
 				PGrnCheckRC(GRN_UNKNOWN_ERROR,
 							"[wal][apply][consume][%s(%u)]"
-							"[%u/%u/%" PGRN_PRIuSIZE "] "
+							"[%u/%u] "
 							"unconsumed WAL are overwritten: "
 							"pgroonga.max_wal_size should be increased or "
 							"pgroonga_wal_applier.naptime should be decreased",
 							RelationGetRelationName(data->index),
 							RelationGetRelid(data->index),
 							block,
-							dataOffset,
-							dataSize);
+							dataOffset);
 			}
 			dataSize = lastOffset - dataOffset;
 			if (!msgpack_unpacker_reserve_buffer(&unpacker, dataSize))
