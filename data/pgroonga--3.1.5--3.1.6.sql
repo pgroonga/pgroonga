@@ -300,7 +300,7 @@ ALTER OPERATOR FAMILY pgroonga_text_full_text_search_ops_v2 USING pgroonga
 		OPERATOR 42 &@ (text, pgroonga_condition),
 		OPERATOR 43 &@~ (text, pgroonga_condition);
 
-ALTER OPERATOR FAMILY pgroonga_text_full_text_array_search_ops_v2 USING pgroonga
+ALTER OPERATOR FAMILY pgroonga_text_array_full_text_search_ops_v2 USING pgroonga
 	ADD
 		OPERATOR 42 &@ (text[], pgroonga_condition),
 		OPERATOR 43 &@~ (text[], pgroonga_condition);
