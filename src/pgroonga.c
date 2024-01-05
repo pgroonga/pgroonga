@@ -250,9 +250,11 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_text_array_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_varchar_array_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_contain_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_text_array);
@@ -2149,6 +2151,28 @@ pgroonga_execute_binary_operator_string_array(ArrayType *leftOperands,
 }
 
 static bool
+pgroonga_execute_binary_operator_string_array_condition_raw(
+	ArrayType *leftOperands,
+	HeapTupleHeader header,
+	PGrnBinaryOperatorStringFunction operator)
+{
+	PGrnCondition condition = {0};
+
+	if (ARR_NDIM(leftOperands) == 0)
+		return false;
+
+	condition.isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(condition.isTargets);
+	PGrnConditionDeconstruct(&condition, header);
+	if (!condition.query)
+		return false;
+
+	return pgroonga_execute_binary_operator_string_array(leftOperands,
+														 &condition,
+														 operator);
+}
+
+static bool
 pgroonga_execute_binary_operator_in_string(const char *leftOperand,
 										   unsigned int leftOperandSize,
 										   Datum rightOperands,
@@ -2672,23 +2696,6 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
-static bool
-pgroonga_match_text_array_condition_raw(ArrayType *targets,
-										HeapTupleHeader header)
-{
-	PGrnCondition condition = {0};
-
-	condition.isTargets = &(buffers->isTargets);
-	GRN_BULK_REWIND(condition.isTargets);
-	PGrnConditionDeconstruct(&condition, header);
-	if (!condition.query)
-		return false;
-
-	return pgroonga_execute_binary_operator_string_array(targets,
-														 &condition,
-														 pgroonga_match_term_raw);
-}
-
 /**
  * pgroonga_match_text_array_condition(targets text[],
  *                                     condition pgroonga_condition) : bool
@@ -2714,11 +2721,15 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_text_array_condition_raw(targets, header);
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets, header, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_text_array_condition_raw(targets, header);
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets, header, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3350,6 +3361,40 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_prefix_text_array_condition(
+ *   targets text[],
+ *   condition pgroonga_condition
+ * ) : bool
+ */
+Datum
+pgroonga_prefix_text_array_condition(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool matched = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets,
+				header,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets,
+				header,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga_prefix_varchar(target varchar, prefix varchar) : bool
  */
 Datum
@@ -3434,6 +3479,40 @@ pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
 			pgroonga_execute_binary_operator_string_array(
 				targets,
 				&condition,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_prefix_varchar_array_condition(
+ *   targets varchar[],
+ *   condition pgroonga_condition
+ * ) : bool
+ */
+Datum
+pgroonga_prefix_varchar_array_condition(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
+	bool matched = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets,
+				header,
+				pgroonga_prefix_raw);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched =
+			pgroonga_execute_binary_operator_string_array_condition_raw(
+				targets,
+				header,
 				pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();

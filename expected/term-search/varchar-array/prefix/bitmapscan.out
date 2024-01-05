@@ -1,0 +1,34 @@
+CREATE TABLE tags (
+  names varchar[]
+);
+INSERT INTO tags VALUES (ARRAY['PostgreSQL', 'PG']);
+INSERT INTO tags VALUES (ARRAY['Groonga', 'grn']);
+INSERT INTO tags VALUES (ARRAY['PGroonga', 'pgrn']);
+INSERT INTO tags VALUES (ARRAY[]::varchar[]);
+CREATE INDEX pgrn_index ON tags
+  USING pgroonga (names);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT names
+  FROM tags
+ WHERE names &^ 'pG';
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Bitmap Heap Scan on tags
+   Recheck Cond: (names &^ 'pG'::character varying)
+   ->  Bitmap Index Scan on pgrn_index
+         Index Cond: (names &^ 'pG'::character varying)
+(4 rows)
+
+SELECT names
+  FROM tags
+ WHERE names &^ 'pG';
+      names      
+-----------------
+ {PostgreSQL,PG}
+ {PGroonga,pgrn}
+(2 rows)
+
+DROP TABLE tags;

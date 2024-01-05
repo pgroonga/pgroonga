@@ -1,0 +1,37 @@
+CREATE TABLE tags (
+  id int,
+  names varchar[]
+);
+INSERT INTO tags VALUES (1, ARRAY['PostgreSQL', 'PG']);
+INSERT INTO tags VALUES (2, ARRAY['Groonga', 'grn']);
+INSERT INTO tags VALUES (3, ARRAY['PGroonga', 'pgrn']);
+INSERT INTO tags VALUES (4, ARRAY[]::varchar[]);
+CREATE INDEX pgrn_index ON tags
+  USING pgroonga (names);
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT names
+  FROM tags
+ WHERE names &^ 'pG'
+ ORDER BY id;
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Index Scan using pgrn_index on tags
+         Index Cond: (names &^ 'pG'::character varying)
+(4 rows)
+
+SELECT names
+  FROM tags
+ WHERE names &^ 'pG'
+ ORDER BY id;
+      names      
+-----------------
+ {PostgreSQL,PG}
+ {PGroonga,pgrn}
+(2 rows)
+
+DROP TABLE tags;

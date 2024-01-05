@@ -164,6 +164,24 @@ CREATE OPERATOR &^ (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_prefix_text_array_condition(text[], pgroonga_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text_array_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &^ (
+	PROCEDURE = pgroonga_prefix_text_array_condition,
+	LEFTARG = text[],
+	RIGHTARG = pgroonga_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_prefix_varchar_condition
 	(target varchar, conditoin pgroonga_condition)
 	RETURNS bool
@@ -178,6 +196,24 @@ CREATE FUNCTION pgroonga_prefix_varchar_condition
 CREATE OPERATOR &^ (
 	PROCEDURE = pgroonga_prefix_varchar_condition,
 	LEFTARG = varchar,
+	RIGHTARG = pgroonga_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
+CREATE FUNCTION pgroonga_prefix_varchar_array_condition(varchar[], pgroonga_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_prefix_varchar_array_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 300;
+
+CREATE OPERATOR &^ (
+	PROCEDURE = pgroonga_prefix_varchar_array_condition,
+	LEFTARG = varchar[],
 	RIGHTARG = pgroonga_condition,
 	RESTRICT = contsel,
 	JOIN = contjoinsel
@@ -276,6 +312,7 @@ ALTER OPERATOR FAMILY pgroonga_text_term_search_ops_v2 USING pgroonga
 
 ALTER OPERATOR FAMILY pgroonga_text_array_term_search_ops_v2 USING pgroonga
 	ADD
+		OPERATOR 44 &^ (text[], pgroonga_condition),
 		OPERATOR 46 &=~ (text[], pgroonga_condition);
 
 ALTER OPERATOR FAMILY pgroonga_varchar_full_text_search_ops_v2 USING pgroonga
@@ -285,4 +322,5 @@ ALTER OPERATOR FAMILY pgroonga_varchar_full_text_search_ops_v2 USING pgroonga
 
 ALTER OPERATOR FAMILY pgroonga_varchar_array_term_search_ops_v2 USING pgroonga
 	ADD
+		OPERATOR 44 &^ (varchar[], pgroonga_condition),
 		OPERATOR 46 &=~ (varchar[], pgroonga_condition);
