@@ -16,23 +16,19 @@ EXPLAIN (COSTS OFF)
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('090-12345678',
-        ARRAY[5, 2],
-        'pgrn_index')::pgroonga_full_text_search_condition
+         pgroonga_condition('090-12345678', ARRAY[5, 2], index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Bitmap Heap Scan on memos
-  Recheck Cond: (ARRAY[title, content] &@~ pgroonga_full_text_search_condition)
+  Recheck Cond: (ARRAY[title, content] &@~ pgroonga_condition)
   ->  Bitmap Index Scan on pgrn_index
-        Index Cond: (ARRAY[title, content] &@~ pgroonga_full_text_search_condition)
+        Index Cond: (ARRAY[title, content] &@~ pgroonga_condition)
 (4 rows)
 \pset format aligned
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('090-12345678',
-        ARRAY[5, 2],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+         pgroonga_condition('090-12345678', ARRAY[5, 2], index_name => 'pgrn_index');
     content     | pgroonga_score 
 ----------------+----------------
  090-1234-5678  |              2

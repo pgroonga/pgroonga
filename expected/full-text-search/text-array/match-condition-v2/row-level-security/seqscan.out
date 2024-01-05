@@ -33,23 +33,23 @@ EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
  WHERE contents &@
-       ('PostgreSQL',
-        NULL,
-        NULL,
-        'pgroonga_memos_index')::pgroonga_full_text_search_condition_with_scorers
+         pgroonga_condition(
+           'PostgreSQL',
+           index_name => 'pgroonga_memos_index'
+         )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Seq Scan on memos
-  Filter: ((user_name = CURRENT_USER) AND (contents &@ pgroonga_full_text_search_condition_with_scorers))
+  Filter: ((user_name = CURRENT_USER) AND (contents &@ pgroonga_condition))
 (2 rows)
 \pset format aligned
 SELECT id, contents
   FROM memos
  WHERE contents &@~
-       ('PostgreSQL',
-        NULL,
-        NULL,
-        'pgroonga_memos_index')::pgroonga_full_text_search_condition_with_scorers;
+         pgroonga_condition(
+           'PostgreSQL',
+           index_name => 'pgroonga_memos_index'
+         );
  id |                                                         contents                                                         
 ----+--------------------------------------------------------------------------------------------------------------------------
   3 | {"PGroonga is an OSS PostgreSQL extension","PGroonga adds full full-text search support based on Groonga to PostgreSQL"}

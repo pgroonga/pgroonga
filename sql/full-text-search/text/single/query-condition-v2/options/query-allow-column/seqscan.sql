@@ -19,16 +19,14 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content &@~ ('id:1 PostgreSQL',
-                    NULL,
-                    'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE content &@~
+       pgroonga_condition('id:1 PostgreSQL', index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 \pset format aligned
 
 SELECT id, content
   FROM memos
- WHERE content &@~ ('id:1 PostgreSQL',
-                    NULL,
-                    'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE content &@~
+       pgroonga_condition('id:1 PostgreSQL', index_name => 'pgrn_index');
 
 DROP TABLE memos;

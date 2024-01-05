@@ -14,20 +14,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &^ ('タカハ', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
-QUERY PLAN
-Seq Scan on tags
-  Filter: (name &^ '(タカハ,,pgrn_index)'::pgroonga_full_text_search_condition)
-(2 rows)
+ WHERE name &^ pgroonga_condition('タカハ', index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Seq Scan on tags
-  Filter: (name &^ pgroonga_full_text_search_condition)
+  Filter: (name &^ pgroonga_condition)
 (2 rows)
 \pset format aligned
 SELECT name
   FROM tags
- WHERE name &^ ('タカハ', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE name &^ pgroonga_condition('タカハ', index_name => 'pgrn_index');
    name   
 ----------
  たかはし

@@ -14,14 +14,15 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index')
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Seq Scan on tags
-  Filter: (names &=~ '("ぽすぐれ OR ぐるんが",,pgroonga_index)'::pgroonga_full_text_search_condition)
+  Filter: (names &=~ pgroonga_condition)
 (2 rows)
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index');
 names
 {PostgreSQL,ポスグレ}
 {Groonga,グルンガ}

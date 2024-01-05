@@ -15,29 +15,21 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
- ORDER BY id;
-QUERY PLAN
-Sort
-  Sort Key: id
-  ->  Bitmap Heap Scan on tags
-        Recheck Cond: (name &= '(groonga,,pgrn_index)'::pgroonga_full_text_search_condition)
-        ->  Bitmap Index Scan on pgrn_index
-              Index Cond: (name &= '(groonga,,pgrn_index)'::pgroonga_full_text_search_condition)
-(6 rows)
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
+ ORDER BY id
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Sort
   Sort Key: id
   ->  Bitmap Heap Scan on tags
-        Recheck Cond: (name &= pgroonga_full_text_search_condition)
+        Recheck Cond: (name &= pgroonga_condition)
         ->  Bitmap Index Scan on pgrn_index
-              Index Cond: (name &= pgroonga_full_text_search_condition)
+              Index Cond: (name &= pgroonga_condition)
 (6 rows)
 \pset format aligned
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
  ORDER BY id;
   name   
 ---------

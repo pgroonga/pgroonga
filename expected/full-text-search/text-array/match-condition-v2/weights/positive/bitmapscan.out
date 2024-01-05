@@ -17,19 +17,19 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition
+         pgroonga_condition('PostgreSQL', ARRAY[5, 2], index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Bitmap Heap Scan on memos
-  Recheck Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition)
+  Recheck Cond: (ARRAY[title, content] &@ pgroonga_condition)
   ->  Bitmap Index Scan on pgrn_index
-        Index Cond: (ARRAY[title, content] &@ pgroonga_full_text_search_condition)
+        Index Cond: (ARRAY[title, content] &@ pgroonga_condition)
 (4 rows)
 \pset format aligned
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition;
+         pgroonga_condition('PostgreSQL', ARRAY[5, 2], index_name => 'pgrn_index');
  id |   title    |                        content                        | pgroonga_score 
 ----+------------+-------------------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                                |              7

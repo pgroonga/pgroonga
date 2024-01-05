@@ -1,0 +1,40 @@
+CREATE TABLE memos (
+  title text,
+  content text
+);
+INSERT INTO memos VALUES ('ひらがな', 'りんご');
+INSERT INTO memos VALUES ('カタカナ', 'リンゴ');
+CREATE INDEX pgrn_index ON memos
+ USING pgroonga ((ARRAY[title, content])
+                 pgroonga_text_array_full_text_search_ops_v2)
+  WITH (normalizer = 'NormalizerNFKC100("unify_kana", true)');
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+\pset format unaligned
+EXPLAIN (COSTS OFF)
+SELECT title, content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE ARRAY[title, content] &@
+       ('りんご',
+        ARRAY[5, 2],
+        'pgrn_index')::pgroonga_full_text_search_condition
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Seq Scan on memos
+  Filter: (ARRAY[title, content] &@ pgroonga_full_text_search_condition)
+(2 rows)
+\pset format aligned
+SELECT title, content, pgroonga_score(tableoid, ctid)
+  FROM memos
+ WHERE ARRAY[title, content] &@
+       ('りんご',
+        ARRAY[5, 2],
+        'pgrn_index')::pgroonga_full_text_search_condition;
+  title   | content | pgroonga_score 
+----------+---------+----------------
+ ひらがな | りんご  |              0
+ カタカナ | リンゴ  |              0
+(2 rows)
+
+DROP TABLE memos;

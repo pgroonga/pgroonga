@@ -19,23 +19,27 @@ EXPLAIN (COSTS OFF)
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~
-       ('11',
-        null,
-        'pgrn_index.content')::pgroonga_full_text_search_condition
+       pgroonga_condition(
+         '11',
+         index_name => 'pgrn_index',
+         column_name => 'content'
+       )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Bitmap Heap Scan on memos
-  Recheck Cond: (content &@~ pgroonga_full_text_search_condition)
+  Recheck Cond: (content &@~ pgroonga_condition)
   ->  Bitmap Index Scan on pgrn_index
-        Index Cond: (content &@~ pgroonga_full_text_search_condition)
+        Index Cond: (content &@~ pgroonga_condition)
 (4 rows)
 \pset format aligned
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~
-       ('11',
-        null,
-        'pgrn_index.content')::pgroonga_full_text_search_condition;
+       pgroonga_condition(
+         '11',
+         index_name => 'pgrn_index',
+         column_name => 'content'
+       );
   content  | pgroonga_score 
 -----------+----------------
  Hello 110 |              1

@@ -28,13 +28,13 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index')
  ORDER BY id
-\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index')
  ORDER BY id;
 \pset format aligned
 RESET SESSION AUTHORIZATION;

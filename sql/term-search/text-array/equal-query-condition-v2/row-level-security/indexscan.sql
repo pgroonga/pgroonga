@@ -27,14 +27,14 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index')
  ORDER BY id
-\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index')
  ORDER BY id;
 RESET SESSION AUTHORIZATION;
 

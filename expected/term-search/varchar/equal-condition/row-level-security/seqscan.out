@@ -21,19 +21,19 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
  ORDER BY id
-\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Sort
   Sort Key: id
   ->  Seq Scan on tags
-        Filter: ((user_name = CURRENT_USER) AND (name &= '(groonga,,pgrn_index)'::pgroonga_full_text_search_condition))
+        Filter: ((user_name = CURRENT_USER) AND (name &= pgroonga_condition))
 (4 rows)
 \pset format aligned
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
  ORDER BY id;
   name   
 ---------

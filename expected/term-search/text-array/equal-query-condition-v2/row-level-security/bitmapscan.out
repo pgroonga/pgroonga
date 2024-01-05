@@ -21,22 +21,22 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index')
  ORDER BY id
-\g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Sort
   Sort Key: id
   ->  Bitmap Heap Scan on tags
-        Recheck Cond: (names &=~ '("grn OR sql",,pgroonga_index)'::pgroonga_full_text_search_condition)
+        Recheck Cond: (names &=~ pgroonga_condition)
         Filter: (user_name = CURRENT_USER)
         ->  Bitmap Index Scan on pgroonga_index
-              Index Cond: (names &=~ '("grn OR sql",,pgroonga_index)'::pgroonga_full_text_search_condition)
+              Index Cond: (names &=~ pgroonga_condition)
 (7 rows)
 \pset format aligned
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index')
  ORDER BY id;
          names         
 -----------------------

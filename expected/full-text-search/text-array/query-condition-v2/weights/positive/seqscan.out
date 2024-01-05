@@ -17,21 +17,25 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDBMS -PGroonga',
-        ARRAY[5, 2],
-        'pgrn_index')::pgroonga_full_text_search_condition
+         pgroonga_condition(
+           'Groonga OR RDBMS -PGroonga',
+           ARRAY[5, 2],
+           index_name => 'pgrn_index'
+         )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Seq Scan on memos
-  Filter: (ARRAY[title, content] &@~ pgroonga_full_text_search_condition)
+  Filter: (ARRAY[title, content] &@~ pgroonga_condition)
 (2 rows)
 \pset format aligned
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@~
-       ('Groonga OR RDBMS -PGroonga',
-        ARRAY[5, 2],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+         pgroonga_condition(
+           'Groonga OR RDBMS -PGroonga',
+           ARRAY[5, 2],
+           index_name => 'pgrn_index'
+         );
  id |   title    |                 content                  | pgroonga_score 
 ----+------------+------------------------------------------+----------------
   1 | PostgreSQL | PostgreSQL is a RDBMS.                   |              0

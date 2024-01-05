@@ -12,8 +12,6 @@ CREATE INDEX btree_index ON memos (content);
 SELECT id, content
   FROM memos
  WHERE content &@~
-       ('Groonga',
-        NULL,
-        'btree_index')::pgroonga_full_text_search_condition;
+       pgroonga_condition('Groonga', index_name => 'btree_index');
 
 DROP TABLE memos;

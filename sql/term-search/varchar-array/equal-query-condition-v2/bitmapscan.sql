@@ -13,13 +13,16 @@ SET enable_seqscan = off;
 SET enable_indexscan = off;
 SET enable_bitmapscan = on;
 
+\pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index')
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+\pset format aligned
 
 SELECT names
   FROM tags
- WHERE names &=~ ('grn OR sql', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('grn OR sql', index_name => 'pgroonga_index');
 
 DROP TABLE tags;

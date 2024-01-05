@@ -18,11 +18,12 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index')
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 
 SELECT names
   FROM tags
- WHERE names &=~ ('ぽすぐれ OR ぐるんが', NULL, 'pgroonga_index')::pgroonga_full_text_search_condition;
+ WHERE names &=~ pgroonga_condition('ぽすぐれ OR ぐるんが', index_name => 'pgroonga_index');
 \pset format aligned
 
 DROP TABLE tags;

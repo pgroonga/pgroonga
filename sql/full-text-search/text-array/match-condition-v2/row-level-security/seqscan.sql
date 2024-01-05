@@ -39,20 +39,20 @@ EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
  WHERE contents &@
-       ('PostgreSQL',
-        NULL,
-        NULL,
-        'pgroonga_memos_index')::pgroonga_full_text_search_condition_with_scorers
+         pgroonga_condition(
+           'PostgreSQL',
+           index_name => 'pgroonga_memos_index'
+         )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT id, contents
   FROM memos
  WHERE contents &@~
-       ('PostgreSQL',
-        NULL,
-        NULL,
-        'pgroonga_memos_index')::pgroonga_full_text_search_condition_with_scorers;
+         pgroonga_condition(
+           'PostgreSQL',
+           index_name => 'pgroonga_memos_index'
+         );
 RESET SESSION AUTHORIZATION;
 
 DROP TABLE memos;

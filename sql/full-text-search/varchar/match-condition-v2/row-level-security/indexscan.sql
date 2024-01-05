@@ -29,21 +29,13 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@
-       ('Groonga',
-        NULL,
-        NULL,
-        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
+ WHERE content &@ pgroonga_condition('Groonga', index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@
-       ('Groonga',
-        NULL,
-        NULL,
-        'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+ WHERE content &@ pgroonga_condition('Groonga', index_name => 'pgrn_index');
 RESET SESSION AUTHORIZATION;
 
 DROP TABLE memos;

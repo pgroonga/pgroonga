@@ -57,28 +57,38 @@
 #define PGrnQueryStrategyV2Number	28	/* operator &@~  (query in Groonga) */
 #define PGrnSimilarStrategyV2Number	29	/* operator &@* (similar search) */
 #define PGrnQueryInStrategyV2Number	30	/* operator &@~| (multiple conditions of query in Groonga) */
-/* operator &@ with pgroonga_full_text_search_condition */
-#define PGrnMatchConditionStrategyV2Number	31
-/* operator &@~ with pgroonga_full_text_search_condition */
-#define PGrnQueryConditionStrategyV2Number	32
-/* operator &@ with pgroonga_full_text_search_condition_with_scorers */
-#define PGrnMatchConditionWithScorersStrategyV2Number	33
-/* operator &@~ with pgroonga_full_text_search_condition_with_scorers */
-#define PGrnQueryConditionWithScorersStrategyV2Number	34
+/* operator &@ with pgroonga_full_text_search_condition. Deprecated since 3.1.6. */
+#define PGrnMatchFTSConditionStrategyV2Number	31
+/* operator &@~ with pgroonga_full_text_search_condition. Deprecated since 3.1.6. */
+#define PGrnQueryFTSConditionStrategyV2Number	32
+/* operator &@ with pgroonga_full_text_search_condition_with_scorers. Deprecated since 3.1.6. */
+#define PGrnMatchFTSConditionWithScorersStrategyV2Number	33
+/* operator &@~ with pgroonga_full_text_search_condition_with_scorers. Deprecated since 3.1.6. */
+#define PGrnQueryFTSConditionWithScorersStrategyV2Number	34
 /* operator &~| (multiple conditions of @~ in Groonga) */
 #define PGrnRegexpInStrategyV2Number		35
 /* operator !&^| (multiple conditions of not prefix search) */
 #define PGrnNotPrefixInStrategyV2Number		36
-/* operator &^ with pgroonga_full_text_search_condition */
-#define PGrnPrefixConditionStrategyV2Number	37
+/* operator &^ with pgroonga_full_text_search_condition. Deprecated since 3.1.6. */
+#define PGrnPrefixFTSConditionStrategyV2Number	37
 /* operator &= */
 #define PGrnEqualStrategyV2Number	38
-/* operator &= with pgroonga_full_text_search_condition */
-#define PGrnEqualConditionStrategyV2Number	39
+/* operator &= with pgroonga_full_text_search_condition. Deprecated since 3.1.6. */
+#define PGrnEqualFTSConditionStrategyV2Number	39
 /* operator &=~ */
 #define PGrnEqualQueryStrategyV2Number	40
-/* operator &=~ with pgroonga_full_text_search_condition */
-#define PGrnEqualQueryConditionStrategyV2Number	41
+/* operator &=~ with pgroonga_full_text_search_condition. Deprecated since 3.1.6. */
+#define PGrnEqualQueryFTSConditionStrategyV2Number	41
+/* operator &@ with pgroonga_condition. */
+#define PGrnMatchConditionStrategyV2Number	42
+/* operator &@~ with pgroonga_condition. */
+#define PGrnQueryConditionStrategyV2Number	43
+/* operator &^ with pgroonga_condition. */
+#define PGrnPrefixConditionStrategyV2Number	44
+/* operator &= with pgroonga_condition. */
+#define PGrnEqualConditionStrategyV2Number	45
+/* operator &=~ with pgroonga_condition. */
+#define PGrnEqualQueryConditionStrategyV2Number	46
 
 #define PGRN_N_STRATEGIES PGrnEqualQueryConditionStrategyV2Number
 

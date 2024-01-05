@@ -15,20 +15,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &^ ('-p_G', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
-QUERY PLAN
-Index Scan using pgrn_index on tags
-  Index Cond: (name &^ '(-p_G,,pgrn_index)'::pgroonga_full_text_search_condition)
-(2 rows)
+ WHERE name &^ pgroonga_condition('-p_G', index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Index Scan using pgrn_index on tags
-  Index Cond: (name &^ pgroonga_full_text_search_condition)
+  Index Cond: (name &^ pgroonga_condition)
 (2 rows)
 \pset format aligned
 SELECT name
   FROM tags
- WHERE name &^ ('-p_G', NULL, 'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE name &^ pgroonga_condition('-p_G', index_name => 'pgrn_index');
    name    
 -----------
  pglogical

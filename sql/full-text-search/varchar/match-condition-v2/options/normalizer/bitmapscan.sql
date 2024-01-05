@@ -18,17 +18,21 @@ EXPLAIN (COSTS OFF)
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@
-       ('りんご',
-        ARRAY[5],
-        'pgrn_index')::pgroonga_full_text_search_condition
+         pgroonga_condition(
+           'りんご',
+           ARRAY[5],
+           index_name => 'pgrn_index'
+         )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 \pset format aligned
 
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@
-       ('りんご',
-        ARRAY[5],
-        'pgrn_index')::pgroonga_full_text_search_condition;
+         pgroonga_condition(
+           'りんご',
+           ARRAY[5],
+           index_name => 'pgrn_index'
+         );
 
 DROP TABLE memos;

@@ -21,13 +21,13 @@ EXPLAIN (COSTS OFF)
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition
+         pgroonga_condition('PostgreSQL', ARRAY[5, 2], index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 \pset format aligned
 
 SELECT id, title, content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE ARRAY[title, content] &@
-       ('PostgreSQL', ARRAY[5, 2], 'pgrn_index')::pgroonga_full_text_search_condition;
+         pgroonga_condition('PostgreSQL', ARRAY[5, 2], index_name => 'pgrn_index');
 
 DROP TABLE memos;

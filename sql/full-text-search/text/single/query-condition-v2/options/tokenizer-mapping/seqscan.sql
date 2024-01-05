@@ -23,17 +23,21 @@ EXPLAIN (COSTS OFF)
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~
-       ('11',
-        null,
-        'pgrn_index.content')::pgroonga_full_text_search_condition
+       pgroonga_condition(
+         '11',
+         index_name => 'pgrn_index',
+         column_name => 'content'
+       )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 \pset format aligned
 
 SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~
-       ('11',
-        null,
-        'pgrn_index.content')::pgroonga_full_text_search_condition;
+       pgroonga_condition(
+         '11',
+         index_name => 'pgrn_index',
+         column_name => 'content'
+       );
 
 DROP TABLE memos;

@@ -19,14 +19,14 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
- ORDER BY id;
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
+ ORDER BY id
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 \pset format aligned
 
 SELECT name
   FROM tags
- WHERE name &= ('groonga', NULL, 'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE name &= pgroonga_condition('groonga', index_name => 'pgrn_index')
  ORDER BY id;
 
 DROP TABLE tags;

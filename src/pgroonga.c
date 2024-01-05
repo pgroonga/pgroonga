@@ -1165,6 +1165,13 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
 											leftType,
 											rightType,
+											PGrnPrefixFTSConditionStrategyV2Number);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
 											PGrnPrefixStrategyV2DeprecatedNumber);
 	if (OidIsValid(prefixStrategyOID))
 		return true;
@@ -5673,7 +5680,8 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 		return false;
 	}
 
-	if (key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnEqualQueryFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
 		defaultOperator = GRN_OP_EQUAL;
 	}
@@ -6019,8 +6027,9 @@ PGrnSearchBuildCondition(Relation index,
 	if (PGrnSearchIsInCondition(key))
 		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 
-	if (key->sk_strategy == PGrnMatchConditionStrategyV2Number ||
-		key->sk_strategy == PGrnMatchConditionWithScorersStrategyV2Number)
+	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnMatchFTSConditionWithScorersStrategyV2Number ||
+		key->sk_strategy == PGrnMatchConditionStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionBinaryOperationCondition(data,
 																key,
@@ -6029,8 +6038,10 @@ PGrnSearchBuildCondition(Relation index,
 																GRN_OP_MATCH);
 	}
 
-	if (key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
-		key->sk_strategy == PGrnQueryConditionWithScorersStrategyV2Number ||
+	if (key->sk_strategy == PGrnQueryFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnQueryFTSConditionWithScorersStrategyV2Number ||
+		key->sk_strategy == PGrnEqualQueryFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionQueryCondition(data,
@@ -6039,7 +6050,8 @@ PGrnSearchBuildCondition(Relation index,
 													  attribute);
 	}
 
-	if (key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnPrefixFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionBinaryOperationCondition(data,
 																key,
@@ -6048,7 +6060,8 @@ PGrnSearchBuildCondition(Relation index,
 																GRN_OP_PREFIX);
 	}
 
-	if (key->sk_strategy == PGrnEqualConditionStrategyV2Number)
+	if (key->sk_strategy == PGrnEqualFTSConditionStrategyV2Number ||
+		key->sk_strategy == PGrnEqualConditionStrategyV2Number)
 	{
 		return PGrnSearchBuildConditionBinaryOperationCondition(data,
 																key,
@@ -6466,6 +6479,8 @@ PGrnSearch(IndexScanDesc scan)
 						 so->searched,
 						 GRN_OP_OR);
 	}
+	grn_p(ctx, data.expression);
+	grn_p(ctx, so->searched);
 	PGrnSearchDataFree(&data);
 }
 

@@ -30,20 +30,14 @@ EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  WHERE content &@~
-         ('rdbms OR engine',
-          NULL,
-          NULL,
-          'pgrn_index')::pgroonga_full_text_search_condition_with_scorers
+       pgroonga_condition('rdbms OR engine', index_name => 'pgrn_index')
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g" -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT id, content
   FROM memos
  WHERE content &@~
-         ('rdbms OR engine',
-          NULL,
-          NULL,
-          'pgrn_index')::pgroonga_full_text_search_condition_with_scorers;
+       pgroonga_condition('rdbms OR engine', index_name => 'pgrn_index');
 RESET SESSION AUTHORIZATION;
 
 DROP TABLE memos;

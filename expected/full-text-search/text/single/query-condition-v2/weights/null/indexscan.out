@@ -14,20 +14,24 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@~ ('Groonga OR PostgreSQL -PGroonga',
-                    NULL,
-                    'pgrn_index')::pgroonga_full_text_search_condition
+ WHERE content &@~
+         pgroonga_condition(
+           'Groonga OR PostgreSQL -PGroonga',
+           index_name => 'pgrn_index'
+         )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
 QUERY PLAN
 Index Scan using pgrn_index on memos
-  Index Cond: (content &@~ pgroonga_full_text_search_condition)
+  Index Cond: (content &@~ pgroonga_condition)
 (2 rows)
 \pset format aligned
 SELECT id, content, pgroonga_score(tableoid, ctid)
   FROM memos
- WHERE content &@~ ('Groonga OR PostgreSQL -PGroonga',
-                    NULL,
-                    'pgrn_index')::pgroonga_full_text_search_condition;
+ WHERE content &@~
+         pgroonga_condition(
+           'Groonga OR PostgreSQL -PGroonga',
+           index_name => 'pgrn_index'
+         );
  id |                 content                  | pgroonga_score 
 ----+------------------------------------------+----------------
   2 | Groonga is fast full text search engine. |              1
