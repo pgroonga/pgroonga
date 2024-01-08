@@ -5727,7 +5727,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 	grn_expr_append_op(ctx,
 					   data->expression,
 					   operator,
-					   1);
+					   2);
 	PGrnCheck("%s failed to push %s operator",
 			  tag,
 			  grn_operator_to_string(operator));
