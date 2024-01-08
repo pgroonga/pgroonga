@@ -193,11 +193,6 @@ jobs:
           Remove-Item sql\full-text-search\text\options\token-filters\custom.sql
           # Reduce tests to reduce test time
           Remove-Item sql\compatibility -Recurse -Force
-          if (${{ matrix.postgresql-version-major }} -lt 12) {
-            Remove-Item sql\function\highlight-html\declarative-partitioning.sql
-            Remove-Item sql\function\wal-set-applied-position\declarative-partitioning.sql
-            Remove-Item sql\vacuum\two-phase-commit.sql
-          }
           if (${{ matrix.postgresql-version-major }} -lt 13) {
             Remove-Item sql\full-text-search\text\single\declarative-partitioning.sql
           }

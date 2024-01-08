@@ -55,11 +55,6 @@ jobs:
         run: |
           # TODO: Remove me when groonga formula enables libstemmer
           rm sql/full-text-search/text/options/token-filters/custom.sql
-          if [ ${{ matrix.postgresql-version }} -lt 12 ]; then
-            rm sql/function/highlight-html/declarative-partitioning.sql
-            rm sql/function/wal-set-applied-position/declarative-partitioning.sql
-            rm sql/vacuum/two-phase-commit.sql
-          fi
           rm sql/full-text-search/text/single/declarative-partitioning.sql
           PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
             test/run-sql-test.sh
