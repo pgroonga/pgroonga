@@ -6558,8 +6558,6 @@ PGrnSearch(IndexScanDesc scan)
 						 so->searched,
 						 GRN_OP_OR);
 	}
-	grn_p(ctx, data.expression);
-	grn_p(ctx, so->searched);
 	PGrnSearchDataFree(&data);
 }
 
