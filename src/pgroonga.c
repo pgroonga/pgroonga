@@ -5700,7 +5700,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 	grn_expr_append_obj(ctx,
 						data->expression,
 						matchTarget,
-						GRN_OP_PUSH,
+						GRN_OP_GET_VALUE,
 						1);
 	if (matchTarget == targetColumn)
 	{
