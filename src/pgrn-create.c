@@ -201,6 +201,13 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 			flags |= GRN_OBJ_WITH_SECTION;
 		}
 	}
+	else
+	{
+		if (data->attributeFlags & GRN_OBJ_VECTOR)
+		{
+			flags |= GRN_OBJ_WITH_POSITION;
+		}
+	}
 	{
 		grn_obj *tokenizer = NULL;
 		grn_obj *normalizers = NULL;

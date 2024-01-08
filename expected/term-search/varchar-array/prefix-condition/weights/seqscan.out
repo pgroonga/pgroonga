@@ -1,0 +1,33 @@
+CREATE TABLE tags (
+  names varchar[]
+);
+INSERT INTO tags VALUES (ARRAY['PG', 'PostgreSQL']);
+INSERT INTO tags VALUES (ARRAY['grn', 'Groonga']);
+INSERT INTO tags VALUES (ARRAY['pgrn', 'PGroonga']);
+INSERT INTO tags VALUES (ARRAY[]::varchar[]);
+CREATE INDEX pgrn_index ON tags
+  USING pgroonga (names)
+  WITH (normalizers='NormalizerNFKC130("remove_symbol", true)');
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+\pset format unaligned
+EXPLAIN (COSTS OFF)
+SELECT names
+  FROM tags
+ WHERE names &^ pgroonga_condition('-p_G', ARRAY[0, 5], index_name => 'pgrn_index')
+\g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
+QUERY PLAN
+Seq Scan on tags
+  Filter: (names &^ pgroonga_condition)
+(2 rows)
+\pset format aligned
+SELECT names
+  FROM tags
+ WHERE names &^ pgroonga_condition('-p_G', ARRAY[0, 5], index_name => 'pgrn_index');
+      names      
+-----------------
+ {pgrn,PGroonga}
+(1 row)
+
+DROP TABLE tags;
