@@ -76,7 +76,7 @@ jobs:
           Write-Output "ARTIFACT_ID=${ARTIFACT_ID}" | `
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Cache ccache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ccache
           key: windows-msvc-${{ env.ARTIFACT_ID }}-ccache-${{ hashFiles('src/**') }}

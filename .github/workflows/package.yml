@@ -188,7 +188,7 @@ jobs:
           esac
           echo "TEST_DOCKER_IMAGE=${test_docker_image}" >> ${GITHUB_ENV}
       - name: Cache ccache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: packages/${{ env.PACKAGE }}/${{ env.PACKAGE_TYPE }}/build/ccache
           key: package-${{ matrix.package-id }}-ccache-${{ hashFiles('src/*.c', 'src/*.h') }}
