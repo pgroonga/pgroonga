@@ -84,6 +84,7 @@ PG_MODULE_MAGIC;
 #define PROGRESS_PGROONGA_PHASE_DONE 6
 
 static bool PGrnInitialized = false;
+static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
 static bool PGrnCrashSaferInitialized = false;
 
@@ -487,6 +488,7 @@ PGrnBeforeShmemExit(int code, Datum arg)
 	grn_fin();
 
 	PGrnGroongaInitialized = false;
+	PGrnBaseInitialized = false;
 	PGrnInitialized = false;
 }
 
@@ -660,65 +662,69 @@ _PG_init(void)
 {
 	grn_rc rc;
 
-	if (PGrnInitialized)
+	if (!PGrnInitialized)
+	{
+		PGrnInitialized = true;
+		PGrnBaseInitialized = false;
+		PGrnGroongaInitialized = false;
+
+		PGrnInitializeVariables();
+
+		grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
+
+		grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
+
+		rc = grn_init();
+		PGrnCheckRC(rc, "failed to initialize Groonga");
+
+		grn_set_segv_handler();
+		grn_set_abrt_handler();
+
+		if (IsUnderPostmaster) {
+			bool found;
+			LWLockAcquire(AddinShmemInitLock, LW_EXCLUSIVE);
+			processSharedData =
+				(PGrnProcessSharedData *) ShmemInitStruct("PGrnProcessSharedData",
+														  sizeof(PGrnProcessSharedData),
+														  &found);
+			if (!found)
+			{
+				processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
+			}
+			LWLockRelease(AddinShmemInitLock);
+		}
+		processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
+
+		before_shmem_exit(PGrnBeforeShmemExit, 0);
+
+		RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
+		RegisterResourceReleaseCallback(PGrnReleaseSequentialSearch, NULL);
+
+		grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
+
+		rc = grn_ctx_init(&PGrnContext, 0);
+		PGrnCheckRC(rc, "failed to initialize Groonga context");
+
+		PGrnGroongaInitialized = true;
+
+		ctx = &PGrnContext;
+
+		GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+
+		PGrnInitializeBuffers();
+
+		PGrnInitializeGroongaInformation();
+
+		PGrnVariablesApplyInitialValues();
+
+		PGrnInitializeOptions();
+
+		PGrnBaseInitialized = true;
+	}
+
+	if (!PGrnBaseInitialized)
 		PGrnCheckRC(GRN_UNKNOWN_ERROR,
 					"already tried to initialize and failed");
-
-	PGrnInitialized = true;
-	PGrnGroongaInitialized = false;
-
-	PGrnInitializeVariables();
-
-	grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
-
-	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
-
-	rc = grn_init();
-	PGrnCheckRC(rc,
-				"failed to initialize Groonga");
-
-	grn_set_segv_handler();
-	grn_set_abrt_handler();
-
-	if (IsUnderPostmaster) {
-		bool found;
-		LWLockAcquire(AddinShmemInitLock, LW_EXCLUSIVE);
-		processSharedData =
-			(PGrnProcessSharedData *) ShmemInitStruct("PGrnProcessSharedData",
-													  sizeof(PGrnProcessSharedData),
-													  &found);
-		if (!found)
-		{
-			processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
-		}
-		LWLockRelease(AddinShmemInitLock);
-	}
-	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
-
-	before_shmem_exit(PGrnBeforeShmemExit, 0);
-
-	RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
-	RegisterResourceReleaseCallback(PGrnReleaseSequentialSearch, NULL);
-
-	grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
-
-	rc = grn_ctx_init(&PGrnContext, 0);
-	PGrnCheckRC(rc,
-				"failed to initialize Groonga context");
-
-	PGrnGroongaInitialized = true;
-
-	ctx = &PGrnContext;
-
-	GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
-
-	PGrnInitializeBuffers();
-
-	PGrnInitializeGroongaInformation();
-
-	PGrnVariablesApplyInitialValues();
-
-	PGrnInitializeOptions();
 
 	PGrnEnsureDatabase();
 }
