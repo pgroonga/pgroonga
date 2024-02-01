@@ -457,6 +457,12 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		BackgroundWorker worker = {0};
 		BackgroundWorkerHandle *handle;
 
+		GRN_LOG(&ctx,
+				GRN_LOG_NOTICE,
+				TAG ": reindexing: %u/%u",
+				databaseOid,
+				tableSpaceOid);
+
 		snprintf(worker.bgw_name,
 				 BGW_MAXLEN,
 				 TAG ": prepare: %s: %u/%u",
@@ -481,8 +487,19 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		if (RegisterDynamicBackgroundWorker(&worker, &handle))
 		{
 			WaitForBackgroundWorkerShutdown(handle);
+			GRN_LOG(&ctx,
+					GRN_LOG_NOTICE,
+					TAG ": reindexed: %u/%u",
+					databaseOid,
+					tableSpaceOid);
 		}
 	}
+
+	GRN_LOG(&ctx,
+			GRN_LOG_NOTICE,
+			TAG ": ready: %u/%u",
+			databaseOid,
+			tableSpaceOid);
 
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
