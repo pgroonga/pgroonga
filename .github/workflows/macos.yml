@@ -57,10 +57,10 @@ jobs:
           rm sql/full-text-search/text/options/token-filters/custom.sql
           rm sql/full-text-search/text/single/declarative-partitioning.sql
           # TODO: Remove me when groonga formula is 13.1.1 or later
-          rm sql/term-search/varchar-array/prefix-condition/weights/bitmapscan.test
-          rm sql/term-search/varchar-array/prefix-condition/weights/indexscan.test
-          rm sql/term-search/text-array/prefix-condition/weights/bitmapscan.test
-          rm sql/term-search/text-array/prefix-condition/weights/indexscan.test
+          rm sql/term-search/varchar-array/prefix-condition/weights/bitmapscan.sql
+          rm sql/term-search/varchar-array/prefix-condition/weights/indexscan.sql
+          rm sql/term-search/text-array/prefix-condition/weights/bitmapscan.sql
+          rm sql/term-search/text-array/prefix-condition/weights/indexscan.sql
           PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
             test/run-sql-test.sh
         env:
