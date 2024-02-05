@@ -108,7 +108,7 @@ PGrnSequentialSearchDatumFinalize(PGrnSequentialSearchDatum *datum)
 		grn_obj_close(ctx, datum->expression);
 	grn_obj_close(ctx, datum->matched);
 	if (datum->indexColumn)
-		grn_obj_remove(ctx, datum->indexColumn);
+		grn_obj_close(ctx, datum->indexColumn);
 	if (datum->lexicon)
 		grn_obj_close(ctx, datum->lexicon);
 	grn_obj_close(ctx, datum->targetColumn);

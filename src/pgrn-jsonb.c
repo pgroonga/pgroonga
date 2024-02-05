@@ -913,9 +913,9 @@ PGrnInitializeJSONB(void)
 void
 PGrnFinalizeJSONB(void)
 {
-	grn_obj_remove(ctx, tmpValuesTable);
-	grn_obj_remove(ctx, tmpTypesTable);
-	grn_obj_remove(ctx, tmpPathsTable);
+	grn_obj_close(ctx, tmpValuesTable);
+	grn_obj_close(ctx, tmpTypesTable);
+	grn_obj_close(ctx, tmpPathsTable);
 }
 
 static void
