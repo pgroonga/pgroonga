@@ -115,3 +115,13 @@ if [ ${USE_MECAB:-no} = "yes" ]; then
   download_recursive \
     groonga-tokenizer-mecab-${GROONGA_VERSION}-1.el${OS_VERSION}
 fi
+
+if [ ${USE_PLUGIN_SUGGEST:-no} = "yes" ]; then
+  download_recursive \
+    groonga-plugin-suggest-${GROONGA_VERSION}-1.el${OS_VERSION}
+fi
+
+if [ ${USE_GROONGA_BIN:-no} = "yes" ]; then
+  download_recursive \
+    groonga-${GROONGA_VERSION}-1.el${OS_VERSION}
+fi
