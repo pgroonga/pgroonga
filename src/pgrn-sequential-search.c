@@ -475,6 +475,7 @@ PGrnSequentialSearchPrepareExpression(PGrnCondition *condition,
 	{
 		grn_obj_close(ctx, currentDatum->expression);
 		currentDatum->expression = NULL;
+		currentDatum->expressionHash = 0;
 	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx,
