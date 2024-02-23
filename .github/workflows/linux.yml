@@ -95,18 +95,16 @@ jobs:
               -e 's/^stats_temp_directory/#stats_temp_directory/g' \
               /etc/postgresql/15/main/postgresql.conf
           fi
-          echo "max_prepared_transactions = 1" | \
-            sudo tee --append /etc/postgresql/*/main/postgresql.conf
+          cat <<CONF | sudo tee --append /etc/postgresql/*/main/postgresql.conf
+          enable_partitionwise_join = on
+          max_prepared_transactions = 1
+          random_page_cost = 0
+          CONF
           sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Run regression test
         run: |
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
-            rm sql/full-text-search/text/single/declarative-partitioning.sql
-          fi
-          if [ ${{ matrix.postgresql-version }} -gt 15 -o \
-               "${GROONGA_MAIN}" = "yes" ]; then
-            # TODO: We don't know why this case doesn't use parallel scan...
             rm sql/full-text-search/text/single/declarative-partitioning.sql
           fi
           test/run-sql-test.sh
