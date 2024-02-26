@@ -171,6 +171,10 @@ PGrnReleaseSequentialSearch(ResourceReleasePhase phase,
 		}
 		else
 		{
+			if (datum == currentDatum)
+			{
+				currentDatum = NULL;
+			}
 			PGrnSequentialSearchDatumFinalize(datum);
 			grn_hash_cursor_delete(ctx, cursor, NULL);
 		}
