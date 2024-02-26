@@ -254,7 +254,7 @@ PGrnSequentialSearchPrepareIndex(PGrnCondition *condition,
 	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX;
 	bool targetIsVector =
 		(currentTargetType == PGRN_SEQUENTIAL_SEARCH_TARGET_TEXTS);
-	PGrnSequentialSearchDatumKey key;
+	PGrnSequentialSearchDatumKey key = {0};
 
 	if (!PGrnPGTextIsEmpty(condition->schemaName))
 	{
