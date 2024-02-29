@@ -422,6 +422,10 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			PGRN_VERSION,
 			databaseOid,
 			tableSpaceOid);
+	GRN_LOG(&ctx,
+			GRN_LOG_DEBUG,
+			TAG ": max_recovery_threads: %d",
+			grn_get_default_n_workers());
 
 	grn_ctx_set_wal_role(&ctx, GRN_WAL_ROLE_PRIMARY);
 
