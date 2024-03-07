@@ -855,7 +855,7 @@ _PG_init(void)
 							"Maximum number of threads for recovery of broken Groonga indexes.",
 							"The default is 0, which means disabled. "
 							"Use all CPUs in the environment at -1. "
-							"Use CPU for that number if max_recovery_threads >= 1 is set.",
+							"Use CPU for that number if 1 or later is set.",
 							&PGroongaCrashSaferMaxRecoveryThreads,
 							PGroongaCrashSaferMaxRecoveryThreads,
 							-1,
