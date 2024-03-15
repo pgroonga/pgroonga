@@ -3,5 +3,4 @@ CREATE TABLE memos (
 );
 CREATE INDEX pgrn_index ON memos USING pgroonga (contents);
 INSERT INTO memos VALUES (ARRAY['', E'\x0a']);
-WARNING:  pgroonga: [insert] <pgrn_index.contents>: failed to cast: <[{"value":"", "weight":0.0}, {"value":"\n", "weight":0.0}]>
 DROP TABLE memos;
