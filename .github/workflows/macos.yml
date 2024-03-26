@@ -39,6 +39,26 @@ jobs:
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark
+      - name: Update Homebrew if needed
+        run: |
+          set -x
+          required_groonga_version=$(grep "^REQUIRED_GROONGA_VERSION" makefiles/pgrn-pgxs.mk | cut -d' ' -f 3)
+          homebrew_groonga_version=$(brew info --json groonga | jq -r '.[0].versions.stable')
+          older_groonga_version=$( \
+            (echo ${required_groonga_version}; \
+             echo ${homebrew_groonga_version}) | \
+              sort --version-sort | \
+              head -n1 \
+          )
+          if [ "${older_groonga_version}" = "${homebrew_groonga_version}" ] && \
+             [ "${homebrew_groonga_version}" != "${required_groonga_version}" ]; then
+            brew update
+            # Force overwriting Python related symbolic links because
+            # Python related files in $(brew --prefix)/bin/ are provided
+            # system Python that is pre-installed on GitHub Actions
+            # runner.
+            brew install --overwrite python@3.12 python@3.11 python@3.10
+          fi
       - name: Install dependency
         run: |
           sed \
