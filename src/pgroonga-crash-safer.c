@@ -54,6 +54,7 @@ static volatile sig_atomic_t PGroongaCrashSaferGotSIGUSR1 = false;
 static int PGroongaCrashSaferFlushNaptime = 60;
 static char *PGroongaCrashSaferLogPath;
 static int PGroongaCrashSaferLogLevel = GRN_LOG_DEFAULT_LEVEL;
+static int PGroongaCrashSaferMaxRecoveryThreads = 0;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
@@ -396,6 +397,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		grn_default_logger_set_path(PGroongaCrashSaferLogPath);
 	}
+	grn_set_default_n_workers(PGroongaCrashSaferMaxRecoveryThreads);
 
 	if (grn_init() != GRN_SUCCESS)
 	{
@@ -420,6 +422,10 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			PGRN_VERSION,
 			databaseOid,
 			tableSpaceOid);
+	GRN_LOG(&ctx,
+			GRN_LOG_DEBUG,
+			TAG ": max_recovery_threads: %d",
+			grn_get_default_n_workers());
 
 	grn_ctx_set_wal_role(&ctx, GRN_WAL_ROLE_PRIMARY);
 
@@ -844,6 +850,21 @@ _PG_init(void)
 							 NULL,
 							 NULL,
 							 NULL);
+
+	DefineCustomIntVariable("pgroonga_crash_safer.max_recovery_threads",
+							"Maximum number of threads for recovery of broken Groonga indexes.",
+							"The default is 0, which means disabled. "
+							"Use all CPUs in the environment at -1. "
+							"Use CPU for that number if 1 or later is set.",
+							&PGroongaCrashSaferMaxRecoveryThreads,
+							PGroongaCrashSaferMaxRecoveryThreads,
+							-1,
+							INT_MAX,
+							PGC_SIGHUP,
+							0,
+							NULL,
+							NULL,
+							NULL);
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;

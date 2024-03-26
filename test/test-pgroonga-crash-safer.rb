@@ -282,4 +282,26 @@ log_autovacuum_min_duration = 0
       end
     end
   end
+
+  test "max_recovery_threads: default" do
+    pgroonga_log = @postgresql.read_pgroonga_log
+    assert_equal(["pgroonga: crash-safer: max_recovery_threads: 0"],
+                 pgroonga_log.scan(/pgroonga: crash-safer: max_recovery_threads:.*$/),
+                 pgroonga_log)
+  end
+
+  sub_test_case("max_recovery_threads") do
+    def additional_configurations
+      super + <<-CONFIG
+pgroonga_crash_safer.max_recovery_threads = -1
+      CONFIG
+    end
+
+    test "set" do
+      pgroonga_log = @postgresql.read_pgroonga_log
+      assert_equal(["pgroonga: crash-safer: max_recovery_threads: -1"],
+                   pgroonga_log.scan(/pgroonga: crash-safer: max_recovery_threads:.*$/),
+                   pgroonga_log)
+    end
+  end
 end
