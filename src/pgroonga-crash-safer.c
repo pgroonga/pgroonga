@@ -466,7 +466,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		GRN_LOG(&ctx,
 				GRN_LOG_NOTICE,
 				TAG ": %s: %u/%u",
-				needReindex ? "reindexing" : "resetting-position"
+				needReindex ? "reindexing" : "resetting-position",
 				databaseOid,
 				tableSpaceOid);
 
@@ -497,7 +497,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			GRN_LOG(&ctx,
 					GRN_LOG_NOTICE,
 					TAG ": %s: %u/%u",
-					needReindex ? "reindexed" : "reset-position"
+					needReindex ? "reindexed" : "reset-position",
 					databaseOid,
 					tableSpaceOid);
 		}
