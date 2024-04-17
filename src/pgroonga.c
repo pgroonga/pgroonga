@@ -488,6 +488,16 @@ PGrnBeforeShmemExit(int code, Datum arg)
 	}
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize]", tag);
+#ifdef WIN32
+	pgwin32_install_crashdump_handler();
+#else
+#	ifdef SIGSEGV
+	pqsignal(SIGSEGV, SIG_DFL);
+#	endif
+#endif
+#ifdef SIGABRT
+	pqsignal(SIGABRT, SIG_DFL);
+#endif
 	grn_fin();
 
 	PGrnGroongaInitialized = false;
