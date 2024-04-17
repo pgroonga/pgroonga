@@ -117,4 +117,30 @@ SELECT * FROM memos
       input.close
     end
   end
+
+  test "vacuum: in transaction" do
+    before_postgresql_log = @postgresql.read_log
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX pgroonga_content_index ON memos USING pgroonga (content);")
+    connection_pid = nil
+    run_sql do |input, output, error|
+      execute(input, output, "\\pset tuples_only on")
+      execute(input, output, "SELECT pg_backend_pid();")
+      connection_pid = Integer(output.gets.strip, 10)
+      99.times do
+        execute(input, output, "SELECT * FROM memos WHERE content &@ 'test';")
+      end
+      input.puts("BEGIN;")
+      input.close
+    end
+    loop do
+      result, = run_sql(<<-SELECT)
+SELECT pid FROM pg_stat_activity WHERE pid = #{connection_pid};
+      SELECT
+      break if result.include?("(0 rows)")
+    end
+    # No additional log. If this vacuum causes a crash, some messages are logged.
+    assert_equal(before_postgresql_log,
+                 @postgresql.read_log)
+  end
 end
