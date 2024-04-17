@@ -409,6 +409,9 @@ PGrnBeforeShmemExit(int code, Datum arg)
 {
 	const char *tag = "pgroonga: [exit]";
 
+	UnregisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
+	UnregisterResourceReleaseCallback(PGrnReleaseSequentialSearch, NULL);
+
 	if (ctx)
 	{
 		grn_obj *db;
