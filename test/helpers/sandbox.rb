@@ -269,12 +269,13 @@ module Helpers
       begin
         run_command("pg_ctl", "stop",
                     "-D", @dir)
-      rescue CommandRunError
+      rescue CommandRunError => error
         if @pid
           Process.kill(:KILL, @pid)
           @pid = nil
           @running = false
         end
+        error.message << "\nPostgreSQL log:\n#{read_log}"
         raise
       else
         @pid = nil
