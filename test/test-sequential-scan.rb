@@ -127,6 +127,7 @@ SELECT * FROM memos
       execute(input, output, "\\pset tuples_only on")
       result = execute(input, output, "SELECT pg_backend_pid();")
       result_lines = result.lines
+      pp result_lines
       if result_lines.size == 1
         # result_lines have only the executed query:
         #   ["SELECT pg_backend_pid();\n"]
