@@ -91,7 +91,13 @@ module Helpers
         error = ""
         status = nil
         timeout = 1
-        yield(input_write, output_read, output_read) if block_given?
+        if block_given?
+          begin
+            yield(input_write, output_read, output_read)
+          ensure
+            input_write.close unless input_write.closed?
+          end
+        end
         loop do
           readables, = IO.select([output_read, error_read], nil, nil, timeout)
           if readables
