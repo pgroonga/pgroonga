@@ -21,6 +21,7 @@ RUN \
     devscripts \
     libgroonga-dev \
     libmsgpack-dev \
+    libxxhash-dev \
     pkg-config \
     postgresql-server-dev-12 && \
   apt clean && \
