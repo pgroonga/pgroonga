@@ -126,21 +126,18 @@ SELECT * FROM memos
     run_sql do |input, output, error|
       execute(input, output, "\\pset tuples_only on")
       result = execute(input, output, "SELECT pg_backend_pid();")
-      result_lines = result.lines
-      pp result_lines
-      if result_lines.size == 1
-        # result_lines have only the executed query:
-        #   ["SELECT pg_backend_pid();\n"]
+      if result.strip == "SELECT pg_backend_pid();"
+        # result has only the executed query:
+        #   "SELECT pg_backend_pid();\n"
         # We need to read the result explicitly.
         connection_pid = Integer(output.gets.strip, 10)
       else
-        # result_lines have the executed query and its result:
-        #   [
-        #     "SELECT pg_backend_pid();\n",
-        #     "        1973961\n",
-        #   ]
+        # result has the executed query and its result:
+        #   "SELECT pg_backend_pid();\n" +
+        #   "        1973961\n" +
+        #   "\n"
         # We can just read result instead of reading again.
-        connection_pid = Integer(result_lines.last.strip, 10)
+        connection_pid = Integer(result.strip.lines.last.strip, 10)
       end
       99.times do
         execute(input, output, "SELECT * FROM memos WHERE content &@ 'test';")
