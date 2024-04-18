@@ -6,17 +6,8 @@ class PostgreSQL14PGroongaPackageTask < VersionedPGroongaPackageTask
     @updating_debian_changelog = false
   end
 
-  def enable_apt?
-    @updating_debian_changelog
-  end
-
-  def update_debian_changelog
-    @updating_debian_changelog = true
-    begin
-      super
-    ensure
-      @updating_debian_changelog = false
-    end
+  def apt_targets_default
+    []
   end
 
   def ubuntu_targets_default
