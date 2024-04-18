@@ -130,6 +130,7 @@ jobs:
           - postgresql-12-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-12-pgdg-pgroonga-almalinux-8
           - postgresql-12-pgdg-pgroonga-centos-7
+          - postgresql-12-pgroonga-ubuntu-focal
           - postgresql-12-pgroonga-centos-7
           # Groonga 11.0.5 or later is required
           # - pgroonga-fedora-33
