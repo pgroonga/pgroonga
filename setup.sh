@@ -26,22 +26,22 @@ fi
 case "${distribution}-${code_name}" in
   debian-*)
     wget https://apache.jfrog.io/artifactory/arrow/${distribution}/apache-arrow-apt-source-latest-${code_name}.deb
-    sudo apt install -y -V ./apache-arrow-apt-source-latest-${code_name}.deb
+    ${SUDO} apt install -y -V ./apache-arrow-apt-source-latest-${code_name}.deb
     wget https://packages.groonga.org/${distribution}/groonga-apt-source-latest-${code_name}.deb
-    sudo apt install -y -V ./groonga-apt-source-latest-${code_name}.deb
+    ${SUDO} apt install -y -V ./groonga-apt-source-latest-${code_name}.deb
     ;;
   ubuntu-*)
-    sudo apt install -y -V software-properties-common
-    sudo add-apt-repository -y universe
-    sudo add-apt-repository -y ppa:groonga/ppa
+    ${SUDO} apt install -y -V software-properties-common
+    ${SUDO} add-apt-repository -y universe
+    ${SUDO} add-apt-repository -y ppa:groonga/ppa
     ;;
 esac
 
 case "${distribution}-${code_name}" in
   debian-*|ubuntu-*)
-    sudo apt install -y -V gpg
+    ${SUDO} apt install -y -V gpg
     wget -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-      sudo gpg \
+      ${SUDO} gpg \
            --no-default-keyring \
            --keyring /usr/share/keyrings/pgdg.gpg \
            --import -
@@ -50,14 +50,14 @@ case "${distribution}-${code_name}" in
      echo "Suites: $(lsb_release --codename --short)-pgdg"; \
      echo "Components: main"; \
      echo "Signed-By: /usr/share/keyrings/pgdg.gpg") | \
-      sudo tee /etc/apt/sources.list.d/pgdg.sources
-    sudo apt update
+      ${SUDO} tee /etc/apt/sources.list.d/pgdg.sources
+    ${SUDO} apt update
     latest_postgresql_version=$(cd "${source_dir}/packages" && \
                                   echo postgresql-*-pgdg-pgroonga | \
                                     grep -o '[0-9]*' | \
                                     sort | \
                                     tail -n 1)
-    sudo apt install -y -V \
+    ${SUDO} apt install -y -V \
          gcc \
          groonga-token-filter-stem \
          groonga-tokenizer-mecab \
