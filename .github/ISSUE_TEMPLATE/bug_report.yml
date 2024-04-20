@@ -39,7 +39,7 @@ body:
         - PostgreSQL Version: [e.g. 15.1]
         - PGroonga Version: [e.g. 12.1.0]
         - libgroonga Version: [e.g.  8.0.1]
-           - https://pgroonga.github.io/ja/reference/parameters/libgroonga-version.html
+           - https://pgroonga.github.io/reference/parameters/libgroonga-version.html
     validations:
       required: true
   - type: textarea
