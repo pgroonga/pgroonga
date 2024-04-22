@@ -129,6 +129,13 @@ namespace :version do
         upgrade_sql.puts("-- Upgrade SQL")
       end
       sh("git", "add", upgrade_sql_path)
+
+      downgrade_sql_name = "#{package_name}--#{new_version}--#{version}.sql"
+      downgrade_sql_path = File.join("data", downgrade_sql_name)
+      File.open(downgrade_sql_path, "w") do |downgrade_sql|
+        downgrade_sql.puts("-- Downgrade SQL")
+      end
+      sh("git", "add", downgrade_sql_path)
     end
   end
 end
