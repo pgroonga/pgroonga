@@ -1,0 +1,20 @@
+---
+# PostgreSQL style
+AlignAfterOpenBracket: Align
+AllowShortIfStatementsOnASingleLine: Never
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterExternBlock: true
+  BeforeElse: true
+BreakBeforeBraces: Custom
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForContinuationAndIndentation
+# Project style
+BinPackArguments: false
+BinPackParameters: false
+IndentPPDirectives: AfterHash
