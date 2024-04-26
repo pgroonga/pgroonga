@@ -33,49 +33,26 @@
 #endif
 
 #ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
-#	define pgrn_add_string_reloption(kinds,			\
-									 name,			\
-									 desc,			\
-									 default_value,	\
-									 validator,		\
-									 lock_mode)		\
-	add_string_reloption((kinds),					\
-						 (name),					\
-						 (desc),					\
-						 (default_value),			\
-						 (validator),				\
-						 (lock_mode))
-#	define pgrn_add_bool_reloption(kinds,			\
-								   name,			\
-								   desc,			\
-								   default_value,	\
-								   lock_mode)		\
-	add_bool_reloption((kinds),						\
-					   (name),						\
-					   (desc),						\
-					   (default_value),				\
-					   (lock_mode))
+#	define pgrn_add_string_reloption(                                         \
+		kinds, name, desc, default_value, validator, lock_mode)                \
+		add_string_reloption((kinds),                                          \
+							 (name),                                           \
+							 (desc),                                           \
+							 (default_value),                                  \
+							 (validator),                                      \
+							 (lock_mode))
+#	define pgrn_add_bool_reloption(                                           \
+		kinds, name, desc, default_value, lock_mode)                           \
+		add_bool_reloption(                                                    \
+			(kinds), (name), (desc), (default_value), (lock_mode))
 #else
-#	define pgrn_add_string_reloption(kinds,			\
-									 name,			\
-									 desc,			\
-									 default_value,	\
-									 validator,		\
-									 lock_mode)		\
-	add_string_reloption((kinds),					\
-						 (name),					\
-						 (desc),					\
-						 (default_value),			\
-						 (validator))
-#	define pgrn_add_bool_reloption(kinds,			\
-								   name,			\
-								   desc,			\
-								   default_value,	\
-								   lock_mode)		\
-	add_bool_reloption((kinds),						\
-					   (name),						\
-					   (desc),						\
-					   (default_value))
+#	define pgrn_add_string_reloption(                                         \
+		kinds, name, desc, default_value, validator, lock_mode)                \
+		add_string_reloption(                                                  \
+			(kinds), (name), (desc), (default_value), (validator))
+#	define pgrn_add_bool_reloption(                                           \
+		kinds, name, desc, default_value, lock_mode)                           \
+		add_bool_reloption((kinds), (name), (desc), (default_value))
 #endif
 
 #if PG_VERSION_NUM >= 130000
@@ -92,44 +69,41 @@
 
 #if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
-#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
-	((relation)->rd_locator.relNumber)
-#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
-	((relation)->rd_locator.spcOid)
+#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)                         \
+		((relation)->rd_locator.relNumber)
+#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)                          \
+		((relation)->rd_locator.spcOid)
 #	include <common/relpath.h>
 typedef RelFileNumber PGrnRelFileNumber;
-#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
-	RelidByRelfilenumber((tablespaceOid), (fileNumber))
-#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)	\
-	object_ownercheck(TableSpaceRelationId, (tablespaceOid), (userOid))
-#	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
-	object_ownercheck(RelationRelationId, (relationOid), (userOid))
+#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)                \
+		RelidByRelfilenumber((tablespaceOid), (fileNumber))
+#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)              \
+		object_ownercheck(TableSpaceRelationId, (tablespaceOid), (userOid))
+#	define pgrn_pg_class_ownercheck(relationOid, userOid)                     \
+		object_ownercheck(RelationRelationId, (relationOid), (userOid))
 #else
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_node)
-#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)	\
-	((relation)->rd_node.relNode)
-#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)	\
-	((relation)->rd_node.spcNode)
+#	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)                         \
+		((relation)->rd_node.relNode)
+#	define PGRN_RELATION_GET_LOCATOR_SPACE(relation)                          \
+		((relation)->rd_node.spcNode)
 typedef Oid PGrnRelFileNumber;
-#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)	\
-	RelidByRelfilenode((tablespaceOid), (fileNumber))
-#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)	\
-	pg_tablespace_ownercheck((tablespaceOid), (userOid))
-#	define pgrn_pg_class_ownercheck(relationOid, userOid)	\
-	pg_class_ownercheck((relationOid), (userOid))
+#	define PGrnRelidByRelfilenumber(tablespaceOid, fileNumber)                \
+		RelidByRelfilenode((tablespaceOid), (fileNumber))
+#	define pgrn_pg_tablespace_ownercheck(tablespaceOid, userOid)              \
+		pg_tablespace_ownercheck((tablespaceOid), (userOid))
+#	define pgrn_pg_class_ownercheck(relationOid, userOid)                     \
+		pg_class_ownercheck((relationOid), (userOid))
 #endif
 
 #if PG_VERSION_NUM >= 150000
-#	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
-	RELKIND_HAS_PARTITIONS(relkind)
-#	define PGRN_RELKIND_HAS_TABLE_AM(relkind)	\
-	RELKIND_HAS_TABLE_AM(relkind)
+#	define PGRN_RELKIND_HAS_PARTITIONS(relkind) RELKIND_HAS_PARTITIONS(relkind)
+#	define PGRN_RELKIND_HAS_TABLE_AM(relkind) RELKIND_HAS_TABLE_AM(relkind)
 #else
-#	define PGRN_RELKIND_HAS_PARTITIONS(relkind)	\
-	((relkind) == RELKIND_PARTITIONED_TABLE ||	\
-	 (relkind) == RELKIND_PARTITIONED_INDEX)
-#	define PGRN_RELKIND_HAS_TABLE_AM(relkind)	\
-	((relkind) == RELKIND_RELATION ||		\
-	 (relkind) == RELKIND_TOASTVALUE ||		\
-	 (relkind) == RELKIND_MATVIEW)
+#	define PGRN_RELKIND_HAS_PARTITIONS(relkind)                               \
+		((relkind) == RELKIND_PARTITIONED_TABLE ||                             \
+		 (relkind) == RELKIND_PARTITIONED_INDEX)
+#	define PGRN_RELKIND_HAS_TABLE_AM(relkind)                                 \
+		((relkind) == RELKIND_RELATION || (relkind) == RELKIND_TOASTVALUE ||   \
+		 (relkind) == RELKIND_MATVIEW)
 #endif

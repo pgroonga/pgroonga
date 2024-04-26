@@ -18,10 +18,10 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT void
-pgroonga_wal_applier_apply(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_wal_applier_main(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_wal_applier_apply(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_wal_applier_main(Datum datum)
+	pg_attribute_noreturn();
 
 #define TAG "pgroonga: wal-applier"
 
@@ -76,7 +76,7 @@ pgroonga_wal_applier_apply(Datum databaseOidDatum)
 		{
 			ereport(FATAL,
 					(errmsg(TAG ": failed to detect "
-							"whether PGroonga is installed or not: %d",
+								"whether PGroonga is installed or not: %d",
 							result)));
 		}
 		if (SPI_processed == 1)
@@ -86,8 +86,7 @@ pgroonga_wal_applier_apply(Datum databaseOidDatum)
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(FATAL,
-						(errmsg(TAG ": failed to apply WAL: %d",
-								result)));
+						(errmsg(TAG ": failed to apply WAL: %d", result)));
 			}
 		}
 	}
@@ -140,13 +139,13 @@ pgroonga_wal_applier_apply_all(void)
 					 databaseOid);
 			snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 			worker.bgw_flags =
-				BGWORKER_SHMEM_ACCESS |
-				BGWORKER_BACKEND_DATABASE_CONNECTION;
+				BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 			worker.bgw_start_time = BgWorkerStart_ConsistentState;
 			worker.bgw_restart_time = BGW_NEVER_RESTART;
 			snprintf(worker.bgw_library_name,
 					 BGW_MAXLEN,
-					 "%s", PGroongaWALApplierLibraryName);
+					 "%s",
+					 PGroongaWALApplierLibraryName);
 			snprintf(worker.bgw_function_name,
 					 BGW_MAXLEN,
 					 "pgroonga_wal_applier_apply");
@@ -177,9 +176,7 @@ pgroonga_wal_applier_main(Datum arg)
 	while (!PGroongaWALApplierGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
-				  WL_LATCH_SET |
-				  WL_TIMEOUT |
-				  PGRN_WL_EXIT_ON_PM_DEATH,
+				  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
 				  PGroongaWALApplierNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
@@ -226,14 +223,14 @@ _PG_init(void)
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
-		BGWORKER_SHMEM_ACCESS |
-		BGWORKER_BACKEND_DATABASE_CONNECTION;
+		BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 	worker.bgw_start_time = BgWorkerStart_ConsistentState;
 	worker.bgw_restart_time = BGW_NEVER_RESTART;
-	snprintf(worker.bgw_library_name, BGW_MAXLEN,
-			 "%s", PGroongaWALApplierLibraryName);
-	snprintf(worker.bgw_function_name, BGW_MAXLEN,
-			 "pgroonga_wal_applier_main");
+	snprintf(worker.bgw_library_name,
+			 BGW_MAXLEN,
+			 "%s",
+			 PGroongaWALApplierLibraryName);
+	snprintf(worker.bgw_function_name, BGW_MAXLEN, "pgroonga_wal_applier_main");
 	worker.bgw_main_arg = 0;
 	worker.bgw_notify_pid = 0;
 

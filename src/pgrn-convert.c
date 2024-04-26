@@ -35,11 +35,8 @@ PGrnConvertFromDataArrayType(Datum datum,
 
 		if (isNULL)
 		{
-			grn_vector_add_element(ctx, buffer,
-								   NULL,
-								   0,
-								   weight,
-								   buffer->header.domain);
+			grn_vector_add_element(
+				ctx, buffer, NULL, 0, weight, buffer->header.domain);
 			continue;
 		}
 
@@ -56,7 +53,8 @@ PGrnConvertFromDataArrayType(Datum datum,
 		{
 			VarChar *element;
 			element = DatumGetVarCharPP(elementDatum);
-			grn_vector_add_element(ctx, buffer,
+			grn_vector_add_element(ctx,
+								   buffer,
 								   VARDATA_ANY(element),
 								   VARSIZE_ANY_EXHDR(element),
 								   weight,
@@ -67,7 +65,8 @@ PGrnConvertFromDataArrayType(Datum datum,
 		{
 			VarChar *element;
 			element = DatumGetTextPP(elementDatum);
-			grn_vector_add_element(ctx, buffer,
+			grn_vector_add_element(ctx,
+								   buffer,
 								   VARDATA_ANY(element),
 								   VARSIZE_ANY_EXHDR(element),
 								   weight,
@@ -146,15 +145,13 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	case XMLOID:
 	{
 		text *value = DatumGetTextPP(datum);
-		GRN_TEXT_SET(ctx, buffer,
-					 VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
+		GRN_TEXT_SET(ctx, buffer, VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
 		break;
 	}
 	case VARCHAROID:
 	{
 		VarChar *value = DatumGetVarCharPP(datum);
-		GRN_TEXT_SET(ctx, buffer,
-					 VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
+		GRN_TEXT_SET(ctx, buffer, VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value));
 		break;
 	}
 #ifdef NOT_USED
@@ -170,9 +167,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 	case UUIDOID:
 	{
 		Datum uuidCStringDatum = DirectFunctionCall1(uuid_out, datum);
-		GRN_TEXT_SETS(ctx,
-					  buffer,
-					  DatumGetCString(uuidCStringDatum));
+		GRN_TEXT_SETS(ctx, buffer, DatumGetCString(uuidCStringDatum));
 		break;
 	}
 	default:

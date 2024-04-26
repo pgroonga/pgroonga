@@ -15,8 +15,10 @@ PGrnCreateSourcesTable(PGrnCreateData *data)
 {
 	char buildingSourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(buildingSourcesTableName, sizeof(buildingSourcesTableName),
-			 PGrnBuildingSourcesTableNameFormat, data->relNumber);
+	snprintf(buildingSourcesTableName,
+			 sizeof(buildingSourcesTableName),
+			 PGrnBuildingSourcesTableNameFormat,
+			 data->relNumber);
 	data->sourcesTable = PGrnCreateTable(data->index,
 										 buildingSourcesTableName,
 										 GRN_OBJ_TABLE_HASH_KEY,
@@ -32,8 +34,10 @@ PGrnCreateSourcesTableFinish(PGrnCreateData *data)
 {
 	char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(sourcesTableName, sizeof(sourcesTableName),
-			 PGrnSourcesTableNameFormat, data->relNumber);
+	snprintf(sourcesTableName,
+			 sizeof(sourcesTableName),
+			 PGrnSourcesTableNameFormat,
+			 data->relNumber);
 	PGrnRenameTable(data->index, data->sourcesTable, sourcesTableName);
 	if (!data->sourcesCtidColumn)
 		PGrnAliasAdd(data->index);
@@ -51,8 +55,11 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 	{
 		char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
 
-		snprintf(lexiconName, sizeof(lexiconName),
-				 PGrnLexiconNameFormat, data->relNumber, data->i);
+		snprintf(lexiconName,
+				 sizeof(lexiconName),
+				 PGrnLexiconNameFormat,
+				 data->relNumber,
+				 data->i);
 		range = PGrnLookup(lexiconName, ERROR);
 		rangeID = grn_obj_id(ctx, range);
 	}
@@ -100,11 +107,8 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		char columnName[GRN_TABLE_MAX_KEY_SIZE];
 		PGrnColumnNameEncode(TupleDescAttr(data->desc, data->i)->attname.data,
 							 columnName);
-		PGrnCreateColumn(data->index,
-						 data->sourcesTable,
-						 columnName,
-						 flags,
-						 range);
+		PGrnCreateColumn(
+			data->index, data->sourcesTable, columnName, flags, range);
 	}
 }
 
@@ -131,8 +135,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		break;
 	}
 
-	if (data->forFullTextSearch ||
-		data->forRegexpSearch ||
+	if (data->forFullTextSearch || data->forRegexpSearch ||
 		data->forPrefixSearch)
 	{
 		const char *tokenizerName = NULL;
@@ -158,8 +161,10 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		PGrnApplyOptionValues(data->index,
 							  data->i,
 							  useCase,
-							  &tokenizer, tokenizerName,
-							  &normalizers, normalizersName,
+							  &tokenizer,
+							  tokenizerName,
+							  &normalizers,
+							  normalizersName,
 							  &tokenFilters,
 							  &flags,
 							  NULL);
@@ -169,8 +174,11 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		flags |= GRN_OBJ_TABLE_PAT_KEY;
 	}
 
-	snprintf(lexiconName, sizeof(lexiconName),
-			 PGrnLexiconNameFormat, data->relNumber, data->i);
+	snprintf(lexiconName,
+			 sizeof(lexiconName),
+			 PGrnLexiconNameFormat,
+			 data->relNumber,
+			 data->i);
 	type = grn_ctx_at(ctx, typeID);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
@@ -189,8 +197,11 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 	grn_obj *lexicon;
 	grn_column_flags flags = GRN_OBJ_COLUMN_INDEX;
 
-	snprintf(lexiconName, sizeof(lexiconName),
-			 PGrnLexiconNameFormat, data->relNumber, data->i);
+	snprintf(lexiconName,
+			 sizeof(lexiconName),
+			 PGrnLexiconNameFormat,
+			 data->relNumber,
+			 data->i);
 	lexicon = PGrnLookup(lexiconName, ERROR);
 
 	if (data->forFullTextSearch || data->forRegexpSearch)
@@ -216,15 +227,14 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 		PGrnApplyOptionValues(data->index,
 							  data->i,
 							  PGRN_OPTION_USE_CASE_UNKNOWN,
-							  &tokenizer, NULL,
-							  &normalizers, NULL,
+							  &tokenizer,
+							  NULL,
+							  &normalizers,
+							  NULL,
 							  &tokenFilters,
 							  &tableFlags,
 							  &flags);
 	}
-	PGrnCreateColumn(data->index,
-					 lexicon,
-					 PGrnIndexColumnName,
-					 flags,
-					 data->sourcesTable);
+	PGrnCreateColumn(
+		data->index, lexicon, PGrnIndexColumnName, flags, data->sourcesTable);
 }

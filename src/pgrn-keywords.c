@@ -53,8 +53,10 @@ PGrnKeywordsResolveNormalizer(const char *indexName,
 		PGrnApplyOptionValues(index,
 							  -1,
 							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
-							  &tokenizer, PGRN_DEFAULT_TOKENIZER,
-							  normalizers, PGRN_DEFAULT_NORMALIZERS,
+							  &tokenizer,
+							  PGRN_DEFAULT_TOKENIZER,
+							  normalizers,
+							  PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
 							  &flags,
 							  NULL);
@@ -69,7 +71,8 @@ PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 						  Oid *previousIndexID)
 {
 	grn_obj *normalizers = NULL;
-	if (!PGrnKeywordsResolveNormalizer(indexName, &normalizers, previousIndexID))
+	if (!PGrnKeywordsResolveNormalizer(
+			indexName, &normalizers, previousIndexID))
 		return;
 
 	if (grn_table_size(ctx, keywordsTable) > 0)
@@ -80,10 +83,7 @@ PGrnKeywordsSetNormalizer(grn_obj *keywordsTable,
 		normalizers = &(buffers->normalizers);
 		GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
 	}
-	grn_obj_set_info(ctx,
-					 keywordsTable,
-					 GRN_INFO_NORMALIZERS,
-					 normalizers);
+	grn_obj_set_info(ctx, keywordsTable, GRN_INFO_NORMALIZERS, normalizers);
 }
 
 void
@@ -108,13 +108,14 @@ PGrnKeywordsUpdateTable(Datum keywords, grn_obj *keywordsTable)
 			bool isNULL;
 			grn_id id;
 
-			keywordDatum = array_get_element(keywords, 1, &i, -1, -1, false,
-											 'i', &isNULL);
+			keywordDatum =
+				array_get_element(keywords, 1, &i, -1, -1, false, 'i', &isNULL);
 			if (isNULL)
 				continue;
 
 			keyword = DatumGetTextPP(keywordDatum);
-			id = grn_table_add(ctx, keywordsTable,
+			id = grn_table_add(ctx,
+							   keywordsTable,
 							   VARDATA_ANY(keyword),
 							   VARSIZE_ANY_EXHDR(keyword),
 							   NULL);
@@ -129,12 +130,10 @@ PGrnKeywordsUpdateTable(Datum keywords, grn_obj *keywordsTable)
 		grn_id id;
 		size_t nIDs;
 
-		cursor = grn_table_cursor_open(ctx,
-									   keywordsTable,
-									   NULL, 0,
-									   NULL, 0,
-									   0, -1, 0);
-		if (!cursor) {
+		cursor = grn_table_cursor_open(
+			ctx, keywordsTable, NULL, 0, NULL, 0, 0, -1, 0);
+		if (!cursor)
+		{
 			PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
 						"%s failed to create cursor for keywordsTable",
 						tag);
@@ -164,5 +163,3 @@ PGrnKeywordsUpdateTable(Datum keywords, grn_obj *keywordsTable)
 		grn_table_cursor_close(ctx, cursor);
 	}
 }
-
-

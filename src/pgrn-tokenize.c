@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
@@ -21,7 +22,8 @@ static grn_obj tokenJSON;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_tokenize);
 
-typedef struct {
+typedef struct
+{
 	grn_id id;
 	grn_obj value;
 	int32_t position;
@@ -85,49 +87,46 @@ PGrnTokensAppend(grn_id id, grn_token_cursor *tokenCursor)
 	grnToken = grn_token_cursor_get_token(ctx, tokenCursor);
 	{
 		grn_obj *data = grn_token_get_data(ctx, grnToken);
-		GRN_TEXT_SET(ctx,
-					 &(token->value),
-					 GRN_TEXT_VALUE(data),
-					 GRN_TEXT_LEN(data));
+		GRN_TEXT_SET(
+			ctx, &(token->value), GRN_TEXT_VALUE(data), GRN_TEXT_LEN(data));
 	}
 	token->position = grn_token_get_position(ctx, grnToken);
 	token->forcePrefixSearch = grn_token_get_position(ctx, grnToken);
-    token->sourceOffset = grn_token_get_source_offset(ctx, grnToken);
-    token->sourceLength = grn_token_get_source_length(ctx, grnToken);
-    token->sourceFirstCharacterLength =
-      grn_token_get_source_first_character_length(ctx, grnToken);
-    {
-      grn_obj *metadata;
-      size_t nMetadata;
-      size_t i;
+	token->sourceOffset = grn_token_get_source_offset(ctx, grnToken);
+	token->sourceLength = grn_token_get_source_length(ctx, grnToken);
+	token->sourceFirstCharacterLength =
+		grn_token_get_source_first_character_length(ctx, grnToken);
+	{
+		grn_obj *metadata;
+		size_t nMetadata;
+		size_t i;
 
-      metadata = grn_token_get_metadata(ctx, grnToken);
-      nMetadata = grn_token_metadata_get_size(ctx, metadata);
-      for (i = 0; i < nMetadata; i++) {
-        GRN_BULK_REWIND(&tokenMetadataName);
-        GRN_BULK_REWIND(&tokenMetadataValue);
-        grn_token_metadata_at(ctx,
-							  metadata,
-							  i,
-							  &tokenMetadataName,
-							  &tokenMetadataValue);
-        if (GRN_TEXT_LEN(&tokenMetadataName) == 0) {
-          continue;
-        }
-        grn_vector_add_element(ctx,
-                               &(token->metadata),
-                               GRN_BULK_HEAD(&tokenMetadataName),
-                               GRN_BULK_VSIZE(&tokenMetadataName),
-                               0,
-                               tokenMetadataName.header.domain);
-        grn_vector_add_element(ctx,
-                               &(token->metadata),
-                               GRN_BULK_HEAD(&tokenMetadataValue),
-                               GRN_BULK_VSIZE(&tokenMetadataValue),
-                               0,
-                               tokenMetadataValue.header.domain);
-      }
-    }
+		metadata = grn_token_get_metadata(ctx, grnToken);
+		nMetadata = grn_token_metadata_get_size(ctx, metadata);
+		for (i = 0; i < nMetadata; i++)
+		{
+			GRN_BULK_REWIND(&tokenMetadataName);
+			GRN_BULK_REWIND(&tokenMetadataValue);
+			grn_token_metadata_at(
+				ctx, metadata, i, &tokenMetadataName, &tokenMetadataValue);
+			if (GRN_TEXT_LEN(&tokenMetadataName) == 0)
+			{
+				continue;
+			}
+			grn_vector_add_element(ctx,
+								   &(token->metadata),
+								   GRN_BULK_HEAD(&tokenMetadataName),
+								   GRN_BULK_VSIZE(&tokenMetadataName),
+								   0,
+								   tokenMetadataName.header.domain);
+			grn_vector_add_element(ctx,
+								   &(token->metadata),
+								   GRN_BULK_HEAD(&tokenMetadataValue),
+								   GRN_BULK_VSIZE(&tokenMetadataValue),
+								   0,
+								   tokenMetadataValue.header.domain);
+		}
+	}
 }
 
 static void
@@ -140,7 +139,10 @@ PGrnTokensFin(void)
 void
 PGrnInitializeTokenize(void)
 {
-	lexicon = grn_table_create(ctx, NULL, 0, NULL,
+	lexicon = grn_table_create(ctx,
+							   NULL,
+							   0,
+							   NULL,
 							   GRN_OBJ_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
@@ -199,10 +201,8 @@ PGrnTokenizeSetModule(const char *moduleName,
 			return;
 		}
 
-		GRN_TEXT_SET(ctx,
-					 value,
-					 VARDATA_ANY(newValue),
-					 VARSIZE_ANY_EXHDR(newValue));
+		GRN_TEXT_SET(
+			ctx, value, VARDATA_ANY(newValue), VARSIZE_ANY_EXHDR(newValue));
 		grn_obj_set_info(ctx, lexicon, type, value);
 		PGrnCheck("tokenize: failed to set %s", moduleName);
 	}
@@ -223,8 +223,8 @@ PGrnTokenizeCreateArray(void)
 	size_t i;
 	size_t nTokens;
 	Datum *tokenData;
-	int	dims[1];
-	int	lbs[1];
+	int dims[1];
+	int lbs[1];
 
 	nTokens = PGrnTokensSize();
 	if (nTokens == 0)
@@ -255,7 +255,9 @@ PGrnTokenizeCreateArray(void)
 		}
 		grn_output_map_open(ctx, &tokenJSON, type, "token", nElements);
 		grn_output_cstr(ctx, &tokenJSON, type, "value");
-		grn_output_str(ctx, &tokenJSON, type,
+		grn_output_str(ctx,
+					   &tokenJSON,
+					   type,
 					   GRN_TEXT_VALUE(&(token->value)),
 					   GRN_TEXT_LEN(&(token->value)));
 		grn_output_cstr(ctx, &tokenJSON, type, "position");
@@ -268,10 +270,10 @@ PGrnTokenizeCreateArray(void)
 			grn_output_uint64(ctx, &tokenJSON, type, token->sourceOffset);
 			grn_output_cstr(ctx, &tokenJSON, type, "source_length");
 			grn_output_uint32(ctx, &tokenJSON, type, token->sourceLength);
-			grn_output_cstr(ctx, &tokenJSON, type,
-							"source_first_character_length");
-			grn_output_uint32(ctx, &tokenJSON, type,
-							  token->sourceFirstCharacterLength);
+			grn_output_cstr(
+				ctx, &tokenJSON, type, "source_first_character_length");
+			grn_output_uint32(
+				ctx, &tokenJSON, type, token->sourceFirstCharacterLength);
 		}
 		if (haveMetadata)
 		{
@@ -289,12 +291,8 @@ PGrnTokenizeCreateArray(void)
 				unsigned int rawValueLength;
 				grn_id valueDomain;
 
-				rawNameLength = grn_vector_get_element(ctx,
-													   &(token->metadata),
-													   j * 2,
-													   &rawName,
-													   NULL,
-													   NULL);
+				rawNameLength = grn_vector_get_element(
+					ctx, &(token->metadata), j * 2, &rawName, NULL, NULL);
 				grn_output_str(ctx, &tokenJSON, type, rawName, rawNameLength);
 
 				rawValueLength = grn_vector_get_element(ctx,
@@ -304,9 +302,10 @@ PGrnTokenizeCreateArray(void)
 														NULL,
 														&valueDomain);
 				grn_obj_reinit(ctx, &tokenMetadataValue, valueDomain, 0);
-				grn_bulk_write(ctx, &tokenMetadataValue,
-							   rawValue, rawValueLength);
-				grn_output_obj(ctx, &tokenJSON, type, &tokenMetadataValue, NULL);
+				grn_bulk_write(
+					ctx, &tokenMetadataValue, rawValue, rawValueLength);
+				grn_output_obj(
+					ctx, &tokenJSON, type, &tokenMetadataValue, NULL);
 			}
 			grn_output_map_close(ctx, &tokenJSON, type);
 		}
@@ -318,15 +317,8 @@ PGrnTokenizeCreateArray(void)
 	}
 	dims[0] = nTokens;
 	lbs[0] = 1;
-	return construct_md_array(tokenData,
-							  NULL,
-							  1,
-							  dims,
-							  lbs,
-							  JSONOID,
-							  -1,
-							  false,
-							  'i');
+	return construct_md_array(
+		tokenData, NULL, 1, dims, lbs, JSONOID, -1, false, 'i');
 }
 
 static ArrayType *
@@ -405,9 +397,8 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 
 			value = DatumGetTextPP(valueDatum);
 
-#define NAME_EQUAL(n)									\
-			(VARSIZE_ANY_EXHDR(name) == strlen(n) &&	\
-			 strcmp(VARDATA_ANY(name), n) == 0)
+#define NAME_EQUAL(n)                                                          \
+	(VARSIZE_ANY_EXHDR(name) == strlen(n) && strcmp(VARDATA_ANY(name), n) == 0)
 
 			if (NAME_EQUAL("tokenizer"))
 			{
@@ -435,15 +426,11 @@ pgroonga_tokenize(PG_FUNCTION_ARGS)
 		array_free_iterator(iterator);
 	}
 
-	PGrnTokenizeSetModule("tokenizer",
-						  GRN_INFO_DEFAULT_TOKENIZER,
-						  tokenizerName);
-	PGrnTokenizeSetModule("normalizer",
-						  GRN_INFO_NORMALIZER,
-						  normalizerName);
-	PGrnTokenizeSetModule("token filters",
-						  GRN_INFO_TOKEN_FILTERS,
-						  tokenFiltersName);
+	PGrnTokenizeSetModule(
+		"tokenizer", GRN_INFO_DEFAULT_TOKENIZER, tokenizerName);
+	PGrnTokenizeSetModule("normalizer", GRN_INFO_NORMALIZER, normalizerName);
+	PGrnTokenizeSetModule(
+		"token filters", GRN_INFO_TOKEN_FILTERS, tokenFiltersName);
 
 	pgTokens = PGrnTokenize(target);
 

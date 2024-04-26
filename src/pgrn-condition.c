@@ -14,8 +14,7 @@
 static grn_ctx *ctx = &PGrnContext;
 
 void
-PGrnConditionDeconstruct(PGrnCondition *condition,
-						 HeapTupleHeader header)
+PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 {
 	Oid type;
 	int32 typmod;
@@ -50,7 +49,8 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 		queryIndex = 0;
 		weightsIndex = 1;
 		indexNameIndex = 2;
-	} else if (desc->natts == 4)
+	}
+	else if (desc->natts == 4)
 	{
 		/* pgroonga_full_text_search_condition_with_scorers */
 		mayFullIndexName = true;
@@ -107,10 +107,8 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 			continue;
 		}
 
-		offset = att_align_pointer(offset,
-								   attribute->attalign,
-								   -1,
-								   rawData + offset);
+		offset = att_align_pointer(
+			offset, attribute->attalign, -1, rawData + offset);
 		datum = fetchatt(attribute, rawData + offset);
 
 		if (i == queryIndex)
@@ -138,9 +136,8 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 			condition->columnName = DatumGetTextPP(datum);
 		}
 
-		offset = att_addlength_pointer(offset,
-									   attribute->attlen,
-									   rawData + offset);
+		offset =
+			att_addlength_pointer(offset, attribute->attlen, rawData + offset);
 	}
 
 	ReleaseTupleDesc(desc);
@@ -168,8 +165,7 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 		}
 	}
 
-	if (condition->isTargets &&
-		condition->weights &&
+	if (condition->isTargets && condition->weights &&
 		ARR_NDIM(condition->weights) == 1)
 	{
 		ArrayIterator iterator;
@@ -185,7 +181,8 @@ PGrnConditionDeconstruct(PGrnCondition *condition,
 				continue;
 			}
 
-			GRN_BOOL_PUT(ctx, condition->isTargets, (DatumGetInt32(datum) != 0));
+			GRN_BOOL_PUT(
+				ctx, condition->isTargets, (DatumGetInt32(datum) != 0));
 		}
 		array_free_iterator(iterator);
 	}

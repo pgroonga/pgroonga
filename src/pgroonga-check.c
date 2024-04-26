@@ -20,12 +20,10 @@ static void
 PGrnCheckDatabaseDirectory(grn_ctx *ctx, const char *directoryPath)
 {
 	char databasePath[MAXPGPATH];
-	grn_obj	*db;
+	grn_obj *db;
 	pgrn_stat_buffer fileStatus;
 
-	join_path_components(databasePath,
-						 directoryPath,
-						 PGrnDatabaseBasename);
+	join_path_components(databasePath, directoryPath, PGrnDatabaseBasename);
 
 	if (pgrn_stat(databasePath, &fileStatus) != 0)
 	{
@@ -60,9 +58,7 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 	HANDLE finder;
 	char targetPath[MAXPGPATH];
 
-	join_path_components(targetPath,
-						 baseDirectoryPath,
-						 "*");
+	join_path_components(targetPath, baseDirectoryPath, "*");
 	finder = FindFirstFile(targetPath, &data);
 	if (finder != INVALID_HANDLE_VALUE)
 	{
@@ -77,9 +73,8 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 			if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 				continue;
 
-			join_path_components(directoryPath,
-								 baseDirectoryPath,
-								 data.cFileName);
+			join_path_components(
+				directoryPath, baseDirectoryPath, data.cFileName);
 			PGrnCheckDatabaseDirectory(ctx, directoryPath);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
@@ -98,9 +93,8 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 			if (strcmp(entry->d_name, "..") == 0)
 				continue;
 
-			join_path_components(directoryPath,
-								 baseDirectoryPath,
-								 entry->d_name);
+			join_path_components(
+				directoryPath, baseDirectoryPath, entry->d_name);
 			PGrnCheckDatabaseDirectory(ctx, directoryPath);
 		}
 		closedir(dir);
@@ -132,10 +126,8 @@ _PG_init(void)
 				 errmsg("pgroonga: check: "
 						"failed to initialize Groonga context")));
 
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			"pgroonga: check: initialize: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(
+		ctx, GRN_LOG_NOTICE, "pgroonga: check: initialize: <%s>", PGRN_VERSION);
 
 	PGrnCheckAllDatabases(ctx);
 

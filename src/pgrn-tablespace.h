@@ -7,7 +7,8 @@
 #include <access/tableam.h>
 #include <catalog/pg_tablespace.h>
 
-typedef struct {
+typedef struct
+{
 	LOCKMODE lockMode;
 	Relation tablespaces;
 	TableScanDesc scan;
@@ -19,9 +20,7 @@ PGrnTablespaceIteratorInitialize(PGrnTablespaceIterator *iterator,
 {
 	iterator->lockMode = lockMode;
 	iterator->tablespaces = table_open(TableSpaceRelationId, lockMode);
-	iterator->scan = table_beginscan_catalog(iterator->tablespaces,
-												  0,
-												  NULL);
+	iterator->scan = table_beginscan_catalog(iterator->tablespaces, 0, NULL);
 }
 
 static inline Oid
@@ -45,4 +44,3 @@ PGrnTablespaceIteratorFinalize(PGrnTablespaceIterator *iterator)
 	heap_endscan(iterator->scan);
 	table_close(iterator->tablespaces, iterator->lockMode);
 }
-

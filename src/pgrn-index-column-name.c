@@ -62,9 +62,11 @@ pgroonga_index_column_name_name(PG_FUNCTION_ARGS)
 
 		indexID = PGrnPGIndexNameToID(indexName);
 		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-		snprintf(indexColumnNameBuffer, sizeof(indexColumnNameBuffer),
+		snprintf(indexColumnNameBuffer,
+				 sizeof(indexColumnNameBuffer),
 				 PGrnIndexColumnNameFormat,
-				 fileNodeID, i);
+				 fileNodeID,
+				 i);
 		indexColumnName = cstring_to_text(indexColumnNameBuffer);
 		PG_RETURN_TEXT_P(indexColumnName);
 	}
@@ -107,9 +109,11 @@ pgroonga_index_column_name_index(PG_FUNCTION_ARGS)
 
 		indexID = PGrnPGIndexNameToID(indexName);
 		fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-		snprintf(indexColumnNameBuffer, sizeof(indexColumnNameBuffer),
+		snprintf(indexColumnNameBuffer,
+				 sizeof(indexColumnNameBuffer),
 				 PGrnIndexColumnNameFormat,
-				 fileNodeID, columnIndex);
+				 fileNodeID,
+				 columnIndex);
 		indexColumnName = cstring_to_text(indexColumnNameBuffer);
 		PG_RETURN_TEXT_P(indexColumnName);
 	}

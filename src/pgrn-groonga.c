@@ -163,9 +163,9 @@ PGrnCheckRC(grn_rc rc, const char *format, ...)
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 	va_end(args);
-	ereport(ERROR,
-			(errcode(PGrnRCToPgErrorCode(rc)),
-			 errmsg("pgroonga: %s", message)));
+	ereport(
+		ERROR,
+		(errcode(PGrnRCToPgErrorCode(rc)), errmsg("pgroonga: %s", message)));
 	return false;
 #undef MESSAGE_SIZE
 }
@@ -195,9 +195,9 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 	va_end(args);
-	ereport(errorLevel,
-			(errcode(PGrnRCToPgErrorCode(rc)),
-			 errmsg("pgroonga: %s", message)));
+	ereport(
+		errorLevel,
+		(errcode(PGrnRCToPgErrorCode(rc)), errmsg("pgroonga: %s", message)));
 	return false;
 #undef MESSAGE_SIZE
 }
@@ -209,9 +209,7 @@ PGrnLookup(const char *name, int errorLevel)
 }
 
 grn_obj *
-PGrnLookupWithSize(const char *name,
-				   size_t nameSize,
-				   int errorLevel)
+PGrnLookupWithSize(const char *name, size_t nameSize, int errorLevel)
 {
 	grn_obj *object;
 	object = grn_ctx_get(ctx, name, nameSize);
@@ -220,7 +218,8 @@ PGrnLookupWithSize(const char *name,
 		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
 						 errorLevel,
 						 "object isn't found: <%.*s>",
-						 (int)nameSize, name);
+						 (int) nameSize,
+						 name);
 	}
 	return object;
 }
@@ -252,8 +251,10 @@ PGrnLookupColumnWithSize(grn_obj *table,
 		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
 						 errorLevel,
 						 "column isn't found: <%.*s>:<%.*s>",
-						 tableNameSize, tableName,
-						 (int) nameSize, name);
+						 tableNameSize,
+						 tableName,
+						 (int) nameSize,
+						 name);
 	}
 
 	return column;
@@ -264,7 +265,8 @@ PGrnLookupSourcesTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name),
+	snprintf(name,
+			 sizeof(name),
 			 PGrnSourcesTableNameFormat,
 			 PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 	return PGrnLookup(name, errorLevel);
@@ -275,7 +277,8 @@ PGrnLookupSourcesCtidColumn(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name),
+	snprintf(name,
+			 sizeof(name),
 			 PGrnSourcesTableNameFormat "." PGrnSourcesCtidColumnName,
 			 PGRN_RELATION_GET_LOCATOR_NUMBER(index));
 	return PGrnLookup(name, errorLevel);
@@ -286,7 +289,8 @@ PGrnLookupLexicon(Relation index, unsigned int nthAttribute, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name),
+	snprintf(name,
+			 sizeof(name),
 			 PGrnLexiconNameFormat,
 			 PGRN_RELATION_GET_LOCATOR_NUMBER(index),
 			 nthAttribute);
@@ -298,7 +302,8 @@ PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 
-	snprintf(name, sizeof(name),
+	snprintf(name,
+			 sizeof(name),
 			 PGrnLexiconNameFormat ".%s",
 			 PGRN_RELATION_GET_LOCATOR_NUMBER(index),
 			 nthAttribute,
@@ -314,9 +319,8 @@ PGrnFormatSourcesTableName(const char *indexName,
 	Oid fileNodeID;
 	indexID = PGrnPGIndexNameToID(indexName);
 	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-	snprintf(output, GRN_TABLE_MAX_KEY_SIZE,
-			 PGrnSourcesTableNameFormat,
-			 fileNodeID);
+	snprintf(
+		output, GRN_TABLE_MAX_KEY_SIZE, PGrnSourcesTableNameFormat, fileNodeID);
 }
 
 grn_obj *
@@ -355,41 +359,34 @@ PGrnCreateTableWithSize(Relation index,
 {
 	const char *path = NULL;
 	char pathBuffer[MAXPGPATH];
-	grn_obj	*table;
+	grn_obj *table;
 
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
-		if (index && PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
+		if (index &&
+			PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
 		{
 			char *databasePath;
 			char filePath[MAXPGPATH];
 
-			databasePath =
-				GetDatabasePath(MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
-			snprintf(filePath, sizeof(filePath),
+			databasePath = GetDatabasePath(
+				MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
+			snprintf(filePath,
+					 sizeof(filePath),
 					 "%s.%.*s",
 					 PGrnDatabaseBasename,
-					 (int)nameSize,
+					 (int) nameSize,
 					 name);
-			join_path_components(pathBuffer,
-								 databasePath,
-								 filePath);
+			join_path_components(pathBuffer, databasePath, filePath);
 			pfree(databasePath);
 
 			path = pathBuffer;
 		}
 	}
 
-	table = grn_table_create(ctx,
-							 name,
-							 nameSize,
-							 path,
-							 flags,
-							 type,
-							 NULL);
-	PGrnCheck("failed to create table: <%.*s>",
-			  (int)nameSize, name);
+	table = grn_table_create(ctx, name, nameSize, path, flags, type, NULL);
+	PGrnCheck("failed to create table: <%.*s>", (int) nameSize, name);
 	if (tokenizer)
 		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
 	if (normalizers)
@@ -441,8 +438,8 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 
 	if (attributeNameSize > 0)
 	{
-		int i =
-			PGrnPGResolveAttributeIndex(index, attributeName, attributeNameSize);
+		int i = PGrnPGResolveAttributeIndex(
+			index, attributeName, attributeNameSize);
 		if (i != -1)
 		{
 			lexicon = PGrnLookupLexicon(index, i, ERROR);
@@ -500,29 +497,27 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 
 	GRN_BULK_REWIND(tokenizerBuffer);
 	grn_table_get_default_tokenizer_string(ctx, lexicon, tokenizerBuffer);
-	if (GRN_TEXT_LEN(tokenizerBuffer) > 0) {
+	if (GRN_TEXT_LEN(tokenizerBuffer) > 0)
+	{
 		tokenizer = tokenizerBuffer;
 	}
 
 	GRN_BULK_REWIND(normalizersBuffer);
 	grn_table_get_normalizers_string(ctx, lexicon, normalizersBuffer);
-	if (GRN_TEXT_LEN(normalizersBuffer) > 0) {
+	if (GRN_TEXT_LEN(normalizersBuffer) > 0)
+	{
 		normalizers = normalizersBuffer;
 	}
 
 	GRN_BULK_REWIND(tokenFiltersBuffer);
 	grn_table_get_token_filters_string(ctx, lexicon, tokenFiltersBuffer);
-	if (GRN_TEXT_LEN(tokenFiltersBuffer) > 0) {
+	if (GRN_TEXT_LEN(tokenFiltersBuffer) > 0)
+	{
 		tokenFilters = tokenFiltersBuffer;
 	}
 
-	temporaryLexicon = PGrnCreateTable(index,
-									   NULL,
-									   flags,
-									   keyType,
-									   tokenizer,
-									   normalizers,
-									   tokenFilters);
+	temporaryLexicon = PGrnCreateTable(
+		index, NULL, flags, keyType, tokenizer, normalizers, tokenFilters);
 
 	grn_obj_unref(ctx, lexicon);
 	grn_obj_unref(ctx, keyType);
@@ -531,27 +526,23 @@ PGrnCreateSimilarTemporaryLexicon(Relation index,
 }
 
 grn_obj *
-PGrnCreateColumn(Relation	index,
-				 grn_obj	*table,
+PGrnCreateColumn(Relation index,
+				 grn_obj *table,
 				 const char *name,
 				 grn_column_flags flags,
-				 grn_obj	*type)
+				 grn_obj *type)
 {
-	return PGrnCreateColumnWithSize(index,
-									table,
-									name,
-									strlen(name),
-									flags,
-									type);
+	return PGrnCreateColumnWithSize(
+		index, table, name, strlen(name), flags, type);
 }
 
 grn_obj *
-PGrnCreateColumnWithSize(Relation	index,
-						 grn_obj	*table,
+PGrnCreateColumnWithSize(Relation index,
+						 grn_obj *table,
 						 const char *name,
-						 size_t		nameSize,
+						 size_t nameSize,
 						 grn_column_flags flags,
-						 grn_obj	*type)
+						 grn_obj *type)
 {
 	const char *path = NULL;
 	char pathBuffer[MAXPGPATH];
@@ -560,43 +551,34 @@ PGrnCreateColumnWithSize(Relation	index,
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
-		if (index && PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
+		if (index &&
+			PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
 		{
 			char *databasePath;
 			char tableName[GRN_TABLE_MAX_KEY_SIZE];
 			int tableNameSize;
 			char filePath[MAXPGPATH];
 
-			databasePath =
-				GetDatabasePath(MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
-			tableNameSize = grn_obj_name(ctx,
-										 table,
-										 tableName,
-										 GRN_TABLE_MAX_KEY_SIZE);
-			snprintf(filePath, sizeof(filePath),
+			databasePath = GetDatabasePath(
+				MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
+			tableNameSize =
+				grn_obj_name(ctx, table, tableName, GRN_TABLE_MAX_KEY_SIZE);
+			snprintf(filePath,
+					 sizeof(filePath),
 					 "%s.%.*s.%.*s",
 					 PGrnDatabaseBasename,
 					 tableNameSize,
 					 tableName,
-					 (int)nameSize,
+					 (int) nameSize,
 					 name);
-			join_path_components(pathBuffer,
-								 databasePath,
-								 filePath);
+			join_path_components(pathBuffer, databasePath, filePath);
 			pfree(databasePath);
 
 			path = pathBuffer;
 		}
 	}
-	column = grn_column_create(ctx,
-							   table,
-							   name,
-							   nameSize,
-							   path,
-							   flags,
-							   type);
-	PGrnCheck("failed to create column: <%.*s>",
-			  (int)nameSize, name);
+	column = grn_column_create(ctx, table, name, nameSize, path, flags, type);
+	PGrnCheck("failed to create column: <%.*s>", (int) nameSize, name);
 
 	PGrnWALCreateColumn(index, table, name, nameSize, flags, type);
 
@@ -604,17 +586,14 @@ PGrnCreateColumnWithSize(Relation	index,
 }
 
 void
-PGrnIndexColumnClearSources(Relation index,
-							grn_obj *indexColumn)
+PGrnIndexColumnClearSources(Relation index, grn_obj *indexColumn)
 {
 	GRN_BULK_REWIND(&(buffers->sourceIDs));
 	PGrnIndexColumnSetSourceIDs(index, indexColumn, &(buffers->sourceIDs));
 }
 
 void
-PGrnIndexColumnSetSource(Relation index,
-						 grn_obj *indexColumn,
-						 grn_obj *source)
+PGrnIndexColumnSetSource(Relation index, grn_obj *indexColumn, grn_obj *source)
 {
 	grn_id sourceID;
 
@@ -667,11 +646,7 @@ PGrnRenameTable(Relation index, grn_obj *table, const char *newName)
 			  PGrnInspectName(table),
 			  newName);
 
-	PGrnWALRenameTable(index,
-					   name,
-					   nameSize,
-					   newName,
-					   newNameSize);
+	PGrnWALRenameTable(index, name, nameSize, newName, newNameSize);
 }
 
 void
@@ -681,15 +656,13 @@ PGrnRemoveObject(const char *name)
 }
 
 void
-PGrnRemoveObjectWithSize(const char *name,
-						 size_t nameSize)
+PGrnRemoveObjectWithSize(const char *name, size_t nameSize)
 {
 	grn_obj *object;
 
 	object = PGrnLookupWithSize(name, nameSize, ERROR);
 	grn_obj_remove(ctx, object);
-	PGrnCheck("failed to remove: <%.*s>",
-			  (int)nameSize, name);
+	PGrnCheck("failed to remove: <%.*s>", (int) nameSize, name);
 }
 
 void
@@ -699,8 +672,7 @@ PGrnRemoveObjectForce(const char *name)
 }
 
 void
-PGrnRemoveObjectForceWithSize(const char *name,
-							  size_t nameSize)
+PGrnRemoveObjectForceWithSize(const char *name, size_t nameSize)
 {
 	grn_obj *object;
 
@@ -712,11 +684,11 @@ PGrnRemoveObjectForceWithSize(const char *name,
 			object = NULL;
 		}
 	}
-	if (!object) {
+	if (!object)
+	{
 		grn_obj_remove_force(ctx, name, nameSize);
 	}
-	PGrnCheck("failed to remove: <%.*s>",
-			  (int)nameSize, name);
+	PGrnCheck("failed to remove: <%.*s>", (int) nameSize, name);
 }
 
 void
@@ -738,8 +710,7 @@ PGrnFlushObject(grn_obj *object, bool recursive)
 		return;
 
 	nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
-	PGrnCheck("failed to flush: <%.*s>",
-			  nameSize, name);
+	PGrnCheck("failed to flush: <%.*s>", nameSize, name);
 }
 
 void
@@ -747,11 +718,8 @@ PGrnRemoveColumns(grn_obj *table)
 {
 	grn_hash *columns;
 
-	columns = grn_hash_create(ctx,
-							  NULL,
-							  sizeof(grn_id),
-							  0,
-							  GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
+	columns = grn_hash_create(
+		ctx, NULL, sizeof(grn_id), 0, GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
 	if (!columns)
 	{
 		PGrnCheck("failed to create columns container for removing columns: "
@@ -759,19 +727,20 @@ PGrnRemoveColumns(grn_obj *table)
 				  PGrnInspectName(table));
 	}
 
-	GRN_HASH_EACH_BEGIN(ctx, columns, cursor, id) {
+	GRN_HASH_EACH_BEGIN(ctx, columns, cursor, id)
+	{
 		grn_id *columnID;
 		grn_obj *column;
 
-		grn_hash_cursor_get_key(ctx, cursor, (void **)&columnID);
+		grn_hash_cursor_get_key(ctx, cursor, (void **) &columnID);
 		column = grn_ctx_at(ctx, *columnID);
 		if (!column)
 			continue;
 
 		grn_obj_remove(ctx, column);
-		PGrnCheck("failed to remove column: <%s>",
-				  PGrnInspectName(column));
-	} GRN_HASH_EACH_END(ctx, cursor);
+		PGrnCheck("failed to remove column: <%s>", PGrnInspectName(column));
+	}
+	GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
 }
@@ -812,7 +781,7 @@ PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags)
 		typeID = GRN_DB_LONG_TEXT;
 		break;
 	case VARCHAROID:
-		typeID = GRN_DB_SHORT_TEXT;	/* 4KB */
+		typeID = GRN_DB_SHORT_TEXT; /* 4KB */
 		break;
 #ifdef NOT_USED
 	case POINTOID:

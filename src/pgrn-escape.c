@@ -55,16 +55,16 @@ pgroonga_escape_string(PG_FUNCTION_ARGS)
 		GRN_TEXT_PUTC(ctx, specialCharactersBuffer, '\0');
 	}
 
-	 grn_expr_syntax_escape(ctx,
-							VARDATA_ANY(value),
-							VARSIZE_ANY_EXHDR(value),
-							GRN_TEXT_VALUE(specialCharactersBuffer),
-							'\\',
-							escapedValueBuffer);
-	 PGrnCheck("%s failed to escape: <%.*s>",
-			   tag,
-			   (int) VARSIZE_ANY_EXHDR(value),
-			   VARDATA_ANY(value));
+	grn_expr_syntax_escape(ctx,
+						   VARDATA_ANY(value),
+						   VARSIZE_ANY_EXHDR(value),
+						   GRN_TEXT_VALUE(specialCharactersBuffer),
+						   '\\',
+						   escapedValueBuffer);
+	PGrnCheck("%s failed to escape: <%.*s>",
+			  tag,
+			  (int) VARSIZE_ANY_EXHDR(value),
+			  VARDATA_ANY(value));
 	GRN_TEXT_PUTC(ctx, escapedValueBuffer, '"');
 
 	escapedValue = cstring_to_text_with_len(GRN_TEXT_VALUE(escapedValueBuffer),

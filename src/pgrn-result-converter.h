@@ -16,13 +16,9 @@ typedef struct
 	TupleDesc desc;
 } PGrnResultConverter;
 
-void
-PGrnResultConverterInit(PGrnResultConverter *converter,
-						Jsonb *jsonb,
-						const char *tag);
-void
-PGrnResultConverterBuildTupleDesc(PGrnResultConverter *converter);
-HeapTuple
-PGrnResultConverterBuildTuple(PGrnResultConverter *converter);
-Jsonb *
-PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter);
+void PGrnResultConverterInit(PGrnResultConverter *converter,
+							 Jsonb *jsonb,
+							 const char *tag);
+void PGrnResultConverterBuildTupleDesc(PGrnResultConverter *converter);
+HeapTuple PGrnResultConverterBuildTuple(PGrnResultConverter *converter);
+Jsonb *PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter);

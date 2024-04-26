@@ -78,7 +78,8 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 #endif
 
 #ifdef PGRN_SUPPORT_WAL
-typedef enum {
+typedef enum
+{
 	PGRN_WAL_ACTION_INSERT,
 	PGRN_WAL_ACTION_CREATE_TABLE,
 	PGRN_WAL_ACTION_CREATE_COLUMN,
@@ -87,15 +88,17 @@ typedef enum {
 	PGRN_WAL_ACTION_DELETE
 } PGrnWALAction;
 
-#define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
+#	define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
 
-typedef struct {
+typedef struct
+{
 	BlockNumber next;
 	BlockNumber max;
 	uint32_t version;
 } PGrnWALMetaPageSpecial;
 
-typedef struct {
+typedef struct
+{
 	GenericXLogState *state;
 	PGrnWALMetaPageSpecial *metaPageSpecial;
 	Buffer buffer;
@@ -145,9 +148,8 @@ msgpack_pack_grn_obj(msgpack_packer *packer, grn_obj *object)
 		if (grn_obj_is_text_family_bulk(ctx, object))
 		{
 			msgpack_pack_str(packer, GRN_TEXT_LEN(object));
-			msgpack_pack_str_body(packer,
-								  GRN_TEXT_VALUE(object),
-								  GRN_TEXT_LEN(object));
+			msgpack_pack_str_body(
+				packer, GRN_TEXT_VALUE(object), GRN_TEXT_LEN(object));
 		}
 		else
 		{
@@ -197,7 +199,7 @@ PGrnWALPageGetFreeSize(Page page)
 {
 	PageHeader pageHeader;
 
-	pageHeader = (PageHeader)page;
+	pageHeader = (PageHeader) page;
 	return pageHeader->pd_upper - pageHeader->pd_lower;
 }
 
@@ -206,7 +208,7 @@ PGrnWALPageGetLastOffset(Page page)
 {
 	PageHeader pageHeader;
 
-	pageHeader = (PageHeader)page;
+	pageHeader = (PageHeader) page;
 	return pageHeader->pd_lower - SizeOfPageHeaderData;
 }
 
@@ -245,13 +247,10 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 	if (RelationGetNumberOfBlocks(data->index) == 0)
 	{
 		data->meta.buffer =
-			PGrnWALReadLockedBuffer(data->index,
-									P_NEW,
-									BUFFER_LOCK_EXCLUSIVE);
+			PGrnWALReadLockedBuffer(data->index, P_NEW, BUFFER_LOCK_EXCLUSIVE);
 		data->buffers[data->nBuffers++] = data->meta.buffer;
-		data->meta.page = GenericXLogRegisterBuffer(data->state,
-													data->meta.buffer,
-													GENERIC_XLOG_FULL_IMAGE);
+		data->meta.page = GenericXLogRegisterBuffer(
+			data->state, data->meta.buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(data->meta.page, BLCKSZ, sizeof(PGrnWALMetaPageSpecial));
 		data->meta.pageSpecial =
 			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(data->meta.page);
@@ -266,9 +265,8 @@ PGrnWALDataInitMeta(PGrnWALData *data)
 									PGRN_WAL_META_PAGE_BLOCK_NUMBER,
 									BUFFER_LOCK_EXCLUSIVE);
 		data->buffers[data->nBuffers++] = data->meta.buffer;
-		data->meta.page = GenericXLogRegisterBuffer(data->state,
-													data->meta.buffer,
-													0);
+		data->meta.page =
+			GenericXLogRegisterBuffer(data->state, data->meta.buffer, 0);
 		data->meta.pageSpecial =
 			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(data->meta.page);
 	}
@@ -318,7 +316,7 @@ PGrnWALPageAppend(Page page, const char *data, size_t dataSize)
 {
 	PageHeader pageHeader;
 
-	pageHeader = (PageHeader)page;
+	pageHeader = (PageHeader) page;
 	memcpy(PGrnWALPageGetData(page) + PGrnWALPageGetLastOffset(page),
 		   data,
 		   dataSize);
@@ -375,28 +373,20 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 	if (RelationGetNumberOfBlocks(data->index) <= meta->next)
 	{
 		data->current.buffer =
-			PGrnWALReadLockedBuffer(data->index,
-									P_NEW,
-									BUFFER_LOCK_EXCLUSIVE);
+			PGrnWALReadLockedBuffer(data->index, P_NEW, BUFFER_LOCK_EXCLUSIVE);
 		data->buffers[data->nBuffers++] = data->current.buffer;
 		meta->next = BufferGetBlockNumber(data->current.buffer);
-		data->current.page =
-			GenericXLogRegisterBuffer(data->state,
-									  data->current.buffer,
-									  GENERIC_XLOG_FULL_IMAGE);
+		data->current.page = GenericXLogRegisterBuffer(
+			data->state, data->current.buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(data->current.page, BLCKSZ, 0);
 	}
 	else
 	{
-		data->current.buffer =
-			PGrnWALReadLockedBuffer(data->index,
-									meta->next,
-									BUFFER_LOCK_EXCLUSIVE);
+		data->current.buffer = PGrnWALReadLockedBuffer(
+			data->index, meta->next, BUFFER_LOCK_EXCLUSIVE);
 		data->buffers[data->nBuffers++] = data->current.buffer;
 		data->current.page =
-			GenericXLogRegisterBuffer(data->state,
-									  data->current.buffer,
-									  0);
+			GenericXLogRegisterBuffer(data->state, data->current.buffer, 0);
 		if (PGrnWALPageGetFreeSize(data->current.page) == 0)
 			PageInit(data->current.page, BLCKSZ, 0);
 	}
@@ -405,9 +395,7 @@ PGrnWALPageWriterEnsureCurrent(PGrnWALData *data)
 }
 
 static int
-PGrnWALPageWriter(void *userData,
-				  const char *buffer,
-				  size_t length)
+PGrnWALPageWriter(void *userData, const char *buffer, size_t length)
 {
 	PGrnWALData *data = userData;
 	int written = 0;
@@ -554,9 +542,7 @@ PGrnWALAbort(PGrnWALData *data)
 }
 
 void
-PGrnWALInsertStart(PGrnWALData *data,
-				   grn_obj *table,
-				   size_t nColumns)
+PGrnWALInsertStart(PGrnWALData *data, grn_obj *table, size_t nColumns)
 {
 #ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
@@ -576,10 +562,8 @@ PGrnWALInsertStart(PGrnWALData *data,
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];
 		int tableNameSize;
 
-		tableNameSize = grn_obj_name(ctx,
-									 table,
-									 tableName,
-									 GRN_TABLE_MAX_KEY_SIZE);
+		tableNameSize =
+			grn_obj_name(ctx, table, tableName, GRN_TABLE_MAX_KEY_SIZE);
 		msgpack_pack_cstr(packer, "_table");
 		msgpack_pack_str(packer, tableNameSize);
 		msgpack_pack_str_body(packer, tableName, tableNameSize);
@@ -593,9 +577,7 @@ PGrnWALInsertFinish(PGrnWALData *data)
 }
 
 void
-PGrnWALInsertColumnStart(PGrnWALData *data,
-						 const char *name,
-						 size_t nameSize)
+PGrnWALInsertColumnStart(PGrnWALData *data, const char *name, size_t nameSize)
 {
 #ifdef PGRN_SUPPORT_WAL
 	msgpack_packer *packer;
@@ -632,7 +614,7 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 	switch (domain)
 	{
 	case GRN_DB_BOOL:
-		if (*((grn_bool *)value))
+		if (*((grn_bool *) value))
 		{
 			msgpack_pack_true(packer);
 		}
@@ -642,34 +624,34 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 		}
 		break;
 	case GRN_DB_INT8:
-		msgpack_pack_int8(packer, *((int8_t *)(value)));
+		msgpack_pack_int8(packer, *((int8_t *) (value)));
 		break;
 	case GRN_DB_UINT8:
-		msgpack_pack_uint8(packer, *((uint8_t *)(value)));
+		msgpack_pack_uint8(packer, *((uint8_t *) (value)));
 		break;
 	case GRN_DB_INT16:
-		msgpack_pack_int16(packer, *((int16_t *)(value)));
+		msgpack_pack_int16(packer, *((int16_t *) (value)));
 		break;
 	case GRN_DB_UINT16:
-		msgpack_pack_uint16(packer, *((uint16_t *)(value)));
+		msgpack_pack_uint16(packer, *((uint16_t *) (value)));
 		break;
 	case GRN_DB_INT32:
-		msgpack_pack_int32(packer, *((int32_t *)(value)));
+		msgpack_pack_int32(packer, *((int32_t *) (value)));
 		break;
 	case GRN_DB_UINT32:
-		msgpack_pack_uint32(packer, *((uint32_t *)(value)));
+		msgpack_pack_uint32(packer, *((uint32_t *) (value)));
 		break;
 	case GRN_DB_INT64:
-		msgpack_pack_int64(packer, *((int64_t *)(value)));
+		msgpack_pack_int64(packer, *((int64_t *) (value)));
 		break;
 	case GRN_DB_UINT64:
-		msgpack_pack_uint64(packer, *((uint64_t *)(value)));
+		msgpack_pack_uint64(packer, *((uint64_t *) (value)));
 		break;
 	case GRN_DB_FLOAT:
-		msgpack_pack_double(packer, *((double *)(value)));
+		msgpack_pack_double(packer, *((double *) (value)));
 		break;
 	case GRN_DB_TIME:
-		msgpack_pack_int64(packer, *((int64_t *)(value)));
+		msgpack_pack_int64(packer, *((int64_t *) (value)));
 		break;
 	case GRN_DB_SHORT_TEXT:
 	case GRN_DB_TEXT:
@@ -678,22 +660,21 @@ PGrnWALInsertColumnValueRaw(PGrnWALData *data,
 		msgpack_pack_str_body(packer, value, valueSize);
 		break;
 	default:
-		{
-			char domainName[GRN_TABLE_MAX_KEY_SIZE];
-			int domainNameSize;
+	{
+		char domainName[GRN_TABLE_MAX_KEY_SIZE];
+		int domainNameSize;
 
-			domainNameSize = grn_table_get_key(ctx,
-											   grn_ctx_db(ctx),
-											   domain,
-											   domainName,
-											   GRN_TABLE_MAX_KEY_SIZE);
-			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-						"%s unsupported type: <%.*s>: <%.*s>",
-						tag,
-						(int) nameSize, name,
-						domainNameSize, domainName);
-		}
-		break;
+		domainNameSize = grn_table_get_key(
+			ctx, grn_ctx_db(ctx), domain, domainName, GRN_TABLE_MAX_KEY_SIZE);
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported type: <%.*s>: <%.*s>",
+					tag,
+					(int) nameSize,
+					name,
+					domainNameSize,
+					domainName);
+	}
+	break;
 	}
 }
 
@@ -730,18 +711,10 @@ PGrnWALInsertColumnValueVector(PGrnWALData *data,
 		unsigned int elementSize;
 		grn_id domain;
 
-		elementSize = grn_vector_get_element(ctx,
-											 value,
-											 i,
-											 &element,
-											 NULL,
-											 &domain);
-		PGrnWALInsertColumnValueRaw(data,
-									name,
-									nameSize,
-									domain,
-									element,
-									elementSize);
+		elementSize =
+			grn_vector_get_element(ctx, value, i, &element, NULL, &domain);
+		PGrnWALInsertColumnValueRaw(
+			data, name, nameSize, domain, element, elementSize);
 	}
 }
 
@@ -767,20 +740,14 @@ PGrnWALInsertColumnUValueVector(PGrnWALData *data,
 		const char *element;
 
 		element = GRN_BULK_HEAD(value) + (elementSize * i);
-		PGrnWALInsertColumnValueRaw(data,
-									name,
-									nameSize,
-									domain,
-									element,
-									elementSize);
+		PGrnWALInsertColumnValueRaw(
+			data, name, nameSize, domain, element, elementSize);
 	}
 }
 #endif
 
 void
-PGrnWALInsertColumn(PGrnWALData *data,
-					grn_obj *column,
-					grn_obj *value)
+PGrnWALInsertColumn(PGrnWALData *data, grn_obj *column, grn_obj *value)
 {
 #ifdef PGRN_SUPPORT_WAL
 	const char *tag = "[wal][insert][column]";
@@ -809,7 +776,8 @@ PGrnWALInsertColumn(PGrnWALData *data,
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s not bulk value isn't supported yet: <%.*s>: <%s>",
 					tag,
-					(int) nameSize, name,
+					(int) nameSize,
+					name,
 					grn_obj_type_to_string(value->header.type));
 		break;
 	}
@@ -829,9 +797,8 @@ PGrnWALInsertKeyRaw(PGrnWALData *data, const void *key, size_t keySize)
 
 	packer = &(data->packer);
 
-	PGrnWALInsertColumnStart(data,
-							 GRN_COLUMN_NAME_KEY,
-							 GRN_COLUMN_NAME_KEY_LEN);
+	PGrnWALInsertColumnStart(
+		data, GRN_COLUMN_NAME_KEY, GRN_COLUMN_NAME_KEY_LEN);
 	msgpack_pack_bin(packer, keySize);
 	msgpack_pack_bin_body(packer, key, keySize);
 	PGrnWALInsertColumnFinish(data);
@@ -845,9 +812,7 @@ PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
 	if (!data)
 		return;
 
-	PGrnWALInsertKeyRaw(data,
-						GRN_BULK_HEAD(key),
-						GRN_BULK_VSIZE(key));
+	PGrnWALInsertKeyRaw(data, GRN_BULK_HEAD(key), GRN_BULK_VSIZE(key));
 #endif
 }
 
@@ -946,9 +911,7 @@ PGrnWALCreateColumn(Relation index,
 }
 
 void
-PGrnWALSetSourceIDs(Relation index,
-					grn_obj *column,
-					grn_obj *sourceIDs)
+PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs)
 {
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALData *data;
@@ -1021,10 +984,7 @@ PGrnWALRenameTable(Relation index,
 }
 
 void
-PGrnWALDelete(Relation index,
-			  grn_obj *table,
-			  const char *key,
-			  size_t keySize)
+PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize)
 {
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALData *data;
@@ -1053,9 +1013,11 @@ PGrnWALDelete(Relation index,
 }
 
 #ifdef PGRN_SUPPORT_WAL
-typedef struct {
+typedef struct
+{
 	Relation index;
-	struct {
+	struct
+	{
 		BlockNumber block;
 		LocationIndex offset;
 	} current;
@@ -1069,9 +1031,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 	LocationIndex currentOffset;
 	BlockNumber nBlocks;
 
-	PGrnIndexStatusGetWALAppliedPosition(data->index,
-										 &currentBlock,
-										 &currentOffset);
+	PGrnIndexStatusGetWALAppliedPosition(
+		data->index, &currentBlock, &currentOffset);
 	if (currentBlock == PGRN_WAL_META_PAGE_BLOCK_NUMBER)
 		currentBlock++;
 
@@ -1088,9 +1049,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 		bool haveDataInCurrentPage;
 		bool needToApply;
 
-		buffer = PGrnWALReadLockedBuffer(data->index,
-										 currentBlock,
-										 BUFFER_LOCK_SHARE);
+		buffer = PGrnWALReadLockedBuffer(
+			data->index, currentBlock, BUFFER_LOCK_SHARE);
 		page = BufferGetPage(buffer);
 		offset = PGrnWALPageGetLastOffset(page);
 		UnlockReleaseBuffer(buffer);
@@ -1111,9 +1071,8 @@ PGrnWALApplyNeeded(PGrnWALApplyData *data)
 				/* 0 is the meta page. 1 is the first page that has data. */
 				nextBlock = 1;
 			}
-			nextBuffer = PGrnWALReadLockedBuffer(data->index,
-												 nextBlock,
-												 BUFFER_LOCK_SHARE);
+			nextBuffer = PGrnWALReadLockedBuffer(
+				data->index, nextBlock, BUFFER_LOCK_SHARE);
 			nextPage = BufferGetPage(nextBuffer);
 			needToApply = (PGrnWALPageGetLastOffset(nextPage) > 0);
 			UnlockReleaseBuffer(nextBuffer);
@@ -1244,9 +1203,8 @@ PGrnWALApplyValueGetGroongaObject(PGrnWALApplyData *data,
 		object = NULL;
 		break;
 	case MSGPACK_OBJECT_STR:
-		object = PGrnLookupWithSize(kv->val.via.str.ptr,
-									kv->val.via.str.size,
-									ERROR);
+		object = PGrnLookupWithSize(
+			kv->val.via.str.ptr, kv->val.via.str.size, ERROR);
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -1313,9 +1271,8 @@ PGrnWALApplyValueGetGroongaObjectIDs(PGrnWALApplyData *data,
 						element->type);
 		}
 
-		object = PGrnLookupWithSize(element->via.str.ptr,
-									element->via.str.size,
-									ERROR);
+		object = PGrnLookupWithSize(
+			element->via.str.ptr, element->via.str.size, ERROR);
 		objectID = grn_obj_id(ctx, object);
 		GRN_RECORD_PUT(ctx, ids, objectID);
 	}
@@ -1337,10 +1294,7 @@ PGrnWALApplyValueGetTableModule(PGrnWALApplyData *data,
 	case MSGPACK_OBJECT_STR:
 		module = buffer;
 		GRN_BULK_REWIND(module);
-		GRN_TEXT_SET(ctx,
-					 module,
-					 kv->val.via.str.ptr,
-					 kv->val.via.str.size);
+		GRN_TEXT_SET(ctx, module, kv->val.via.str.ptr, kv->val.via.str.size);
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -1375,10 +1329,7 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 	case MSGPACK_OBJECT_STR:
 		modules = buffer;
 		GRN_BULK_REWIND(modules);
-		GRN_TEXT_SET(ctx,
-					 modules,
-					 kv->val.via.str.ptr,
-					 kv->val.via.str.size);
+		GRN_TEXT_SET(ctx, modules, kv->val.via.str.ptr, kv->val.via.str.size);
 		break;
 	case MSGPACK_OBJECT_ARRAY:
 	{
@@ -1411,10 +1362,8 @@ PGrnWALApplyValueGetTableModules(PGrnWALApplyData *data,
 
 			if (i > 0)
 				GRN_TEXT_PUTS(ctx, modules, ", ");
-			GRN_TEXT_PUT(ctx,
-						 modules,
-						 element->via.str.ptr,
-						 element->via.str.size);
+			GRN_TEXT_PUT(
+				ctx, modules, element->via.str.ptr, element->via.str.size);
 		}
 		break;
 	}
@@ -1469,10 +1418,9 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			break;
 		case MSGPACK_OBJECT_POSITIVE_INTEGER:
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
-#define ELEMENT_VALUE											\
-			(element->type == MSGPACK_OBJECT_POSITIVE_INTEGER ? \
-			 element->via.u64 :									\
-			 element->via.i64)
+#	define ELEMENT_VALUE                                                      \
+		(element->type == MSGPACK_OBJECT_POSITIVE_INTEGER ? element->via.u64   \
+														  : element->via.i64)
 			switch (element_domain_id)
 			{
 			case GRN_DB_INT8:
@@ -1500,25 +1448,25 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 				GRN_UINT64_PUT(ctx, value, ELEMENT_VALUE);
 				break;
 			default:
+			{
+				grn_obj key;
+				if (element->type == MSGPACK_OBJECT_POSITIVE_INTEGER)
 				{
-					grn_obj key;
-					if (element->type == MSGPACK_OBJECT_POSITIVE_INTEGER)
-					{
-						GRN_INT64_INIT(&key, 0);
-						GRN_INT64_SET(ctx, &key, element->via.i64);
-					}
-					else
-					{
-						GRN_UINT64_INIT(&key, 0);
-						GRN_UINT64_SET(ctx, &key, element->via.u64);
-					}
-					grn_obj_cast(ctx, &key, value, GRN_FALSE);
-					GRN_OBJ_FIN(ctx, &key);
+					GRN_INT64_INIT(&key, 0);
+					GRN_INT64_SET(ctx, &key, element->via.i64);
 				}
-				break;
+				else
+				{
+					GRN_UINT64_INIT(&key, 0);
+					GRN_UINT64_SET(ctx, &key, element->via.u64);
+				}
+				grn_obj_cast(ctx, &key, value, GRN_FALSE);
+				GRN_OBJ_FIN(ctx, &key);
 			}
 			break;
-#undef ELEMENT_VALUE
+			}
+			break;
+#	undef ELEMENT_VALUE
 		case MSGPACK_OBJECT_FLOAT:
 			GRN_FLOAT_PUT(ctx, value, element->via.f64);
 			break;
@@ -1578,7 +1526,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		msgpack_object_kv *kv;
 
 		kv = &(map->ptr[currentElement]);
-		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), GRN_COLUMN_NAME_KEY))
+		if (PGrnWALApplyKeyEqual(
+				data, context, &(kv->key), GRN_COLUMN_NAME_KEY))
 		{
 			PGrnWALApplyValueGetBinary(data, context, kv, &key, &keySize);
 			currentElement++;
@@ -1607,10 +1556,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 						key->type);
 		}
 
-		column = PGrnLookupColumnWithSize(table,
-										  key->via.str.ptr,
-										  key->via.str.size,
-										  ERROR);
+		column = PGrnLookupColumnWithSize(
+			table, key->via.str.ptr, key->via.str.size, ERROR);
 		switch (value->type)
 		{
 		case MSGPACK_OBJECT_BOOLEAN:
@@ -1631,9 +1578,8 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 			break;
 		case MSGPACK_OBJECT_STR:
 			grn_obj_reinit(ctx, walValue, GRN_DB_TEXT, 0);
-			GRN_TEXT_SET(ctx, walValue,
-						 value->via.str.ptr,
-						 value->via.str.size);
+			GRN_TEXT_SET(
+				ctx, walValue, value->via.str.ptr, value->via.str.size);
 			break;
 		case MSGPACK_OBJECT_ARRAY:
 			PGrnWALApplyInsertArray(data,
@@ -1641,14 +1587,14 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 									walValue,
 									grn_obj_get_range(ctx, column));
 			break;
-/*
-		case MSGPACK_OBJECT_MAP:
-			break;
-		case MSGPACK_OBJECT_BIN:
-			break;
-		case MSGPACK_OBJECT_EXT:
-			break;
-*/
+			/*
+					case MSGPACK_OBJECT_MAP:
+						break;
+					case MSGPACK_OBJECT_BIN:
+						break;
+					case MSGPACK_OBJECT_EXT:
+						break;
+			*/
 		default:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s%s[%s(%u)] unexpected value type: <%#x>",
@@ -1697,25 +1643,21 @@ PGrnWALApplyCreateTable(PGrnWALApplyData *data,
 		}
 		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "tokenizer"))
 		{
-			tokenizer = PGrnWALApplyValueGetTableModule(data,
-														context,
-														kv,
-														&(buffers->tokenizer));
+			tokenizer = PGrnWALApplyValueGetTableModule(
+				data, context, kv, &(buffers->tokenizer));
 		}
-		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "normalizer") ||
+		else if (PGrnWALApplyKeyEqual(
+					 data, context, &(kv->key), "normalizer") ||
 				 PGrnWALApplyKeyEqual(data, context, &(kv->key), "normalizers"))
 		{
-			normalizers = PGrnWALApplyValueGetTableModule(data,
-														  context,
-														  kv,
-														  &(buffers->normalizers));
+			normalizers = PGrnWALApplyValueGetTableModule(
+				data, context, kv, &(buffers->normalizers));
 		}
-		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "token_filters"))
+		else if (PGrnWALApplyKeyEqual(
+					 data, context, &(kv->key), "token_filters"))
 		{
-			tokenFilters = PGrnWALApplyValueGetTableModules(data,
-															context,
-															kv,
-															&(buffers->tokenFilters));
+			tokenFilters = PGrnWALApplyValueGetTableModules(
+				data, context, kv, &(buffers->tokenFilters));
 		}
 	}
 
@@ -1819,7 +1761,8 @@ PGrnWALApplyRenameTable(PGrnWALApplyData *data,
 		}
 		else if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "new_name"))
 		{
-			PGrnWALApplyValueGetString(data, context, kv, &newName, &newNameSize);
+			PGrnWALApplyValueGetString(
+				data, context, kv, &newName, &newNameSize);
 		}
 	}
 
@@ -1855,8 +1798,9 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 
 	if (table->header.type == GRN_TABLE_NO_KEY)
 	{
-		const uint64_t packedCtid = *((uint64_t *)key);
-		grn_obj *ctidColumn = grn_obj_column(ctx, table, "ctid", strlen("ctid"));
+		const uint64_t packedCtid = *((uint64_t *) key);
+		grn_obj *ctidColumn =
+			grn_obj_column(ctx, table, "ctid", strlen("ctid"));
 		grn_obj ctidValue;
 		GRN_UINT64_INIT(&ctidValue, 0);
 		GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
@@ -1868,7 +1812,8 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 				grn_table_cursor_delete(ctx, cursor);
 				break;
 			}
-		} GRN_TABLE_EACH_END(ctx, cursor);
+		}
+		GRN_TABLE_EACH_END(ctx, cursor);
 		GRN_OBJ_FIN(ctx, &ctidValue);
 		grn_obj_unlink(ctx, ctidColumn);
 	}
@@ -1893,9 +1838,8 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		BlockNumber currentBlock;
 		LocationIndex currentOffset;
 
-		PGrnIndexStatusGetWALAppliedPosition(data->index,
-											 &currentBlock,
-											 &currentOffset);
+		PGrnIndexStatusGetWALAppliedPosition(
+			data->index, &currentBlock, &currentOffset);
 		switch (object->type)
 		{
 		case MSGPACK_OBJECT_NIL:
@@ -1977,7 +1921,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						currentOffset,
 						object->via.array.size);
 			break;
-#if MSGPACK_VERSION_MAJOR != 0
+#	if MSGPACK_VERSION_MAJOR != 0
 		case MSGPACK_OBJECT_BIN:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s[%s(%u)] %s: <%u><%u>: <binary>: <%u>",
@@ -1989,7 +1933,7 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						currentOffset,
 						object->via.bin.size);
 			break;
-#endif
+#	endif
 		default:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
 						"%s[%s(%u)] %s: <%u><%u>: <%#x>",
@@ -2068,9 +2012,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 
 	msgpack_unpacker_init(&unpacker, MSGPACK_UNPACKER_INIT_BUFFER_SIZE);
 	msgpack_unpacked_init(&unpacked);
-	metaBuffer = PGrnWALReadLockedBuffer(data->index,
-										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
-										 BUFFER_LOCK_SHARE);
+	metaBuffer = PGrnWALReadLockedBuffer(
+		data->index, PGRN_WAL_META_PAGE_BLOCK_NUMBER, BUFFER_LOCK_SHARE);
 	metaPage = BufferGetPage(metaBuffer);
 	meta = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
 	startBlock = data->current.block;
@@ -2099,9 +2042,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			if (block > maxBlock)
 				continue;
 
-			buffer = PGrnWALReadLockedBuffer(data->index,
-											 block,
-											 BUFFER_LOCK_SHARE);
+			buffer =
+				PGrnWALReadLockedBuffer(data->index, block, BUFFER_LOCK_SHARE);
 			page = BufferGetPage(buffer);
 			lastOffset = PGrnWALPageGetLastOffset(page);
 			if (dataOffset > lastOffset)
@@ -2140,9 +2082,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 			while (true)
 			{
 				msgpack_unpack_return unpackResult =
-					msgpack_unpacker_next_with_size(&unpacker,
-													&unpacked,
-													&parsedSize);
+					msgpack_unpacker_next_with_size(
+						&unpacker, &unpacked, &parsedSize);
 				LocationIndex appliedOffset;
 
 				if (unpackResult < 0)
@@ -2166,9 +2107,8 @@ PGrnWALApplyConsume(PGrnWALApplyData *data)
 				PGrnWALApplyObject(data, &unpacked.data);
 				bufferedSize -= parsedSize;
 				appliedOffset = dataOffset + dataSize - bufferedSize;
-				PGrnIndexStatusSetWALAppliedPosition(data->index,
-													 block,
-													 appliedOffset);
+				PGrnIndexStatusSetWALAppliedPosition(
+					data->index, block, appliedOffset);
 				nAppliedOperations++;
 			}
 
@@ -2210,9 +2150,8 @@ PGrnWALApply(Relation index)
 		return 0;
 
 	PGrnWALLock(index);
-	PGrnIndexStatusGetWALAppliedPosition(data.index,
-										 &(data.current.block),
-										 &(data.current.offset));
+	PGrnIndexStatusGetWALAppliedPosition(
+		data.index, &(data.current.block), &(data.current.offset));
 	data.sources = NULL;
 	nAppliedOperations = PGrnWALApplyConsume(&data);
 	PGrnWALUnlock(index);
@@ -2277,9 +2216,7 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
@@ -2347,16 +2284,16 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	table_close(indexes, lock);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_INT64(nAppliedOperations);
 }
 
 #ifdef PGRN_SUPPORT_WAL
 static void
-PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset)
+PGrnWALGetLastPosition(Relation index,
+					   BlockNumber *block,
+					   LocationIndex *offset)
 {
 	BlockNumber nBlocks = RelationGetNumberOfBlocks(index);
 
@@ -2367,20 +2304,16 @@ PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset
 		return;
 
 	{
-		Buffer metaBuffer =
-			PGrnWALReadLockedBuffer(index,
-									PGRN_WAL_META_PAGE_BLOCK_NUMBER,
-									BUFFER_LOCK_SHARE);
+		Buffer metaBuffer = PGrnWALReadLockedBuffer(
+			index, PGRN_WAL_META_PAGE_BLOCK_NUMBER, BUFFER_LOCK_SHARE);
 		Page metaPage = BufferGetPage(metaBuffer);
 		PGrnWALMetaPageSpecial *metaPageSpecial =
 			(PGrnWALMetaPageSpecial *) PageGetSpecialPointer(metaPage);
 		*block = metaPageSpecial->next;
 		if (*block < nBlocks)
 		{
-			Buffer buffer =
-				PGrnWALReadLockedBuffer(index,
-										metaPageSpecial->next,
-										BUFFER_LOCK_SHARE);
+			Buffer buffer = PGrnWALReadLockedBuffer(
+				index, metaPageSpecial->next, BUFFER_LOCK_SHARE);
 			Page page = BufferGetPage(buffer);
 			*offset = PGrnWALPageGetLastOffset(page);
 			UnlockReleaseBuffer(buffer);
@@ -2390,7 +2323,8 @@ PGrnWALGetLastPosition(Relation index, BlockNumber *block, LocationIndex *offset
 }
 #endif
 
-typedef struct {
+typedef struct
+{
 	Relation indexes;
 	TableScanDesc scan;
 	TupleDesc desc;
@@ -2472,9 +2406,11 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 		values = palloc(sizeof(Datum) * data->desc->natts);
 		/* All values are not NULL */
 		nulls = palloc0(sizeof(bool) * data->desc->natts);
-		values[i++] = PointerGetDatum(cstring_to_text(RelationGetRelationName(index)));
+		values[i++] =
+			PointerGetDatum(cstring_to_text(RelationGetRelationName(index)));
 		values[i++] = ObjectIdGetDatum(RelationGetRelid(index));
-		PGrnIndexStatusGetWALAppliedPosition(index, &currentBlock, &currentOffset);
+		PGrnIndexStatusGetWALAppliedPosition(
+			index, &currentBlock, &currentOffset);
 		values[i++] = Int64GetDatum(currentBlock);
 		values[i++] = Int64GetDatum(currentOffset);
 		values[i++] = Int64GetDatum(currentBlock * BLCKSZ + currentOffset);
@@ -2505,9 +2441,7 @@ pgroonga_wal_status(PG_FUNCTION_ARGS)
 	context = SRF_PERCALL_SETUP();
 	{
 		const char *tag = "[wal][status]";
-		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-					"%s not supported",
-					tag);
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 	}
 #endif
 	SRF_RETURN_DONE(context);
@@ -2539,11 +2473,11 @@ PGrnWALTruncate(Relation index)
 		Page page;
 		PGrnWALMetaPageSpecial *pageSpecial;
 
-		buffer = PGrnWALReadLockedBuffer(index,
-										 PGRN_WAL_META_PAGE_BLOCK_NUMBER,
-										 BUFFER_LOCK_EXCLUSIVE);
+		buffer = PGrnWALReadLockedBuffer(
+			index, PGRN_WAL_META_PAGE_BLOCK_NUMBER, BUFFER_LOCK_EXCLUSIVE);
 		processingBuffers[nProcessingBuffers++] = buffer;
-		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
+		page =
+			GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		pageSpecial = (PGrnWALMetaPageSpecial *) PageGetSpecialPointer(page);
 		pageSpecial->next = PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1;
 
@@ -2570,7 +2504,8 @@ PGrnWALTruncate(Relation index)
 		}
 		buffer = PGrnWALReadLockedBuffer(index, i, BUFFER_LOCK_EXCLUSIVE);
 		processingBuffers[nProcessingBuffers++] = buffer;
-		page = GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
+		page =
+			GenericXLogRegisterBuffer(state, buffer, GENERIC_XLOG_FULL_IMAGE);
 		PageInit(page, BLCKSZ, 0);
 
 		nTruncatedBlocks++;
@@ -2585,9 +2520,8 @@ PGrnWALTruncate(Relation index)
 		}
 	}
 
-	PGrnIndexStatusSetWALAppliedPosition(index,
-										 PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1,
-										 0);
+	PGrnIndexStatusSetWALAppliedPosition(
+		index, PGRN_WAL_META_PAGE_BLOCK_NUMBER + 1, 0);
 
 	PGrnWALUnlock(index);
 
@@ -2639,9 +2573,7 @@ pgroonga_wal_truncate_index(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }
@@ -2694,9 +2626,7 @@ pgroonga_wal_truncate_all(PG_FUNCTION_ARGS)
 	table_close(indexes, lock);
 #else
 	const char *tag = "[wal][truncate][all]";
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_INT64(nTruncatedBlocks);
 }
@@ -2769,9 +2699,7 @@ pgroonga_wal_set_applied_position_index(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_BOOL(true);
 }
@@ -2842,9 +2770,7 @@ pgroonga_wal_set_applied_position_index_last(PG_FUNCTION_ARGS)
 	PG_END_TRY();
 	RelationClose(index);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_BOOL(true);
 }
@@ -2910,9 +2836,7 @@ pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	table_close(indexes, lock);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_BOOL(true);
 }
@@ -2984,9 +2908,7 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 	heap_endscan(scan);
 	table_close(indexes, lock);
 #else
-	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-				"%s not supported",
-				tag);
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_BOOL(true);
 }

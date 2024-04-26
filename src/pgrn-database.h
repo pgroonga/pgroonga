@@ -2,8 +2,8 @@
 
 #include "pgrn-portable.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #ifndef WIN32
 #	include <dirent.h>
 #	include <unistd.h>
@@ -17,18 +17,14 @@ PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)
 	HANDLE finder;
 	char targetPath[MAXPGPATH];
 
-	join_path_components(targetPath,
-						 directoryPath,
-						 PGrnDatabaseBasename "*");
+	join_path_components(targetPath, directoryPath, PGrnDatabaseBasename "*");
 	finder = FindFirstFile(targetPath, &data);
 	if (finder != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
 			char path[MAXPGPATH];
-			join_path_components(path,
-								 directoryPath,
-								 data.cFileName);
+			join_path_components(path, directoryPath, data.cFileName);
 			unlink(path);
 		} while (FindNextFile(finder, &data) != 0);
 		FindClose(finder);
@@ -45,9 +41,7 @@ PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)
 						strlen(PGrnDatabaseBasename)) == 0)
 			{
 				char path[MAXPGPATH];
-				join_path_components(path,
-									 directoryPath,
-									 entry->d_name);
+				join_path_components(path, directoryPath, entry->d_name);
 				unlink(path);
 			}
 		}

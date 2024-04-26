@@ -21,13 +21,12 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
 void
 PGrnInitializeQueryExtractKeywords(void)
 {
-	table = grn_table_create(ctx, NULL, 0, NULL,
-							 GRN_OBJ_TABLE_NO_KEY,
-							 NULL,
-							 NULL);
+	table =
+		grn_table_create(ctx, NULL, 0, NULL, GRN_OBJ_TABLE_NO_KEY, NULL, NULL);
 	textColumn = grn_column_create(ctx,
 								   table,
-								   "text", strlen("text"),
+								   "text",
+								   strlen("text"),
 								   NULL,
 								   GRN_OBJ_COLUMN_SCALAR,
 								   grn_ctx_at(ctx, GRN_DB_TEXT));
@@ -70,9 +69,8 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, targetTable, expression, variable);
 	if (!expression)
 	{
-		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
-					"%s failed to create expression",
-					tag);
+		PGrnCheckRC(
+			GRN_NO_MEMORY_AVAILABLE, "%s failed to create expression", tag);
 	}
 
 	grn_expr_parse(ctx,
@@ -99,7 +97,8 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 		grn_expr_get_keywords(ctx, expression, &extractedKeywords);
 		nKeywords = GRN_BULK_VSIZE(&extractedKeywords) / sizeof(grn_obj *);
 		elements = palloc(sizeof(Datum) * nKeywords);
-		for (i = 0; i < nKeywords; i++) {
+		for (i = 0; i < nKeywords; i++)
+		{
 			grn_obj *extractedKeyword;
 			text *keyword;
 
@@ -110,15 +109,8 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 		}
 		dims[0] = nKeywords;
 		lbs[0] = 1;
-		keywords = construct_md_array(elements,
-									  NULL,
-									  1,
-									  dims,
-									  lbs,
-									  TEXTOID,
-									  -1,
-									  false,
-									  'i');
+		keywords = construct_md_array(
+			elements, NULL, 1, dims, lbs, TEXTOID, -1, false, 'i');
 
 		GRN_OBJ_FIN(ctx, &extractedKeywords);
 	}

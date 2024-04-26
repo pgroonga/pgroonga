@@ -1,6 +1,6 @@
+#include "pgrn-string.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
-#include "pgrn-string.h"
 
 static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -20,11 +20,11 @@ PGrnStringSubstituteIndex(const char *string,
 	while (current < end)
 	{
 		int char_length = grn_charlen(ctx, current, end);
-		if (char_length == 0) {
+		if (char_length == 0)
+		{
 			return;
 		}
-		if (char_length == 1 &&
-			current[0] == '$' &&
+		if (char_length == 1 && current[0] == '$' &&
 			(end - current) >= variableSize &&
 			memcmp(current, variable, variableSize) == 0)
 		{
@@ -45,14 +45,16 @@ PGrnStringSubstituteVariables(const char *string,
 {
 	const char *current = string;
 	const char *end = current + stringSize;
-	enum {
+	enum
+	{
 		STATE_RAW,
 		STATE_ESCAPE,
 		STATE_VARIABLE_START,
 		STATE_IN_VARIABLE_BLOCK,
 	} state = STATE_RAW;
 	const char *variableSubstitutionStart = NULL;
-	enum {
+	enum
+	{
 		VARIABLE_TYPE_NONE,
 		VARIABLE_TYPE_TABLE,
 		/* TODO */
@@ -63,7 +65,8 @@ PGrnStringSubstituteVariables(const char *string,
 	while (current < end)
 	{
 		int charLength = grn_charlen(ctx, current, end);
-		if (charLength == 0) {
+		if (charLength == 0)
+		{
 			return;
 		}
 		switch (state)
@@ -98,7 +101,8 @@ PGrnStringSubstituteVariables(const char *string,
 				GRN_TEXT_PUT(ctx,
 							 output,
 							 variableSubstitutionStart,
-							 (current - variableSubstitutionStart) + charLength);
+							 (current - variableSubstitutionStart) +
+								 charLength);
 				state = STATE_RAW;
 				variableSubstitutionStart = NULL;
 				variableType = VARIABLE_TYPE_NONE;
@@ -106,8 +110,7 @@ PGrnStringSubstituteVariables(const char *string,
 			}
 			break;
 		case STATE_IN_VARIABLE_BLOCK:
-			if (charLength == 1 &&
-				variableType == VARIABLE_TYPE_NONE &&
+			if (charLength == 1 && variableType == VARIABLE_TYPE_NONE &&
 				current[0] == ':')
 			{
 				grn_raw_string rawVariable;
@@ -119,7 +122,8 @@ PGrnStringSubstituteVariables(const char *string,
 					targetStart = current + charLength;
 				}
 				/*
-				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawVariable, "index_column"))
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawVariable,
+				"index_column"))
 				{
 					variableType = VARIABLE_TYPE_INDEX_COLUMN;
 					targetStart = current + charLength;
@@ -134,10 +138,8 @@ PGrnStringSubstituteVariables(const char *string,
 				{
 					grn_obj *indexName = &(buffers->text);
 					char tableName[GRN_TABLE_MAX_KEY_SIZE];
-					GRN_TEXT_SET(ctx,
-								 indexName,
-								 targetStart,
-								 current - targetStart);
+					GRN_TEXT_SET(
+						ctx, indexName, targetStart, current - targetStart);
 					GRN_TEXT_PUTC(ctx, indexName, '\0');
 					PGrnFormatSourcesTableName(GRN_TEXT_VALUE(indexName),
 											   tableName);
@@ -151,7 +153,8 @@ PGrnStringSubstituteVariables(const char *string,
 					GRN_TEXT_PUT(ctx,
 								 output,
 								 variableSubstitutionStart,
-								 (current - variableSubstitutionStart) + charLength);
+								 (current - variableSubstitutionStart) +
+									 charLength);
 					break;
 				}
 				state = STATE_RAW;

@@ -21,9 +21,7 @@ PGrnInitializeIndexStatus(void)
 {
 	grn_obj *table;
 
-	table = grn_ctx_get(ctx,
-						TABLE_NAME,
-						TABLE_NAME_SIZE);
+	table = grn_ctx_get(ctx, TABLE_NAME, TABLE_NAME_SIZE);
 	if (!table)
 	{
 		table = PGrnCreateTableWithSize(NULL,
@@ -120,8 +118,7 @@ PGrnIndexStatusGetMaxRecordSize(Relation index)
 	grn_obj *maxRecordSize = &(buffers->maxRecordSize);
 
 	id = PGrnIndexStatusGetRecordID(index);
-	column = PGrnLookup(TABLE_NAME "." MAX_RECORD_SIZE_COLUMN_NAME,
-						ERROR);
+	column = PGrnLookup(TABLE_NAME "." MAX_RECORD_SIZE_COLUMN_NAME, ERROR);
 	GRN_BULK_REWIND(maxRecordSize);
 	grn_obj_get_value(ctx, column, id, maxRecordSize);
 	return GRN_UINT32_VALUE(maxRecordSize);
@@ -137,8 +134,7 @@ PGrnIndexStatusSetMaxRecordSize(Relation index, uint32_t size)
 	size_t nColumns = 2;
 
 	id = PGrnIndexStatusGetRecordIDWithWAL(index, &walData, nColumns);
-	column = PGrnLookup(TABLE_NAME "." MAX_RECORD_SIZE_COLUMN_NAME,
-						ERROR);
+	column = PGrnLookup(TABLE_NAME "." MAX_RECORD_SIZE_COLUMN_NAME, ERROR);
 	GRN_UINT32_SET(ctx, maxRecordSize, size);
 	grn_obj_set_value(ctx, column, id, maxRecordSize, GRN_OBJ_SET);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
@@ -158,13 +154,12 @@ PGrnIndexStatusGetWALAppliedPosition(Relation index,
 	uint64_t positionRaw;
 
 	id = PGrnIndexStatusGetRecordID(index);
-	column = PGrnLookup(TABLE_NAME "." WAL_APPLIED_POSITION_COLUMN_NAME,
-						ERROR);
+	column = PGrnLookup(TABLE_NAME "." WAL_APPLIED_POSITION_COLUMN_NAME, ERROR);
 	GRN_BULK_REWIND(position);
 	grn_obj_get_value(ctx, column, id, position);
 	positionRaw = GRN_UINT64_VALUE(position);
-	*block = (BlockNumber)(positionRaw >> 32);
-	*offset = (LocationIndex)(positionRaw & ((1 << 16) - 1));
+	*block = (BlockNumber) (positionRaw >> 32);
+	*offset = (LocationIndex) (positionRaw & ((1 << 16) - 1));
 }
 
 void
@@ -178,9 +173,8 @@ PGrnIndexStatusSetWALAppliedPosition(Relation index,
 	uint64_t positionRaw;
 
 	id = PGrnIndexStatusGetRecordID(index);
-	column = PGrnLookup(TABLE_NAME "." WAL_APPLIED_POSITION_COLUMN_NAME,
-						ERROR);
-	positionRaw = (((uint64_t)block) << 32) + (uint64_t)offset;
+	column = PGrnLookup(TABLE_NAME "." WAL_APPLIED_POSITION_COLUMN_NAME, ERROR);
+	positionRaw = (((uint64_t) block) << 32) + (uint64_t) offset;
 	GRN_UINT64_SET(ctx, position, positionRaw);
 	grn_obj_set_value(ctx, column, id, position, GRN_OBJ_SET);
 	grn_db_touch(ctx, grn_ctx_db(ctx));

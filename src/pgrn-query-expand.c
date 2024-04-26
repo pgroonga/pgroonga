@@ -22,10 +22,11 @@
 
 #include <groonga/plugin.h>
 
-#define PGRN_EXPANDER_NAME			"QueryExpanderPostgreSQL"
-#define PGRN_EXPANDER_NAME_LENGTH	(sizeof(PGRN_EXPANDER_NAME) - 1)
+#define PGRN_EXPANDER_NAME "QueryExpanderPostgreSQL"
+#define PGRN_EXPANDER_NAME_LENGTH (sizeof(PGRN_EXPANDER_NAME) - 1)
 
-typedef struct {
+typedef struct
+{
 	Relation table;
 	AttrNumber termAttributeNumber;
 	Form_pg_attribute synonymsAttribute;
@@ -64,8 +65,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 	term = args[0];
 	expandedTerm = args[1];
 
-	termText = cstring_to_text_with_len(GRN_TEXT_VALUE(term),
-										GRN_TEXT_LEN(term));
+	termText =
+		cstring_to_text_with_len(GRN_TEXT_VALUE(term), GRN_TEXT_LEN(term));
 	switch (currentData.scanOperator)
 	{
 	case TextEqualOperator:
@@ -82,15 +83,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 		elements[0] = PointerGetDatum(termText);
 		dims[0] = nElements;
 		lbs[0] = 1;
-		termTexts = construct_md_array(elements,
-									   NULL,
-									   1,
-									   dims,
-									   lbs,
-									   TEXTOID,
-									   -1,
-									   false,
-									   'i');
+		termTexts = construct_md_array(
+			elements, NULL, 1, dims, lbs, TEXTOID, -1, false, 'i');
 		scanKeyDatum = PointerGetDatum(termTexts);
 		break;
 	}
@@ -114,10 +108,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					InvalidStrategy,
 					currentData.scanProcedure,
 					scanKeyDatum);
-		heapScan = table_beginscan(currentData.table,
-										currentData.snapshot,
-										nKeys,
-										scanKeys);
+		heapScan = table_beginscan(
+			currentData.table, currentData.snapshot, nKeys, scanKeys);
 	}
 
 	while (true)
@@ -126,9 +118,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 
 		if (currentData.scan)
 		{
-			if (index_getnext_slot(currentData.scan,
-								   ForwardScanDirection,
-								   currentData.slot))
+			if (index_getnext_slot(
+					currentData.scan, ForwardScanDirection, currentData.slot))
 				tuple = ExecFetchSlotHeapTuple(currentData.slot, false, NULL);
 			else
 				tuple = NULL;
@@ -162,7 +153,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 				GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
 
 			GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-			GRN_TEXT_PUT(ctx, expandedTerm,
+			GRN_TEXT_PUT(ctx,
+						 expandedTerm,
 						 VARDATA_ANY(synonym),
 						 VARSIZE_ANY_EXHDR(synonym));
 			GRN_TEXT_PUTC(ctx, expandedTerm, ')');
@@ -223,7 +215,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 				if (nUsedSynonyms >= 1)
 					GRN_TEXT_PUTS(ctx, expandedTerm, " OR ");
 				GRN_TEXT_PUTC(ctx, expandedTerm, '(');
-				GRN_TEXT_PUT(ctx, expandedTerm,
+				GRN_TEXT_PUT(ctx,
+							 expandedTerm,
 							 VARDATA_ANY(synonym),
 							 VARSIZE_ANY_EXHDR(synonym));
 				GRN_TEXT_PUTC(ctx, expandedTerm, ')');
@@ -259,8 +252,11 @@ PGrnInitializeQueryExpand(void)
 					PGRN_EXPANDER_NAME,
 					PGRN_EXPANDER_NAME_LENGTH,
 					GRN_PROC_FUNCTION,
-					func_query_expander_postgresql, NULL, NULL,
-					0, NULL);
+					func_query_expander_postgresql,
+					NULL,
+					NULL,
+					0,
+					NULL);
 }
 
 static Form_pg_attribute
@@ -293,7 +289,8 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 						"<%s>.<%.*s>",
 						tag,
 						tableName,
-						(int) columnNameSize, columnName);
+						(int) columnNameSize,
+						columnName);
 		}
 
 		PGRN_TRACE_LOG_EXIT();
@@ -304,7 +301,8 @@ PGrnFindSynonymsAttribute(PGrnQueryExpandData *data,
 				"%s synonyms column doesn't exist: <%s>.<%.*s>",
 				tag,
 				tableName,
-				(int) columnNameSize, columnName);
+				(int) columnNameSize,
+				columnName);
 
 	PGRN_TRACE_LOG_EXIT();
 	return NULL;
@@ -323,7 +321,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 	PGRN_TRACE_LOG_ENTER();
 
 	indexOIDList = RelationGetIndexList(data->table);
-	foreach(cell, indexOIDList)
+	foreach (cell, indexOIDList)
 	{
 		Relation index = InvalidRelation;
 		Oid indexOID = lfirst_oid(cell);
@@ -444,7 +442,8 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 						"<%s>.<%.*s>",
 						tag,
 						tableName,
-						(int) columnNameSize, columnName);
+						(int) columnNameSize,
+						columnName);
 			break;
 		}
 
@@ -457,7 +456,8 @@ PGrnFindTermAttributeNumber(PGrnQueryExpandData *data,
 				"%s term column doesn't exist: <%s>.<%.*s>",
 				tag,
 				tableName,
-				(int) columnNameSize, columnName);
+				(int) columnNameSize,
+				columnName);
 
 	data->termAttributeNumber = InvalidAttrNumber;
 	PGRN_TRACE_LOG_EXIT();
@@ -533,11 +533,12 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	currentData.table = RelationIdGetRelation(tableOID);
 	if (!PGrnRelationIsTable(currentData.table))
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s the specified table isn't table: <%s>: <%s>",
-					tag,
-					DatumGetCString(tableNameDatum),
-					PGrnRelkindToString(RelationGetForm(currentData.table)->relkind));
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT,
+			"%s the specified table isn't table: <%s>: <%s>",
+			tag,
+			DatumGetCString(tableNameDatum),
+			PGrnRelkindToString(RelationGetForm(currentData.table)->relkind));
 	}
 	currentData.synonymsAttribute =
 		PGrnFindSynonymsAttribute(&currentData,
@@ -562,11 +563,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		int nKeys = 1;
 		int nOrderBys = 0;
 		PGRN_TRACE_LOG("index_begin_scan");
-		currentData.scan = index_beginscan(currentData.table,
-										   index,
-										   currentData.snapshot,
-										   nKeys,
-										   nOrderBys);
+		currentData.scan = index_beginscan(
+			currentData.table, index, currentData.snapshot, nKeys, nOrderBys);
 		currentData.slot = table_slot_create(currentData.table, NULL);
 	}
 	else
@@ -581,14 +579,13 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	{
 		grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 		PGRN_TRACE_LOG("grn_expr_syntax_expand_query");
-		grn_expr_syntax_expand_query(ctx,
-									 VARDATA_ANY(query),
-									 VARSIZE_ANY_EXHDR(query),
-									 flags,
-									 grn_ctx_get(ctx,
-												 PGRN_EXPANDER_NAME,
-												 PGRN_EXPANDER_NAME_LENGTH),
-									 &expandedQuery);
+		grn_expr_syntax_expand_query(
+			ctx,
+			VARDATA_ANY(query),
+			VARSIZE_ANY_EXHDR(query),
+			flags,
+			grn_ctx_get(ctx, PGRN_EXPANDER_NAME, PGRN_EXPANDER_NAME_LENGTH),
+			&expandedQuery);
 	}
 	if (currentData.scan)
 	{
@@ -604,9 +601,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 	{
 		text *expandedQueryText;
 
-		expandedQueryText =
-			cstring_to_text_with_len(GRN_TEXT_VALUE(&expandedQuery),
-									 GRN_TEXT_LEN(&expandedQuery));
+		expandedQueryText = cstring_to_text_with_len(
+			GRN_TEXT_VALUE(&expandedQuery), GRN_TEXT_LEN(&expandedQuery));
 		GRN_OBJ_FIN(ctx, &expandedQuery);
 
 		PGRN_TRACE_LOG_EXIT();
@@ -614,4 +610,3 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		PG_RETURN_TEXT_P(expandedQueryText);
 	}
 }
-

@@ -18,22 +18,14 @@ PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);
 void PGrnWALAbort(PGrnWALData *data);
 
-void PGrnWALInsertStart(PGrnWALData *data,
-						grn_obj *table,
-						size_t nColumns);
+void PGrnWALInsertStart(PGrnWALData *data, grn_obj *table, size_t nColumns);
 void PGrnWALInsertFinish(PGrnWALData *data);
-void PGrnWALInsertColumnStart(PGrnWALData *data,
-							  const char *name,
-							  size_t nameSize);
+void
+PGrnWALInsertColumnStart(PGrnWALData *data, const char *name, size_t nameSize);
 void PGrnWALInsertColumnFinish(PGrnWALData *data);
-void PGrnWALInsertColumn(PGrnWALData *data,
-						 grn_obj *column,
-						 grn_obj *value);
-void PGrnWALInsertKeyRaw(PGrnWALData *data,
-						 const void *key,
-						 size_t keySize);
-void PGrnWALInsertKey(PGrnWALData *data,
-					  grn_obj *key);
+void PGrnWALInsertColumn(PGrnWALData *data, grn_obj *column, grn_obj *value);
+void PGrnWALInsertKeyRaw(PGrnWALData *data, const void *key, size_t keySize);
+void PGrnWALInsertKey(PGrnWALData *data, grn_obj *key);
 
 void PGrnWALCreateTable(Relation index,
 						const char *name,
@@ -51,9 +43,7 @@ void PGrnWALCreateColumn(Relation index,
 						 grn_column_flags flags,
 						 grn_obj *type);
 
-void PGrnWALSetSourceIDs(Relation index,
-						 grn_obj *column,
-						 grn_obj *sourceIDs);
+void PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs);
 
 void PGrnWALRenameTable(Relation index,
 						const char *name,
@@ -61,9 +51,7 @@ void PGrnWALRenameTable(Relation index,
 						const char *newName,
 						size_t newNameSize);
 
-void PGrnWALDelete(Relation index,
-				   grn_obj *table,
-				   const char *key,
-				   size_t keySize);
+void
+PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize);
 
 int64_t PGrnWALApply(Relation index);

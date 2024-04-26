@@ -28,10 +28,8 @@ pgroonga_query_escape(PG_FUNCTION_ARGS)
 
 	escapedQueryBuffer = &(buffers->escape.escapedValue);
 	GRN_BULK_REWIND(escapedQueryBuffer);
-	grn_expr_syntax_escape_query(ctx,
-								 VARDATA_ANY(query),
-								 VARSIZE_ANY_EXHDR(query),
-								 escapedQueryBuffer);
+	grn_expr_syntax_escape_query(
+		ctx, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query), escapedQueryBuffer);
 	PGrnCheck("%s failed to escape: <%.*s>",
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(query),

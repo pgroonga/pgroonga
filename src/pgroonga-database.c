@@ -40,7 +40,8 @@ pgroonga_database_remove(PG_FUNCTION_ARGS)
 		}
 		else
 		{
-			databaseDirectoryPath = GetDatabasePath(MyDatabaseId, tablespaceOid);
+			databaseDirectoryPath =
+				GetDatabasePath(MyDatabaseId, tablespaceOid);
 		}
 		PGrnDatabaseRemoveAllRelatedFiles(databaseDirectoryPath);
 		pfree(databaseDirectoryPath);

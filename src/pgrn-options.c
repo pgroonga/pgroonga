@@ -69,7 +69,8 @@ PGrnOptionParseNames(const char *names,
 		}
 	}
 
-	if (current > start) {
+	if (current > start)
+	{
 		function(start, current - start, data);
 	}
 }
@@ -81,13 +82,13 @@ PGrnOptionEnsureLexicon(const char *context)
 		grn_obj_close(ctx, lexicon);
 
 	lexicon = grn_table_create(ctx,
-							   NULL, 0,
+							   NULL,
+							   0,
 							   NULL,
 							   GRN_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
-	PGrnCheck("options: %s: failed to create a temporary lexicon",
-			  context);
+	PGrnCheck("options: %s: failed to create a temporary lexicon", context);
 }
 
 static void
@@ -105,13 +106,8 @@ PGrnOptionValidateTokenizer(const char *rawTokenizer)
 	PGrnOptionEnsureLexicon("tokenizer");
 
 	GRN_TEXT_SETS(ctx, tokenizer, rawTokenizer);
-	grn_obj_set_info(ctx,
-					 lexicon,
-					 GRN_INFO_DEFAULT_TOKENIZER,
-					 tokenizer);
-	PGrnCheck("%s invalid tokenizer: <%s>",
-			  tag,
-			  rawTokenizer);
+	grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
+	PGrnCheck("%s invalid tokenizer: <%s>", tag, rawTokenizer);
 }
 
 static void
@@ -142,7 +138,8 @@ PGrnOptionValidateTokenizerMapping(const char *rawTokenizerMapping)
 					rawTokenizerMapping);
 	}
 
-	while (true) {
+	while (true)
+	{
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token == WJB_END_OBJECT)
 			break;
@@ -171,14 +168,9 @@ PGrnOptionValidateTokenizerMapping(const char *rawTokenizerMapping)
 						PGrnJSONBValueTypeToString(value.type),
 						rawTokenizerMapping);
 		}
-		GRN_TEXT_SET(ctx,
-					 tokenizer,
-					 value.val.string.val,
-					 value.val.string.len);
-		grn_obj_set_info(ctx,
-						 lexicon,
-						 GRN_INFO_DEFAULT_TOKENIZER,
-						 tokenizer);
+		GRN_TEXT_SET(
+			ctx, tokenizer, value.val.string.val, value.val.string.len);
+		grn_obj_set_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
 		PGrnCheck("%s value is invalid tokenizer: <%.*s>",
 				  tag,
 				  (int) GRN_TEXT_LEN(tokenizer),
@@ -201,13 +193,8 @@ PGrnOptionValidateNormalizers(const char *rawNormalizers)
 	PGrnOptionEnsureLexicon("normalizers");
 
 	GRN_TEXT_SETS(ctx, normalizers, rawNormalizers);
-	grn_obj_set_info(ctx,
-					 lexicon,
-					 GRN_INFO_NORMALIZERS,
-					 normalizers);
-	PGrnCheck("%s invalid normalizers: <%s>",
-			  tag,
-			  rawNormalizers);
+	grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZERS, normalizers);
+	PGrnCheck("%s invalid normalizers: <%s>", tag, rawNormalizers);
 }
 
 static void
@@ -238,7 +225,8 @@ PGrnOptionValidateNormalizersMapping(const char *rawNormalizersMapping)
 					rawNormalizersMapping);
 	}
 
-	while (true) {
+	while (true)
+	{
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token == WJB_END_OBJECT)
 			break;
@@ -267,14 +255,9 @@ PGrnOptionValidateNormalizersMapping(const char *rawNormalizersMapping)
 						PGrnJSONBValueTypeToString(value.type),
 						rawNormalizersMapping);
 		}
-		GRN_TEXT_SET(ctx,
-					 normalizers,
-					 value.val.string.val,
-					 value.val.string.len);
-		grn_obj_set_info(ctx,
-						 lexicon,
-						 GRN_INFO_NORMALIZERS,
-						 normalizers);
+		GRN_TEXT_SET(
+			ctx, normalizers, value.val.string.val, value.val.string.len);
+		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZERS, normalizers);
 		PGrnCheck("%s value is invalid normalizer: <%.*s>",
 				  tag,
 				  (int) GRN_TEXT_LEN(normalizers),
@@ -294,19 +277,12 @@ PGrnOptionValidateTokenFilters(const char *rawTokenFilters)
 	PGrnOptionEnsureLexicon("token filters");
 
 	GRN_TEXT_SETS(ctx, tokenFilters, rawTokenFilters);
-	grn_obj_set_info(ctx,
-						  lexicon,
-						  GRN_INFO_TOKEN_FILTERS,
-						  tokenFilters);
-	PGrnCheck("%s invalid token filters: <%s>",
-			  tag,
-			  rawTokenFilters);
+	grn_obj_set_info(ctx, lexicon, GRN_INFO_TOKEN_FILTERS, tokenFilters);
+	PGrnCheck("%s invalid token filters: <%s>", tag, rawTokenFilters);
 }
 
 static void
-PGrnOptionValidatePlugin(const char *name,
-						 size_t nameSize,
-						 void *data)
+PGrnOptionValidatePlugin(const char *name, size_t nameSize, void *data)
 {
 	const char *tag = "[option][plugin][validate]";
 	char pluginName[MAXPGPATH];
@@ -314,17 +290,14 @@ PGrnOptionValidatePlugin(const char *name,
 	grn_strncpy(pluginName, MAXPGPATH, name, nameSize);
 	pluginName[nameSize] = '\0';
 	grn_plugin_register(ctx, pluginName);
-	PGrnCheck("%s failed to register plugin: <%.*s>",
-			  tag,
-			  (int) nameSize, name);
+	PGrnCheck(
+		"%s failed to register plugin: <%.*s>", tag, (int) nameSize, name);
 }
 
 static void
 PGrnOptionValidatePlugins(const char *names)
 {
-	PGrnOptionParseNames(names,
-						 PGrnOptionValidatePlugin,
-						 NULL);
+	PGrnOptionParseNames(names, PGrnOptionValidatePlugin, NULL);
 }
 
 static void
@@ -380,7 +353,8 @@ PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 					rawIndexFlagsMapping);
 	}
 
-	while (true) {
+	while (true)
+	{
 		token = JsonbIteratorNext(&iter, &value, false);
 		if (token == WJB_END_OBJECT)
 			break;
@@ -587,9 +561,8 @@ PGrnApplyOptionValuesTokenizer(PGrnOptions *options,
 
 			*tokenizer = &(buffers->tokenizer);
 			GRN_BULK_REWIND(*tokenizer);
-			PGrnStringSubstituteVariables(value.val.string.val,
-										  value.val.string.len,
-										  *tokenizer);
+			PGrnStringSubstituteVariables(
+				value.val.string.val, value.val.string.len, *tokenizer);
 			return;
 		}
 	}
@@ -666,9 +639,8 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 
 			*normalizers = &(buffers->normalizers);
 			GRN_BULK_REWIND(*normalizers);
-			PGrnStringSubstituteVariables(value.val.string.val,
-										  value.val.string.len,
-										  *normalizers);
+			PGrnStringSubstituteVariables(
+				value.val.string.val, value.val.string.len, *normalizers);
 			return;
 		}
 	}
@@ -694,22 +666,22 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 	case PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH:
 		if (options->fullTextSearchNormalizerOffset != 0)
 		{
-			rawNormalizers =
-				((const char *) options) + options->fullTextSearchNormalizerOffset;
+			rawNormalizers = ((const char *) options) +
+							 options->fullTextSearchNormalizerOffset;
 		}
 		break;
 	case PGRN_OPTION_USE_CASE_REGEXP_SEARCH:
 		if (options->regexpSearchNormalizerOffset != 0)
 		{
-			rawNormalizers =
-				((const char *) options) + options->regexpSearchNormalizerOffset;
+			rawNormalizers = ((const char *) options) +
+							 options->regexpSearchNormalizerOffset;
 		}
 		break;
 	case PGRN_OPTION_USE_CASE_PREFIX_SEARCH:
 		if (options->prefixSearchNormalizerOffset != 0)
 		{
-			rawNormalizers =
-				((const char *) options) + options->prefixSearchNormalizerOffset;
+			rawNormalizers = ((const char *) options) +
+							 options->prefixSearchNormalizerOffset;
 		}
 		break;
 	default:
@@ -726,9 +698,8 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 		{
 			*normalizers = &(buffers->normalizers);
 			GRN_BULK_REWIND(*normalizers);
-			PGrnStringSubstituteVariables(defaultNormalizers,
-										  strlen(defaultNormalizers),
-										  *normalizers);
+			PGrnStringSubstituteVariables(
+				defaultNormalizers, strlen(defaultNormalizers), *normalizers);
 		}
 		else
 		{
@@ -739,9 +710,8 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 	{
 		*normalizers = &(buffers->normalizers);
 		GRN_BULK_REWIND(*normalizers);
-		PGrnStringSubstituteVariables(rawNormalizers,
-									  strlen(rawNormalizers),
-									  *normalizers);
+		PGrnStringSubstituteVariables(
+			rawNormalizers, strlen(rawNormalizers), *normalizers);
 	}
 }
 
@@ -799,7 +769,8 @@ PGrnApplyOptionValuesIndexFlags(PGrnOptions *options,
 					*indexFlags |= GRN_OBJ_INDEX_LARGE;
 				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WITH_WEIGHT"))
 					*indexFlags |= GRN_OBJ_WITH_WEIGHT;
-				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WEIGHT_FLOAT32"))
+				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag,
+													  "WEIGHT_FLOAT32"))
 					*indexFlags |= GRN_OBJ_WEIGHT_FLOAT32;
 			}
 			if (isTarget)
@@ -847,19 +818,11 @@ PGrnApplyOptionValues(Relation index,
 		return;
 	}
 
-	PGrnApplyOptionValuesTokenizer(options,
-								   index,
-								   i,
-								   useCase,
-								   tokenizer,
-								   defaultTokenizer);
+	PGrnApplyOptionValuesTokenizer(
+		options, index, i, useCase, tokenizer, defaultTokenizer);
 
-	PGrnApplyOptionValuesNormalizers(options,
-									 index,
-									 i,
-									 useCase,
-									 normalizers,
-									 defaultNormalizers);
+	PGrnApplyOptionValuesNormalizers(
+		options, index, i, useCase, normalizers, defaultNormalizers);
 
 	rawTokenFilters = ((const char *) options) + options->tokenFiltersOffset;
 	if (!PGrnIsNoneValue(rawTokenFilters))
@@ -879,7 +842,8 @@ PGrnApplyOptionValues(Relation index,
 		{
 			*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 		}
-		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) == 0)
+		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) ==
+				 0)
 		{
 			*lexiconType |= GRN_OBJ_TABLE_DAT_KEY;
 		}
@@ -909,36 +873,46 @@ PGrnOptionsGetExprParseFlags(Relation index)
 }
 
 bytea *
-pgroonga_options(Datum reloptions,
-				 bool validate)
+pgroonga_options(Datum reloptions, bool validate)
 {
 	PGrnOptions *grnOptions;
 	const relopt_parse_elt optionsMap[] = {
-		{"tokenizer", RELOPT_TYPE_STRING,
+		{"tokenizer",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenizerOffset)},
-		{"tokenizer_mapping", RELOPT_TYPE_STRING,
+		{"tokenizer_mapping",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenizerMappingOffset)},
-		{"normalizer", RELOPT_TYPE_STRING,
+		{"normalizer",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizerOffset)},
-		{"token_filters", RELOPT_TYPE_STRING,
+		{"token_filters",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, tokenFiltersOffset)},
-		{"plugins", RELOPT_TYPE_STRING,
-		 offsetof(PGrnOptions, pluginsOffset)},
-		{"full_text_search_normalizer", RELOPT_TYPE_STRING,
+		{"plugins", RELOPT_TYPE_STRING, offsetof(PGrnOptions, pluginsOffset)},
+		{"full_text_search_normalizer",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, fullTextSearchNormalizerOffset)},
-		{"regexp_search_normalizer", RELOPT_TYPE_STRING,
+		{"regexp_search_normalizer",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, regexpSearchNormalizerOffset)},
-		{"prefix_search_normalizer", RELOPT_TYPE_STRING,
+		{"prefix_search_normalizer",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, prefixSearchNormalizerOffset)},
-		{"lexicon_type", RELOPT_TYPE_STRING,
+		{"lexicon_type",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, lexiconTypeOffset)},
-		{"query_allow_column", RELOPT_TYPE_BOOL,
+		{"query_allow_column",
+		 RELOPT_TYPE_BOOL,
 		 offsetof(PGrnOptions, queryAllowColumn)},
-		{"normalizers", RELOPT_TYPE_STRING,
+		{"normalizers",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizersOffset)},
-		{"normalizers_mapping", RELOPT_TYPE_STRING,
+		{"normalizers_mapping",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, normalizersMappingOffset)},
-		{"index_flags_mapping", RELOPT_TYPE_STRING,
+		{"index_flags_mapping",
+		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 	};
 
@@ -953,13 +927,10 @@ pgroonga_options(Datum reloptions,
 	{
 		relopt_value *options;
 		int nOptions;
-		options = parseRelOptions(reloptions,
-								  validate,
-								  PGrnReloptionKind,
-								  &nOptions);
-		grnOptions = allocateReloptStruct(sizeof(PGrnOptions),
-										  options,
-										  nOptions);
+		options =
+			parseRelOptions(reloptions, validate, PGrnReloptionKind, &nOptions);
+		grnOptions =
+			allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
 		fillRelOptions(grnOptions,
 					   sizeof(PGrnOptions),
 					   options,

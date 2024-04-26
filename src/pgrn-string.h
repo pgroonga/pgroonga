@@ -7,7 +7,6 @@ void PGrnStringSubstituteIndex(const char *text,
 							   grn_obj *output,
 							   const char *indexName,
 							   int section);
-void
-PGrnStringSubstituteVariables(const char *string,
-							  unsigned int stringSize,
-							  grn_obj *output);
+void PGrnStringSubstituteVariables(const char *string,
+								   unsigned int stringSize,
+								   grn_obj *output);

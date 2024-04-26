@@ -21,13 +21,8 @@ PGrnCtidIsAlive(Relation table, ItemPointer ctid)
 	buffer = ReadBuffer(table, ItemPointerGetBlockNumber(ctid));
 	LockBuffer(buffer, BUFFER_LOCK_SHARE);
 	/* table_index_fetch_tuple_check() may be better in the future. */
-	found = heap_hot_search_buffer(ctid,
-								   table,
-								   buffer,
-								   snapshot,
-								   &heapTuple,
-								   NULL,
-								   true);
+	found = heap_hot_search_buffer(
+		ctid, table, buffer, snapshot, &heapTuple, NULL, true);
 	LockBuffer(buffer, BUFFER_LOCK_UNLOCK);
 	ReleaseBuffer(buffer);
 
@@ -42,16 +37,13 @@ PGrnCtidPack(ItemPointer ctid)
 
 	blockNumber = ItemPointerGetBlockNumber(ctid);
 	offsetNumber = ItemPointerGetOffsetNumber(ctid);
-	return (((uint64_t)blockNumber << 16) | ((uint64_t)offsetNumber));
+	return (((uint64_t) blockNumber << 16) | ((uint64_t) offsetNumber));
 }
 
 ItemPointerData
 PGrnCtidUnpack(uint64_t packedCtid)
 {
-	ItemPointerData	ctid;
-	ItemPointerSet(&ctid,
-				   (packedCtid >> 16) & 0xFFFFFFFF,
-				   packedCtid & 0xFFFF);
+	ItemPointerData ctid;
+	ItemPointerSet(&ctid, (packedCtid >> 16) & 0xFFFFFFFF, packedCtid & 0xFFFF);
 	return ctid;
 }
-

@@ -5,8 +5,8 @@
 #include "pgrn-groonga.h"
 #include "pgrn-jsonb.h"
 
-#include <storage/lock.h>
 #include <storage/lmgr.h>
+#include <storage/lock.h>
 #include <utils/builtins.h>
 
 static grn_ctx *ctx = &PGrnContext;
@@ -51,8 +51,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 		TupleDesc desc;
 		unsigned int i;
 
-		PGrnFlushObject(PGrnLookupSourcesTable(index, ERROR),
-						true);
+		PGrnFlushObject(PGrnLookupSourcesTable(index, ERROR), true);
 
 		desc = RelationGetDescr(index);
 		for (i = 0; i < desc->natts; i++)
@@ -83,8 +82,7 @@ pgroonga_flush(PG_FUNCTION_ARGS)
 			}
 			else
 			{
-				PGrnFlushObject(PGrnLookupLexicon(index, i, ERROR),
-								true);
+				PGrnFlushObject(PGrnLookupLexicon(index, i, ERROR), true);
 			}
 		}
 		PGrnFlushObject(grn_ctx_db(ctx), false);

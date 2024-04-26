@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
@@ -20,7 +21,10 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_normalize);
 void
 PGrnInitializeNormalize(void)
 {
-	lexicon = grn_table_create(ctx, NULL, 0, NULL,
+	lexicon = grn_table_create(ctx,
+							   NULL,
+							   0,
+							   NULL,
 							   GRN_OBJ_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
@@ -70,13 +74,9 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 				 GRN_TEXT_LEN(&normalizers)) == 0))
 	{
 		GRN_BULK_REWIND(&normalizersBuffer);
-		PGrnStringSubstituteVariables(rawNormalizersData,
-									  rawNormalizersLength,
-									  &normalizersBuffer);
-		grn_obj_set_info(ctx,
-						 lexicon,
-						 GRN_INFO_NORMALIZER,
-						 &normalizersBuffer);
+		PGrnStringSubstituteVariables(
+			rawNormalizersData, rawNormalizersLength, &normalizersBuffer);
+		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER, &normalizersBuffer);
 		PGrnCheck("normalize: failed to set normalizers: <%.*s>",
 				  (int) GRN_TEXT_LEN(&normalizersBuffer),
 				  GRN_TEXT_VALUE(&normalizersBuffer));
@@ -85,18 +85,11 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 					 GRN_TEXT_VALUE(&normalizersBuffer),
 					 GRN_TEXT_LEN(&normalizersBuffer));
 	}
-	string = grn_string_open(ctx,
-							 VARDATA_ANY(target),
-							 VARSIZE_ANY_EXHDR(target),
-							 lexicon,
-							 0);
+	string = grn_string_open(
+		ctx, VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), lexicon, 0);
 	PGrnCheck("normalize: failed to open normalized string");
 
-	grn_string_get_normalized(ctx,
-							  string,
-							  &normalized,
-							  &lengthInBytes,
-							  NULL);
+	grn_string_get_normalized(ctx, string, &normalized, &lengthInBytes, NULL);
 
 	normalizedTarget = cstring_to_text_with_len(normalized, lengthInBytes);
 

@@ -13,8 +13,8 @@ typedef struct PGrnSearchData
 	grn_obj sectionID;
 	grn_obj *expression;
 	grn_obj *expressionVariable;
-	bool    isEmptyCondition;
-	size_t  nExpressions;
+	bool isEmptyCondition;
+	size_t nExpressions;
 } PGrnSearchData;
 
 void PGrnSearchBuildConditionQuery(PGrnSearchData *data,

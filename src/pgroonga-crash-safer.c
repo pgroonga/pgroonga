@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+
 #include "pgrn-compatible.h"
 #include "pgrn-portable.h"
 
@@ -19,13 +20,11 @@
 #include <storage/ipc.h>
 #include <storage/latch.h>
 #include <storage/procsignal.h>
-#include <utils/snapmgr.h>
 #include <utils/guc.h>
 #include <utils/snapmgr.h>
 #include <utils/timestamp.h>
 
 #include <groonga.h>
-
 
 /* #define PGROONGA_CRASH_SAFER_DEBUG */
 #ifdef PGROONGA_CRASH_SAFER_DEBUG
@@ -37,14 +36,14 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT void
-pgroonga_crash_safer_reset_position_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_crash_safer_reindex_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_crash_safer_flush_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_crash_safer_main(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_crash_safer_reset_position_one(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_crash_safer_reindex_one(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_crash_safer_flush_one(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_crash_safer_main(Datum datum)
+	pg_attribute_noreturn();
 
 #define TAG "pgroonga: crash-safer"
 
@@ -57,7 +56,6 @@ static int PGroongaCrashSaferLogLevel = GRN_LOG_DEFAULT_LEVEL;
 static int PGroongaCrashSaferMaxRecoveryThreads = 0;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
-
 
 #if PG_VERSION_NUM < 140000
 /* Borrowed from src/backend/utils/adt/timestamp.c in PostgreSQL.
@@ -77,10 +75,9 @@ PGrnTimestampDifferenceMilliseconds(TimestampTz start_time,
 		return (long) ((diff + 999) / 1000);
 }
 #else
-#	define PGrnTimestampDifferenceMilliseconds(start_time, stop_time)	\
-	TimestampDifferenceMilliseconds((start_time), (stop_time))
+#	define PGrnTimestampDifferenceMilliseconds(start_time, stop_time)         \
+		TimestampDifferenceMilliseconds((start_time), (stop_time))
 #endif
-
 
 static uint32_t
 pgroonga_crash_safer_get_thread_limit(void *data)
@@ -91,7 +88,7 @@ pgroonga_crash_safer_get_thread_limit(void *data)
 static void
 pgroonga_crash_safer_sigterm(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaCrashSaferGotSIGTERM = true;
 	SetLatch(MyLatch);
@@ -102,7 +99,7 @@ pgroonga_crash_safer_sigterm(SIGNAL_ARGS)
 static void
 pgroonga_crash_safer_sighup(SIGNAL_ARGS)
 {
-	int	save_errno = errno;
+	int save_errno = errno;
 
 	PGroongaCrashSaferGotSIGHUP = true;
 	SetLatch(MyLatch);
@@ -125,10 +122,8 @@ pgroonga_crash_safer_prepare_one_on_exit(int code, Datum databaseInfoDatum)
 	Oid databaseOid;
 	Oid tableSpaceOid;
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
-	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
-											  databaseOid,
-											  tableSpaceOid,
-											  InvalidPid);
+	pgrn_crash_safer_statuses_set_prepare_pid(
+		NULL, databaseOid, tableSpaceOid, InvalidPid);
 }
 
 void
@@ -147,10 +142,8 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": resetting position");
 
-	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
-											  databaseOid,
-											  tableSpaceOid,
-											  MyProcPid);
+	pgrn_crash_safer_statuses_set_prepare_pid(
+		NULL, databaseOid, tableSpaceOid, MyProcPid);
 	before_shmem_exit(pgroonga_crash_safer_prepare_one_on_exit,
 					  databaseInfoDatum);
 
@@ -158,18 +151,19 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		int result;
 
 		SetCurrentStatementStartTimestamp();
-		result = SPI_execute("SELECT proname "
-							 "  FROM pg_catalog.pg_proc "
-							 "  WHERE "
-							 "    proname = 'pgroonga_wal_set_applied_position'",
-							 true,
-							 0);
+		result =
+			SPI_execute("SELECT proname "
+						"  FROM pg_catalog.pg_proc "
+						"  WHERE "
+						"    proname = 'pgroonga_wal_set_applied_position'",
+						true,
+						0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
 					(errmsg(TAG ": failed to detect "
-							"pgroonga_wal_set_applied_position(): "
-							"%u/%u: %d",
+								"pgroonga_wal_set_applied_position(): "
+								"%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
@@ -178,15 +172,14 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		if (SPI_processed > 0)
 		{
 			SetCurrentStatementStartTimestamp();
-			result = SPI_execute("SELECT pgroonga_wal_set_applied_position()",
-								 false,
-								 0);
+			result = SPI_execute(
+				"SELECT pgroonga_wal_set_applied_position()", false, 0);
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(FATAL,
 						(errmsg(TAG ": failed to reset WAL applied positions "
-								"of all PGroonga indexes: "
-								"%u/%u: %d",
+									"of all PGroonga indexes: "
+									"%u/%u: %d",
 								databaseOid,
 								tableSpaceOid,
 								result)));
@@ -219,10 +212,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING, TAG ": reindexing");
 
-	pgrn_crash_safer_statuses_set_prepare_pid(NULL,
-											  databaseOid,
-											  tableSpaceOid,
-											  MyProcPid);
+	pgrn_crash_safer_statuses_set_prepare_pid(
+		NULL, databaseOid, tableSpaceOid, MyProcPid);
 	before_shmem_exit(pgroonga_crash_safer_prepare_one_on_exit,
 					  databaseInfoDatum);
 
@@ -234,32 +225,33 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 		char **indexNames;
 
 		SetCurrentStatementStartTimestamp();
-		result = SPI_execute("SELECT (namespace.nspname || "
-							 "        '.' || "
-							 "        class.relname) AS index_name "
-							 "  FROM pg_catalog.pg_class AS class "
-							 "  JOIN pg_catalog.pg_namespace AS namespace "
-							 "    ON class.relnamespace = namespace.oid "
-							 " WHERE class.relam = ("
-							 "   SELECT oid "
-							 "     FROM pg_catalog.pg_am "
-							 "    WHERE amname = 'pgroonga'"
-							 " )"
-							 "ORDER BY "
-							 "  CASE "
-							 "  WHEN array_to_string(class.reloptions, ' ', ' ') "
-							 "       LIKE '%${%}%' "
-							 "    THEN 1 "
-							 "  ELSE 0 "
-							 "  END, "
-							 "  class.relname",
-							 true,
-							 0);
+		result =
+			SPI_execute("SELECT (namespace.nspname || "
+						"        '.' || "
+						"        class.relname) AS index_name "
+						"  FROM pg_catalog.pg_class AS class "
+						"  JOIN pg_catalog.pg_namespace AS namespace "
+						"    ON class.relnamespace = namespace.oid "
+						" WHERE class.relam = ("
+						"   SELECT oid "
+						"     FROM pg_catalog.pg_am "
+						"    WHERE amname = 'pgroonga'"
+						" )"
+						"ORDER BY "
+						"  CASE "
+						"  WHEN array_to_string(class.reloptions, ' ', ' ') "
+						"       LIKE '%${%}%' "
+						"    THEN 1 "
+						"  ELSE 0 "
+						"  END, "
+						"  class.relname",
+						true,
+						0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
 					(errmsg(TAG ": failed to detect PGroonga indexes: "
-							"%u/%u: %d",
+								"%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
@@ -273,10 +265,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			bool isNull;
 			Datum indexName;
 
-			indexName = SPI_getbinval(SPI_tuptable->vals[i],
-									  SPI_tuptable->tupdesc,
-									  1,
-									  &isNull);
+			indexName = SPI_getbinval(
+				SPI_tuptable->vals[i], SPI_tuptable->tupdesc, 1, &isNull);
 			if (isNull)
 			{
 				indexNames[i] = NULL;
@@ -301,7 +291,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			{
 				ereport(FATAL,
 						(errmsg(TAG ": failed to reindex PGroonga index: "
-								"%u/%u: <%s>: %d",
+									"%u/%u: <%s>: %d",
 								databaseOid,
 								tableSpaceOid,
 								indexNames[i],
@@ -332,11 +322,8 @@ pgroonga_crash_safer_flush_one_remove_pid_on_exit(int code,
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
-	entry = pgrn_crash_safer_statuses_search(NULL,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
+	entry = pgrn_crash_safer_statuses_search(
+		NULL, databaseOid, tableSpaceOid, HASH_FIND, &found);
 	if (!found)
 		return;
 	entry->pid = InvalidPid;
@@ -380,18 +367,14 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
 
 	databasePath = GetDatabasePath(databaseOid, tableSpaceOid);
-	join_path_components(pgrnDatabasePath,
-						 databasePath,
-						 PGrnDatabaseBasename);
+	join_path_components(pgrnDatabasePath, databasePath, PGrnDatabaseBasename);
 
 	P(": flush: %u/%u", databaseOid, tableSpaceOid);
 
 	pgstat_report_activity(STATE_RUNNING, TAG ": flushing");
 
-	grn_thread_set_get_limit_func(pgroonga_crash_safer_get_thread_limit,
-								  NULL);
-	grn_default_logger_set_flags(grn_default_logger_get_flags() |
-								 GRN_LOG_PID);
+	grn_thread_set_get_limit_func(pgroonga_crash_safer_get_thread_limit, NULL);
+	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
 	grn_default_logger_set_max_level(PGroongaCrashSaferLogLevel);
 	if (!PGrnIsNoneValue(PGroongaCrashSaferLogPath))
 	{
@@ -478,17 +461,17 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				 tableSpaceOid);
 		snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 		worker.bgw_flags =
-			BGWORKER_SHMEM_ACCESS |
-			BGWORKER_BACKEND_DATABASE_CONNECTION;
+			BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 		worker.bgw_start_time = BgWorkerStart_ConsistentState;
 		worker.bgw_restart_time = BGW_NEVER_RESTART;
 		snprintf(worker.bgw_library_name,
 				 BGW_MAXLEN,
-				 "%s", PGroongaCrashSaferLibraryName);
-		snprintf(worker.bgw_function_name, BGW_MAXLEN,
-				 needReindex ?
-				 "pgroonga_crash_safer_reindex_one" :
-				 "pgroonga_crash_safer_reset_position_one");
+				 "%s",
+				 PGroongaCrashSaferLibraryName);
+		snprintf(worker.bgw_function_name,
+				 BGW_MAXLEN,
+				 needReindex ? "pgroonga_crash_safer_reindex_one"
+							 : "pgroonga_crash_safer_reset_position_one");
 		worker.bgw_main_arg = databaseInfoDatum;
 		worker.bgw_notify_pid = MyProcPid;
 		if (RegisterDynamicBackgroundWorker(&worker, &handle))
@@ -503,11 +486,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		}
 	}
 
-	GRN_LOG(&ctx,
-			GRN_LOG_NOTICE,
-			TAG ": ready: %u/%u",
-			databaseOid,
-			tableSpaceOid);
+	GRN_LOG(
+		&ctx, GRN_LOG_NOTICE, TAG ": ready: %u/%u", databaseOid, tableSpaceOid);
 
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
@@ -516,13 +496,10 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
-		TimestampTz nextFlushTime =
-			TimestampTzPlusMilliseconds(
-				lastFlushTime,
-				PGroongaCrashSaferFlushNaptime * 1000);
-		long timeout =
-			PGrnTimestampDifferenceMilliseconds(GetCurrentTimestamp(),
-												nextFlushTime);
+		TimestampTz nextFlushTime = TimestampTzPlusMilliseconds(
+			lastFlushTime, PGroongaCrashSaferFlushNaptime * 1000);
+		long timeout = PGrnTimestampDifferenceMilliseconds(
+			GetCurrentTimestamp(), nextFlushTime);
 		int conditions;
 		if (timeout <= 0)
 		{
@@ -530,12 +507,11 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		}
 		else
 		{
-			conditions = WaitLatch(MyLatch,
-								   WL_LATCH_SET |
-								   WL_TIMEOUT |
-								   PGRN_WL_EXIT_ON_PM_DEATH,
-								   timeout,
-								   PG_WAIT_EXTENSION);
+			conditions =
+				WaitLatch(MyLatch,
+						  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+						  timeout,
+						  PG_WAIT_EXTENSION);
 		}
 		if (conditions & WL_LATCH_SET)
 		{
@@ -580,9 +556,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		int conditions;
 		uint32 n_using_processes =
-			pgrn_crash_safer_statuses_get_n_using_processes(statuses,
-															databaseOid,
-															tableSpaceOid);
+			pgrn_crash_safer_statuses_get_n_using_processes(
+				statuses, databaseOid, tableSpaceOid);
 		if (n_using_processes == 0)
 			break;
 
@@ -592,12 +567,11 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				n_using_processes,
 				databaseOid,
 				tableSpaceOid);
-		conditions = WaitLatch(MyLatch,
-							   WL_LATCH_SET |
-							   WL_TIMEOUT |
-							   PGRN_WL_EXIT_ON_PM_DEATH,
-							   PGroongaCrashSaferFlushNaptime * 1000,
-							   PG_WAIT_EXTENSION);
+		conditions =
+			WaitLatch(MyLatch,
+					  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+					  PGroongaCrashSaferFlushNaptime * 1000,
+					  PG_WAIT_EXTENSION);
 		if (conditions & WL_LATCH_SET)
 		{
 			ResetLatch(MyLatch);
@@ -657,12 +631,8 @@ pgroonga_crash_safer_main_flush_one(pgrn_crash_safer_statuses_entry *entry)
 	Oid databaseOid;
 	Oid tableSpaceOid;
 
-	PGRN_DATABASE_INFO_UNPACK(entry->key,
-							  databaseOid,
-							  tableSpaceOid);
-	P(": flush: start: %u/%u",
-	  databaseOid,
-	  tableSpaceOid);
+	PGRN_DATABASE_INFO_UNPACK(entry->key, databaseOid, tableSpaceOid);
+	P(": flush: start: %u/%u", databaseOid, tableSpaceOid);
 	snprintf(worker.bgw_name,
 			 BGW_MAXLEN,
 			 TAG ": flush: %u/%u",
@@ -674,10 +644,10 @@ pgroonga_crash_safer_main_flush_one(pgrn_crash_safer_statuses_entry *entry)
 	worker.bgw_restart_time = BGW_NEVER_RESTART;
 	snprintf(worker.bgw_library_name,
 			 BGW_MAXLEN,
-			 "%s", PGroongaCrashSaferLibraryName);
-	snprintf(worker.bgw_function_name,
-			 BGW_MAXLEN,
-			 "pgroonga_crash_safer_flush_one");
+			 "%s",
+			 PGroongaCrashSaferLibraryName);
+	snprintf(
+		worker.bgw_function_name, BGW_MAXLEN, "pgroonga_crash_safer_flush_one");
 	worker.bgw_main_arg = DatumGetUInt64(entry->key);
 	worker.bgw_notify_pid = MyProcPid;
 	if (!RegisterDynamicBackgroundWorker(&worker, &handle))
@@ -718,17 +688,13 @@ pgroonga_crash_safer_main_flush_all(void)
 		tableSpaceOid = form->dattablespace;
 
 		databasePath = GetDatabasePath(databaseOid, tableSpaceOid);
-		join_path_components(pgrnDatabasePath,
-							 databasePath,
-							 PGrnDatabaseBasename);
+		join_path_components(
+			pgrnDatabasePath, databasePath, PGrnDatabaseBasename);
 		if (!pgrn_file_exist(pgrnDatabasePath))
 			continue;
 
-		entry = pgrn_crash_safer_statuses_search(statuses,
-												 databaseOid,
-												 tableSpaceOid,
-												 HASH_ENTER,
-												 NULL);
+		entry = pgrn_crash_safer_statuses_search(
+			statuses, databaseOid, tableSpaceOid, HASH_ENTER, NULL);
 		pgroonga_crash_safer_main_flush_one(entry);
 	}
 	table_endscan(scan);
@@ -768,8 +734,7 @@ pgroonga_crash_safer_main(Datum arg)
 		int conditions;
 
 		conditions = WaitLatch(MyLatch,
-							   WL_LATCH_SET |
-							   PGRN_WL_EXIT_ON_PM_DEATH,
+							   WL_LATCH_SET | PGRN_WL_EXIT_ON_PM_DEATH,
 							   0,
 							   PG_WAIT_EXTENSION);
 		if (conditions & WL_LATCH_SET)
@@ -853,20 +818,21 @@ _PG_init(void)
 							 NULL,
 							 NULL);
 
-	DefineCustomIntVariable("pgroonga_crash_safer.max_recovery_threads",
-							"Maximum number of threads for recovery of broken Groonga indexes.",
-							"The default is 0, which means disabled. "
-							"Use all CPUs in the environment at -1. "
-							"Use CPU for that number if 1 or later is set.",
-							&PGroongaCrashSaferMaxRecoveryThreads,
-							PGroongaCrashSaferMaxRecoveryThreads,
-							-1,
-							INT_MAX,
-							PGC_SIGHUP,
-							0,
-							NULL,
-							NULL,
-							NULL);
+	DefineCustomIntVariable(
+		"pgroonga_crash_safer.max_recovery_threads",
+		"Maximum number of threads for recovery of broken Groonga indexes.",
+		"The default is 0, which means disabled. "
+		"Use all CPUs in the environment at -1. "
+		"Use CPU for that number if 1 or later is set.",
+		&PGroongaCrashSaferMaxRecoveryThreads,
+		PGroongaCrashSaferMaxRecoveryThreads,
+		-1,
+		INT_MAX,
+		PGC_SIGHUP,
+		0,
+		NULL,
+		NULL,
+		NULL);
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
@@ -874,14 +840,14 @@ _PG_init(void)
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
-		BGWORKER_SHMEM_ACCESS |
-		BGWORKER_BACKEND_DATABASE_CONNECTION;
+		BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 	worker.bgw_start_time = BgWorkerStart_ConsistentState;
 	worker.bgw_restart_time = 60;
-	snprintf(worker.bgw_library_name, BGW_MAXLEN,
-			 "%s", PGroongaCrashSaferLibraryName);
-	snprintf(worker.bgw_function_name, BGW_MAXLEN,
-			 "pgroonga_crash_safer_main");
+	snprintf(worker.bgw_library_name,
+			 BGW_MAXLEN,
+			 "%s",
+			 PGroongaCrashSaferLibraryName);
+	snprintf(worker.bgw_function_name, BGW_MAXLEN, "pgroonga_crash_safer_main");
 	worker.bgw_main_arg = 0;
 	worker.bgw_notify_pid = 0;
 

@@ -6,6 +6,7 @@
 #include <groonga.h>
 
 #include <postgres.h>
+
 #include <mb/pg_wchar.h>
 
 static const char *ENCODED_CHARACTER_FORMAT = "@%05x";
@@ -14,8 +15,7 @@ static const int ENCODED_CHARACTER_LENGTH = 6;
 static bool
 PGrnColumnNameIsUsableCharacterASCII(char character)
 {
-	return (character == '_' ||
-			('0' <= character && character <= '9') ||
+	return (character == '_' || ('0' <= character && character <= '9') ||
 			('A' <= character && character <= 'Z') ||
 			('a' <= character && character <= 'z'));
 }
@@ -24,7 +24,7 @@ static void
 PGrnColumnNameEncodeCharacterUTF8(const char *utf8Character, char *encodedName)
 {
 	pg_wchar codepoint;
-	codepoint = utf8_to_unicode((const unsigned char *)utf8Character);
+	codepoint = utf8_to_unicode((const unsigned char *) utf8Character);
 	snprintf(encodedName,
 			 ENCODED_CHARACTER_LENGTH + 1,
 			 ENCODED_CHARACTER_FORMAT,
@@ -61,8 +61,7 @@ PGrnColumnNameEncodeUTF8WithSize(const char *name,
 
 		length = pg_mblen(current);
 
-		if (length == 1 &&
-			PGrnColumnNameIsUsableCharacterASCII(*current) &&
+		if (length == 1 && PGrnColumnNameIsUsableCharacterASCII(*current) &&
 			!(*current == '_' && current == name))
 		{
 			checkSize(encodedNameSize + length + 1, tag);

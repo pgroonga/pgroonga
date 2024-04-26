@@ -27,9 +27,8 @@ pgrn_crash_safer_statuses_hash(const void *key, Size keysize)
 {
 	Oid databaseOid;
 	Oid tableSpaceOid;
-	PGRN_DATABASE_INFO_UNPACK(*((const uint64 *)key),
-							  databaseOid,
-							  tableSpaceOid);
+	PGRN_DATABASE_INFO_UNPACK(
+		*((const uint64 *) key), databaseOid, tableSpaceOid);
 #ifdef PGRN_HAVE_COMMON_HASHFN_H
 	return hash_combine(uint32_hash(&databaseOid, sizeof(Oid)),
 						uint32_hash(&tableSpaceOid, sizeof(Oid)));
@@ -48,11 +47,7 @@ pgrn_crash_safer_statuses_get(void)
 	info.entrysize = sizeof(pgrn_crash_safer_statuses_entry);
 	info.hash = pgrn_crash_safer_statuses_hash;
 	flags = HASH_ELEM | HASH_FUNCTION;
-	return ShmemInitHash(name,
-						 1,
-						 32 /* TODO: configurable */,
-						 &info,
-						 flags);
+	return ShmemInitHash(name, 1, 32 /* TODO: configurable */, &info, flags);
 }
 
 static inline pgrn_crash_safer_statuses_entry *
@@ -65,16 +60,19 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 	uint64 databaseInfo;
 	bool found_local;
 	pgrn_crash_safer_statuses_entry *entry;
-	if (!statuses) {
+	if (!statuses)
+	{
 		statuses = pgrn_crash_safer_statuses_get();
 	}
 	databaseInfo = PGRN_DATABASE_INFO_PACK(databaseOid, tableSpaceOid);
 	entry = hash_search(statuses, &databaseInfo, action, &found_local);
-	if (action == HASH_ENTER && !found_local) {
+	if (action == HASH_ENTER && !found_local)
+	{
 		entry->pid = InvalidPid;
 		entry->preparePID = InvalidPid;
 	}
-	if (found) {
+	if (found)
+	{
 		*found = found_local;
 	}
 	return entry;
@@ -84,11 +82,8 @@ static inline void
 pgrn_crash_safer_statuses_set_main_pid(HTAB *statuses, pid_t pid)
 {
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 InvalidOid,
-											 InvalidOid,
-											 HASH_ENTER,
-											 NULL);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, InvalidOid, InvalidOid, HASH_ENTER, NULL);
 	entry->pid = pid;
 }
 
@@ -97,12 +92,10 @@ pgrn_crash_safer_statuses_get_main_pid(HTAB *statuses)
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 InvalidOid,
-											 InvalidOid,
-											 HASH_FIND,
-											 &found);
-	if (found) {
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, InvalidOid, InvalidOid, HASH_FIND, &found);
+	if (found)
+	{
 		return entry->pid;
 	}
 	else
@@ -118,11 +111,8 @@ pgrn_crash_safer_statuses_set_prepare_pid(HTAB *statuses,
 										  pid_t pid)
 {
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_ENTER,
-											 NULL);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_ENTER, NULL);
 	entry->preparePID = pid;
 }
 
@@ -133,12 +123,10 @@ pgrn_crash_safer_statuses_get_prepare_pid(HTAB *statuses,
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
-	if (found) {
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
+	if (found)
+	{
 		return entry->preparePID;
 	}
 	else
@@ -153,11 +141,8 @@ pgrn_crash_safer_statuses_use(HTAB *statuses,
 							  Oid tableSpaceOid)
 {
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_ENTER,
-											 NULL);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_ENTER, NULL);
 	pg_atomic_fetch_add_u32(&(entry->nUsingProcesses), 1);
 }
 
@@ -168,11 +153,8 @@ pgrn_crash_safer_statuses_release(HTAB *statuses,
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
 	if (found)
 	{
 		uint32 nUsingProcesses =
@@ -191,11 +173,8 @@ pgrn_crash_safer_statuses_get_n_using_processes(HTAB *statuses,
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
 	if (!found)
 		return 0;
 	return pg_atomic_read_u32(&(entry->nUsingProcesses));
@@ -207,11 +186,8 @@ pgrn_crash_safer_statuses_start(HTAB *statuses,
 								Oid tableSpaceOid)
 {
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_ENTER,
-											 NULL);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_ENTER, NULL);
 	entry->flushing = true;
 }
 
@@ -220,11 +196,8 @@ pgrn_crash_safer_statuses_stop(HTAB *statuses,
 							   Oid databaseOid,
 							   Oid tableSpaceOid)
 {
-	pgrn_crash_safer_statuses_search(statuses,
-									 databaseOid,
-									 tableSpaceOid,
-									 HASH_REMOVE,
-									 NULL);
+	pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_REMOVE, NULL);
 }
 
 static inline bool
@@ -234,11 +207,8 @@ pgrn_crash_safer_statuses_is_flushing(HTAB *statuses,
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
 	return found && entry->flushing;
 }
 
@@ -249,10 +219,7 @@ pgrn_crash_safer_statuses_is_preparing(HTAB *statuses,
 {
 	bool found;
 	pgrn_crash_safer_statuses_entry *entry;
-	entry = pgrn_crash_safer_statuses_search(statuses,
-											 databaseOid,
-											 tableSpaceOid,
-											 HASH_FIND,
-											 &found);
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
 	return found && entry->preparePID != InvalidPid;
 }

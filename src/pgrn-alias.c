@@ -12,10 +12,8 @@ static struct PGrnBuffers *buffers = &PGrnBuffers;
 #define TABLE_NAME "Aliases"
 #define TABLE_NAME_SIZE (sizeof(TABLE_NAME) - 1)
 #define REAL_NAME_COLUMN_NAME "real_name"
-#define FULL_REAL_NAME_COLUMN_NAME \
-	(TABLE_NAME "." REAL_NAME_COLUMN_NAME)
-#define FULL_REAL_NAME_COLUMN_NAME_SIZE \
-	(sizeof(FULL_REAL_NAME_COLUMN_NAME) - 1)
+#define FULL_REAL_NAME_COLUMN_NAME (TABLE_NAME "." REAL_NAME_COLUMN_NAME)
+#define FULL_REAL_NAME_COLUMN_NAME_SIZE (sizeof(FULL_REAL_NAME_COLUMN_NAME) - 1)
 #define ALIAS_CONFIG_KEY "alias.column"
 #define ALIAS_CONFIG_KEY_SIZE (sizeof(ALIAS_CONFIG_KEY) - 1)
 
@@ -25,11 +23,8 @@ PGrnInitializeAliasUpdateConfigNeeded(void)
 	const char *value = NULL;
 	uint32_t valueSize = 0;
 
-	grn_config_get(ctx,
-				   ALIAS_CONFIG_KEY,
-				   ALIAS_CONFIG_KEY_SIZE,
-				   &value,
-				   &valueSize);
+	grn_config_get(
+		ctx, ALIAS_CONFIG_KEY, ALIAS_CONFIG_KEY_SIZE, &value, &valueSize);
 
 	if (!value)
 		return true;
@@ -61,9 +56,7 @@ PGrnInitializeAlias(void)
 {
 	grn_obj *table;
 
-	table = grn_ctx_get(ctx,
-						TABLE_NAME,
-						TABLE_NAME_SIZE);
+	table = grn_ctx_get(ctx, TABLE_NAME, TABLE_NAME_SIZE);
 	if (!table)
 	{
 		table = PGrnCreateTableWithSize(NULL,
@@ -91,25 +84,22 @@ PGrnInitializeAlias(void)
 static grn_obj *
 PGrnAliasLookupTable(void)
 {
-	return PGrnLookupWithSize(TABLE_NAME,
-							  TABLE_NAME_SIZE,
-							  ERROR);
+	return PGrnLookupWithSize(TABLE_NAME, TABLE_NAME_SIZE, ERROR);
 }
 
 static grn_obj *
 PGrnAliasLookupColumn(void)
 {
-	return PGrnLookupWithSize(FULL_REAL_NAME_COLUMN_NAME,
-							  FULL_REAL_NAME_COLUMN_NAME_SIZE,
-							  ERROR);
+	return PGrnLookupWithSize(
+		FULL_REAL_NAME_COLUMN_NAME, FULL_REAL_NAME_COLUMN_NAME_SIZE, ERROR);
 }
 
 static void
-PGrnAliasFillOldNameRaw(Oid indexFileNodeID,
-						char *name,
-						size_t nameSize)
+PGrnAliasFillOldNameRaw(Oid indexFileNodeID, char *name, size_t nameSize)
 {
-	grn_snprintf(name, nameSize, nameSize,
+	grn_snprintf(name,
+				 nameSize,
+				 nameSize,
 				 PGrnSourcesTableNameFormat "." PGrnSourcesCtidColumnName,
 				 indexFileNodeID);
 }
@@ -117,7 +107,9 @@ PGrnAliasFillOldNameRaw(Oid indexFileNodeID,
 static void
 PGrnAliasFillNewNameRaw(Oid indexFileNodeID, char *name, size_t nameSize)
 {
-	grn_snprintf(name, nameSize, nameSize,
+	grn_snprintf(name,
+				 nameSize,
+				 nameSize,
 				 PGrnSourcesTableNameFormat "._key",
 				 indexFileNodeID);
 }
@@ -136,19 +128,17 @@ PGrnAliasAdd(Relation index)
 
 	table = PGrnAliasLookupTable();
 	column = PGrnAliasLookupColumn();
-	PGrnAliasFillOldNameRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index), old, sizeof(old));
-	PGrnAliasFillNewNameRaw(PGRN_RELATION_GET_LOCATOR_NUMBER(index), new, sizeof(new));
+	PGrnAliasFillOldNameRaw(
+		PGRN_RELATION_GET_LOCATOR_NUMBER(index), old, sizeof(old));
+	PGrnAliasFillNewNameRaw(
+		PGRN_RELATION_GET_LOCATOR_NUMBER(index), new, sizeof(new));
 
 	id = grn_table_add(ctx, table, old, strlen(old), NULL);
 	if (id == GRN_ID_NIL)
 	{
-		PGrnCheck("%s failed to add entry: <%s>",
-				  tag,
-				  old);
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s failed to add entry: <%s>",
-					tag,
-					old);
+		PGrnCheck("%s failed to add entry: <%s>", tag, old);
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT, "%s failed to add entry: <%s>", tag, old);
 	}
 
 	walData = PGrnWALStart(index);
@@ -157,15 +147,12 @@ PGrnAliasAdd(Relation index)
 
 	{
 		grn_obj *newValue = &(buffers->general);
-		grn_obj_reinit(ctx,
-					   newValue,
-					   GRN_DB_SHORT_TEXT,
-					   GRN_OBJ_DO_SHALLOW_COPY);
+		grn_obj_reinit(
+			ctx, newValue, GRN_DB_SHORT_TEXT, GRN_OBJ_DO_SHALLOW_COPY);
 		GRN_TEXT_SET(ctx, newValue, new, strlen(new));
 		grn_obj_set_value(ctx, column, id, newValue, GRN_OBJ_SET);
-		PGrnCheck("%s failed to set entry: <%s>(%u) -> <%s>",
-				  tag,
-				  old, id, new);
+		PGrnCheck(
+			"%s failed to set entry: <%s>(%u) -> <%s>", tag, old, id, new);
 		grn_db_touch(ctx, grn_ctx_db(ctx));
 
 		PGrnWALInsertColumn(walData, column, newValue);

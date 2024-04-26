@@ -12,8 +12,8 @@
 #include "pgrn-ctid.h"
 #include "pgrn-file.h"
 #include "pgrn-global.h"
-#include "pgrn-groonga.h"
 #include "pgrn-groonga-tuple-is-alive.h"
+#include "pgrn-groonga.h"
 #include "pgrn-highlight-html.h"
 #include "pgrn-index-status.h"
 #include "pgrn-jsonb.h"
@@ -71,9 +71,9 @@
 
 #include <groonga.h>
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 PG_MODULE_MAGIC;
 
@@ -103,8 +103,8 @@ static PGrnProcessLocalData processLocalData;
 
 typedef struct PGrnBuildStateData
 {
-	grn_obj	*sourcesTable;
-	grn_obj	*sourcesCtidColumn;
+	grn_obj *sourcesTable;
+	grn_obj *sourcesCtidColumn;
 	double nIndexedTuples;
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
@@ -160,7 +160,8 @@ typedef struct PGrnPrefixRKSequentialSearchData
 	grn_obj *resultTable;
 } PGrnPrefixRKSequentialSearchData;
 
-typedef struct PGrnParallelScanDescData {
+typedef struct PGrnParallelScanDescData
+{
 	slock_t mutex;
 	bool scanning;
 } PGrnParallelScanDescData;
@@ -228,7 +229,8 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text_condition_with_scorers);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text_array_condition);
-PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_text_array_condition_with_scorers);
+PGDLLEXPORT
+PG_FUNCTION_INFO_V1(pgroonga_match_text_array_condition_with_scorers);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_match_varchar_condition_with_scorers);
@@ -238,7 +240,8 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text_condition_with_scorers);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text_array_condition);
-PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_text_array_condition_with_scorers);
+PGDLLEXPORT
+PG_FUNCTION_INFO_V1(pgroonga_query_text_array_condition_with_scorers);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_varchar_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_varchar_condition_with_scorers);
@@ -307,7 +310,7 @@ PGrnGetThreadLimit(void *data)
 static grn_encoding
 PGrnGetEncoding(void)
 {
-	int	enc = GetDatabaseEncoding();
+	int enc = GetDatabaseEncoding();
 
 	switch (enc)
 	{
@@ -348,7 +351,8 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 	switch (phase)
 	{
 	case RESOURCE_RELEASE_BEFORE_LOCKS:
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
 				"%s%s%s %u: skip",
 				tag,
 				top_level_tag,
@@ -356,7 +360,8 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 				PGrnNScanOpaques);
 		return;
 	case RESOURCE_RELEASE_LOCKS:
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
 				"%s%s%s %u: skip",
 				tag,
 				top_level_tag,
@@ -364,7 +369,8 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 				PGrnNScanOpaques);
 		return;
 	case RESOURCE_RELEASE_AFTER_LOCKS:
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
 				"%s%s%s[start] %u",
 				tag,
 				top_level_tag,
@@ -382,7 +388,8 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 		PGrnScanOpaqueFin(so);
 	}
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"%s%s%s[end] %u",
 			tag,
 			top_level_tag,
@@ -417,7 +424,8 @@ PGrnBeforeShmemExit(int code, Datum arg)
 		grn_obj *db;
 
 		db = grn_ctx_db(ctx);
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
 				"%s[db][%s]",
 				tag,
 				db ? "opened" : "not-opened");
@@ -426,23 +434,25 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][auto-close]", tag);
 			PGrnFinalizeAutoClose();
 
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][normalize]", tag);
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][normalize]", tag);
 			PGrnFinalizeNormalize();
 
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][tokenize]", tag);
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][tokenize]", tag);
 			PGrnFinalizeTokenize();
 
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][query-extract-keywords]", tag);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][query-extract-keywords]",
+					tag);
 			PGrnFinalizeQueryExtractKeywords();
 
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][match-positions-byte]", tag);
+			GRN_LOG(
+				ctx, GRN_LOG_DEBUG, "%s[finalize][match-positions-byte]", tag);
 			PGrnFinalizeMatchPositionsByte();
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][match-positions-character]", tag);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][match-positions-character]",
+					tag);
 			PGrnFinalizeMatchPositionsCharacter();
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][highlight-html]", tag);
@@ -454,11 +464,15 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][jsonb]", tag);
 			PGrnFinalizeJSONB();
 
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][sequential-search-data]", tag);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][sequential-search-data]",
+					tag);
 			PGrnFinalizeSequentialSearch();
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[finalize][prefix-rk-sequential-search-data]", tag);
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][prefix-rk-sequential-search-data]",
+					tag);
 			PGrnFinalizePrefixRKSequentialSearchData();
 
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][options]", tag);
@@ -470,13 +484,10 @@ PGrnBeforeShmemExit(int code, Datum arg)
 
 		if (PGrnCrashSaferInitialized)
 		{
-			GRN_LOG(ctx,
-					GRN_LOG_DEBUG,
-					"%s[finalize][crash-safer][release]",
-					tag);
-			pgrn_crash_safer_statuses_release(NULL,
-											  MyDatabaseId,
-											  MyDatabaseTableSpace);
+			GRN_LOG(
+				ctx, GRN_LOG_DEBUG, "%s[finalize][crash-safer][release]", tag);
+			pgrn_crash_safer_statuses_release(
+				NULL, MyDatabaseId, MyDatabaseTableSpace);
 			PGrnCrashSaferInitialized = false;
 		}
 
@@ -510,7 +521,8 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 {
 	prefixRKSequentialSearchData.table =
 		grn_table_create(ctx,
-						 NULL, 0,
+						 NULL,
+						 0,
 						 NULL,
 						 GRN_OBJ_TABLE_PAT_KEY,
 						 grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
@@ -524,7 +536,8 @@ PGrnInitializePrefixRKSequentialSearchData(void)
 
 	prefixRKSequentialSearchData.resultTable =
 		grn_table_create(ctx,
-						 NULL, 0,
+						 NULL,
+						 0,
 						 NULL,
 						 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
 						 prefixRKSequentialSearchData.table,
@@ -577,9 +590,7 @@ PGrnEnsureDatabase(void)
 
 	GRN_CTX_SET_ENCODING(ctx, PGrnGetEncoding());
 	databasePath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
-	join_path_components(path,
-						 databasePath,
-						 PGrnDatabaseBasename);
+	join_path_components(path, databasePath, PGrnDatabaseBasename);
 	pfree(databasePath);
 
 	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
@@ -600,15 +611,12 @@ PGrnEnsureDatabase(void)
 							"shared_preload_libraries may not include "
 							"pgroonga_crash_safer")));
 		}
-		pgrn_crash_safer_statuses_use(statuses,
-									  MyDatabaseId,
-									  MyDatabaseTableSpace);
+		pgrn_crash_safer_statuses_use(
+			statuses, MyDatabaseId, MyDatabaseTableSpace);
 		PGrnCrashSaferInitialized = true;
 
-		preparePID =
-			pgrn_crash_safer_statuses_get_prepare_pid(statuses,
-													  MyDatabaseId,
-													  MyDatabaseTableSpace);
+		preparePID = pgrn_crash_safer_statuses_get_prepare_pid(
+			statuses, MyDatabaseId, MyDatabaseTableSpace);
 		if (preparePID == MyProcPid)
 		{
 			waitFlushing = false;
@@ -623,9 +631,8 @@ PGrnEnsureDatabase(void)
 			 * we accept a new connection and block the connection
 			 * here, REINDEX by pgroonga-crash-safer may be blocked by
 			 * the connection. */
-			if (pgrn_crash_safer_statuses_is_preparing(statuses,
-													   MyDatabaseId,
-													   MyDatabaseTableSpace))
+			if (pgrn_crash_safer_statuses_is_preparing(
+					statuses, MyDatabaseId, MyDatabaseTableSpace))
 			{
 				ereport(ERROR,
 						(errcode(ERRCODE_CANNOT_CONNECT_NOW),
@@ -633,21 +640,19 @@ PGrnEnsureDatabase(void)
 								"pgroonga_crash_safer is preparing")));
 			}
 
-			if (pgrn_crash_safer_statuses_is_flushing(statuses,
-													  MyDatabaseId,
-													  MyDatabaseTableSpace))
+			if (pgrn_crash_safer_statuses_is_flushing(
+					statuses, MyDatabaseId, MyDatabaseTableSpace))
 			{
 				break;
 			}
 
 			kill(crashSaferPID, SIGUSR1);
 
-			conditions = WaitLatch(MyLatch,
-								   WL_LATCH_SET |
-								   WL_TIMEOUT |
-								   PGRN_WL_EXIT_ON_PM_DEATH,
-								   timeout,
-								   PG_WAIT_EXTENSION);
+			conditions =
+				WaitLatch(MyLatch,
+						  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+						  timeout,
+						  PG_WAIT_EXTENSION);
 			if (conditions & WL_LATCH_SET)
 			{
 				ResetLatch(MyLatch);
@@ -685,7 +690,8 @@ _PG_init(void)
 
 		grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
 
-		grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
+		grn_default_logger_set_flags(grn_default_logger_get_flags() |
+									 GRN_LOG_PID);
 
 		rc = grn_init();
 		PGrnCheckRC(rc, "failed to initialize Groonga");
@@ -693,13 +699,12 @@ _PG_init(void)
 		grn_set_segv_handler();
 		grn_set_abrt_handler();
 
-		if (IsUnderPostmaster) {
+		if (IsUnderPostmaster)
+		{
 			bool found;
 			LWLockAcquire(AddinShmemInitLock, LW_EXCLUSIVE);
-			processSharedData =
-				(PGrnProcessSharedData *) ShmemInitStruct("PGrnProcessSharedData",
-														  sizeof(PGrnProcessSharedData),
-														  &found);
+			processSharedData = (PGrnProcessSharedData *) ShmemInitStruct(
+				"PGrnProcessSharedData", sizeof(PGrnProcessSharedData), &found);
 			if (!found)
 			{
 				processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
@@ -713,7 +718,8 @@ _PG_init(void)
 		RegisterResourceReleaseCallback(PGrnReleaseScanOpaques, NULL);
 		RegisterResourceReleaseCallback(PGrnReleaseSequentialSearch, NULL);
 
-		grn_set_default_match_escalation_threshold(PGrnMatchEscalationThreshold);
+		grn_set_default_match_escalation_threshold(
+			PGrnMatchEscalationThreshold);
 
 		rc = grn_ctx_init(&PGrnContext, 0);
 		PGrnCheckRC(rc, "failed to initialize Groonga context");
@@ -722,7 +728,8 @@ _PG_init(void)
 
 		ctx = &PGrnContext;
 
-		GRN_LOG(ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+		GRN_LOG(
+			ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
 
 		PGrnInitializeBuffers();
 
@@ -772,9 +779,8 @@ PGrnEnsureLatestDB(void)
 		return false;
 	}
 
-	GRN_LOG(ctx,
-			GRN_LOG_DEBUG,
-			"pgroonga: unmap DB because VACUUM was executed");
+	GRN_LOG(
+		ctx, GRN_LOG_DEBUG, "pgroonga: unmap DB because VACUUM was executed");
 	PGrnUnmapDB();
 	processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
 
@@ -846,10 +852,8 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 			unsigned int elementSize;
 			text *value;
 
-			elementSize = grn_vector_get_element(ctx, vector, i,
-												 &element,
-												 NULL,
-												 NULL);
+			elementSize =
+				grn_vector_get_element(ctx, vector, i, &element, NULL, NULL);
 			value = cstring_to_text_with_len(element, elementSize);
 			values[i] = PointerGetDatum(value);
 		}
@@ -858,9 +862,8 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 	{
 		unsigned int elementSize = grn_uvector_element_size(ctx, vector);
 		grn_obj element;
-		GRN_VALUE_FIX_SIZE_INIT(&element,
-								GRN_OBJ_DO_SHALLOW_COPY,
-								vector->header.domain);
+		GRN_VALUE_FIX_SIZE_INIT(
+			&element, GRN_OBJ_DO_SHALLOW_COPY, vector->header.domain);
 		for (i = 0; i < n; i++)
 		{
 			const char *rawElement = GRN_BULK_HEAD(vector) + (elementSize * i);
@@ -871,13 +874,16 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 	}
 
 	{
-		int	dims[1];
-		int	lbs[1];
+		int dims[1];
+		int lbs[1];
 
 		dims[0] = n;
 		lbs[0] = 1;
-		PG_RETURN_POINTER(construct_md_array(values, NULL,
-											 1, dims, lbs,
+		PG_RETURN_POINTER(construct_md_array(values,
+											 NULL,
+											 1,
+											 dims,
+											 lbs,
 											 elementTypeID,
 											 elementLength,
 											 elementByValue,
@@ -972,9 +978,8 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		char uuid[UUID_TEXT_SIZE];
 		memcpy(uuid,
 			   GRN_TEXT_VALUE(value),
-			   GRN_TEXT_LEN(value) > UUID_TEXT_SIZE - 1 ?
-			   UUID_TEXT_SIZE - 1 :
-			   GRN_TEXT_LEN(value));
+			   GRN_TEXT_LEN(value) > UUID_TEXT_SIZE - 1 ? UUID_TEXT_SIZE - 1
+														: GRN_TEXT_LEN(value));
 		uuid[UUID_TEXT_SIZE - 1] = '\0';
 #undef UUID_TEXT_SIZE
 		return DirectFunctionCall1(uuid_in, CStringGetDatum(uuid));
@@ -1176,32 +1181,34 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 	if (OidIsValid(prefixStrategyOID))
 		return true;
 
-	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
-											leftType,
-											rightType,
-											PGrnPrefixConditionStrategyV2Number);
-	if (OidIsValid(prefixStrategyOID))
-		return true;
-
-	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
-											leftType,
-											rightType,
-											PGrnPrefixFTSConditionStrategyV2Number);
-	if (OidIsValid(prefixStrategyOID))
-		return true;
-
-	prefixStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
-											leftType,
-											rightType,
-											PGrnPrefixStrategyV2DeprecatedNumber);
-	if (OidIsValid(prefixStrategyOID))
-		return true;
-
-	prefixInStrategyOID =
+	prefixStrategyOID =
 		get_opfamily_member(index->rd_opfamily[nthAttribute],
 							leftType,
 							rightType,
-							PGrnPrefixInStrategyV2Number);
+							PGrnPrefixConditionStrategyV2Number);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixStrategyOID =
+		get_opfamily_member(index->rd_opfamily[nthAttribute],
+							leftType,
+							rightType,
+							PGrnPrefixFTSConditionStrategyV2Number);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixStrategyOID =
+		get_opfamily_member(index->rd_opfamily[nthAttribute],
+							leftType,
+							rightType,
+							PGrnPrefixStrategyV2DeprecatedNumber);
+	if (OidIsValid(prefixStrategyOID))
+		return true;
+
+	prefixInStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											  leftType,
+											  rightType,
+											  PGrnPrefixInStrategyV2Number);
 	if (OidIsValid(prefixInStrategyOID))
 		return true;
 
@@ -1255,10 +1262,13 @@ PGrnCreate(PGrnCreateData *data)
 		char sourcesTableName[GRN_TABLE_MAX_KEY_SIZE];
 		grn_obj *sourcesTable;
 
-		snprintf(sourcesTableName, sizeof(sourcesTableName),
-				 PGrnSourcesTableNameFormat, data->relNumber);
+		snprintf(sourcesTableName,
+				 sizeof(sourcesTableName),
+				 PGrnSourcesTableNameFormat,
+				 data->relNumber);
 		sourcesTable = grn_ctx_get(ctx, sourcesTableName, -1);
-		if (sourcesTable) {
+		if (sourcesTable)
+		{
 			grn_obj_unlink(ctx, sourcesTable);
 			PGrnRemoveUnusedTable(data->relNumber);
 		}
@@ -1269,8 +1279,7 @@ PGrnCreate(PGrnCreateData *data)
 	for (data->i = 0; data->i < data->desc->natts; data->i++)
 	{
 		bool forInclude =
-			(data->i >=
-			 IndexRelationGetNumberOfKeyAttributes(data->index));
+			(data->i >= IndexRelationGetNumberOfKeyAttributes(data->index));
 		Form_pg_attribute attribute = TupleDescAttr(data->desc, data->i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
@@ -1311,8 +1320,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
-		bool forInclude =
-			(i >= IndexRelationGetNumberOfKeyAttributes(index));
+		bool forInclude = (i >= IndexRelationGetNumberOfKeyAttributes(index));
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name = &(attribute->attname);
 		grn_obj *source;
@@ -1338,9 +1346,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 }
 
 static double
-PGrnCollectScoreGetScore(Relation table,
-						 PGrnScanOpaque so,
-						 grn_id recordID)
+PGrnCollectScoreGetScore(Relation table, PGrnScanOpaque so, grn_id recordID)
 {
 	double score = 0.0;
 	grn_id id;
@@ -1391,18 +1397,14 @@ PGrnCollectScoreOneColumnPrimaryKey(Relation table,
 	grn_posting *posting;
 
 	desc = RelationGetDescr(table);
-	primaryKeyColumn = slist_container(PGrnPrimaryKeyColumn,
-									   node,
-									   so->primaryKeyColumns.head.next);
+	primaryKeyColumn = slist_container(
+		PGrnPrimaryKeyColumn, node, so->primaryKeyColumns.head.next);
 
 	{
 		unsigned int nIndexData;
 
-		nIndexData = grn_column_find_index_data(ctx,
-												primaryKeyColumn->column,
-												GRN_OP_EQUAL,
-												&indexDatum,
-												1);
+		nIndexData = grn_column_find_index_data(
+			ctx, primaryKeyColumn->column, GRN_OP_EQUAL, &indexDatum, 1);
 		if (nIndexData == 0)
 			return 0.0;
 	}
@@ -1419,13 +1421,10 @@ PGrnCollectScoreOneColumnPrimaryKey(Relation table,
 					   &(buffers->general),
 					   primaryKeyColumn->domain,
 					   primaryKeyColumn->flags);
-		primaryKeyValue = heap_getattr(tuple,
-									   primaryKeyColumn->number,
-									   desc,
-									   &isNULL);
-		PGrnConvertFromData(primaryKeyValue,
-							primaryKeyColumn->type,
-							&(buffers->general));
+		primaryKeyValue =
+			heap_getattr(tuple, primaryKeyColumn->number, desc, &isNULL);
+		PGrnConvertFromData(
+			primaryKeyValue, primaryKeyColumn->type, &(buffers->general));
 	}
 	termID = grn_table_get(ctx,
 						   lexicon,
@@ -1435,7 +1434,7 @@ PGrnCollectScoreOneColumnPrimaryKey(Relation table,
 		return 0.0;
 
 	iiCursor = grn_ii_cursor_open(ctx,
-								  (grn_ii *)(indexDatum.index),
+								  (grn_ii *) (indexDatum.index),
 								  termID,
 								  GRN_ID_NIL,
 								  GRN_ID_NIL,
@@ -1470,9 +1469,13 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 	if (!so->scoreTargetRecords)
 	{
 		so->scoreTargetRecords =
-			grn_table_create(ctx, NULL, 0, NULL,
+			grn_table_create(ctx,
+							 NULL,
+							 0,
+							 NULL,
 							 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-							 so->sourcesTable, NULL);
+							 so->sourcesTable,
+							 NULL);
 	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, so->sourcesTable, expression, variable);
@@ -1483,37 +1486,32 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		bool isNULL;
 		Datum primaryKeyValue;
 
-		primaryKeyColumn = slist_container(PGrnPrimaryKeyColumn, node, iter.cur);
+		primaryKeyColumn =
+			slist_container(PGrnPrimaryKeyColumn, node, iter.cur);
 
 		grn_obj_reinit(ctx,
 					   &(buffers->general),
 					   primaryKeyColumn->domain,
 					   primaryKeyColumn->flags);
 
-		primaryKeyValue = heap_getattr(tuple,
-									   primaryKeyColumn->number,
-									   desc,
-									   &isNULL);
-		PGrnConvertFromData(primaryKeyValue,
-							primaryKeyColumn->type,
-							&(buffers->general));
+		primaryKeyValue =
+			heap_getattr(tuple, primaryKeyColumn->number, desc, &isNULL);
+		PGrnConvertFromData(
+			primaryKeyValue, primaryKeyColumn->type, &(buffers->general));
 
-		grn_expr_append_obj(ctx, expression,
-							primaryKeyColumn->column, GRN_OP_PUSH, 1);
+		grn_expr_append_obj(
+			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
-		grn_expr_append_const(ctx, expression,
-							  &(buffers->general), GRN_OP_PUSH, 1);
+		grn_expr_append_const(
+			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, expression, GRN_OP_EQUAL, 2);
 
 		if (nPrimaryKeyColumns > 0)
 			grn_expr_append_op(ctx, expression, GRN_OP_AND, 2);
 		nPrimaryKeyColumns++;
 	}
-	grn_table_select(ctx,
-					 so->sourcesTable,
-					 expression,
-					 so->scoreTargetRecords,
-					 GRN_OP_OR);
+	grn_table_select(
+		ctx, so->sourcesTable, expression, so->scoreTargetRecords, GRN_OP_OR);
 	grn_obj_close(ctx, expression);
 
 	{
@@ -1521,8 +1519,13 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 
 		tableCursor = grn_table_cursor_open(ctx,
 											so->scoreTargetRecords,
-											NULL, 0, NULL, 0,
-											0, -1, GRN_CURSOR_ASCENDING);
+											NULL,
+											0,
+											NULL,
+											0,
+											0,
+											-1,
+											GRN_CURSOR_ASCENDING);
 		while (grn_table_cursor_next(ctx, tableCursor) != GRN_ID_NIL)
 		{
 			void *key;
@@ -1625,7 +1628,7 @@ Datum
 pgroonga_score_row(PG_FUNCTION_ARGS)
 {
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(0);
-	Oid	type;
+	Oid type;
 	int32 recordType;
 	TupleDesc desc;
 	double score = 0.0;
@@ -1683,7 +1686,8 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 			grn_column_cache_open(ctx, so->sourcesCtidColumn);
 
 	so->ctidResolveTable = grn_table_create(ctx,
-											NULL, 0,
+											NULL,
+											0,
 											NULL,
 											GRN_OBJ_TABLE_HASH_KEY,
 											grn_ctx_at(ctx, GRN_DB_UINT64),
@@ -1705,10 +1709,8 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		{
 			void *ctidColumnValue;
 			size_t ctidColumnValueSize;
-			ctidColumnValue = grn_column_cache_ref(ctx,
-												   sourcesCtidColumnCache,
-												   sourceID,
-												   &ctidColumnValueSize);
+			ctidColumnValue = grn_column_cache_ref(
+				ctx, sourcesCtidColumnCache, sourceID, &ctidColumnValueSize);
 			if (ctidColumnValueSize != sizeof(uint64_t))
 			{
 				GRN_LOG(ctx,
@@ -1729,11 +1731,8 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 		{
 			int keySize;
 
-			keySize = grn_table_get_key(ctx,
-										so->sourcesTable,
-										sourceID,
-										&packedCtid,
-										sizeof(uint64_t));
+			keySize = grn_table_get_key(
+				ctx, so->sourcesTable, sourceID, &packedCtid, sizeof(uint64_t));
 			if (keySize != sizeof(uint64_t))
 			{
 				GRN_LOG(ctx,
@@ -1763,8 +1762,7 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 			continue;
 		}
 
-		if (!sourcesCtidColumnCache &&
-			ItemPointerEquals(&ctid, &resolvedCtid))
+		if (!sourcesCtidColumnCache && ItemPointerEquals(&ctid, &resolvedCtid))
 		{
 			GRN_LOG(ctx,
 					GRN_LOG_DEBUG,
@@ -1786,11 +1784,8 @@ PGrnScanOpaqueCreateCtidResolveTable(PGrnScanOpaque so)
 								   sizeof(uint64_t),
 								   NULL);
 		GRN_RECORD_SET(ctx, sourceRecord, sourceID);
-		grn_obj_set_value(ctx,
-						  so->ctidResolveTable,
-						  resolvedID,
-						  sourceRecord,
-						  GRN_OBJ_SET);
+		grn_obj_set_value(
+			ctx, so->ctidResolveTable, resolvedID, sourceRecord, GRN_OBJ_SET);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				"%s[add] <%s>(%u): <%u>: <(%u,%u),%u> -> <(%u,%u),%u>",
@@ -1832,10 +1827,8 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 
 	if (so->sourcesTable->header.type != GRN_TABLE_NO_KEY)
 	{
-		sourceID = grn_table_get(ctx,
-								 so->sourcesTable,
-								 &packedCtid,
-								 sizeof(uint64_t));
+		sourceID =
+			grn_table_get(ctx, so->sourcesTable, &packedCtid, sizeof(uint64_t));
 	}
 
 	if (sourceID == GRN_ID_NIL)
@@ -1843,10 +1836,8 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 		if (!so->ctidResolveTable)
 			PGrnScanOpaqueCreateCtidResolveTable(so);
 
-		resolveID = grn_table_get(ctx,
-								  so->ctidResolveTable,
-								  &packedCtid,
-								  sizeof(uint64_t));
+		resolveID = grn_table_get(
+			ctx, so->ctidResolveTable, &packedCtid, sizeof(uint64_t));
 		if (resolveID != GRN_ID_NIL)
 		{
 			{
@@ -1864,10 +1855,8 @@ PGrnCollectScoreCtid(PGrnScanOpaque so, ItemPointer ctid)
 						resolveID);
 			}
 			GRN_BULK_REWIND(&(buffers->general));
-			grn_obj_get_value(ctx,
-							  so->ctidResolveTable,
-							  resolveID,
-							  &(buffers->general));
+			grn_obj_get_value(
+				ctx, so->ctidResolveTable, resolveID, &(buffers->general));
 			sourceID = GRN_RECORD_VALUE(&(buffers->general));
 		}
 	}
@@ -1988,9 +1977,7 @@ pgroonga_table_name(PG_FUNCTION_ARGS)
 }
 
 static void
-PGrnCommandReceive(grn_ctx *ctx,
-				   int flags,
-				   void *user_data)
+PGrnCommandReceive(grn_ctx *ctx, int flags, void *user_data)
 {
 	grn_rc rc = ctx->rc;
 	char *chunk;
@@ -1999,17 +1986,13 @@ PGrnCommandReceive(grn_ctx *ctx,
 	grn_ctx_recv(ctx, &chunk, &chunkSize, &recv_flags);
 	GRN_TEXT_PUT(ctx, &(buffers->body), chunk, chunkSize);
 
-	if (!(flags & GRN_CTX_TAIL)) {
+	if (!(flags & GRN_CTX_TAIL))
+	{
 		return;
 	}
 
-	grn_output_envelope(ctx,
-						rc,
-						&(buffers->head),
-						&(buffers->body),
-						&(buffers->foot),
-						NULL,
-						0);
+	grn_output_envelope(
+		ctx, rc, &(buffers->head), &(buffers->body), &(buffers->foot), NULL, 0);
 }
 
 /**
@@ -2053,24 +2036,12 @@ pgroonga_command(PG_FUNCTION_ARGS)
 			text *value;
 			bool isNULL;
 
-			nameDatum = array_get_element(arguments,
-										  1,
-										  &nameIndex,
-										  -1,
-										  -1,
-										  false,
-										  'i',
-										  &isNULL);
+			nameDatum = array_get_element(
+				arguments, 1, &nameIndex, -1, -1, false, 'i', &isNULL);
 			if (isNULL)
 				continue;
-			valueDatum = array_get_element(arguments,
-										   1,
-										   &valueIndex,
-										   -1,
-										   -1,
-										   false,
-										   'i',
-										   &isNULL);
+			valueDatum = array_get_element(
+				arguments, 1, &valueIndex, -1, -1, false, 'i', &isNULL);
 			if (isNULL)
 				continue;
 
@@ -2078,20 +2049,14 @@ pgroonga_command(PG_FUNCTION_ARGS)
 			value = DatumGetTextPP(valueDatum);
 
 			GRN_TEXT_PUTS(ctx, command, " --");
-			GRN_TEXT_PUT(ctx,
-						 command,
-						 VARDATA_ANY(name),
-						 VARSIZE_ANY_EXHDR(name));
+			GRN_TEXT_PUT(
+				ctx, command, VARDATA_ANY(name), VARSIZE_ANY_EXHDR(name));
 			GRN_TEXT_PUTC(ctx, command, ' ');
-			PGrnCommandEscapeValue(VARDATA_ANY(value),
-								   VARSIZE_ANY_EXHDR(value),
-								   command);
+			PGrnCommandEscapeValue(
+				VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value), command);
 		}
 		grn_ctx_recv_handler_set(ctx, PGrnCommandReceive, NULL);
-		grn_ctx_send(ctx,
-					 GRN_TEXT_VALUE(command),
-					 GRN_TEXT_LEN(command),
-					 0);
+		grn_ctx_send(ctx, GRN_TEXT_VALUE(command), GRN_TEXT_LEN(command), 0);
 	}
 	else
 	{
@@ -2104,13 +2069,16 @@ pgroonga_command(PG_FUNCTION_ARGS)
 	grn_ctx_recv_handler_set(ctx, NULL, NULL);
 
 	grn_obj_reinit(ctx, &(buffers->general), GRN_DB_TEXT, 0);
-	GRN_TEXT_PUT(ctx, &(buffers->general),
+	GRN_TEXT_PUT(ctx,
+				 &(buffers->general),
 				 GRN_TEXT_VALUE(&(buffers->head)),
 				 GRN_TEXT_LEN(&(buffers->head)));
-	GRN_TEXT_PUT(ctx, &(buffers->general),
+	GRN_TEXT_PUT(ctx,
+				 &(buffers->general),
 				 GRN_TEXT_VALUE(&(buffers->body)),
 				 GRN_TEXT_LEN(&(buffers->body)));
-	GRN_TEXT_PUT(ctx, &(buffers->general),
+	GRN_TEXT_PUT(ctx,
+				 &(buffers->general),
 				 GRN_TEXT_VALUE(&(buffers->foot)),
 				 GRN_TEXT_LEN(&(buffers->foot)));
 	result = cstring_to_text_with_len(GRN_TEXT_VALUE(&(buffers->general)),
@@ -2123,9 +2091,10 @@ typedef bool (*PGrnBinaryOperatorStringFunction)(const char *leftOperand,
 												 PGrnCondition *condition);
 
 static bool
-pgroonga_execute_binary_operator_string_array(ArrayType *leftOperands,
-											  PGrnCondition *condition,
-											  PGrnBinaryOperatorStringFunction operator)
+pgroonga_execute_binary_operator_string_array(
+	ArrayType *leftOperands,
+	PGrnCondition *condition,
+	PGrnBinaryOperatorStringFunction operator)
 {
 	bool matched = false;
 	ArrayIterator iterator;
@@ -2186,17 +2155,17 @@ pgroonga_execute_binary_operator_string_array_condition_raw(
 	if (!condition.query)
 		return false;
 
-	return pgroonga_execute_binary_operator_string_array(leftOperands,
-														 &condition,
-														 operator);
+	return pgroonga_execute_binary_operator_string_array(
+		leftOperands, &condition, operator);
 }
 
 static bool
-pgroonga_execute_binary_operator_in_string(const char *leftOperand,
-										   unsigned int leftOperandSize,
-										   Datum rightOperands,
-										   PGrnCondition *condition,
-										   PGrnBinaryOperatorStringFunction operator)
+pgroonga_execute_binary_operator_in_string(
+	const char *leftOperand,
+	unsigned int leftOperandSize,
+	Datum rightOperands,
+	PGrnCondition *condition,
+	PGrnBinaryOperatorStringFunction operator)
 {
 	AnyArrayType *rightOperandsArray = DatumGetAnyArrayP(rightOperands);
 	int i, n;
@@ -2210,8 +2179,8 @@ pgroonga_execute_binary_operator_in_string(const char *leftOperand,
 		Datum rightOperandDatum;
 		bool isNULL;
 
-		rightOperandDatum =
-			array_get_element(rightOperands, 1, &i, -1, -1, false, 'i', &isNULL);
+		rightOperandDatum = array_get_element(
+			rightOperands, 1, &i, -1, -1, false, 'i', &isNULL);
 		if (isNULL)
 			continue;
 
@@ -2237,10 +2206,11 @@ pgroonga_execute_binary_operator_in_string(const char *leftOperand,
 }
 
 static bool
-pgroonga_execute_binary_operator_in_string_array(Datum leftOperands,
-												 Datum rightOperands,
-												 PGrnCondition *condition,
-												 PGrnBinaryOperatorStringFunction operator)
+pgroonga_execute_binary_operator_in_string_array(
+	Datum leftOperands,
+	Datum rightOperands,
+	PGrnCondition *condition,
+	PGrnBinaryOperatorStringFunction operator)
 {
 	AnyArrayType *leftOperandsArray = DatumGetAnyArrayP(leftOperands);
 	int i, n;
@@ -2280,7 +2250,8 @@ pgroonga_execute_binary_operator_in_string_array(Datum leftOperands,
 }
 
 static bool
-pgroonga_match_term_raw(const char *target, unsigned int targetSize,
+pgroonga_match_term_raw(const char *target,
+						unsigned int targetSize,
 						PGrnCondition *condition)
 {
 	if (PGrnPGTextIsEmpty(condition->query))
@@ -2329,9 +2300,8 @@ pgroonga_match_term_text(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = term;
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+	matched = pgroonga_match_term_raw(
+		VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2348,16 +2318,15 @@ pgroonga_match_term_text_array(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = term;
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  &condition,
-													  pgroonga_match_term_raw);
+	matched = pgroonga_execute_binary_operator_string_array(
+		targets, &condition, pgroonga_match_term_raw);
 
 	PG_RETURN_BOOL(matched);
 }
 
 static bool
-pgroonga_equal_raw(const char *leftText, unsigned int leftTextSize,
+pgroonga_equal_raw(const char *leftText,
+				   unsigned int leftTextSize,
 				   PGrnCondition *condition)
 {
 	grn_bool matched;
@@ -2394,9 +2363,8 @@ pgroonga_match_term_varchar(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = term;
-	matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+	matched = pgroonga_match_term_raw(
+		VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2413,16 +2381,15 @@ pgroonga_match_term_varchar_array(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = term;
-	matched =
-		pgroonga_execute_binary_operator_string_array(targets,
-													  &condition,
-													  pgroonga_match_term_raw);
+	matched = pgroonga_execute_binary_operator_string_array(
+		targets, &condition, pgroonga_match_term_raw);
 
 	PG_RETURN_BOOL(matched);
 }
 
 static bool
-pgroonga_match_query_raw(const char *target, unsigned int targetSize,
+pgroonga_match_query_raw(const char *target,
+						 unsigned int targetSize,
 						 PGrnCondition *condition)
 {
 	PGrnSequentialSearchSetTargetText(target, targetSize);
@@ -2454,9 +2421,8 @@ pgroonga_match_query_text(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = query;
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   &condition);
+	matched = pgroonga_match_query_raw(
+		VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 
 	PG_RETURN_BOOL(matched);
 }
@@ -2490,15 +2456,15 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	bool matched;
 
 	condition.query = query;
-	matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-									   VARSIZE_ANY_EXHDR(target),
-									   &condition);
+	matched = pgroonga_match_query_raw(
+		VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 
 	PG_RETURN_BOOL(matched);
 }
 
 static bool
-pgroonga_match_regexp_raw(const char *text, unsigned int textSize,
+pgroonga_match_regexp_raw(const char *text,
+						  unsigned int textSize,
 						  PGrnCondition *condition)
 {
 	grn_bool matched;
@@ -2537,15 +2503,13 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2566,15 +2530,13 @@ pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2596,15 +2558,13 @@ pgroonga_match_text(PG_FUNCTION_ARGS)
 	condition.query = term;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  &condition);
+		matched = pgroonga_match_term_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  &condition);
+		matched = pgroonga_match_term_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2654,15 +2614,13 @@ pgroonga_match_text_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_match_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_match_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2696,19 +2654,13 @@ pgroonga_match_text_array(PG_FUNCTION_ARGS)
 	condition.query = term;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2740,15 +2692,13 @@ pgroonga_match_text_array_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets, header, pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets, header, pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2782,15 +2732,13 @@ pgroonga_match_varchar(PG_FUNCTION_ARGS)
 	condition.query = term;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  &condition);
+		matched = pgroonga_match_term_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_term_raw(VARDATA_ANY(target),
-										  VARSIZE_ANY_EXHDR(target),
-										  &condition);
+		matched = pgroonga_match_term_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2820,15 +2768,13 @@ pgroonga_match_varchar_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_match_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_match_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2860,17 +2806,13 @@ pgroonga_contain_varchar_array(PG_FUNCTION_ARGS)
 	condition.query = term;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_equal_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_equal_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_equal_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_equal_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2891,15 +2833,13 @@ pgroonga_query_text(PG_FUNCTION_ARGS)
 	condition.query = query;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   &condition);
+		matched = pgroonga_match_query_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   &condition);
+		matched = pgroonga_match_query_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -2949,15 +2889,13 @@ pgroonga_query_text_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_query_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_query_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3078,15 +3016,13 @@ pgroonga_query_varchar(PG_FUNCTION_ARGS)
 	condition.query = query;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   &condition);
+		matched = pgroonga_match_query_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_query_raw(VARDATA_ANY(target),
-										   VARSIZE_ANY_EXHDR(target),
-										   &condition);
+		matched = pgroonga_match_query_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3116,15 +3052,13 @@ pgroonga_query_varchar_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_query_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_query_condition_raw(VARDATA_ANY(target),
-											   VARSIZE_ANY_EXHDR(target),
-											   header);
+		matched = pgroonga_query_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3229,7 +3163,8 @@ pgroonga_script_varchar(PG_FUNCTION_ARGS)
 }
 
 static bool
-pgroonga_prefix_raw(const char *text, unsigned int textSize,
+pgroonga_prefix_raw(const char *text,
+					unsigned int textSize,
 					PGrnCondition *condition)
 {
 	if (PGrnPGTextIsEmpty(condition->query))
@@ -3280,15 +3215,13 @@ pgroonga_prefix_text(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+		matched = pgroonga_prefix_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+		matched = pgroonga_prefix_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3331,15 +3264,13 @@ pgroonga_prefix_text_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
-												VARSIZE_ANY_EXHDR(target),
-												header);
+		matched = pgroonga_prefix_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
-												VARSIZE_ANY_EXHDR(target),
-												header);
+		matched = pgroonga_prefix_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3360,19 +3291,13 @@ pgroonga_prefix_text_array(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3394,19 +3319,13 @@ pgroonga_prefix_text_array_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets,
-				header,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets,
-				header,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3427,15 +3346,13 @@ pgroonga_prefix_varchar(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+		matched = pgroonga_prefix_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_raw(VARDATA_ANY(target),
-									  VARSIZE_ANY_EXHDR(target),
-									  &condition);
+		matched = pgroonga_prefix_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3457,15 +3374,13 @@ pgroonga_prefix_varchar_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
-												VARSIZE_ANY_EXHDR(target),
-												header);
+		matched = pgroonga_prefix_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_condition_raw(VARDATA_ANY(target),
-												VARSIZE_ANY_EXHDR(target),
-												header);
+		matched = pgroonga_prefix_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3486,19 +3401,13 @@ pgroonga_prefix_varchar_array(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(
-				targets,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3520,19 +3429,13 @@ pgroonga_prefix_varchar_array_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets,
-				header,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array_condition_raw(
-				targets,
-				header,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_string_array_condition_raw(
+			targets, header, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3566,23 +3469,21 @@ pgroonga_prefix_rk_raw(const char *text,
 
 	/* TODO: Use condition->indexName */
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx,
-							  prefixRKSequentialSearchData.table,
-							  expression,
-							  variable);
+	GRN_EXPR_CREATE_FOR_QUERY(
+		ctx, prefixRKSequentialSearchData.table, expression, variable);
 	if (!expression)
 	{
-		PGrnCheckRC(GRN_NO_MEMORY_AVAILABLE,
-					"%s failed to create expression",
-					tag);
+		PGrnCheckRC(
+			GRN_NO_MEMORY_AVAILABLE, "%s failed to create expression", tag);
 	}
 
-	grn_expr_append_obj(ctx, expression,
+	grn_expr_append_obj(ctx,
+						expression,
 						grn_ctx_get(ctx, "prefix_rk_search", -1),
-						GRN_OP_PUSH, 1);
-	grn_expr_append_obj(ctx, expression,
-						prefixRKSequentialSearchData.key,
-						GRN_OP_GET_VALUE, 1);
+						GRN_OP_PUSH,
+						1);
+	grn_expr_append_obj(
+		ctx, expression, prefixRKSequentialSearchData.key, GRN_OP_GET_VALUE, 1);
 	grn_expr_append_const_str(ctx,
 							  expression,
 							  VARDATA_ANY(condition->query),
@@ -3591,21 +3492,17 @@ pgroonga_prefix_rk_raw(const char *text,
 							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_CALL, 2);
 
-	id = grn_table_add(ctx,
-					   prefixRKSequentialSearchData.table,
-					   text, textSize, NULL);
+	id = grn_table_add(
+		ctx, prefixRKSequentialSearchData.table, text, textSize, NULL);
 	grn_table_select(ctx,
 					 prefixRKSequentialSearchData.table,
 					 expression,
 					 prefixRKSequentialSearchData.resultTable,
 					 GRN_OP_OR);
 	matched = grn_table_size(ctx, prefixRKSequentialSearchData.resultTable) > 0;
-	grn_table_delete(ctx,
-					 prefixRKSequentialSearchData.resultTable,
-					 &id, sizeof(grn_id));
-	grn_table_delete(ctx,
-					 prefixRKSequentialSearchData.table,
-					 text, textSize);
+	grn_table_delete(
+		ctx, prefixRKSequentialSearchData.resultTable, &id, sizeof(grn_id));
+	grn_table_delete(ctx, prefixRKSequentialSearchData.table, text, textSize);
 
 	grn_obj_close(ctx, expression);
 
@@ -3626,15 +3523,13 @@ pgroonga_prefix_rk_text(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 &condition);
+		matched = pgroonga_prefix_rk_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 &condition);
+		matched = pgroonga_prefix_rk_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3655,17 +3550,13 @@ pgroonga_prefix_rk_text_array(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3686,15 +3577,13 @@ pgroonga_prefix_rk_varchar(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 &condition);
+		matched = pgroonga_prefix_rk_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_prefix_rk_raw(VARDATA_ANY(target),
-										 VARSIZE_ANY_EXHDR(target),
-										 &condition);
+		matched = pgroonga_prefix_rk_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3715,17 +3604,13 @@ pgroonga_prefix_rk_varchar_array(PG_FUNCTION_ARGS)
 	condition.query = prefix;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_string_array(targets,
-														  &condition,
-														  pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_string_array(
+			targets, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3756,21 +3641,21 @@ pgroonga_match_in_text(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   keywords,
-													   &condition,
-													   pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			keywords,
+			&condition,
+			pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   keywords,
-													   &condition,
-													   pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			keywords,
+			&condition,
+			pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3801,21 +3686,13 @@ pgroonga_match_in_text_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				keywords,
-				&condition,
-				pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, keywords, &condition, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				keywords,
-				&condition,
-				pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, keywords, &condition, pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3835,21 +3712,21 @@ pgroonga_match_in_varchar(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   keywords,
-													   &condition,
-													   pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			keywords,
+			&condition,
+			pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   keywords,
-													   &condition,
-													   pgroonga_match_term_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			keywords,
+			&condition,
+			pgroonga_match_term_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3869,21 +3746,21 @@ pgroonga_query_in_text(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   queries,
-													   &condition,
-													   pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			queries,
+			&condition,
+			pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   queries,
-													   &condition,
-													   pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			queries,
+			&condition,
+			pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3914,21 +3791,13 @@ pgroonga_query_in_text_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				queries,
-				&condition,
-				pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, queries, &condition, pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				queries,
-				&condition,
-				pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, queries, &condition, pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3948,21 +3817,21 @@ pgroonga_query_in_varchar(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   queries,
-													   &condition,
-													   pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			queries,
+			&condition,
+			pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   queries,
-													   &condition,
-													   pgroonga_match_query_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			queries,
+			&condition,
+			pgroonga_match_query_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -3982,21 +3851,21 @@ pgroonga_prefix_in_text(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4016,21 +3885,21 @@ pgroonga_not_prefix_in_text(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4050,21 +3919,13 @@ pgroonga_prefix_in_text_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4084,21 +3945,21 @@ pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4106,7 +3967,8 @@ pgroonga_prefix_in_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_prefix_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ * pgroonga_prefix_in_varchar_array(targets varchar[], prefixes varchar[]) :
+ * bool
  */
 Datum
 pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
@@ -4118,21 +3980,13 @@ pgroonga_prefix_in_varchar_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4152,21 +4006,21 @@ pgroonga_prefix_rk_in_text(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4186,21 +4040,13 @@ pgroonga_prefix_rk_in_text_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4220,21 +4066,21 @@ pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(VARDATA_ANY(target),
-													   VARSIZE_ANY_EXHDR(target),
-													   prefixes,
-													   &condition,
-													   pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			prefixes,
+			&condition,
+			pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4242,7 +4088,8 @@ pgroonga_prefix_rk_in_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_prefix_rk_in_varchar_array(targets varchar[], prefixes varchar[]) : bool
+ * pgroonga_prefix_rk_in_varchar_array(targets varchar[], prefixes varchar[]) :
+ * bool
  */
 Datum
 pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
@@ -4254,21 +4101,13 @@ pgroonga_prefix_rk_in_varchar_array(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string_array(
-				targets,
-				prefixes,
-				&condition,
-				pgroonga_prefix_rk_raw);
+		matched = pgroonga_execute_binary_operator_in_string_array(
+			targets, prefixes, &condition, pgroonga_prefix_rk_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4289,15 +4128,13 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4318,15 +4155,13 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_raw(VARDATA_ANY(target),
-											VARSIZE_ANY_EXHDR(target),
-											&condition);
+		matched = pgroonga_match_regexp_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4380,23 +4215,21 @@ pgroonga_regexp_in_varchar(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(
-				VARDATA_ANY(target),
-				VARSIZE_ANY_EXHDR(target),
-				patterns,
-				&condition,
-				pgroonga_match_regexp_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			patterns,
+			&condition,
+			pgroonga_match_regexp_raw);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched =
-			pgroonga_execute_binary_operator_in_string(
-				VARDATA_ANY(target),
-				VARSIZE_ANY_EXHDR(target),
-				patterns,
-				&condition,
-				pgroonga_match_regexp_raw);
+		matched = pgroonga_execute_binary_operator_in_string(
+			VARDATA_ANY(target),
+			VARSIZE_ANY_EXHDR(target),
+			patterns,
+			&condition,
+			pgroonga_match_regexp_raw);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4456,15 +4289,13 @@ pgroonga_equal_text(PG_FUNCTION_ARGS)
 	condition.query = other;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		equal = pgroonga_equal_text_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										&condition);
+		equal = pgroonga_equal_text_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		equal = pgroonga_equal_text_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										&condition);
+		equal = pgroonga_equal_text_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4504,15 +4335,13 @@ pgroonga_equal_text_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		equal = pgroonga_equal_condition_raw(VARDATA_ANY(target),
-											 VARSIZE_ANY_EXHDR(target),
-											 header);
+		equal = pgroonga_equal_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		equal = pgroonga_equal_condition_raw(VARDATA_ANY(target),
-											 VARSIZE_ANY_EXHDR(target),
-											 header);
+		equal = pgroonga_equal_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4533,15 +4362,13 @@ pgroonga_equal_varchar(PG_FUNCTION_ARGS)
 	condition.query = other;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		equal = pgroonga_equal_text_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										&condition);
+		equal = pgroonga_equal_text_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		equal = pgroonga_equal_text_raw(VARDATA_ANY(target),
-										VARSIZE_ANY_EXHDR(target),
-										&condition);
+		equal = pgroonga_equal_text_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4561,15 +4388,13 @@ pgroonga_equal_varchar_condition(PG_FUNCTION_ARGS)
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		equal = pgroonga_equal_condition_raw(VARDATA_ANY(target),
-											 VARSIZE_ANY_EXHDR(target),
-											 header);
+		equal = pgroonga_equal_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		equal = pgroonga_equal_condition_raw(VARDATA_ANY(target),
-											 VARSIZE_ANY_EXHDR(target),
-											 header);
+		equal = pgroonga_equal_condition_raw(
+			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), header);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4741,8 +4566,7 @@ PGrnNeedMaxRecordSizeUpdate(Relation index)
 #define PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE (INDEX_SIZE_MASK * 0.9)
 
 static void
-PGrnUpdateMaxRecordSize(Relation index,
-						uint32_t recordSize)
+PGrnUpdateMaxRecordSize(Relation index, uint32_t recordSize)
 {
 	uint32_t currentMaxRecordSize;
 
@@ -4830,21 +4654,12 @@ PGrnInsertColumn(Relation index,
 				const char *elementValue;
 				float weight;
 				grn_id elementDomain;
-				uint32_t elementSize =
-					grn_vector_get_element_float(ctx,
-												 rawValue,
-												 j,
-												 &elementValue,
-												 &weight,
-												 &elementDomain);
+				uint32_t elementSize = grn_vector_get_element_float(
+					ctx, rawValue, j, &elementValue, &weight, &elementDomain);
 				GRN_OBJ_FIN(ctx, &rawElement);
-				GRN_VALUE_VAR_SIZE_INIT(&rawElement,
-										GRN_OBJ_DO_SHALLOW_COPY,
-										elementDomain);
-				GRN_TEXT_SET(ctx,
-							 &rawElement,
-							 elementValue,
-							 elementSize);
+				GRN_VALUE_VAR_SIZE_INIT(
+					&rawElement, GRN_OBJ_DO_SHALLOW_COPY, elementDomain);
+				GRN_TEXT_SET(ctx, &rawElement, elementValue, elementSize);
 				grn_obj_reinit(ctx, element, domain, 0);
 				rc = grn_obj_cast(ctx, &rawElement, element, true);
 				if (rc != GRN_SUCCESS)
@@ -4863,9 +4678,8 @@ PGrnInsertColumn(Relation index,
 			uint32_t n = grn_uvector_size(ctx, rawValue);
 			uint32_t j;
 			GRN_OBJ_FIN(ctx, &rawElement);
-			GRN_VALUE_FIX_SIZE_INIT(&rawElement,
-									GRN_OBJ_DO_SHALLOW_COPY,
-									rawDomain);
+			GRN_VALUE_FIX_SIZE_INIT(
+				&rawElement, GRN_OBJ_DO_SHALLOW_COPY, rawDomain);
 			grn_obj_reinit(ctx, element, domain, 0);
 			for (j = 0; j < n; j++)
 			{
@@ -4899,7 +4713,7 @@ PGrnInsertColumn(Relation index,
 				 tag,
 				 index->rd_rel->relname.data,
 				 name->data,
-				 (int)GRN_TEXT_LEN(inspected),
+				 (int) GRN_TEXT_LEN(inspected),
 				 GRN_TEXT_VALUE(inspected));
 			return 0;
 		}
@@ -4960,16 +4774,12 @@ PGrnInsert(Relation index,
 			PGrnCheck("%s failed to add a record", tag);
 			if (id == GRN_ID_NIL)
 			{
-				PGrnCheckRC(GRN_UNKNOWN_ERROR,
-							"%s failed to add a record",
-							tag);
+				PGrnCheckRC(
+					GRN_UNKNOWN_ERROR, "%s failed to add a record", tag);
 			}
 			GRN_UINT64_SET(ctx, &(buffers->ctid), packedCtid);
-			grn_obj_set_value(ctx,
-							  sourcesCtidColumn,
-							  id,
-							  &(buffers->ctid),
-							  GRN_OBJ_SET);
+			grn_obj_set_value(
+				ctx, sourcesCtidColumn, id, &(buffers->ctid), GRN_OBJ_SET);
 			PGrnCheck("%s failed to set ctid value: <%u>: <%" PRIu64 ">",
 					  tag,
 					  id,
@@ -4990,14 +4800,10 @@ PGrnInsert(Relation index,
 		}
 		else
 		{
-			id = grn_table_add(ctx,
-							   sourcesTable,
-							   &packedCtid,
-							   sizeof(uint64_t),
-							   NULL);
-			PGrnCheck("%s failed to add a record: <%" PRIu64 ">",
-					  tag,
-					  packedCtid);
+			id = grn_table_add(
+				ctx, sourcesTable, &packedCtid, sizeof(uint64_t), NULL);
+			PGrnCheck(
+				"%s failed to add a record: <%" PRIu64 ">", tag, packedCtid);
 			if (id == GRN_ID_NIL)
 			{
 				PGrnCheckRC(GRN_UNKNOWN_ERROR,
@@ -5023,13 +4829,8 @@ PGrnInsert(Relation index,
 		{
 			if (isnull[i])
 				continue;
-			recordSize += PGrnInsertColumn(index,
-										   sourcesTable,
-										   values,
-										   walData,
-										   i,
-										   id,
-										   tag);
+			recordSize += PGrnInsertColumn(
+				index, sourcesTable, values, walData, i, id, tag);
 		}
 
 		PGrnWALInsertFinish(walData);
@@ -5083,12 +4884,8 @@ pgroonga_insert(Relation index,
 	{
 		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 	}
-	recordSize = PGrnInsert(index,
-							sourcesTable,
-							sourcesCtidColumn,
-							values,
-							isnull,
-							ctid);
+	recordSize = PGrnInsert(
+		index, sourcesTable, sourcesCtidColumn, values, isnull, ctid);
 	if (PGrnNeedMaxRecordSizeUpdate(index))
 		PGrnUpdateMaxRecordSize(index, recordSize);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
@@ -5113,8 +4910,7 @@ PGrnPrimaryKeyColumnsFin(slist_head *columns)
 }
 
 static void
-PGrnPrimaryKeyColumnsInit(slist_head *columns,
-						  PGrnScanOpaque so)
+PGrnPrimaryKeyColumnsInit(slist_head *columns, PGrnScanOpaque so)
 {
 	Relation table;
 	List *indexOIDList;
@@ -5122,7 +4918,7 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 
 	table = RelationIdGetRelation(so->dataTableID);
 	indexOIDList = RelationGetIndexList(table);
-	foreach(cell, indexOIDList)
+	foreach (cell, indexOIDList)
 	{
 		const LOCKMODE lockMode = AccessShareLock;
 		Oid indexOID = lfirst_oid(cell);
@@ -5130,7 +4926,8 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 		int i;
 
 		primaryKeyIndex = index_open(indexOID, lockMode);
-		if (!primaryKeyIndex->rd_index->indisprimary) {
+		if (!primaryKeyIndex->rd_index->indisprimary)
+		{
 			index_close(primaryKeyIndex, lockMode);
 			continue;
 		}
@@ -5152,8 +4949,8 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 				if (so->index->rd_index->indkey.values[j] != primaryKeyNumber)
 					continue;
 
-				primaryKeyColumn =
-					(PGrnPrimaryKeyColumn *) malloc(sizeof(PGrnPrimaryKeyColumn));
+				primaryKeyColumn = (PGrnPrimaryKeyColumn *) malloc(
+					sizeof(PGrnPrimaryKeyColumn));
 
 				desc = RelationGetDescr(table);
 				columnName = TupleDescAttr(so->index->rd_att, j)->attname.data;
@@ -5161,13 +4958,10 @@ PGrnPrimaryKeyColumnsInit(slist_head *columns,
 				primaryKeyColumn->number = primaryKeyNumber;
 				primaryKeyColumn->type =
 					TupleDescAttr(desc, primaryKeyNumber - 1)->atttypid;
-				primaryKeyColumn->domain = PGrnGetType(primaryKeyIndex,
-													   i,
-													   &(primaryKeyColumn->flags));
-				primaryKeyColumn->column = grn_obj_column(ctx,
-														  so->sourcesTable,
-														  columnName,
-														  strlen(columnName));
+				primaryKeyColumn->domain =
+					PGrnGetType(primaryKeyIndex, i, &(primaryKeyColumn->flags));
+				primaryKeyColumn->column = grn_obj_column(
+					ctx, so->sourcesTable, columnName, strlen(columnName));
 				slist_push_head(columns, &(primaryKeyColumn->node));
 				havePrimaryKey = true;
 				break;
@@ -5211,7 +5005,8 @@ PGrnScanOpaqueInitSources(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 {
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [initialize][scan-opaque][start] %u",
 			PGrnNScanOpaques);
 
@@ -5243,7 +5038,8 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 	PGrnScanOpaqueInitPrimaryKeyColumns(so);
 	so->scoreTargetRecords = NULL;
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [initialize][scan-opaque][end] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
@@ -5252,7 +5048,8 @@ PGrnScanOpaqueInit(PGrnScanOpaque so, Relation index)
 static void
 PGrnScanOpaqueReinit(PGrnScanOpaque so)
 {
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [reinitialize][scan-opaque][start] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
@@ -5302,7 +5099,8 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 		PGrnScanOpaqueInitSources(so);
 	}
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [reinitialize][scan-opaque][end] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
@@ -5311,7 +5109,8 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 static void
 PGrnScanOpaqueFin(PGrnScanOpaque so)
 {
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [finalize][scan-opaque][start] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
@@ -5333,7 +5132,8 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 
 	GRN_OBJ_FIN(ctx, &(so->canReturns));
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
+	GRN_LOG(ctx,
+			GRN_LOG_DEBUG,
 			"pgroonga: [finalize][scan-opaque][end] %u: <%p>",
 			PGrnNScanOpaques,
 			so);
@@ -5342,9 +5142,7 @@ PGrnScanOpaqueFin(PGrnScanOpaque so)
 }
 
 static IndexScanDesc
-pgroonga_beginscan(Relation index,
-				   int nKeys,
-				   int nOrderBys)
+pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 {
 	IndexScanDesc scan;
 	PGrnScanOpaque so;
@@ -5358,9 +5156,7 @@ pgroonga_beginscan(Relation index,
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
 	PGrnScanOpaqueInit(so, index);
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"pgroonga: [scan][begin] <%p>",
-			so);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, "pgroonga: [scan][begin] <%p>", so);
 
 	scan->opaque = so;
 
@@ -5394,22 +5190,18 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	n_dimensions = ARR_NDIM(values);
 	switch (n_dimensions)
 	{
-	case 0 :
+	case 0:
 		grn_obj_reinit(ctx, &(buffers->general), GRN_DB_BOOL, 0);
 		GRN_BOOL_SET(ctx, &(buffers->general), GRN_FALSE);
-		grn_expr_append_const(ctx,
-							  data->expression,
-							  &(buffers->general),
-							  GRN_OP_PUSH,
-							  0);
-		PGrnCheck("%s failed to push false value",
-				  tag_any);
+		grn_expr_append_const(
+			ctx, data->expression, &(buffers->general), GRN_OP_PUSH, 0);
+		PGrnCheck("%s failed to push false value", tag_any);
 		return true;
 		break;
-	case 1 :
+	case 1:
 		/* OK */
 		break;
-	default :
+	default:
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s 2 or more dimensions array isn't supported yet: %d",
 					tag,
@@ -5421,15 +5213,10 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	grn_obj_reinit(ctx, &(buffers->general), domain, flags);
 	n = ARR_DIMS(values)[0];
 
-	grn_expr_append_obj(ctx, data->expression,
-						PGrnLookup("in_values", ERROR),
-						GRN_OP_PUSH,
-						1);
+	grn_expr_append_obj(
+		ctx, data->expression, PGrnLookup("in_values", ERROR), GRN_OP_PUSH, 1);
 	PGrnCheck("%s failed to push in_values()", tag);
-	grn_expr_append_obj(ctx, data->expression,
-						targetColumn,
-						GRN_OP_PUSH,
-						1);
+	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnCheck("%s failed to push target column", tag);
 	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
 	PGrnCheck("%s failed to push GET_VALUE", tag);
@@ -5439,7 +5226,10 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		Datum valueDatum;
 		bool isNULL;
 
-		valueDatum = array_ref(values, 1, &i, -1,
+		valueDatum = array_ref(values,
+							   1,
+							   &i,
+							   -1,
 							   attribute->attlen,
 							   attribute->attbyval,
 							   attribute->attalign,
@@ -5447,14 +5237,10 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		if (isNULL)
 			return false;
 
-		PGrnConvertFromData(valueDatum,
-							attribute->atttypid,
-							&(buffers->general));
-		grn_expr_append_const(ctx,
-							  data->expression,
-							  &(buffers->general),
-							  GRN_OP_PUSH,
-							  1);
+		PGrnConvertFromData(
+			valueDatum, attribute->atttypid, &(buffers->general));
+		grn_expr_append_const(
+			ctx, data->expression, &(buffers->general), GRN_OP_PUSH, 1);
 		PGrnCheck("%s failed to push a value", tag);
 	}
 
@@ -5465,12 +5251,13 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 }
 
 static bool
-PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
-														  grn_obj *matchColumns,
-														  grn_index_datum *indexData,
-														  ArrayType *weights,
-														  ArrayType *scorers,
-														  const char *tag)
+PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
+	PGrnSearchData *data,
+	grn_obj *matchColumns,
+	grn_index_datum *indexData,
+	ArrayType *weights,
+	ArrayType *scorers,
+	const char *tag)
 {
 	char indexName[GRN_TABLE_MAX_KEY_SIZE];
 	ArrayIterator weightsIterator = NULL;
@@ -5481,10 +5268,8 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 
 	{
 		int nameSize;
-		nameSize = grn_obj_name(ctx,
-								indexData->index,
-								indexName,
-								GRN_TABLE_MAX_KEY_SIZE);
+		nameSize = grn_obj_name(
+			ctx, indexData->index, indexName, GRN_TABLE_MAX_KEY_SIZE);
 		indexName[nameSize] = '\0';
 	}
 
@@ -5552,48 +5337,45 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 						   GRN_EXPR_SYNTAX_SCRIPT);
 			PGrnCheck("%s failed to parse scorer: <%s>[%d]: <%.*s>",
 					  tag,
-					  indexName, section,
-					  (int)VARSIZE_ANY_EXHDR(scorer),
+					  indexName,
+					  section,
+					  (int) VARSIZE_ANY_EXHDR(scorer),
 					  VARDATA_ANY(scorer));
 		}
 		else
 		{
-			grn_expr_append_obj(ctx,
-								matchColumns,
-								indexData->index,
-								GRN_OP_PUSH,
-								1);
-			PGrnCheck("%s failed to push index: <%s>[%d]",
-					  tag,
-					  indexName, section);
-			grn_expr_append_const_int(ctx,
-									  matchColumns,
-									  section,
-									  GRN_OP_PUSH,
-									  1);
+			grn_expr_append_obj(
+				ctx, matchColumns, indexData->index, GRN_OP_PUSH, 1);
+			PGrnCheck(
+				"%s failed to push index: <%s>[%d]", tag, indexName, section);
+			grn_expr_append_const_int(
+				ctx, matchColumns, section, GRN_OP_PUSH, 1);
 			PGrnCheck("%s failed to push section of index: <%s>[%d]",
 					  tag,
-					  indexName, section);
+					  indexName,
+					  section);
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
 			PGrnCheck("%s failed to push get-member operator: <%s>[%d]",
 					  tag,
-					  indexName, section);
+					  indexName,
+					  section);
 		}
 		if (weight != 1)
 		{
-			grn_expr_append_const_int(ctx,
-									  matchColumns,
-									  weight,
-									  GRN_OP_PUSH,
-									  1);
+			grn_expr_append_const_int(
+				ctx, matchColumns, weight, GRN_OP_PUSH, 1);
 			PGrnCheck("%s failed to push weight: <%s>[%d] * <%d>",
 					  tag,
-					  indexName, section, weight);
+					  indexName,
+					  section,
+					  weight);
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
 			PGrnCheck("%s failed to push star operator for weight: "
 					  "<%s>[%d] * <%d>",
 					  tag,
-					  indexName, section, weight);
+					  indexName,
+					  section,
+					  weight);
 		}
 
 		if (nMatchColumns > 0)
@@ -5601,7 +5383,8 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(PGrnSearchData *data,
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
 			PGrnCheck("%s failed to push OR operator: <%s>[%d]",
 					  tag,
-					  indexName, section);
+					  indexName,
+					  section);
 		}
 
 		nMatchColumns++;
@@ -5620,7 +5403,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 										 grn_obj *targetColumn,
 										 Form_pg_attribute attribute,
 										 grn_operator operator,
-										 PGrnCondition *condition,
+										 PGrnCondition * condition,
 										 grn_obj **matchTarget,
 										 const char *tag)
 {
@@ -5628,11 +5411,8 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	unsigned int nIndexData;
 	HeapTupleHeader header;
 
-	nIndexData = grn_column_find_index_data(ctx,
-											targetColumn,
-											operator,
-											&indexData,
-											1);
+	nIndexData =
+		grn_column_find_index_data(ctx, targetColumn, operator, & indexData, 1);
 	if (nIndexData == 0)
 	{
 		PGrnCheckRC(GRN_OBJECT_CORRUPT,
@@ -5646,9 +5426,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	PGrnConditionDeconstruct(condition, header);
 	if (PGrnPGTextIsEmpty(condition->query))
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s query must not NULL",
-					tag);
+		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
 		return false;
 	}
 
@@ -5660,19 +5438,16 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 
 	if (condition->weights && ARR_NDIM(condition->weights) == 0)
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s weights must not empty array",
-					tag);
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT, "%s weights must not empty array", tag);
 		return false;
 	}
 
 	{
 		grn_obj *matchColumns, *matchColumnsVariable;
 
-		GRN_EXPR_CREATE_FOR_QUERY(ctx,
-								  data->sourcesTable,
-								  matchColumns,
-								  matchColumnsVariable);
+		GRN_EXPR_CREATE_FOR_QUERY(
+			ctx, data->sourcesTable, matchColumns, matchColumnsVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchColumns);
 
 		if (!PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
@@ -5704,23 +5479,14 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			 sizeof(tag),
 			 "[build-condition][%s-condition]",
 			 grn_operator_to_string(operator));
-	if (!PGrnSearchBuildConditionPrepareCondition(data,
-												  key,
-												  targetColumn,
-												  attribute,
-												  operator,
-												  &condition,
-												  &matchTarget,
-												  tag))
+	if (!PGrnSearchBuildConditionPrepareCondition(
+			data, key, targetColumn, attribute, operator, & condition, &matchTarget, tag))
 	{
 		return false;
 	}
 
-	grn_expr_append_obj(ctx,
-						data->expression,
-						matchTarget,
-						GRN_OP_GET_VALUE,
-						1);
+	grn_expr_append_obj(
+		ctx, data->expression, matchTarget, GRN_OP_GET_VALUE, 1);
 	if (matchTarget == targetColumn)
 	{
 		PGrnCheck("%s failed to push column for %s operator: <%s>",
@@ -5730,8 +5496,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 	}
 	else
 	{
-		PGrnCheck("%s failed to push match columns",
-				  tag);
+		PGrnCheck("%s failed to push match columns", tag);
 	}
 	grn_expr_append_const_str(ctx,
 							  data->expression,
@@ -5743,13 +5508,9 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(condition.query),
 			  VARDATA_ANY(condition.query));
-	grn_expr_append_op(ctx,
-					   data->expression,
-					   operator,
-					   2);
-	PGrnCheck("%s failed to push %s operator",
-			  tag,
-			  grn_operator_to_string(operator));
+	grn_expr_append_op(ctx, data->expression, operator, 2);
+	PGrnCheck(
+		"%s failed to push %s operator", tag, grn_operator_to_string(operator));
 
 	return true;
 }
@@ -5815,10 +5576,12 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const_str(ctx, expression,
+	grn_expr_append_const_str(ctx,
+							  expression,
 							  GRN_TEXT_VALUE(keyword),
 							  GRN_TEXT_LEN(keyword),
-							  GRN_OP_PUSH, 1);
+							  GRN_OP_PUSH,
+							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
 	if (*nKeywords > 0)
 		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
@@ -5865,10 +5628,8 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 			break;
 		case '%':
 		case '_':
-			PGrnSearchBuildConditionLikeMatchFlush(expression,
-												   targetColumn,
-												   &(buffers->keyword),
-												   &nKeywords);
+			PGrnSearchBuildConditionLikeMatchFlush(
+				expression, targetColumn, &(buffers->keyword), &nKeywords);
 			break;
 		default:
 			GRN_TEXT_PUTC(ctx, &(buffers->keyword), queryRaw[i]);
@@ -5876,15 +5637,15 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		}
 	}
 
-	PGrnSearchBuildConditionLikeMatchFlush(expression,
-										   targetColumn,
-										   &(buffers->keyword),
-										   &nKeywords);
+	PGrnSearchBuildConditionLikeMatchFlush(
+		expression, targetColumn, &(buffers->keyword), &nKeywords);
 	if (nKeywords == 0)
 	{
-		grn_expr_append_obj(ctx, expression,
+		grn_expr_append_obj(ctx,
+							expression,
 							grn_ctx_get(ctx, "all_records", -1),
-							GRN_OP_PUSH, 1);
+							GRN_OP_PUSH,
+							1);
 		grn_expr_append_op(ctx, expression, GRN_OP_CALL, 0);
 	}
 }
@@ -5994,7 +5755,8 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s invalid encoding character exist: <%.*s>",
 					tag,
-					(int) querySize, queryRaw);
+					(int) querySize,
+					queryRaw);
 	}
 
 	if (!lastIsPercent)
@@ -6002,10 +5764,12 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const_str(ctx, expression,
+	grn_expr_append_const_str(ctx,
+							  expression,
 							  GRN_TEXT_VALUE(&(buffers->pattern)),
 							  GRN_TEXT_LEN(&(buffers->pattern)),
-							  GRN_OP_PUSH, 1);
+							  GRN_OP_PUSH,
+							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
 }
 
@@ -6019,19 +5783,22 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
-							  matchTarget, matchTargetVariable);
+	GRN_EXPR_CREATE_FOR_QUERY(
+		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
-	grn_expr_parse(ctx, data->expression,
-				   query, querySize,
-				   matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+	grn_expr_parse(ctx,
+				   data->expression,
+				   query,
+				   querySize,
+				   matchTarget,
+				   GRN_OP_MATCH,
+				   GRN_OP_AND,
 				   flags);
-	PGrnCheck("%s failed to parse expression: <%.*s>",
-			  tag,
-			  (int) querySize, query);
+	PGrnCheck(
+		"%s failed to parse expression: <%.*s>", tag, (int) querySize, query);
 }
 
 static void
@@ -6047,16 +5814,19 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 	grn_text_esc(ctx, &subFilterScript, prefix, prefixSize);
 	GRN_TEXT_PUTS(ctx, &subFilterScript, ")");
 
-	grn_expr_append_obj(ctx, data->expression,
+	grn_expr_append_obj(ctx,
+						data->expression,
 						grn_ctx_get(ctx, "sub_filter", -1),
-						GRN_OP_PUSH, 1);
-	grn_expr_append_obj(ctx, data->expression,
-						targetColumn,
-						GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const_str(ctx, data->expression,
+						GRN_OP_PUSH,
+						1);
+	grn_expr_append_obj(
+		ctx, data->expression, targetColumn, GRN_OP_GET_VALUE, 1);
+	grn_expr_append_const_str(ctx,
+							  data->expression,
 							  GRN_TEXT_VALUE(&subFilterScript),
 							  GRN_TEXT_LEN(&subFilterScript),
-							  GRN_OP_PUSH, 1);
+							  GRN_OP_PUSH,
+							  1);
 	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
 
 	GRN_OBJ_FIN(ctx, &subFilterScript);
@@ -6072,14 +5842,18 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = GRN_EXPR_SYNTAX_SCRIPT;
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, data->sourcesTable,
-							  matchTarget, matchTargetVariable);
+	GRN_EXPR_CREATE_FOR_QUERY(
+		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
 
-	grn_expr_parse(ctx, data->expression,
-				   script, scriptSize,
-				   matchTarget, GRN_OP_MATCH, GRN_OP_AND,
+	grn_expr_parse(ctx,
+				   data->expression,
+				   script,
+				   scriptSize,
+				   matchTarget,
+				   GRN_OP_MATCH,
+				   GRN_OP_AND,
 				   flags);
 	PGrnCheck("%s failed to parse expression", tag);
 }
@@ -6090,25 +5864,21 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_obj *value,
 										grn_operator operator)
 {
-	grn_expr_append_obj(ctx, data->expression,
-						targetColumn, GRN_OP_PUSH, 1);
+	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const(ctx, data->expression,
-						  value, GRN_OP_PUSH, 1);
+	grn_expr_append_const(ctx, data->expression, value, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, data->expression, operator, 2);
 }
 
 static bool
-PGrnSearchBuildCondition(Relation index,
-						 ScanKey key,
-						 PGrnSearchData *data)
+PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 {
 	const char *tag = "[build-condition]";
 	TupleDesc desc;
 	Form_pg_attribute attribute;
 	const char *targetColumnName;
 	grn_obj *targetColumn;
-	grn_operator operator = GRN_OP_NOP;
+	grn_operator operator= GRN_OP_NOP;
 	Oid valueTypeID;
 
 	/* NULL key is not supported */
@@ -6119,7 +5889,8 @@ PGrnSearchBuildCondition(Relation index,
 	attribute = TupleDescAttr(desc, key->sk_attno - 1);
 
 	targetColumnName = attribute->attname.data;
-	targetColumn = PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
+	targetColumn =
+		PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
 	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 
 	if (PGrnSearchIsInCondition(key))
@@ -6129,11 +5900,8 @@ PGrnSearchBuildCondition(Relation index,
 		key->sk_strategy == PGrnMatchFTSConditionWithScorersStrategyV2Number ||
 		key->sk_strategy == PGrnMatchConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(data,
-																key,
-																targetColumn,
-																attribute,
-																GRN_OP_MATCH);
+		return PGrnSearchBuildConditionBinaryOperationCondition(
+			data, key, targetColumn, attribute, GRN_OP_MATCH);
 	}
 
 	if (key->sk_strategy == PGrnQueryFTSConditionStrategyV2Number ||
@@ -6142,30 +5910,22 @@ PGrnSearchBuildCondition(Relation index,
 		key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionQueryCondition(data,
-													  key,
-													  targetColumn,
-													  attribute);
+		return PGrnSearchBuildConditionQueryCondition(
+			data, key, targetColumn, attribute);
 	}
 
 	if (key->sk_strategy == PGrnPrefixFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(data,
-																key,
-																targetColumn,
-																attribute,
-																GRN_OP_PREFIX);
+		return PGrnSearchBuildConditionBinaryOperationCondition(
+			data, key, targetColumn, attribute, GRN_OP_PREFIX);
 	}
 
 	if (key->sk_strategy == PGrnEqualFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(data,
-																key,
-																targetColumn,
-																attribute,
-																GRN_OP_EQUAL);
+		return PGrnSearchBuildConditionBinaryOperationCondition(
+			data, key, targetColumn, attribute, GRN_OP_EQUAL);
 	}
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
@@ -6212,27 +5972,27 @@ PGrnSearchBuildCondition(Relation index,
 	switch (key->sk_strategy)
 	{
 	case PGrnLessStrategyNumber:
-		operator = GRN_OP_LESS;
+		operator= GRN_OP_LESS;
 		break;
 	case PGrnLessEqualStrategyNumber:
-		operator = GRN_OP_LESS_EQUAL;
+		operator= GRN_OP_LESS_EQUAL;
 		break;
 	case PGrnEqualStrategyNumber:
 	case PGrnEqualStrategyV2Number:
-		operator = GRN_OP_EQUAL;
+		operator= GRN_OP_EQUAL;
 		break;
 	case PGrnGreaterEqualStrategyNumber:
-		operator = GRN_OP_GREATER_EQUAL;
+		operator= GRN_OP_GREATER_EQUAL;
 		break;
 	case PGrnGreaterStrategyNumber:
-		operator = GRN_OP_GREATER;
+		operator= GRN_OP_GREATER;
 		break;
 	case PGrnLikeStrategyNumber:
 	case PGrnILikeStrategyNumber:
 		break;
 	case PGrnMatchStrategyNumber:
 	case PGrnMatchStrategyV2Number:
-		operator = GRN_OP_MATCH;
+		operator= GRN_OP_MATCH;
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
@@ -6240,11 +6000,11 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnEqualQueryStrategyV2Number:
 		break;
 	case PGrnContainStrategyNumber:
-		operator = GRN_OP_MATCH;
+		operator= GRN_OP_MATCH;
 		break;
 	case PGrnSimilarStrategyV2Number:
 	case PGrnSimilarStrategyV2DeprecatedNumber:
-		operator = GRN_OP_SIMILAR;
+		operator= GRN_OP_SIMILAR;
 		break;
 	case PGrnScriptStrategyV2Number:
 		break;
@@ -6252,7 +6012,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnPrefixStrategyV2DeprecatedNumber:
 	case PGrnPrefixInStrategyV2Number:
 	case PGrnNotPrefixInStrategyV2Number:
-		operator = GRN_OP_PREFIX;
+		operator= GRN_OP_PREFIX;
 		break;
 	case PGrnPrefixRKStrategyV2Number:
 	case PGrnPrefixRKStrategyV2DeprecatedNumber:
@@ -6261,7 +6021,7 @@ PGrnSearchBuildCondition(Relation index,
 	case PGrnRegexpStrategyNumber:
 	case PGrnRegexpStrategyV2Number:
 	case PGrnRegexpInStrategyV2Number:
-		operator = GRN_OP_REGEXP;
+		operator= GRN_OP_REGEXP;
 		break;
 	case PGrnQueryInStrategyV2Number:
 	case PGrnQueryInStrategyV2DeprecatedNumber:
@@ -6269,10 +6029,10 @@ PGrnSearchBuildCondition(Relation index,
 		break;
 	case PGrnMatchInStrategyV2Number:
 	case PGrnMatchInStrategyV2DeprecatedNumber:
-		operator = GRN_OP_MATCH;
+		operator= GRN_OP_MATCH;
 		break;
 	case PGrnContainStrategyV2Number:
-		operator = GRN_OP_MATCH;
+		operator= GRN_OP_MATCH;
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -6294,12 +6054,15 @@ PGrnSearchBuildCondition(Relation index,
 	{
 	case PGrnLikeStrategyNumber:
 		if (PGrnIsForRegexpSearchIndex(index, key->sk_attno - 1))
-			PGrnSearchBuildConditionLikeRegexp(data, targetColumn, &(buffers->general));
+			PGrnSearchBuildConditionLikeRegexp(
+				data, targetColumn, &(buffers->general));
 		else
-			PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
+			PGrnSearchBuildConditionLikeMatch(
+				data, targetColumn, &(buffers->general));
 		break;
 	case PGrnILikeStrategyNumber:
-		PGrnSearchBuildConditionLikeMatch(data, targetColumn, &(buffers->general));
+		PGrnSearchBuildConditionLikeMatch(
+			data, targetColumn, &(buffers->general));
 		break;
 	case PGrnQueryStrategyNumber:
 	case PGrnQueryStrategyV2Number:
@@ -6323,13 +6086,11 @@ PGrnSearchBuildCondition(Relation index,
 			const char *element;
 			unsigned int elementSize;
 
-			elementSize = grn_vector_get_element(ctx, elements, i,
-												 &element, NULL, NULL);
+			elementSize =
+				grn_vector_get_element(ctx, elements, i, &element, NULL, NULL);
 			GRN_TEXT_SET(ctx, &elementBuffer, element, elementSize);
-			PGrnSearchBuildConditionBinaryOperation(data,
-													targetColumn,
-													&elementBuffer,
-													operator);
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &elementBuffer, operator);
 			if (i > 0)
 				grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
 		}
@@ -6360,12 +6121,10 @@ PGrnSearchBuildCondition(Relation index,
 			const char *prefix;
 			unsigned int prefixSize;
 
-			prefixSize = grn_vector_get_element(ctx, prefixes, i,
-												&prefix, NULL, NULL);
-			PGrnSearchBuildConditionPrefixRK(data,
-											 targetColumn,
-											 prefix,
-											 prefixSize);
+			prefixSize =
+				grn_vector_get_element(ctx, prefixes, i, &prefix, NULL, NULL);
+			PGrnSearchBuildConditionPrefixRK(
+				data, targetColumn, prefix, prefixSize);
 			if (i > 0)
 				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
 		}
@@ -6384,12 +6143,9 @@ PGrnSearchBuildCondition(Relation index,
 			const char *query;
 			unsigned int querySize;
 
-			querySize = grn_vector_get_element(ctx, queries, i,
-												&query, NULL, NULL);
-			PGrnSearchBuildConditionQuery(data,
-										  targetColumn,
-										  query,
-										  querySize);
+			querySize =
+				grn_vector_get_element(ctx, queries, i, &query, NULL, NULL);
+			PGrnSearchBuildConditionQuery(data, targetColumn, query, querySize);
 			if (i > 0)
 				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
 		}
@@ -6411,13 +6167,11 @@ PGrnSearchBuildCondition(Relation index,
 			const char *keyword;
 			unsigned int keywordSize;
 
-			keywordSize = grn_vector_get_element(ctx, keywords, i,
-												 &keyword, NULL, NULL);
+			keywordSize =
+				grn_vector_get_element(ctx, keywords, i, &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
-			PGrnSearchBuildConditionBinaryOperation(data,
-													targetColumn,
-													&keywordBuffer,
-													operator);
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &keywordBuffer, operator);
 			if (i > 0)
 				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
 		}
@@ -6432,9 +6186,11 @@ PGrnSearchBuildCondition(Relation index,
 
 		if (data->nExpressions == 0)
 		{
-			grn_expr_append_obj(ctx, data->expression,
+			grn_expr_append_obj(ctx,
+								data->expression,
 								grn_ctx_get(ctx, "all_records", -1),
-								GRN_OP_PUSH, 1);
+								GRN_OP_PUSH,
+								1);
 			grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 0);
 		}
 
@@ -6445,23 +6201,19 @@ PGrnSearchBuildCondition(Relation index,
 			const char *keyword;
 			unsigned int keywordSize;
 
-			keywordSize = grn_vector_get_element(ctx, keywords, i,
-												 &keyword, NULL, NULL);
+			keywordSize =
+				grn_vector_get_element(ctx, keywords, i, &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
-			PGrnSearchBuildConditionBinaryOperation(data,
-													targetColumn,
-													&keywordBuffer,
-													operator);
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &keywordBuffer, operator);
 			grn_expr_append_op(ctx, data->expression, GRN_OP_AND_NOT, 2);
 		}
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
 	}
 	default:
-		PGrnSearchBuildConditionBinaryOperation(data,
-												targetColumn,
-												&(buffers->general),
-												operator);
+		PGrnSearchBuildConditionBinaryOperation(
+			data, targetColumn, &(buffers->general), operator);
 		break;
 	}
 
@@ -6510,8 +6262,8 @@ PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 	GRN_PTR_INIT(&(data->targetColumns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_UINT32_INIT(&(data->sectionID), 0);
 
-	GRN_EXPR_CREATE_FOR_QUERY(ctx, sourcesTable,
-							  data->expression, data->expressionVariable);
+	GRN_EXPR_CREATE_FOR_QUERY(
+		ctx, sourcesTable, data->expression, data->expressionVariable);
 	data->isEmptyCondition = false;
 	data->nExpressions = 0;
 }
@@ -6566,16 +6318,18 @@ PGrnSearch(IndexScanDesc scan)
 	PG_END_TRY();
 
 	/* TODO: Add NULL check for so->searched. */
-	so->searched = grn_table_create(ctx, NULL, 0, NULL,
-									GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
-									so->sourcesTable, 0);
+	so->searched =
+		grn_table_create(ctx,
+						 NULL,
+						 0,
+						 NULL,
+						 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
+						 so->sourcesTable,
+						 0);
 	if (!data.isEmptyCondition)
 	{
-		grn_table_select(ctx,
-						 so->sourcesTable,
-						 data.expression,
-						 so->searched,
-						 GRN_OP_OR);
+		grn_table_select(
+			ctx, so->sourcesTable, data.expression, so->searched, GRN_OP_OR);
 	}
 	PGrnSearchDataFree(&data);
 }
@@ -6600,26 +6354,18 @@ PGrnSort(IndexScanDesc scan)
 	if (!PGrnSearchIsInCondition(key))
 		return;
 
-	so->sorted = grn_table_create(ctx, NULL, 0, NULL,
-								  GRN_OBJ_TABLE_NO_KEY,
-								  NULL, so->searched);
+	so->sorted = grn_table_create(
+		ctx, NULL, 0, NULL, GRN_OBJ_TABLE_NO_KEY, NULL, so->searched);
 
 	desc = RelationGetDescr(scan->indexRelation);
 	attribute = TupleDescAttr(desc, key->sk_attno - 1);
 	targetColumnName = attribute->attname.data;
-	sort_key.key = grn_obj_column(ctx, so->searched,
-								  targetColumnName,
-								  strlen(targetColumnName));
+	sort_key.key = grn_obj_column(
+		ctx, so->searched, targetColumnName, strlen(targetColumnName));
 
 	sort_key.flags = GRN_TABLE_SORT_ASC;
 	sort_key.offset = 0;
-	grn_table_sort(ctx,
-				   so->searched,
-				   0,
-				   -1,
-				   so->sorted,
-				   &sort_key,
-				   1);
+	grn_table_sort(ctx, so->searched, 0, -1, so->sorted, &sort_key, 1);
 	grn_obj_close(ctx, sort_key.key);
 }
 
@@ -6646,7 +6392,8 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 
 	if (!grn_obj_is_table(ctx, table))
 	{
-		GRN_LOG(ctx, GRN_LOG_DEBUG,
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
 				"pgroonga: %s target table is invalid: "
 				"<%p>: <%p>:<%p>:<%p>:<%p>",
 				tag,
@@ -6656,25 +6403,25 @@ PGrnOpenTableCursor(IndexScanDesc scan, ScanDirection dir)
 				so->searched,
 				so->sourcesTable);
 	}
-	so->tableCursor = grn_table_cursor_open(ctx, table,
-											NULL, 0, NULL, 0,
-											offset, limit, flags);
+	so->tableCursor = grn_table_cursor_open(
+		ctx, table, NULL, 0, NULL, 0, offset, limit, flags);
 	PGrnCheck("%s failed to open cursor", tag);
 	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
 	{
-		so->ctidAccessor = grn_obj_column(ctx, table,
+		so->ctidAccessor = grn_obj_column(ctx,
+										  table,
 										  PGrnSourcesCtidColumnName,
 										  PGrnSourcesCtidColumnNameLength);
 	}
 	else
 	{
-		so->ctidAccessor = grn_obj_column(ctx, table,
-										  GRN_COLUMN_NAME_KEY,
-										  GRN_COLUMN_NAME_KEY_LEN);
+		so->ctidAccessor = grn_obj_column(
+			ctx, table, GRN_COLUMN_NAME_KEY, GRN_COLUMN_NAME_KEY_LEN);
 	}
 	if (so->searched)
 	{
-		so->scoreAccessor = grn_obj_column(ctx, so->searched,
+		so->scoreAccessor = grn_obj_column(ctx,
+										   so->searched,
 										   GRN_COLUMN_NAME_SCORE,
 										   GRN_COLUMN_NAME_SCORE_LEN);
 	}
@@ -6716,8 +6463,10 @@ PGrnIsMeaningfullMinBorderValue(grn_obj *currentValue,
 
 static void
 PGrnFillBorder(IndexScanDesc scan,
-			   void **min, unsigned int *minSize,
-			   void **max, unsigned int *maxSize,
+			   void **min,
+			   unsigned int *minSize,
+			   void **max,
+			   unsigned int *maxSize,
 			   int *flags)
 {
 	const char *tag = "[range][fill-border]";
@@ -6750,9 +6499,8 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (maxBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &(buffers->general), domain, 0);
-				PGrnConvertFromData(key->sk_argument,
-									attribute->atttypid,
-									&(buffers->general));
+				PGrnConvertFromData(
+					key->sk_argument, attribute->atttypid, &(buffers->general));
 				if (!PGrnIsMeaningfullMaxBorderValue(maxBorderValue,
 													 &(buffers->general),
 													 *flags,
@@ -6762,9 +6510,8 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, maxBorderValue, domain, 0);
-			PGrnConvertFromData(key->sk_argument,
-								attribute->atttypid,
-								maxBorderValue);
+			PGrnConvertFromData(
+				key->sk_argument, attribute->atttypid, maxBorderValue);
 			*max = GRN_BULK_HEAD(maxBorderValue);
 			*maxSize = GRN_BULK_VSIZE(maxBorderValue);
 			*flags &= ~(GRN_CURSOR_LT | GRN_CURSOR_LE);
@@ -6782,9 +6529,8 @@ PGrnFillBorder(IndexScanDesc scan,
 			if (minBorderValue->header.type != GRN_DB_VOID)
 			{
 				grn_obj_reinit(ctx, &(buffers->general), domain, 0);
-				PGrnConvertFromData(key->sk_argument,
-									attribute->atttypid,
-									&(buffers->general));
+				PGrnConvertFromData(
+					key->sk_argument, attribute->atttypid, &(buffers->general));
 				if (!PGrnIsMeaningfullMinBorderValue(minBorderValue,
 													 &(buffers->general),
 													 *flags,
@@ -6794,9 +6540,8 @@ PGrnFillBorder(IndexScanDesc scan,
 				}
 			}
 			grn_obj_reinit(ctx, minBorderValue, domain, 0);
-			PGrnConvertFromData(key->sk_argument,
-								attribute->atttypid,
-								minBorderValue);
+			PGrnConvertFromData(
+				key->sk_argument, attribute->atttypid, minBorderValue);
 			*min = GRN_BULK_HEAD(minBorderValue);
 			*minSize = GRN_BULK_VSIZE(minBorderValue);
 			*flags &= ~(GRN_CURSOR_GT | GRN_CURSOR_GE);
@@ -6851,28 +6596,29 @@ PGrnRangeSearch(IndexScanDesc scan, ScanDirection dir)
 		nthAttribute = key->sk_attno - 1;
 		break;
 	}
-	indexColumn = PGrnLookupIndexColumn(scan->indexRelation, nthAttribute,
-										ERROR);
+	indexColumn =
+		PGrnLookupIndexColumn(scan->indexRelation, nthAttribute, ERROR);
 	lexicon = grn_column_table(ctx, indexColumn);
 
-	so->tableCursor = grn_table_cursor_open(ctx, lexicon,
-											min, minSize,
-											max, maxSize,
-											offset, limit, flags);
+	so->tableCursor = grn_table_cursor_open(
+		ctx, lexicon, min, minSize, max, maxSize, offset, limit, flags);
 	so->indexCursor = grn_index_cursor_open(ctx,
-											so->tableCursor, indexColumn,
+											so->tableCursor,
+											indexColumn,
 											indexCursorMin,
 											indexCursorMax,
 											indexCursorFlags);
 	if (so->sourcesTable->header.type == GRN_TABLE_NO_KEY)
 	{
-		so->ctidAccessor = grn_obj_column(ctx, so->sourcesTable,
+		so->ctidAccessor = grn_obj_column(ctx,
+										  so->sourcesTable,
 										  PGrnSourcesCtidColumnName,
 										  PGrnSourcesCtidColumnNameLength);
 	}
 	else
 	{
-		so->ctidAccessor = grn_obj_column(ctx, so->sourcesTable,
+		so->ctidAccessor = grn_obj_column(ctx,
+										  so->sourcesTable,
 										  GRN_COLUMN_NAME_KEY,
 										  GRN_COLUMN_NAME_KEY_LEN);
 	}
@@ -6900,8 +6646,8 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 
 		indexColumn = PGrnLookupIndexColumn(scan->indexRelation, 0, ERROR);
 		lexicon = grn_column_table(ctx, indexColumn);
-		tokenizer = grn_obj_get_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER,
-									 NULL);
+		tokenizer =
+			grn_obj_get_info(ctx, lexicon, GRN_INFO_DEFAULT_TOKENIZER, NULL);
 		if (tokenizer)
 		{
 			return false;
@@ -6938,9 +6684,7 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 }
 
 static void
-PGrnEnsureCursorOpened(IndexScanDesc scan,
-					   ScanDirection dir,
-					   bool needSort)
+PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir, bool needSort)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 
@@ -6991,8 +6735,8 @@ PGrnScanOpaqueResolveID(PGrnScanOpaque so)
 	}
 	if (so->searched)
 	{
-		grn_table_get_key(ctx, so->searched, recordID,
-						  &recordID, sizeof(grn_id));
+		grn_table_get_key(
+			ctx, so->searched, recordID, &recordID, sizeof(grn_id));
 	}
 
 	return recordID;
@@ -7001,8 +6745,7 @@ PGrnScanOpaqueResolveID(PGrnScanOpaque so)
 static bool pgroonga_canreturn(Relation index, int nthAttribute);
 
 static void
-PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
-						   IndexScanDesc scan)
+PGrnGetTupleFillIndexTuple(PGrnScanOpaque so, IndexScanDesc scan)
 {
 	MemoryContext oldMemoryContext;
 	TupleDesc desc;
@@ -7028,11 +6771,10 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		NameData *name;
 		grn_obj *dataColumn;
 
-		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) <= i) {
+		if (GRN_BOOL_VECTOR_SIZE(&(so->canReturns)) <= i)
+		{
 			unsigned int j;
-			for (j = GRN_BOOL_VECTOR_SIZE(&(so->canReturns));
-				 j <= i;
-				 j++)
+			for (j = GRN_BOOL_VECTOR_SIZE(&(so->canReturns)); j <= i; j++)
 			{
 				bool can = pgroonga_canreturn(so->index, j);
 				GRN_BOOL_PUT(ctx, &(so->canReturns), can);
@@ -7050,21 +6792,19 @@ PGrnGetTupleFillIndexTuple(PGrnScanOpaque so,
 		dataColumn = PGrnLookupColumn(so->sourcesTable, name->data, ERROR);
 		GRN_BULK_REWIND(&(buffers->general));
 		grn_obj_get_value(ctx, dataColumn, recordID, &(buffers->general));
-		values[i] = PGrnConvertToDatum(&(buffers->general), attribute->atttypid);
+		values[i] =
+			PGrnConvertToDatum(&(buffers->general), attribute->atttypid);
 		isNulls[i] = false;
 		grn_obj_unlink(ctx, dataColumn);
 	}
 
-	scan->xs_itup = index_form_tuple(scan->xs_itupdesc,
-									 values,
-									 isNulls);
+	scan->xs_itup = index_form_tuple(scan->xs_itupdesc, values, isNulls);
 
 	MemoryContextSwitchTo(oldMemoryContext);
 }
 
 static bool
-pgroonga_gettuple_internal(IndexScanDesc scan,
-						   ScanDirection direction)
+pgroonga_gettuple_internal(IndexScanDesc scan, ScanDirection direction)
 {
 	const char *tag = "pgroonga: [get-tuple]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
@@ -7078,8 +6818,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 
 	PGrnEnsureCursorOpened(scan, direction, true);
 
-	if (scan->kill_prior_tuple &&
-		so->currentID != GRN_ID_NIL &&
+	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL &&
 		PGrnIsWritable())
 	{
 		grn_id recordID;
@@ -7087,10 +6826,8 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 
 		recordID = PGrnScanOpaqueResolveID(so);
 		GRN_BULK_REWIND(&(buffers->ctid));
-		grn_obj_get_value(ctx,
-						  so->ctidAccessor,
-						  so->currentID,
-						  &(buffers->ctid));
+		grn_obj_get_value(
+			ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
 		if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 		{
 			NameData tableName;
@@ -7110,19 +6847,20 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 			{
 				NameData tableName;
 				ItemPointerData ctid = PGrnCtidUnpack(packedCtid);
-				GRN_LOG(ctx,
-						GRN_LOG_DEBUG,
-						"%s[delete] "
-						"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%" PRIu64 ">",
-						tag,
-						PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
-						so->dataTableID,
-						so->currentID,
-						recordID,
-						ctid.ip_blkid.bi_hi,
-						ctid.ip_blkid.bi_lo,
-						ctid.ip_posid,
-						packedCtid);
+				GRN_LOG(
+					ctx,
+					GRN_LOG_DEBUG,
+					"%s[delete] "
+					"<%s>(%u): <%u> -> <%u>: <(%u,%u),%u>: <%" PRIu64 ">",
+					tag,
+					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+					so->dataTableID,
+					so->currentID,
+					recordID,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid,
+					packedCtid);
 			}
 			grn_table_delete_by_id(ctx, so->sourcesTable, recordID);
 
@@ -7159,21 +6897,20 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 			bool valid;
 
 			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx,
-							  so->ctidAccessor,
-							  so->currentID,
-							  &(buffers->ctid));
+			grn_obj_get_value(
+				ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
 			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 			{
 				NameData tableName;
-				GRN_LOG(ctx,
-						GRN_LOG_DEBUG,
-						"%s[nonexistent] <%s>(%u): <%u> -> <%u>",
-						tag,
-						PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
-						so->dataTableID,
-						so->currentID,
-						PGrnScanOpaqueResolveID(so));
+				GRN_LOG(
+					ctx,
+					GRN_LOG_DEBUG,
+					"%s[nonexistent] <%s>(%u): <%u> -> <%u>",
+					tag,
+					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+					so->dataTableID,
+					so->currentID,
+					PGrnScanOpaqueResolveID(so));
 				continue;
 			}
 
@@ -7183,21 +6920,21 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 
 			{
 				NameData tableName;
-				GRN_LOG(ctx,
-						GRN_LOG_DEBUG,
-						"%s <%s>(%u): <%u> -> <%u>: "
-						"<(%u,%u),%u>: <%" PRIu64 ">: <%s>",
-						tag,
-						PGrnPGGetRelationNameByID(so->dataTableID,
-												  tableName.data),
-						so->dataTableID,
-						so->currentID,
-						PGrnScanOpaqueResolveID(so),
-						ctid.ip_blkid.bi_hi,
-						ctid.ip_blkid.bi_lo,
-						ctid.ip_posid,
-						packedCtid,
-						valid ? "true" : "false");
+				GRN_LOG(
+					ctx,
+					GRN_LOG_DEBUG,
+					"%s <%s>(%u): <%u> -> <%u>: "
+					"<(%u,%u),%u>: <%" PRIu64 ">: <%s>",
+					tag,
+					PGrnPGGetRelationNameByID(so->dataTableID, tableName.data),
+					so->dataTableID,
+					so->currentID,
+					PGrnScanOpaqueResolveID(so),
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid,
+					packedCtid,
+					valid ? "true" : "false");
 			}
 
 			if (!valid)
@@ -7216,8 +6953,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan,
 }
 
 static bool
-pgroonga_gettuple(IndexScanDesc scan,
-				  ScanDirection direction)
+pgroonga_gettuple(IndexScanDesc scan, ScanDirection direction)
 {
 	bool found = false;
 
@@ -7246,8 +6982,7 @@ pgroonga_gettuple(IndexScanDesc scan,
 }
 
 static int64
-pgroonga_getbitmap_internal(IndexScanDesc scan,
-							TIDBitmap *tbm)
+pgroonga_getbitmap_internal(IndexScanDesc scan, TIDBitmap *tbm)
 {
 	const char *tag = "pgroonga: [get-bitmap]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
@@ -7280,10 +7015,8 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 
 			so->currentID = posting->rid;
 			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx,
-							  so->ctidAccessor,
-							  so->currentID,
-							  &(buffers->ctid));
+			grn_obj_get_value(
+				ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
 			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 			{
 				GRN_LOG(ctx,
@@ -7298,8 +7031,10 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
-					"%s[index-cursor] <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[index-cursor] <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64
+					")",
 					tag,
 					so->index->rd_rel->relname.data,
 					so->index->rd_id,
@@ -7326,10 +7061,8 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 				break;
 
 			GRN_BULK_REWIND(&(buffers->ctid));
-			grn_obj_get_value(ctx,
-							  so->ctidAccessor,
-							  so->currentID,
-							  &(buffers->ctid));
+			grn_obj_get_value(
+				ctx, so->ctidAccessor, so->currentID, &(buffers->ctid));
 			if (GRN_BULK_VSIZE(&(buffers->ctid)) == 0)
 			{
 				GRN_LOG(ctx,
@@ -7344,7 +7077,8 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 
 			packedCtid = GRN_UINT64_VALUE(&(buffers->ctid));
 			ctid = PGrnCtidUnpack(packedCtid);
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
 					"%s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
 					tag,
 					so->index->rd_rel->relname.data,
@@ -7365,8 +7099,7 @@ pgroonga_getbitmap_internal(IndexScanDesc scan,
 }
 
 static int64
-pgroonga_getbitmap(IndexScanDesc scan,
-				   TIDBitmap *tbm)
+pgroonga_getbitmap(IndexScanDesc scan, TIDBitmap *tbm)
 {
 	int64 nRecords = 0;
 	bool enabled;
@@ -7417,9 +7150,7 @@ pgroonga_endscan(IndexScanDesc scan)
 
 	PGRN_TRACE_LOG_ENTER();
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG,
-			"pgroonga: [scan][end] <%p>",
-			so);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, "pgroonga: [scan][end] <%p>", so);
 
 	PGrnScanOpaqueFin(so);
 	MemoryContextDelete(memoryContext);
@@ -7451,14 +7182,9 @@ PGrnBuildCallback(Relation index,
 
 	oldMemoryContext = MemoryContextSwitchTo(bs->memoryContext);
 
-	recordSize = PGrnInsert(index,
-							bs->sourcesTable,
-							bs->sourcesCtidColumn,
-							values,
-							isnull,
-							tid);
-	if (bs->needMaxRecordSizeUpdate &&
-		recordSize > bs->maxRecordSize)
+	recordSize = PGrnInsert(
+		index, bs->sourcesTable, bs->sourcesCtidColumn, values, isnull, tid);
+	if (bs->needMaxRecordSizeUpdate && recordSize > bs->maxRecordSize)
 	{
 		bs->maxRecordSize = recordSize;
 	}
@@ -7532,9 +7258,7 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 }
 
 static IndexBuildResult *
-pgroonga_build(Relation heap,
-			   Relation index,
-			   IndexInfo *indexInfo)
+pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 {
 	const char *tag = "[build]";
 	IndexBuildResult *result;
@@ -7606,14 +7330,8 @@ pgroonga_build(Relation heap,
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
-		nHeapTuples = table_index_build_scan(heap,
-											 index,
-											 indexInfo,
-											 true,
-											 true,
-											 PGrnBuildCallback,
-											 &bs,
-											 NULL);
+		nHeapTuples = table_index_build_scan(
+			heap, index, indexInfo, true, true, PGrnBuildCallback, &bs, NULL);
 		grn_ctx_set_progress_callback(ctx, PGrnProgressCallback, &state);
 		PGrnSetSources(index, bs.sourcesTable);
 		grn_ctx_set_progress_callback(ctx, NULL, NULL);
@@ -7747,7 +7465,7 @@ PGrnBulkDeleteResult(IndexVacuumInfo *info, grn_obj *sourcesTable)
 	IndexBulkDeleteResult *stats;
 
 	stats = (IndexBulkDeleteResult *) palloc0(sizeof(IndexBulkDeleteResult));
-	stats->num_pages = (BlockNumber) 1;	/* TODO: sizeof index / BLCKSZ */
+	stats->num_pages = (BlockNumber) 1; /* TODO: sizeof index / BLCKSZ */
 
 	/* table might be NULL if index is corrupted */
 	if (sourcesTable)
@@ -7766,7 +7484,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 {
 	const char *tag = "[bulk-delete]";
 	Relation index = info->index;
-	grn_obj	*sourcesTable;
+	grn_obj *sourcesTable;
 	grn_table_cursor *cursor;
 	double nRemovedTuples;
 
@@ -7797,9 +7515,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 
 	nRemovedTuples = 0;
 
-	cursor = grn_table_cursor_open(ctx, sourcesTable,
-								   NULL, 0, NULL, 0,
-								   0, -1, 0);
+	cursor =
+		grn_table_cursor_open(ctx, sourcesTable, NULL, 0, NULL, 0, 0, -1, 0);
 	PGrnCheck("%s failed to open cursor", tag);
 
 	PG_TRY();
@@ -7820,7 +7537,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 		while ((id = grn_table_cursor_next(ctx, cursor)) != GRN_ID_NIL)
 		{
 			uint64_t packedCtid;
-			ItemPointerData	ctid;
+			ItemPointerData ctid;
 
 			CHECK_FOR_INTERRUPTS();
 
@@ -7864,7 +7581,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 			{
 				GRN_LOG(ctx,
 						GRN_LOG_DEBUG,
-						"pgroonga: %s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64 ")",
+						"pgroonga: %s <%s>(%u): <%u>: <(%u,%u),%u>(%" PRIu64
+						")",
 						tag,
 						index->rd_rel->relname.data,
 						index->rd_id,
@@ -7915,8 +7633,11 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];
 		grn_obj *lexicon;
 
-		snprintf(tableName, sizeof(tableName),
-				 PGrnLexiconNameFormat, relationFileNodeID, i);
+		snprintf(tableName,
+				 sizeof(tableName),
+				 PGrnLexiconNameFormat,
+				 relationFileNodeID,
+				 i);
 		lexicon = grn_ctx_get(ctx, tableName, -1);
 		if (!lexicon)
 			break;
@@ -7926,8 +7647,10 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 
 	{
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];
-		snprintf(tableName, sizeof(tableName),
-				 PGrnSourcesTableNameFormat, relationFileNodeID);
+		snprintf(tableName,
+				 sizeof(tableName),
+				 PGrnSourcesTableNameFormat,
+				 relationFileNodeID);
 		PGrnRemoveObjectForce(tableName);
 		PGrnAliasDeleteRaw(relationFileNodeID);
 		PGrnIndexStatusDeleteRaw(relationFileNodeID);
@@ -7938,8 +7661,11 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		char tableName[GRN_TABLE_MAX_KEY_SIZE];
 		grn_obj *lexicon;
 
-		snprintf(tableName, sizeof(tableName),
-				 PGrnLexiconNameFormat, relationFileNodeID, i);
+		snprintf(tableName,
+				 sizeof(tableName),
+				 PGrnLexiconNameFormat,
+				 relationFileNodeID,
+				 i);
 		lexicon = grn_ctx_get(ctx, tableName, -1);
 		if (!lexicon)
 			break;
@@ -7996,10 +7722,15 @@ PGrnRemoveUnusedTables(void)
 		processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
 	}
 
-	cursor = grn_table_cursor_open(ctx, grn_ctx_db(ctx),
-								   min, strlen(min),
-								   NULL, 0,
-								   0, -1, GRN_CURSOR_BY_KEY|GRN_CURSOR_PREFIX);
+	cursor = grn_table_cursor_open(ctx,
+								   grn_ctx_db(ctx),
+								   min,
+								   strlen(min),
+								   NULL,
+								   0,
+								   0,
+								   -1,
+								   GRN_CURSOR_BY_KEY | GRN_CURSOR_PREFIX);
 	while (grn_table_cursor_next(ctx, cursor) != GRN_ID_NIL)
 	{
 		void *key;
@@ -8026,8 +7757,7 @@ PGrnRemoveUnusedTables(void)
 }
 
 static IndexBulkDeleteResult *
-pgroonga_vacuumcleanup(IndexVacuumInfo *info,
-					   IndexBulkDeleteResult *stats)
+pgroonga_vacuumcleanup(IndexVacuumInfo *info, IndexBulkDeleteResult *stats)
 {
 	PGRN_TRACE_LOG_ENTER();
 
@@ -8052,8 +7782,7 @@ pgroonga_vacuumcleanup(IndexVacuumInfo *info,
 }
 
 static bool
-pgroonga_canreturn(Relation index,
-				   int nthAttribute)
+pgroonga_canreturn(Relation index, int nthAttribute)
 {
 	bool can_return = true;
 	Relation table = RelationIdGetRelation(index->rd_index->indrelid);
@@ -8103,7 +7832,7 @@ pgroonga_canreturn(Relation index,
 	if (can_return)
 	{
 		can_return = PGrnIndexStatusGetMaxRecordSize(index) <
-			PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE;
+					 PGRN_INDEX_ONLY_SCAN_THRESHOLD_SIZE;
 	}
 
 	PGRN_TRACE_LOG_EXIT();
@@ -8164,12 +7893,8 @@ PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
 		return;
 
 	opFamily = index->rd_opfamily[nthAttribute - 1];
-	get_op_opfamily_properties(expr->opno,
-							   opFamily,
-							   false,
-							   &strategy,
-							   &leftType,
-							   &rightType);
+	get_op_opfamily_properties(
+		expr->opno, opFamily, false, &strategy, &leftType, &rightType);
 
 	key.sk_flags = 0;
 	key.sk_attno = nthAttribute;
@@ -8226,7 +7951,7 @@ PGrnCostEstimateUpdateSelectivity(Relation index,
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 
 	quals = get_quals_from_indexclauses(path->indexclauses);
-	foreach(cell, quals)
+	foreach (cell, quals)
 	{
 		Node *clause = (Node *) lfirst(cell);
 		RestrictInfo *info;
@@ -8235,11 +7960,8 @@ PGrnCostEstimateUpdateSelectivity(Relation index,
 			continue;
 
 		info = (RestrictInfo *) clause;
-		PGrnCostEstimateUpdateSelectivityOne(root,
-											 path,
-											 index,
-											 sourcesTable,
-											 info);
+		PGrnCostEstimateUpdateSelectivityOne(
+			root, path, index, sourcesTable, info);
 	}
 }
 
@@ -8259,14 +7981,11 @@ pgroonga_costestimate_internal(Relation index,
 	PGrnCostEstimateUpdateSelectivity(index, root, path);
 	indexQuals = get_quals_from_indexclauses(path->indexclauses);
 	quals = add_predicate_to_index_quals(path->indexinfo, indexQuals);
-	*indexSelectivity = clauselist_selectivity(root,
-											   quals,
-											   path->indexinfo->rel->relid,
-											   JOIN_INNER,
-											   NULL);
+	*indexSelectivity = clauselist_selectivity(
+		root, quals, path->indexinfo->rel->relid, JOIN_INNER, NULL);
 
 	*indexStartupCost = 0.0; /* TODO */
-	*indexTotalCost = 0.0; /* TODO */
+	*indexTotalCost = 0.0;   /* TODO */
 	*indexCorrelation = 0.0;
 	*indexPages = 0.0; /* TODO */
 }
@@ -8376,8 +8095,7 @@ pgroonga_parallelrescan(IndexScanDesc scan)
 {
 	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
 	PGrnParallelScanDesc pgrnParallelScan =
-		OffsetToPointer((void *) (parallelScan),
-						parallelScan->ps_offset);
+		OffsetToPointer((void *) (parallelScan), parallelScan->ps_offset);
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -8392,8 +8110,7 @@ PGrnParallelScanAcquire(IndexScanDesc scan)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
 	PGrnParallelScanDesc pgrnParallelScan =
-		OffsetToPointer((void *) (parallelScan),
-						parallelScan->ps_offset);
+		OffsetToPointer((void *) (parallelScan), parallelScan->ps_offset);
 	bool acquired = false;
 
 	if (so->indexCursor)
@@ -8402,7 +8119,8 @@ PGrnParallelScanAcquire(IndexScanDesc scan)
 		return true;
 
 	SpinLockAcquire(&(pgrnParallelScan->mutex));
-	if (!pgrnParallelScan->scanning) {
+	if (!pgrnParallelScan->scanning)
+	{
 		acquired = true;
 		pgrnParallelScan->scanning = true;
 	}
@@ -8416,7 +8134,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	IndexAmRoutine *routine = makeNode(IndexAmRoutine);
 
 	routine->amstrategies = PGRN_N_STRATEGIES;
-	routine->amsupport    = 0;
+	routine->amsupport = 0;
 	routine->amcanorder = true;
 	routine->amcanorderbyop = true;
 	routine->amcanbackward = true;

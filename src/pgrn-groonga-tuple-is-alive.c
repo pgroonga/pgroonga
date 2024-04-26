@@ -84,7 +84,7 @@ func_pgroonga_tuple_is_alive(grn_ctx *ctx,
 						 rc,
 						 "pgroonga_tuple_is_alive(): "
 						 "invalid packed ctid: <%.*s>",
-						 (int)GRN_TEXT_LEN(&inspected_packed_ctid),
+						 (int) GRN_TEXT_LEN(&inspected_packed_ctid),
 						 GRN_TEXT_VALUE(&inspected_packed_ctid));
 		GRN_OBJ_FIN(ctx, &inspected_packed_ctid);
 		goto exit;
@@ -97,9 +97,8 @@ func_pgroonga_tuple_is_alive(grn_ctx *ctx,
 		LOCKMODE lock_mode = AccessShareLock;
 
 		file_node_id = sources_table_to_file_node_id(ctx, table);
-		pg_index = PGrnPGResolveFileNodeID(file_node_id,
-										   &pg_index_id,
-										   lock_mode);
+		pg_index =
+			PGrnPGResolveFileNodeID(file_node_id, &pg_index_id, lock_mode);
 		if (RelationIsValid(pg_index))
 		{
 			Relation pg_table;
@@ -133,120 +132,118 @@ selector_pgroonga_tuple_is_alive(grn_ctx *ctx,
 								 grn_obj *res,
 								 grn_operator op)
 {
-  Oid file_node_id;
-  Relation pg_index;
-  Oid pg_index_id;
-  LOCKMODE lock_mode = AccessShareLock;
-  const char *ctid_column_name;
-  size_t ctid_column_name_length;
+	Oid file_node_id;
+	Relation pg_index;
+	Oid pg_index_id;
+	LOCKMODE lock_mode = AccessShareLock;
+	const char *ctid_column_name;
+	size_t ctid_column_name_length;
 
-  switch (op)
-  {
-  case GRN_OP_AND:
-  case GRN_OP_OR:
-	  break;
-  default:
-	  return GRN_FUNCTION_NOT_IMPLEMENTED;
-  }
+	switch (op)
+	{
+	case GRN_OP_AND:
+	case GRN_OP_OR:
+		break;
+	default:
+		return GRN_FUNCTION_NOT_IMPLEMENTED;
+	}
 
-  if (table->header.type == GRN_TABLE_NO_KEY)
-  {
-	  ctid_column_name = PGrnSourcesCtidColumnName;
-	  ctid_column_name_length = PGrnSourcesCtidColumnNameLength;
-  }
-  else
-  {
-	  ctid_column_name = GRN_COLUMN_NAME_KEY;
-	  ctid_column_name_length = GRN_COLUMN_NAME_KEY_LEN;
-  }
+	if (table->header.type == GRN_TABLE_NO_KEY)
+	{
+		ctid_column_name = PGrnSourcesCtidColumnName;
+		ctid_column_name_length = PGrnSourcesCtidColumnNameLength;
+	}
+	else
+	{
+		ctid_column_name = GRN_COLUMN_NAME_KEY;
+		ctid_column_name_length = GRN_COLUMN_NAME_KEY_LEN;
+	}
 
-  file_node_id = sources_table_to_file_node_id(ctx, table);
-  pg_index = PGrnPGResolveFileNodeID(file_node_id, &pg_index_id, lock_mode);
-  if (RelationIsValid(pg_index))
-  {
-	  Relation pg_table;
-	  grn_obj *ctid_accessor;
-	  grn_obj packed_ctid;
+	file_node_id = sources_table_to_file_node_id(ctx, table);
+	pg_index = PGrnPGResolveFileNodeID(file_node_id, &pg_index_id, lock_mode);
+	if (RelationIsValid(pg_index))
+	{
+		Relation pg_table;
+		grn_obj *ctid_accessor;
+		grn_obj packed_ctid;
 
-	  pg_table = RelationIdGetRelation(pg_index->rd_index->indrelid);
-	  GRN_UINT64_INIT(&packed_ctid, 0);
-	  if (op == GRN_OP_AND)
-	  {
-		  ctid_accessor = grn_obj_column(ctx,
-										 res,
-										 ctid_column_name,
-										 ctid_column_name_length);
-		  GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
-		  {
-			  ItemPointerData ctid;
+		pg_table = RelationIdGetRelation(pg_index->rd_index->indrelid);
+		GRN_UINT64_INIT(&packed_ctid, 0);
+		if (op == GRN_OP_AND)
+		{
+			ctid_accessor = grn_obj_column(
+				ctx, res, ctid_column_name, ctid_column_name_length);
+			GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
+			{
+				ItemPointerData ctid;
 
-			  GRN_BULK_REWIND(&packed_ctid);
-			  grn_obj_get_value(ctx, ctid_accessor, id, &packed_ctid);
-			  ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&packed_ctid));
-			  if (!PGrnCtidIsAlive(pg_table, &ctid))
-				  grn_table_cursor_delete(ctx, cursor);
-		  }
-		  GRN_TABLE_EACH_END(ctx, cursor);
-	  }
-	  else
-	  {
-		  grn_posting posting;
+				GRN_BULK_REWIND(&packed_ctid);
+				grn_obj_get_value(ctx, ctid_accessor, id, &packed_ctid);
+				ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&packed_ctid));
+				if (!PGrnCtidIsAlive(pg_table, &ctid))
+					grn_table_cursor_delete(ctx, cursor);
+			}
+			GRN_TABLE_EACH_END(ctx, cursor);
+		}
+		else
+		{
+			grn_posting posting;
 
-		  ctid_accessor = grn_obj_column(ctx,
-										 table,
-										 ctid_column_name,
-										 ctid_column_name_length);
-		  memset(&posting, 0, sizeof(grn_posting));
-		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
-		  {
-			  ItemPointerData ctid;
+			ctid_accessor = grn_obj_column(
+				ctx, table, ctid_column_name, ctid_column_name_length);
+			memset(&posting, 0, sizeof(grn_posting));
+			GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+			{
+				ItemPointerData ctid;
 
-			  GRN_BULK_REWIND(&packed_ctid);
-			  grn_obj_get_value(ctx, ctid_accessor, id, &packed_ctid);
-			  ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&packed_ctid));
-			  if (PGrnCtidIsAlive(pg_table, &ctid))
-			  {
-				  posting.rid = id;
-				  grn_ii_posting_add(ctx, &posting, (grn_hash *)res, op);
-			  }
-		  }
-		  GRN_TABLE_EACH_END(ctx, cursor);
-		  /* TODO: Enable it when we support GRN_OP_AND_NOT and GRN_OP_ADJUST. */
-		  /* grn_ii_resolve_sel_and(ctx, res, op); */
-	  }
-	  grn_obj_unlink(ctx, ctid_accessor);
-	  GRN_OBJ_FIN(ctx, &packed_ctid);
-	  RelationClose(pg_table);
-	  RelationClose(pg_index);
-	  UnlockRelationOid(pg_index_id, lock_mode);
-  }
-  else
-  {
-	  if (op == GRN_OP_AND)
-	  {
-		  GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
-		  {
-			  grn_table_cursor_delete(ctx, cursor);
-		  }
-		  GRN_TABLE_EACH_END(ctx, cursor);
-	  }
-	  else
-	  {
-		  grn_posting posting;
+				GRN_BULK_REWIND(&packed_ctid);
+				grn_obj_get_value(ctx, ctid_accessor, id, &packed_ctid);
+				ctid = PGrnCtidUnpack(GRN_UINT64_VALUE(&packed_ctid));
+				if (PGrnCtidIsAlive(pg_table, &ctid))
+				{
+					posting.rid = id;
+					grn_ii_posting_add(ctx, &posting, (grn_hash *) res, op);
+				}
+			}
+			GRN_TABLE_EACH_END(ctx, cursor);
+			/* TODO: Enable it when we support GRN_OP_AND_NOT and GRN_OP_ADJUST.
+			 */
+			/* grn_ii_resolve_sel_and(ctx, res, op); */
+		}
+		grn_obj_unlink(ctx, ctid_accessor);
+		GRN_OBJ_FIN(ctx, &packed_ctid);
+		RelationClose(pg_table);
+		RelationClose(pg_index);
+		UnlockRelationOid(pg_index_id, lock_mode);
+	}
+	else
+	{
+		if (op == GRN_OP_AND)
+		{
+			GRN_TABLE_EACH_BEGIN(ctx, res, cursor, id)
+			{
+				grn_table_cursor_delete(ctx, cursor);
+			}
+			GRN_TABLE_EACH_END(ctx, cursor);
+		}
+		else
+		{
+			grn_posting posting;
 
-		  memset(&posting, 0, sizeof(grn_posting));
-		  GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
-		  {
-			  posting.rid = id;
-			  grn_ii_posting_add(ctx, &posting, (grn_hash *)res, op);
-		  }
-		  GRN_TABLE_EACH_END(ctx, cursor);
-		  /* TODO: Enable it when we support GRN_OP_AND_NOT and GRN_OP_ADJUST. */
-		  /* grn_ii_resolve_sel_and(ctx, res, op); */
-	  }
-  }
+			memset(&posting, 0, sizeof(grn_posting));
+			GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+			{
+				posting.rid = id;
+				grn_ii_posting_add(ctx, &posting, (grn_hash *) res, op);
+			}
+			GRN_TABLE_EACH_END(ctx, cursor);
+			/* TODO: Enable it when we support GRN_OP_AND_NOT and GRN_OP_ADJUST.
+			 */
+			/* grn_ii_resolve_sel_and(ctx, res, op); */
+		}
+	}
 
-  return ctx->rc;
+	return ctx->rc;
 }
 
 void
@@ -256,13 +253,14 @@ PGrnInitializeGroongaTupleIsAlive(void)
 	grn_obj *proc;
 
 	proc = grn_proc_create(ctx,
-						   "pgroonga_tuple_is_alive", -1,
+						   "pgroonga_tuple_is_alive",
+						   -1,
 						   GRN_PROC_FUNCTION,
 						   func_pgroonga_tuple_is_alive,
 						   NULL,
 						   NULL,
 						   0,
 						   NULL);
-    grn_proc_set_selector(ctx, proc, selector_pgroonga_tuple_is_alive);
-    grn_proc_set_selector_operator(ctx, proc, GRN_OP_NOP);
+	grn_proc_set_selector(ctx, proc, selector_pgroonga_tuple_is_alive);
+	grn_proc_set_selector_operator(ctx, proc, GRN_OP_NOP);
 }

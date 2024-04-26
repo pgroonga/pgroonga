@@ -72,8 +72,8 @@ PGrnHighlightHTML(text *target)
 							  VARDATA_ANY(target),
 							  VARSIZE_ANY_EXHDR(target),
 							  buffer);
-	highlighted = cstring_to_text_with_len(GRN_TEXT_VALUE(buffer),
-										   GRN_TEXT_LEN(buffer));
+	highlighted =
+		cstring_to_text_with_len(GRN_TEXT_VALUE(buffer), GRN_TEXT_LEN(buffer));
 	return highlighted;
 }
 
@@ -88,7 +88,8 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 {
 	if (ARR_NDIM(keywords) != 1)
 	{
-		if (keywordsHash != 0) {
+		if (keywordsHash != 0)
+		{
 			PGrnHighlightHTMLClearKeywords();
 			keywordsHash = 0;
 		}
@@ -116,12 +117,10 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 										highlighter,
 										VARDATA_ANY(keyword),
 										VARSIZE_ANY_EXHDR(keyword));
-			XXH3_64bits_update(hashState,
-							   VARDATA_ANY(keyword),
-							   VARSIZE_ANY_EXHDR(keyword));
-			XXH3_64bits_update(hashState,
-							   keywordsHashDelimiter,
-							   keywordsHashDelimiterSize);
+			XXH3_64bits_update(
+				hashState, VARDATA_ANY(keyword), VARSIZE_ANY_EXHDR(keyword));
+			XXH3_64bits_update(
+				hashState, keywordsHashDelimiter, keywordsHashDelimiterSize);
 		}
 		array_free_iterator(iterator);
 		keywordsHash = XXH3_64bits_digest(hashState);
@@ -144,12 +143,10 @@ PGrnHighlightHTMLUpdateKeywords(ArrayType *keywords)
 				continue;
 
 			keyword = DatumGetTextPP(datum);
-			XXH3_64bits_update(hashState,
-							   VARDATA_ANY(keyword),
-							   VARSIZE_ANY_EXHDR(keyword));
-			XXH3_64bits_update(hashState,
-							   keywordsHashDelimiter,
-							   keywordsHashDelimiterSize);
+			XXH3_64bits_update(
+				hashState, VARDATA_ANY(keyword), VARSIZE_ANY_EXHDR(keyword));
+			XXH3_64bits_update(
+				hashState, keywordsHashDelimiter, keywordsHashDelimiterSize);
 		}
 		array_free_iterator(iterator);
 		newKeywordsHash = XXH3_64bits_digest(hashState);
@@ -236,10 +233,8 @@ PGrnHighlightHTMLSetLexicon(const char *fullIndexName)
 	}
 	PG_TRY();
 	{
-		lexicon = PGrnCreateSimilarTemporaryLexicon(index,
-													attributeNameData,
-													attributeNameSize,
-													tag);
+		lexicon = PGrnCreateSimilarTemporaryLexicon(
+			index, attributeNameData, attributeNameSize, tag);
 	}
 	PG_CATCH();
 	{
@@ -263,7 +258,8 @@ pgroonga_highlight_html(PG_FUNCTION_ARGS)
 
 /**
  * pgroonga.highlight_html(target text, keywords text[]) : text
- * pgroonga.highlight_html(target text, keywords text[], indexName cstring) : text
+ * pgroonga.highlight_html(target text, keywords text[], indexName cstring) :
+ * text
  */
 Datum
 pgroonga_highlight_html_text(PG_FUNCTION_ARGS)
@@ -291,7 +287,8 @@ pgroonga_highlight_html_text(PG_FUNCTION_ARGS)
 
 /**
  * pgroonga.highlight_html(target text[], keywords text[]) : text[]
- * pgroonga.highlight_html(target text[], keywords text[], indexName cstring) : text[]
+ * pgroonga.highlight_html(target text[], keywords text[], indexName cstring) :
+ * text[]
  */
 Datum
 pgroonga_highlight_html_text_array(PG_FUNCTION_ARGS)
@@ -351,14 +348,7 @@ pgroonga_highlight_html_text_array(PG_FUNCTION_ARGS)
 
 		dims[0] = n;
 		lbs[0] = 1;
-		PG_RETURN_POINTER(construct_md_array(highlights,
-											 nulls,
-											 1,
-											 dims,
-											 lbs,
-											 TEXTOID,
-											 -1,
-											 false,
-											 'i'));
+		PG_RETURN_POINTER(construct_md_array(
+			highlights, nulls, 1, dims, lbs, TEXTOID, -1, false, 'i'));
 	}
 }

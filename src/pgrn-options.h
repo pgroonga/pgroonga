@@ -5,7 +5,8 @@
 #include <postgres.h>
 #include <utils/rel.h>
 
-typedef enum {
+typedef enum
+{
 	PGRN_OPTION_USE_CASE_UNKNOWN,
 	PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 	PGRN_OPTION_USE_CASE_REGEXP_SEARCH,
@@ -28,5 +29,4 @@ void PGrnApplyOptionValues(Relation index,
 
 grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);
 
-bytea *pgroonga_options(Datum reloptions,
-						bool validate);
+bytea *pgroonga_options(Datum reloptions, bool validate);

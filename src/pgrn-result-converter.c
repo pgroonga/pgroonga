@@ -117,9 +117,8 @@ PGrnResultConverterBuildTupleDesc1FillAttribute(PGrnResultConverter *converter,
 						i,
 						typeName.type);
 		}
-		type = grn_ctx_get(ctx,
-						   typeName.val.string.val,
-						   typeName.val.string.len);
+		type =
+			grn_ctx_get(ctx, typeName.val.string.val, typeName.val.string.len);
 		if (!type)
 		{
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -135,12 +134,7 @@ PGrnResultConverterBuildTupleDesc1FillAttribute(PGrnResultConverter *converter,
 		typeOid = PGrnGrnTypeToPGType(typeID);
 	}
 
-	TupleDescInitEntry(converter->desc,
-					   i,
-					   NameStr(nameData),
-					   typeOid,
-					   -1,
-					   0);
+	TupleDescInitEntry(converter->desc, i, NameStr(nameData), typeOid, -1, 0);
 }
 
 static void
@@ -231,7 +225,8 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 	bool haveType = false;
 	Oid typeOid = InvalidOid;
 
-	while (true) {
+	while (true)
+	{
 		JsonbValue key;
 		grn_raw_string keyString;
 		JsonbIteratorToken token;
@@ -282,9 +277,8 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 							value.val.string.len,
 							NAMEDATALEN - 1);
 			}
-			memcpy(NameStr(nameData),
-				   value.val.string.val,
-				   value.val.string.len);
+			memcpy(
+				NameStr(nameData), value.val.string.val, value.val.string.len);
 			NameStr(nameData)[value.val.string.len] = '\0';
 			haveName = true;
 		}
@@ -312,9 +306,7 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 							i - 1,
 							value.type);
 			}
-			type = grn_ctx_get(ctx,
-							   value.val.string.val,
-							   value.val.string.len);
+			type = grn_ctx_get(ctx, value.val.string.val, value.val.string.len);
 			if (!type)
 			{
 				PGrnCheckRC(GRN_INVALID_ARGUMENT,
@@ -354,12 +346,7 @@ PGrnResultConverterBuildTupleDesc3FillAttribute(PGrnResultConverter *converter,
 					i);
 	}
 
-	TupleDescInitEntry(converter->desc,
-					   i,
-					   NameStr(nameData),
-					   typeOid,
-					   -1,
-					   0);
+	TupleDescInitEntry(converter->desc, i, NameStr(nameData), typeOid, -1, 0);
 }
 
 static void
@@ -450,7 +437,8 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 				AttrNumber i = 1;
 				while (true)
 				{
-					token = JsonbIteratorNext(&(converter->iterator), &value, false);
+					token = JsonbIteratorNext(
+						&(converter->iterator), &value, false);
 					if (token == WJB_END_ARRAY)
 						break;
 					if (token != WJB_BEGIN_OBJECT)
@@ -462,7 +450,8 @@ PGrnResultConverterBuildTupleDesc3(PGrnResultConverter *converter)
 									i - 1,
 									PGrnJSONBIteratorTokenToString(token));
 					}
-					PGrnResultConverterBuildTupleDesc3FillAttribute(converter, i);
+					PGrnResultConverterBuildTupleDesc3FillAttribute(converter,
+																	i);
 					i++;
 				}
 			}
@@ -560,49 +549,46 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 				nulls[i] = true;
 				break;
 			case jbvString:
-				values[i] = PointerGetDatum(
-					cstring_to_text_with_len(element.val.string.val,
-											 element.val.string.len));
+				values[i] = PointerGetDatum(cstring_to_text_with_len(
+					element.val.string.val, element.val.string.len));
 				nulls[i] = false;
 				break;
 			case jbvNumeric:
+			{
+				Datum value = NumericGetDatum(element.val.numeric);
+				switch (TupleDescAttr(converter->desc, i)->atttypid)
 				{
-					Datum value = NumericGetDatum(element.val.numeric);
-					switch (TupleDescAttr(converter->desc, i)->atttypid) {
-					case INT2OID:
-						values[i] = DirectFunctionCall1(numeric_int2, value);
-						break;
-					case INT4OID:
-						values[i] = DirectFunctionCall1(numeric_int4, value);
-						break;
-					case INT8OID:
-						values[i] = DirectFunctionCall1(numeric_int8, value);
-						break;
-					case FLOAT4OID:
-						values[i] = DirectFunctionCall1(numeric_float4, value);
-						break;
-					case FLOAT8OID:
-						values[i] = DirectFunctionCall1(numeric_float8, value);
-						break;
-					case TIMESTAMPOID:
-						{
-							Datum unixTimeDatum =
-								DirectFunctionCall1(numeric_float8, value);
-							float8 unixTime = DatumGetFloat8(unixTimeDatum);
-							float8 fractionalSeconds =
-								unixTime - (int64_t)unixTime;
-							int64_t usec =
-								(int64_t)(fractionalSeconds * 1000000);
-							Timestamp timestamp =
-								PGrnPGLocalTimeToTimestamp(unixTime) +
-								usec;
-							values[i] = TimestampGetDatum(timestamp);
-						}
-						break;
-					default:
-						break;
-					}
+				case INT2OID:
+					values[i] = DirectFunctionCall1(numeric_int2, value);
+					break;
+				case INT4OID:
+					values[i] = DirectFunctionCall1(numeric_int4, value);
+					break;
+				case INT8OID:
+					values[i] = DirectFunctionCall1(numeric_int8, value);
+					break;
+				case FLOAT4OID:
+					values[i] = DirectFunctionCall1(numeric_float4, value);
+					break;
+				case FLOAT8OID:
+					values[i] = DirectFunctionCall1(numeric_float8, value);
+					break;
+				case TIMESTAMPOID:
+				{
+					Datum unixTimeDatum =
+						DirectFunctionCall1(numeric_float8, value);
+					float8 unixTime = DatumGetFloat8(unixTimeDatum);
+					float8 fractionalSeconds = unixTime - (int64_t) unixTime;
+					int64_t usec = (int64_t) (fractionalSeconds * 1000000);
+					Timestamp timestamp =
+						PGrnPGLocalTimeToTimestamp(unixTime) + usec;
+					values[i] = TimestampGetDatum(timestamp);
 				}
+				break;
+				default:
+					break;
+				}
+			}
 				nulls[i] = false;
 				break;
 			case jbvBool:

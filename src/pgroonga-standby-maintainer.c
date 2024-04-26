@@ -19,12 +19,12 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT void
-pgroonga_standby_maintainer_apply_wal(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_standby_maintainer_maintain(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT void
-pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_standby_maintainer_apply_wal(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_standby_maintainer_maintain(Datum datum)
+	pg_attribute_noreturn();
+extern PGDLLEXPORT void pgroonga_standby_maintainer_main(Datum datum)
+	pg_attribute_noreturn();
 
 #define TAG "pgroonga: standby-maintainer"
 
@@ -32,7 +32,8 @@ static volatile sig_atomic_t PGroongaStandbyMaintainerGotSIGTERM = false;
 static volatile sig_atomic_t PGroongaStandbyMaintainerGotSIGHUP = false;
 static int PGroongaStandbyMaintainerNaptime = 60;
 static int PGroongaStandbyMaintainerMaxParallelWALAppliersPerDB = 0;
-static const char *PGroongaStandbyMaintainerLibraryName = "pgroonga_standby_maintainer";
+static const char *PGroongaStandbyMaintainerLibraryName =
+	"pgroonga_standby_maintainer";
 
 static void
 pgroonga_standby_maintainer_sigterm(SIGNAL_ARGS)
@@ -65,21 +66,23 @@ pgroonga_standby_maintainer_sighup(SIGNAL_ARGS)
  * |<----index OID----->|<-----------index name------------>|
  * |sizeof(unsigned int)|BGW_EXTRALEN - sizeof(unsigned int)|
  */
-#define BGWORKER_GET_INDEX_OID(worker) (*((Oid *)((worker)->bgw_extra)))
-#define BGWORKER_SET_INDEX_OID(worker, oid)		\
-	*((Oid *)((worker)->bgw_extra)) = (oid)
-#define BGWORKER_GET_INDEX_NAME(worker)				\
-	((char *)((Oid *)((worker)->bgw_extra) + 1))
-#define BGWORKER_SET_INDEX_NAME(worker, name, nameSize)	do {			\
-		size_t maxSize = BGW_EXTRALEN - sizeof(Oid) - 1;				\
-		size_t realSize = (nameSize) > maxSize ? maxSize : (nameSize);	\
-		if (realSize > 0)												\
-		{																\
-			memcpy((char *)((Oid *)((worker)->bgw_extra) + 1),			\
-				   (name),												\
-				   realSize);											\
-		}																\
-		(worker)->bgw_extra[sizeof(Oid) + realSize] = '\0';				\
+#define BGWORKER_GET_INDEX_OID(worker) (*((Oid *) ((worker)->bgw_extra)))
+#define BGWORKER_SET_INDEX_OID(worker, oid)                                    \
+	*((Oid *) ((worker)->bgw_extra)) = (oid)
+#define BGWORKER_GET_INDEX_NAME(worker)                                        \
+	((char *) ((Oid *) ((worker)->bgw_extra) + 1))
+#define BGWORKER_SET_INDEX_NAME(worker, name, nameSize)                        \
+	do                                                                         \
+	{                                                                          \
+		size_t maxSize = BGW_EXTRALEN - sizeof(Oid) - 1;                       \
+		size_t realSize = (nameSize) > maxSize ? maxSize : (nameSize);         \
+		if (realSize > 0)                                                      \
+		{                                                                      \
+			memcpy((char *) ((Oid *) ((worker)->bgw_extra) + 1),               \
+				   (name),                                                     \
+				   realSize);                                                  \
+		}                                                                      \
+		(worker)->bgw_extra[sizeof(Oid) + realSize] = '\0';                    \
 	} while (false)
 
 static void
@@ -104,7 +107,7 @@ pgroonga_standby_maintainer_execute_apply_wal(Oid databaseOid,
 	{
 		ereport(FATAL,
 				(errmsg(TAG ": failed to apply WAL: "
-						"%s(%u/%u/%u): %d",
+							"%s(%u/%u/%u): %d",
 						indexName,
 						databaseOid,
 						tableSpaceOid,
@@ -134,10 +137,8 @@ pgroonga_standby_maintainer_apply_wal(Datum databaseInfoDatum)
 	{
 		Oid indexOid = BGWORKER_GET_INDEX_OID(MyBgworkerEntry);
 		const char *indexName = BGWORKER_GET_INDEX_NAME(MyBgworkerEntry);
-		pgroonga_standby_maintainer_execute_apply_wal(databaseOid,
-													  tableSpaceOid,
-													  indexOid,
-													  indexName);
+		pgroonga_standby_maintainer_execute_apply_wal(
+			databaseOid, tableSpaceOid, indexOid, indexName);
 	}
 
 	PopActiveSnapshot();
@@ -195,7 +196,7 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 		{
 			ereport(FATAL,
 					(errmsg(TAG ": failed to detect PGroonga indexes: "
-							"%u/%u: %d",
+								"%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
@@ -216,10 +217,8 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 			memset(&(workers[i]), 0, sizeof(BackgroundWorker));
 			workerHandles[i] = NULL;
 
-			indexOidDatum = SPI_getbinval(SPI_tuptable->vals[i],
-										  SPI_tuptable->tupdesc,
-										  1,
-										  &isNull);
+			indexOidDatum = SPI_getbinval(
+				SPI_tuptable->vals[i], SPI_tuptable->tupdesc, 1, &isNull);
 			if (isNull)
 			{
 				BGWORKER_SET_INDEX_OID(worker, InvalidOid);
@@ -229,10 +228,8 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 				BGWORKER_SET_INDEX_OID(worker, DatumGetObjectId(indexOidDatum));
 			}
 
-			indexNameDatum = SPI_getbinval(SPI_tuptable->vals[i],
-										   SPI_tuptable->tupdesc,
-										   2,
-										   &isNull);
+			indexNameDatum = SPI_getbinval(
+				SPI_tuptable->vals[i], SPI_tuptable->tupdesc, 2, &isNull);
 			if (isNull)
 			{
 				indexName = NULL;
@@ -258,10 +255,8 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 
 			if (nMaxWorkers == 0)
 			{
-				pgroonga_standby_maintainer_execute_apply_wal(databaseOid,
-															  tableSpaceOid,
-															  indexOid,
-															  indexName);
+				pgroonga_standby_maintainer_execute_apply_wal(
+					databaseOid, tableSpaceOid, indexOid, indexName);
 				continue;
 			}
 
@@ -274,13 +269,13 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 					 indexOid);
 			snprintf(worker->bgw_type, BGW_MAXLEN, "%s", worker->bgw_name);
 			worker->bgw_flags =
-				BGWORKER_SHMEM_ACCESS |
-				BGWORKER_BACKEND_DATABASE_CONNECTION;
+				BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 			worker->bgw_start_time = BgWorkerStart_ConsistentState;
 			worker->bgw_restart_time = BGW_NEVER_RESTART;
 			snprintf(worker->bgw_library_name,
 					 BGW_MAXLEN,
-					 "%s", PGroongaStandbyMaintainerLibraryName);
+					 "%s",
+					 PGroongaStandbyMaintainerLibraryName);
 			snprintf(worker->bgw_function_name,
 					 BGW_MAXLEN,
 					 "pgroonga_standby_maintainer_apply_wal");
@@ -310,9 +305,8 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 				}
 
 				events = WaitLatch(MyLatch,
-								   WL_LATCH_SET |
-								   WL_TIMEOUT |
-								   PGRN_WL_EXIT_ON_PM_DEATH,
+								   WL_LATCH_SET | WL_TIMEOUT |
+									   PGRN_WL_EXIT_ON_PM_DEATH,
 								   60 * 1000,
 								   WAIT_EVENT_BGWORKER_SHUTDOWN);
 				if (events & PGRN_WL_EXIT_ON_PM_DEATH)
@@ -431,13 +425,13 @@ pgroonga_standby_maintainer_maintain_all(void)
 					 tableSpaceOid);
 			snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 			worker.bgw_flags =
-				BGWORKER_SHMEM_ACCESS |
-				BGWORKER_BACKEND_DATABASE_CONNECTION;
+				BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 			worker.bgw_start_time = BgWorkerStart_ConsistentState;
 			worker.bgw_restart_time = BGW_NEVER_RESTART;
 			snprintf(worker.bgw_library_name,
 					 BGW_MAXLEN,
-					 "%s", PGroongaStandbyMaintainerLibraryName);
+					 "%s",
+					 PGroongaStandbyMaintainerLibraryName);
 			snprintf(worker.bgw_function_name,
 					 BGW_MAXLEN,
 					 "pgroonga_standby_maintainer_maintain");
@@ -469,9 +463,7 @@ pgroonga_standby_maintainer_main(Datum arg)
 	while (!PGroongaStandbyMaintainerGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
-				  WL_LATCH_SET |
-				  WL_TIMEOUT |
-				  PGRN_WL_EXIT_ON_PM_DEATH,
+				  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
 				  PGroongaStandbyMaintainerNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
@@ -495,37 +487,39 @@ _PG_init(void)
 {
 	BackgroundWorker worker = {0};
 
-	DefineCustomIntVariable("pgroonga_standby_maintainer.naptime",
-							"Duration between each check in seconds.",
-							"The default is 60 seconds. "
-							"It means that PGroonga standby maintainer tries to "
-							"apply all pending PGroonga WAL and remove internal "
-							"unused Groonga tables, columns and records in all "
-							"PGroonga available databases per 1 minute.",
-							&PGroongaStandbyMaintainerNaptime,
-							PGroongaStandbyMaintainerNaptime,
-							1,
-							INT_MAX,
-							PGC_SIGHUP,
-							GUC_UNIT_S,
-							NULL,
-							NULL,
-							NULL);
-	DefineCustomIntVariable("pgroonga_standby_maintainer.max_parallel_wal_appliers_per_db",
-							"The max number of parallel WAL applier processes "
-							"per DB.",
-							"The default is 0. "
-							"It means that no parallel WAL applier process "
-							"is used.",
-							&PGroongaStandbyMaintainerMaxParallelWALAppliersPerDB,
-							PGroongaStandbyMaintainerMaxParallelWALAppliersPerDB,
-							0,
-							INT_MAX,
-							PGC_SIGHUP,
-							GUC_UNIT_S,
-							NULL,
-							NULL,
-							NULL);
+	DefineCustomIntVariable(
+		"pgroonga_standby_maintainer.naptime",
+		"Duration between each check in seconds.",
+		"The default is 60 seconds. "
+		"It means that PGroonga standby maintainer tries to "
+		"apply all pending PGroonga WAL and remove internal "
+		"unused Groonga tables, columns and records in all "
+		"PGroonga available databases per 1 minute.",
+		&PGroongaStandbyMaintainerNaptime,
+		PGroongaStandbyMaintainerNaptime,
+		1,
+		INT_MAX,
+		PGC_SIGHUP,
+		GUC_UNIT_S,
+		NULL,
+		NULL,
+		NULL);
+	DefineCustomIntVariable(
+		"pgroonga_standby_maintainer.max_parallel_wal_appliers_per_db",
+		"The max number of parallel WAL applier processes "
+		"per DB.",
+		"The default is 0. "
+		"It means that no parallel WAL applier process "
+		"is used.",
+		&PGroongaStandbyMaintainerMaxParallelWALAppliersPerDB,
+		PGroongaStandbyMaintainerMaxParallelWALAppliersPerDB,
+		0,
+		INT_MAX,
+		PGC_SIGHUP,
+		GUC_UNIT_S,
+		NULL,
+		NULL,
+		NULL);
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
@@ -533,13 +527,15 @@ _PG_init(void)
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
-		BGWORKER_SHMEM_ACCESS |
-		BGWORKER_BACKEND_DATABASE_CONNECTION;
+		BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
 	worker.bgw_start_time = BgWorkerStart_ConsistentState;
 	worker.bgw_restart_time = BGW_NEVER_RESTART;
-	snprintf(worker.bgw_library_name, BGW_MAXLEN,
-			 "%s", PGroongaStandbyMaintainerLibraryName);
-	snprintf(worker.bgw_function_name, BGW_MAXLEN,
+	snprintf(worker.bgw_library_name,
+			 BGW_MAXLEN,
+			 "%s",
+			 PGroongaStandbyMaintainerLibraryName);
+	snprintf(worker.bgw_function_name,
+			 BGW_MAXLEN,
 			 "pgroonga_standby_maintainer_main");
 	worker.bgw_main_arg = 0;
 	worker.bgw_notify_pid = 0;

@@ -11,8 +11,8 @@
 #include <access/tableam.h>
 #include <catalog/pg_type.h>
 #include <executor/executor.h>
-#include <pgtime.h>
 #include <nodes/execnodes.h>
+#include <pgtime.h>
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
 #include <utils/datetime.h>
@@ -56,7 +56,8 @@ PGrnPGFullIndexNameSplit(const char *fullName,
 		}
 		*indexName = fullName;
 		*indexNameSize = current - fullName;
-		if (current == end) {
+		if (current == end)
+		{
 			return;
 		}
 		/* +1/-1 is for '.' */
@@ -75,9 +76,7 @@ PGrnPGIndexNameToID(const char *name)
 	indexID = DatumGetObjectId(indexIDDatum);
 	if (!OidIsValid(indexID))
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"unknown index name: <%s>",
-					name);
+		PGrnCheckRC(GRN_INVALID_ARGUMENT, "unknown index name: <%s>", name);
 	}
 
 	return indexID;
@@ -99,9 +98,8 @@ PGrnPGResolveIndexID(Oid id)
 	index = RelationIdGetRelation(id);
 	if (!RelationIsValid(index))
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"pgroonga: unknown index ID: <%u>",
-					id);
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT, "pgroonga: unknown index ID: <%u>", id);
 	}
 
 	return index;
@@ -148,9 +146,7 @@ PGrnPGIndexIDToFileNodeID(Oid indexID)
 }
 
 Relation
-PGrnPGResolveFileNodeID(Oid fileNodeID,
-						Oid *relationID,
-						LOCKMODE lockMode)
+PGrnPGResolveFileNodeID(Oid fileNodeID, Oid *relationID, LOCKMODE lockMode)
 {
 	PGrnTablespaceIterator iterator;
 	Relation relation = InvalidRelation;
@@ -214,12 +210,7 @@ PGrnPGTimestampToLocalTime(Timestamp timestamp)
 	fsec_t fsec;
 	int offset = 0;
 
-	if (timestamp2tm(timestamp,
-					 &offset,
-					 &tm,
-					 &fsec,
-					 NULL,
-					 NULL) != 0)
+	if (timestamp2tm(timestamp, &offset, &tm, &fsec, NULL, NULL) != 0)
 	{
 		offset = PGrnPGGetSessionTimezoneOffset();
 	}
@@ -240,7 +231,8 @@ PGrnPGLocalTimeToTimestamp(pg_time_t unixTimeLocal)
 	sessionOffset = PGrnPGGetSessionTimezoneOffset();
 	timestampMayDifferentSummaryTime =
 		time_t_to_timestamptz(unixTimeLocal + sessionOffset);
-	/* TODO: This logic will be broken 1 hour around summer time change point. */
+	/* TODO: This logic will be broken 1 hour around summer time change point.
+	 */
 	if (timestamp2tm(timestampMayDifferentSummaryTime,
 					 &offset,
 					 &tm,
@@ -303,12 +295,8 @@ PGrnPGHavePreparedTransaction(void)
 		estate = CreateExecutorState();
 		econtext = CreateExprContext(estate);
 		fmgr_info(F_PG_PREPARED_XACT, &flinfo);
-		InitFunctionCallInfoData(*fcinfo,
-								 &flinfo,
-								 0,
-								 InvalidOid,
-								 NULL,
-								 (fmNodePtr) &rsinfo);
+		InitFunctionCallInfoData(
+			*fcinfo, &flinfo, 0, InvalidOid, NULL, (fmNodePtr) &rsinfo);
 		rsinfo.type = T_ReturnSetInfo;
 		rsinfo.econtext = econtext;
 		rsinfo.expectedDesc = NULL;
@@ -318,9 +306,11 @@ PGrnPGHavePreparedTransaction(void)
 		rsinfo.setDesc = NULL;
 		rsinfo.isDone = ExprSingleResult;
 
-		while (true) {
+		while (true)
+		{
 			flinfo.fn_addr(fcinfo);
-			if (rsinfo.isDone == ExprEndResult) {
+			if (rsinfo.isDone == ExprEndResult)
+			{
 				break;
 			}
 			have = true;
@@ -351,9 +341,7 @@ PGrnPGIsParentIndex(Relation index)
 }
 
 int
-PGrnPGResolveAttributeIndex(Relation index,
-							const char *name,
-							size_t nameSize)
+PGrnPGResolveAttributeIndex(Relation index, const char *name, size_t nameSize)
 {
 	int i;
 

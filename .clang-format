@@ -7,11 +7,13 @@ BraceWrapping:
   AfterCaseLabel: true
   AfterControlStatement: true
   AfterEnum: true
-  AfterFunction: true
   AfterExternBlock: true
+  AfterFunction: true
+  AfterStruct: true
   BeforeElse: true
 BreakBeforeBraces: Custom
 IndentWidth: 4
+SpaceAfterCStyleCast: true
 TabWidth: 4
 UseTab: ForContinuationAndIndentation
 # Project style

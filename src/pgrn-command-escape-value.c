@@ -30,7 +30,8 @@ PGrnCommandEscapeValue(const char *value,
 	{
 		int charLength = grn_charlen(ctx, valueCurrent, valueEnd);
 
-		if (charLength == 0) {
+		if (charLength == 0)
+		{
 			break;
 		}
 		else if (charLength == 1)
@@ -72,9 +73,8 @@ pgroonga_command_escape_value(PG_FUNCTION_ARGS)
 
 	escapedValueBuffer = &(buffers->escape.escapedValue);
 	GRN_BULK_REWIND(escapedValueBuffer);
-	PGrnCommandEscapeValue(VARDATA_ANY(value),
-						   VARSIZE_ANY_EXHDR(value),
-						   escapedValueBuffer);
+	PGrnCommandEscapeValue(
+		VARDATA_ANY(value), VARSIZE_ANY_EXHDR(value), escapedValueBuffer);
 	escapedValue = cstring_to_text_with_len(GRN_TEXT_VALUE(escapedValueBuffer),
 											GRN_TEXT_LEN(escapedValueBuffer));
 	PG_RETURN_TEXT_P(escapedValue);

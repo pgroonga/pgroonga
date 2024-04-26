@@ -77,4 +77,3 @@ PGrnFinalizeBuffers(void)
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.foot));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.inspect));
 }
-

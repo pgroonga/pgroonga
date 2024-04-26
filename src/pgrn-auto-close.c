@@ -10,11 +10,7 @@ static grn_hash *usingIndexes = NULL;
 void
 PGrnInitializeAutoClose(void)
 {
-	usingIndexes = grn_hash_create(ctx,
-								   NULL,
-								   sizeof(Oid),
-								   sizeof(Oid),
-								   0);
+	usingIndexes = grn_hash_create(ctx, NULL, sizeof(Oid), sizeof(Oid), 0);
 }
 
 void
@@ -52,8 +48,7 @@ PGrnAutoCloseCloseUnusedObjects(Oid nodeID)
 	{
 		char prefix[GRN_TABLE_MAX_KEY_SIZE];
 
-		snprintf(prefix, sizeof(prefix),
-				 prefixes[i], nodeID);
+		snprintf(prefix, sizeof(prefix), prefixes[i], nodeID);
 		GRN_TABLE_EACH_BEGIN_MIN(ctx,
 								 db,
 								 cursor,
@@ -72,13 +67,16 @@ PGrnAutoCloseCloseUnusedObjects(Oid nodeID)
 
 			name_size = grn_table_cursor_get_key(ctx, cursor, &key);
 			name = key;
-			GRN_LOG(ctx, GRN_LOG_DEBUG,
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
 					"pgroonga: auto-close: <%.*s>",
-					name_size, name);
+					name_size,
+					name);
 
 			object = grn_ctx_at(ctx, id);
 			grn_obj_close(ctx, object);
-		} GRN_TABLE_EACH_END(ctx, cursor);
+		}
+		GRN_TABLE_EACH_END(ctx, cursor);
 	}
 }
 
@@ -91,11 +89,8 @@ PGrnAutoCloseUseIndex(Relation index)
 	if (!usingIndexes)
 		return;
 
-	id = grn_hash_get(ctx,
-					  usingIndexes,
-					  &(index->rd_id),
-					  sizeof(index->rd_id),
-					  &value);
+	id = grn_hash_get(
+		ctx, usingIndexes, &(index->rd_id), sizeof(index->rd_id), &value);
 	if (id == GRN_ID_NIL)
 	{
 		id = grn_hash_add(ctx,
@@ -106,14 +101,16 @@ PGrnAutoCloseUseIndex(Relation index)
 						  NULL);
 		if (id == GRN_ID_NIL)
 			return;
-		*((PGrnRelFileNumber *)value) = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
+		*((PGrnRelFileNumber *) value) =
+			PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 	}
 	else
 	{
-		Oid currentNodeID = *((Oid *)value);
+		Oid currentNodeID = *((Oid *) value);
 		if (PGRN_RELATION_GET_LOCATOR_NUMBER(index) == currentNodeID)
 			return;
 		PGrnAutoCloseCloseUnusedObjects(currentNodeID);
-		*((PGrnRelFileNumber *)value) = PGRN_RELATION_GET_LOCATOR_NUMBER(index);
+		*((PGrnRelFileNumber *) value) =
+			PGRN_RELATION_GET_LOCATOR_NUMBER(index);
 	}
 }

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <postgres.h>
+
 #include <access/htup.h>
 #include <utils/array.h>
 
 #include <groonga.h>
 
-typedef struct {
+typedef struct
+{
 	text *query;
 	ArrayType *weights;
 	ArrayType *scorers;
@@ -16,6 +18,4 @@ typedef struct {
 	grn_obj *isTargets;
 } PGrnCondition;
 
-void
-PGrnConditionDeconstruct(PGrnCondition *condition,
-						 HeapTupleHeader header);
+void PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header);
