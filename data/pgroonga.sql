@@ -434,6 +434,12 @@ CREATE FUNCTION pgroonga_wal_set_applied_position()
 	LANGUAGE C
 	STRICT;
 
+CREATE FUNCTION pgroonga_list_broken_indexes()
+	RETURNS void /* todo */
+	AS 'MODULE_PATHNAME', 'pgroonga_list_broken_indexes'
+	LANGUAGE C
+	STRICT
+	PARALLEL SAFE;
 
 /* v1 */
 CREATE FUNCTION pgroonga_match_term(target text, term text)
