@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+
 #include <funcapi.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_list_broken_indexes);
