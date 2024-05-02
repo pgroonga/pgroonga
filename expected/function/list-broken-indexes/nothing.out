@@ -1,6 +1,5 @@
 SELECT * FROM pgroonga_list_broken_indexes();
  pgroonga_list_broken_indexes 
 ------------------------------
- 
-(1 row)
+(0 rows)
 
