@@ -726,6 +726,9 @@ PGrnRemoveColumns(grn_obj *table)
 				  "<%s>",
 				  PGrnInspectName(table));
 	}
+	grn_table_columns(ctx, table, "", 0, (grn_obj *) columns);
+	PGrnCheck("failed to collect columns for removing columns: <%s>",
+			  PGrnInspectName(table));
 
 	GRN_HASH_EACH_BEGIN(ctx, columns, cursor, id)
 	{
