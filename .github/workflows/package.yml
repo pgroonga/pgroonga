@@ -239,3 +239,11 @@ jobs:
             --volume ${PWD}:/host:ro \
             ${TEST_DOCKER_IMAGE} \
             /host/packages/${PACKAGE_TYPE}/test.sh
+
+      # Upload logs
+      - uses: actions/upload-artifact@v4
+        if: |
+          failure()
+        with:
+          name: ${{ matrix.package-id }}-logs
+          path: logs/

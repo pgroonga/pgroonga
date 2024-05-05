@@ -155,6 +155,11 @@ if [ ${pg_regress_status} -ne 0 ]; then
   echo "::group::Diff"
   cat regression.diffs
   echo "::endgroup::"
+  mkdir -p /host/logs
+  cp -a regression.diffs /host/logs/
+  cp -a ${data_dir}/log /host/logs/postgresql || :
+  mkdir -p /host/logs/pgroonga/ || :
+  cp -a ${data_dir}/pgroonga.log* /host/logs/pgroonga/ || :
   exit ${pg_regress_status}
 fi
 
