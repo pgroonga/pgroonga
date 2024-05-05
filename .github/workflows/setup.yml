@@ -56,12 +56,12 @@ jobs:
           sudo incus admin init --auto
           sudo incus launch ${{ matrix.image }} target
           sudo incus config device add target host disk source=$PWD path=/host
-          sudo incus exec target -- adduser --uid 1000 pgroonga
+          sudo incus exec target -- adduser --uid 10000 pgroonga
           sudo incus exec target -- \
             sh -c "echo 'pgroonga ALL=(ALL:ALL) NOPASSWD:ALL' | \
                      EDITOR='tee -a' visudo -f /etc/sudoers.d/pgroonga-nopasswd"
           sudo incus exec target -- /host/setup.sh
-          sudo incus exec target --user 1000 --group 1000 -- \
+          sudo incus exec target --user 10000 --group 10000 -- \
             /host/build.sh /host /tmp/build \
               sql/full-text-search/text/single/query-v2/indexscan.sql
           sudo incus stop target
