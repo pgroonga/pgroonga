@@ -122,6 +122,20 @@ jobs:
         run: |
           sudo cat \
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
+      - name: Show pgroonga.log of parsed backtrace
+        if: failure()
+        run: |
+          wget --quiet https://raw.githubusercontent.com/groonga/groonga/main/tools/parse-backtrace.rb
+          options=""
+          if [ "${GROONGA_MAIN}" = "yes" ]; then
+            options="--use-installed-groonga"
+          else
+            groonga_version=$(groonga --version | awk '{ print $2 }' | awk -F- '{ print $1}')
+            options="--version ${groonga_version}"
+          fi
+          sudo ruby ./parse-backtrace.rb \
+            ${options} \
+            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ruby
