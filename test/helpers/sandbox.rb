@@ -13,7 +13,7 @@ module Helpers
       @command_line = command_line
       @output = output
       @error = error
-      message = "failed to run: "
+      message = +"failed to run: "
       message << command_line.join(" ")
       message << "\n"
       message << "output:\n"
@@ -87,8 +87,8 @@ module Helpers
 
     def run_command(*command_line)
       spawn_process(*command_line) do |pid, input_write, output_read, error_read|
-        output = ""
-        error = ""
+        output = +""
+        error = +""
         status = nil
         timeout = 1
         if block_given?
@@ -338,7 +338,7 @@ module Helpers
     end
 
     def normalize_output(output)
-      normalized_output = ""
+      normalized_output = +""
       output.each_line do |line|
         case line.chomp
         when "SET", "CREATE EXTENSION"
