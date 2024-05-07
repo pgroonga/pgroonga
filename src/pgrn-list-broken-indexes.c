@@ -48,7 +48,8 @@ PGrnIsLockedColumn(grn_obj *table)
 		column = grn_ctx_at(ctx, *columnID);
 		if (!column)
 			continue;
-		if (grn_obj_is_locked(ctx, column)) {
+		if (grn_obj_is_locked(ctx, column))
+		{
 			is_locked = true;
 			break;
 		}
@@ -63,7 +64,8 @@ static bool
 PGrnIsLockedSources(Relation index)
 {
 	grn_obj *table = PGrnLookupSourcesTable(index, ERROR);
-	if (grn_obj_is_locked(ctx, table)) {
+	if (grn_obj_is_locked(ctx, table))
+	{
 		return true;
 	}
 	return PGrnIsLockedColumn(table);
@@ -77,10 +79,12 @@ PGrnIsLockedLexicon(Relation index)
 	for (i = 0; i < index->rd_att->natts; i++)
 	{
 		lexicon = PGrnLookupLexicon(index, i, ERROR);
-		if (grn_obj_is_locked(ctx, lexicon)) {
+		if (grn_obj_is_locked(ctx, lexicon))
+		{
 			return true;
 		}
-		if (PGrnIsLockedColumn(lexicon)) {
+		if (PGrnIsLockedColumn(lexicon))
+		{
 			return true;
 		}
 	}
@@ -133,7 +137,8 @@ pgroonga_list_broken_indexes(PG_FUNCTION_ARGS)
 			continue;
 		}
 
-		if (!PGrnIsLockedSources(index) && !PGrnIsLockedLexicon(index)) {
+		if (!PGrnIsLockedSources(index) && !PGrnIsLockedLexicon(index))
+		{
 			RelationClose(index);
 			continue;
 		}
