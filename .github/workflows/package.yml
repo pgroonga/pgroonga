@@ -237,6 +237,7 @@ jobs:
           docker run \
             --rm \
             --volume ${PWD}:/host:ro \
+            --volume ${PWD}:/host-rw:rw \
             ${TEST_DOCKER_IMAGE} \
             /host/packages/${PACKAGE_TYPE}/test.sh
 
