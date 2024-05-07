@@ -22,19 +22,17 @@ typedef struct
 } PGrnListBrokenIndexData;
 
 static bool
-PGrnIsLockedColumn(grn_obj *table)
+PGrnTableHaveLockedColumn(grn_obj *table)
 {
 	grn_hash *columns;
-	bool is_locked = false;
+	bool isLocked = false;
 
 	columns = grn_hash_create(
 		ctx, NULL, sizeof(grn_id), 0, GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
-	if (!columns)
-	{
-		PGrnCheck("failed to create columns container for checking locks: "
-				  "<%s>",
-				  PGrnInspectName(table));
-	}
+	PGrnCheck("failed to create columns container for checking locks: "
+			  "<%s>",
+			  PGrnInspectName(table));
+
 	grn_table_columns(ctx, table, "", 0, (grn_obj *) columns);
 	PGrnCheck("failed to collect columns for checking locks: <%s>",
 			  PGrnInspectName(table));
@@ -50,14 +48,14 @@ PGrnIsLockedColumn(grn_obj *table)
 			continue;
 		if (grn_obj_is_locked(ctx, column))
 		{
-			is_locked = true;
+			isLocked = true;
 			break;
 		}
 	}
 	GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
-	return is_locked;
+	return isLocked;
 }
 
 static bool
@@ -68,7 +66,7 @@ PGrnIsLockedSources(Relation index)
 	{
 		return true;
 	}
-	return PGrnIsLockedColumn(table);
+	return PGrnTableHaveLockedColumn(table);
 }
 
 static bool
@@ -83,12 +81,20 @@ PGrnIsLockedLexicon(Relation index)
 		{
 			return true;
 		}
-		if (PGrnIsLockedColumn(lexicon))
+		if (PGrnTableHaveLockedColumn(lexicon))
 		{
 			return true;
 		}
 	}
 	return false;
+}
+
+static bool
+PGrnIndexIsBroken(Relation index)
+{
+	// todo
+	// Check for corrupt indexes
+	return PGrnIsLockedSources(index) || PGrnIsLockedLexicon(index);
 }
 
 Datum
@@ -137,7 +143,7 @@ pgroonga_list_broken_indexes(PG_FUNCTION_ARGS)
 			continue;
 		}
 
-		if (!PGrnIsLockedSources(index) && !PGrnIsLockedLexicon(index))
+		if (!PGrnIndexIsBroken(index))
 		{
 			RelationClose(index);
 			continue;
@@ -147,9 +153,6 @@ pgroonga_list_broken_indexes(PG_FUNCTION_ARGS)
 		RelationClose(index);
 		SRF_RETURN_NEXT(context, name);
 	}
-
-	// todo
-	// Filtering broken(corrupt) indexes
 
 	heap_endscan(data->scan);
 	table_close(data->indexes, lock);
