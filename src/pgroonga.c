@@ -7681,6 +7681,7 @@ PGrnRemoveUnusedTables(void)
 {
 	grn_table_cursor *cursor;
 	const char *min = PGrnSourcesTableNamePrefix;
+	grn_obj targetRelatinFileNodIDs;
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -7722,6 +7723,7 @@ PGrnRemoveUnusedTables(void)
 		processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
 	}
 
+	GRN_UINT32_INIT(&targetRelatinFileNodIDs, GRN_OBJ_VECTOR);
 	cursor = grn_table_cursor_open(ctx,
 								   grn_ctx_db(ctx),
 								   min,
@@ -7749,9 +7751,19 @@ PGrnRemoveUnusedTables(void)
 		if (PGrnPGIsValidFileNodeID(relationFileNodeID))
 			continue;
 
-		PGrnRemoveUnusedTable(relationFileNodeID);
+		GRN_UINT32_PUT(ctx, &targetRelatinFileNodIDs, relationFileNodeID);
 	}
 	grn_table_cursor_close(ctx, cursor);
+
+	{
+		size_t i;
+		size_t n = GRN_UINT32_VECTOR_SIZE(&targetRelatinFileNodIDs);
+		for (i = 0; i < n; i++) {
+			Oid relationFileNodeID = GRN_UINT32_VALUE_AT(&targetRelatinFileNodIDs, i);
+			PGrnRemoveUnusedTable(relationFileNodeID);
+		}
+	}
+	GRN_OBJ_FIN(ctx, &targetRelatinFileNodIDs);
 
 	PGRN_TRACE_LOG_EXIT();
 }
