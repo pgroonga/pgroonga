@@ -7758,8 +7758,10 @@ PGrnRemoveUnusedTables(void)
 	{
 		size_t i;
 		size_t n = GRN_UINT32_VECTOR_SIZE(&targetRelatinFileNodIDs);
-		for (i = 0; i < n; i++) {
-			Oid relationFileNodeID = GRN_UINT32_VALUE_AT(&targetRelatinFileNodIDs, i);
+		for (i = 0; i < n; i++)
+		{
+			Oid relationFileNodeID =
+				GRN_UINT32_VALUE_AT(&targetRelatinFileNodIDs, i);
 			PGrnRemoveUnusedTable(relationFileNodeID);
 		}
 	}
