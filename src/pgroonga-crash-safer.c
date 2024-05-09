@@ -284,6 +284,20 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 				continue;
 
 			resetStringInfo(&buffer);
+			appendStringInfo(&buffer,
+							 "SELECT pgroonga_command('log_put', "
+							 "ARRAY["
+							 "'level', 'notice', "
+							 "'message', '%s: reindexing: %s: %u/%u'"
+							 "])",
+							 TAG,
+							 indexNames[i],
+							 databaseOid,
+							 tableSpaceOid);
+			SetCurrentStatementStartTimestamp();
+			SPI_execute(buffer.data, false, 0);
+
+			resetStringInfo(&buffer);
 			appendStringInfo(&buffer, "REINDEX INDEX %s", indexNames[i]);
 			SetCurrentStatementStartTimestamp();
 			result = SPI_execute(buffer.data, false, 0);
@@ -297,6 +311,21 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 								indexNames[i],
 								result)));
 			}
+
+			resetStringInfo(&buffer);
+			appendStringInfo(&buffer,
+							 "SELECT pgroonga_command('log_put', "
+							 "ARRAY["
+							 "'level', 'notice', "
+							 "'message', '%s: reindexed: %s: %u/%u'"
+							 "])",
+							 TAG,
+							 indexNames[i],
+							 databaseOid,
+							 tableSpaceOid);
+			SetCurrentStatementStartTimestamp();
+			SPI_execute(buffer.data, false, 0);
+
 			pfree(indexNames[i]);
 			indexNames[i] = NULL;
 		}
