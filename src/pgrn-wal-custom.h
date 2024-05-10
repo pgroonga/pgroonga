@@ -306,3 +306,118 @@ PGrnWALRecordCreateColumnRead(grn_ctx *ctx,
 				   raw->size));
 	}
 }
+
+typedef struct PGrnWALRecordSetSources
+{
+	PGrnWALRecordCommon common;
+	grn_obj *column;
+	grn_obj *sourceIDs;
+	grn_obj *sourceNames;
+} PGrnWALRecordSetSources;
+
+static inline void
+PGrnWALRecordSetSourcesFill(PGrnWALRecordSetSources *record,
+							Oid dbID,
+							int dbEncoding,
+							Oid dbTableSpaceID,
+							grn_obj *column,
+							grn_obj *sourceIDs)
+{
+	record->common.dbID = dbID;
+	record->common.dbEncoding = dbEncoding;
+	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->column = column;
+	record->sourceIDs = sourceIDs;
+	record->sourceNames = NULL;
+}
+
+static inline void
+PGrnWALRecordSetSourcesWrite(grn_ctx *ctx, PGrnWALRecordSetSources *record)
+{
+	char columnNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	int32 columnNameSize;
+	grn_obj sourceNames;
+	grn_obj sourceNameSizes;
+	size_t i;
+	size_t n = GRN_RECORD_VECTOR_SIZE(record->sourceIDs);
+
+	XLogBeginInsert();
+	XLogRegisterData((char *) record,
+					 offsetof(PGrnWALRecordSetSources, column));
+	PGrnWALRecordWriteGrnObj(
+		ctx, record->column, columnNameBuffer, &columnNameSize);
+	XLogRegisterData((char *) &n, sizeof(size_t));
+	GRN_TEXT_INIT(&sourceNames, GRN_OBJ_VECTOR);
+	GRN_INT32_INIT(&sourceNameSizes, GRN_OBJ_VECTOR);
+	for (i = 0; i < n; i++)
+	{
+		grn_id sourceID = GRN_RECORD_VALUE_AT(record->sourceIDs, i);
+		grn_obj *source = grn_ctx_at(ctx, sourceID);
+		if (source)
+		{
+			char name[GRN_TABLE_MAX_KEY_SIZE];
+			int nameSize =
+				grn_obj_name(ctx, source, name, GRN_TABLE_MAX_KEY_SIZE);
+			grn_vector_add_element(
+				ctx, &sourceNames, name, nameSize, 0, GRN_DB_TEXT);
+			GRN_INT32_PUT(ctx, &sourceNameSizes, nameSize);
+		}
+		else
+		{
+			grn_vector_add_element(ctx, &sourceNames, NULL, 0, 0, GRN_DB_TEXT);
+			GRN_INT32_PUT(ctx, &sourceNameSizes, -1);
+		}
+	}
+	for (i = 0; i < n; i++)
+	{
+		int32_t *rawNameSizes = (int32_t *) GRN_BULK_HEAD(&sourceNameSizes);
+		int32_t nameSize = rawNameSizes[i];
+		XLogRegisterData((char *) &(rawNameSizes[i]), sizeof(int32));
+		if (nameSize != -1)
+		{
+			const char *name;
+			grn_vector_get_element(ctx, &sourceNames, i, &name, NULL, NULL);
+			XLogRegisterData((char *) name, nameSize);
+		}
+	}
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_SET_SOURCES | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordSetSourcesRead(grn_ctx *ctx,
+							PGrnWALRecordSetSources *record,
+							PGrnWALRecordRaw *raw)
+{
+	size_t i;
+	size_t n;
+
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordSetSources, column));
+	PGrnWALRecordRawReadGrnObj(raw, ctx, record->column);
+	PGrnWALRecordRawReadData(raw, &n, sizeof(size_t));
+	for (i = 0; i < n; i++)
+	{
+		const char *name;
+		int32 nameSize;
+		grn_obj *source;
+		grn_id sourceID;
+
+		PGrnWALRecordRawReadData(raw, &nameSize, sizeof(int32));
+		if (nameSize == -1)
+			continue;
+		name = PGrnWALRecordRawRefer(raw, nameSize);
+		grn_vector_add_element(
+			ctx, record->sourceNames, name, nameSize, 0, GRN_DB_TEXT);
+	}
+	if (raw->size != 0)
+	{
+		ereport(
+			ERROR,
+			errcode(ERRCODE_DATA_EXCEPTION),
+			errmsg("%s: "
+				   "[wal][record][read][create-column] garbage at the end:%zu",
+				   PGRN_TAG,
+				   raw->size));
+	}
+}

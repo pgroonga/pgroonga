@@ -94,10 +94,10 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	walRecord.tokenizer = &tokenizerName;
 	walRecord.normalizers = &normalizersName;
 	walRecord.tokenFilters = &tokenFiltersName;
-	PGrnWALRecordCreateTableRead(ctx, &walRecord, &raw);
 	PG_TRY();
 	{
 		grn_obj *type = NULL;
+		PGrnWALRecordCreateTableRead(ctx, &walRecord, &raw);
 		pgrnwrm_redo_setup(&data);
 		if (GRN_BULK_VSIZE(walRecord.type) > 0)
 		{
@@ -143,11 +143,13 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 	GRN_TEXT_INIT(&typeName, GRN_OBJ_DO_SHALLOW_COPY);
 	walRecord.table = &tableName;
 	walRecord.type = &typeName;
-	PGrnWALRecordCreateColumnRead(ctx, &walRecord, &raw);
 	PG_TRY();
 	{
 		grn_obj *table = NULL;
 		grn_obj *type = NULL;
+
+		PGrnWALRecordCreateColumnRead(ctx, &walRecord, &raw);
+
 		pgrnwrm_redo_setup(&data);
 		table = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.table),
 								   GRN_TEXT_LEN(walRecord.table),
@@ -171,6 +173,61 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_set_sources(XLogReaderState *record)
+{
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	grn_obj columnName;
+	grn_obj sourceNames;
+	grn_obj sourceIDs;
+	PGrnWALRecordSetSources walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = &(walRecord.common),
+		.db = NULL,
+	};
+	GRN_TEXT_INIT(&columnName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&sourceNames, GRN_OBJ_VECTOR);
+	GRN_RECORD_INIT(&sourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	walRecord.column = &columnName;
+	walRecord.sourceNames = &sourceNames;
+	PG_TRY();
+	{
+		grn_obj *column = NULL;
+		uint32_t i;
+		uint32_t nSourceNames;
+
+		PGrnWALRecordSetSourcesRead(ctx, &walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		column = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.column),
+									GRN_TEXT_LEN(walRecord.column),
+									ERROR);
+		nSourceNames = grn_vector_size(ctx, walRecord.sourceNames);
+		for (i = 0; i < nSourceNames; i++)
+		{
+			const char *name;
+			uint32_t nameSize = grn_vector_get_element(
+				ctx, walRecord.sourceNames, i, &name, NULL, NULL);
+			grn_obj *source = PGrnLookupWithSize(name, nameSize, ERROR);
+			grn_id sourceID = grn_obj_id(ctx, source);
+			GRN_RECORD_PUT(ctx, &sourceIDs, sourceID);
+		}
+
+		PGrnIndexColumnSetSourceIDsRaw(column, &sourceIDs);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+		GRN_OBJ_FIN(ctx, &columnName);
+		GRN_OBJ_FIN(ctx, &sourceNames);
+		GRN_OBJ_FIN(ctx, &sourceIDs);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -180,6 +237,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "PGROONGA_CREATE_TABLE";
 	case PGRN_WAL_RECORD_CREATE_COLUMN:
 		return "PGROONGA_CREATE_COLUMN";
+	case PGRN_WAL_RECORD_SET_SOURCES:
+		return "PGROONGA_SET_SOURCES";
 	default:
 		return "PGROONGA_UNKNOWN";
 	}
@@ -202,6 +261,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_CREATE_COLUMN:
 		pgrnwrm_redo_create_column(record);
+		break;
+	case PGRN_WAL_RECORD_SET_SOURCES:
+		pgrnwrm_redo_set_sources(record);
 		break;
 	default:
 		ereport(ERROR,

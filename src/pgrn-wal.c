@@ -900,7 +900,7 @@ PGrnWALCreateTableCustom(Relation index,
 	if (!PGrnWALResourceManagerEnabled)
 		return;
 
-	if (index)
+	if (RelationIsValid(index))
 	{
 		indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
 		if (indexTableSpaceOid == MyDatabaseTableSpace)
@@ -1012,7 +1012,7 @@ PGrnWALCreateColumnCustom(Relation index,
 	if (!PGrnWALResourceManagerEnabled)
 		return;
 
-	if (index)
+	if (RelationIsValid(index))
 	{
 		indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
 		if (indexTableSpaceOid == MyDatabaseTableSpace)
@@ -1054,10 +1054,10 @@ PGrnWALCreateColumn(Relation index,
 #endif
 }
 
-void
-PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALSetSourceIDsGeneral(Relation index, grn_obj *column, grn_obj *sourceIDs)
+{
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 3;
@@ -1090,6 +1090,40 @@ PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs)
 	}
 
 	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALSetSourceIDsCustom(Relation index, grn_obj *column, grn_obj *sourceIDs)
+{
+	PGrnWALRecordSetSources record;
+	Oid indexTableSpaceOid = InvalidOid;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	PGrnWALRecordSetSourcesFill(&record,
+								MyDatabaseId,
+								GetDatabaseEncoding(),
+								MyDatabaseTableSpace,
+								column,
+								sourceIDs);
+	PGrnWALRecordSetSourcesWrite(ctx, &record);
+}
+#endif
+
+void
+PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs)
+{
+	if (!RelationIsValid(index))
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALSetSourceIDsGeneral(index, column, sourceIDs);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALSetSourceIDsCustom(index, column, sourceIDs);
 #endif
 }
 
