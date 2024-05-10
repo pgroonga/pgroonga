@@ -4,9 +4,6 @@ class ReindexTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
   test "REINDEX CONCURRENTLY with UPDATE" do
-    if @postgresql.version < 12
-      omit("REINDEX CONCURRENTLY is available since PostgreSQL 12")
-    end
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
     run_sql("INSERT INTO memos " +
