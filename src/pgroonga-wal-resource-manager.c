@@ -29,11 +29,11 @@ pgrnwrm_get_thread_limit(void *data)
 	return 1;
 }
 
-typedef struct PGrnWRMRedoData {
+typedef struct PGrnWRMRedoData
+{
 	PGrnWALRecordCommon *walRecord;
 	grn_obj *db;
 } PGrnWRMRedoData;
-
 
 static void
 pgrnwrm_redo_setup(PGrnWRMRedoData *data)
@@ -94,7 +94,8 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	{
 		grn_obj *type = NULL;
 		pgrnwrm_redo_setup(&data);
-		if (GRN_BULK_VSIZE(walRecord.type) > 0) {
+		if (GRN_BULK_VSIZE(walRecord.type) > 0)
+		{
 			type = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.type),
 									  GRN_TEXT_LEN(walRecord.type),
 									  ERROR);
@@ -123,11 +124,9 @@ static void
 pgrnwrm_redo(XLogReaderState *record)
 {
 	uint8 info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": redo: <%s>",
-			PGRN_VERSION);
-	switch (info) {
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": redo: <%s>", PGRN_VERSION);
+	switch (info)
+	{
 	case PGRN_WAL_RECORD_CREATE_TABLE:
 		pgrnwrm_redo_create_table(record);
 		break;
@@ -142,20 +141,15 @@ pgrnwrm_redo(XLogReaderState *record)
 static void
 pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": desc: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": desc: <%s>", PGRN_VERSION);
 }
 
 static const char *
 pgrnwrm_identify(uint8 info)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": identify: <%s>",
-			PGRN_VERSION);
-	switch (info) {
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": identify: <%s>", PGRN_VERSION);
+	switch (info)
+	{
 	case PGRN_WAL_RECORD_CREATE_TABLE:
 		return "PGROONGA_CREATE_TABLE";
 	default:
@@ -186,26 +180,23 @@ pgrnwrm_startup(void)
 
 	{
 		grn_rc rc = grn_ctx_init(ctx, 0);
-		if (rc != GRN_SUCCESS) {
-			ereport(ERROR,
-					(errcode(PGrnGrnRCToPGErrorCode(rc)),
-					 errmsg(PGRN_TAG ": failed to initialize Groonga context: %d", rc)));
+		if (rc != GRN_SUCCESS)
+		{
+			ereport(
+				ERROR,
+				(errcode(PGrnGrnRCToPGErrorCode(rc)),
+				 errmsg(PGRN_TAG ": failed to initialize Groonga context: %d",
+						rc)));
 		}
 	}
 
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": initialize: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": initialize: <%s>", PGRN_VERSION);
 }
 
 static void
 pgrnwrm_cleanup(void)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": cleanup: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup: <%s>", PGRN_VERSION);
 	grn_ctx_fin(ctx);
 	grn_fin();
 }
@@ -213,19 +204,14 @@ pgrnwrm_cleanup(void)
 static void
 pgrnwrm_mask(char *pagedata, BlockNumber block_number)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": mask: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": mask: <%s>", PGRN_VERSION);
 }
 
 static void
-pgrnwrm_decode(struct LogicalDecodingContext *context, struct XLogRecordBuffer *buffer)
+pgrnwrm_decode(struct LogicalDecodingContext *context,
+			   struct XLogRecordBuffer *buffer)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": decode: <%s>",
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": decode: <%s>", PGRN_VERSION);
 }
 
 static RmgrData data = {
