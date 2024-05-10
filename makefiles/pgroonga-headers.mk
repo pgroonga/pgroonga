@@ -18,6 +18,7 @@ HEADERS =					\
 	src/pgrn-highlight-html.h		\
 	src/pgrn-index-status.h			\
 	src/pgrn-jsonb.h			\
+	src/pgrn-log-level.h			\
 	src/pgrn-keywords.h			\
 	src/pgrn-match-positions-byte.h		\
 	src/pgrn-match-positions-character.h	\

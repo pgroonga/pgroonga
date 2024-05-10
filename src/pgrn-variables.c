@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
+#include "pgrn-log-level.h"
 #include "pgrn-row-level-security.h"
 #include "pgrn-trace-log.h"
 #include "pgrn-value.h"

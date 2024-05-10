@@ -1,11 +1,10 @@
-#include "pgroonga.h"
-
 #include "pgrn-compatible.h"
 #include "pgrn-portable.h"
 
 #include "pgrn-crash-safer-statuses.h"
 #include "pgrn-database.h"
 #include "pgrn-file.h"
+#include "pgrn-log-level.h"
 #include "pgrn-value.h"
 
 #include <access/heapam.h>
