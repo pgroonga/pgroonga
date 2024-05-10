@@ -4,7 +4,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifndef WIN32
+#ifndef _WIN32
 #	include <dirent.h>
 #	include <unistd.h>
 #endif
@@ -12,7 +12,7 @@
 static void
 PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	WIN32_FIND_DATA data;
 	HANDLE finder;
 	char targetPath[MAXPGPATH];

@@ -2,7 +2,7 @@
 
 #include <postgres.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #	define PRId64 "I64d"
 #	define PRIu64 "I64u"
 #	define PGRN_PRIdSIZE "Id"

@@ -53,7 +53,7 @@ PGrnCheckAllDatabases(grn_ctx *ctx)
 {
 	const char *baseDirectoryPath = "base";
 
-#ifdef WIN32
+#ifdef _WIN32
 	WIN32_FIND_DATA data;
 	HANDLE finder;
 	char targetPath[MAXPGPATH];

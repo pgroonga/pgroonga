@@ -478,7 +478,7 @@ PGrnBeforeShmemExit(int code, Datum arg)
 	}
 
 	GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize]", tag);
-#ifdef WIN32
+#ifdef _WIN32
 	pgwin32_install_crashdump_handler();
 #else
 #	ifdef SIGSEGV
