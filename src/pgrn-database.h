@@ -2,14 +2,10 @@
 #include "pgrn-portable.h"
 
 #include <stdarg.h>
-#include <stdbool.h>
 #include <string.h>
 #ifndef _WIN32
 #	include <dirent.h>
 #endif
-
-#include <c.h>
-#include <port.h>
 
 static inline void
 PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)

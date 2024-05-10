@@ -1,5 +1,8 @@
 #pragma once
 
+#include <c.h>
+#include <port.h>
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #ifndef _WIN32
