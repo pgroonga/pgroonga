@@ -1,5 +1,6 @@
 #pragma once
 
+#include <c.h>
 #include <mb/pg_wchar.h>
 #include <postgres.h>
 #include <utils/rel.h>
