@@ -4685,16 +4685,12 @@ PGrnInsertColumn(Relation index,
 
 		if (rc != GRN_SUCCESS)
 		{
-			grn_obj *inspected = &(buffers->inspect);
-			GRN_BULK_REWIND(inspected);
-			grn_inspect(ctx, inspected, rawValue);
 			elog(WARNING,
-				 "pgroonga: %s <%s.%s>: failed to cast: <%.*s>",
+				 "pgroonga: %s <%s.%s>: failed to cast: <%*s>",
 				 tag,
 				 index->rd_rel->relname.data,
 				 name->data,
-				 (int) GRN_TEXT_LEN(inspected),
-				 GRN_TEXT_VALUE(inspected));
+				 PGrnInspect(rawValue));
 			return 0;
 		}
 	}
