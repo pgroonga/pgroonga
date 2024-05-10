@@ -5,6 +5,7 @@
 static grn_ctx PGrnWRMContext;
 static grn_ctx *ctx = &PGrnWRMContext;
 
+#include "pgrn-compatible.h"
 #include "pgrn-constant.h"
 #include "pgrn-file.h"
 #include "pgrn-groonga.h"
@@ -23,6 +24,7 @@ PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGrnWRMLogLevelEntries);
 
 extern PGDLLEXPORT void _PG_init(void);
 
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
 static uint32_t
 pgrnwrm_get_thread_limit(void *data)
 {
@@ -290,6 +292,7 @@ static RmgrData data = {
 	.rm_mask = pgrnwrm_mask,
 	.rm_decode = pgrnwrm_decode,
 };
+#endif
 
 void
 _PG_init(void)
@@ -322,5 +325,7 @@ _PG_init(void)
 							 NULL,
 							 NULL);
 
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
 	RegisterCustomRmgr(PGRN_WAL_RESOURCE_MANAGER_ID, &data);
+#endif
 }
