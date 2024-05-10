@@ -207,7 +207,7 @@ PGrnCreateTableWithSize(Relation index,
 		flags |= GRN_OBJ_PERSISTENT;
 	}
 
-	if (index)
+	if (RelationIsValid(index))
 	{
 		indexTableSpaceID = PGRN_RELATION_GET_LOCATOR_SPACE(index);
 		if (indexTableSpaceID == MyDatabaseTableSpace)
@@ -381,7 +381,7 @@ PGrnCreateColumnWithSize(Relation index,
 		flags |= GRN_OBJ_PERSISTENT;
 	}
 
-	if (index)
+	if (RelationIsValid(index))
 	{
 		indexTableSpaceID = PGRN_RELATION_GET_LOCATOR_SPACE(index);
 		if (indexTableSpaceID == MyDatabaseTableSpace)
@@ -421,25 +421,9 @@ PGrnIndexColumnSetSourceIDs(Relation index,
 							grn_obj *indexColumn,
 							grn_obj *sourceIDs)
 {
-	grn_obj currentSourceIDs;
-	bool same;
-
-	GRN_RECORD_INIT(&currentSourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
-	grn_obj_get_info(ctx, indexColumn, GRN_INFO_SOURCE, &currentSourceIDs);
-	same = (GRN_BULK_VSIZE(&currentSourceIDs) == GRN_BULK_VSIZE(sourceIDs) &&
-			memcmp(GRN_BULK_HEAD(&currentSourceIDs),
-				   GRN_BULK_HEAD(sourceIDs),
-				   GRN_BULK_VSIZE(&currentSourceIDs)) == 0);
-	GRN_OBJ_FIN(ctx, &currentSourceIDs);
-	if (same)
-	{
+	if (!PGrnIndexColumnSetSourceIDsRaw(indexColumn, sourceIDs))
 		return;
-	}
 
-	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
-	PGrnCheck("failed to set sources: <%s>: <%s>",
-			  PGrnInspectName(indexColumn),
-			  PGrnInspect(sourceIDs));
 	PGrnWALSetSourceIDs(index, indexColumn, sourceIDs);
 }
 

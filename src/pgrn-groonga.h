@@ -356,6 +356,33 @@ grn_obj *PGrnCreateColumnWithSize(Relation index,
 void PGrnIndexColumnClearSources(Relation index, grn_obj *indexColumn);
 void
 PGrnIndexColumnSetSource(Relation index, grn_obj *indexColumn, grn_obj *source);
+
+static inline bool
+PGrnIndexColumnSetSourceIDsRaw(grn_obj *indexColumn, grn_obj *sourceIDs)
+{
+	grn_obj currentSourceIDs;
+	bool same;
+
+	GRN_RECORD_INIT(&currentSourceIDs, GRN_OBJ_VECTOR, GRN_ID_NIL);
+	grn_obj_get_info(ctx, indexColumn, GRN_INFO_SOURCE, &currentSourceIDs);
+	same = (GRN_BULK_VSIZE(&currentSourceIDs) == GRN_BULK_VSIZE(sourceIDs) &&
+			memcmp(GRN_BULK_HEAD(&currentSourceIDs),
+				   GRN_BULK_HEAD(sourceIDs),
+				   GRN_BULK_VSIZE(&currentSourceIDs)) == 0);
+	GRN_OBJ_FIN(ctx, &currentSourceIDs);
+	if (same)
+	{
+		return false;
+	}
+
+	grn_obj_set_info(ctx, indexColumn, GRN_INFO_SOURCE, sourceIDs);
+	PGrnCheck("failed to set sources: <%s>: <%s>",
+			  PGrnInspectName(indexColumn),
+			  PGrnInspect(sourceIDs));
+
+	return true;
+}
+
 void PGrnIndexColumnSetSourceIDs(Relation index,
 								 grn_obj *indexColumn,
 								 grn_obj *sourceIDs);
