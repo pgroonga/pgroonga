@@ -918,7 +918,7 @@ PGrnWALCreateTableCustom(Relation index,
 								 tokenizer,
 								 normalizers,
 								 tokenFilters);
-	PGrnWALRecordCreateTableWrite(ctx, &record);
+	PGrnWALRecordCreateTableWrite(&record);
 }
 #endif
 
@@ -1028,7 +1028,7 @@ PGrnWALCreateColumnCustom(Relation index,
 								  nameSize,
 								  flags,
 								  type);
-	PGrnWALRecordCreateColumnWrite(ctx, &record);
+	PGrnWALRecordCreateColumnWrite(&record);
 }
 #endif
 
@@ -1109,7 +1109,7 @@ PGrnWALSetSourceIDsCustom(Relation index, grn_obj *column, grn_obj *sourceIDs)
 								MyDatabaseTableSpace,
 								column,
 								sourceIDs);
-	PGrnWALRecordSetSourcesWrite(ctx, &record);
+	PGrnWALRecordSetSourcesWrite(&record);
 }
 #endif
 

@@ -97,7 +97,7 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	PG_TRY();
 	{
 		grn_obj *type = NULL;
-		PGrnWALRecordCreateTableRead(ctx, &walRecord, &raw);
+		PGrnWALRecordCreateTableRead(&walRecord, &raw);
 		pgrnwrm_redo_setup(&data);
 		if (GRN_BULK_VSIZE(walRecord.type) > 0)
 		{
@@ -148,7 +148,7 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 		grn_obj *table = NULL;
 		grn_obj *type = NULL;
 
-		PGrnWALRecordCreateColumnRead(ctx, &walRecord, &raw);
+		PGrnWALRecordCreateColumnRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
 		table = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.table),
@@ -199,7 +199,7 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 		uint32_t i;
 		uint32_t nSourceNames;
 
-		PGrnWALRecordSetSourcesRead(ctx, &walRecord, &raw);
+		PGrnWALRecordSetSourcesRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
 		column = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.column),

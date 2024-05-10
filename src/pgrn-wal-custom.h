@@ -63,7 +63,7 @@ PGrnWALRecordRawReadData(PGrnWALRecordRaw *raw, void *output, uint32 size)
 }
 
 static inline void
-PGrnWALRecordRawReadGrnObj(PGrnWALRecordRaw *raw, grn_ctx *ctx, grn_obj *object)
+PGrnWALRecordRawReadGrnObj(PGrnWALRecordRaw *raw, grn_obj *object)
 {
 	int32 size;
 	if (raw->size < sizeof(int32))
@@ -102,10 +102,7 @@ PGrnWALRecordRawReadGrnObj(PGrnWALRecordRaw *raw, grn_ctx *ctx, grn_obj *object)
 }
 
 static inline void
-PGrnWALRecordWriteGrnObj(grn_ctx *ctx,
-						 grn_obj *object,
-						 char *buffer,
-						 int32 *size)
+PGrnWALRecordWriteGrnObj(grn_obj *object, char *buffer, int32 *size)
 {
 	if (object)
 	{
@@ -177,7 +174,7 @@ PGrnWALRecordCreateTableFill(PGrnWALRecordCreateTable *record,
 }
 
 static inline void
-PGrnWALRecordCreateTableWrite(grn_ctx *ctx, PGrnWALRecordCreateTable *record)
+PGrnWALRecordCreateTableWrite(PGrnWALRecordCreateTable *record)
 {
 	char typeNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	int32 typeNameSize;
@@ -191,32 +188,29 @@ PGrnWALRecordCreateTableWrite(grn_ctx *ctx, PGrnWALRecordCreateTable *record)
 	XLogRegisterData((char *) record, offsetof(PGrnWALRecordCreateTable, name));
 	XLogRegisterData((char *) (record->name), record->nameSize);
 	XLogRegisterData((char *) &(record->flags), sizeof(grn_table_flags));
-	PGrnWALRecordWriteGrnObj(ctx, record->type, typeNameBuffer, &typeNameSize);
+	PGrnWALRecordWriteGrnObj(record->type, typeNameBuffer, &typeNameSize);
 	PGrnWALRecordWriteGrnObj(
-		ctx, record->tokenizer, tokenizerNameBuffer, &tokenizerNameSize);
+		record->tokenizer, tokenizerNameBuffer, &tokenizerNameSize);
 	PGrnWALRecordWriteGrnObj(
-		ctx, record->normalizers, normalizersNameBuffer, &normalizersNameSize);
-	PGrnWALRecordWriteGrnObj(ctx,
-							 record->tokenFilters,
-							 tokenFiltersNameBuffer,
-							 &tokenFiltersNameSize);
+		record->normalizers, normalizersNameBuffer, &normalizersNameSize);
+	PGrnWALRecordWriteGrnObj(
+		record->tokenFilters, tokenFiltersNameBuffer, &tokenFiltersNameSize);
 	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
 			   PGRN_WAL_RECORD_CREATE_TABLE | XLR_SPECIAL_REL_UPDATE);
 }
 
 static inline void
-PGrnWALRecordCreateTableRead(grn_ctx *ctx,
-							 PGrnWALRecordCreateTable *record,
+PGrnWALRecordCreateTableRead(PGrnWALRecordCreateTable *record,
 							 PGrnWALRecordRaw *raw)
 {
 	PGrnWALRecordRawReadData(
 		raw, record, offsetof(PGrnWALRecordCreateTable, name));
 	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
 	PGrnWALRecordRawReadData(raw, &(record->flags), sizeof(grn_table_flags));
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->type);
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->tokenizer);
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->normalizers);
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->tokenFilters);
+	PGrnWALRecordRawReadGrnObj(raw, record->type);
+	PGrnWALRecordRawReadGrnObj(raw, record->tokenizer);
+	PGrnWALRecordRawReadGrnObj(raw, record->normalizers);
+	PGrnWALRecordRawReadGrnObj(raw, record->tokenFilters);
 	if (raw->size != 0)
 	{
 		ereport(
@@ -264,7 +258,7 @@ PGrnWALRecordCreateColumnFill(PGrnWALRecordCreateColumn *record,
 }
 
 static inline void
-PGrnWALRecordCreateColumnWrite(grn_ctx *ctx, PGrnWALRecordCreateColumn *record)
+PGrnWALRecordCreateColumnWrite(PGrnWALRecordCreateColumn *record)
 {
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	int32 tableNameSize;
@@ -273,28 +267,26 @@ PGrnWALRecordCreateColumnWrite(grn_ctx *ctx, PGrnWALRecordCreateColumn *record)
 	XLogBeginInsert();
 	XLogRegisterData((char *) record,
 					 offsetof(PGrnWALRecordCreateColumn, table));
-	PGrnWALRecordWriteGrnObj(
-		ctx, record->table, tableNameBuffer, &tableNameSize);
+	PGrnWALRecordWriteGrnObj(record->table, tableNameBuffer, &tableNameSize);
 	XLogRegisterData((char *) &(record->nameSize), sizeof(int32));
 	XLogRegisterData((char *) (record->name), record->nameSize);
 	XLogRegisterData((char *) &(record->flags), sizeof(grn_column_flags));
-	PGrnWALRecordWriteGrnObj(ctx, record->type, typeNameBuffer, &typeNameSize);
+	PGrnWALRecordWriteGrnObj(record->type, typeNameBuffer, &typeNameSize);
 	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
 			   PGRN_WAL_RECORD_CREATE_COLUMN | XLR_SPECIAL_REL_UPDATE);
 }
 
 static inline void
-PGrnWALRecordCreateColumnRead(grn_ctx *ctx,
-							  PGrnWALRecordCreateColumn *record,
+PGrnWALRecordCreateColumnRead(PGrnWALRecordCreateColumn *record,
 							  PGrnWALRecordRaw *raw)
 {
 	PGrnWALRecordRawReadData(
 		raw, record, offsetof(PGrnWALRecordCreateColumn, table));
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->table);
+	PGrnWALRecordRawReadGrnObj(raw, record->table);
 	PGrnWALRecordRawReadData(raw, &(record->nameSize), sizeof(int32));
 	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
 	PGrnWALRecordRawReadData(raw, &(record->flags), sizeof(grn_column_flags));
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->type);
+	PGrnWALRecordRawReadGrnObj(raw, record->type);
 	if (raw->size != 0)
 	{
 		ereport(
@@ -332,7 +324,7 @@ PGrnWALRecordSetSourcesFill(PGrnWALRecordSetSources *record,
 }
 
 static inline void
-PGrnWALRecordSetSourcesWrite(grn_ctx *ctx, PGrnWALRecordSetSources *record)
+PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record)
 {
 	char columnNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	int32 columnNameSize;
@@ -344,8 +336,7 @@ PGrnWALRecordSetSourcesWrite(grn_ctx *ctx, PGrnWALRecordSetSources *record)
 	XLogBeginInsert();
 	XLogRegisterData((char *) record,
 					 offsetof(PGrnWALRecordSetSources, column));
-	PGrnWALRecordWriteGrnObj(
-		ctx, record->column, columnNameBuffer, &columnNameSize);
+	PGrnWALRecordWriteGrnObj(record->column, columnNameBuffer, &columnNameSize);
 	XLogRegisterData((char *) &n, sizeof(size_t));
 	GRN_TEXT_INIT(&sourceNames, GRN_OBJ_VECTOR);
 	GRN_INT32_INIT(&sourceNameSizes, GRN_OBJ_VECTOR);
@@ -385,8 +376,7 @@ PGrnWALRecordSetSourcesWrite(grn_ctx *ctx, PGrnWALRecordSetSources *record)
 }
 
 static inline void
-PGrnWALRecordSetSourcesRead(grn_ctx *ctx,
-							PGrnWALRecordSetSources *record,
+PGrnWALRecordSetSourcesRead(PGrnWALRecordSetSources *record,
 							PGrnWALRecordRaw *raw)
 {
 	size_t i;
@@ -394,7 +384,7 @@ PGrnWALRecordSetSourcesRead(grn_ctx *ctx,
 
 	PGrnWALRecordRawReadData(
 		raw, record, offsetof(PGrnWALRecordSetSources, column));
-	PGrnWALRecordRawReadGrnObj(raw, ctx, record->column);
+	PGrnWALRecordRawReadGrnObj(raw, record->column);
 	PGrnWALRecordRawReadData(raw, &n, sizeof(size_t));
 	for (i = 0; i < n; i++)
 	{
