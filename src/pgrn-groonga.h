@@ -58,8 +58,10 @@ PGrnCheck(const char *format, ...)
 	if (ctx->rc == GRN_SUCCESS)
 		return true;
 
+#ifdef PGRN_MODULE_PGROONGA
 	if (PGrnIsRLSEnabled)
 		PG_RE_THROW();
+#endif
 
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
@@ -83,8 +85,10 @@ PGrnCheckRC(grn_rc rc, const char *format, ...)
 	if (rc == GRN_SUCCESS)
 		return true;
 
+#ifdef PGRN_MODULE_PGROONGA
 	if (PGrnIsRLSEnabled)
 		PG_RE_THROW();
+#endif
 
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
@@ -109,6 +113,7 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	if (rc == GRN_SUCCESS)
 		return true;
 
+#ifdef PGRN_MODULE_PGROONGA
 	if (PGrnIsRLSEnabled)
 	{
 		if (errorLevel == ERROR)
@@ -120,6 +125,7 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 			return false;
 		}
 	}
+#endif
 
 	va_start(args, format);
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);

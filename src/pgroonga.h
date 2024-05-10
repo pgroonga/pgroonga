@@ -12,6 +12,9 @@
 #include "pgrn-compatible.h"
 #include "pgrn-constant.h"
 
+/* Used for pgroonga.so not other pgroonga_*.so. */
+#define PGRN_MODULE_PGROONGA
+
 /* Prefix for all log messages. */
 #define PGRN_TAG "pgroonga"
 
