@@ -233,6 +233,11 @@ PGrnCreateTableWithSize(Relation index,
 	Oid indexTableSpaceID = InvalidOid;
 	grn_obj *table;
 
+	if (name)
+	{
+		flags |= GRN_OBJ_PERSISTENT;
+	}
+
 	if (index)
 	{
 		indexTableSpaceID = PGRN_RELATION_GET_LOCATOR_SPACE(index);
