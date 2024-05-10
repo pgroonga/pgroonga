@@ -3,6 +3,12 @@ require_relative "helpers/sandbox"
 class PGroongaWALResourceManagerTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
+  setup def check_postgresql_version
+    if @postgresql.version < 15
+      omit("custom WAL resource manager is available since PostgreSQL 15")
+    end
+  end
+
   def additional_configurations
     <<-CONFIG
 pgroonga.enable_wal_resource_manager = yes
