@@ -23,14 +23,16 @@ pgroonga.enable_wal_resource_manager = yes
   setup :setup_standby_db
   teardown :teardown_standby_db
 
-  test "create table" do
+  test "create column" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
 
+    # TODO
+    sleep(0.1)
     select = <<-SELECT
 SELECT pgroonga_command('object_exist',
                         ARRAY[
-                          'name', 'Building' || pgroonga_table_name('memos_content')
+                          'name', 'Building' || pgroonga_table_name('memos_content') || '.content'
                         ])::jsonb->1;
 SELECT
     output = <<-OUTPUT

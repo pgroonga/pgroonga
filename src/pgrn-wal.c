@@ -957,21 +957,18 @@ PGrnWALCreateTable(Relation index,
 #endif
 }
 
-void
-PGrnWALCreateColumn(Relation index,
-					grn_obj *table,
-					const char *name,
-					size_t nameSize,
-					grn_column_flags flags,
-					grn_obj *type)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALCreateColumnGeneral(Relation index,
+						   grn_obj *table,
+						   const char *name,
+						   size_t nameSize,
+						   grn_column_flags flags,
+						   grn_obj *type)
+{
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 5;
-
-	if (!name)
-		return;
 
 	data = PGrnWALStart(index);
 	if (!data)
@@ -997,6 +994,63 @@ PGrnWALCreateColumn(Relation index,
 	msgpack_pack_grn_obj(packer, type);
 
 	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALCreateColumnCustom(Relation index,
+						  grn_obj *table,
+						  const char *name,
+						  size_t nameSize,
+						  grn_column_flags flags,
+						  grn_obj *type)
+{
+	PGrnWALRecordCreateColumn record;
+	Oid indexTableSpaceOid = InvalidOid;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	if (index)
+	{
+		indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
+		if (indexTableSpaceOid == MyDatabaseTableSpace)
+			indexTableSpaceOid = InvalidOid;
+	}
+	PGrnWALRecordCreateColumnFill(&record,
+								  MyDatabaseId,
+								  GetDatabaseEncoding(),
+								  MyDatabaseTableSpace,
+								  indexTableSpaceOid,
+								  table,
+								  name,
+								  nameSize,
+								  flags,
+								  type);
+	PGrnWALRecordCreateColumnWrite(ctx, &record);
+}
+#endif
+
+void
+PGrnWALCreateColumn(Relation index,
+					grn_obj *table,
+					const char *name,
+					size_t nameSize,
+					grn_column_flags flags,
+					grn_obj *type)
+{
+	if (!name)
+		return;
+
+	if (grn_obj_is_temporary(ctx, table))
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALCreateColumnGeneral(index, table, name, nameSize, flags, type);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALCreateColumnCustom(index, table, name, nameSize, flags, type);
 #endif
 }
 

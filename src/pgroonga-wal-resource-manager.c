@@ -72,23 +72,23 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
 	};
-	grn_obj type;
-	grn_obj tokenizer;
-	grn_obj normalizers;
-	grn_obj tokenFilters;
+	grn_obj typeName;
+	grn_obj tokenizerName;
+	grn_obj normalizersName;
+	grn_obj tokenFiltersName;
 	PGrnWALRecordCreateTable walRecord = {0};
 	PGrnWRMRedoData data = {
 		.walRecord = &(walRecord.common),
 		.db = NULL,
 	};
-	GRN_TEXT_INIT(&type, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&tokenizer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&normalizers, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&tokenFilters, GRN_OBJ_DO_SHALLOW_COPY);
-	walRecord.type = &type;
-	walRecord.tokenizer = &tokenizer;
-	walRecord.normalizers = &normalizers;
-	walRecord.tokenFilters = &tokenFilters;
+	GRN_TEXT_INIT(&typeName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&tokenizerName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&normalizersName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&tokenFiltersName, GRN_OBJ_DO_SHALLOW_COPY);
+	walRecord.type = &typeName;
+	walRecord.tokenizer = &tokenizerName;
+	walRecord.normalizers = &normalizersName;
+	walRecord.tokenFilters = &tokenFiltersName;
 	PGrnWALRecordCreateTableRead(ctx, &walRecord, &raw);
 	PG_TRY();
 	{
@@ -112,23 +112,91 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	PG_FINALLY();
 	{
 		pgrnwrm_redo_teardown(&data);
+		GRN_OBJ_FIN(ctx, &typeName);
+		GRN_OBJ_FIN(ctx, &tokenizerName);
+		GRN_OBJ_FIN(ctx, &normalizersName);
+		GRN_OBJ_FIN(ctx, &tokenFiltersName);
 	}
 	PG_END_TRY();
-	GRN_OBJ_FIN(ctx, &type);
-	GRN_OBJ_FIN(ctx, &tokenizer);
-	GRN_OBJ_FIN(ctx, &normalizers);
-	GRN_OBJ_FIN(ctx, &tokenFilters);
+}
+
+static void
+pgrnwrm_redo_create_column(XLogReaderState *record)
+{
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	grn_obj tableName;
+	grn_obj typeName;
+	PGrnWALRecordCreateColumn walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = &(walRecord.common),
+		.db = NULL,
+	};
+	GRN_TEXT_INIT(&tableName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&typeName, GRN_OBJ_DO_SHALLOW_COPY);
+	walRecord.table = &tableName;
+	walRecord.type = &typeName;
+	PGrnWALRecordCreateColumnRead(ctx, &walRecord, &raw);
+	PG_TRY();
+	{
+		grn_obj *table = NULL;
+		grn_obj *type = NULL;
+		pgrnwrm_redo_setup(&data);
+		table = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.table),
+								   GRN_TEXT_LEN(walRecord.table),
+								   ERROR);
+		type = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.type),
+								  GRN_TEXT_LEN(walRecord.type),
+								  ERROR);
+		PGrnCreateColumnRawWithSize(walRecord.indexTableSpaceID,
+									table,
+									walRecord.name,
+									walRecord.nameSize,
+									walRecord.flags,
+									type);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+		GRN_OBJ_FIN(ctx, &tableName);
+		GRN_OBJ_FIN(ctx, &typeName);
+	}
+	PG_END_TRY();
+}
+
+static const char *
+pgrnwrm_info_to_string(uint8 info)
+{
+	switch (info)
+	{
+	case PGRN_WAL_RECORD_CREATE_TABLE:
+		return "PGROONGA_CREATE_TABLE";
+	case PGRN_WAL_RECORD_CREATE_COLUMN:
+		return "PGROONGA_CREATE_COLUMN";
+	default:
+		return "PGROONGA_UNKNOWN";
+	}
 }
 
 static void
 pgrnwrm_redo(XLogReaderState *record)
 {
 	uint8 info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": redo: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx,
+			GRN_LOG_NOTICE,
+			PGRN_TAG ": redo: <%s>(%u): <%s>",
+			pgrnwrm_info_to_string(info),
+			info,
+			PGRN_VERSION);
 	switch (info)
 	{
 	case PGRN_WAL_RECORD_CREATE_TABLE:
 		pgrnwrm_redo_create_table(record);
+		break;
+	case PGRN_WAL_RECORD_CREATE_COLUMN:
+		pgrnwrm_redo_create_column(record);
 		break;
 	default:
 		ereport(ERROR,
@@ -147,14 +215,12 @@ pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 static const char *
 pgrnwrm_identify(uint8 info)
 {
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": identify: <%s>", PGRN_VERSION);
-	switch (info)
-	{
-	case PGRN_WAL_RECORD_CREATE_TABLE:
-		return "PGROONGA_CREATE_TABLE";
-	default:
-		return NULL;
-	}
+	GRN_LOG(ctx,
+			GRN_LOG_NOTICE,
+			PGRN_TAG ": identify: <%u>: <%s>",
+			info,
+			PGRN_VERSION);
+	return pgrnwrm_info_to_string(info);
 }
 
 static void

@@ -228,3 +228,81 @@ PGrnWALRecordCreateTableRead(grn_ctx *ctx,
 				   raw->size));
 	}
 }
+
+typedef struct PGrnWALRecordCreateColumn
+{
+	PGrnWALRecordCommon common;
+	Oid indexTableSpaceID;
+	grn_obj *table;
+	int32 nameSize;
+	const char *name;
+	grn_column_flags flags;
+	grn_obj *type;
+} PGrnWALRecordCreateColumn;
+
+static inline void
+PGrnWALRecordCreateColumnFill(PGrnWALRecordCreateColumn *record,
+							  Oid dbID,
+							  int dbEncoding,
+							  Oid dbTableSpaceID,
+							  Oid indexTableSpaceID,
+							  grn_obj *table,
+							  const char *name,
+							  size_t nameSize,
+							  grn_column_flags flags,
+							  grn_obj *type)
+{
+	record->common.dbID = dbID;
+	record->common.dbEncoding = dbEncoding;
+	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->indexTableSpaceID = indexTableSpaceID;
+	record->table = table;
+	record->nameSize = (int32) nameSize;
+	record->name = name;
+	record->flags = flags;
+	record->type = type;
+}
+
+static inline void
+PGrnWALRecordCreateColumnWrite(grn_ctx *ctx, PGrnWALRecordCreateColumn *record)
+{
+	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	int32 tableNameSize;
+	char typeNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	int32 typeNameSize;
+	XLogBeginInsert();
+	XLogRegisterData((char *) record,
+					 offsetof(PGrnWALRecordCreateColumn, table));
+	PGrnWALRecordWriteGrnObj(
+		ctx, record->table, tableNameBuffer, &tableNameSize);
+	XLogRegisterData((char *) &(record->nameSize), sizeof(int32));
+	XLogRegisterData((char *) (record->name), record->nameSize);
+	XLogRegisterData((char *) &(record->flags), sizeof(grn_column_flags));
+	PGrnWALRecordWriteGrnObj(ctx, record->type, typeNameBuffer, &typeNameSize);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_CREATE_COLUMN | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordCreateColumnRead(grn_ctx *ctx,
+							  PGrnWALRecordCreateColumn *record,
+							  PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordCreateColumn, table));
+	PGrnWALRecordRawReadGrnObj(raw, ctx, record->table);
+	PGrnWALRecordRawReadData(raw, &(record->nameSize), sizeof(int32));
+	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
+	PGrnWALRecordRawReadData(raw, &(record->flags), sizeof(grn_column_flags));
+	PGrnWALRecordRawReadGrnObj(raw, ctx, record->type);
+	if (raw->size != 0)
+	{
+		ereport(
+			ERROR,
+			errcode(ERRCODE_DATA_EXCEPTION),
+			errmsg("%s: "
+				   "[wal][record][read][create-column] garbage at the end:%zu",
+				   PGRN_TAG,
+				   raw->size));
+	}
+}
