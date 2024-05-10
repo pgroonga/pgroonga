@@ -1,7 +1,5 @@
 #include "pgroonga.h"
 
-#include "pgrn-compatible.h"
-
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-options.h"

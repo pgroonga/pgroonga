@@ -1,6 +1,5 @@
 #include "pgroonga.h"
 
-#include "pgrn-compatible.h"
 #include "pgrn-groonga.h"
 #include "pgrn-normalize.h"
 #include "pgrn-string.h"

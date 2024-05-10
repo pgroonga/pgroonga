@@ -9,6 +9,7 @@
 #include <fmgr.h>
 #include <utils/rel.h>
 
+#include "pgrn-compatible.h"
 #include "pgrn-constant.h"
 
 

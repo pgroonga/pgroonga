@@ -1,7 +1,5 @@
 #include "pgroonga.h"
 
-#include "pgrn-compatible.h"
-
 #include "pgrn-groonga.h"
 #include "pgrn-query-expand.h"
 #include "pgrn-trace-log.h"

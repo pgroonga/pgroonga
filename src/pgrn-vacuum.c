@@ -1,6 +1,5 @@
 #include "pgroonga.h"
 
-#include "pgrn-compatible.h"
 #include "pgrn-trace-log.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_vacuum);

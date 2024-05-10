@@ -1,7 +1,5 @@
 #include "pgroonga.h"
 
-#include "pgrn-compatible.h"
-
 #include "pgrn-groonga.h"
 
 #include <catalog/pg_type.h>
