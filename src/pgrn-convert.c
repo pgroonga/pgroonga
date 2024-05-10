@@ -3,7 +3,6 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-convert.h"
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
 
@@ -11,8 +10,6 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/timestamp.h>
-
-static grn_ctx *ctx = &PGrnContext;
 
 static void
 PGrnConvertFromDataArrayType(Datum datum,

@@ -2,7 +2,6 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-jsonb.h"
 #include "pgrn-pg.h"
@@ -13,8 +12,6 @@
 #include <catalog/pg_type.h>
 #include <funcapi.h>
 #include <utils/builtins.h>
-
-static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnResultConverterInit(PGrnResultConverter *converter,

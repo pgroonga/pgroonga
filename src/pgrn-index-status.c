@@ -8,7 +8,6 @@
 
 #include <miscadmin.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 #define TABLE_NAME "IndexStatuses"

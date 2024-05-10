@@ -9,7 +9,6 @@
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj keywordIDs;
 

@@ -1,8 +1,9 @@
-#include "pgrn-string.h"
+#include "pgroonga.h"
+
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
+#include "pgrn-string.h"
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void

@@ -1,7 +1,6 @@
 #include "pgroonga.h"
 
 #include "pgrn-compatible.h"
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-tokenize.h"
 
@@ -10,7 +9,6 @@
 #include <utils/builtins.h>
 #include <utils/json.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static grn_obj *lexicon;
 static grn_obj tokenizerValue;
 static grn_obj normalizerValue;

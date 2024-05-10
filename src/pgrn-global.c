@@ -1,12 +1,11 @@
+#include "pgroonga.h"
+
 #include "pgrn-global.h"
 
 #include <stdlib.h>
 
-grn_ctx PGrnContext;
 struct PGrnBuffers PGrnBuffers;
 int PGrnMatchEscalationThreshold = 0;
-
-static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnInitializeBuffers(void)

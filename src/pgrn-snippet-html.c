@@ -2,14 +2,11 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 
 #include <catalog/pg_type.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
-
-static grn_ctx *ctx = &PGrnContext;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_snippet_html);
 

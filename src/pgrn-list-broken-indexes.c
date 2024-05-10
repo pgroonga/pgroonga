@@ -2,7 +2,6 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 
 #include <access/heapam.h>
@@ -12,8 +11,6 @@
 #include <utils/builtins.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_list_broken_indexes);
-
-static grn_ctx *ctx = &PGrnContext;
 
 typedef struct
 {

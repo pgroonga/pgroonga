@@ -58,7 +58,6 @@ typedef struct PGrnJSONBInsertData
 	grn_obj type;
 } PGrnJSONBInsertData;
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 static const unsigned int PGRN_JSON_GENERATE_PATH_IS_ABSOLUTE = 1 << 0;

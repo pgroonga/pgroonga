@@ -14,7 +14,6 @@
 
 #include <xxhash.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_highlighter *highlighter = NULL;
 static Oid indexOID = InvalidOid;

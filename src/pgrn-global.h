@@ -37,7 +37,6 @@ struct PGrnBuffers
 	grn_obj inspect;
 };
 
-extern grn_ctx PGrnContext;
 extern struct PGrnBuffers PGrnBuffers;
 extern int PGrnMatchEscalationThreshold;
 

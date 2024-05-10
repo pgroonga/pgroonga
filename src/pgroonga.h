@@ -1,5 +1,7 @@
 #pragma once
 
+#include <groonga.h>
+
 #include <stdbool.h>
 
 #include <postgres.h>
@@ -153,6 +155,8 @@
 		{"debug", GRN_LOG_DEBUG, false},                                       \
 		{"dump", GRN_LOG_DUMP, false},                                         \
 		{NULL, GRN_LOG_NONE, false}}
+extern grn_ctx PGrnContext;
+static grn_ctx *ctx = &PGrnContext;
 
 extern bool PGrnGroongaInitialized;
 void PGrnEnsureDatabase(void);

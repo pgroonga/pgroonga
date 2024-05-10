@@ -11,7 +11,6 @@
 #	include <varatt.h>
 #endif
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_escape_string);

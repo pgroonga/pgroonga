@@ -2,7 +2,6 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-options.h"
 #include "pgrn-pg.h"
@@ -12,7 +11,6 @@
 #include <utils/array.h>
 #include <utils/builtins.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static grn_obj *table = NULL;
 static grn_obj *textColumn = NULL;
 

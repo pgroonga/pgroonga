@@ -2,7 +2,6 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-keywords.h"
 #include "pgrn-match-positions-byte.h"
@@ -10,7 +9,6 @@
 #include <catalog/pg_type.h>
 #include <utils/builtins.h>
 
-static grn_ctx *ctx = &PGrnContext;
 static grn_obj *keywordsTable = NULL;
 static Oid previousIndexID = InvalidOid;
 

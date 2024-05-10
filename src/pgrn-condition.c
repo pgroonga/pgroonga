@@ -3,15 +3,12 @@
 #include "pgrn-compatible.h"
 
 #include "pgrn-condition.h"
-#include "pgrn-global.h"
 #include "pgrn-pg.h"
 
 #include <access/htup_details.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/typcache.h>
-
-static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)

@@ -45,7 +45,6 @@ typedef struct PGrnSequentialSearchDatum
 	bool used;
 } PGrnSequentialSearchDatum;
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static PGrnSequentialSearchTargetType currentTargetType =
 	PGRN_SEQUENTIAL_SEARCH_TARGET_TEXT;

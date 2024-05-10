@@ -4,7 +4,6 @@
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
 
-static grn_ctx *ctx = &PGrnContext;
 static grn_hash *usingIndexes = NULL;
 
 void

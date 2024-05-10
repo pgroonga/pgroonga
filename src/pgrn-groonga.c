@@ -18,7 +18,6 @@ bool PGrnIsZlibAvailable;
 bool PGrnIsZstdAvailable;
 bool PGrnIsTemporaryIndexSearchAvailable;
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 static bool

@@ -2,7 +2,6 @@
 
 #include "pgrn-compatible.h"
 
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-query-expand.h"
 #include "pgrn-trace-log.h"
@@ -38,7 +37,6 @@ typedef struct
 	RegProcedure scanProcedure;
 } PGrnQueryExpandData;
 
-static grn_ctx *ctx = &PGrnContext;
 static PGrnQueryExpandData currentData;
 static const LOCKMODE lockMode = AccessShareLock;
 

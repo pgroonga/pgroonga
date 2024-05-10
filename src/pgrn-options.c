@@ -34,7 +34,6 @@ typedef struct PGrnOptions
 
 static relopt_kind PGrnReloptionKind;
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj *lexicon = NULL;
 

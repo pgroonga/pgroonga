@@ -1,10 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-compatible.h"
-#include "pgrn-global.h"
 #include "pgrn-writable.h"
-
-static grn_ctx *ctx = &PGrnContext;
 
 #define KEY "pgroonga_writable"
 #define KEY_SIZE (sizeof(KEY) - 1)

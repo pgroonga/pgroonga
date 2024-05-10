@@ -3,12 +3,9 @@
 #include "pgrn-alias.h"
 #include "pgrn-column-name.h"
 #include "pgrn-create.h"
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-options.h"
 #include "pgrn-value.h"
-
-static grn_ctx *ctx = &PGrnContext;
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)

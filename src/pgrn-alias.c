@@ -6,7 +6,6 @@
 #include "pgrn-groonga.h"
 #include "pgrn-wal.h"
 
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 #define TABLE_NAME "Aliases"

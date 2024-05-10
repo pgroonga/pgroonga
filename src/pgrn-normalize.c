@@ -1,7 +1,6 @@
 #include "pgroonga.h"
 
 #include "pgrn-compatible.h"
-#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-normalize.h"
 #include "pgrn-string.h"
@@ -11,7 +10,6 @@
 #	include <varatt.h>
 #endif
 
-static grn_ctx *ctx = &PGrnContext;
 static grn_obj *lexicon = NULL;
 static grn_obj normalizers;
 static grn_obj normalizersBuffer;

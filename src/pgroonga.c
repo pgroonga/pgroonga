@@ -85,6 +85,7 @@ PG_MODULE_MAGIC;
 #define PROGRESS_PGROONGA_PHASE_INDEX_COMMIT 5
 #define PROGRESS_PGROONGA_PHASE_DONE 6
 
+grn_ctx PGrnContext;
 static bool PGrnInitialized = false;
 static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
@@ -299,7 +300,6 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_equal_query_varchar_array_condition);
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_handler);
 
-static grn_ctx *ctx = NULL;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static PGrnPrefixRKSequentialSearchData prefixRKSequentialSearchData;
 
@@ -700,12 +700,10 @@ _PG_init(void)
 		grn_set_default_match_escalation_threshold(
 			PGrnMatchEscalationThreshold);
 
-		rc = grn_ctx_init(&PGrnContext, 0);
+		rc = grn_ctx_init(ctx, 0);
 		PGrnCheckRC(rc, "failed to initialize Groonga context");
 
 		PGrnGroongaInitialized = true;
-
-		ctx = &PGrnContext;
 
 		GRN_LOG(
 			ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
