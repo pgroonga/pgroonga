@@ -73,7 +73,6 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all_last);
 
 #ifdef PGRN_SUPPORT_WAL
-static grn_ctx *ctx = &PGrnContext;
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 #endif
 
