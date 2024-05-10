@@ -98,22 +98,6 @@ PGrnLookup(const char *name, int errorLevel)
 }
 
 grn_obj *
-PGrnLookupWithSize(const char *name, size_t nameSize, int errorLevel)
-{
-	grn_obj *object;
-	object = grn_ctx_get(ctx, name, nameSize);
-	if (!object && errorLevel != PGRN_ERROR_LEVEL_IGNORE)
-	{
-		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
-						 errorLevel,
-						 "object isn't found: <%.*s>",
-						 (int) nameSize,
-						 name);
-	}
-	return object;
-}
-
-grn_obj *
 PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
 {
 	return PGrnLookupColumnWithSize(table, name, strlen(name), errorLevel);
