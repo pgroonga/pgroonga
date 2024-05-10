@@ -734,14 +734,16 @@ PGrnRemoveColumns(grn_obj *table)
 	{
 		grn_id *columnID;
 		grn_obj *column;
+		const char *columnName;
 
 		grn_hash_cursor_get_key(ctx, cursor, (void **) &columnID);
 		column = grn_ctx_at(ctx, *columnID);
 		if (!column)
 			continue;
 
+		columnName = PGrnInspectName(column);
 		grn_obj_remove(ctx, column);
-		PGrnCheck("failed to remove column: <%s>", PGrnInspectName(column));
+		PGrnCheck("failed to remove column: <%s>", columnName);
 	}
 	GRN_HASH_EACH_END(ctx, cursor);
 
