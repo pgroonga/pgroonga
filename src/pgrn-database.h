@@ -1,5 +1,4 @@
-#include "pgroonga.h"
-
+#include "pgrn-constant.h"
 #include "pgrn-portable.h"
 
 #include <sys/stat.h>
@@ -9,7 +8,7 @@
 #	include <unistd.h>
 #endif
 
-static void
+static inline void
 PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)
 {
 #ifdef _WIN32
