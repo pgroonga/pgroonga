@@ -4,6 +4,7 @@ HEADERS =					\
 	src/pgrn-column-name.h			\
 	src/pgrn-command-escape-value.h		\
 	src/pgrn-compatible.h			\
+	src/pgrn-constant.h			\
 	src/pgrn-convert.h			\
 	src/pgrn-crash-safer-statuses.h		\
 	src/pgrn-create.h			\
