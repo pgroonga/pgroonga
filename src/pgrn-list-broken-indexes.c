@@ -72,11 +72,10 @@ PGrnIsLockedSources(Relation index)
 static bool
 PGrnIsLockedLexicon(Relation index)
 {
-	grn_obj *lexicon;
 	int i;
 	for (i = 0; i < index->rd_att->natts; i++)
 	{
-		lexicon = PGrnLookupLexicon(index, i, ERROR);
+		grn_obj *lexicon = PGrnLookupLexicon(index, i, ERROR);
 		if (grn_obj_is_locked(ctx, lexicon))
 		{
 			return true;
