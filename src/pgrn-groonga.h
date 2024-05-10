@@ -387,6 +387,18 @@ void PGrnIndexColumnSetSourceIDs(Relation index,
 								 grn_obj *indexColumn,
 								 grn_obj *sourceIDs);
 
+static inline void
+PGrnRenameTableRawWithSize(grn_obj *table,
+						   const char *newName,
+						   size_t newNameSize)
+{
+	grn_table_rename(ctx, table, newName, newNameSize);
+	PGrnCheck("failed to rename table: <%s> -> <%.*s>",
+			  PGrnInspectName(table),
+			  (int) newNameSize,
+			  newName);
+}
+
 void PGrnRenameTable(Relation index, grn_obj *table, const char *newName);
 
 void PGrnRemoveObject(const char *name);

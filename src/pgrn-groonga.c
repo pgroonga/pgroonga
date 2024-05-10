@@ -436,10 +436,7 @@ PGrnRenameTable(Relation index, grn_obj *table, const char *newName)
 
 	nameSize = grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
 	newNameSize = strlen(newName);
-	grn_table_rename(ctx, table, newName, strlen(newName));
-	PGrnCheck("failed to rename table: <%s> -> <%s>",
-			  PGrnInspectName(table),
-			  newName);
+	PGrnRenameTableRawWithSize(table, newName, newNameSize);
 
 	PGrnWALRenameTable(index, name, nameSize, newName, newNameSize);
 }
