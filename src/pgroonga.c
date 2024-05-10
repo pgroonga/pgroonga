@@ -77,8 +77,6 @@
 
 PG_MODULE_MAGIC;
 
-#define TAG "pgroonga"
-
 #define PROGRESS_PGROONGA_PHASE_IMPORT 2
 #define PROGRESS_PGROONGA_PHASE_INDEX 3
 #define PROGRESS_PGROONGA_PHASE_INDEX_LOAD 4
@@ -312,7 +310,7 @@ PGrnGetThreadLimit(void *data)
 static grn_encoding
 PGrnGetEncoding(void)
 {
-	return PGrnPGEncodingToGrnEncoding(GetDatabaseEncoding(), TAG);
+	return PGrnPGEncodingToGrnEncoding(GetDatabaseEncoding());
 }
 
 static void PGrnScanOpaqueFin(PGrnScanOpaque so);

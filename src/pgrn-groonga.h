@@ -1,5 +1,7 @@
 #pragma once
 
+#include "pgrn-row-level-security.h"
+
 #include <c.h>
 #include <mb/pg_wchar.h>
 #include <postgres.h>
@@ -45,13 +47,92 @@ PGrnGrnRCToPGErrorCode(grn_rc rc)
 	return errorCode;
 }
 
-bool PGrnCheck(const char *format, ...) GRN_ATTRIBUTE_PRINTF(1);
-bool PGrnCheckRC(grn_rc rc, const char *format, ...) GRN_ATTRIBUTE_PRINTF(2);
-bool PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
+static inline bool PGrnCheck(const char *format, ...) GRN_ATTRIBUTE_PRINTF(1);
+static inline bool
+PGrnCheck(const char *format, ...)
+{
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
+	if (ctx->rc == GRN_SUCCESS)
+		return true;
+
+	if (PGrnIsRLSEnabled)
+		PG_RE_THROW();
+
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
+	ereport(ERROR,
+			(errcode(PGrnGrnRCToPGErrorCode(ctx->rc)),
+			 errmsg("%s: %s: %s", PGRN_TAG, message, ctx->errbuf)));
+	return false;
+#undef MESSAGE_SIZE
+}
+
+static inline bool PGrnCheckRC(grn_rc rc, const char *format, ...)
+	GRN_ATTRIBUTE_PRINTF(2);
+static inline bool
+PGrnCheckRC(grn_rc rc, const char *format, ...)
+{
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
+	if (rc == GRN_SUCCESS)
+		return true;
+
+	if (PGrnIsRLSEnabled)
+		PG_RE_THROW();
+
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
+	ereport(ERROR,
+			(errcode(PGrnGrnRCToPGErrorCode(rc)),
+			 errmsg("%s: %s", PGRN_TAG, message)));
+	return false;
+#undef MESSAGE_SIZE
+}
+
+static inline bool
+PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	GRN_ATTRIBUTE_PRINTF(3);
+static inline bool
+PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
+{
+#define MESSAGE_SIZE 4096
+	va_list args;
+	char message[MESSAGE_SIZE];
+
+	if (rc == GRN_SUCCESS)
+		return true;
+
+	if (PGrnIsRLSEnabled)
+	{
+		if (errorLevel == ERROR)
+		{
+			PG_RE_THROW();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	va_start(args, format);
+	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+	va_end(args);
+	ereport(errorLevel,
+			(errcode(PGrnGrnRCToPGErrorCode(rc)),
+			 errmsg("%s: %s", PGRN_TAG, message)));
+	return false;
+#undef MESSAGE_SIZE
+}
 
 static inline grn_encoding
-PGrnPGEncodingToGrnEncoding(int pgEncoding, const char *tag)
+PGrnPGEncodingToGrnEncoding(int pgEncoding)
 {
 	switch (pgEncoding)
 	{
@@ -72,7 +153,7 @@ PGrnPGEncodingToGrnEncoding(int pgEncoding, const char *tag)
 	default:
 		ereport(WARNING,
 				errmsg("%s: use default encoding instead of '%s'",
-					   tag,
+					   PGRN_TAG,
 					   pg_encoding_to_char(pgEncoding)));
 		return GRN_ENC_DEFAULT;
 	}

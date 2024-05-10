@@ -5,7 +5,6 @@
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
-#include "pgrn-row-level-security.h"
 #include "pgrn-wal.h"
 
 #include <catalog/catalog.h>
@@ -90,84 +89,6 @@ PGrnInspectName(grn_obj *object)
 	}
 
 	return name;
-}
-
-bool
-PGrnCheck(const char *format, ...)
-{
-#define MESSAGE_SIZE 4096
-	va_list args;
-	char message[MESSAGE_SIZE];
-
-	if (ctx->rc == GRN_SUCCESS)
-		return true;
-
-	if (PGrnIsRLSEnabled)
-		PG_RE_THROW();
-
-	va_start(args, format);
-	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
-	va_end(args);
-	ereport(ERROR,
-			(errcode(PGrnGrnRCToPGErrorCode(ctx->rc)),
-			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
-	return false;
-#undef MESSAGE_SIZE
-}
-
-bool
-PGrnCheckRC(grn_rc rc, const char *format, ...)
-{
-#define MESSAGE_SIZE 4096
-	va_list args;
-	char message[MESSAGE_SIZE];
-
-	if (rc == GRN_SUCCESS)
-		return true;
-
-	if (PGrnIsRLSEnabled)
-		PG_RE_THROW();
-
-	va_start(args, format);
-	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
-	va_end(args);
-	ereport(
-		ERROR,
-		(errcode(PGrnGrnRCToPGErrorCode(rc)), errmsg("pgroonga: %s", message)));
-	return false;
-#undef MESSAGE_SIZE
-}
-
-bool
-PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
-{
-#define MESSAGE_SIZE 4096
-	va_list args;
-	char message[MESSAGE_SIZE];
-
-	if (rc == GRN_SUCCESS)
-		return true;
-
-	if (PGrnIsRLSEnabled)
-	{
-		if (errorLevel == ERROR)
-		{
-			PG_RE_THROW();
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	va_start(args, format);
-	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
-	va_end(args);
-	ereport(
-		errorLevel,
-		(errcode(PGrnGrnRCToPGErrorCode(rc)), errmsg("pgroonga: %s", message)));
-	return false;
-#undef MESSAGE_SIZE
 }
 
 grn_obj *

@@ -12,6 +12,8 @@
 #include "pgrn-compatible.h"
 #include "pgrn-constant.h"
 
+/* Prefix for all log messages. */
+#define PGRN_TAG "pgroonga"
 
 /* Groonga strategy types */
 #define PGrnLessStrategyNumber 1         /* operator < */
