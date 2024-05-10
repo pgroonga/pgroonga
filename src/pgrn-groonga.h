@@ -4,6 +4,7 @@
 
 #include <c.h>
 #include <mb/pg_wchar.h>
+#include <miscadmin.h>
 #include <postgres.h>
 #include <utils/rel.h>
 
@@ -182,6 +183,54 @@ grn_obj *PGrnLookupIndexColumn(Relation index,
 
 void PGrnFormatSourcesTableName(const char *indexName,
 								char output[GRN_TABLE_MAX_KEY_SIZE]);
+
+static inline grn_obj *
+PGrnCreateTableRawWithSize(Oid tableSpaceID,
+						   const char *name,
+						   size_t nameSize,
+						   grn_table_flags flags,
+						   grn_obj *type,
+						   grn_obj *tokenizer,
+						   grn_obj *normalizers,
+						   grn_obj *tokenFilters)
+{
+	const char *path = NULL;
+	char pathBuffer[MAXPGPATH];
+	grn_obj *table;
+
+	if (name)
+	{
+		flags |= GRN_OBJ_PERSISTENT;
+		if (tableSpaceID != InvalidOid)
+		{
+			char *databasePath;
+			char filePath[MAXPGPATH];
+
+			databasePath = GetDatabasePath(MyDatabaseId, tableSpaceID);
+			snprintf(filePath,
+					 sizeof(filePath),
+					 "%s.%.*s",
+					 PGrnDatabaseBasename,
+					 (int) nameSize,
+					 name);
+			join_path_components(pathBuffer, databasePath, filePath);
+			pfree(databasePath);
+
+			path = pathBuffer;
+		}
+	}
+
+	table = grn_table_create(ctx, name, nameSize, path, flags, type, NULL);
+	PGrnCheck("failed to create table: <%.*s>", (int) nameSize, name);
+	if (tokenizer)
+		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
+	if (normalizers)
+		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZERS, normalizers);
+	if (tokenFilters)
+		grn_obj_set_info(ctx, table, GRN_INFO_TOKEN_FILTERS, tokenFilters);
+
+	return table;
+}
 
 grn_obj *PGrnCreateTable(Relation index,
 						 const char *name,

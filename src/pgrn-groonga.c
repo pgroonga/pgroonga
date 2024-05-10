@@ -246,42 +246,24 @@ PGrnCreateTableWithSize(Relation index,
 						grn_obj *normalizers,
 						grn_obj *tokenFilters)
 {
-	const char *path = NULL;
-	char pathBuffer[MAXPGPATH];
+	Oid indexTableSpaceID = InvalidOid;
 	grn_obj *table;
 
-	if (name)
+	if (index)
 	{
-		flags |= GRN_OBJ_PERSISTENT;
-		if (index &&
-			PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
-		{
-			char *databasePath;
-			char filePath[MAXPGPATH];
-
-			databasePath = GetDatabasePath(
-				MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
-			snprintf(filePath,
-					 sizeof(filePath),
-					 "%s.%.*s",
-					 PGrnDatabaseBasename,
-					 (int) nameSize,
-					 name);
-			join_path_components(pathBuffer, databasePath, filePath);
-			pfree(databasePath);
-
-			path = pathBuffer;
-		}
+		indexTableSpaceID = PGRN_RELATION_GET_LOCATOR_SPACE(index);
+		if (indexTableSpaceID == MyDatabaseTableSpace)
+			indexTableSpaceID = InvalidOid;
 	}
 
-	table = grn_table_create(ctx, name, nameSize, path, flags, type, NULL);
-	PGrnCheck("failed to create table: <%.*s>", (int) nameSize, name);
-	if (tokenizer)
-		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
-	if (normalizers)
-		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZERS, normalizers);
-	if (tokenFilters)
-		grn_obj_set_info(ctx, table, GRN_INFO_TOKEN_FILTERS, tokenFilters);
+	table = PGrnCreateTableRawWithSize(indexTableSpaceID,
+									   name,
+									   nameSize,
+									   flags,
+									   type,
+									   tokenizer,
+									   normalizers,
+									   tokenFilters);
 
 	PGrnWALCreateTable(index,
 					   name,
