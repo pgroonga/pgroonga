@@ -1,6 +1,7 @@
 #pragma once
 
 #include <postgres.h>
+
 #include <utils/relcache.h>
 
 #include <groonga.h>
@@ -13,6 +14,10 @@ void PGrnWALDisable(void);
 
 size_t PGrnWALGetMaxSize(void);
 void PGrnWALSetMaxSize(size_t size);
+
+bool PGrnWALResourceManagerGetEnabled(void);
+void PGrnWALResourceManagerEnable(void);
+void PGrnWALResourceManagerDisable(void);
 
 PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);

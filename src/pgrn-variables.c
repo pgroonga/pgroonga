@@ -46,6 +46,8 @@ static bool PGrnForceMatchEscalation;
 
 static char *PGrnLibgroongaVersion;
 
+static bool PGrnEnableWALResourceManager;
+
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx,
 						grn_log_level level,
@@ -239,6 +241,19 @@ PGrnEnableRLSAssign(bool newValue, void *extra)
 	PGrnEnableRLS = newValue;
 }
 
+static void
+PGrnEnableWALResourceManagerAssign(bool new_value, void *extra)
+{
+	if (new_value)
+	{
+		PGrnWALResourceManagerEnable();
+	}
+	else
+	{
+		PGrnWALResourceManagerDisable();
+	}
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -426,6 +441,18 @@ PGrnInitializeVariables(void)
 							 0,
 							 NULL,
 							 PGrnEnableRLSAssign,
+							 NULL);
+
+	DefineCustomBoolVariable("pgroonga.enable_wal_resource_manager",
+							 "Enable WAL resource manager.",
+							 "You need to enable this "
+							 "to use custom WAL for replication.",
+							 &PGrnEnableWALResourceManager,
+							 PGrnWALResourceManagerGetEnabled(),
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnEnableWALResourceManagerAssign,
 							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");

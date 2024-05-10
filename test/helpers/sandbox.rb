@@ -228,8 +228,8 @@ module Helpers
       end
       conf = File.read(postgresql_conf)
       conf = conf.gsub(/^shared_preload_libraries = '(.*?)'/) do
-        libraries = [$1, *shared_preload_libraries].join(",")
-        "shared_preload_libraries = '#{libraries}'"
+        libraries = $1.split(/\s*,\s*/) + shared_preload_libraries
+        "shared_preload_libraries = '#{libraries.join(",")}'"
       end
       File.write(postgresql_conf, conf)
     end

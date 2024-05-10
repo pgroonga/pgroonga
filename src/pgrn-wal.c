@@ -5,6 +5,9 @@
 #include "pgrn-index-status.h"
 #include "pgrn-pg.h"
 #include "pgrn-wal.h"
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+#	include "pgrn-wal-custom.h"
+#endif
 #include "pgrn-writable.h"
 
 #include <access/tableam.h>
@@ -14,6 +17,7 @@
 
 static bool PGrnWALEnabled = false;
 static size_t PGrnWALMaxSize = 0;
+static bool PGrnWALResourceManagerEnabled = false;
 
 bool
 PGrnWALGetEnabled(void)
@@ -43,6 +47,24 @@ void
 PGrnWALSetMaxSize(size_t size)
 {
 	PGrnWALMaxSize = size;
+}
+
+bool
+PGrnWALResourceManagerGetEnabled(void)
+{
+	return PGrnWALResourceManagerEnabled;
+}
+
+void
+PGrnWALResourceManagerEnable(void)
+{
+	PGrnWALResourceManagerEnabled = true;
+}
+
+void
+PGrnWALResourceManagerDisable(void)
+{
+	PGrnWALResourceManagerEnabled = false;
 }
 
 #ifdef PGRN_SUPPORT_WAL
@@ -813,23 +835,20 @@ PGrnWALInsertKey(PGrnWALData *data, grn_obj *key)
 #endif
 }
 
-void
-PGrnWALCreateTable(Relation index,
-				   const char *name,
-				   size_t nameSize,
-				   grn_table_flags flags,
-				   grn_obj *type,
-				   grn_obj *tokenizer,
-				   grn_obj *normalizers,
-				   grn_obj *tokenFilters)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALCreateTableGeneral(Relation index,
+						  const char *name,
+						  size_t nameSize,
+						  grn_table_flags flags,
+						  grn_obj *type,
+						  grn_obj *tokenizer,
+						  grn_obj *normalizers,
+						  grn_obj *tokenFilters)
+{
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 7;
-
-	if (!name)
-		return;
 
 	data = PGrnWALStart(index);
 	if (!data)
@@ -861,6 +880,80 @@ PGrnWALCreateTable(Relation index,
 	msgpack_pack_grn_obj(packer, tokenFilters);
 
 	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALCreateTableCustom(Relation index,
+						 const char *name,
+						 size_t nameSize,
+						 grn_table_flags flags,
+						 grn_obj *type,
+						 grn_obj *tokenizer,
+						 grn_obj *normalizers,
+						 grn_obj *tokenFilters)
+{
+	PGrnWALRecordCreateTable record;
+	Oid indexTableSpaceOid = InvalidOid;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	if (index)
+	{
+		indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
+		if (indexTableSpaceOid == MyDatabaseTableSpace)
+			indexTableSpaceOid = InvalidOid;
+	}
+	PGrnWALRecordCreateTableFill(&record,
+								 MyDatabaseId,
+								 GetDatabaseEncoding(),
+								 MyDatabaseTableSpace,
+								 indexTableSpaceOid,
+								 name,
+								 nameSize,
+								 flags,
+								 type,
+								 tokenizer,
+								 normalizers,
+								 tokenFilters);
+	PGrnWALRecordCreateTableWrite(ctx, &record);
+}
+#endif
+
+void
+PGrnWALCreateTable(Relation index,
+				   const char *name,
+				   size_t nameSize,
+				   grn_table_flags flags,
+				   grn_obj *type,
+				   grn_obj *tokenizer,
+				   grn_obj *normalizers,
+				   grn_obj *tokenFilters)
+{
+	if (!name)
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALCreateTableGeneral(index,
+							  name,
+							  nameSize,
+							  flags,
+							  type,
+							  tokenizer,
+							  normalizers,
+							  tokenFilters);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALCreateTableCustom(index,
+							 name,
+							 nameSize,
+							 flags,
+							 type,
+							 tokenizer,
+							 normalizers,
+							 tokenFilters);
 #endif
 }
 
