@@ -2,15 +2,25 @@ CREATE TABLE memos (
   title text,
   content text
 );
-
 CREATE TABLE tags (
   name text
 );
-
 CREATE INDEX pgrn_memos_index ON memos USING PGroonga (title, content);
 CREATE INDEX pgrn_tags_index ON tags USING PGroonga (name);
+select pgroonga_command(
+  'lock_acquire',
+  ARRAY['target_name', pgroonga_table_name('pgrn_tags_index')]
+)::jsonb->>1;
+ ?column? 
+----------
+ true
+(1 row)
 
 SELECT * FROM pgroonga_list_broken_indexes();
+ pgroonga_list_broken_indexes 
+------------------------------
+ pgrn_tags_index
+(1 row)
 
 DROP TABLE memos;
 DROP TABLE tags;
