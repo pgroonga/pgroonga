@@ -5,8 +5,6 @@
 
 #include "pgrn-pg.h"
 
-#include <groonga.h>
-
 #include <utils/builtins.h>
 #ifdef PGRN_HAVE_VARATT_H
 #	include <varatt.h>

@@ -5,8 +5,6 @@
 #include <postgres.h>
 #include <utils/rel.h>
 
-#include <groonga.h>
-
 extern bool PGrnIsLZ4Available;
 extern bool PGrnIsZlibAvailable;
 extern bool PGrnIsZstdAvailable;

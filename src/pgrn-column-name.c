@@ -3,11 +3,7 @@
 #include "pgrn-column-name.h"
 #include "pgrn-groonga.h"
 
-#include <groonga.h>
-
 #include <postgres.h>
-
-#include <mb/pg_wchar.h>
 
 static const char *ENCODED_CHARACTER_FORMAT = "@%05x";
 static const int ENCODED_CHARACTER_LENGTH = 6;
