@@ -1,5 +1,3 @@
-#include "pgroonga.h"
-
 #include "pgrn-compatible.h"
 #include "pgrn-database.h"
 #include "pgrn-tablespace.h"
