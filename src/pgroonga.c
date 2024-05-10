@@ -77,6 +77,8 @@
 
 PG_MODULE_MAGIC;
 
+#define TAG "pgroonga"
+
 #define PROGRESS_PGROONGA_PHASE_IMPORT 2
 #define PROGRESS_PGROONGA_PHASE_INDEX 3
 #define PROGRESS_PGROONGA_PHASE_INDEX_LOAD 4
@@ -310,30 +312,7 @@ PGrnGetThreadLimit(void *data)
 static grn_encoding
 PGrnGetEncoding(void)
 {
-	int enc = GetDatabaseEncoding();
-
-	switch (enc)
-	{
-	case PG_SQL_ASCII:
-	case PG_UTF8:
-		return GRN_ENC_UTF8;
-	case PG_EUC_JP:
-	case PG_EUC_JIS_2004:
-		return GRN_ENC_EUC_JP;
-	case PG_LATIN1:
-	case PG_WIN1252:
-		return GRN_ENC_LATIN1;
-	case PG_KOI8R:
-		return GRN_ENC_KOI8R;
-	case PG_SJIS:
-	case PG_SHIFT_JIS_2004:
-		return GRN_ENC_SJIS;
-	default:
-		elog(WARNING,
-			 "pgroonga: use default encoding instead of '%s'",
-			 GetDatabaseEncodingName());
-		return GRN_ENC_DEFAULT;
-	}
+	return PGrnPGEncodingToGrnEncoding(GetDatabaseEncoding(), TAG);
 }
 
 static void PGrnScanOpaqueFin(PGrnScanOpaque so);
