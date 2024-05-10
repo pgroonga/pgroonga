@@ -1,7 +1,8 @@
-#include "pgroonga.h"
-
 #include "pgrn-database.h"
 
+#include <postgres.h>
+
+#include <fmgr.h>
 #include <miscadmin.h>
 
 #include <groonga.h>

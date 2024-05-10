@@ -1,12 +1,18 @@
 #include "pgrn-constant.h"
 #include "pgrn-portable.h"
 
+#include <stdarg.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #ifndef _WIN32
 #	include <dirent.h>
 #	include <unistd.h>
 #endif
+
+#include <c.h>
+#include <port.h>
 
 static inline void
 PGrnDatabaseRemoveAllRelatedFiles(const char *directoryPath)
