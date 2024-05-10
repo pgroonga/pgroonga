@@ -231,16 +231,16 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
-	switch (info)
+	switch (info & XLR_RMGR_INFO_MASK)
 	{
 	case PGRN_WAL_RECORD_CREATE_TABLE:
-		return "PGROONGA_CREATE_TABLE";
+		return "CREATE_TABLE";
 	case PGRN_WAL_RECORD_CREATE_COLUMN:
-		return "PGROONGA_CREATE_COLUMN";
+		return "CREATE_COLUMN";
 	case PGRN_WAL_RECORD_SET_SOURCES:
-		return "PGROONGA_SET_SOURCES";
+		return "SET_SOURCES";
 	default:
-		return "PGROONGA_UNKNOWN";
+		return "UNKNOWN";
 	}
 }
 
