@@ -36,16 +36,16 @@ pgroonga.enable_wal_resource_manager = yes
     # TODO
     sleep(0.1)
     select = <<-SELECT
-SELECT pgroonga_command('object_inspect',
+SELECT pgroonga_command('object_exist',
                         ARRAY[
-                          'name', pgroonga_index_column_name('memos_content', 'content')
-                        ])::jsonb->1->'sources'->0->'name';
+                          'name', pgroonga_table_name('memos_content')
+                        ])::jsonb->1;
 SELECT
     output = <<-OUTPUT
 #{select};
- ?column?  
------------
- "content"
+ ?column? 
+----------
+ true
 (1 row)
 
     OUTPUT

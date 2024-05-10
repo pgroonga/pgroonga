@@ -228,6 +228,36 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_rename_table(XLogReaderState *record)
+{
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	PGrnWALRecordRenameTable walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = &(walRecord.common),
+		.db = NULL,
+	};
+	PG_TRY();
+	{
+		grn_obj *table;
+
+		PGrnWALRecordRenameTableRead(&walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		table = PGrnLookupWithSize(walRecord.name, walRecord.nameSize, ERROR);
+		PGrnRenameTableRawWithSize(
+			table, walRecord.newName, walRecord.newNameSize);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -239,6 +269,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "CREATE_COLUMN";
 	case PGRN_WAL_RECORD_SET_SOURCES:
 		return "SET_SOURCES";
+	case PGRN_WAL_RECORD_RENAME_TABLE:
+		return "RENAME_TABLE";
 	default:
 		return "UNKNOWN";
 	}
@@ -264,6 +296,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_SET_SOURCES:
 		pgrnwrm_redo_set_sources(record);
+		break;
+	case PGRN_WAL_RECORD_RENAME_TABLE:
+		pgrnwrm_redo_rename_table(record);
 		break;
 	default:
 		ereport(ERROR,

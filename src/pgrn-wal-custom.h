@@ -217,7 +217,7 @@ PGrnWALRecordCreateTableRead(PGrnWALRecordCreateTable *record,
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][create-table] garbage at the end:%zu",
+				   "[wal][record][read][create-table] garbage at the end:%u",
 				   PGRN_TAG,
 				   raw->size));
 	}
@@ -293,7 +293,7 @@ PGrnWALRecordCreateColumnRead(PGrnWALRecordCreateColumn *record,
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][create-column] garbage at the end:%zu",
+				   "[wal][record][read][create-column] garbage at the end:%u",
 				   PGRN_TAG,
 				   raw->size));
 	}
@@ -402,11 +402,73 @@ PGrnWALRecordSetSourcesRead(PGrnWALRecordSetSources *record,
 	}
 	if (raw->size != 0)
 	{
+		ereport(ERROR,
+				errcode(ERRCODE_DATA_EXCEPTION),
+				errmsg("%s: "
+					   "[wal][record][read][set-sources] garbage at the end:%u",
+					   PGRN_TAG,
+					   raw->size));
+	}
+}
+
+typedef struct PGrnWALRecordRenameTable
+{
+	PGrnWALRecordCommon common;
+	const char *name;
+	uint32 nameSize;
+	const char *newName;
+	uint32 newNameSize;
+} PGrnWALRecordRenameTable;
+
+static inline void
+PGrnWALRecordRenameTableFill(PGrnWALRecordRenameTable *record,
+							 Oid dbID,
+							 int dbEncoding,
+							 Oid dbTableSpaceID,
+							 const char *name,
+							 uint32 nameSize,
+							 const char *newName,
+							 uint32 newNameSize)
+{
+	record->common.dbID = dbID;
+	record->common.dbEncoding = dbEncoding;
+	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->name = name;
+	record->nameSize = nameSize;
+	record->newName = newName;
+	record->newNameSize = newNameSize;
+}
+
+static inline void
+PGrnWALRecordRenameTableWrite(PGrnWALRecordRenameTable *record)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) record, offsetof(PGrnWALRecordRenameTable, name));
+	XLogRegisterData((char *) &(record->nameSize), sizeof(uint32));
+	XLogRegisterData((char *) record->name, record->nameSize);
+	XLogRegisterData((char *) &(record->newNameSize), sizeof(uint32));
+	XLogRegisterData((char *) record->newName, record->newNameSize);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_RENAME_TABLE | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordRenameTableRead(PGrnWALRecordRenameTable *record,
+							 PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordRenameTable, name));
+	PGrnWALRecordRawReadData(raw, &(record->nameSize), sizeof(uint32));
+	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
+	PGrnWALRecordRawReadData(raw, &(record->newNameSize), sizeof(uint32));
+	record->newName = PGrnWALRecordRawRefer(raw, record->newNameSize);
+	if (raw->size != 0)
+	{
 		ereport(
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][create-column] garbage at the end:%zu",
+				   "[wal][record][read][rename-table] garbage at the end:%u",
 				   PGRN_TAG,
 				   raw->size));
 	}

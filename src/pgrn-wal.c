@@ -1098,7 +1098,6 @@ static void
 PGrnWALSetSourceIDsCustom(Relation index, grn_obj *column, grn_obj *sourceIDs)
 {
 	PGrnWALRecordSetSources record;
-	Oid indexTableSpaceOid = InvalidOid;
 
 	if (!PGrnWALResourceManagerEnabled)
 		return;
@@ -1127,14 +1126,14 @@ PGrnWALSetSourceIDs(Relation index, grn_obj *column, grn_obj *sourceIDs)
 #endif
 }
 
-void
-PGrnWALRenameTable(Relation index,
-				   const char *name,
-				   size_t nameSize,
-				   const char *newName,
-				   size_t newNameSize)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALRenameTableGeneral(Relation index,
+						  const char *name,
+						  size_t nameSize,
+						  const char *newName,
+						  size_t newNameSize)
+{
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 3;
@@ -1158,6 +1157,46 @@ PGrnWALRenameTable(Relation index,
 	msgpack_pack_str_body(packer, newName, newNameSize);
 
 	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALRenameTableCustom(Relation index,
+						 const char *name,
+						 size_t nameSize,
+						 const char *newName,
+						 size_t newNameSize)
+{
+	PGrnWALRecordRenameTable record;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	PGrnWALRecordRenameTableFill(&record,
+								 MyDatabaseId,
+								 GetDatabaseEncoding(),
+								 MyDatabaseTableSpace,
+								 name,
+								 nameSize,
+								 newName,
+								 newNameSize);
+	PGrnWALRecordRenameTableWrite(&record);
+}
+#endif
+
+void
+PGrnWALRenameTable(Relation index,
+				   const char *name,
+				   size_t nameSize,
+				   const char *newName,
+				   size_t newNameSize)
+{
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALRenameTableGeneral(index, name, nameSize, newName, newNameSize);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALRenameTableCustom(index, name, nameSize, newName, newNameSize);
 #endif
 }
 
