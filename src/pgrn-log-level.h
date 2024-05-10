@@ -11,4 +11,3 @@
 		{"debug", GRN_LOG_DEBUG, false},                                       \
 		{"dump", GRN_LOG_DUMP, false},                                         \
 		{NULL, GRN_LOG_NONE, false}}
-
