@@ -33,7 +33,7 @@ PGrnWALRecordRawRefer(PGrnWALRecordRaw *raw, uint32 size)
 		ereport(ERROR,
 				errcode(ERRCODE_DATA_EXCEPTION),
 				errmsg("%s: [wal][record][refar][data] small data: "
-					   "expected:%zu actual:%zu",
+					   "expected:%u actual:%u",
 					   PGRN_TAG,
 					   size,
 					   raw->size));
@@ -52,7 +52,7 @@ PGrnWALRecordRawReadData(PGrnWALRecordRaw *raw, void *output, uint32 size)
 		ereport(ERROR,
 				errcode(ERRCODE_DATA_EXCEPTION),
 				errmsg("%s: [wal][record][read][data] small data: "
-					   "expected:%zu actual:%zu",
+					   "expected:%u actual:%u",
 					   PGRN_TAG,
 					   size,
 					   raw->size));
