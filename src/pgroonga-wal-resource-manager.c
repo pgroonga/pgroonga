@@ -11,7 +11,9 @@ static grn_ctx *ctx = &PGrnWRMContext;
 #include "pgrn-groonga.h"
 #include "pgrn-log-level.h"
 #include "pgrn-value.h"
-#include "pgrn-wal-custom.h"
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+#	include "pgrn-wal-custom.h"
+#endif
 
 #include <utils/guc.h>
 
