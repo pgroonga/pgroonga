@@ -4,6 +4,7 @@
 
 static grn_ctx PGrnWRMContext;
 static grn_ctx *ctx = &PGrnWRMContext;
+static grn_obj PGrnInspectBuffer;
 
 #include "pgrn-compatible.h"
 #include "pgrn-constant.h"
@@ -261,12 +262,15 @@ pgrnwrm_startup(void)
 	}
 
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": initialize: <%s>", PGRN_VERSION);
+
+	GRN_TEXT_INIT(&PGrnInspectBuffer, 0);
 }
 
 static void
 pgrnwrm_cleanup(void)
 {
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup: <%s>", PGRN_VERSION);
+	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
 	grn_ctx_fin(ctx);
 	grn_fin();
 }

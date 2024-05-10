@@ -84,6 +84,7 @@ PG_MODULE_MAGIC;
 #define PROGRESS_PGROONGA_PHASE_DONE 6
 
 grn_ctx PGrnContext;
+grn_obj PGrnInspectBuffer;
 static bool PGrnInitialized = false;
 static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
@@ -471,6 +472,8 @@ PGrnBeforeShmemExit(int code, Datum arg)
 		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][buffers]", tag);
 		PGrnFinalizeBuffers();
 
+		GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
+
 		GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][context]", tag);
 		grn_ctx_fin(ctx);
 	}
@@ -705,6 +708,8 @@ _PG_init(void)
 
 		GRN_LOG(
 			ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+
+		GRN_TEXT_INIT(&PGrnInspectBuffer, 0);
 
 		PGrnInitializeBuffers();
 

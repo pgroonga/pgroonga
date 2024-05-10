@@ -109,6 +109,7 @@
 
 extern grn_ctx PGrnContext;
 static grn_ctx *ctx = &PGrnContext;
+extern grn_obj PGrnInspectBuffer;
 
 extern bool PGrnGroongaInitialized;
 void PGrnEnsureDatabase(void);

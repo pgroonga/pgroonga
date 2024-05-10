@@ -15,8 +15,36 @@ extern bool PGrnIsTemporaryIndexSearchAvailable;
 
 void PGrnInitializeGroongaInformation(void);
 
-const char *PGrnInspect(grn_obj *object);
-const char *PGrnInspectName(grn_obj *object);
+static inline const char *
+PGrnInspect(grn_obj *object)
+{
+	grn_obj *buffer = &PGrnInspectBuffer;
+
+	GRN_BULK_REWIND(buffer);
+	{
+		grn_rc rc = ctx->rc;
+		grn_inspect(ctx, buffer, object);
+		ctx->rc = rc;
+	}
+	GRN_TEXT_PUTC(ctx, buffer, '\0');
+	return GRN_TEXT_VALUE(buffer);
+}
+
+static inline const char *
+PGrnInspectName(grn_obj *object)
+{
+	static char name[GRN_TABLE_MAX_KEY_SIZE];
+	int nameSize;
+
+	{
+		grn_rc rc = ctx->rc;
+		nameSize = grn_obj_name(ctx, object, name, GRN_TABLE_MAX_KEY_SIZE);
+		name[nameSize] = '\0';
+		ctx->rc = rc;
+	}
+
+	return name;
+}
 
 static inline int
 PGrnGrnRCToPGErrorCode(grn_rc rc)
