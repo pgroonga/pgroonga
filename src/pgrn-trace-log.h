@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pgrn-global.h"
+#include <stdbool.h>
 
 extern bool PGrnEnableTraceLog;
 
@@ -9,9 +9,10 @@ extern bool PGrnEnableTraceLog;
 	{                                                                          \
 		if (PGrnEnableTraceLog)                                                \
 		{                                                                      \
-			GRN_LOG(&PGrnContext,                                              \
+			GRN_LOG(ctx,                                                       \
 					GRN_LOG_NOTICE,                                            \
-					"pgroonga: [trace][%s][%s]",                               \
+					"%s: [trace][%s][%s]",                                     \
+					PGRN_TAG,                                                  \
 					__func__,                                                  \
 					(status));                                                 \
 		}                                                                      \
