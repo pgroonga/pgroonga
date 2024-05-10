@@ -267,6 +267,52 @@ grn_obj *PGrnCreateSimilarTemporaryLexicon(Relation index,
 										   const char *attributeName,
 										   size_t attributeNameSize,
 										   const char *tag);
+
+static inline grn_obj *
+PGrnCreateColumnRawWithSize(Oid tableSpaceID,
+							grn_obj *table,
+							const char *name,
+							size_t nameSize,
+							grn_column_flags flags,
+							grn_obj *type)
+{
+	const char *path = NULL;
+	char pathBuffer[MAXPGPATH];
+	grn_obj *column;
+
+	if (name)
+	{
+		flags |= GRN_OBJ_PERSISTENT;
+		if (tableSpaceID != InvalidOid)
+		{
+			char *databasePath;
+			char tableName[GRN_TABLE_MAX_KEY_SIZE];
+			int tableNameSize;
+			char filePath[MAXPGPATH];
+
+			databasePath = GetDatabasePath(MyDatabaseId, tableSpaceID);
+			tableNameSize =
+				grn_obj_name(ctx, table, tableName, GRN_TABLE_MAX_KEY_SIZE);
+			snprintf(filePath,
+					 sizeof(filePath),
+					 "%s.%.*s.%.*s",
+					 PGrnDatabaseBasename,
+					 tableNameSize,
+					 tableName,
+					 (int) nameSize,
+					 name);
+			join_path_components(pathBuffer, databasePath, filePath);
+			pfree(databasePath);
+
+			path = pathBuffer;
+		}
+	}
+	column = grn_column_create(ctx, table, name, nameSize, path, flags, type);
+	PGrnCheck("failed to create column: <%.*s>", (int) nameSize, name);
+
+	return column;
+}
+
 grn_obj *PGrnCreateColumn(Relation index,
 						  grn_obj *table,
 						  const char *name,

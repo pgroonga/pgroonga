@@ -404,41 +404,23 @@ PGrnCreateColumnWithSize(Relation index,
 						 grn_column_flags flags,
 						 grn_obj *type)
 {
-	const char *path = NULL;
-	char pathBuffer[MAXPGPATH];
+	Oid indexTableSpaceID = InvalidOid;
 	grn_obj *column;
 
 	if (name)
 	{
 		flags |= GRN_OBJ_PERSISTENT;
-		if (index &&
-			PGRN_RELATION_GET_LOCATOR_SPACE(index) != MyDatabaseTableSpace)
-		{
-			char *databasePath;
-			char tableName[GRN_TABLE_MAX_KEY_SIZE];
-			int tableNameSize;
-			char filePath[MAXPGPATH];
-
-			databasePath = GetDatabasePath(
-				MyDatabaseId, PGRN_RELATION_GET_LOCATOR_SPACE(index));
-			tableNameSize =
-				grn_obj_name(ctx, table, tableName, GRN_TABLE_MAX_KEY_SIZE);
-			snprintf(filePath,
-					 sizeof(filePath),
-					 "%s.%.*s.%.*s",
-					 PGrnDatabaseBasename,
-					 tableNameSize,
-					 tableName,
-					 (int) nameSize,
-					 name);
-			join_path_components(pathBuffer, databasePath, filePath);
-			pfree(databasePath);
-
-			path = pathBuffer;
-		}
 	}
-	column = grn_column_create(ctx, table, name, nameSize, path, flags, type);
-	PGrnCheck("failed to create column: <%.*s>", (int) nameSize, name);
+
+	if (index)
+	{
+		indexTableSpaceID = PGRN_RELATION_GET_LOCATOR_SPACE(index);
+		if (indexTableSpaceID == MyDatabaseTableSpace)
+			indexTableSpaceID = InvalidOid;
+	}
+
+	column = PGrnCreateColumnRawWithSize(
+		indexTableSpaceID, table, name, nameSize, flags, type);
 
 	PGrnWALCreateColumn(index, table, name, nameSize, flags, type);
 
