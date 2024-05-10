@@ -15,11 +15,68 @@ void PGrnInitializeGroongaInformation(void);
 const char *PGrnInspect(grn_obj *object);
 const char *PGrnInspectName(grn_obj *object);
 
-int PGrnRCToPgErrorCode(grn_rc rc);
+static inline int
+PGrnGrnRCToPGErrorCode(grn_rc rc)
+{
+	int errorCode = ERRCODE_SYSTEM_ERROR;
+
+	/* TODO: Fill me. */
+	switch (rc)
+	{
+	case GRN_NO_SUCH_FILE_OR_DIRECTORY:
+		errorCode = ERRCODE_IO_ERROR;
+		break;
+	case GRN_INPUT_OUTPUT_ERROR:
+		errorCode = ERRCODE_IO_ERROR;
+		break;
+	case GRN_INVALID_ARGUMENT:
+		errorCode = ERRCODE_INVALID_PARAMETER_VALUE;
+		break;
+	case GRN_FUNCTION_NOT_IMPLEMENTED:
+		errorCode = ERRCODE_FEATURE_NOT_SUPPORTED;
+		break;
+	case GRN_NO_MEMORY_AVAILABLE:
+		errorCode = ERRCODE_OUT_OF_MEMORY;
+		break;
+	default:
+		break;
+	}
+
+	return errorCode;
+}
+
 bool PGrnCheck(const char *format, ...) GRN_ATTRIBUTE_PRINTF(1);
 bool PGrnCheckRC(grn_rc rc, const char *format, ...) GRN_ATTRIBUTE_PRINTF(2);
 bool PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	GRN_ATTRIBUTE_PRINTF(3);
+
+static inline grn_encoding
+PGrnPGEncodingToGrnEncoding(int pgEncoding, const char *tag)
+{
+	switch (pgEncoding)
+	{
+	case PG_SQL_ASCII:
+	case PG_UTF8:
+		return GRN_ENC_UTF8;
+	case PG_EUC_JP:
+	case PG_EUC_JIS_2004:
+		return GRN_ENC_EUC_JP;
+	case PG_LATIN1:
+	case PG_WIN1252:
+		return GRN_ENC_LATIN1;
+	case PG_KOI8R:
+		return GRN_ENC_KOI8R;
+	case PG_SJIS:
+	case PG_SHIFT_JIS_2004:
+		return GRN_ENC_SJIS;
+	default:
+		ereport(WARNING,
+				errmsg("%s: use default encoding instead of '%s'",
+					   tag,
+					   pg_encoding_to_char(pgEncoding)));
+		return GRN_ENC_DEFAULT;
+	}
+}
 
 grn_obj *PGrnLookup(const char *name, int errorLevel);
 grn_obj *PGrnLookupWithSize(const char *name, size_t nameSize, int errorLevel);

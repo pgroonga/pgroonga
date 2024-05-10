@@ -94,36 +94,6 @@ PGrnInspectName(grn_obj *object)
 	return name;
 }
 
-int
-PGrnRCToPgErrorCode(grn_rc rc)
-{
-	int errorCode = ERRCODE_SYSTEM_ERROR;
-
-	/* TODO: Fill me. */
-	switch (rc)
-	{
-	case GRN_NO_SUCH_FILE_OR_DIRECTORY:
-		errorCode = ERRCODE_IO_ERROR;
-		break;
-	case GRN_INPUT_OUTPUT_ERROR:
-		errorCode = ERRCODE_IO_ERROR;
-		break;
-	case GRN_INVALID_ARGUMENT:
-		errorCode = ERRCODE_INVALID_PARAMETER_VALUE;
-		break;
-	case GRN_FUNCTION_NOT_IMPLEMENTED:
-		errorCode = ERRCODE_FEATURE_NOT_SUPPORTED;
-		break;
-	case GRN_NO_MEMORY_AVAILABLE:
-		errorCode = ERRCODE_OUT_OF_MEMORY;
-		break;
-	default:
-		break;
-	}
-
-	return errorCode;
-}
-
 bool
 PGrnCheck(const char *format, ...)
 {
@@ -141,7 +111,7 @@ PGrnCheck(const char *format, ...)
 	grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 	va_end(args);
 	ereport(ERROR,
-			(errcode(PGrnRCToPgErrorCode(ctx->rc)),
+			(errcode(PGrnGrnRCToPGErrorCode(ctx->rc)),
 			 errmsg("pgroonga: %s: %s", message, ctx->errbuf)));
 	return false;
 #undef MESSAGE_SIZE
@@ -165,7 +135,7 @@ PGrnCheckRC(grn_rc rc, const char *format, ...)
 	va_end(args);
 	ereport(
 		ERROR,
-		(errcode(PGrnRCToPgErrorCode(rc)), errmsg("pgroonga: %s", message)));
+		(errcode(PGrnGrnRCToPGErrorCode(rc)), errmsg("pgroonga: %s", message)));
 	return false;
 #undef MESSAGE_SIZE
 }
@@ -197,7 +167,7 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	va_end(args);
 	ereport(
 		errorLevel,
-		(errcode(PGrnRCToPgErrorCode(rc)), errmsg("pgroonga: %s", message)));
+		(errcode(PGrnGrnRCToPGErrorCode(rc)), errmsg("pgroonga: %s", message)));
 	return false;
 #undef MESSAGE_SIZE
 }
