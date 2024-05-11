@@ -162,6 +162,16 @@ module Helpers
       @running
     end
 
+    def postgresql_conf
+      File.join(@dir, "postgresql.conf")
+    end
+
+    def append_configuration(configuration)
+      File.open(postgresql_conf, "a") do |conf|
+        conf.puts(configuration)
+      end
+    end
+
     def initdb(db_path: "db",
                port: 15432,
                shared_preload_libraries: [])
@@ -177,21 +187,21 @@ module Helpers
                   "--username", @user,
                   "-D", @dir)
       FileUtils.mkdir_p(socket_dir)
-      postgresql_conf = File.join(@dir, "postgresql.conf")
-      File.open(postgresql_conf, "a") do |conf|
-        conf.puts("listen_addresses = '#{@host}'")
-        conf.puts("port = #{@port}")
-        unless windows?
-          conf.puts("unix_socket_directories = '#{socket_dir}'")
-        end
-        conf.puts("logging_collector = on")
-        conf.puts("log_filename = '#{@log_base_name}'")
-        conf.puts("wal_level = replica")
-        conf.puts("max_wal_senders = 4")
-        conf.puts("shared_preload_libraries = " +
-                  "'#{shared_preload_libraries.join(",")}'")
-        yield(conf) if block_given?
+      conf = StringIO.new
+      conf.puts("application_name = 'primary'")
+      conf.puts("listen_addresses = '#{@host}'")
+      conf.puts("port = #{@port}")
+      unless windows?
+        conf.puts("unix_socket_directories = '#{socket_dir}'")
       end
+      conf.puts("logging_collector = on")
+      conf.puts("log_filename = '#{@log_base_name}'")
+      conf.puts("wal_level = replica")
+      conf.puts("max_wal_senders = 4")
+      conf.puts("shared_preload_libraries = " +
+                "'#{shared_preload_libraries.join(",")}'")
+      yield(conf) if block_given?
+      append_configuration(conf.string)
       pg_hba_conf = File.join(@dir, "pg_hba.conf")
       File.open(pg_hba_conf, "a") do |conf|
         conf.puts("host replication #{@replication_user} #{@host}/32 trust")
@@ -213,18 +223,22 @@ module Helpers
       @log_path = File.join(@dir, "log", @log_base_name)
       @port = primary.port + 1
       run_command("pg_basebackup",
+                  "--create-slot",
+                  "--slot", "standby",
                   "--host", primary.host,
                   "--port", primary.port.to_s,
                   "--pgdata", @dir,
                   "--username", primary.replication_user,
                   "--write-recovery-conf",
                   "--verbose")
-      postgresql_conf = File.join(@dir, "postgresql.conf")
-      File.open(postgresql_conf, "a") do |conf|
-        conf.puts("hot_standby = on")
-        conf.puts("port = #{@port}")
-        yield(conf) if block_given?
-      end
+      conf = StringIO.new
+      conf.puts("application_name = 'standby'")
+      conf.puts("cluster_name = 'standby'")
+      conf.puts("primary_slot_name = 'standby'")
+      conf.puts("hot_standby = on")
+      conf.puts("port = #{@port}")
+      yield(conf) if block_given?
+      append_configuration(conf.string)
       conf = File.read(postgresql_conf)
       conf = conf.gsub(/^shared_preload_libraries = '(.*?)'/) do
         libraries = $1.split(/\s*,\s*/) + shared_preload_libraries

@@ -16,23 +16,28 @@ pgroonga.enable_wal_resource_manager = yes
   end
 
   def shared_preload_libraries
-    [
-      # We may use this later.
-      # "pgroonga_wal_resource_manager",
-    ]
+    ["pgroonga_wal_resource_manager"]
   end
 
   def shared_preload_libraries_standby
-    ["pgroonga_wal_resource_manager"]
+    []
   end
 
   setup :setup_standby_db
   teardown :teardown_standby_db
 
-  test "create column" do
+  setup def setup_synchronous_replication
+    stop_postgres
+    @postgresql.append_configuration(<<-CONFIG)
+synchronous_commit = remote_apply
+synchronous_standby_names = standby
+    CONFIG
+    start_postgres
+  end
+
+  test "index search" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-
     run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
 
     select = "SELECT * FROM memos WHERE content &@ 'PGroonga'"
