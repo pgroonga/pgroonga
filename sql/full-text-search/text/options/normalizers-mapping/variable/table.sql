@@ -19,7 +19,7 @@ INSERT INTO memos VALUES ('グルンガ');
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (content)
   WITH (normalizers_mapping = '{
-          "content": "NormalizerNFKC130(\"unify_kana\", true), NormalizerTable(\"normalized\", \"${table:pgrn_normalizations_index}.normalized\", \"target\", \"target\")"
+          "content": "NormalizerNFKC130(\"unify_kana\", true), NormalizerTable(\"normalized\", \"${table:public.pgrn_normalizations_index}.normalized\", \"target\", \"target\")"
        }');
 
 SELECT jsonb_pretty(
