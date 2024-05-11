@@ -288,7 +288,10 @@ SELECT jsonb_pretty(
 
   sub_test_case "pgroonga.max_wal_size" do
     def additional_configurations
-      "pgroonga.max_wal_size = 32kB"
+      <<-CONFIG
+pgroonga.enable_wal = yes
+pgroonga.max_wal_size = 32kB
+      CONFIG
     end
 
     def additional_standby_configurations

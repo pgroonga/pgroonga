@@ -190,7 +190,6 @@ module Helpers
         conf.puts("max_wal_senders = 4")
         conf.puts("shared_preload_libraries = " +
                   "'#{shared_preload_libraries.join(",")}'")
-        conf.puts("pgroonga.enable_wal = yes")
         yield(conf) if block_given?
       end
       pg_hba_conf = File.join(@dir, "pg_hba.conf")
@@ -428,7 +427,9 @@ module Helpers
     end
 
     def additional_configurations
-      ""
+      <<-CONFIG
+pgroonga.enable_wal = yes
+      CONFIG
     end
 
     def teardown_db

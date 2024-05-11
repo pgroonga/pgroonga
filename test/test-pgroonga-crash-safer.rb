@@ -15,6 +15,7 @@ class PGroongaCrashSaferTestCase < Test::Unit::TestCase
   def additional_configurations
     <<-CONFIG
 pgroonga.enable_crash_safe = yes
+pgroonga.enable_wal = yes
 pgroonga.log_level = debug
 pgroonga_crash_safer.flush_naptime = #{flush_naptime}
 pgroonga_crash_safer.log_level = debug
