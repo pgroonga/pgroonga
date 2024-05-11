@@ -33,19 +33,27 @@ pgroonga.enable_wal_resource_manager = yes
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
 
-    # TODO
-    sleep(0.1)
-    select = <<-SELECT
-SELECT pgroonga_command('object_exist',
-                        ARRAY[
-                          'name', pgroonga_table_name('memos_content')
-                        ])::jsonb->1;
-SELECT
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'PGroonga'"
+    output = <<-OUTPUT
+EXPLAIN (COSTS OFF) #{select};
+                    QUERY PLAN                     
+---------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@ 'PGroonga'::text)
+   ->  Bitmap Index Scan on memos_content
+         Index Cond: (content &@ 'PGroonga'::text)
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
     output = <<-OUTPUT
 #{select};
- ?column? 
-----------
- true
+      content      
+-------------------
+ PGroonga is good!
 (1 row)
 
     OUTPUT

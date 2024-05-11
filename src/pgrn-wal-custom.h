@@ -135,7 +135,11 @@ typedef struct PGrnWALRecordCommon
 
 typedef struct PGrnWALRecordCreateTable
 {
-	PGrnWALRecordCommon common;
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
 	Oid indexTableSpaceID;
 	int32 nameSize;
 	const char *name;
@@ -160,9 +164,9 @@ PGrnWALRecordCreateTableFill(PGrnWALRecordCreateTable *record,
 							 grn_obj *normalizers,
 							 grn_obj *tokenFilters)
 {
-	record->common.dbID = dbID;
-	record->common.dbEncoding = dbEncoding;
-	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
 	record->indexTableSpaceID = indexTableSpaceID;
 	record->nameSize = (int32) nameSize;
 	record->name = name;
@@ -225,7 +229,11 @@ PGrnWALRecordCreateTableRead(PGrnWALRecordCreateTable *record,
 
 typedef struct PGrnWALRecordCreateColumn
 {
-	PGrnWALRecordCommon common;
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
 	Oid indexTableSpaceID;
 	grn_obj *table;
 	int32 nameSize;
@@ -246,9 +254,9 @@ PGrnWALRecordCreateColumnFill(PGrnWALRecordCreateColumn *record,
 							  grn_column_flags flags,
 							  grn_obj *type)
 {
-	record->common.dbID = dbID;
-	record->common.dbEncoding = dbEncoding;
-	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
 	record->indexTableSpaceID = indexTableSpaceID;
 	record->table = table;
 	record->nameSize = (int32) nameSize;
@@ -301,7 +309,11 @@ PGrnWALRecordCreateColumnRead(PGrnWALRecordCreateColumn *record,
 
 typedef struct PGrnWALRecordSetSources
 {
-	PGrnWALRecordCommon common;
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
 	grn_obj *column;
 	grn_obj *sourceIDs;
 	grn_obj *sourceNames;
@@ -315,9 +327,9 @@ PGrnWALRecordSetSourcesFill(PGrnWALRecordSetSources *record,
 							grn_obj *column,
 							grn_obj *sourceIDs)
 {
-	record->common.dbID = dbID;
-	record->common.dbEncoding = dbEncoding;
-	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
 	record->column = column;
 	record->sourceIDs = sourceIDs;
 	record->sourceNames = NULL;
@@ -411,7 +423,11 @@ PGrnWALRecordSetSourcesRead(PGrnWALRecordSetSources *record,
 
 typedef struct PGrnWALRecordRenameTable
 {
-	PGrnWALRecordCommon common;
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
 	const char *name;
 	uint32 nameSize;
 	const char *newName;
@@ -428,9 +444,9 @@ PGrnWALRecordRenameTableFill(PGrnWALRecordRenameTable *record,
 							 const char *newName,
 							 uint32 newNameSize)
 {
-	record->common.dbID = dbID;
-	record->common.dbEncoding = dbEncoding;
-	record->common.dbTableSpaceID = dbTableSpaceID;
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
 	record->name = name;
 	record->nameSize = nameSize;
 	record->newName = newName;
@@ -469,5 +485,290 @@ PGrnWALRecordRenameTableRead(PGrnWALRecordRenameTable *record,
 				   "[wal][record][read][rename-table] garbage at the end:%u",
 				   PGRN_TAG,
 				   raw->size));
+	}
+}
+
+typedef struct PGrnWALRecordInsert
+{
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
+	const char *tableName;
+	uint32 tableNameSize;
+	uint32 nColumns;
+	grn_obj *columnNames;
+	grn_obj *columnValues;
+} PGrnWALRecordInsert;
+
+static inline void
+PGrnWALRecordInsertWriteStart(grn_obj *buffer,
+							  PGrnWALRecordCommon *record,
+							  grn_obj *table,
+							  uint32 nColumns)
+{
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbID), sizeof(Oid));
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbEncoding), sizeof(int));
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbTableSpaceID), sizeof(Oid));
+	{
+		char name[GRN_TABLE_MAX_KEY_SIZE];
+		uint32 nameSize =
+			grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
+		GRN_TEXT_PUT(ctx, buffer, &nameSize, sizeof(uint32));
+		GRN_TEXT_PUT(ctx, buffer, name, nameSize);
+	}
+	GRN_TEXT_PUT(ctx, buffer, &nColumns, sizeof(uint32));
+}
+
+static inline void
+PGrnWALRecordInsertWriteColumnStart(grn_obj *buffer,
+									const char *name,
+									uint32 nameSize)
+{
+	GRN_TEXT_PUT(ctx, buffer, &nameSize, sizeof(uint32));
+	GRN_TEXT_PUT(ctx, buffer, name, nameSize);
+}
+
+static inline void
+PGrnWALRecordInsertWriteColumnValueKey(grn_obj *buffer,
+									   const char *key,
+									   uint32 keySize)
+{
+	GRN_TEXT_PUT(ctx, buffer, &keySize, sizeof(uint32));
+	GRN_TEXT_PUT(ctx, buffer, key, keySize);
+}
+
+static inline void
+PGrnWALRecordInsertWriteColumnValueRaw(grn_obj *buffer,
+									   const char *name,
+									   uint32 nameSize,
+									   grn_id domain,
+									   const char *value,
+									   uint32 valueSize)
+{
+	GRN_TEXT_PUT(ctx, buffer, &domain, sizeof(grn_id));
+	switch (domain)
+	{
+	case GRN_DB_BOOL:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(bool));
+		break;
+	case GRN_DB_INT8:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(int8_t));
+		break;
+	case GRN_DB_UINT8:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(uint8_t));
+		break;
+	case GRN_DB_INT16:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(int16_t));
+		break;
+	case GRN_DB_UINT16:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(uint16_t));
+		break;
+	case GRN_DB_INT32:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(int32_t));
+		break;
+	case GRN_DB_UINT32:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(uint32_t));
+		break;
+	case GRN_DB_INT64:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(int64_t));
+		break;
+	case GRN_DB_UINT64:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(uint64_t));
+		break;
+	case GRN_DB_FLOAT:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(double));
+		break;
+	case GRN_DB_TIME:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(int64_t));
+		break;
+	case GRN_DB_SHORT_TEXT:
+	case GRN_DB_TEXT:
+	case GRN_DB_LONG_TEXT:
+		GRN_TEXT_PUT(ctx, buffer, &valueSize, sizeof(uint32));
+		GRN_TEXT_PUT(ctx, buffer, value, valueSize);
+		break;
+	default:
+	{
+		const char *tag = "[wal][insert][column][value]";
+		char domainName[GRN_TABLE_MAX_KEY_SIZE];
+		int domainNameSize;
+
+		domainNameSize = grn_table_get_key(
+			ctx, grn_ctx_db(ctx), domain, domainName, GRN_TABLE_MAX_KEY_SIZE);
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported type: <%.*s>: <%.*s>",
+					tag,
+					(int) nameSize,
+					name,
+					domainNameSize,
+					domainName);
+	}
+	break;
+	}
+}
+
+static inline void
+PGrnWALRecordInsertWriteFinish(grn_obj *buffer)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) GRN_TEXT_VALUE(buffer), GRN_TEXT_LEN(buffer));
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_INSERT | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
+{
+	size_t i;
+	PGrnWALRecordRawReadData(raw, &(record->dbID), sizeof(Oid));
+	PGrnWALRecordRawReadData(raw, &(record->dbEncoding), sizeof(int));
+	PGrnWALRecordRawReadData(raw, &(record->dbTableSpaceID), sizeof(Oid));
+	PGrnWALRecordRawReadData(raw, &(record->tableNameSize), sizeof(uint32));
+	record->tableName = PGrnWALRecordRawRefer(raw, record->tableNameSize);
+	PGrnWALRecordRawReadData(raw, &(record->nColumns), sizeof(uint32));
+	for (i = 0; i < record->nColumns; i++)
+	{
+		const char *name;
+		uint32 nameSize;
+		grn_id domain;
+		union {
+			bool boolValue;
+			int8_t int8Value;
+			uint8_t uint8Value;
+			int16_t int16Value;
+			uint16_t uint16Value;
+			int32_t int32Value;
+			uint32_t uint32Value;
+			int64_t int64Value;
+			uint64_t uint64Value;
+			double doubleValue;
+		} valueBuffer;
+		const void *value;
+		uint32 valueSize;
+
+		PGrnWALRecordRawReadData(raw, &nameSize, sizeof(uint32));
+		name = PGrnWALRecordRawRefer(raw, nameSize);
+		grn_vector_add_element(
+			ctx, record->columnNames, name, nameSize, 0, GRN_DB_SHORT_TEXT);
+
+		if (nameSize == GRN_COLUMN_NAME_KEY_LEN &&
+			memcmp(name, GRN_COLUMN_NAME_KEY, GRN_COLUMN_NAME_KEY_LEN) == 0)
+		{
+			domain = GRN_DB_SHORT_TEXT; /* TODO: GRN_DB_SHORT_BINARY */
+			PGrnWALRecordRawReadData(raw, &valueSize, sizeof(uint32));
+			value = PGrnWALRecordRawRefer(raw, valueSize);
+		}
+		else
+		{
+			PGrnWALRecordRawReadData(raw, &domain, sizeof(grn_id));
+			switch (domain)
+			{
+			case GRN_DB_BOOL:
+				valueSize = sizeof(bool);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.boolValue), valueSize);
+				value = &(valueBuffer.boolValue);
+				break;
+			case GRN_DB_INT8:
+				valueSize = sizeof(int8_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.int8Value), valueSize);
+				value = &(valueBuffer.int8Value);
+				break;
+			case GRN_DB_UINT8:
+				valueSize = sizeof(uint8_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.uint8Value), valueSize);
+				value = &(valueBuffer.uint8Value);
+				break;
+			case GRN_DB_INT16:
+				valueSize = sizeof(int16_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.int16Value), valueSize);
+				value = &(valueBuffer.int16Value);
+				break;
+			case GRN_DB_UINT16:
+				valueSize = sizeof(uint16_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.uint16Value), valueSize);
+				value = &(valueBuffer.uint16Value);
+				break;
+			case GRN_DB_INT32:
+				valueSize = sizeof(int32_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.int32Value), valueSize);
+				value = &(valueBuffer.int32Value);
+				break;
+			case GRN_DB_UINT32:
+				valueSize = sizeof(uint32_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.uint32Value), valueSize);
+				value = &(valueBuffer.uint32Value);
+				break;
+			case GRN_DB_INT64:
+				valueSize = sizeof(int64_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.int64Value), valueSize);
+				value = &(valueBuffer.int64Value);
+				break;
+			case GRN_DB_UINT64:
+				valueSize = sizeof(uint64_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.uint64Value), valueSize);
+				value = &(valueBuffer.uint64Value);
+				break;
+			case GRN_DB_FLOAT:
+				valueSize = sizeof(double);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.doubleValue), valueSize);
+				value = &(valueBuffer.doubleValue);
+				break;
+			case GRN_DB_TIME:
+				valueSize = sizeof(int64_t);
+				PGrnWALRecordRawReadData(
+					raw, &(valueBuffer.int64Value), valueSize);
+				value = &(valueBuffer.int64Value);
+				break;
+			case GRN_DB_SHORT_TEXT:
+			case GRN_DB_TEXT:
+			case GRN_DB_LONG_TEXT:
+				PGrnWALRecordRawReadData(raw, &valueSize, sizeof(uint32));
+				value = PGrnWALRecordRawRefer(raw, valueSize);
+				break;
+			default:
+			{
+				const char *tag = "[wal][record][read][column][value]";
+				char domainName[GRN_TABLE_MAX_KEY_SIZE];
+				int domainNameSize;
+
+				domainNameSize = grn_table_get_key(ctx,
+												   grn_ctx_db(ctx),
+												   domain,
+												   domainName,
+												   GRN_TABLE_MAX_KEY_SIZE);
+				PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+							"%s unsupported type: <%.*s>: <%.*s>",
+							tag,
+							(int) nameSize,
+							name,
+							domainNameSize,
+							domainName);
+			}
+			break;
+			}
+		}
+		grn_vector_add_element(
+			ctx, record->columnValues, value, valueSize, 0, domain);
+	}
+	if (raw->size != 0)
+	{
+		ereport(ERROR,
+				errcode(ERRCODE_DATA_EXCEPTION),
+				errmsg("%s: "
+					   "[wal][record][read][insert] garbage at the end:%u",
+					   PGRN_TAG,
+					   raw->size));
 	}
 }

@@ -83,7 +83,7 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	grn_obj tokenFiltersName;
 	PGrnWALRecordCreateTable walRecord = {0};
 	PGrnWRMRedoData data = {
-		.walRecord = &(walRecord.common),
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
 		.db = NULL,
 	};
 	GRN_TEXT_INIT(&typeName, GRN_OBJ_DO_SHALLOW_COPY);
@@ -136,7 +136,7 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 	grn_obj typeName;
 	PGrnWALRecordCreateColumn walRecord = {0};
 	PGrnWRMRedoData data = {
-		.walRecord = &(walRecord.common),
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
 		.db = NULL,
 	};
 	GRN_TEXT_INIT(&tableName, GRN_OBJ_DO_SHALLOW_COPY);
@@ -185,7 +185,7 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 	grn_obj sourceIDs;
 	PGrnWALRecordSetSources walRecord = {0};
 	PGrnWRMRedoData data = {
-		.walRecord = &(walRecord.common),
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
 		.db = NULL,
 	};
 	GRN_TEXT_INIT(&columnName, GRN_OBJ_DO_SHALLOW_COPY);
@@ -237,7 +237,7 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 	};
 	PGrnWALRecordRenameTable walRecord = {0};
 	PGrnWRMRedoData data = {
-		.walRecord = &(walRecord.common),
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
 		.db = NULL,
 	};
 	PG_TRY();
@@ -258,6 +258,119 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_insert(XLogReaderState *record)
+{
+	const char *tag = "[redo][table][add]";
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	grn_obj columnNames;
+	grn_obj columnValues;
+	grn_obj valueBuffer;
+	PGrnWALRecordInsert walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
+		.db = NULL,
+	};
+	GRN_TEXT_INIT(&columnNames, GRN_OBJ_VECTOR);
+	GRN_TEXT_INIT(&columnValues, GRN_OBJ_VECTOR);
+	GRN_VOID_INIT(&valueBuffer);
+	walRecord.columnNames = &columnNames;
+	walRecord.columnValues = &columnValues;
+	PG_TRY();
+	{
+		grn_obj *table;
+		grn_id id = GRN_ID_NIL;
+		uint32 i;
+
+		PGrnWALRecordInsertRead(&walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		table = PGrnLookupWithSize(
+			walRecord.tableName, walRecord.tableNameSize, ERROR);
+		for (i = 0; i < walRecord.nColumns; i++)
+		{
+			const char *name;
+			uint32_t nameSize;
+
+			nameSize = grn_vector_get_element(
+				ctx, walRecord.columnNames, i, &name, NULL, NULL);
+			if (i == 0)
+			{
+				if (nameSize == GRN_COLUMN_NAME_KEY_LEN &&
+					memcmp(name,
+						   GRN_COLUMN_NAME_KEY,
+						   GRN_COLUMN_NAME_KEY_LEN) == 0)
+				{
+					const char *key;
+					uint32_t keySize;
+					keySize = grn_vector_get_element(
+						ctx, walRecord.columnValues, i, &key, NULL, NULL);
+					id = grn_table_add(ctx, table, key, keySize, NULL);
+					PGrnCheck("%s failed to add a record: <%.*s>: <%.*s>",
+							  tag,
+							  (int) walRecord.tableNameSize,
+							  walRecord.tableName,
+							  (int) keySize,
+							  key);
+					continue;
+				}
+				else
+				{
+					id = grn_table_add(ctx, table, NULL, 0, NULL);
+					PGrnCheck("%s failed to add a record: <%.*s>",
+							  tag,
+							  (int) walRecord.tableNameSize,
+							  walRecord.tableName);
+				}
+			}
+
+			{
+				grn_obj *column;
+				const char *value;
+				uint32_t valueSize;
+				grn_id domain;
+
+				column = PGrnLookupColumnWithSize(table, name, nameSize, ERROR);
+				valueSize = grn_vector_get_element(
+					ctx, walRecord.columnValues, i, &value, NULL, &domain);
+				GRN_OBJ_FIN(ctx, &valueBuffer);
+				GRN_OBJ_INIT(
+					&valueBuffer, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, domain);
+				PGrnCheck("%s failed to initialize value buffer: "
+						  "<%.*s.%.*s>: <%u>",
+						  tag,
+						  (int) (walRecord.tableNameSize),
+						  walRecord.tableName,
+						  (int) nameSize,
+						  name,
+						  id);
+				GRN_TEXT_SET_REF(&valueBuffer, value, valueSize);
+				grn_obj_set_value(ctx, column, id, &valueBuffer, GRN_OBJ_SET);
+				PGrnCheck("%s failed to set a column value: "
+						  "<%.*s.%.*s>: <%u>: <%s>",
+						  tag,
+						  (int) (walRecord.tableNameSize),
+						  walRecord.tableName,
+						  (int) nameSize,
+						  name,
+						  id,
+						  PGrnInspect(&valueBuffer));
+			}
+		}
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+		GRN_OBJ_FIN(ctx, &columnNames);
+		GRN_OBJ_FIN(ctx, &columnValues);
+		GRN_OBJ_FIN(ctx, &valueBuffer);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -271,6 +384,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "SET_SOURCES";
 	case PGRN_WAL_RECORD_RENAME_TABLE:
 		return "RENAME_TABLE";
+	case PGRN_WAL_RECORD_INSERT:
+		return "INSERT";
 	default:
 		return "UNKNOWN";
 	}
@@ -299,6 +414,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_RENAME_TABLE:
 		pgrnwrm_redo_rename_table(record);
+		break;
+	case PGRN_WAL_RECORD_INSERT:
+		pgrnwrm_redo_insert(record);
 		break;
 	default:
 		ereport(ERROR,

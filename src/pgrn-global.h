@@ -34,6 +34,7 @@ struct PGrnBuffers
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;
+	grn_obj walBuffer;
 };
 
 extern struct PGrnBuffers PGrnBuffers;

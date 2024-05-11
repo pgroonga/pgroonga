@@ -41,6 +41,7 @@ PGrnInitializeBuffers(void)
 	GRN_TEXT_INIT(&(PGrnBuffers.head), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.body), 0);
 	GRN_TEXT_INIT(&(PGrnBuffers.foot), 0);
+	GRN_TEXT_INIT(&(PGrnBuffers.walBuffer), 0);
 }
 
 void
@@ -73,4 +74,5 @@ PGrnFinalizeBuffers(void)
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.head));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.body));
 	GRN_OBJ_FIN(ctx, &(PGrnBuffers.foot));
+	GRN_OBJ_FIN(ctx, &(PGrnBuffers.walBuffer));
 }
