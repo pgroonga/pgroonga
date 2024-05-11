@@ -64,7 +64,7 @@ module Helpers
     end
 
     def read_command_output_all(input, initial_timeout: 1)
-      all_output = ""
+      all_output = +""
       timeout = initial_timeout
       loop do
         break unless IO.select([input], nil, nil, timeout)
