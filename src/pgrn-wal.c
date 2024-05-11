@@ -1160,7 +1160,7 @@ PGrnWALRenameTableGeneral(Relation index,
 }
 #endif
 
-#ifdef PGRN_SUPPORT_WAL
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
 static void
 PGrnWALRenameTableCustom(Relation index,
 						 const char *name,
