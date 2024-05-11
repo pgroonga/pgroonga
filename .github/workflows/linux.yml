@@ -29,6 +29,7 @@ jobs:
           - PostgreSQL 15
           - PostgreSQL 16
           - PostgreSQL 16 with Groonga main
+          - PostgreSQL 17
         include:
           - label: PostgreSQL 12
             postgresql-version: "12"
