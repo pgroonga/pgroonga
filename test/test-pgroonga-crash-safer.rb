@@ -204,13 +204,7 @@ INSERT INTO memos
 
     def additional_configurations
       super + <<-CONFIG
-autovacuum = no
-log_autovacuum_min_duration = 0
-      CONFIG
-    end
-
-    def additional_reference_configurations
-      <<-CONFIG
+pgroonga.enable_wal = yes
 autovacuum = no
 log_autovacuum_min_duration = 0
       CONFIG
