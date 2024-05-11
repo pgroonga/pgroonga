@@ -162,9 +162,9 @@ module Helpers
       @running
     end
 
-    def initdb(shared_preload_libraries: [],
-               db_path: "db",
-               port: 15432)
+    def initdb(db_path: "db",
+               port: 15432,
+               shared_preload_libraries: [])
       @dir = File.join(@base_dir, db_path)
       @log_path = File.join(@dir, "log", @log_base_name)
       @pgroonga_log_path = File.join(@dir, "pgroonga.log")
