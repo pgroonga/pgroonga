@@ -210,7 +210,7 @@ log_autovacuum_min_duration = 0
     end
 
     def additional_reference_configurations
-      <<-CONFIG
+      super + <<-CONFIG
 autovacuum = no
 log_autovacuum_min_duration = 0
       CONFIG

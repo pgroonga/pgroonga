@@ -486,7 +486,9 @@ pgroonga.enable_wal = yes
     end
 
     def additional_reference_configurations
-      ""
+      <<-CONFIG
+pgroonga.enable_wal = yes
+      CONFIG
     end
 
     def teardown_reference_db
