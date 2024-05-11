@@ -261,7 +261,7 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 static void
 pgrnwrm_redo_insert(XLogReaderState *record)
 {
-	const char *tag = "[redo][table][add]";
+	const char *tag = "[redo][table][insert]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -371,6 +371,67 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_delete(XLogReaderState *record)
+{
+	const char *tag = "[redo][table][delete]";
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	PGrnWALRecordDelete walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
+		.db = NULL,
+	};
+	PG_TRY();
+	{
+		grn_obj *table;
+
+		PGrnWALRecordDeleteRead(&walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		table = PGrnLookupWithSize(
+			walRecord.tableName, walRecord.tableNameSize, ERROR);
+		if (table->header.type == GRN_TABLE_NO_KEY)
+		{
+			const uint64_t packedCtid = *((uint64_t *) (walRecord.key));
+			grn_obj *ctidColumn =
+				grn_obj_column(ctx, table, "ctid", strlen("ctid"));
+			grn_obj ctidValue;
+			GRN_UINT64_INIT(&ctidValue, 0);
+			GRN_TABLE_EACH_BEGIN(ctx, table, cursor, id)
+			{
+				GRN_BULK_REWIND(&ctidValue);
+				grn_obj_get_value(ctx, ctidColumn, id, &ctidValue);
+				if (packedCtid == GRN_UINT64_VALUE(&ctidValue))
+				{
+					grn_table_cursor_delete(ctx, cursor);
+					break;
+				}
+			}
+			GRN_TABLE_EACH_END(ctx, cursor);
+			GRN_OBJ_FIN(ctx, &ctidValue);
+		}
+		else
+		{
+			grn_table_delete(ctx, table, walRecord.key, walRecord.keySize);
+		}
+		PGrnCheck("%s failed to delete a record: "
+				  "<%.*s>: <%.*s>",
+				  tag,
+				  (int) (walRecord.tableNameSize),
+				  walRecord.tableName,
+				  (int) (walRecord.keySize),
+				  walRecord.key);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -386,6 +447,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "RENAME_TABLE";
 	case PGRN_WAL_RECORD_INSERT:
 		return "INSERT";
+	case PGRN_WAL_RECORD_DELETE:
+		return "DELETE";
 	default:
 		return "UNKNOWN";
 	}
@@ -417,6 +480,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_INSERT:
 		pgrnwrm_redo_insert(record);
+		break;
+	case PGRN_WAL_RECORD_DELETE:
+		pgrnwrm_redo_delete(record);
 		break;
 	default:
 		ereport(ERROR,

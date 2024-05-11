@@ -1435,10 +1435,13 @@ PGrnWALRenameTable(Relation index,
 #endif
 }
 
-void
-PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize)
-{
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALDeleteGeneric(Relation index,
+					 grn_obj *table,
+					 const char *key,
+					 size_t keySize)
+{
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 3;
@@ -1461,6 +1464,47 @@ PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize)
 	msgpack_pack_bin_body(packer, key, keySize);
 
 	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALDeleteCustom(Relation index,
+					grn_obj *table,
+					const char *key,
+					size_t keySize)
+{
+	PGrnWALRecordDelete record;
+	char tableName[GRN_TABLE_MAX_KEY_SIZE];
+	int tableNameSize;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	tableNameSize = grn_obj_name(ctx, table, tableName, GRN_TABLE_MAX_KEY_SIZE);
+	PGrnWALRecordDeleteFill(&record,
+							MyDatabaseId,
+							GetDatabaseEncoding(),
+							MyDatabaseTableSpace,
+							tableName,
+							tableNameSize,
+							key,
+							keySize);
+	PGrnWALRecordDeleteWrite(&record);
+}
+#endif
+
+void
+PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize)
+{
+	if (!RelationIsValid(index))
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALDeleteGeneric(index, table, key, keySize);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALDeleteCustom(index, table, key, keySize);
 #endif
 }
 

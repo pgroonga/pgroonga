@@ -131,4 +131,57 @@ EXPLAIN (COSTS OFF) #{select};
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
+
+  test "delete" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    run_sql("INSERT INTO memos VALUES ('Groonga is good!');")
+
+    select = "SELECT * FROM memos WHERE content &@ 'good'"
+    output = <<-OUTPUT
+#{select};
+      content      
+-------------------
+ PGroonga is good!
+ Groonga is good!
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("DELETE FROM memos WHERE content &@ 'PGroonga';")
+    run_sql("VACUUM memos;")
+    run_sql("INSERT INTO memos VALUES ('Groonga is very good!');")
+    select = <<-SELECT
+SELECT *
+  FROM
+    pgroonga_result_to_recordset(
+      pgroonga_command(
+        'select',
+        ARRAY[
+          'command_version', '3',
+          'query', 'content:@good',
+          'table', pgroonga_table_name('memos_content')
+        ]
+      )::jsonb
+    ) AS record(
+      _id bigint,
+      _key bigint,
+      content text
+    )
+    SELECT
+    output = <<-OUTPUT
+#{select};
+ _id | _key |        content        
+-----+------+-----------------------
+   1 |    1 | Groonga is very good!
+   2 |    2 | Groonga is good!
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
 end

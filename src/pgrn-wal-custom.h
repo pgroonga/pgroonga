@@ -772,3 +772,68 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 					   raw->size));
 	}
 }
+
+typedef struct PGrnWALRecordDelete
+{
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
+	const char *tableName;
+	uint32 tableNameSize;
+	const char *key;
+	uint32 keySize;
+} PGrnWALRecordDelete;
+
+static inline void
+PGrnWALRecordDeleteFill(PGrnWALRecordDelete *record,
+						Oid dbID,
+						int dbEncoding,
+						Oid dbTableSpaceID,
+						const char *tableName,
+						uint32 tableNameSize,
+						const char *key,
+						uint32 keySize)
+{
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
+	record->tableName = tableName;
+	record->tableNameSize = tableNameSize;
+	record->key = key;
+	record->keySize = keySize;
+}
+
+static inline void
+PGrnWALRecordDeleteWrite(PGrnWALRecordDelete *record)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) record, offsetof(PGrnWALRecordDelete, tableName));
+	XLogRegisterData((char *) &(record->tableNameSize), sizeof(uint32));
+	XLogRegisterData((char *) record->tableName, record->tableNameSize);
+	XLogRegisterData((char *) &(record->keySize), sizeof(uint32));
+	XLogRegisterData((char *) record->key, record->keySize);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_DELETE | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordDeleteRead(PGrnWALRecordDelete *record, PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordDelete, tableName));
+	PGrnWALRecordRawReadData(raw, &(record->tableNameSize), sizeof(uint32));
+	record->tableName = PGrnWALRecordRawRefer(raw, record->tableNameSize);
+	PGrnWALRecordRawReadData(raw, &(record->keySize), sizeof(uint32));
+	record->key = PGrnWALRecordRawRefer(raw, record->keySize);
+	if (raw->size != 0)
+	{
+		ereport(ERROR,
+				errcode(ERRCODE_DATA_EXCEPTION),
+				errmsg("%s: "
+					   "[wal][record][read][delete] garbage at the end:%u",
+					   PGRN_TAG,
+					   raw->size));
+	}
+}
