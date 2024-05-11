@@ -73,36 +73,6 @@ PGrnLookupColumn(grn_obj *table, const char *name, int errorLevel)
 }
 
 grn_obj *
-PGrnLookupColumnWithSize(grn_obj *table,
-						 const char *name,
-						 size_t nameSize,
-						 int errorLevel)
-{
-	char columnName[GRN_TABLE_MAX_KEY_SIZE];
-	size_t columnNameSize;
-	grn_obj *column;
-
-	columnNameSize = PGrnColumnNameEncodeWithSize(name, nameSize, columnName);
-	column = grn_obj_column(ctx, table, columnName, columnNameSize);
-	if (!column)
-	{
-		char tableName[GRN_TABLE_MAX_KEY_SIZE];
-		int tableNameSize;
-
-		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
-		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
-						 errorLevel,
-						 "column isn't found: <%.*s>:<%.*s>",
-						 tableNameSize,
-						 tableName,
-						 (int) nameSize,
-						 name);
-	}
-
-	return column;
-}
-
-grn_obj *
 PGrnLookupSourcesTable(Relation index, int errorLevel)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
