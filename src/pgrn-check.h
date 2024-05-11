@@ -125,4 +125,3 @@ PGrnCheckRCLevel(grn_rc rc, int errorLevel, const char *format, ...)
 	return false;
 #undef MESSAGE_SIZE
 }
-
