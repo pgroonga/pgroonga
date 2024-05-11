@@ -390,8 +390,6 @@ PGrnWALRecordSetSourcesRead(PGrnWALRecordSetSources *record,
 	{
 		const char *name;
 		int32 nameSize;
-		grn_obj *source;
-		grn_id sourceID;
 
 		PGrnWALRecordRawReadData(raw, &nameSize, sizeof(int32));
 		if (nameSize == -1)
