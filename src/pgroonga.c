@@ -4686,7 +4686,7 @@ PGrnInsertColumn(Relation index,
 		if (rc != GRN_SUCCESS)
 		{
 			elog(WARNING,
-				 "pgroonga: %s <%s.%s>: failed to cast: <%*s>",
+				 "pgroonga: %s <%s.%s>: failed to cast: <%s>",
 				 tag,
 				 index->rd_rel->relname.data,
 				 name->data,
