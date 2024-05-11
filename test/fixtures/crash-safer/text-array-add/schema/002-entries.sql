@@ -16,7 +16,7 @@ CREATE INDEX entries_fts_index
  )
  WITH (normalizers='
          NormalizerTable(
-           "normalized", "${table:normalizations_index}.normalized",
+           "normalized", "${table:public.normalizations_index}.normalized",
            "target", "target",
            "report_source_offset", true),
          NormalizerNFKC130

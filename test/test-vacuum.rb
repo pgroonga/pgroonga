@@ -63,7 +63,7 @@ CREATE INDEX pgroonga_memos_content ON memos
   WITH (normalizers='
           NormalizerNFKC150,
           NormalizerTable(
-            "normalized", "${table:pgroonga_normalizations_index}.normalized",
+            "normalized", "${table:public.pgroonga_normalizations_index}.normalized",
             "target", "target"
           )
         ');
@@ -118,7 +118,7 @@ CREATE INDEX pgroonga_memos_content ON memos
   WITH (normalizers='
           NormalizerNFKC150,
           NormalizerTable(
-            "normalized", "${table:pgroonga_normalizations_index}.normalized",
+            "normalized", "${table:public.pgroonga_normalizations_index}.normalized",
             "target", "target"
           )
         ');
