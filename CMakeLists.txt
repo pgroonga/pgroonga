@@ -144,7 +144,7 @@ string(REGEX REPLACE "\\\\" ";"
   PGRN_STANDBY_MAINTAINER_SOURCES "${PGRN_STANDBY_MAINTAINER_SOURCES}")
 
 file(READ
-  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-wal-resource-manager.mk
+  ${CMAKE_CURRENT_SOURCE_DIR}/makefiles/pgroonga-wal-resource-manager-sources.mk
   PGRN_WAL_RESOURCE_MANAGER_SOURCES)
 string(REGEX REPLACE "^.*=[ \t]*\\\\" ""
   PGRN_WAL_RESOURCE_MANAGER_SOURCES "${PGRN_WAL_RESOURCE_MANAGER_SOURCES}")
