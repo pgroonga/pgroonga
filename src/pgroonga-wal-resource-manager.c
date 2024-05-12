@@ -309,12 +309,11 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 					keySize = grn_vector_get_element(
 						ctx, walRecord.columnValues, i, &key, NULL, NULL);
 					id = grn_table_add(ctx, table, key, keySize, NULL);
-					PGrnCheck("%s failed to add a record: <%.*s>: <%.*s>",
+					PGrnCheck("%s failed to add a record: <%.*s>: <%s>",
 							  tag,
 							  (int) walRecord.tableNameSize,
 							  walRecord.tableName,
-							  (int) keySize,
-							  key);
+							  PGrnInspectKey(table, key, keySize));
 					continue;
 				}
 				else
@@ -418,12 +417,11 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 			grn_table_delete(ctx, table, walRecord.key, walRecord.keySize);
 		}
 		PGrnCheck("%s failed to delete a record: "
-				  "<%.*s>: <%.*s>",
+				  "<%.*s>: <%s>",
 				  tag,
 				  (int) (walRecord.tableNameSize),
 				  walRecord.tableName,
-				  (int) (walRecord.keySize),
-				  walRecord.key);
+				  PGrnInspectKey(table, walRecord.key, walRecord.keySize));
 	}
 	PG_FINALLY();
 	{
