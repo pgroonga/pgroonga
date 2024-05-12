@@ -31,6 +31,21 @@ PGrnInspect(grn_obj *object)
 }
 
 static inline const char *
+PGrnInspectKey(grn_obj *table, const void *key, uint32_t keySize)
+{
+	grn_obj *buffer = &PGrnInspectBuffer;
+
+	GRN_BULK_REWIND(buffer);
+	{
+		grn_rc rc = ctx->rc;
+		grn_inspect_key(ctx, buffer, table, key, keySize);
+		ctx->rc = rc;
+	}
+	GRN_TEXT_PUTC(ctx, buffer, '\0');
+	return GRN_TEXT_VALUE(buffer);
+}
+
+static inline const char *
 PGrnInspectName(grn_obj *object)
 {
 	static char name[GRN_TABLE_MAX_KEY_SIZE];
