@@ -35,7 +35,7 @@ synchronous_standby_names = standby
     start_postgres
   end
 
-  test "index search" do
+  test "text" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
     run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
@@ -60,6 +60,38 @@ EXPLAIN (COSTS OFF) #{select};
 -------------------
  PGroonga is good!
 (1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
+  test "text[]" do
+    run_sql("CREATE TABLE memos (contents text[]);")
+    run_sql("CREATE INDEX memos_contents ON memos USING pgroonga (contents);")
+    run_sql("INSERT INTO memos VALUES (ARRAY['PGroonga is good!']);")
+    run_sql("INSERT INTO memos VALUES (ARRAY['PostgreSQL is good!']);")
+    run_sql("INSERT INTO memos VALUES (ARRAY['Groonga is good!', 'PGroonga is fast!']);")
+
+    select = "SELECT * FROM memos WHERE contents &@ 'PGroonga'"
+    output = <<-OUTPUT
+EXPLAIN (COSTS OFF) #{select};
+                  QUERY PLAN                  
+----------------------------------------------
+ Index Scan using memos_contents on memos
+   Index Cond: (contents &@ 'PGroonga'::text)
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+                 contents                 
+------------------------------------------
+ {"PGroonga is good!"}
+ {"Groonga is good!","PGroonga is fast!"}
+(2 rows)
 
     OUTPUT
     assert_equal([output, ""],

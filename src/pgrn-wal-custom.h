@@ -18,6 +18,10 @@
 #define PGRN_WAL_RECORD_INSERT 0x50
 #define PGRN_WAL_RECORD_DELETE 0x60
 
+#define PGRN_WAL_RECORD_DOMAIN_ID_MASK GRN_ID_MAX
+#define PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK 0xc0000000
+#define PGRN_WAL_RECORD_DOMAIN_FLAG_VECTOR 0x40000000
+
 typedef struct PGrnWALRecordRaw
 {
 	const char *data;
@@ -500,6 +504,7 @@ typedef struct PGrnWALRecordInsert
 	uint32 nColumns;
 	grn_obj *columnNames;
 	grn_obj *columnValues;
+	grn_hash *columnVectorValues;
 } PGrnWALRecordInsert;
 
 static inline void
@@ -547,7 +552,6 @@ PGrnWALRecordInsertWriteColumnValueRaw(grn_obj *buffer,
 									   const char *value,
 									   uint32 valueSize)
 {
-	GRN_TEXT_PUT(ctx, buffer, &domain, sizeof(grn_id));
 	switch (domain)
 	{
 	case GRN_DB_BOOL:
@@ -610,6 +614,48 @@ PGrnWALRecordInsertWriteColumnValueRaw(grn_obj *buffer,
 }
 
 static inline void
+PGrnWALRecordInsertWriteColumnValueBulk(grn_obj *buffer,
+										const char *name,
+										uint32 nameSize,
+										grn_obj *value)
+{
+	GRN_TEXT_PUT(ctx, buffer, &(value->header.domain), sizeof(grn_id));
+	PGrnWALRecordInsertWriteColumnValueRaw(buffer,
+										   name,
+										   nameSize,
+										   value->header.domain,
+										   GRN_BULK_HEAD(value),
+										   GRN_BULK_VSIZE(value));
+}
+
+static inline void
+PGrnWALRecordInsertWriteColumnValueVector(grn_obj *buffer,
+										  const char *name,
+										  uint32 nameSize,
+										  grn_obj *vector)
+{
+	grn_id domain_and_flags =
+		(vector->header.domain) | PGRN_WAL_RECORD_DOMAIN_FLAG_VECTOR;
+	uint32_t i, n;
+
+	GRN_TEXT_PUT(ctx, buffer, &domain_and_flags, sizeof(grn_id));
+
+	n = grn_vector_size(ctx, vector);
+	GRN_TEXT_PUT(ctx, buffer, &n, sizeof(uint32_t));
+	for (i = 0; i < n; i++)
+	{
+		const char *element;
+		unsigned int elementSize;
+		grn_id domain;
+
+		elementSize =
+			grn_vector_get_element(ctx, vector, i, &element, NULL, &domain);
+		PGrnWALRecordInsertWriteColumnValueRaw(
+			buffer, name, nameSize, domain, element, elementSize);
+	}
+}
+
+static inline void
 PGrnWALRecordInsertWriteFinish(grn_obj *buffer)
 {
 	XLogBeginInsert();
@@ -618,10 +664,125 @@ PGrnWALRecordInsertWriteFinish(grn_obj *buffer)
 			   PGRN_WAL_RECORD_INSERT | XLR_SPECIAL_REL_UPDATE);
 }
 
+typedef union PGrnWALRecordInsertColumnValueBuffer {
+	bool boolValue;
+	int8_t int8Value;
+	uint8_t uint8Value;
+	int16_t int16Value;
+	uint16_t uint16Value;
+	int32_t int32Value;
+	uint32_t uint32Value;
+	int64_t int64Value;
+	uint64_t uint64Value;
+	double doubleValue;
+} PGrnWALRecordInsertColumnValueBuffer;
+
+static inline bool
+PGrnWALRecordInsertReadColumnValueRaw(
+	PGrnWALRecordInsert *record,
+	PGrnWALRecordRaw *raw,
+	grn_id domain,
+	PGrnWALRecordInsertColumnValueBuffer *valueBuffer,
+	const void **value,
+	uint32 *valueSize)
+{
+	switch (domain)
+	{
+	case GRN_DB_BOOL:
+		*valueSize = sizeof(bool);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->boolValue), *valueSize);
+		*value = &(valueBuffer->boolValue);
+		return true;
+	case GRN_DB_INT8:
+		*valueSize = sizeof(int8_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->int8Value), *valueSize);
+		*value = &(valueBuffer->int8Value);
+		return true;
+	case GRN_DB_UINT8:
+		*valueSize = sizeof(uint8_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->uint8Value), *valueSize);
+		*value = &(valueBuffer->uint8Value);
+		return true;
+	case GRN_DB_INT16:
+		*valueSize = sizeof(int16_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->int16Value), *valueSize);
+		*value = &(valueBuffer->int16Value);
+		return true;
+	case GRN_DB_UINT16:
+		*valueSize = sizeof(uint16_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->uint16Value), *valueSize);
+		*value = &(valueBuffer->uint16Value);
+		return true;
+	case GRN_DB_INT32:
+		*valueSize = sizeof(int32_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->int32Value), *valueSize);
+		*value = &(valueBuffer->int32Value);
+		return true;
+	case GRN_DB_UINT32:
+		*valueSize = sizeof(uint32_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->uint32Value), *valueSize);
+		*value = &(valueBuffer->uint32Value);
+		return true;
+	case GRN_DB_INT64:
+		*valueSize = sizeof(int64_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->int64Value), *valueSize);
+		*value = &(valueBuffer->int64Value);
+		return true;
+	case GRN_DB_UINT64:
+		*valueSize = sizeof(uint64_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->uint64Value), *valueSize);
+		*value = &(valueBuffer->uint64Value);
+		return true;
+	case GRN_DB_FLOAT:
+		*valueSize = sizeof(double);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->doubleValue), *valueSize);
+		*value = &(valueBuffer->doubleValue);
+		return true;
+	case GRN_DB_TIME:
+		*valueSize = sizeof(int64_t);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->int64Value), *valueSize);
+		*value = &(valueBuffer->int64Value);
+		return true;
+	case GRN_DB_SHORT_TEXT:
+	case GRN_DB_TEXT:
+	case GRN_DB_LONG_TEXT:
+		PGrnWALRecordRawReadData(raw, valueSize, sizeof(uint32));
+		*value = PGrnWALRecordRawRefer(raw, *valueSize);
+		return true;
+	default:
+		return false;
+	}
+}
+
+static inline bool
+PGrnWALRecordInsertReadColumnValueVector(PGrnWALRecordInsert *record,
+										 PGrnWALRecordRaw *raw,
+										 grn_id domain,
+										 grn_obj *vectorValue)
+{
+	uint32_t i, n;
+	GRN_OBJ_INIT(vectorValue, GRN_VECTOR, 0, domain);
+	PGrnWALRecordRawReadData(raw, &n, sizeof(uint32_t));
+	for (i = 0; i < n; i++)
+	{
+		bool succeeded;
+		PGrnWALRecordInsertColumnValueBuffer valueBuffer;
+		const void *value;
+		uint32 valueSize;
+		succeeded = PGrnWALRecordInsertReadColumnValueRaw(
+			record, raw, domain, &valueBuffer, &value, &valueSize);
+		if (!succeeded)
+			return false;
+		grn_vector_add_element(ctx, vectorValue, value, valueSize, 0, domain);
+	}
+
+	return true;
+}
+
 static inline void
 PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 {
-	size_t i;
+	uint32 i;
 	PGrnWALRecordRawReadData(raw, &(record->dbID), sizeof(Oid));
 	PGrnWALRecordRawReadData(raw, &(record->dbEncoding), sizeof(int));
 	PGrnWALRecordRawReadData(raw, &(record->dbTableSpaceID), sizeof(Oid));
@@ -630,21 +791,11 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 	PGrnWALRecordRawReadData(raw, &(record->nColumns), sizeof(uint32));
 	for (i = 0; i < record->nColumns; i++)
 	{
+		const char *tag = "[wal][record][read][column][value]";
 		const char *name;
 		uint32 nameSize;
 		grn_id domain;
-		union {
-			bool boolValue;
-			int8_t int8Value;
-			uint8_t uint8Value;
-			int16_t int16Value;
-			uint16_t uint16Value;
-			int32_t int32Value;
-			uint32_t uint32Value;
-			int64_t int64Value;
-			uint64_t uint64Value;
-			double doubleValue;
-		} valueBuffer;
+		PGrnWALRecordInsertColumnValueBuffer valueBuffer;
 		const void *value;
 		uint32 valueSize;
 
@@ -662,84 +813,43 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 		}
 		else
 		{
-			PGrnWALRecordRawReadData(raw, &domain, sizeof(grn_id));
-			switch (domain)
+			grn_id domain_and_flags;
+			grn_id flags;
+			bool isVector = false;
+			bool succeeded;
+			PGrnWALRecordRawReadData(raw, &domain_and_flags, sizeof(grn_id));
+			domain = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_ID_MASK;
+			flags = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK;
+			if (flags & PGRN_WAL_RECORD_DOMAIN_FLAG_VECTOR)
 			{
-			case GRN_DB_BOOL:
-				valueSize = sizeof(bool);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.boolValue), valueSize);
-				value = &(valueBuffer.boolValue);
-				break;
-			case GRN_DB_INT8:
-				valueSize = sizeof(int8_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.int8Value), valueSize);
-				value = &(valueBuffer.int8Value);
-				break;
-			case GRN_DB_UINT8:
-				valueSize = sizeof(uint8_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.uint8Value), valueSize);
-				value = &(valueBuffer.uint8Value);
-				break;
-			case GRN_DB_INT16:
-				valueSize = sizeof(int16_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.int16Value), valueSize);
-				value = &(valueBuffer.int16Value);
-				break;
-			case GRN_DB_UINT16:
-				valueSize = sizeof(uint16_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.uint16Value), valueSize);
-				value = &(valueBuffer.uint16Value);
-				break;
-			case GRN_DB_INT32:
-				valueSize = sizeof(int32_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.int32Value), valueSize);
-				value = &(valueBuffer.int32Value);
-				break;
-			case GRN_DB_UINT32:
-				valueSize = sizeof(uint32_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.uint32Value), valueSize);
-				value = &(valueBuffer.uint32Value);
-				break;
-			case GRN_DB_INT64:
-				valueSize = sizeof(int64_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.int64Value), valueSize);
-				value = &(valueBuffer.int64Value);
-				break;
-			case GRN_DB_UINT64:
-				valueSize = sizeof(uint64_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.uint64Value), valueSize);
-				value = &(valueBuffer.uint64Value);
-				break;
-			case GRN_DB_FLOAT:
-				valueSize = sizeof(double);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.doubleValue), valueSize);
-				value = &(valueBuffer.doubleValue);
-				break;
-			case GRN_DB_TIME:
-				valueSize = sizeof(int64_t);
-				PGrnWALRecordRawReadData(
-					raw, &(valueBuffer.int64Value), valueSize);
-				value = &(valueBuffer.int64Value);
-				break;
-			case GRN_DB_SHORT_TEXT:
-			case GRN_DB_TEXT:
-			case GRN_DB_LONG_TEXT:
-				PGrnWALRecordRawReadData(raw, &valueSize, sizeof(uint32));
-				value = PGrnWALRecordRawRefer(raw, valueSize);
-				break;
-			default:
+				isVector = true;
+			}
+			if (isVector)
 			{
-				const char *tag = "[wal][record][read][column][value]";
+				void *vectorValue;
+				grn_hash_add(ctx,
+							 record->columnVectorValues,
+							 &i,
+							 sizeof(uint32),
+							 &vectorValue,
+							 NULL);
+				PGrnCheck("%s failed to allocate a vector column: <%.*s>",
+						  tag,
+						  (int) nameSize,
+						  name);
+				succeeded = PGrnWALRecordInsertReadColumnValueVector(
+					record, raw, domain, vectorValue);
+				domain = GRN_DB_VOID;
+				value = NULL;
+				valueSize = 0;
+			}
+			else
+			{
+				succeeded = PGrnWALRecordInsertReadColumnValueRaw(
+					record, raw, domain, &valueBuffer, &value, &valueSize);
+			}
+			if (!succeeded)
+			{
 				char domainName[GRN_TABLE_MAX_KEY_SIZE];
 				int domainNameSize;
 
@@ -755,8 +865,6 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 							name,
 							domainNameSize,
 							domainName);
-			}
-			break;
 			}
 		}
 		grn_vector_add_element(

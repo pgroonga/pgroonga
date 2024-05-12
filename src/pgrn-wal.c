@@ -833,43 +833,38 @@ PGrnWALInsertColumnValueRawGeneric(PGrnWALData *data,
 }
 #endif
 
+#ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALInsertColumnValueBulkGeneric(PGrnWALData *data,
+									const char *name,
+									size_t nameSize,
+									grn_obj *value)
+{
+	PGrnWALInsertColumnValueRawGeneric(data,
+									   name,
+									   nameSize,
+									   value->header.domain,
+									   GRN_BULK_HEAD(value),
+									   GRN_BULK_VSIZE(value));
+}
+#endif
+
 #ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
 static void
-PGrnWALInsertColumnValueRawCustom(PGrnWALData *data,
-								  const char *name,
-								  size_t nameSize,
-								  grn_id domain,
-								  const char *value,
-								  size_t valueSize)
+PGrnWALInsertColumnValueBulkCustom(PGrnWALData *data,
+								   const char *name,
+								   size_t nameSize,
+								   grn_obj *value)
 {
 	if (!PGrnWALResourceManagerEnabled)
 		return;
 
 	{
 		grn_obj *buffer = &(buffers->walBuffer);
-		PGrnWALRecordInsertWriteColumnValueRaw(
-			buffer, name, nameSize, domain, value, valueSize);
+		PGrnWALRecordInsertWriteColumnValueBulk(buffer, name, nameSize, value);
 	}
 }
 #endif
-
-static void
-PGrnWALInsertColumnValueRaw(PGrnWALData *data,
-							const char *name,
-							size_t nameSize,
-							grn_id domain,
-							const char *value,
-							size_t valueSize)
-{
-#ifdef PGRN_SUPPORT_WAL
-	PGrnWALInsertColumnValueRawGeneric(
-		data, name, nameSize, domain, value, valueSize);
-#endif
-#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
-	PGrnWALInsertColumnValueRawCustom(
-		data, name, nameSize, domain, value, valueSize);
-#endif
-}
 
 static void
 PGrnWALInsertColumnValueBulk(PGrnWALData *data,
@@ -877,12 +872,12 @@ PGrnWALInsertColumnValueBulk(PGrnWALData *data,
 							 size_t nameSize,
 							 grn_obj *value)
 {
-	PGrnWALInsertColumnValueRaw(data,
-								name,
-								nameSize,
-								value->header.domain,
-								GRN_BULK_HEAD(value),
-								GRN_BULK_VSIZE(value));
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALInsertColumnValueBulkGeneric(data, name, nameSize, value);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALInsertColumnValueBulkCustom(data, name, nameSize, value);
+#endif
 }
 
 #ifdef PGRN_SUPPORT_WAL
@@ -893,7 +888,7 @@ PGrnWALInsertColumnValueVectorGeneric(PGrnWALData *data,
 									  grn_obj *value)
 {
 	msgpack_packer *packer;
-	unsigned int i, n;
+	uint32_t i, n;
 
 	if (!data)
 		return;
@@ -910,7 +905,7 @@ PGrnWALInsertColumnValueVectorGeneric(PGrnWALData *data,
 
 		elementSize =
 			grn_vector_get_element(ctx, value, i, &element, NULL, &domain);
-		PGrnWALInsertColumnValueRaw(
+		PGrnWALInsertColumnValueRawGeneric(
 			data, name, nameSize, domain, element, elementSize);
 	}
 }
@@ -925,6 +920,12 @@ PGrnWALInsertColumnValueVectorCustom(PGrnWALData *data,
 {
 	if (!PGrnWALResourceManagerEnabled)
 		return;
+
+	{
+		grn_obj *buffer = &(buffers->walBuffer);
+		PGrnWALRecordInsertWriteColumnValueVector(
+			buffer, name, nameSize, value);
+	}
 }
 #endif
 
@@ -968,7 +969,7 @@ PGrnWALInsertColumnUValueVectorGeneric(PGrnWALData *data,
 		const char *element;
 
 		element = GRN_BULK_HEAD(value) + (elementSize * i);
-		PGrnWALInsertColumnValueRaw(
+		PGrnWALInsertColumnValueRawGeneric(
 			data, name, nameSize, domain, element, elementSize);
 	}
 }

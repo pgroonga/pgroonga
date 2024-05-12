@@ -266,6 +266,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
 	};
+	grn_hash *columnVectorValues;
 	grn_obj columnNames;
 	grn_obj columnValues;
 	grn_obj valueBuffer;
@@ -274,11 +275,15 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 		.walRecord = (PGrnWALRecordCommon *) &walRecord,
 		.db = NULL,
 	};
+	columnVectorValues = grn_hash_create(
+		ctx, NULL, sizeof(uint32), sizeof(grn_obj), GRN_TABLE_HASH_KEY);
+	PGrnCheck("%s failed to create a buffer for column vector values", tag);
 	GRN_TEXT_INIT(&columnNames, GRN_OBJ_VECTOR);
 	GRN_TEXT_INIT(&columnValues, GRN_OBJ_VECTOR);
 	GRN_VOID_INIT(&valueBuffer);
 	walRecord.columnNames = &columnNames;
 	walRecord.columnValues = &columnValues;
+	walRecord.columnVectorValues = columnVectorValues;
 	PG_TRY();
 	{
 		grn_obj *table;
@@ -328,26 +333,44 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 
 			{
 				grn_obj *column;
-				const char *value;
-				uint32_t valueSize;
-				grn_id domain;
+				grn_id vectorValueID;
+				void *vectorValue;
+				grn_obj *columnValue;
 
 				column = PGrnLookupColumnWithSize(table, name, nameSize, ERROR);
-				valueSize = grn_vector_get_element(
-					ctx, walRecord.columnValues, i, &value, NULL, &domain);
-				GRN_OBJ_FIN(ctx, &valueBuffer);
-				GRN_OBJ_INIT(
-					&valueBuffer, GRN_BULK, GRN_OBJ_DO_SHALLOW_COPY, domain);
-				PGrnCheck("%s failed to initialize value buffer: "
-						  "<%.*s.%.*s>: <%u>",
-						  tag,
-						  (int) (walRecord.tableNameSize),
-						  walRecord.tableName,
-						  (int) nameSize,
-						  name,
-						  id);
-				GRN_TEXT_SET_REF(&valueBuffer, value, valueSize);
-				grn_obj_set_value(ctx, column, id, &valueBuffer, GRN_OBJ_SET);
+				vectorValueID = grn_hash_get(ctx,
+											 walRecord.columnVectorValues,
+											 &i,
+											 sizeof(uint32),
+											 &vectorValue);
+				if (vectorValueID == GRN_ID_NIL)
+				{
+					const char *value;
+					uint32_t valueSize;
+					grn_id domain;
+					valueSize = grn_vector_get_element(
+						ctx, walRecord.columnValues, i, &value, NULL, &domain);
+					GRN_OBJ_FIN(ctx, &valueBuffer);
+					GRN_OBJ_INIT(&valueBuffer,
+								 GRN_BULK,
+								 GRN_OBJ_DO_SHALLOW_COPY,
+								 domain);
+					PGrnCheck("%s failed to initialize value buffer: "
+							  "<%.*s.%.*s>: <%u>",
+							  tag,
+							  (int) (walRecord.tableNameSize),
+							  walRecord.tableName,
+							  (int) nameSize,
+							  name,
+							  id);
+					GRN_TEXT_SET_REF(&valueBuffer, value, valueSize);
+					columnValue = &valueBuffer;
+				}
+				else
+				{
+					columnValue = vectorValue;
+				}
+				grn_obj_set_value(ctx, column, id, columnValue, GRN_OBJ_SET);
 				PGrnCheck("%s failed to set a column value: "
 						  "<%.*s.%.*s>: <%u>: <%s>",
 						  tag,
@@ -356,7 +379,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 						  (int) nameSize,
 						  name,
 						  id,
-						  PGrnInspect(&valueBuffer));
+						  PGrnInspect(columnValue));
 			}
 		}
 	}
@@ -366,6 +389,16 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 		GRN_OBJ_FIN(ctx, &columnNames);
 		GRN_OBJ_FIN(ctx, &columnValues);
 		GRN_OBJ_FIN(ctx, &valueBuffer);
+		GRN_HASH_EACH_BEGIN(ctx, columnVectorValues, cursor, id)
+		{
+			void *v;
+			grn_obj *value;
+			grn_hash_cursor_get_value(ctx, cursor, &v);
+			value = v;
+			GRN_OBJ_FIN(ctx, value);
+		}
+		GRN_HASH_EACH_END(ctx, cursor);
+		grn_hash_close(ctx, columnVectorValues);
 	}
 	PG_END_TRY();
 }
