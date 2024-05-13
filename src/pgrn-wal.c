@@ -1573,8 +1573,8 @@ PGrnWALRemoveObjectGeneric(Relation index, const char *name, size_t nameSize)
 	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_REMOVE_OBJECT);
 
 	msgpack_pack_cstr(packer, "name");
-	msgpack_pack_bin(packer, nameSize);
-	msgpack_pack_bin_body(packer, name, nameSize);
+	msgpack_pack_str(packer, nameSize);
+	msgpack_pack_str_body(packer, name, nameSize);
 
 	PGrnWALFinish(data);
 }
