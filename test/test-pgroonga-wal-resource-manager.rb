@@ -205,6 +205,64 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
+  test "jsonb: sequential search" do
+    run_sql("CREATE TABLE memos (content jsonb);")
+    run_sql("INSERT INTO memos VALUES ('" + <<-JSON + "')");
+{
+  "string": "hello",
+  "number": 1,
+  "boolean": true,
+  "array": [
+    1,
+    "hello",
+    {
+      "object": {
+        "string": "world"
+      }
+    },
+    false
+  ]
+}
+    JSON
+
+    select = "SELECT jsonb_pretty(content) FROM memos WHERE content &@ 'Hello'"
+    output = <<-OUTPUT
+EXPLAIN (COSTS OFF) #{select};
+              QUERY PLAN              
+--------------------------------------
+ Seq Scan on memos
+   Filter: (content &@ 'Hello'::text)
+(2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+           jsonb_pretty            
+-----------------------------------
+ {                                +
+     "array": [                   +
+         1,                       +
+         "hello",                 +
+         {                        +
+             "object": {          +
+                 "string": "world"+
+             }                    +
+         },                       +
+         false                    +
+     ],                           +
+     "number": 1,                 +
+     "string": "hello",           +
+     "boolean": true              +
+ }
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
   test "name: Japanese" do
     run_sql("CREATE TABLE メモ (コンテンツ text);")
     run_sql("CREATE INDEX メモ_コンテンツ ON メモ USING pgroonga (コンテンツ);")

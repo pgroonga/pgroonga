@@ -67,6 +67,12 @@ PGrnWALResourceManagerDisable(void)
 	PGrnWALResourceManagerEnabled = false;
 }
 
+static bool
+PGrnWALAnyEnabled(void)
+{
+	return PGrnWALEnabled || PGrnWALResourceManagerEnabled;
+}
+
 #ifdef PGRN_SUPPORT_WAL
 #	include <access/generic_xlog.h>
 #	include <access/heapam.h>
@@ -128,6 +134,7 @@ typedef struct
 struct PGrnWALData_
 {
 	Relation index;
+	grn_obj *table;
 #ifdef PGRN_SUPPORT_WAL
 	GenericXLogState *state;
 	unsigned int nUsedPages;
@@ -490,27 +497,31 @@ PGrnWALUnlock(Relation index)
 PGrnWALData *
 PGrnWALStart(Relation index)
 {
-#ifdef PGRN_SUPPORT_WAL
+#if defined(PGRN_SUPPORT_WAL) || defined(PGRN_SUPPORT_WAL_RESOURCE_MANAGER)
 	PGrnWALData *data;
 
-	if (!PGrnWALEnabled)
+	if (!PGrnWALAnyEnabled())
 		return NULL;
-
 	if (!RelationIsValid(index))
 		return NULL;
 
-	PGrnWALLock(index);
+	if (PGrnWALEnabled)
+		PGrnWALLock(index);
 
 	data = palloc(sizeof(PGrnWALData));
+	data->table = NULL;
 
-	data->index = index;
-	data->state = GenericXLogStart(data->index);
+	if (PGrnWALEnabled)
+	{
+		data->index = index;
+		data->state = GenericXLogStart(data->index);
 
-	PGrnWALDataInitBuffers(data);
-	PGrnWALDataInitNUsedPages(data);
-	PGrnWALDataInitMeta(data);
-	PGrnWALDataInitCurrent(data);
-	PGrnWALDataInitMessagePack(data);
+		PGrnWALDataInitBuffers(data);
+		PGrnWALDataInitNUsedPages(data);
+		PGrnWALDataInitMeta(data);
+		PGrnWALDataInitCurrent(data);
+		PGrnWALDataInitMessagePack(data);
+	}
 
 	return data;
 #else
@@ -521,15 +532,18 @@ PGrnWALStart(Relation index)
 void
 PGrnWALFinish(PGrnWALData *data)
 {
-#ifdef PGRN_SUPPORT_WAL
+#if defined(PGRN_SUPPORT_WAL) || defined(PGRN_SUPPORT_WAL_RESOURCE_MANAGER)
 	if (!data)
 		return;
 
-	PGrnWALDataFinish(data);
+	if (PGrnWALEnabled)
+	{
+		PGrnWALDataFinish(data);
 
-	PGrnWALDataReleaseBuffers(data);
+		PGrnWALDataReleaseBuffers(data);
 
-	PGrnWALUnlock(data->index);
+		PGrnWALUnlock(data->index);
+	}
 
 	pfree(data);
 #endif
@@ -538,22 +552,25 @@ PGrnWALFinish(PGrnWALData *data)
 void
 PGrnWALAbort(PGrnWALData *data)
 {
-#ifdef PGRN_SUPPORT_WAL
+#if defined(PGRN_SUPPORT_WAL) || defined(PGRN_SUPPORT_WAL_RESOURCE_MANAGER)
 	if (!data)
 		return;
 
-	GenericXLogAbort(data->state);
+	if (PGrnWALEnabled)
+	{
+		GenericXLogAbort(data->state);
 
 /* For PostgreSQL on Amazon Linux 2. PostgreSQL 12.8 or later provides this. */
 #	ifndef INTERRUPTS_CAN_BE_PROCESSED
 #		define INTERRUPTS_CAN_BE_PROCESSED() false
 #	endif
 
-	if (!INTERRUPTS_CAN_BE_PROCESSED())
-	{
-		PGrnWALDataReleaseBuffers(data);
+		if (!INTERRUPTS_CAN_BE_PROCESSED())
+		{
+			PGrnWALDataReleaseBuffers(data);
 
-		PGrnWALUnlock(data->index);
+			PGrnWALUnlock(data->index);
+		}
 	}
 
 	pfree(data);
@@ -567,7 +584,7 @@ PGrnWALInsertStartGeneric(PGrnWALData *data, grn_obj *table, size_t nColumns)
 	msgpack_packer *packer;
 	size_t nElements = nColumns;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	if (table)
@@ -614,6 +631,12 @@ PGrnWALInsertStartCustom(PGrnWALData *data, grn_obj *table, size_t nColumns)
 void
 PGrnWALInsertStart(PGrnWALData *data, grn_obj *table, size_t nColumns)
 {
+	if (!data)
+		return;
+	if (grn_obj_is_temporary(ctx, table))
+		return;
+
+	data->table = table;
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALInsertStartGeneric(data, table, nColumns);
 #endif
@@ -646,6 +669,9 @@ PGrnWALInsertFinishCustom(PGrnWALData *data)
 void
 PGrnWALInsertFinish(PGrnWALData *data)
 {
+	if (!data)
+		return;
+
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALInsertFinishGeneric(data);
 #endif
@@ -662,7 +688,7 @@ PGrnWALInsertColumnStartGeneric(PGrnWALData *data,
 {
 	msgpack_packer *packer;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -691,6 +717,11 @@ PGrnWALInsertColumnStartCustom(PGrnWALData *data,
 void
 PGrnWALInsertColumnStart(PGrnWALData *data, const char *name, size_t nameSize)
 {
+	if (!data)
+		return;
+	if (!data->table)
+		return;
+
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALInsertColumnStartGeneric(data, name, nameSize);
 #endif
@@ -712,7 +743,7 @@ PGrnWALInsertColumnValueKeyGeneric(PGrnWALData *data,
 {
 	msgpack_packer *packer;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -740,6 +771,11 @@ PGrnWALInsertColumnValueKeyCustom(PGrnWALData *data,
 static void
 PGrnWALInsertColumnValueKey(PGrnWALData *data, const char *key, size_t keySize)
 {
+	if (!data)
+		return;
+	if (!data->table)
+		return;
+
 #ifdef PGRN_SUPPORT_WAL
 	PGrnWALInsertColumnValueKeyGeneric(data, key, keySize);
 #endif
@@ -760,7 +796,7 @@ PGrnWALInsertColumnValueRawGeneric(PGrnWALData *data,
 	const char *tag = "[wal][insert][column][value]";
 	msgpack_packer *packer;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -890,7 +926,7 @@ PGrnWALInsertColumnValueVectorGeneric(PGrnWALData *data,
 	msgpack_packer *packer;
 	uint32_t i, n;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -955,7 +991,7 @@ PGrnWALInsertColumnUValueVectorGeneric(PGrnWALData *data,
 	unsigned int elementSize;
 	unsigned int i, n;
 
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -1010,47 +1046,39 @@ PGrnWALInsertColumnUValueVector(PGrnWALData *data,
 void
 PGrnWALInsertColumn(PGrnWALData *data, grn_obj *column, grn_obj *value)
 {
-	bool needToExecute = false;
-#ifdef PGRN_SUPPORT_WAL
-	if (data)
-		needToExecute = true;
-#endif
-#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
-	if (PGrnWALResourceManagerEnabled)
-		needToExecute = true;
-#endif
+	const char *tag = "[wal][insert][column]";
+	char name[GRN_TABLE_MAX_KEY_SIZE];
+	int nameSize;
 
-	if (needToExecute)
+	if (!data)
+		return;
+	if (!data->table)
+		return;
+
+	nameSize = grn_column_name(ctx, column, name, GRN_TABLE_MAX_KEY_SIZE);
+
+	PGrnWALInsertColumnStart(data, name, nameSize);
+	switch (value->header.type)
 	{
-		const char *tag = "[wal][insert][column]";
-		char name[GRN_TABLE_MAX_KEY_SIZE];
-		int nameSize;
-
-		nameSize = grn_column_name(ctx, column, name, GRN_TABLE_MAX_KEY_SIZE);
-
-		PGrnWALInsertColumnStart(data, name, nameSize);
-		switch (value->header.type)
-		{
-		case GRN_BULK:
-			PGrnWALInsertColumnValueBulk(data, name, nameSize, value);
-			break;
-		case GRN_VECTOR:
-			PGrnWALInsertColumnValueVector(data, name, nameSize, value);
-			break;
-		case GRN_UVECTOR:
-			PGrnWALInsertColumnUValueVector(data, name, nameSize, value);
-			break;
-		default:
-			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-						"%s unsupported value: <%.*s>: <%s>",
-						tag,
-						(int) nameSize,
-						name,
-						grn_obj_type_to_string(value->header.type));
-			break;
-		}
-		PGrnWALInsertColumnFinish(data);
+	case GRN_BULK:
+		PGrnWALInsertColumnValueBulk(data, name, nameSize, value);
+		break;
+	case GRN_VECTOR:
+		PGrnWALInsertColumnValueVector(data, name, nameSize, value);
+		break;
+	case GRN_UVECTOR:
+		PGrnWALInsertColumnUValueVector(data, name, nameSize, value);
+		break;
+	default:
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s unsupported value: <%.*s>: <%s>",
+					tag,
+					(int) nameSize,
+					name,
+					grn_obj_type_to_string(value->header.type));
+		break;
 	}
+	PGrnWALInsertColumnFinish(data);
 }
 
 void
@@ -1084,7 +1112,7 @@ PGrnWALCreateTableGeneral(Relation index,
 	size_t nElements = 7;
 
 	data = PGrnWALStart(index);
-	if (!data)
+	if (!PGrnWALEnabled)
 		return;
 
 	packer = &(data->packer);
@@ -1206,6 +1234,9 @@ PGrnWALCreateColumnGeneral(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 5;
 
+	if (!PGrnWALEnabled)
+		return;
+
 	data = PGrnWALStart(index);
 	if (!data)
 		return;
@@ -1243,17 +1274,14 @@ PGrnWALCreateColumnCustom(Relation index,
 						  grn_obj *type)
 {
 	PGrnWALRecordCreateColumn record;
-	Oid indexTableSpaceOid = InvalidOid;
+	Oid indexTableSpaceOid;
 
 	if (!PGrnWALResourceManagerEnabled)
 		return;
 
-	if (RelationIsValid(index))
-	{
-		indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
-		if (indexTableSpaceOid == MyDatabaseTableSpace)
-			indexTableSpaceOid = InvalidOid;
-	}
+	indexTableSpaceOid = PGRN_RELATION_GET_LOCATOR_SPACE(index);
+	if (indexTableSpaceOid == MyDatabaseTableSpace)
+		indexTableSpaceOid = InvalidOid;
 	PGrnWALRecordCreateColumnFill(&record,
 								  MyDatabaseId,
 								  GetDatabaseEncoding(),
@@ -1278,10 +1306,8 @@ PGrnWALCreateColumn(Relation index,
 {
 	if (!RelationIsValid(index))
 		return;
-
-	if (!name)
+	if (nameSize == 0)
 		return;
-
 	if (grn_obj_is_temporary(ctx, table))
 		return;
 
@@ -1300,6 +1326,9 @@ PGrnWALSetSourceIDsGeneral(Relation index, grn_obj *column, grn_obj *sourceIDs)
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 3;
+
+	if (!PGrnWALEnabled)
+		return;
 
 	data = PGrnWALStart(index);
 	if (!data)
@@ -1377,6 +1406,9 @@ PGrnWALRenameTableGeneral(Relation index,
 	msgpack_packer *packer;
 	size_t nElements = 3;
 
+	if (!PGrnWALEnabled)
+		return;
+
 	data = PGrnWALStart(index);
 	if (!data)
 		return;
@@ -1452,6 +1484,9 @@ PGrnWALDeleteGeneric(Relation index,
 	PGrnWALData *data;
 	msgpack_packer *packer;
 	size_t nElements = 3;
+
+	if (!PGrnWALEnabled)
+		return;
 
 	data = PGrnWALStart(index);
 	if (!data)

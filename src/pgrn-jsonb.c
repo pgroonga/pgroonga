@@ -604,7 +604,7 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	PGrnJSONBInsertGeneratePaths(data);
 	grn_obj_set_value(
 		ctx, data->pathsColumn, valueID, &(data->pathIDs), GRN_OBJ_SET);
-	{
+	if (walData) {
 		unsigned int i, n;
 
 		GRN_BULK_REWIND(&(data->paths));
@@ -1501,28 +1501,31 @@ PGrnJSONBInsertRecord(Relation index,
 		grn_obj_set_value(ctx, column, id, data->valueIDs, GRN_OBJ_SET);
 	PGrnCheck("failed to set column value: <%s>", attributeName->data);
 
-	if (data->isForFullTextSearchOnly)
+	if (walData)
 	{
-		PGrnWALInsertColumn(walData, column, &(data->value));
-	}
-	else
-	{
-		grn_obj *valueKeys = &(buffers->jsonbValueKeys);
-		size_t i, nValueIDs;
-
-		GRN_BULK_REWIND(valueKeys);
-		nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
-		for (i = 0; i < nValueIDs; i++)
+		if (data->isForFullTextSearchOnly)
 		{
-			grn_id valueID;
-			uint64_t key;
-
-			valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
-			grn_table_get_key(
-				ctx, data->valuesTable, valueID, &key, sizeof(uint64_t));
-			GRN_UINT64_PUT(ctx, valueKeys, key);
+			PGrnWALInsertColumn(walData, column, &(data->value));
 		}
-		PGrnWALInsertColumn(walData, column, valueKeys);
+		else
+		{
+			grn_obj *valueKeys = &(buffers->jsonbValueKeys);
+			size_t i, nValueIDs;
+
+			GRN_BULK_REWIND(valueKeys);
+			nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
+			for (i = 0; i < nValueIDs; i++)
+			{
+				grn_id valueID;
+				uint64_t key;
+
+				valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
+				grn_table_get_key(
+					ctx, data->valuesTable, valueID, &key, sizeof(uint64_t));
+				GRN_UINT64_PUT(ctx, valueKeys, key);
+			}
+			PGrnWALInsertColumn(walData, column, valueKeys);
+		}
 	}
 
 	PGrnWALInsertFinish(walData);
