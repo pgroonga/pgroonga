@@ -604,7 +604,8 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	PGrnJSONBInsertGeneratePaths(data);
 	grn_obj_set_value(
 		ctx, data->pathsColumn, valueID, &(data->pathIDs), GRN_OBJ_SET);
-	if (walData) {
+	if (walData)
+	{
 		unsigned int i, n;
 
 		GRN_BULK_REWIND(&(data->paths));
