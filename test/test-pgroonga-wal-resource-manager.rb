@@ -205,6 +205,37 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
+  test "name: Japanese" do
+    run_sql("CREATE TABLE メモ (コンテンツ text);")
+    run_sql("CREATE INDEX メモ_コンテンツ ON メモ USING pgroonga (コンテンツ);")
+    run_sql("INSERT INTO メモ VALUES ('PGroonga is good!');")
+
+    select = "SELECT * FROM メモ WHERE コンテンツ &@ 'PGroonga'"
+    output = <<-OUTPUT
+EXPLAIN (COSTS OFF) #{select};
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Bitmap Heap Scan on "メモ"
+   Recheck Cond: ("コンテンツ" &@ 'PGroonga'::text)
+   ->  Bitmap Index Scan on "メモ_コンテンツ"
+         Index Cond: ("コンテンツ" &@ 'PGroonga'::text)
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+    コンテンツ     
+-------------------
+ PGroonga is good!
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
   test "tokenizer options" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +

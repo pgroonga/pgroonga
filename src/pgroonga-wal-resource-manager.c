@@ -410,7 +410,17 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 				void *vectorValue;
 				grn_obj *columnValue;
 
-				column = PGrnLookupColumnWithSize(table, name, nameSize, ERROR);
+				column = grn_obj_column(ctx, table, name, nameSize);
+				if (!column)
+				{
+					PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
+									 ERROR,
+									 "column isn't found: <%.*s>:<%.*s>",
+									 (int) (walRecord.tableNameSize),
+									 walRecord.tableName,
+									 (int) nameSize,
+									 name);
+				}
 				vectorValueID = grn_hash_get(ctx,
 											 walRecord.columnVectorValues,
 											 &i,
