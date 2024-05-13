@@ -349,10 +349,12 @@ void PGrnRenameTable(Relation index, grn_obj *table, const char *newName);
 
 void PGrnRemoveObject(const char *name);
 void PGrnRemoveObjectWithSize(const char *name, size_t nameSize);
-void PGrnRemoveObjectForce(const char *name);
-void PGrnRemoveObjectForceWithSize(const char *name, size_t nameSize);
+void PGrnRemoveObjectForce(Relation index, const char *name);
+void PGrnRemoveObjectForceWithSize(Relation index,
+								   const char *name,
+								   size_t nameSize);
 
-void PGrnRemoveColumns(grn_obj *table);
+void PGrnRemoveColumns(Relation index, grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);
 

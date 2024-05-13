@@ -110,7 +110,8 @@ typedef enum
 	PGRN_WAL_ACTION_CREATE_COLUMN,
 	PGRN_WAL_ACTION_SET_SOURCES,
 	PGRN_WAL_ACTION_RENAME_TABLE,
-	PGRN_WAL_ACTION_DELETE
+	PGRN_WAL_ACTION_DELETE,
+	PGRN_WAL_ACTION_REMOVE_OBJECT
 } PGrnWALAction;
 
 #	define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
@@ -1551,6 +1552,68 @@ PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize)
 }
 
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALRemoveObjectGeneric(Relation index, const char *name, size_t nameSize)
+{
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 2;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+	if (!data)
+		return;
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_REMOVE_OBJECT);
+
+	msgpack_pack_cstr(packer, "name");
+	msgpack_pack_bin(packer, nameSize);
+	msgpack_pack_bin_body(packer, name, nameSize);
+
+	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALRemoveObjectCustom(Relation index, const char *name, size_t nameSize)
+{
+	PGrnWALRecordRemoveObject record;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	PGrnWALRecordRemoveObjectFill(&record,
+								  MyDatabaseId,
+								  GetDatabaseEncoding(),
+								  MyDatabaseTableSpace,
+								  name,
+								  nameSize);
+	PGrnWALRecordRemoveObjectWrite(&record);
+}
+#endif
+
+void
+PGrnWALRemoveObject(Relation index, const char *name, size_t nameSize)
+{
+	if (nameSize == 0)
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALRemoveObjectGeneric(index, name, nameSize);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALRemoveObjectCustom(index, name, nameSize);
+#endif
+}
+
+#ifdef PGRN_SUPPORT_WAL
 typedef struct
 {
 	Relation index;
@@ -2362,6 +2425,30 @@ PGrnWALApplyDelete(PGrnWALApplyData *data,
 }
 
 static void
+PGrnWALApplyRemoveObject(PGrnWALApplyData *data,
+						 msgpack_object_map *map,
+						 uint32_t currentElement)
+{
+	const char *context = "[rename-object]";
+	const char *name = NULL;
+	size_t nameSize = 0;
+	uint32_t i;
+
+	for (i = currentElement; i < map->size; i++)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[i]);
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "name"))
+		{
+			PGrnWALApplyValueGetString(data, context, kv, &name, &nameSize);
+		}
+	}
+
+	PGrnRemoveObjectForceWithSize(InvalidRelation, name, nameSize);
+}
+
+static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	const char *tag = "[wal][apply][object]";
@@ -2519,6 +2606,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		break;
 	case PGRN_WAL_ACTION_DELETE:
 		PGrnWALApplyDelete(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_REMOVE_OBJECT:
+		PGrnWALApplyRemoveObject(data, map, currentElement);
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,

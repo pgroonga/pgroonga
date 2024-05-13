@@ -428,13 +428,13 @@ PGrnRemoveObjectWithSize(const char *name, size_t nameSize)
 }
 
 void
-PGrnRemoveObjectForce(const char *name)
+PGrnRemoveObjectForce(Relation index, const char *name)
 {
-	PGrnRemoveObjectForceWithSize(name, strlen(name));
+	PGrnRemoveObjectForceWithSize(index, name, strlen(name));
 }
 
 void
-PGrnRemoveObjectForceWithSize(const char *name, size_t nameSize)
+PGrnRemoveObjectForceWithSize(Relation index, const char *name, size_t nameSize)
 {
 	grn_obj *object;
 
@@ -451,6 +451,8 @@ PGrnRemoveObjectForceWithSize(const char *name, size_t nameSize)
 		grn_obj_remove_force(ctx, name, nameSize);
 	}
 	PGrnCheck("failed to remove: <%.*s>", (int) nameSize, name);
+
+	PGrnWALRemoveObject(index, name, nameSize);
 }
 
 void
@@ -476,7 +478,7 @@ PGrnFlushObject(grn_obj *object, bool recursive)
 }
 
 void
-PGrnRemoveColumns(grn_obj *table)
+PGrnRemoveColumns(Relation index, grn_obj *table)
 {
 	grn_hash *columns;
 
@@ -496,16 +498,21 @@ PGrnRemoveColumns(grn_obj *table)
 	{
 		grn_id *columnID;
 		grn_obj *column;
-		const char *columnName;
+		char columnName[GRN_TABLE_MAX_KEY_SIZE];
+		int columnNameSize;
 
 		grn_hash_cursor_get_key(ctx, cursor, (void **) &columnID);
 		column = grn_ctx_at(ctx, *columnID);
 		if (!column)
 			continue;
 
-		columnName = PGrnInspectName(column);
+		columnNameSize =
+			grn_obj_name(ctx, column, columnName, GRN_TABLE_MAX_KEY_SIZE);
 		grn_obj_remove(ctx, column);
-		PGrnCheck("failed to remove column: <%s>", columnName);
+		PGrnCheck(
+			"failed to remove column: <%.*s>", columnNameSize, columnName);
+
+		PGrnWALRemoveObject(index, columnName, columnNameSize);
 	}
 	GRN_HASH_EACH_END(ctx, cursor);
 

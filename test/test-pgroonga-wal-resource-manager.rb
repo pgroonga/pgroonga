@@ -412,4 +412,52 @@ SELECT *
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
+
+  test "truncate: in transaction" do
+    run_sql(<<-SQL)
+BEGIN TRANSACTION;
+
+CREATE TABLE memos (content text);
+
+INSERT INTO memos VALUES ('PGroonga is good!');
+
+CREATE INDEX memos_content ON memos USING pgroonga (content);
+
+TRUNCATE memos;
+
+INSERT INTO memos VALUES ('Groonga is good!');
+INSERT INTO memos VALUES ('PGroonga is very good!');
+
+COMMIT;
+    SQL
+
+    disable_index_scan = "SET enable_indexscan = off"
+    select = "SELECT * FROM memos WHERE content &@ 'PGroonga'"
+    output = <<-OUTPUT
+#{disable_index_scan};
+EXPLAIN (COSTS OFF) #{select};
+                    QUERY PLAN                     
+---------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@ 'PGroonga'::text)
+   ->  Bitmap Index Scan on memos_content
+         Index Cond: (content &@ 'PGroonga'::text)
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{disable_index_scan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
+
+    output = <<-OUTPUT
+#{select};
+        content         
+------------------------
+ PGroonga is very good!
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
 end

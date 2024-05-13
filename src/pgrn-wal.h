@@ -59,4 +59,6 @@ void PGrnWALRenameTable(Relation index,
 void
 PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize);
 
+void PGrnWALRemoveObject(Relation index, const char *name, size_t nameSize);
+
 int64_t PGrnWALApply(Relation index);

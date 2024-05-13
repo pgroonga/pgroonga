@@ -116,10 +116,11 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 		pgrnwrm_redo_setup(&data);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				PGRN_TAG ": %s %u(%s)/%u/%u name=<%.*s> flags=<%u> "
+				PGRN_TAG ": %s %x/%08X %u(%s)/%u/%u name=<%.*s> flags=<%u> "
 						 "type=<%.*s> tokenizer=<%.*s> normalizers=<%.*s> "
 						 "token-filters=<%.*s>",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -191,9 +192,10 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG
-				": %s %u(%s)/%u/%u table=<%.*s> name=<%.*s> flags=<%u> "
+				": %s %X/%08X %u(%s)/%u/%u table=<%.*s> name=<%.*s> flags=<%u> "
 				"type=<%.*s>",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -259,8 +261,9 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 		pgrnwrm_redo_setup(&data);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				PGRN_TAG ": %s %u(%s)/%u column=<%.*s> sources=<%s>",
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u column=<%.*s> sources=<%s>",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -315,8 +318,9 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 		pgrnwrm_redo_setup(&data);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				PGRN_TAG ": %s %u(%s)/%u name=<%.*s> new-name=<%.*s>",
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s> new-name=<%.*s>",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -372,8 +376,9 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 		pgrnwrm_redo_setup(&data);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				PGRN_TAG ": %s %u(%s)/%u table=<%.*s> columns=<%s>",
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u table=<%.*s> columns=<%s>",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -524,8 +529,9 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 			walRecord.tableName, walRecord.tableNameSize, ERROR);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				PGRN_TAG ": %s %u(%s)/%u %s",
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u %s",
 				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
 				walRecord.dbID,
 				pg_encoding_to_char(walRecord.dbEncoding),
 				walRecord.dbTableSpaceID,
@@ -565,6 +571,61 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_remove_object(XLogReaderState *record)
+{
+	const char *tag = "[redo][remove-object]";
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	PGrnWALRecordRemoveObject walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
+		.db = NULL,
+	};
+	PG_TRY();
+	{
+		grn_obj *object;
+
+		PGrnWALRecordRemoveObjectRead(&walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s>",
+				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				(int) (walRecord.nameSize),
+				walRecord.name);
+		object = PGrnLookupWithSize(
+			walRecord.name, walRecord.nameSize, PGRN_ERROR_LEVEL_IGNORE);
+		if (object)
+		{
+			if (grn_obj_remove(ctx, object) != GRN_SUCCESS)
+			{
+				object = NULL;
+			}
+		}
+		if (!object)
+		{
+			grn_obj_remove_force(ctx, walRecord.name, walRecord.nameSize);
+		}
+		PGrnCheck("%s failed to remove: <%.*s>",
+				  tag,
+				  (int) (walRecord.nameSize),
+				  walRecord.name);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -582,6 +643,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "INSERT";
 	case PGRN_WAL_RECORD_DELETE:
 		return "DELETE";
+	case PGRN_WAL_RECORD_REMOVE_OBJECT:
+		return "REMOVE_OBJECT";
 	default:
 		return "UNKNOWN";
 	}
@@ -616,6 +679,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_DELETE:
 		pgrnwrm_redo_delete(record);
+		break;
+	case PGRN_WAL_RECORD_REMOVE_OBJECT:
+		pgrnwrm_redo_remove_object(record);
 		break;
 	default:
 		ereport(ERROR,

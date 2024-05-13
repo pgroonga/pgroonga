@@ -1227,7 +1227,7 @@ PGrnCreateCheckType(PGrnCreateData *data)
 	}
 }
 
-static void PGrnRemoveUnusedTable(Oid relationFileNodeID);
+static void PGrnRemoveUnusedTable(Relation index, Oid relationFileNodeID);
 
 static void
 PGrnCreate(PGrnCreateData *data)
@@ -1250,7 +1250,7 @@ PGrnCreate(PGrnCreateData *data)
 		if (sourcesTable)
 		{
 			grn_obj_unlink(ctx, sourcesTable);
-			PGrnRemoveUnusedTable(data->relNumber);
+			PGrnRemoveUnusedTable(data->index, data->relNumber);
 		}
 	}
 
@@ -7600,7 +7600,7 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 }
 
 static void
-PGrnRemoveUnusedTable(Oid relationFileNodeID)
+PGrnRemoveUnusedTable(Relation index, Oid relationFileNodeID)
 {
 	unsigned int i;
 
@@ -7618,7 +7618,7 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		if (!lexicon)
 			break;
 
-		PGrnRemoveColumns(lexicon);
+		PGrnRemoveColumns(index, lexicon);
 	}
 
 	{
@@ -7627,7 +7627,7 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 				 sizeof(tableName),
 				 PGrnSourcesTableNameFormat,
 				 relationFileNodeID);
-		PGrnRemoveObjectForce(tableName);
+		PGrnRemoveObjectForce(index, tableName);
 		PGrnAliasDeleteRaw(relationFileNodeID);
 		PGrnIndexStatusDeleteRaw(relationFileNodeID);
 	}
@@ -7646,7 +7646,7 @@ PGrnRemoveUnusedTable(Oid relationFileNodeID)
 		if (!lexicon)
 			break;
 
-		PGrnRemoveObjectForce(tableName);
+		PGrnRemoveObjectForce(index, tableName);
 	}
 
 	PGrnJSONBRemoveUnusedTables(relationFileNodeID);
@@ -7738,7 +7738,7 @@ PGrnRemoveUnusedTables(void)
 		{
 			Oid relationFileNodeID =
 				GRN_UINT32_VALUE_AT(&targetRelatinFileNodIDs, i);
-			PGrnRemoveUnusedTable(relationFileNodeID);
+			PGrnRemoveUnusedTable(InvalidRelation, relationFileNodeID);
 		}
 	}
 	GRN_OBJ_FIN(ctx, &targetRelatinFileNodIDs);

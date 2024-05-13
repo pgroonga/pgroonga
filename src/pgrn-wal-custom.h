@@ -17,6 +17,7 @@
 #define PGRN_WAL_RECORD_RENAME_TABLE 0x40
 #define PGRN_WAL_RECORD_INSERT 0x50
 #define PGRN_WAL_RECORD_DELETE 0x60
+#define PGRN_WAL_RECORD_REMOVE_OBJECT 0x70
 
 #define PGRN_WAL_RECORD_DOMAIN_ID_MASK GRN_ID_MAX
 #define PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK 0xc0000000
@@ -225,7 +226,7 @@ PGrnWALRecordCreateTableRead(PGrnWALRecordCreateTable *record,
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][create-table] garbage at the end:%u",
+				   "[wal][record][read][create-table] garbage at the end: %u",
 				   PGRN_TAG,
 				   raw->size));
 	}
@@ -305,7 +306,7 @@ PGrnWALRecordCreateColumnRead(PGrnWALRecordCreateColumn *record,
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][create-column] garbage at the end:%u",
+				   "[wal][record][read][create-column] garbage at the end: %u",
 				   PGRN_TAG,
 				   raw->size));
 	}
@@ -416,12 +417,13 @@ PGrnWALRecordSetSourcesRead(PGrnWALRecordSetSources *record,
 	}
 	if (raw->size != 0)
 	{
-		ereport(ERROR,
-				errcode(ERRCODE_DATA_EXCEPTION),
-				errmsg("%s: "
-					   "[wal][record][read][set-sources] garbage at the end:%u",
-					   PGRN_TAG,
-					   raw->size));
+		ereport(
+			ERROR,
+			errcode(ERRCODE_DATA_EXCEPTION),
+			errmsg("%s: "
+				   "[wal][record][read][set-sources] garbage at the end: %u",
+				   PGRN_TAG,
+				   raw->size));
 	}
 }
 
@@ -486,7 +488,7 @@ PGrnWALRecordRenameTableRead(PGrnWALRecordRenameTable *record,
 			ERROR,
 			errcode(ERRCODE_DATA_EXCEPTION),
 			errmsg("%s: "
-				   "[wal][record][read][rename-table] garbage at the end:%u",
+				   "[wal][record][read][rename-table] garbage at the end: %u",
 				   PGRN_TAG,
 				   raw->size));
 	}
@@ -915,7 +917,7 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 		ereport(ERROR,
 				errcode(ERRCODE_DATA_EXCEPTION),
 				errmsg("%s: "
-					   "[wal][record][read][insert] garbage at the end:%u",
+					   "[wal][record][read][insert] garbage at the end: %u",
 					   PGRN_TAG,
 					   raw->size));
 	}
@@ -980,8 +982,66 @@ PGrnWALRecordDeleteRead(PGrnWALRecordDelete *record, PGrnWALRecordRaw *raw)
 		ereport(ERROR,
 				errcode(ERRCODE_DATA_EXCEPTION),
 				errmsg("%s: "
-					   "[wal][record][read][delete] garbage at the end:%u",
+					   "[wal][record][read][delete] garbage at the end: %u",
 					   PGRN_TAG,
 					   raw->size));
+	}
+}
+
+typedef struct PGrnWALRecordRemoveObject
+{
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
+	const char *name;
+	uint32 nameSize;
+} PGrnWALRecordRemoveObject;
+
+static inline void
+PGrnWALRecordRemoveObjectFill(PGrnWALRecordRemoveObject *record,
+							  Oid dbID,
+							  int dbEncoding,
+							  Oid dbTableSpaceID,
+							  const char *name,
+							  uint32 nameSize)
+{
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
+	record->name = name;
+	record->nameSize = nameSize;
+}
+
+static inline void
+PGrnWALRecordRemoveObjectWrite(PGrnWALRecordRemoveObject *record)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) record,
+					 offsetof(PGrnWALRecordRemoveObject, name));
+	XLogRegisterData((char *) &(record->nameSize), sizeof(uint32));
+	XLogRegisterData((char *) record->name, record->nameSize);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_REMOVE_OBJECT | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordRemoveObjectRead(PGrnWALRecordRemoveObject *record,
+							  PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordRemoveObject, name));
+	PGrnWALRecordRawReadData(raw, &(record->nameSize), sizeof(uint32));
+	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
+	if (raw->size != 0)
+	{
+		ereport(
+			ERROR,
+			errcode(ERRCODE_DATA_EXCEPTION),
+			errmsg("%s: "
+				   "[wal][record][read][remove-object] garbage at the end: %u",
+				   PGRN_TAG,
+				   raw->size));
 	}
 }
