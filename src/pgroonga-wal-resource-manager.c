@@ -626,6 +626,45 @@ pgrnwrm_redo_remove_object(XLogReaderState *record)
 	PG_END_TRY();
 }
 
+static void
+pgrnwrm_redo_register_plugin(XLogReaderState *record)
+{
+	const char *tag = "[redo][register-plugin]";
+	PGrnWALRecordRaw raw = {
+		.data = XLogRecGetData(record),
+		.size = XLogRecGetDataLen(record),
+	};
+	PGrnWALRecordRegisterPlugin walRecord = {0};
+	PGrnWRMRedoData data = {
+		.walRecord = (PGrnWALRecordCommon *) &walRecord,
+		.db = NULL,
+	};
+	PG_TRY();
+	{
+		char pluginName[MAXPGPATH];
+
+		PGrnWALRecordRegisterPluginRead(&walRecord, &raw);
+
+		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s>",
+				tag,
+				LSN_FORMAT_ARGS(record->ReadRecPtr),
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				(int) (walRecord.nameSize),
+				walRecord.name);
+		PGrnRegisterPluginWithSize(walRecord.name, walRecord.nameSize, tag);
+	}
+	PG_FINALLY();
+	{
+		pgrnwrm_redo_teardown(&data);
+	}
+	PG_END_TRY();
+}
+
 static const char *
 pgrnwrm_info_to_string(uint8 info)
 {
@@ -645,6 +684,8 @@ pgrnwrm_info_to_string(uint8 info)
 		return "DELETE";
 	case PGRN_WAL_RECORD_REMOVE_OBJECT:
 		return "REMOVE_OBJECT";
+	case PGRN_WAL_RECORD_REGISTER_PLUGIN:
+		return "REGISTER_PLUGIN";
 	default:
 		return "UNKNOWN";
 	}
@@ -682,6 +723,9 @@ pgrnwrm_redo(XLogReaderState *record)
 		break;
 	case PGRN_WAL_RECORD_REMOVE_OBJECT:
 		pgrnwrm_redo_remove_object(record);
+		break;
+	case PGRN_WAL_RECORD_REGISTER_PLUGIN:
+		pgrnwrm_redo_register_plugin(record);
 		break;
 	default:
 		ereport(ERROR,

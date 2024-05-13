@@ -24,6 +24,7 @@ void PGrnApplyOptionValues(Relation index,
 						   grn_obj **normalizers,
 						   const char *defaultNormalizers,
 						   grn_obj **tokenFilters,
+						   grn_obj **plugins,
 						   grn_table_flags *lexiconType,
 						   grn_column_flags *indexFlags);
 

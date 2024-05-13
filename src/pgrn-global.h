@@ -17,6 +17,7 @@ struct PGrnBuffers
 	grn_obj tokenizer;
 	grn_obj normalizers;
 	grn_obj tokenFilters;
+	grn_obj plugins;
 	grn_obj jsonbValueKeys;
 	grn_obj jsonbTokenStack;
 	grn_obj text;

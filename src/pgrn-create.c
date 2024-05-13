@@ -6,6 +6,7 @@
 #include "pgrn-groonga.h"
 #include "pgrn-options.h"
 #include "pgrn-value.h"
+#include "pgrn-wal.h"
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
@@ -120,6 +121,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
+	grn_obj *plugins = NULL;
 
 	switch (data->attributeTypeID)
 	{
@@ -163,6 +165,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  &normalizers,
 							  normalizersName,
 							  &tokenFilters,
+							  &plugins,
 							  &flags,
 							  NULL);
 	}
@@ -170,6 +173,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	{
 		flags |= GRN_OBJ_TABLE_PAT_KEY;
 	}
+
+	PGrnWALRegisterPlugins(data->index, plugins);
 
 	snprintf(lexiconName,
 			 sizeof(lexiconName),
@@ -229,6 +234,7 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 							  &normalizers,
 							  NULL,
 							  &tokenFilters,
+							  NULL,
 							  &tableFlags,
 							  &flags);
 	}

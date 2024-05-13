@@ -111,7 +111,8 @@ typedef enum
 	PGRN_WAL_ACTION_SET_SOURCES,
 	PGRN_WAL_ACTION_RENAME_TABLE,
 	PGRN_WAL_ACTION_DELETE,
-	PGRN_WAL_ACTION_REMOVE_OBJECT
+	PGRN_WAL_ACTION_REMOVE_OBJECT,
+	PGRN_WAL_ACTION_REGISTER_PLUGIN,
 } PGrnWALAction;
 
 #	define PGRN_WAL_META_PAGE_SPECIAL_VERSION 1
@@ -1614,6 +1615,86 @@ PGrnWALRemoveObject(Relation index, const char *name, size_t nameSize)
 }
 
 #ifdef PGRN_SUPPORT_WAL
+static void
+PGrnWALRegisterPluginGeneric(Relation index, const char *name, size_t nameSize)
+{
+	PGrnWALData *data;
+	msgpack_packer *packer;
+	size_t nElements = 2;
+
+	if (!PGrnWALEnabled)
+		return;
+
+	data = PGrnWALStart(index);
+	if (!data)
+		return;
+
+	packer = &(data->packer);
+	msgpack_pack_map(packer, nElements);
+
+	msgpack_pack_cstr(packer, "_action");
+	msgpack_pack_uint32(packer, PGRN_WAL_ACTION_REGISTER_PLUGIN);
+
+	msgpack_pack_cstr(packer, "name");
+	msgpack_pack_str(packer, nameSize);
+	msgpack_pack_str_body(packer, name, nameSize);
+
+	PGrnWALFinish(data);
+}
+#endif
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+static void
+PGrnWALRegisterPluginCustom(Relation index, const char *name, size_t nameSize)
+{
+	PGrnWALRecordRegisterPlugin record;
+
+	if (!PGrnWALResourceManagerEnabled)
+		return;
+
+	PGrnWALRecordRegisterPluginFill(&record,
+									MyDatabaseId,
+									GetDatabaseEncoding(),
+									MyDatabaseTableSpace,
+									name,
+									nameSize);
+	PGrnWALRecordRegisterPluginWrite(&record);
+}
+#endif
+
+void
+PGrnWALRegisterPlugin(Relation index, const char *name, size_t nameSize)
+{
+	if (nameSize == 0)
+		return;
+
+#ifdef PGRN_SUPPORT_WAL
+	PGrnWALRegisterPluginGeneric(index, name, nameSize);
+#endif
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	PGrnWALRegisterPluginCustom(index, name, nameSize);
+#endif
+}
+
+void
+PGrnWALRegisterPlugins(Relation index, grn_obj *names)
+{
+	uint32_t i, n;
+
+	if (!names)
+		return;
+
+	n = grn_vector_size(ctx, names);
+	for (i = 0; i < n; i++)
+	{
+		const char *name;
+		uint32_t nameSize =
+			grn_vector_get_element(ctx, names, i, &name, NULL, NULL);
+		PGrnWALRegisterPlugin(index, name, nameSize);
+	}
+}
+
+#ifdef PGRN_SUPPORT_WAL
 typedef struct
 {
 	Relation index;
@@ -2449,6 +2530,31 @@ PGrnWALApplyRemoveObject(PGrnWALApplyData *data,
 }
 
 static void
+PGrnWALApplyRegisterPlugin(PGrnWALApplyData *data,
+						   msgpack_object_map *map,
+						   uint32_t currentElement)
+{
+	const char *context = "[register-plugin]";
+	const char *tag = "[wal][apply][register-plugin]";
+	const char *name = NULL;
+	size_t nameSize = 0;
+	uint32_t i;
+
+	for (i = currentElement; i < map->size; i++)
+	{
+		msgpack_object_kv *kv;
+
+		kv = &(map->ptr[i]);
+		if (PGrnWALApplyKeyEqual(data, context, &(kv->key), "name"))
+		{
+			PGrnWALApplyValueGetString(data, context, kv, &name, &nameSize);
+		}
+	}
+
+	PGrnRegisterPluginWithSize(name, nameSize, tag);
+}
+
+static void
 PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 {
 	const char *tag = "[wal][apply][object]";
@@ -2609,6 +2715,9 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 		break;
 	case PGRN_WAL_ACTION_REMOVE_OBJECT:
 		PGrnWALApplyRemoveObject(data, map, currentElement);
+		break;
+	case PGRN_WAL_ACTION_REGISTER_PLUGIN:
+		PGrnWALApplyRegisterPlugin(data, map, currentElement);
 		break;
 	default:
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,

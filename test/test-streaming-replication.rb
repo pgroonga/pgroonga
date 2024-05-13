@@ -37,7 +37,7 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
-  test "tokenizer options" do
+  test "options: tokenizer" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +
             "USING pgroonga (content) " +
@@ -57,7 +57,7 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
-  test "normalizer options" do
+  test "options: normalizer" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +
             "USING pgroonga (content) " +
@@ -80,7 +80,7 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
-  test "token filters options" do
+  test "options: token filters" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +
             "USING pgroonga (content) " +
@@ -97,6 +97,50 @@ EXPLAIN (COSTS OFF) #{select};
  りんご
  リンゴ
 (2 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
+  test "options: plugins" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql(<<-CREATE_INDEX)
+CREATE INDEX memos_content ON memos
+ USING pgroonga (content)
+  WITH (plugins = 'token_filters/stem',
+        token_filters = 'TokenFilterStem');
+    CREATE_INDEX
+    run_sql("INSERT INTO memos VALUES ('It works');")
+    run_sql("INSERT INTO memos VALUES ('I work');")
+    run_sql("INSERT INTO memos VALUES ('I worked');")
+
+    disable_index_scan = "SET enable_indexscan = off"
+    select = "SELECT * FROM memos WHERE content &@ 'work'"
+    output = <<-OUTPUT
+#{disable_index_scan};
+EXPLAIN (COSTS OFF) #{select};
+                  QUERY PLAN                   
+-----------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@ 'work'::text)
+   ->  Bitmap Index Scan on memos_content
+         Index Cond: (content &@ 'work'::text)
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{disable_index_scan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
+
+    output = <<-OUTPUT
+#{select};
+ content  
+----------
+ It works
+ I work
+ I worked
+(3 rows)
 
     OUTPUT
     assert_equal([output, ""],

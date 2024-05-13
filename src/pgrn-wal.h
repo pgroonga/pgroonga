@@ -61,4 +61,7 @@ PGrnWALDelete(Relation index, grn_obj *table, const char *key, size_t keySize);
 
 void PGrnWALRemoveObject(Relation index, const char *name, size_t nameSize);
 
+void PGrnWALRegisterPlugin(Relation index, const char *name, size_t nameSize);
+void PGrnWALRegisterPlugins(Relation index, grn_obj *names);
+
 int64_t PGrnWALApply(Relation index);

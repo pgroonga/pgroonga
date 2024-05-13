@@ -358,5 +358,17 @@ void PGrnRemoveColumns(Relation index, grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);
 
+static void PGrnRegisterPluginWithSize(const char *name, size_t nameSize, const char *tag)
+{
+	char pluginName[MAXPGPATH];
+	grn_strncpy(pluginName, MAXPGPATH, name, nameSize);
+	pluginName[nameSize] = '\0';
+	grn_plugin_register(ctx, pluginName);
+	PGrnCheck("%s failed to register a plugin: <%.*s>",
+			  tag,
+			  (int) nameSize,
+			  name);
+}
+
 grn_id PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags);
 Oid PGrnGrnTypeToPGType(grn_id typeID);

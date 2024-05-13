@@ -41,6 +41,13 @@ typedef void (*PGrnOptionNameFunction)(const char *name,
 									   void *data);
 
 static void
+PGrnOptionAppendName(const char *name, size_t nameSize, void *data)
+{
+	grn_obj *vector = data;
+	grn_vector_add_element(ctx, vector, name, nameSize, 0, GRN_DB_TEXT);
+}
+
+static void
 PGrnOptionParseNames(const char *names,
 					 PGrnOptionNameFunction function,
 					 void *data)
@@ -283,13 +290,7 @@ static void
 PGrnOptionValidatePlugin(const char *name, size_t nameSize, void *data)
 {
 	const char *tag = "[option][plugin][validate]";
-	char pluginName[MAXPGPATH];
-
-	grn_strncpy(pluginName, MAXPGPATH, name, nameSize);
-	pluginName[nameSize] = '\0';
-	grn_plugin_register(ctx, pluginName);
-	PGrnCheck(
-		"%s failed to register plugin: <%.*s>", tag, (int) nameSize, name);
+	PGrnRegisterPluginWithSize(name, nameSize, tag);
 }
 
 static void
@@ -786,6 +787,7 @@ PGrnApplyOptionValues(Relation index,
 					  grn_obj **normalizers,
 					  const char *defaultNormalizers,
 					  grn_obj **tokenFilters,
+					  grn_obj **plugins,
 					  grn_table_flags *lexiconType,
 					  grn_column_flags *indexFlags)
 {
@@ -827,6 +829,18 @@ PGrnApplyOptionValues(Relation index,
 	{
 		*tokenFilters = &(buffers->tokenFilters);
 		GRN_TEXT_SETS(ctx, *tokenFilters, rawTokenFilters);
+	}
+
+	if (plugins)
+	{
+		const char *rawPlugins =
+			((const char *) options) + options->pluginsOffset;
+		if (!PGrnIsNoneValue(rawPlugins))
+		{
+			*plugins = &(buffers->plugins);
+			GRN_BULK_REWIND(*plugins);
+			PGrnOptionParseNames(rawPlugins, PGrnOptionAppendName, *plugins);
+		}
 	}
 
 	lexiconTypeName = GET_STRING_RELOPTION(options, lexiconTypeOffset);

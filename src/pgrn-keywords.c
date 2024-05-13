@@ -57,6 +57,7 @@ PGrnKeywordsResolveNormalizer(const char *indexName,
 							  normalizers,
 							  PGRN_DEFAULT_NORMALIZERS,
 							  &tokenFilters,
+							  NULL,
 							  &flags,
 							  NULL);
 		RelationClose(index);

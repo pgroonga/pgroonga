@@ -947,6 +947,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	grn_obj *tokenizer = NULL;
 	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
+	grn_obj *plugins = NULL;
 	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION;
 
 	PGrnApplyOptionValues(data->index,
@@ -957,11 +958,14 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 						  &normalizers,
 						  PGRN_DEFAULT_NORMALIZERS,
 						  &tokenFilters,
+						  &plugins,
 						  &flags,
 						  &indexFlags);
 
 	if (!tokenizer)
 		return;
+
+	PGrnWALRegisterPlugins(data->index, plugins);
 
 	snprintf(lexiconName,
 			 sizeof(lexiconName),

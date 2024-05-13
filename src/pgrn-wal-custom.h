@@ -18,6 +18,7 @@
 #define PGRN_WAL_RECORD_INSERT 0x50
 #define PGRN_WAL_RECORD_DELETE 0x60
 #define PGRN_WAL_RECORD_REMOVE_OBJECT 0x70
+#define PGRN_WAL_RECORD_REGISTER_PLUGIN 0x80
 
 #define PGRN_WAL_RECORD_DOMAIN_ID_MASK GRN_ID_MAX
 #define PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK 0xc0000000
@@ -1043,5 +1044,64 @@ PGrnWALRecordRemoveObjectRead(PGrnWALRecordRemoveObject *record,
 				   "[wal][record][read][remove-object] garbage at the end: %u",
 				   PGRN_TAG,
 				   raw->size));
+	}
+}
+
+typedef struct PGrnWALRecordRegisterPlugin
+{
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
+	const char *name;
+	uint32 nameSize;
+} PGrnWALRecordRegisterPlugin;
+
+static inline void
+PGrnWALRecordRegisterPluginFill(PGrnWALRecordRegisterPlugin *record,
+								Oid dbID,
+								int dbEncoding,
+								Oid dbTableSpaceID,
+								const char *name,
+								uint32 nameSize)
+{
+	record->dbID = dbID;
+	record->dbEncoding = dbEncoding;
+	record->dbTableSpaceID = dbTableSpaceID;
+	record->name = name;
+	record->nameSize = nameSize;
+}
+
+static inline void
+PGrnWALRecordRegisterPluginWrite(PGrnWALRecordRegisterPlugin *record)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) record,
+					 offsetof(PGrnWALRecordRegisterPlugin, name));
+	XLogRegisterData((char *) &(record->nameSize), sizeof(uint32));
+	XLogRegisterData((char *) record->name, record->nameSize);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_REGISTER_PLUGIN | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordRegisterPluginRead(PGrnWALRecordRegisterPlugin *record,
+								PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(
+		raw, record, offsetof(PGrnWALRecordRegisterPlugin, name));
+	PGrnWALRecordRawReadData(raw, &(record->nameSize), sizeof(uint32));
+	record->name = PGrnWALRecordRawRefer(raw, record->nameSize);
+	if (raw->size != 0)
+	{
+		ereport(
+			ERROR,
+			errcode(ERRCODE_DATA_EXCEPTION),
+			errmsg(
+				"%s: "
+				"[wal][record][read][register-plugin] garbage at the end: %u",
+				PGRN_TAG,
+				raw->size));
 	}
 }
