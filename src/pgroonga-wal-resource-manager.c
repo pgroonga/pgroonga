@@ -605,19 +605,12 @@ pgrnwrm_redo_remove_object(XLogReaderState *record)
 			walRecord.name, walRecord.nameSize, PGRN_ERROR_LEVEL_IGNORE);
 		if (object)
 		{
-			if (grn_obj_remove(ctx, object) != GRN_SUCCESS)
-			{
-				object = NULL;
-			}
+			grn_obj_remove(ctx, object);
+			PGrnCheck("%s failed to remove: <%.*s>",
+					  tag,
+					  (int) (walRecord.nameSize),
+					  walRecord.name);
 		}
-		if (!object)
-		{
-			grn_obj_remove_force(ctx, walRecord.name, walRecord.nameSize);
-		}
-		PGrnCheck("%s failed to remove: <%.*s>",
-				  tag,
-				  (int) (walRecord.nameSize),
-				  walRecord.name);
 	}
 	PG_FINALLY();
 	{

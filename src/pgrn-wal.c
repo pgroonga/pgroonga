@@ -2510,10 +2510,12 @@ PGrnWALApplyRemoveObject(PGrnWALApplyData *data,
 						 msgpack_object_map *map,
 						 uint32_t currentElement)
 {
-	const char *context = "[rename-object]";
+	const char *context = "[remove-object]";
+	const char *tag = "[wal][apply][remove-object]";
 	const char *name = NULL;
 	size_t nameSize = 0;
 	uint32_t i;
+	grn_obj *object = NULL;
 
 	for (i = currentElement; i < map->size; i++)
 	{
@@ -2526,7 +2528,12 @@ PGrnWALApplyRemoveObject(PGrnWALApplyData *data,
 		}
 	}
 
-	PGrnRemoveObjectForceWithSize(InvalidRelation, name, nameSize);
+	object = PGrnLookupWithSize(name, nameSize, PGRN_ERROR_LEVEL_IGNORE);
+	if (object)
+	{
+		grn_obj_remove(ctx, object);
+		PGrnCheck("%s failed to remove: <%.*s>", tag, (int) nameSize, name);
+	}
 }
 
 static void
