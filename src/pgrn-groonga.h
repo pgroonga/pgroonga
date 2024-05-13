@@ -215,7 +215,8 @@ PGrnCreateTableRawWithSize(Oid tableSpaceID,
 	if (PGrnTableModuleValueIsPresent(tokenFilters))
 	{
 		grn_obj_set_info(ctx, table, GRN_INFO_TOKEN_FILTERS, tokenFilters);
-		PGrnCheck("failed to set token filters: <%s>", PGrnInspect(tokenFilters));
+		PGrnCheck("failed to set token filters: <%s>",
+				  PGrnInspect(tokenFilters));
 	}
 
 	return table;
