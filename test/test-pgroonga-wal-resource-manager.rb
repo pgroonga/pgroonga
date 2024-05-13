@@ -73,18 +73,23 @@ EXPLAIN (COSTS OFF) #{select};
     run_sql("INSERT INTO memos VALUES (ARRAY['PostgreSQL is good!']);")
     run_sql("INSERT INTO memos VALUES (ARRAY['Groonga is good!', 'PGroonga is fast!']);")
 
+    disable_index_scan = "SET enable_indexscan = off"
     select = "SELECT * FROM memos WHERE contents &@ 'PGroonga'"
     output = <<-OUTPUT
+#{disable_index_scan};
 EXPLAIN (COSTS OFF) #{select};
-                  QUERY PLAN                  
-----------------------------------------------
- Index Scan using memos_contents on memos
-   Index Cond: (contents &@ 'PGroonga'::text)
-(2 rows)
+                     QUERY PLAN                     
+----------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (contents &@ 'PGroonga'::text)
+   ->  Bitmap Index Scan on memos_contents
+         Index Cond: (contents &@ 'PGroonga'::text)
+(4 rows)
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+                 run_sql_standby("#{disable_index_scan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
     output = <<-OUTPUT
 #{select};
                  contents                 
