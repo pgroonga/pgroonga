@@ -984,6 +984,12 @@ PGrnWALInsertColumnUValueVectorCustom(PGrnWALData *data,
 {
 	if (!PGrnWALResourceManagerEnabled)
 		return;
+
+	{
+		grn_obj *buffer = &(buffers->walBuffer);
+		PGrnWALRecordInsertWriteColumnValueUVector(
+			buffer, name, nameSize, value);
+	}
 }
 #endif
 

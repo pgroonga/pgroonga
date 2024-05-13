@@ -103,6 +103,44 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
+  # I don't know why we can create a PGroonga index for int[]...
+  # PGroonga doesn't provide an operator class for int[]...
+  test "int[]" do
+    run_sql("CREATE TABLE users (scores int[]);")
+    run_sql("CREATE INDEX users_scores ON users USING pgroonga (scores);")
+    run_sql("INSERT INTO users VALUES (ARRAY[1, 2]);")
+    run_sql("INSERT INTO users VALUES (ARRAY[20]);")
+    run_sql("INSERT INTO users VALUES (ARRAY[2, 20, 200]);")
+
+    disable_index_scan = "SET enable_indexscan = off"
+    select = "SELECT * FROM users WHERE scores = ARRAY[2, 20, 200]"
+    output = <<-OUTPUT
+#{disable_index_scan};
+EXPLAIN (COSTS OFF) #{select};
+                       QUERY PLAN                       
+--------------------------------------------------------
+ Bitmap Heap Scan on users
+   Recheck Cond: (scores = '{2,20,200}'::integer[])
+   ->  Bitmap Index Scan on users_scores
+         Index Cond: (scores = '{2,20,200}'::integer[])
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{disable_index_scan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+   scores   
+------------
+ {2,20,200}
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
   test "tokenizer options" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +
