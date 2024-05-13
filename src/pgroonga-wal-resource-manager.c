@@ -73,6 +73,7 @@ pgrnwrm_redo_teardown(PGrnWRMRedoData *data)
 static void
 pgrnwrm_redo_create_table(XLogReaderState *record)
 {
+	const char *tag = "[redo][create-table]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -99,6 +100,27 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 		grn_obj *type = NULL;
 		PGrnWALRecordCreateTableRead(&walRecord, &raw);
 		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %u(%s)/%u/%u name=<%.*s> flags=<%u> "
+						 "type=<%.*s> tokenizer=<%.*s> normalizers=<%.*s> "
+						 "token-filters=<%.*s>",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				walRecord.indexTableSpaceID,
+				(int) (walRecord.nameSize),
+				walRecord.name,
+				walRecord.flags,
+				(int) GRN_TEXT_LEN(walRecord.type),
+				GRN_TEXT_VALUE(walRecord.type),
+				(int) GRN_TEXT_LEN(walRecord.tokenizer),
+				GRN_TEXT_VALUE(walRecord.tokenizer),
+				(int) GRN_TEXT_LEN(walRecord.normalizers),
+				GRN_TEXT_VALUE(walRecord.normalizers),
+				(int) GRN_TEXT_LEN(walRecord.tokenFilters),
+				GRN_TEXT_VALUE(walRecord.tokenFilters));
 		if (GRN_BULK_VSIZE(walRecord.type) > 0)
 		{
 			type = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.type),
@@ -128,6 +150,7 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 static void
 pgrnwrm_redo_create_column(XLogReaderState *record)
 {
+	const char *tag = "[redo][create-column]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -151,6 +174,23 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 		PGrnWALRecordCreateColumnRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG
+				": %s %u(%s)/%u/%u table=<%.*s> name=<%.*s> flags=<%u> "
+				"type=<%.*s>",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				walRecord.indexTableSpaceID,
+				(int) GRN_TEXT_LEN(walRecord.table),
+				GRN_TEXT_VALUE(walRecord.table),
+				(int) (walRecord.nameSize),
+				walRecord.name,
+				walRecord.flags,
+				(int) GRN_TEXT_LEN(walRecord.type),
+				GRN_TEXT_VALUE(walRecord.type));
 		table = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.table),
 								   GRN_TEXT_LEN(walRecord.table),
 								   ERROR);
@@ -176,6 +216,7 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 static void
 pgrnwrm_redo_set_sources(XLogReaderState *record)
 {
+	const char *tag = "[redo][set-sources]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -202,6 +243,16 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 		PGrnWALRecordSetSourcesRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %u(%s)/%u column=<%.*s> sources=<%s>",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				(int) GRN_TEXT_LEN(walRecord.column),
+				GRN_TEXT_VALUE(walRecord.column),
+				PGrnInspect(walRecord.sourceNames));
 		column = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.column),
 									GRN_TEXT_LEN(walRecord.column),
 									ERROR);
@@ -231,6 +282,7 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 static void
 pgrnwrm_redo_rename_table(XLogReaderState *record)
 {
+	const char *tag = "[redo][rename-table]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -247,6 +299,17 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 		PGrnWALRecordRenameTableRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %u(%s)/%u name=<%.*s> new-name=<%.*s>",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				(int) (walRecord.nameSize),
+				walRecord.name,
+				(int) (walRecord.newNameSize),
+				walRecord.newName);
 		table = PGrnLookupWithSize(walRecord.name, walRecord.nameSize, ERROR);
 		PGrnRenameTableRawWithSize(
 			table, walRecord.newName, walRecord.newNameSize);
@@ -261,7 +324,7 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 static void
 pgrnwrm_redo_insert(XLogReaderState *record)
 {
-	const char *tag = "[redo][table][insert]";
+	const char *tag = "[redo][insert]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -293,6 +356,16 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 		PGrnWALRecordInsertRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %u(%s)/%u table=<%.*s> columns=<%s>",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				(int) (walRecord.tableNameSize),
+				walRecord.tableName,
+				PGrnInspect(walRecord.columnNames));
 		table = PGrnLookupWithSize(
 			walRecord.tableName, walRecord.tableNameSize, ERROR);
 		for (i = 0; i < walRecord.nColumns; i++)
@@ -406,7 +479,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 static void
 pgrnwrm_redo_delete(XLogReaderState *record)
 {
-	const char *tag = "[redo][table][delete]";
+	const char *tag = "[redo][delete]";
 	PGrnWALRecordRaw raw = {
 		.data = XLogRecGetData(record),
 		.size = XLogRecGetDataLen(record),
@@ -425,6 +498,14 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 		pgrnwrm_redo_setup(&data);
 		table = PGrnLookupWithSize(
 			walRecord.tableName, walRecord.tableNameSize, ERROR);
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				PGRN_TAG ": %s %u(%s)/%u %s",
+				tag,
+				walRecord.dbID,
+				pg_encoding_to_char(walRecord.dbEncoding),
+				walRecord.dbTableSpaceID,
+				PGrnInspectKey(table, walRecord.key, walRecord.keySize));
 		if (table->header.type == GRN_TABLE_NO_KEY)
 		{
 			const uint64_t packedCtid = *((uint64_t *) (walRecord.key));
@@ -449,11 +530,8 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 		{
 			grn_table_delete(ctx, table, walRecord.key, walRecord.keySize);
 		}
-		PGrnCheck("%s failed to delete a record: "
-				  "<%.*s>: <%s>",
+		PGrnCheck("%s failed to delete a record: %s",
 				  tag,
-				  (int) (walRecord.tableNameSize),
-				  walRecord.tableName,
 				  PGrnInspectKey(table, walRecord.key, walRecord.keySize));
 	}
 	PG_FINALLY();
@@ -490,11 +568,11 @@ pgrnwrm_redo(XLogReaderState *record)
 {
 	uint8 info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
 	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": redo: <%s>(%u): <%s>",
+			GRN_LOG_DEBUG,
+			PGRN_TAG ": [redo] <%s>(%u): <%u>",
 			pgrnwrm_info_to_string(info),
 			info,
-			PGRN_VERSION);
+			XLogRecGetDataLen(record));
 	switch (info)
 	{
 	case PGRN_WAL_RECORD_CREATE_TABLE:
@@ -526,17 +604,13 @@ pgrnwrm_redo(XLogReaderState *record)
 static void
 pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 {
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": desc: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [desc]");
 }
 
 static const char *
 pgrnwrm_identify(uint8 info)
 {
-	GRN_LOG(ctx,
-			GRN_LOG_NOTICE,
-			PGRN_TAG ": identify: <%u>: <%s>",
-			info,
-			PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [identify] <%u>", info);
 	return pgrnwrm_info_to_string(info);
 }
 
@@ -573,7 +647,7 @@ pgrnwrm_startup(void)
 		}
 	}
 
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": initialize: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": startup: <%s>", PGRN_VERSION);
 
 	GRN_TEXT_INIT(&PGrnInspectBuffer, 0);
 }
@@ -581,7 +655,7 @@ pgrnwrm_startup(void)
 static void
 pgrnwrm_cleanup(void)
 {
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup");
 	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
 	grn_ctx_fin(ctx);
 	grn_fin();
@@ -590,14 +664,14 @@ pgrnwrm_cleanup(void)
 static void
 pgrnwrm_mask(char *pagedata, BlockNumber block_number)
 {
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": mask: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": mask");
 }
 
 static void
 pgrnwrm_decode(struct LogicalDecodingContext *context,
 			   struct XLogRecordBuffer *buffer)
 {
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": decode: <%s>", PGRN_VERSION);
+	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": decode");
 }
 
 static RmgrData data = {
