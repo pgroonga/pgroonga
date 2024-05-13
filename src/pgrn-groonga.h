@@ -150,6 +150,20 @@ grn_obj *PGrnLookupIndexColumn(Relation index,
 void PGrnFormatSourcesTableName(const char *indexName,
 								char output[GRN_TABLE_MAX_KEY_SIZE]);
 
+static inline bool
+PGrnTableModuleValueIsPresent(grn_obj *module)
+{
+	if (!module)
+		return false;
+	if (module->header.type == GRN_DB_VOID)
+		return false;
+	if (!grn_obj_is_text_family_bulk(ctx, module))
+		return true;
+	if (GRN_TEXT_LEN(module) == 0)
+		return false;
+	return true;
+}
+
 static inline grn_obj *
 PGrnCreateTableRawWithSize(Oid tableSpaceID,
 						   const char *name,
@@ -188,12 +202,21 @@ PGrnCreateTableRawWithSize(Oid tableSpaceID,
 
 	table = grn_table_create(ctx, name, nameSize, path, flags, type, NULL);
 	PGrnCheck("failed to create table: <%.*s>", (int) nameSize, name);
-	if (tokenizer)
+	if (PGrnTableModuleValueIsPresent(tokenizer))
+	{
 		grn_obj_set_info(ctx, table, GRN_INFO_DEFAULT_TOKENIZER, tokenizer);
-	if (normalizers)
+		PGrnCheck("failed to set tokenizer: <%s>", PGrnInspect(tokenizer));
+	}
+	if (PGrnTableModuleValueIsPresent(normalizers))
+	{
 		grn_obj_set_info(ctx, table, GRN_INFO_NORMALIZERS, normalizers);
-	if (tokenFilters)
+		PGrnCheck("failed to set normalizers: <%s>", PGrnInspect(normalizers));
+	}
+	if (PGrnTableModuleValueIsPresent(tokenFilters))
+	{
 		grn_obj_set_info(ctx, table, GRN_INFO_TOKEN_FILTERS, tokenFilters);
+		PGrnCheck("failed to set token filters: <%s>", PGrnInspect(tokenFilters));
+	}
 
 	return table;
 }
