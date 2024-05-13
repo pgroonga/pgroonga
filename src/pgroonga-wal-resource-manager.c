@@ -142,6 +142,12 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 									  GRN_TEXT_LEN(walRecord.type),
 									  ERROR);
 		}
+		{
+			grn_obj *table =
+				grn_ctx_get(ctx, walRecord.name, walRecord.nameSize);
+			if (table)
+				grn_obj_remove_dependent(ctx, table);
+		}
 		PGrnCreateTableRawWithSize(walRecord.indexTableSpaceID,
 								   walRecord.name,
 								   walRecord.nameSize,
@@ -213,6 +219,12 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 		type = PGrnLookupWithSize(GRN_TEXT_VALUE(walRecord.type),
 								  GRN_TEXT_LEN(walRecord.type),
 								  ERROR);
+		{
+			grn_obj *column =
+				grn_obj_column(ctx, table, walRecord.name, walRecord.nameSize);
+			if (column)
+				grn_obj_remove(ctx, column);
+		}
 		PGrnCreateColumnRawWithSize(walRecord.indexTableSpaceID,
 									table,
 									walRecord.name,
