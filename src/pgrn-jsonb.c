@@ -590,15 +590,9 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	if (column)
 		nColumns++;
 
-	if (data->index)
-		walData = PGrnWALStart(data->index);
-
+	walData = PGrnWALStart(data->index);
 	PGrnWALInsertStart(walData, data->valuesTable, nColumns);
-	if (walData)
-	{
-		GRN_UINT64_SET(ctx, &(data->valueKey), key);
-		PGrnWALInsertKey(walData, &(data->valueKey));
-	}
+	PGrnWALInsertKeyRaw(walData, &key, sizeof(uint64_t));
 
 	if (setPath)
 	{
@@ -610,7 +604,6 @@ PGrnJSONBInsertValueSet(PGrnJSONBInsertData *data,
 	PGrnJSONBInsertGeneratePaths(data);
 	grn_obj_set_value(
 		ctx, data->pathsColumn, valueID, &(data->pathIDs), GRN_OBJ_SET);
-	if (walData)
 	{
 		unsigned int i, n;
 
@@ -1508,31 +1501,28 @@ PGrnJSONBInsertRecord(Relation index,
 		grn_obj_set_value(ctx, column, id, data->valueIDs, GRN_OBJ_SET);
 	PGrnCheck("failed to set column value: <%s>", attributeName->data);
 
-	if (walData)
+	if (data->isForFullTextSearchOnly)
 	{
-		if (data->isForFullTextSearchOnly)
-		{
-			PGrnWALInsertColumn(walData, column, &(data->value));
-		}
-		else
-		{
-			grn_obj *valueKeys = &(buffers->jsonbValueKeys);
-			size_t i, nValueIDs;
+		PGrnWALInsertColumn(walData, column, &(data->value));
+	}
+	else
+	{
+		grn_obj *valueKeys = &(buffers->jsonbValueKeys);
+		size_t i, nValueIDs;
 
-			GRN_BULK_REWIND(valueKeys);
-			nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
-			for (i = 0; i < nValueIDs; i++)
-			{
-				grn_id valueID;
-				uint64_t key;
+		GRN_BULK_REWIND(valueKeys);
+		nValueIDs = GRN_BULK_VSIZE(data->valueIDs) / sizeof(grn_id);
+		for (i = 0; i < nValueIDs; i++)
+		{
+			grn_id valueID;
+			uint64_t key;
 
-				valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
-				grn_table_get_key(
-					ctx, data->valuesTable, valueID, &key, sizeof(uint64_t));
-				GRN_UINT64_PUT(ctx, valueKeys, key);
-			}
-			PGrnWALInsertColumn(walData, column, valueKeys);
+			valueID = GRN_RECORD_VALUE_AT(data->valueIDs, i);
+			grn_table_get_key(
+				ctx, data->valuesTable, valueID, &key, sizeof(uint64_t));
+			GRN_UINT64_PUT(ctx, valueKeys, key);
 		}
+		PGrnWALInsertColumn(walData, column, valueKeys);
 	}
 
 	PGrnWALInsertFinish(walData);

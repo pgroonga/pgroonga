@@ -141,6 +141,70 @@ EXPLAIN (COSTS OFF) #{select};
                  run_sql_standby("#{select};"))
   end
 
+  test "jsonb" do
+    run_sql("CREATE TABLE memos (content jsonb);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('" + <<-JSON + "')");
+{
+  "string": "hello",
+  "number": 1,
+  "boolean": true,
+  "array": [
+    1,
+    "hello",
+    {
+      "object": {
+        "string": "world"
+      }
+    },
+    false
+  ]
+}
+    JSON
+
+    disable_index_scan = "SET enable_indexscan = off"
+    select = "SELECT jsonb_pretty(content) FROM memos WHERE content &@ 'Hello'"
+    output = <<-OUTPUT
+#{disable_index_scan};
+EXPLAIN (COSTS OFF) #{select};
+                   QUERY PLAN                   
+------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: (content &@ 'Hello'::text)
+   ->  Bitmap Index Scan on memos_content
+         Index Cond: (content &@ 'Hello'::text)
+(4 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{disable_index_scan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+           jsonb_pretty            
+-----------------------------------
+ {                                +
+     "array": [                   +
+         1,                       +
+         "hello",                 +
+         {                        +
+             "object": {          +
+                 "string": "world"+
+             }                    +
+         },                       +
+         false                    +
+     ],                           +
+     "number": 1,                 +
+     "string": "hello",           +
+     "boolean": true              +
+ }
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+  end
+
   test "tokenizer options" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos " +
