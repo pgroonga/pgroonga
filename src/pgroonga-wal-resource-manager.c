@@ -24,6 +24,8 @@ static grn_ctx PGrnWRMContext;
 static char *PGrnWRMLogPath;
 static int PGrnWRMLogLevel = GRN_LOG_DEFAULT_LEVEL;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGrnWRMLogLevelEntries);
+static Oid PGrnWRMCurrentDatabaseID = InvalidOid;
+static Oid PGrnWRMCurrentDatabaseTableSpaceID = InvalidOid;
 
 extern PGDLLEXPORT void _PG_init(void);
 
@@ -47,10 +49,20 @@ pgrnwrm_redo_setup(PGrnWRMRedoData *data)
 	grn_encoding encoding = PGrnPGEncodingToGrnEncoding(walRecord->dbEncoding);
 	char *databasePath;
 	char path[MAXPGPATH];
+	grn_obj *db;
+
 	GRN_CTX_SET_ENCODING(ctx, encoding);
+	/* TODO: Cache DB only if the next WAL record is for the same DB. */
+	if (walRecord->dbID == PGrnWRMCurrentDatabaseID &&
+		walRecord->dbTableSpaceID == PGrnWRMCurrentDatabaseTableSpaceID)
+		return;
+
 	databasePath = GetDatabasePath(walRecord->dbID, walRecord->dbTableSpaceID);
 	join_path_components(path, databasePath, PGrnDatabaseBasename);
 	pfree(databasePath);
+	db = grn_ctx_db(ctx);
+	if (db)
+		grn_obj_close(ctx, db);
 	if (pgrn_file_exist(path))
 	{
 		data->db = grn_db_open(ctx, path);
@@ -59,15 +71,17 @@ pgrnwrm_redo_setup(PGrnWRMRedoData *data)
 	{
 		data->db = grn_db_create(ctx, path, NULL);
 	}
+	PGrnWRMCurrentDatabaseID = walRecord->dbID;
+	PGrnWRMCurrentDatabaseTableSpaceID = walRecord->dbTableSpaceID;
 }
 
 static void
 pgrnwrm_redo_teardown(PGrnWRMRedoData *data)
 {
-	if (!data->db)
-		return;
+	/* if (!data->db) */
+	/* 	return; */
 
-	grn_obj_close(ctx, data->db);
+	/* grn_obj_close(ctx, data->db); */
 }
 
 static void
@@ -665,8 +679,13 @@ pgrnwrm_startup(void)
 static void
 pgrnwrm_cleanup(void)
 {
+	grn_obj *db;
+
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup");
 	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
+	db = grn_ctx_db(ctx);
+	if (db)
+		grn_obj_close(ctx, db);
 	grn_ctx_fin(ctx);
 	grn_fin();
 }
