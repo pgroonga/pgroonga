@@ -30,7 +30,7 @@ jobs:
           - "16"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
-    runs-on: macos-12 # TODO: It fails with macos-latest (macos-14).
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
