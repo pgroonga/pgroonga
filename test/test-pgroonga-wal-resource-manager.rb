@@ -362,12 +362,19 @@ EXPLAIN (COSTS OFF) #{select};
 
   test "options: plugins" do
     run_sql("CREATE TABLE memos (content text);")
-    run_sql(<<-CREATE_INDEX)
+    begin
+      run_sql(<<-CREATE_INDEX)
 CREATE INDEX memos_content ON memos
  USING pgroonga (content)
   WITH (plugins = 'token_filters/stem',
         token_filters = 'TokenFilterStem');
-    CREATE_INDEX
+      CREATE_INDEX
+    rescue Helpers::CommandRunError => error
+      if error.error.include?("cannot find plugin file")
+        omit("token_filters/stem plugin isn't available")
+      end
+      raise
+    end
     run_sql("INSERT INTO memos VALUES ('It works');")
     run_sql("INSERT INTO memos VALUES ('I work');")
     run_sql("INSERT INTO memos VALUES ('I worked');")
