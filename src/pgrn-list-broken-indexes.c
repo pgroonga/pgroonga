@@ -17,19 +17,20 @@ typedef struct
 } PGrnListBrokenIndexData;
 
 static bool
-PGrnTableHaveLockedColumn(grn_obj *table)
+PGrnTableHaveBrokenColumn(grn_obj *table)
 {
 	grn_hash *columns;
 	bool isLocked = false;
+	bool isCorrupt = false;
 
 	columns = grn_hash_create(
 		ctx, NULL, sizeof(grn_id), 0, GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
-	PGrnCheck("failed to create columns container for checking locks: "
+	PGrnCheck("failed to create columns container for broken checks "
 			  "<%s>",
 			  PGrnInspectName(table));
 
 	grn_table_columns(ctx, table, "", 0, (grn_obj *) columns);
-	PGrnCheck("failed to collect columns for checking locks: <%s>",
+	PGrnCheck("failed to collect columns for broken checks: <%s>",
 			  PGrnInspectName(table));
 
 	GRN_HASH_EACH_BEGIN(ctx, columns, cursor, id)
@@ -46,26 +47,35 @@ PGrnTableHaveLockedColumn(grn_obj *table)
 			isLocked = true;
 			break;
 		}
+		if (grn_obj_is_corrupt(ctx, column))
+		{
+			isCorrupt = true;
+			break;
+		}
 	}
 	GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
-	return isLocked;
+	return isLocked || isCorrupt;
 }
 
 static bool
-PGrnIsLockedSources(Relation index)
+PGrnIsBrokenSources(Relation index)
 {
 	grn_obj *table = PGrnLookupSourcesTable(index, ERROR);
 	if (grn_obj_is_locked(ctx, table))
 	{
 		return true;
 	}
-	return PGrnTableHaveLockedColumn(table);
+	if (grn_obj_is_corrupt(ctx, table))
+	{
+		return true;
+	}
+	return PGrnTableHaveBrokenColumn(table);
 }
 
 static bool
-PGrnIsLockedLexicon(Relation index)
+PGrnIsBrokenLexicon(Relation index)
 {
 	int i;
 	for (i = 0; i < index->rd_att->natts; i++)
@@ -75,7 +85,11 @@ PGrnIsLockedLexicon(Relation index)
 		{
 			return true;
 		}
-		if (PGrnTableHaveLockedColumn(lexicon))
+		if (grn_obj_is_corrupt(ctx, lexicon))
+		{
+			return true;
+		}
+		if (PGrnTableHaveBrokenColumn(lexicon))
 		{
 			return true;
 		}
@@ -86,9 +100,7 @@ PGrnIsLockedLexicon(Relation index)
 static bool
 PGrnIndexIsBroken(Relation index)
 {
-	// todo
-	// Check for corrupt indexes
-	return PGrnIsLockedSources(index) || PGrnIsLockedLexicon(index);
+	return PGrnIsBrokenSources(index) || PGrnIsBrokenLexicon(index);
 }
 
 Datum
