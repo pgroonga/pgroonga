@@ -724,4 +724,23 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01');
       end
     end
   end
+
+  sub_test_case "pgroonga_list_lagged_indexes" do
+    test "lagging" do
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+
+      output = <<-OUTPUT
+SELECT * FROM pgroonga_list_lagged_indexes()
+ pgroonga_list_lagged_indexes 
+------------------------------
+ 
+(1 row)
+
+      OUTPUT
+      assert_equal([output, ""],
+                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes()"))
+    end
+  end
 end

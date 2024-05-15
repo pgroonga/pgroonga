@@ -97,6 +97,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_index);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_index_last);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_wal_set_applied_position_all_last);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_list_lagged_indexes);
 
 #if defined(PGRN_SUPPORT_WAL) || defined(PGRN_SUPPORT_WAL_RESOURCE_MANAGER)
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -3655,4 +3656,20 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, "%s not supported", tag);
 #endif
 	PG_RETURN_BOOL(true);
+}
+
+/**
+ * pgroonga_list_lagged_indexes() : SETOF text
+ */
+Datum
+pgroonga_list_lagged_indexes(PG_FUNCTION_ARGS)
+{
+	FuncCallContext *context;
+	if (SRF_IS_FIRSTCALL())
+	{
+		context = SRF_FIRSTCALL_INIT();
+	}
+	context = SRF_PERCALL_SETUP();
+	// todo
+	SRF_RETURN_DONE(context);
 }
