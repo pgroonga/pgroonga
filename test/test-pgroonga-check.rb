@@ -155,7 +155,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
 
       run_sql("CREATE TABLE memos (content text);")
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-      run_sql("INSERT INTO memos SELECT '#{"dummy" * 10}' FROM generate_series(1, 35000000);")
+      run_sql("INSERT INTO memos SELECT '' FROM generate_series(1, 33600000);")
 
       file_name = ""
       run_sql do |input, output, error|
