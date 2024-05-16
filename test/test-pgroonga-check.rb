@@ -162,7 +162,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
         input.puts("\\unset ECHO")
         input.puts("\\pset tuples_only on")
         output.gets # \pset tuples_only on
-        input.puts("select pgroonga_table_name('memos_content');")
+        input.puts("SELECT pgroonga_table_name('memos_content');")
         table_name = read_command_output_all(output).strip
         input.puts(<<-"SQL")
 SELECT path
