@@ -20,8 +20,7 @@ static bool
 PGrnTableHaveBrokenColumn(grn_obj *table)
 {
 	grn_hash *columns;
-	bool isLocked = false;
-	bool isCorrupt = false;
+	bool isBroken = false;
 
 	columns = grn_hash_create(
 		ctx, NULL, sizeof(grn_id), 0, GRN_TABLE_HASH_KEY | GRN_HASH_TINY);
@@ -44,19 +43,19 @@ PGrnTableHaveBrokenColumn(grn_obj *table)
 			continue;
 		if (grn_obj_is_locked(ctx, column))
 		{
-			isLocked = true;
+			isBroken = true;
 			break;
 		}
 		if (grn_obj_is_corrupt(ctx, column))
 		{
-			isCorrupt = true;
+			isBroken = true;
 			break;
 		}
 	}
 	GRN_HASH_EACH_END(ctx, cursor);
 
 	grn_hash_close(ctx, columns);
-	return isLocked || isCorrupt;
+	return isBroken;
 }
 
 static bool
