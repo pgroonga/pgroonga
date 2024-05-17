@@ -148,4 +148,44 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
       end
     end
   end
+
+  sub_test_case "list-broken-indexes" do
+    test "corrupt" do
+      omit("This test takes over 10 minutes, so skip it.") if ENV["CI"]
+
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos SELECT '' FROM generate_series(1, 33600000);")
+
+      file_name = ""
+      run_sql do |input, output, error|
+        input.puts("\\unset ECHO")
+        input.puts("\\pset tuples_only on")
+        output.gets # \pset tuples_only on
+        input.puts("SELECT pgroonga_table_name('memos_content');")
+        table_name = read_command_output_all(output).strip
+        input.puts(<<-"SQL")
+SELECT path
+FROM (
+  SELECT value->1 name, value->2 path
+  FROM JSONB_ARRAY_ELEMENTS(pgroonga_command('table_list')::jsonb->1) tmp
+) table_list
+WHERE name = '"#{table_name}"';
+        SQL
+        file_name = File.basename(read_command_output_all(output).strip.delete('"'))
+        input.close
+      end
+      File.delete(Pathname.glob("#{@test_db_dir}/#{file_name}.*").last)
+      output = <<-OUTPUT
+SELECT * FROM pgroonga_list_broken_indexes();
+ pgroonga_list_broken_indexes 
+------------------------------
+ memos_content
+(1 row)
+
+      OUTPUT
+      assert_equal([output, ""],
+                   run_sql("SELECT * FROM pgroonga_list_broken_indexes();"))
+    end
+  end
 end
