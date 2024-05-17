@@ -726,17 +726,50 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01');
   end
 
   sub_test_case "pgroonga_list_lagged_indexes" do
-    test "lagging" do
+    setup do
       run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE TABLE auther (name text);")
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("CREATE INDEX auther_name ON auther USING pgroonga (name);")
       run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+      run_sql("INSERT INTO auther VALUES ('hoge');")
+    end
 
+    test "none" do
+      run_sql_standby("SELECT pgroonga_wal_apply();")
       output = <<-OUTPUT
 SELECT * FROM pgroonga_list_lagged_indexes()
- pgroonga_list_lagged_indexes 
-------------------------------
- 
+ name 
+------
+(0 rows)
+
+      OUTPUT
+      assert_equal([output, ""],
+                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes()"))
+    end
+
+    test "lagging: some" do
+      run_sql_standby("select * from auther where name &@ 'test'")
+      output = <<-OUTPUT
+SELECT * FROM pgroonga_list_lagged_indexes()
+     name      
+---------------
+ memos_content
 (1 row)
+
+      OUTPUT
+      assert_equal([output, ""],
+                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes()"))
+    end
+
+    test "lagging: all" do
+      output = <<-OUTPUT
+SELECT * FROM pgroonga_list_lagged_indexes()
+     name      
+---------------
+ auther_name
+ memos_content
+(2 rows)
 
       OUTPUT
       assert_equal([output, ""],
