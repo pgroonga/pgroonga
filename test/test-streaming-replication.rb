@@ -764,7 +764,7 @@ SELECT * FROM pgroonga_list_lagged_indexes()
 
     test "lagging: all" do
       output = <<-OUTPUT
-SELECT * FROM pgroonga_list_lagged_indexes()
+SELECT * FROM pgroonga_list_lagged_indexes() ORDER BY name
      name      
 ---------------
  auther_name
@@ -773,7 +773,7 @@ SELECT * FROM pgroonga_list_lagged_indexes()
 
       OUTPUT
       assert_equal([output, ""],
-                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes()"))
+                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes() ORDER BY name"))
     end
   end
 end
