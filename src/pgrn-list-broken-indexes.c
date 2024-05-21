@@ -59,23 +59,23 @@ PGrnTableHaveBrokenColumn(grn_obj *table)
 }
 
 static bool
-PGrnIsBrokenGrnObj(grn_obj *obj)
+PGrnIsBrokenTable(grn_obj *table)
 {
-	if (grn_obj_is_locked(ctx, obj))
+	if (grn_obj_is_locked(ctx, table))
 	{
 		return true;
 	}
-	if (grn_obj_is_corrupt(ctx, obj))
+	if (grn_obj_is_corrupt(ctx, table))
 	{
 		return true;
 	}
-	return PGrnTableHaveBrokenColumn(obj);
+	return PGrnTableHaveBrokenColumn(table);
 }
 
 static bool
 PGrnIsBrokenSources(Relation index)
 {
-	return PGrnIsBrokenGrnObj(PGrnLookupSourcesTable(index, ERROR));
+	return PGrnIsBrokenTable(PGrnLookupSourcesTable(index, ERROR));
 }
 
 static bool
@@ -85,7 +85,7 @@ PGrnIsBrokenLexicon(Relation index)
 	for (i = 0; i < index->rd_att->natts; i++)
 	{
 		grn_obj *lexicon = PGrnLookupLexicon(index, i, ERROR);
-		if (PGrnIsBrokenGrnObj(lexicon))
+		if (PGrnIsBrokenTable(lexicon))
 		{
 			return true;
 		}
