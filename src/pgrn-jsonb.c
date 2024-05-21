@@ -1596,13 +1596,31 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 								   grn_obj *filter,
 								   unsigned int *nthCondition)
 {
+	const char *tag = "[build-condition][json-script]";
+
 	grn_expr_append_obj(ctx, data->expression, subFilter, GRN_OP_PUSH, 1);
+	PGrnCheck("jsonb: %s: failed to append sub_filter", tag);
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck("jsonb: %s: failed to append column: %s",
+			  tag,
+			  PGrnInspectName(targetColumn));
 	grn_expr_append_const(ctx, data->expression, filter, GRN_OP_PUSH, 1);
+	PGrnCheck("jsonb: %s: failed to append filter: <%.*s>",
+			  tag,
+			  (int) GRN_TEXT_LEN(filter),
+			  GRN_TEXT_VALUE(filter));
 	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
+	PGrnCheck("jsonb: %s: failed to append operator: %s",
+			  tag,
+			  grn_operator_to_string(GRN_OP_CALL));
 
 	if (*nthCondition > 0)
+	{
 		grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+		PGrnCheck("jsonb: %s: failed to append operator: %s",
+				  tag,
+				  grn_operator_to_string(GRN_OP_AND));
+	}
 
 	(*nthCondition)++;
 }
