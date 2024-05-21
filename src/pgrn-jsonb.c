@@ -1599,7 +1599,7 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 	const char *tag = "[build-condition][json-script]";
 
 	grn_expr_append_obj(ctx, data->expression, subFilter, GRN_OP_PUSH, 1);
-	PGrnCheck("jsonb: %s: failed to append sub_filter", tag);
+	PGrnCheck("jsonb: %s: failed to append sub_filter()", tag);
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnCheck("jsonb: %s: failed to append column: %s",
 			  tag,
