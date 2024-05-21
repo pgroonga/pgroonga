@@ -358,7 +358,7 @@ void PGrnRemoveColumns(Relation index, grn_obj *table);
 
 void PGrnFlushObject(grn_obj *object, bool recursive);
 
-static void
+static inline void
 PGrnRegisterPluginWithSize(const char *name, size_t nameSize, const char *tag)
 {
 	char pluginName[MAXPGPATH];
