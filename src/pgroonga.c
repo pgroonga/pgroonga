@@ -1437,7 +1437,7 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 									  HeapTuple tuple,
 									  PGrnScanOpaque so)
 {
-	const char *tag = "pgroonga: [score][multi-column-primary-key][collect]";
+	const char *tag = "[score][multi-column-primary-key][collect]";
 	double score = 0.0;
 	TupleDesc desc;
 	grn_obj *expression;
