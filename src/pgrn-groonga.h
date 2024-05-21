@@ -372,4 +372,4 @@ PGrnRegisterPluginWithSize(const char *name, size_t nameSize, const char *tag)
 grn_id PGrnPGTypeToGrnType(Oid pgTypeID, unsigned char *flags);
 Oid PGrnGrnTypeToPGType(grn_id typeID);
 void
-PGrnExprAppendOp(grn_obj *expr, grn_operator op, int nargs, const char *tag);
+PGrnExprAppendOp(grn_obj *expr, grn_operator op, int nArgs, const char *tag);
