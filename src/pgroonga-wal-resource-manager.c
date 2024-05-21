@@ -646,8 +646,6 @@ pgrnwrm_redo_register_plugin(XLogReaderState *record)
 	};
 	PG_TRY();
 	{
-		char pluginName[MAXPGPATH];
-
 		PGrnWALRecordRegisterPluginRead(&walRecord, &raw);
 
 		pgrnwrm_redo_setup(&data);
