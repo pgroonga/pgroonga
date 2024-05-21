@@ -655,3 +655,13 @@ PGrnGrnTypeToPGType(grn_id typeID)
 
 	return pgTypeID;
 }
+
+void
+PGrnExprAppendOp(grn_obj *expr, grn_operator op, int nArgs, const char *tag)
+{
+	grn_expr_append_op(ctx, expr, op, nArgs);
+	PGrnCheck("%s: failed to append operator: %s(%d)",
+			  tag,
+			  grn_operator_to_string(op),
+			  nArgs);
+}
