@@ -3484,8 +3484,8 @@ pgroonga_prefix_rk_raw(const char *text,
 							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_CALL, 2);
 	PGrnCheck("%s: failed to append operator: %s",
-			tag,
-			grn_operator_to_string(GRN_OP_CALL));
+			  tag,
+			  grn_operator_to_string(GRN_OP_CALL));
 
 	id = grn_table_add(
 		ctx, prefixRKSequentialSearchData.table, text, textSize, NULL);
@@ -5569,8 +5569,8 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
 	PGrnCheck("%s: failed to append operator: %s",
-			tag,
-			grn_operator_to_string(GRN_OP_GET_VALUE));
+			  tag,
+			  grn_operator_to_string(GRN_OP_GET_VALUE));
 
 	grn_expr_append_const_str(ctx,
 							  expression,
@@ -5580,14 +5580,14 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
 	PGrnCheck("%s: failed to append operator: %s",
-			tag,
-			grn_operator_to_string(GRN_OP_MATCH));
+			  tag,
+			  grn_operator_to_string(GRN_OP_MATCH));
 	if (*nKeywords > 0)
 	{
 		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
 		PGrnCheck("%s: failed to append operator: %s",
-				tag,
-				grn_operator_to_string(GRN_OP_MATCH));
+				  tag,
+				  grn_operator_to_string(GRN_OP_MATCH));
 	}
 	(*nKeywords)++;
 
@@ -5653,8 +5653,8 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 							1);
 		grn_expr_append_op(ctx, expression, GRN_OP_CALL, 0);
 		PGrnCheck("%s: failed to append operator: %s",
-				tag,
-				grn_operator_to_string(GRN_OP_CALL));
+				  tag,
+				  grn_operator_to_string(GRN_OP_CALL));
 	}
 }
 
