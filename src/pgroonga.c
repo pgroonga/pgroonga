@@ -5587,7 +5587,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
 		PGrnCheck("%s: failed to append operator: %s",
 				  tag,
-				  grn_operator_to_string(GRN_OP_MATCH));
+				  grn_operator_to_string(GRN_OP_OR));
 	}
 	(*nKeywords)++;
 
