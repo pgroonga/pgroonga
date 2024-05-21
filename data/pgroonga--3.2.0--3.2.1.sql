@@ -22,7 +22,7 @@ BEGIN
 			' LANGUAGE SQL
 			STRICT
 			PARALLEL SAFE;
-	ELSIF SUBSTR(rec.setting, 1, 2) = '12' THEN
+	ELSE
 		CREATE FUNCTION pgroonga_list_lagged_indexes()
 			RETURNS TABLE (name text) AS '
 				SELECT name FROM pgroonga_wal_status()
