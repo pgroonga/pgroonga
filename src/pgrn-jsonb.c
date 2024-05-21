@@ -1278,12 +1278,18 @@ PGrnJSONBMatchExpression(Jsonb *target,
 			column = grn_obj_column(
 				ctx, tmpValuesTable, targetName, strlen(targetName));
 			grn_expr_append_obj(ctx, condition, column, GRN_OP_GET_VALUE, 1);
-			PGrnCheck("jsonb: %s: failed to append column", logTag);
+			PGrnCheck(
+				"jsonb: %s: failed to append column: %s", logTag, targetName);
 			grn_expr_append_const_str(
 				ctx, condition, term, termSize, GRN_OP_PUSH, 1);
-			PGrnCheck("jsonb: %s: failed to append text", logTag);
+			PGrnCheck("jsonb: %s: failed to append text: <%.*s>",
+					  logTag,
+					  (int) termSize,
+					  term);
 			grn_expr_append_op(ctx, condition, GRN_OP_MATCH, 2);
-			PGrnCheck("jsonb: %s: failed to append operator", logTag);
+			PGrnCheck("jsonb: %s: failed to append operator: %s",
+					  logTag,
+					  grn_operator_to_string(GRN_OP_MATCH));
 		}
 		else if (querySize > 0)
 		{
