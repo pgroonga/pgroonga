@@ -1437,6 +1437,7 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 									  HeapTuple tuple,
 									  PGrnScanOpaque so)
 {
+	const char *tag = "pgroonga: [score][multi-column-primary-key][collect]";
 	double score = 0.0;
 	TupleDesc desc;
 	grn_obj *expression;
@@ -1482,12 +1483,23 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		grn_expr_append_obj(
 			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
+		PGrnCheck("%s: failed to append operator: %s",
+				  tag,
+				  grn_operator_to_string(GRN_OP_GET_VALUE));
 		grn_expr_append_const(
 			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
 		grn_expr_append_op(ctx, expression, GRN_OP_EQUAL, 2);
+		PGrnCheck("%s: failed to append operator: %s",
+				  tag,
+				  grn_operator_to_string(GRN_OP_EQUAL));
 
 		if (nPrimaryKeyColumns > 0)
+		{
 			grn_expr_append_op(ctx, expression, GRN_OP_AND, 2);
+			PGrnCheck("%s: failed to append operator: %s",
+					  tag,
+					  grn_operator_to_string(GRN_OP_AND));
+		}
 		nPrimaryKeyColumns++;
 	}
 	grn_table_select(
@@ -3471,6 +3483,9 @@ pgroonga_prefix_rk_raw(const char *text,
 							  GRN_OP_PUSH,
 							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_CALL, 2);
+	PGrnCheck("%s: failed to append operator: %s",
+			tag,
+			grn_operator_to_string(GRN_OP_CALL));
 
 	id = grn_table_add(
 		ctx, prefixRKSequentialSearchData.table, text, textSize, NULL);
@@ -5547,11 +5562,16 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 									   grn_obj *keyword,
 									   int *nKeywords)
 {
+	const char *tag = "[build-condition][like-match-flush]";
 	if (GRN_TEXT_LEN(keyword) == 0)
 		return;
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
+	PGrnCheck("%s: failed to append operator: %s",
+			tag,
+			grn_operator_to_string(GRN_OP_GET_VALUE));
+
 	grn_expr_append_const_str(ctx,
 							  expression,
 							  GRN_TEXT_VALUE(keyword),
@@ -5559,8 +5579,16 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 							  GRN_OP_PUSH,
 							  1);
 	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
+	PGrnCheck("%s: failed to append operator: %s",
+			tag,
+			grn_operator_to_string(GRN_OP_MATCH));
 	if (*nKeywords > 0)
+	{
 		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
+		PGrnCheck("%s: failed to append operator: %s",
+				tag,
+				grn_operator_to_string(GRN_OP_MATCH));
+	}
 	(*nKeywords)++;
 
 	GRN_BULK_REWIND(keyword);
@@ -5571,6 +5599,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 								  grn_obj *targetColumn,
 								  grn_obj *query)
 {
+	const char *tag = "[build-condition][like-match]";
 	grn_obj *expression;
 	const char *queryRaw;
 	size_t i, querySize;
@@ -5623,6 +5652,9 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 							GRN_OP_PUSH,
 							1);
 		grn_expr_append_op(ctx, expression, GRN_OP_CALL, 0);
+		PGrnCheck("%s: failed to append operator: %s",
+				tag,
+				grn_operator_to_string(GRN_OP_CALL));
 	}
 }
 
