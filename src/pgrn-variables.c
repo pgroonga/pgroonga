@@ -91,8 +91,6 @@ static grn_logger PGrnPostgreSQLLogger = {GRN_LOG_DEFAULT_LEVEL,
 static void
 PGrnLogTypeAssign(int new_value, void *extra)
 {
-	grn_ctx *ctx = &PGrnContext;
-
 	switch (new_value)
 	{
 	case PGRN_LOG_TYPE_WINDOWS_EVENT_LOG:
@@ -126,7 +124,6 @@ PGrnLogPathAssignRaw(const char *new_value)
 
 	if (PGrnGroongaInitialized)
 	{
-		grn_ctx *ctx = &PGrnContext;
 		grn_logger_reopen(ctx);
 	}
 }
@@ -162,7 +159,6 @@ PGrnQueryLogPathAssignRaw(const char *new_value)
 
 	if (PGrnGroongaInitialized)
 	{
-		grn_ctx *ctx = &PGrnContext;
 		grn_query_logger_reopen(ctx);
 	}
 }
@@ -211,7 +207,7 @@ PGrnMatchEscalationThresholdAssignRaw(int new_value)
 		return;
 
 	grn_set_default_match_escalation_threshold(new_value);
-	grn_ctx_set_match_escalation_threshold(&PGrnContext, new_value);
+	grn_ctx_set_match_escalation_threshold(ctx, new_value);
 }
 
 static void
@@ -226,7 +222,7 @@ PGrnForceMatchEscalationAssign(bool new_value, void *extra)
 	if (!PGrnGroongaInitialized)
 		return;
 
-	grn_ctx_set_force_match_escalation(&PGrnContext, new_value);
+	grn_ctx_set_force_match_escalation(ctx, new_value);
 }
 
 static void
@@ -461,9 +457,9 @@ PGrnInitializeVariables(void)
 void
 PGrnVariablesApplyInitialValues(void)
 {
-	grn_ctx_set_force_match_escalation(&PGrnContext, PGrnForceMatchEscalation);
+	grn_ctx_set_force_match_escalation(ctx, PGrnForceMatchEscalation);
 	if (PGrnEnableCrashSafe)
 	{
-		grn_ctx_set_wal_role(&PGrnContext, GRN_WAL_ROLE_SECONDARY);
+		grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_SECONDARY);
 	}
 }
