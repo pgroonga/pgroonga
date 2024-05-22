@@ -5329,6 +5329,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 					  tag,
 					  indexName,
 					  section);
+			// Customize log, so PGrnExprAppendOp() is not used.
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
 			PGrnCheck("%s failed to push get-member operator: <%s>[%d]",
 					  tag,
@@ -5344,6 +5345,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 					  indexName,
 					  section,
 					  weight);
+			// Customize log, so PGrnExprAppendOp() is not used.
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
 			PGrnCheck("%s failed to push star operator for weight: "
 					  "<%s>[%d] * <%d>",
@@ -5355,6 +5357,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 
 		if (nMatchColumns > 0)
 		{
+			// Customize log, so PGrnExprAppendOp() is not used.
 			grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
 			PGrnCheck("%s failed to push OR operator: <%s>[%d]",
 					  tag,
@@ -5739,14 +5742,14 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\z");
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
-	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
+	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag);
 	grn_expr_append_const_str(ctx,
 							  expression,
 							  GRN_TEXT_VALUE(&(buffers->pattern)),
 							  GRN_TEXT_LEN(&(buffers->pattern)),
 							  GRN_OP_PUSH,
 							  1);
-	grn_expr_append_op(ctx, expression, GRN_OP_REGEXP, 2);
+	PGrnExprAppendOp(expression, GRN_OP_REGEXP, 2, tag);
 }
 
 void
@@ -5783,6 +5786,7 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 								 const char *prefix,
 								 unsigned int prefixSize)
 {
+	const char *tag = "[build-condition][prefix-rk]";
 	grn_obj subFilterScript;
 
 	GRN_TEXT_INIT(&subFilterScript, 0);
@@ -5803,7 +5807,7 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 							  GRN_TEXT_LEN(&subFilterScript),
 							  GRN_OP_PUSH,
 							  1);
-	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag);
 
 	GRN_OBJ_FIN(ctx, &subFilterScript);
 }
@@ -5840,10 +5844,11 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_obj *value,
 										grn_operator operator)
 {
+	const char *tag = "[build-condition][binary-operation]";
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
-	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
+	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag);
 	grn_expr_append_const(ctx, data->expression, value, GRN_OP_PUSH, 1);
-	grn_expr_append_op(ctx, data->expression, operator, 2);
+	PGrnExprAppendOp(data->expression, operator, 2, tag);
 }
 
 static bool
@@ -6068,7 +6073,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &elementBuffer, operator);
 			if (i > 0)
-				grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+				PGrnExprAppendOp(data->expression, GRN_OP_AND, 2, tag);
 		}
 		GRN_OBJ_FIN(ctx, &elementBuffer);
 		break;
@@ -6102,7 +6107,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			PGrnSearchBuildConditionPrefixRK(
 				data, targetColumn, prefix, prefixSize);
 			if (i > 0)
-				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag);
 		}
 		break;
 	}
@@ -6123,7 +6128,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 				grn_vector_get_element(ctx, queries, i, &query, NULL, NULL);
 			PGrnSearchBuildConditionQuery(data, targetColumn, query, querySize);
 			if (i > 0)
-				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag);
 		}
 		break;
 	}
@@ -6149,7 +6154,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
 			if (i > 0)
-				grn_expr_append_op(ctx, data->expression, GRN_OP_OR, 2);
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag);
 		}
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
@@ -6167,7 +6172,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 								grn_ctx_get(ctx, "all_records", -1),
 								GRN_OP_PUSH,
 								1);
-			grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 0);
+			PGrnExprAppendOp(data->expression, GRN_OP_CALL, 0, tag);
 		}
 
 		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
@@ -6182,7 +6187,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
-			grn_expr_append_op(ctx, data->expression, GRN_OP_AND_NOT, 2);
+			PGrnExprAppendOp(data->expression, GRN_OP_AND_NOT, 2, tag);
 		}
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
@@ -6201,6 +6206,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnScanOpaque so,
 						  PGrnSearchData *data)
 {
+	const char *tag = "[build-conditions]";
 	int i;
 
 	for (i = 0; i < scan->numberOfKeys; i++)
@@ -6222,7 +6228,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 			break;
 		default:
 			if (data->nExpressions > 0)
-				grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
+				PGrnExprAppendOp(data->expression, GRN_OP_AND, 2, tag);
 			break;
 		}
 		data->nExpressions++;
