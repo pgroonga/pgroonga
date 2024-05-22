@@ -699,10 +699,11 @@ PGrnExprAppendConst(
 	grn_obj *expr, grn_obj *object, grn_operator op, int nArgs, const char *tag)
 {
 	grn_expr_append_const(ctx, expr, object, op, nArgs);
-	PGrnCheck("%s: failed to %s a value: %s",
+	PGrnCheck("%s: failed to %s a value: %s(%d)",
 			  tag,
 			  grn_operator_to_string(op),
-			  PGrnInspect(object));
+			  PGrnInspect(object),
+			  nArgs);
 }
 
 void
