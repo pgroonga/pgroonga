@@ -695,6 +695,17 @@ PGrnExprAppendOp(grn_obj *expr,
 }
 
 void
+PGrnExprAppendConst(
+	grn_obj *expr, grn_obj *obj, grn_operator op, int nArgs, const char *tag)
+{
+	grn_expr_append_const(ctx, expr, obj, op, nArgs);
+	PGrnCheck("%s: failed to %s a value: %s",
+			  tag,
+			  grn_operator_to_string(op),
+			  PGrnInspect(obj));
+}
+
+void
 PGrnExprAppendConstString(grn_obj *expr,
 						  const char *string,
 						  unsigned int stringSize,
