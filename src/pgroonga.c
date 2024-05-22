@@ -1482,24 +1482,13 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 
 		grn_expr_append_obj(
 			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
-		grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
-		PGrnCheck("%s: failed to append operator: %s",
-				  tag,
-				  grn_operator_to_string(GRN_OP_GET_VALUE));
+		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag);
 		grn_expr_append_const(
 			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
-		grn_expr_append_op(ctx, expression, GRN_OP_EQUAL, 2);
-		PGrnCheck("%s: failed to append operator: %s",
-				  tag,
-				  grn_operator_to_string(GRN_OP_EQUAL));
+		PGrnExprAppendOp(expression, GRN_OP_EQUAL, 2, tag);
 
 		if (nPrimaryKeyColumns > 0)
-		{
-			grn_expr_append_op(ctx, expression, GRN_OP_AND, 2);
-			PGrnCheck("%s: failed to append operator: %s",
-					  tag,
-					  grn_operator_to_string(GRN_OP_AND));
-		}
+			PGrnExprAppendOp(expression, GRN_OP_AND, 2, tag);
 		nPrimaryKeyColumns++;
 	}
 	grn_table_select(
@@ -3482,10 +3471,7 @@ pgroonga_prefix_rk_raw(const char *text,
 							  VARSIZE_ANY_EXHDR(condition->query),
 							  GRN_OP_PUSH,
 							  1);
-	grn_expr_append_op(ctx, expression, GRN_OP_CALL, 2);
-	PGrnCheck("%s: failed to append operator: %s",
-			  tag,
-			  grn_operator_to_string(GRN_OP_CALL));
+	PGrnExprAppendOp(expression, GRN_OP_CALL, 2, tag);
 
 	id = grn_table_add(
 		ctx, prefixRKSequentialSearchData.table, text, textSize, NULL);
@@ -5209,8 +5195,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	PGrnCheck("%s failed to push in_values()", tag);
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnCheck("%s failed to push target column", tag);
-	grn_expr_append_op(ctx, data->expression, GRN_OP_GET_VALUE, 1);
-	PGrnCheck("%s failed to push GET_VALUE", tag);
+	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag);
 
 	for (i = 1; i <= n; i++)
 	{
@@ -5235,8 +5220,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		PGrnCheck("%s failed to push a value", tag);
 	}
 
-	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2 + (n - 1));
-	PGrnCheck("%s failed to push CALL", tag);
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2 + (n - 1), tag);
 
 	return true;
 }
@@ -5499,9 +5483,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(condition.query),
 			  VARDATA_ANY(condition.query));
-	grn_expr_append_op(ctx, data->expression, operator, 2);
-	PGrnCheck(
-		"%s failed to push %s operator", tag, grn_operator_to_string(operator));
+	PGrnExprAppendOp(data->expression, operator, 2, tag);
 
 	return true;
 }
@@ -5567,10 +5549,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 		return;
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
-	grn_expr_append_op(ctx, expression, GRN_OP_GET_VALUE, 1);
-	PGrnCheck("%s: failed to append operator: %s",
-			  tag,
-			  grn_operator_to_string(GRN_OP_GET_VALUE));
+	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag);
 
 	grn_expr_append_const_str(ctx,
 							  expression,
@@ -5578,17 +5557,9 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 							  GRN_TEXT_LEN(keyword),
 							  GRN_OP_PUSH,
 							  1);
-	grn_expr_append_op(ctx, expression, GRN_OP_MATCH, 2);
-	PGrnCheck("%s: failed to append operator: %s",
-			  tag,
-			  grn_operator_to_string(GRN_OP_MATCH));
+	PGrnExprAppendOp(expression, GRN_OP_MATCH, 2, tag);
 	if (*nKeywords > 0)
-	{
-		grn_expr_append_op(ctx, expression, GRN_OP_OR, 2);
-		PGrnCheck("%s: failed to append operator: %s",
-				  tag,
-				  grn_operator_to_string(GRN_OP_OR));
-	}
+		PGrnExprAppendOp(expression, GRN_OP_OR, 2, tag);
 	(*nKeywords)++;
 
 	GRN_BULK_REWIND(keyword);
@@ -5651,10 +5622,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 							grn_ctx_get(ctx, "all_records", -1),
 							GRN_OP_PUSH,
 							1);
-		grn_expr_append_op(ctx, expression, GRN_OP_CALL, 0);
-		PGrnCheck("%s: failed to append operator: %s",
-				  tag,
-				  grn_operator_to_string(GRN_OP_CALL));
+		PGrnExprAppendOp(expression, GRN_OP_CALL, 0, tag);
 	}
 }
 
