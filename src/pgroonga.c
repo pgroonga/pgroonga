@@ -1482,6 +1482,9 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 
 		grn_expr_append_obj(
 			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
+		PGrnCheck("%s: failed to push column: %s",
+				  tag,
+				  PGrnInspectName(primaryKeyColumn->column));
 		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 		grn_expr_append_const(
 			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
@@ -3463,8 +3466,10 @@ pgroonga_prefix_rk_raw(const char *text,
 						grn_ctx_get(ctx, "prefix_rk_search", -1),
 						GRN_OP_PUSH,
 						1);
+	PGrnCheck("%s: failed to append prefix_rk_search()", tag);
 	grn_expr_append_obj(
 		ctx, expression, prefixRKSequentialSearchData.key, GRN_OP_GET_VALUE, 1);
+	PGrnCheck("%s: failed to append key", tag);
 	grn_expr_append_const_str(ctx,
 							  expression,
 							  VARDATA_ANY(condition->query),
@@ -5554,6 +5559,8 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 		return;
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	grn_expr_append_const_str(ctx,
@@ -5627,6 +5634,7 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 							grn_ctx_get(ctx, "all_records", -1),
 							GRN_OP_PUSH,
 							1);
+		PGrnCheck("%s: failed to append all_records()", tag);
 		PGrnExprAppendOp(expression, GRN_OP_CALL, 0, tag, NULL);
 	}
 }
@@ -5744,6 +5752,8 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\z");
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 	grn_expr_append_const_str(ctx,
 							  expression,
@@ -5768,6 +5778,8 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	grn_expr_parse(ctx,
@@ -5801,8 +5813,11 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 						grn_ctx_get(ctx, "sub_filter", -1),
 						GRN_OP_PUSH,
 						1);
+	PGrnCheck("%s: failed to append sub_filter()", tag);
 	grn_expr_append_obj(
 		ctx, data->expression, targetColumn, GRN_OP_GET_VALUE, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 	grn_expr_append_const_str(ctx,
 							  data->expression,
 							  GRN_TEXT_VALUE(&subFilterScript),
@@ -5828,6 +5843,8 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
 	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 
 	grn_expr_parse(ctx,
 				   data->expression,
@@ -5848,6 +5865,8 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 {
 	const char *tag = "[build-condition][binary-operation]";
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnCheck(
+		"%s: failed to push column: %s", tag, PGrnInspectName(targetColumn));
 	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 	grn_expr_append_const(ctx, data->expression, value, GRN_OP_PUSH, 1);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
@@ -6174,6 +6193,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 								grn_ctx_get(ctx, "all_records", -1),
 								GRN_OP_PUSH,
 								1);
+			PGrnCheck("%s: failed to append all_records()", tag);
 			PGrnExprAppendOp(data->expression, GRN_OP_CALL, 0, tag, NULL);
 		}
 
