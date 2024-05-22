@@ -499,13 +499,12 @@ PGrnSequentialSearchSetMatchTerm(PGrnCondition *condition)
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
-	grn_expr_append_const_str(ctx,
-							  currentDatum->expression,
+	PGrnExprAppendConstString(currentDatum->expression,
 							  VARDATA_ANY(condition->query),
 							  VARSIZE_ANY_EXHDR(condition->query),
 							  GRN_OP_PUSH,
-							  1);
-	PGrnCheck("%s append term to be matched", tag);
+							  1,
+							  tag);
 	PGrnExprAppendOp(currentDatum->expression, GRN_OP_MATCH, 2, tag, NULL);
 }
 
@@ -526,13 +525,12 @@ PGrnSequentialSearchSetEqualText(PGrnCondition *condition)
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
-	grn_expr_append_const_str(ctx,
-							  currentDatum->expression,
+	PGrnExprAppendConstString(currentDatum->expression,
 							  VARDATA_ANY(condition->query),
 							  VARSIZE_ANY_EXHDR(condition->query),
 							  GRN_OP_PUSH,
-							  1);
-	PGrnCheck("%s append equal text", tag);
+							  1,
+							  tag);
 	PGrnExprAppendOp(currentDatum->expression, GRN_OP_EQUAL, 2, tag, NULL);
 }
 
@@ -553,13 +551,12 @@ PGrnSequentialSearchSetPrefix(PGrnCondition *condition)
 						GRN_OP_GET_VALUE,
 						1);
 	PGrnCheck("%s append match target column", tag);
-	grn_expr_append_const_str(ctx,
-							  currentDatum->expression,
+	PGrnExprAppendConstString(currentDatum->expression,
 							  VARDATA_ANY(condition->query),
 							  VARSIZE_ANY_EXHDR(condition->query),
 							  GRN_OP_PUSH,
-							  1);
-	PGrnCheck("%s append prefix", tag);
+							  1,
+							  tag);
 	PGrnExprAppendOp(currentDatum->expression, GRN_OP_PREFIX, 2, tag, NULL);
 }
 
