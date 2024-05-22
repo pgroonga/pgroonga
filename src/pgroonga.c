@@ -1485,6 +1485,10 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 		grn_expr_append_const(
 			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
+		PGrnCheck("%s: failed to push string: <%.*s>",
+				  tag,
+				  (int) GRN_TEXT_LEN(&(buffers->general)),
+				  GRN_TEXT_VALUE(&(buffers->general)));
 		PGrnExprAppendOp(expression, GRN_OP_EQUAL, 2, tag, NULL);
 
 		if (nPrimaryKeyColumns > 0)
@@ -5850,6 +5854,7 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 	grn_expr_append_const(ctx, data->expression, value, GRN_OP_PUSH, 1);
+	PGrnCheck("%s: failed to push a value: %s", tag, PGrnInspect(value));
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 }
 
