@@ -1284,7 +1284,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 					  logTag,
 					  (int) termSize,
 					  term);
-			PGrnExprAppendOp(condition, GRN_OP_MATCH, 2, logTag);
+			PGrnExprAppendOp(condition, GRN_OP_MATCH, 2, logTag, NULL);
 		}
 		else if (querySize > 0)
 		{
@@ -1602,11 +1602,11 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 			  tag,
 			  (int) GRN_TEXT_LEN(filter),
 			  GRN_TEXT_VALUE(filter));
-	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag);
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag, NULL);
 
 	if (*nthCondition > 0)
 	{
-		PGrnExprAppendOp(data->expression, GRN_OP_AND, 2, tag);
+		PGrnExprAppendOp(data->expression, GRN_OP_AND, 2, tag, NULL);
 	}
 
 	(*nthCondition)++;

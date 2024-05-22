@@ -657,11 +657,39 @@ PGrnGrnTypeToPGType(grn_id typeID)
 }
 
 void
-PGrnExprAppendOp(grn_obj *expr, grn_operator op, int nArgs, const char *tag)
+PGrnExprAppendOp(grn_obj *expr,
+				 grn_operator op,
+				 int nArgs,
+				 const char *tag,
+				 const char *format,
+				 ...)
 {
 	grn_expr_append_op(ctx, expr, op, nArgs);
-	PGrnCheck("%s: failed to append operator: %s(%d)",
-			  tag,
-			  grn_operator_to_string(op),
-			  nArgs);
+	if (ctx->rc == GRN_SUCCESS)
+		return;
+
+	if (format)
+	{
+#define MESSAGE_SIZE 4096
+		va_list args;
+		char message[MESSAGE_SIZE];
+
+		va_start(args, format);
+		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+		va_end(args);
+
+		PGrnCheck("%s: failed to append operator: %s(%d): %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  message);
+#undef MESSAGE_SIZE
+	}
+	else
+	{
+		PGrnCheck("%s: failed to append operator: %s(%d)",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs);
+	}
 }
