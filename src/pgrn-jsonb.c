@@ -1268,8 +1268,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 	{
 		GRN_EXPR_CREATE_FOR_QUERY(
 			ctx, tmpValuesTable, condition, dummyVariable);
-		PGrnCheck("jsonb: %s: failed to create condition expression object",
-				  logTag);
+		PGrnCheck("%s: failed to create condition expression object", logTag);
 		if (termSize > 0)
 		{
 			const char *targetName = "string";
@@ -1278,18 +1277,14 @@ PGrnJSONBMatchExpression(Jsonb *target,
 			column = grn_obj_column(
 				ctx, tmpValuesTable, targetName, strlen(targetName));
 			grn_expr_append_obj(ctx, condition, column, GRN_OP_GET_VALUE, 1);
-			PGrnCheck(
-				"jsonb: %s: failed to append column: %s", logTag, targetName);
+			PGrnCheck("%s: failed to append column: %s", logTag, targetName);
 			grn_expr_append_const_str(
 				ctx, condition, term, termSize, GRN_OP_PUSH, 1);
-			PGrnCheck("jsonb: %s: failed to append text: <%.*s>",
+			PGrnCheck("%s: failed to append text: <%.*s>",
 					  logTag,
 					  (int) termSize,
 					  term);
-			grn_expr_append_op(ctx, condition, GRN_OP_MATCH, 2);
-			PGrnCheck("jsonb: %s: failed to append operator: %s",
-					  logTag,
-					  grn_operator_to_string(GRN_OP_MATCH));
+			PGrnExprAppendOp(condition, GRN_OP_MATCH, 2, logTag);
 		}
 		else if (querySize > 0)
 		{
@@ -1297,8 +1292,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 
 			GRN_EXPR_CREATE_FOR_QUERY(
 				ctx, tmpValuesTable, matchTarget, dummyVariable);
-			PGrnCheck("jsonb: %s: "
-					  "failed to create match target expression object",
+			PGrnCheck("%s: failed to create match target expression object",
 					  logTag);
 			grn_expr_parse(ctx,
 						   matchTarget,
@@ -1308,7 +1302,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 						   GRN_OP_MATCH,
 						   GRN_OP_AND,
 						   GRN_EXPR_SYNTAX_SCRIPT);
-			PGrnCheck("jsonb: %s: failed to parse match columns: <%.*s>",
+			PGrnCheck("%s: failed to parse match columns: <%.*s>",
 					  logTag,
 					  (int) strlen(matchColumns),
 					  matchColumns);
@@ -1320,7 +1314,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 						   GRN_OP_MATCH,
 						   GRN_OP_AND,
 						   GRN_EXPR_SYNTAX_QUERY);
-			PGrnCheck("jsonb: %s: failed to parse query: <%.*s>",
+			PGrnCheck("%s: failed to parse query: <%.*s>",
 					  logTag,
 					  (int) querySize,
 					  query);
@@ -1335,7 +1329,7 @@ PGrnJSONBMatchExpression(Jsonb *target,
 						   GRN_OP_MATCH,
 						   GRN_OP_AND,
 						   GRN_EXPR_SYNTAX_SCRIPT);
-			PGrnCheck("jsonb: %s: failed to parse script: <%.*s>",
+			PGrnCheck("%s: failed to parse script: <%.*s>",
 					  logTag,
 					  (int) scriptSize,
 					  script);
@@ -1347,9 +1341,9 @@ PGrnJSONBMatchExpression(Jsonb *target,
 								  GRN_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
 								  tmpValuesTable,
 								  NULL);
-		PGrnCheck("jsonb: %s: failed to create result table", logTag);
+		PGrnCheck("%s: failed to create result table", logTag);
 		grn_table_select(ctx, tmpValuesTable, condition, result, GRN_OP_OR);
-		PGrnCheck("jsonb: %s: failed to select", logTag);
+		PGrnCheck("%s: failed to select", logTag);
 	}
 	PG_CATCH();
 	{
@@ -1396,7 +1390,7 @@ pgroonga_match_script_jsonb(PG_FUNCTION_ARGS)
 									   0,
 									   VARDATA_ANY(script),
 									   VARSIZE_ANY_EXHDR(script),
-									   "script");
+									   "jsonb: script");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1417,7 +1411,7 @@ pgroonga_match_jsonb(PG_FUNCTION_ARGS)
 									   0,
 									   NULL,
 									   0,
-									   "match");
+									   "jsonb: match");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1438,7 +1432,7 @@ pgroonga_query_jsonb(PG_FUNCTION_ARGS)
 									   VARSIZE_ANY_EXHDR(query),
 									   NULL,
 									   0,
-									   "query");
+									   "jsonb: query");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1459,7 +1453,7 @@ pgroonga_script_jsonb(PG_FUNCTION_ARGS)
 									   0,
 									   VARDATA_ANY(script),
 									   VARSIZE_ANY_EXHDR(script),
-									   "script");
+									   "jsonb: script");
 	PG_RETURN_BOOL(matched);
 }
 
@@ -1596,30 +1590,23 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 								   grn_obj *filter,
 								   unsigned int *nthCondition)
 {
-	const char *tag = "[build-condition][json-script]";
+	const char *tag = "jsonb: [build-condition][json-script]";
 
 	grn_expr_append_obj(ctx, data->expression, subFilter, GRN_OP_PUSH, 1);
-	PGrnCheck("jsonb: %s: failed to append sub_filter()", tag);
+	PGrnCheck("%s: failed to append sub_filter()", tag);
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
-	PGrnCheck("jsonb: %s: failed to append column: %s",
-			  tag,
-			  PGrnInspectName(targetColumn));
+	PGrnCheck(
+		"%s: failed to append column: %s", tag, PGrnInspectName(targetColumn));
 	grn_expr_append_const(ctx, data->expression, filter, GRN_OP_PUSH, 1);
-	PGrnCheck("jsonb: %s: failed to append filter: <%.*s>",
+	PGrnCheck("%s: failed to append filter: <%.*s>",
 			  tag,
 			  (int) GRN_TEXT_LEN(filter),
 			  GRN_TEXT_VALUE(filter));
-	grn_expr_append_op(ctx, data->expression, GRN_OP_CALL, 2);
-	PGrnCheck("jsonb: %s: failed to append operator: %s",
-			  tag,
-			  grn_operator_to_string(GRN_OP_CALL));
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag);
 
 	if (*nthCondition > 0)
 	{
-		grn_expr_append_op(ctx, data->expression, GRN_OP_AND, 2);
-		PGrnCheck("jsonb: %s: failed to append operator: %s",
-				  tag,
-				  grn_operator_to_string(GRN_OP_AND));
+		PGrnExprAppendOp(data->expression, GRN_OP_AND, 2, tag);
 	}
 
 	(*nthCondition)++;
