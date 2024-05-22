@@ -5329,12 +5329,13 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 					  tag,
 					  indexName,
 					  section);
-			// Customize log, so PGrnExprAppendOp() is not used.
-			grn_expr_append_op(ctx, matchColumns, GRN_OP_GET_MEMBER, 2);
-			PGrnCheck("%s failed to push get-member operator: <%s>[%d]",
-					  tag,
-					  indexName,
-					  section);
+			PGrnExprAppendOp(matchColumns,
+							 GRN_OP_GET_MEMBER,
+							 2,
+							 tag,
+							 "<%s>[%d]",
+							 indexName,
+							 section);
 		}
 		if (weight != 1)
 		{
@@ -5345,24 +5346,25 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 					  indexName,
 					  section,
 					  weight);
-			// Customize log, so PGrnExprAppendOp() is not used.
-			grn_expr_append_op(ctx, matchColumns, GRN_OP_STAR, 2);
-			PGrnCheck("%s failed to push star operator for weight: "
-					  "<%s>[%d] * <%d>",
-					  tag,
-					  indexName,
-					  section,
-					  weight);
+			PGrnExprAppendOp(matchColumns,
+							 GRN_OP_STAR,
+							 2,
+							 tag,
+							 "<%s>[%d] * <%d>",
+							 indexName,
+							 section,
+							 weight);
 		}
 
 		if (nMatchColumns > 0)
 		{
-			// Customize log, so PGrnExprAppendOp() is not used.
-			grn_expr_append_op(ctx, matchColumns, GRN_OP_OR, 2);
-			PGrnCheck("%s failed to push OR operator: <%s>[%d]",
-					  tag,
-					  indexName,
-					  section);
+			PGrnExprAppendOp(matchColumns,
+							 GRN_OP_OR,
+							 2,
+							 tag,
+							 "<%s>[%d]",
+							 indexName,
+							 section);
 		}
 
 		nMatchColumns++;
