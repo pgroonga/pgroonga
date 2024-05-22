@@ -1278,12 +1278,8 @@ PGrnJSONBMatchExpression(Jsonb *target,
 				ctx, tmpValuesTable, targetName, strlen(targetName));
 			grn_expr_append_obj(ctx, condition, column, GRN_OP_GET_VALUE, 1);
 			PGrnCheck("%s: failed to append column: %s", logTag, targetName);
-			grn_expr_append_const_str(
-				ctx, condition, term, termSize, GRN_OP_PUSH, 1);
-			PGrnCheck("%s: failed to append text: <%.*s>",
-					  logTag,
-					  (int) termSize,
-					  term);
+			PGrnExprAppendConstString(
+				condition, term, termSize, GRN_OP_PUSH, 1, logTag);
 			PGrnExprAppendOp(condition, GRN_OP_MATCH, 2, logTag, NULL);
 		}
 		else if (querySize > 0)
