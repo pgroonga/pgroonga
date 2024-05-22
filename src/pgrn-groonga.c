@@ -693,3 +693,20 @@ PGrnExprAppendOp(grn_obj *expr,
 				  nArgs);
 	}
 }
+
+void
+PGrnExprAppendConstStr(grn_obj *expr,
+					   const char *str,
+					   unsigned int strSize,
+					   grn_operator op,
+					   int nArgs,
+					   const char *tag)
+{
+	grn_expr_append_const_str(ctx, expr, str, strSize, op, nArgs);
+	PGrnCheck("%s: failed to %s string: <%.*s>(%d)",
+			  tag,
+			  grn_operator_to_string(op),
+			  (int) strSize,
+			  str,
+			  nArgs);
+}
