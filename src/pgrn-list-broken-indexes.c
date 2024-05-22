@@ -145,8 +145,6 @@ static bool
 PGrnIndexIsBroken(Relation index)
 {
 	TupleDesc desc;
-	unsigned int i;
-	bool isJsonb = false;
 
 	if (PGrnIsBrokenSources(index))
 	{
@@ -154,21 +152,10 @@ PGrnIndexIsBroken(Relation index)
 	}
 
 	desc = RelationGetDescr(index);
-	for (i = 0; i < desc->natts; i++)
+	if (desc->natts == 1 &&
+		PGrnAttributeIsJSONB(TupleDescAttr(desc, 0)->atttypid))
 	{
-		Form_pg_attribute attribute = TupleDescAttr(desc, i);
-		if (PGrnAttributeIsJSONB(attribute->atttypid))
-		{
-			if (PGrnIsBrokenJsonbResource(index, i))
-			{
-				return true;
-			}
-			isJsonb = true;
-		}
-	}
-	if (isJsonb)
-	{
-		return false;
+		return PGrnIsBrokenJsonbResource(index, 0);
 	}
 	return PGrnIsBrokenLexicon(index);
 }
