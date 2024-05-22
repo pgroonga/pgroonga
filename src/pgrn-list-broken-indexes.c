@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-groonga.h"
+#include "pgrn-jsonb.h"
 
 #include <access/heapam.h>
 #include <funcapi.h>
@@ -94,9 +95,82 @@ PGrnIsBrokenLexicon(Relation index)
 }
 
 static bool
+PGrnIsBrokenJsonbResource(Relation index, unsigned int nthAttribute)
+{
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupValuesTable(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupPathsTable(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupTypesTable(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupFullTextSearchLexicon(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupStringLexicon(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupNumberLexicon(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupBooleanLexicon(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	if (PGrnIsBrokenTable(
+			PGrnJSONBLookupSizeLexicon(index, nthAttribute, ERROR)))
+	{
+		return true;
+	}
+	return false;
+}
+
+static bool
 PGrnIndexIsBroken(Relation index)
 {
-	return PGrnIsBrokenSources(index) || PGrnIsBrokenLexicon(index);
+	TupleDesc desc;
+	unsigned int i;
+	bool isJsonb = false;
+
+	if (PGrnIsBrokenSources(index))
+	{
+		return true;
+	}
+
+	desc = RelationGetDescr(index);
+	for (i = 0; i < desc->natts; i++)
+	{
+		Form_pg_attribute attribute = TupleDescAttr(desc, i);
+		if (PGrnAttributeIsJSONB(attribute->atttypid))
+		{
+			if (PGrnIsBrokenJsonbResource(index, i))
+			{
+				return true;
+			}
+			isJsonb = true;
+		}
+	}
+	if (isJsonb)
+	{
+		return false;
+	}
+	return PGrnIsBrokenLexicon(index);
 }
 
 Datum
