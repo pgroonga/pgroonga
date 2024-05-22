@@ -506,8 +506,7 @@ PGrnSequentialSearchSetMatchTerm(PGrnCondition *condition)
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append term to be matched", tag);
-	grn_expr_append_op(ctx, currentDatum->expression, GRN_OP_MATCH, 2);
-	PGrnCheck("%s append match operator", tag);
+	PGrnExprAppendOp(currentDatum->expression, GRN_OP_MATCH, 2, tag);
 }
 
 void
@@ -534,8 +533,7 @@ PGrnSequentialSearchSetEqualText(PGrnCondition *condition)
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append equal text", tag);
-	grn_expr_append_op(ctx, currentDatum->expression, GRN_OP_EQUAL, 2);
-	PGrnCheck("%s append equal operator", tag);
+	PGrnExprAppendOp(currentDatum->expression, GRN_OP_EQUAL, 2, tag);
 }
 
 void
@@ -562,8 +560,7 @@ PGrnSequentialSearchSetPrefix(PGrnCondition *condition)
 							  GRN_OP_PUSH,
 							  1);
 	PGrnCheck("%s append prefix", tag);
-	grn_expr_append_op(ctx, currentDatum->expression, GRN_OP_PREFIX, 2);
-	PGrnCheck("%s append prefix operator", tag);
+	PGrnExprAppendOp(currentDatum->expression, GRN_OP_PREFIX, 2, tag);
 }
 
 void
