@@ -1593,11 +1593,7 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnCheck(
 		"%s: failed to append column: %s", tag, PGrnInspectName(targetColumn));
-	grn_expr_append_const(ctx, data->expression, filter, GRN_OP_PUSH, 1);
-	PGrnCheck("%s: failed to append filter: <%.*s>",
-			  tag,
-			  (int) GRN_TEXT_LEN(filter),
-			  GRN_TEXT_VALUE(filter));
+	PGrnExprAppendConst(data->expression, filter, GRN_OP_PUSH, 1, tag);
 	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag, NULL);
 
 	if (*nthCondition > 0)
