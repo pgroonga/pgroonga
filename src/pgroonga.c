@@ -5177,7 +5177,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		grn_obj_reinit(ctx, &(buffers->general), GRN_DB_BOOL, 0);
 		GRN_BOOL_SET(ctx, &(buffers->general), GRN_FALSE);
 		PGrnExprAppendConst(
-			data->expression, &(buffers->general), GRN_OP_PUSH, 0, tag_any);
+			data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag_any);
 		return true;
 		break;
 	case 1:
