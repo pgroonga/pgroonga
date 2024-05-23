@@ -1483,8 +1483,8 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		grn_expr_append_obj(
 			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
 		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
-		grn_expr_append_const(
-			ctx, expression, &(buffers->general), GRN_OP_PUSH, 1);
+		PGrnExprAppendConst(
+			expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
 		PGrnExprAppendOp(expression, GRN_OP_EQUAL, 2, tag, NULL);
 
 		if (nPrimaryKeyColumns > 0)
@@ -5170,9 +5170,8 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	case 0:
 		grn_obj_reinit(ctx, &(buffers->general), GRN_DB_BOOL, 0);
 		GRN_BOOL_SET(ctx, &(buffers->general), GRN_FALSE);
-		grn_expr_append_const(
-			ctx, data->expression, &(buffers->general), GRN_OP_PUSH, 0);
-		PGrnCheck("%s failed to push false value", tag_any);
+		PGrnExprAppendConst(
+			data->expression, &(buffers->general), GRN_OP_PUSH, 0, tag_any);
 		return true;
 		break;
 	case 1:
@@ -5215,9 +5214,8 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 
 		PGrnConvertFromData(
 			valueDatum, attribute->atttypid, &(buffers->general));
-		grn_expr_append_const(
-			ctx, data->expression, &(buffers->general), GRN_OP_PUSH, 1);
-		PGrnCheck("%s failed to push a value", tag);
+		PGrnExprAppendConst(
+			data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
 	}
 
 	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2 + (n - 1), tag, NULL);
@@ -5845,7 +5843,7 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 	const char *tag = "[build-condition][binary-operation]";
 	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
-	grn_expr_append_const(ctx, data->expression, value, GRN_OP_PUSH, 1);
+	PGrnExprAppendConst(data->expression, value, GRN_OP_PUSH, 1, tag);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 }
 
