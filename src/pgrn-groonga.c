@@ -704,11 +704,19 @@ PGrnExprAppendConst(
 	if (ctx->rc == GRN_SUCCESS)
 		return;
 
-	PGrnCheck("%s: failed to %s(%d) a value: %s",
-			  tag,
-			  grn_operator_to_string(op),
-			  nArgs,
-			  PGrnInspect(object));
+	{
+#define BUFFER_SIZE 4096
+		char inspected[BUFFER_SIZE];
+		strncpy(inspected, PGrnInspect(object), BUFFER_SIZE - 1);
+		inspected[BUFFER_SIZE - 1] = '\0';
+#undef BUFFER_SIZE
+		PGrnCheck("%s: failed to %s(%d) a constant: %s: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  inspected,
+				  PGrnInspect(expr));
+	}
 }
 
 void
@@ -745,31 +753,41 @@ PGrnExprAppendObject(grn_obj *expr,
 	if (ctx->rc == GRN_SUCCESS)
 		return;
 
-	if (format)
 	{
+#define BUFFER_SIZE 4096
+		char inspected[BUFFER_SIZE];
+		strncpy(inspected, PGrnInspect(object), BUFFER_SIZE - 1);
+		inspected[BUFFER_SIZE - 1] = '\0';
+#undef BUFFER_SIZE
+
+		if (format)
+		{
 #define MESSAGE_SIZE 4096
-		va_list args;
-		char message[MESSAGE_SIZE];
+			va_list args;
+			char message[MESSAGE_SIZE];
 
-		va_start(args, format);
-		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
-		va_end(args);
+			va_start(args, format);
+			grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+			va_end(args);
 
-		PGrnCheck("%s: failed to %s(%d) object: %s: %s",
-				  tag,
-				  grn_operator_to_string(op),
-				  nArgs,
-				  PGrnInspect(object),
-				  message);
+			PGrnCheck("%s: failed to %s(%d) object: %s: %s: %s",
+					  tag,
+					  grn_operator_to_string(op),
+					  nArgs,
+					  inspected,
+					  message,
+					  PGrnInspect(expr));
 #undef MESSAGE_SIZE
-	}
-	else
-	{
-		PGrnCheck("%s: failed to %s(%d) object: %s",
-				  tag,
-				  grn_operator_to_string(op),
-				  nArgs,
-				  PGrnInspect(object));
+		}
+		else
+		{
+			PGrnCheck("%s: failed to %s(%d) object: %s: %s",
+					  tag,
+					  grn_operator_to_string(op),
+					  nArgs,
+					  inspected,
+					  PGrnInspect(expr));
+		}
 	}
 }
 
