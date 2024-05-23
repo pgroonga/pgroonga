@@ -6217,14 +6217,14 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 						  PGrnSearchData *data)
 {
 	const char *tag = "[build-conditions]";
+	Relation index = scan->indexRelation;
 	int i;
+
+	PGrnAutoCloseUseIndex(index);
 
 	for (i = 0; i < scan->numberOfKeys; i++)
 	{
-		Relation index = scan->indexRelation;
 		ScanKey key = &(scan->keyData[i]);
-
-		PGrnAutoCloseUseIndex(index);
 
 		if (!PGrnSearchBuildCondition(index, key, data))
 			continue;
