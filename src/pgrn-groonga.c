@@ -678,19 +678,21 @@ PGrnExprAppendOp(grn_obj *expr,
 		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 		va_end(args);
 
-		PGrnCheck("%s: failed to append operator: %s(%d): %s",
+		PGrnCheck("%s: failed to append operator: %s(%d): %s: %s",
 				  tag,
 				  grn_operator_to_string(op),
 				  nArgs,
-				  message);
+				  message,
+				  PGrnInspect(expr));
 #undef MESSAGE_SIZE
 	}
 	else
 	{
-		PGrnCheck("%s: failed to append operator: %s(%d)",
+		PGrnCheck("%s: failed to append operator: %s(%d): %s",
 				  tag,
 				  grn_operator_to_string(op),
-				  nArgs);
+				  nArgs,
+				  PGrnInspect(expr));
 	}
 }
 
@@ -721,12 +723,13 @@ PGrnExprAppendConstString(grn_obj *expr,
 	if (ctx->rc == GRN_SUCCESS)
 		return;
 
-	PGrnCheck("%s: failed to %s(%d) string: <%.*s>",
+	PGrnCheck("%s: failed to %s(%d) string: <%.*s>: %s",
 			  tag,
 			  grn_operator_to_string(op),
 			  nArgs,
 			  (int) stringSize,
-			  string);
+			  string,
+			  PGrnInspect(expr));
 }
 
 void
@@ -793,20 +796,22 @@ PGrnExprAppendConstInteger(grn_obj *expr,
 		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 		va_end(args);
 
+		PGrnCheck("%s: failed to %s(%d) integer: <%d>: %s: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  value,
+				  message,
+				  PGrnInspect(expr));
+#undef MESSAGE_SIZE
+	}
+	else
+	{
 		PGrnCheck("%s: failed to %s(%d) integer: <%d>: %s",
 				  tag,
 				  grn_operator_to_string(op),
 				  nArgs,
 				  value,
-				  message);
-#undef MESSAGE_SIZE
-	}
-	else
-	{
-		PGrnCheck("%s: failed to %s(%d) integer: <%d>",
-				  tag,
-				  grn_operator_to_string(op),
-				  nArgs,
-				  value);
+				  PGrnInspect(expr));
 	}
 }
