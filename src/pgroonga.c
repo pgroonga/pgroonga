@@ -5194,11 +5194,14 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	grn_obj_reinit(ctx, &(buffers->general), domain, flags);
 	n = ARR_DIMS(values)[0];
 
-	grn_expr_append_obj(
-		ctx, data->expression, PGrnLookup("in_values", ERROR), GRN_OP_PUSH, 1);
-	PGrnCheck("%s failed to push in_values()", tag);
-	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
-	PGrnCheck("%s failed to push target column", tag);
+	PGrnExprAppendObject(data->expression,
+						 PGrnLookup("in_values", ERROR),
+						 GRN_OP_PUSH,
+						 1,
+						 tag,
+						 NULL);
+	PGrnExprAppendObject(
+		data->expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	for (i = 1; i <= n; i++)
@@ -5322,10 +5325,13 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 		}
 		else
 		{
-			grn_expr_append_obj(
-				ctx, matchColumns, indexData->index, GRN_OP_PUSH, 1);
-			PGrnCheck(
-				"%s failed to push index: <%s>[%d]", tag, indexName, section);
+			PGrnExprAppendObject(matchColumns,
+								 indexData->index,
+								 GRN_OP_PUSH,
+								 1,
+								 tag,
+								 "section:<%d>",
+								 section);
 			grn_expr_append_const_int(
 				ctx, matchColumns, section, GRN_OP_PUSH, 1);
 			PGrnCheck("%s failed to push section of index: <%s>[%d]",
@@ -5468,19 +5474,13 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 		return false;
 	}
 
-	grn_expr_append_obj(
-		ctx, data->expression, matchTarget, GRN_OP_GET_VALUE, 1);
-	if (matchTarget == targetColumn)
-	{
-		PGrnCheck("%s failed to push column for %s operator: <%s>",
-				  tag,
-				  grn_operator_to_string(operator),
-				  PGrnInspectName(targetColumn));
-	}
-	else
-	{
-		PGrnCheck("%s failed to push match columns", tag);
-	}
+	PGrnExprAppendObject(data->expression,
+						 matchTarget,
+						 GRN_OP_GET_VALUE,
+						 1,
+						 tag,
+						 "target-column:%s",
+						 PGrnInspect(targetColumn));
 	PGrnExprAppendConstString(data->expression,
 							  VARDATA_ANY(condition.query),
 							  VARSIZE_ANY_EXHDR(condition.query),
