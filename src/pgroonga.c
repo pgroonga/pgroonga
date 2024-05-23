@@ -5354,7 +5354,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 									   GRN_OP_PUSH,
 									   1,
 									   tag,
-									   "index: <%s> section: <%d>",
+									   "index: <%s>[%d]",
 									   indexName,
 									   section);
 			PGrnExprAppendOp(matchColumns,
