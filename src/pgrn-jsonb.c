@@ -1276,8 +1276,8 @@ PGrnJSONBMatchExpression(Jsonb *target,
 
 			column = grn_obj_column(
 				ctx, tmpValuesTable, targetName, strlen(targetName));
-			grn_expr_append_obj(ctx, condition, column, GRN_OP_GET_VALUE, 1);
-			PGrnCheck("%s: failed to append column: %s", logTag, targetName);
+			PGrnExprAppendObject(
+				condition, column, GRN_OP_GET_VALUE, 1, logTag, NULL);
 			PGrnExprAppendConstString(
 				condition, term, termSize, GRN_OP_PUSH, 1, logTag);
 			PGrnExprAppendOp(condition, GRN_OP_MATCH, 2, logTag, NULL);
@@ -1588,11 +1588,10 @@ PGrnSearchBuildConditionJSONScript(PGrnSearchData *data,
 {
 	const char *tag = "jsonb: [build-condition][json-script]";
 
-	grn_expr_append_obj(ctx, data->expression, subFilter, GRN_OP_PUSH, 1);
-	PGrnCheck("%s: failed to append sub_filter()", tag);
-	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
-	PGrnCheck(
-		"%s: failed to append column: %s", tag, PGrnInspectName(targetColumn));
+	PGrnExprAppendObject(
+		data->expression, subFilter, GRN_OP_PUSH, 1, tag, NULL);
+	PGrnExprAppendObject(
+		data->expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 	PGrnExprAppendConst(data->expression, filter, GRN_OP_PUSH, 1, tag);
 	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag, NULL);
 
