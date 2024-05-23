@@ -389,3 +389,10 @@ void PGrnExprAppendConstString(grn_obj *expr,
 							   grn_operator op,
 							   int nArgs,
 							   const char *tag);
+void PGrnExprAppendObject(grn_obj *expr,
+						  grn_obj *object,
+						  grn_operator op,
+						  int nArgs,
+						  const char *tag,
+						  const char *format,
+						  ...) GRN_ATTRIBUTE_PRINTF(6);

@@ -722,3 +722,44 @@ PGrnExprAppendConstString(grn_obj *expr,
 			  string,
 			  nArgs);
 }
+
+void
+PGrnExprAppendObject(grn_obj *expr,
+					 grn_obj *object,
+					 grn_operator op,
+					 int nArgs,
+					 const char *tag,
+					 const char *format,
+					 ...)
+{
+	grn_expr_append_obj(ctx, expr, object, op, nArgs);
+	if (ctx->rc == GRN_SUCCESS)
+		return;
+
+	if (format)
+	{
+#define MESSAGE_SIZE 4096
+		va_list args;
+		char message[MESSAGE_SIZE];
+
+		va_start(args, format);
+		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+		va_end(args);
+
+		PGrnCheck("%s: failed to %s(%d) object: %s: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  PGrnInspect(object),
+				  message);
+#undef MESSAGE_SIZE
+	}
+	else
+	{
+		PGrnCheck("%s: failed to %s(%d) object: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  PGrnInspect(object));
+	}
+}
