@@ -1480,9 +1480,12 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		PGrnConvertFromData(
 			primaryKeyValue, primaryKeyColumn->type, &(buffers->general));
 
-		PGrnExprAppendObject(
-			expression, primaryKeyColumn->column, GRN_OP_PUSH, 1, tag, NULL);
-		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
+		PGrnExprAppendObject(expression,
+							 primaryKeyColumn->column,
+							 GRN_OP_GET_VALUE,
+							 1,
+							 tag,
+							 NULL);
 		PGrnExprAppendConst(
 			expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
 		PGrnExprAppendOp(expression, GRN_OP_EQUAL, 2, tag, NULL);
@@ -5556,8 +5559,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 	if (GRN_TEXT_LEN(keyword) == 0)
 		return;
 
-	PGrnExprAppendObject(expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
-	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
+	PGrnExprAppendObject(expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(keyword),
@@ -5747,8 +5749,8 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	if (!lastIsPercent)
 		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\z");
 
-	PGrnExprAppendObject(expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
-	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
+	PGrnExprAppendObject(
+		expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(&(buffers->pattern)),
 							  GRN_TEXT_LEN(&(buffers->pattern)),
@@ -5853,8 +5855,7 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 {
 	const char *tag = "[build-condition][binary-operation]";
 	PGrnExprAppendObject(
-		data->expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
-	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
+		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConst(data->expression, value, GRN_OP_PUSH, 1, tag);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 }
