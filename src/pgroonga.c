@@ -5167,6 +5167,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	grn_id domain;
 	unsigned char flags = 0;
 	int i, n;
+	int nArgs = 0;
 
 	values = DatumGetArrayTypeP(key->sk_argument);
 	n_dimensions = ARR_NDIM(values);
@@ -5202,6 +5203,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						 NULL);
 	PGrnExprAppendObject(
 		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
+	nArgs++;
 
 	for (i = 1; i <= n; i++)
 	{
@@ -5217,15 +5219,16 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 							   attribute->attalign,
 							   &isNULL);
 		if (isNULL)
-			return false;
+			continue;
 
 		PGrnConvertFromData(
 			valueDatum, attribute->atttypid, &(buffers->general));
 		PGrnExprAppendConst(
 			data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
+		nArgs++;
 	}
 
-	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2 + (n - 1), tag, NULL);
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, nArgs, tag, NULL);
 
 	return true;
 }
