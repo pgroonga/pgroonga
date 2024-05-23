@@ -1480,8 +1480,8 @@ PGrnCollectScoreMultiColumnPrimaryKey(Relation table,
 		PGrnConvertFromData(
 			primaryKeyValue, primaryKeyColumn->type, &(buffers->general));
 
-		grn_expr_append_obj(
-			ctx, expression, primaryKeyColumn->column, GRN_OP_PUSH, 1);
+		PGrnExprAppendObject(
+			expression, primaryKeyColumn->column, GRN_OP_PUSH, 1, tag, NULL);
 		PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 		PGrnExprAppendConst(
 			expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
@@ -3458,13 +3458,18 @@ pgroonga_prefix_rk_raw(const char *text,
 			GRN_NO_MEMORY_AVAILABLE, "%s failed to create expression", tag);
 	}
 
-	grn_expr_append_obj(ctx,
-						expression,
-						grn_ctx_get(ctx, "prefix_rk_search", -1),
-						GRN_OP_PUSH,
-						1);
-	grn_expr_append_obj(
-		ctx, expression, prefixRKSequentialSearchData.key, GRN_OP_GET_VALUE, 1);
+	PGrnExprAppendObject(expression,
+						 grn_ctx_get(ctx, "prefix_rk_search", -1),
+						 GRN_OP_PUSH,
+						 1,
+						 tag,
+						 NULL);
+	PGrnExprAppendObject(expression,
+						 prefixRKSequentialSearchData.key,
+						 GRN_OP_GET_VALUE,
+						 1,
+						 tag,
+						 NULL);
 	PGrnExprAppendConstString(expression,
 							  VARDATA_ANY(condition->query),
 							  VARSIZE_ANY_EXHDR(condition->query),
@@ -5547,7 +5552,7 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 	if (GRN_TEXT_LEN(keyword) == 0)
 		return;
 
-	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnExprAppendObject(expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	PGrnExprAppendConstString(expression,
@@ -5616,11 +5621,12 @@ PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
 		expression, targetColumn, &(buffers->keyword), &nKeywords);
 	if (nKeywords == 0)
 	{
-		grn_expr_append_obj(ctx,
-							expression,
-							grn_ctx_get(ctx, "all_records", -1),
-							GRN_OP_PUSH,
-							1);
+		PGrnExprAppendObject(expression,
+							 grn_ctx_get(ctx, "all_records", -1),
+							 GRN_OP_PUSH,
+							 1,
+							 tag,
+							 NULL);
 		PGrnExprAppendOp(expression, GRN_OP_CALL, 0, tag, NULL);
 	}
 }
@@ -5737,7 +5743,7 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 	if (!lastIsPercent)
 		GRN_TEXT_PUTS(ctx, &(buffers->pattern), "\\z");
 
-	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnExprAppendObject(expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(&(buffers->pattern)),
@@ -5761,7 +5767,7 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	GRN_EXPR_CREATE_FOR_QUERY(
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+	PGrnExprAppendObject(matchTarget, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	grn_expr_parse(ctx,
@@ -5790,13 +5796,14 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 	grn_text_esc(ctx, &subFilterScript, prefix, prefixSize);
 	GRN_TEXT_PUTS(ctx, &subFilterScript, ")");
 
-	grn_expr_append_obj(ctx,
-						data->expression,
-						grn_ctx_get(ctx, "sub_filter", -1),
-						GRN_OP_PUSH,
-						1);
-	grn_expr_append_obj(
-		ctx, data->expression, targetColumn, GRN_OP_GET_VALUE, 1);
+	PGrnExprAppendObject(data->expression,
+						 grn_ctx_get(ctx, "sub_filter", -1),
+						 GRN_OP_PUSH,
+						 1,
+						 tag,
+						 NULL);
+	PGrnExprAppendObject(
+		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConstString(data->expression,
 							  GRN_TEXT_VALUE(&subFilterScript),
 							  GRN_TEXT_LEN(&subFilterScript),
@@ -5821,7 +5828,7 @@ PGrnSearchBuildConditionScript(PGrnSearchData *data,
 	GRN_EXPR_CREATE_FOR_QUERY(
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-	grn_expr_append_obj(ctx, matchTarget, targetColumn, GRN_OP_PUSH, 1);
+	PGrnExprAppendObject(matchTarget, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 
 	grn_expr_parse(ctx,
 				   data->expression,
@@ -5841,7 +5848,8 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_operator operator)
 {
 	const char *tag = "[build-condition][binary-operation]";
-	grn_expr_append_obj(ctx, data->expression, targetColumn, GRN_OP_PUSH, 1);
+	PGrnExprAppendObject(
+		data->expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
 	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConst(data->expression, value, GRN_OP_PUSH, 1, tag);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
@@ -6163,11 +6171,12 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 
 		if (data->nExpressions == 0)
 		{
-			grn_expr_append_obj(ctx,
-								data->expression,
-								grn_ctx_get(ctx, "all_records", -1),
-								GRN_OP_PUSH,
-								1);
+			PGrnExprAppendObject(data->expression,
+								 grn_ctx_get(ctx, "all_records", -1),
+								 GRN_OP_PUSH,
+								 1,
+								 tag,
+								 NULL);
 			PGrnExprAppendOp(data->expression, GRN_OP_CALL, 0, tag, NULL);
 		}
 
