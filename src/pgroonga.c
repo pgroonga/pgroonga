@@ -5201,8 +5201,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						 tag,
 						 NULL);
 	PGrnExprAppendObject(
-		data->expression, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
-	PGrnExprAppendOp(data->expression, GRN_OP_GET_VALUE, 1, tag, NULL);
+		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	for (i = 1; i <= n; i++)
 	{
