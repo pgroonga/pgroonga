@@ -5332,7 +5332,7 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 								 GRN_OP_PUSH,
 								 1,
 								 tag,
-								 "section:<%d>",
+								 "section: <%d>",
 								 section);
 			PGrnExprAppendConstInteger(matchColumns,
 									   section,
@@ -5483,7 +5483,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 						 GRN_OP_GET_VALUE,
 						 1,
 						 tag,
-						 "target-column:%s",
+						 "target-column: %s",
 						 PGrnInspect(targetColumn));
 	PGrnExprAppendConstString(data->expression,
 							  VARDATA_ANY(condition.query),
