@@ -1819,7 +1819,7 @@ PGrnSearchBuildConditionJSONContain(PGrnSearchData *data,
 	GRN_OBJ_FIN(ctx, &components);
 }
 
-bool
+void
 PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 							  Relation index,
 							  ScanKey key,
@@ -1885,7 +1885,6 @@ PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 					key->sk_strategy);
 		break;
 	}
-	return true;
 }
 
 static void

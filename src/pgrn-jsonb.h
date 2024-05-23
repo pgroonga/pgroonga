@@ -56,7 +56,7 @@ uint32_t PGrnJSONBInsert(Relation index,
 						 bool *isnull,
 						 uint64_t packedCtid);
 
-bool PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
+void PGrnJSONBBuildSearchCondition(PGrnSearchData *data,
 								   Relation index,
 								   ScanKey key,
 								   grn_obj *targetColumn);

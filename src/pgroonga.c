@@ -5157,7 +5157,7 @@ PGrnSearchIsInCondition(ScanKey key)
 			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
-static bool
+static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   ScanKey key,
 						   grn_obj *targetColumn,
@@ -5181,8 +5181,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		GRN_BOOL_SET(ctx, &(buffers->general), GRN_FALSE);
 		PGrnExprAppendConst(
 			data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag_any);
-		return true;
-		break;
+		return;
 	case 1:
 		/* OK */
 		break;
@@ -5191,7 +5190,7 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 					"%s 2 or more dimensions array isn't supported yet: %d",
 					tag,
 					n_dimensions);
-		break;
+		return;
 	}
 
 	domain = PGrnPGTypeToGrnType(attribute->atttypid, &flags);
@@ -5232,11 +5231,9 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	}
 
 	PGrnExprAppendOp(data->expression, GRN_OP_CALL, nArgs, tag, NULL);
-
-	return true;
 }
 
-static bool
+static void
 PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 	PGrnSearchData *data,
 	grn_obj *matchColumns,
@@ -5389,11 +5386,9 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 		array_free_iterator(weightsIterator);
 	if (scorersIterator)
 		array_free_iterator(scorersIterator);
-
-	return true;
 }
 
-static bool
+static void
 PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 										 ScanKey key,
 										 grn_obj *targetColumn,
@@ -5415,7 +5410,6 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 					"%s index doesn't exist for target column: <%s>",
 					tag,
 					PGrnInspectName(targetColumn));
-		return false;
 	}
 
 	header = DatumGetHeapTupleHeader(key->sk_argument);
@@ -5423,20 +5417,18 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	if (PGrnPGTextIsEmpty(condition->query))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
-		return false;
 	}
 
 	if (!condition->weights && !condition->scorers)
 	{
 		*matchTarget = targetColumn;
-		return true;
+		return;
 	}
 
 	if (condition->weights && ARR_NDIM(condition->weights) == 0)
 	{
 		PGrnCheckRC(
 			GRN_INVALID_ARGUMENT, "%s weights must not empty array", tag);
-		return false;
 	}
 
 	{
@@ -5446,21 +5438,19 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 			ctx, data->sourcesTable, matchColumns, matchColumnsVariable);
 		GRN_PTR_PUT(ctx, &(data->matchTargets), matchColumns);
 
-		if (!PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
-				data,
-				matchColumns,
-				&indexData,
-				condition->weights,
-				condition->scorers,
-				tag))
-			return false;
+		PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
+			data,
+			matchColumns,
+			&indexData,
+			condition->weights,
+			condition->scorers,
+			tag);
 
 		*matchTarget = matchColumns;
-		return true;
 	}
 }
 
-static bool
+static void
 PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 												 ScanKey key,
 												 grn_obj *targetColumn,
@@ -5475,11 +5465,8 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			 sizeof(tag),
 			 "[build-condition][%s-condition]",
 			 grn_operator_to_string(operator));
-	if (!PGrnSearchBuildConditionPrepareCondition(
-			data, key, targetColumn, attribute, operator, & condition, &matchTarget, tag))
-	{
-		return false;
-	}
+	PGrnSearchBuildConditionPrepareCondition(
+		data, key, targetColumn, attribute, operator, & condition, &matchTarget, tag);
 
 	PGrnExprAppendObject(data->expression,
 						 matchTarget,
@@ -5495,11 +5482,9 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 							  1,
 							  tag);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
-
-	return true;
 }
 
-static bool
+static void
 PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 									   ScanKey key,
 									   grn_obj *targetColumn,
@@ -5511,17 +5496,14 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 	grn_operator defaultOperator;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
-	if (!PGrnSearchBuildConditionPrepareCondition(data,
-												  key,
-												  targetColumn,
-												  attribute,
-												  GRN_OP_MATCH,
-												  &condition,
-												  &matchTarget,
-												  tag))
-	{
-		return false;
-	}
+	PGrnSearchBuildConditionPrepareCondition(data,
+											 key,
+											 targetColumn,
+											 attribute,
+											 GRN_OP_MATCH,
+											 &condition,
+											 &matchTarget,
+											 tag);
 
 	if (key->sk_strategy == PGrnEqualQueryFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
@@ -5545,8 +5527,6 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 			  tag,
 			  (int) VARSIZE_ANY_EXHDR(condition.query),
 			  VARDATA_ANY(condition.query));
-
-	return true;
 }
 
 static void
@@ -5861,7 +5841,7 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 }
 
-static bool
+static void
 PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 {
 	const char *tag = "[build-condition]";
@@ -5872,10 +5852,6 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	grn_operator operator= GRN_OP_NOP;
 	Oid valueTypeID;
 
-	/* NULL key is not supported */
-	if (key->sk_flags & SK_ISNULL)
-		return false;
-
 	desc = RelationGetDescr(index);
 	attribute = TupleDescAttr(desc, key->sk_attno - 1);
 
@@ -5885,14 +5861,18 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 
 	if (PGrnSearchIsInCondition(key))
-		return PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
+	{
+		PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
+		return;
+	}
 
 	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnMatchFTSConditionWithScorersStrategyV2Number ||
 		key->sk_strategy == PGrnMatchConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(
+		PGrnSearchBuildConditionBinaryOperationCondition(
 			data, key, targetColumn, attribute, GRN_OP_MATCH);
+		return;
 	}
 
 	if (key->sk_strategy == PGrnQueryFTSConditionStrategyV2Number ||
@@ -5901,26 +5881,32 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		key->sk_strategy == PGrnQueryConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionQueryCondition(
+		PGrnSearchBuildConditionQueryCondition(
 			data, key, targetColumn, attribute);
+		return;
 	}
 
 	if (key->sk_strategy == PGrnPrefixFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnPrefixConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(
+		PGrnSearchBuildConditionBinaryOperationCondition(
 			data, key, targetColumn, attribute, GRN_OP_PREFIX);
+		return;
 	}
 
 	if (key->sk_strategy == PGrnEqualFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualConditionStrategyV2Number)
 	{
-		return PGrnSearchBuildConditionBinaryOperationCondition(
+		PGrnSearchBuildConditionBinaryOperationCondition(
 			data, key, targetColumn, attribute, GRN_OP_EQUAL);
+		return;
 	}
 
 	if (PGrnAttributeIsJSONB(attribute->atttypid))
-		return PGrnJSONBBuildSearchCondition(data, index, key, targetColumn);
+	{
+		PGrnJSONBBuildSearchCondition(data, index, key, targetColumn);
+		return;
+	}
 
 	valueTypeID = attribute->atttypid;
 	switch (key->sk_strategy)
@@ -6208,8 +6194,6 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			data, targetColumn, &(buffers->general), operator);
 		break;
 	}
-
-	return true;
 }
 
 static void
@@ -6227,8 +6211,11 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 	{
 		ScanKey key = &(scan->keyData[i]);
 
-		if (!PGrnSearchBuildCondition(index, key, data))
+		/* NULL key is not supported */
+		if (key->sk_flags & SK_ISNULL)
 			continue;
+
+		PGrnSearchBuildCondition(index, key, data);
 
 		if (data->isEmptyCondition)
 			return;
@@ -7908,7 +7895,7 @@ PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
 	key.sk_strategy = strategy;
 	key.sk_argument = ((Const *) estimatedRightNode)->constvalue;
 	PGrnSearchDataInit(&data, index, sourcesTable);
-	if (PGrnSearchBuildCondition(index, &key, &data))
+	PGrnSearchBuildCondition(index, &key, &data);
 	{
 		unsigned int estimatedSize;
 		unsigned int nRecords;
@@ -7928,7 +7915,7 @@ PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
 		if (estimatedSize == nRecords)
 		{
 			/* TODO: estimatedSize == nRecords means
-			 * estimation isn't support in Groonga. We should
+			 * estimation isn't supported in Groonga. We should
 			 * support it in Groonga. */
 			info->norm_selec = 0.01;
 		}
@@ -7937,10 +7924,6 @@ PGrnCostEstimateUpdateSelectivityOne(PlannerInfo *root,
 			info->norm_selec = (double) estimatedSize / (double) nRecords;
 			/* path->path.rows = (double) estimatedSize; */
 		}
-	}
-	else
-	{
-		info->norm_selec = 0.0;
 	}
 	PGrnSearchDataFree(&data);
 }
