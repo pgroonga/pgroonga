@@ -179,9 +179,17 @@ EXPLAIN (COSTS OFF) #{select};
 (4 rows)
 
     OUTPUT
-    assert_equal([output, ""],
-                 run_sql_standby("#{disable_index_scan};\n" +
-                                 "EXPLAIN (COSTS OFF) #{select};"))
+    # To wait for replication
+    n_retries = 0
+    begin
+      assert_equal([output, ""],
+                   run_sql_standby("#{disable_index_scan};\n" +
+                                   "EXPLAIN (COSTS OFF) #{select};"))
+    rescue Helpers::CommandRunError
+      n_retries += 1
+      retry if n_retries <= 3
+      raise
+    end
 
     output = <<-OUTPUT
 #{select};
