@@ -734,20 +734,20 @@ PGrnExprAppendObject(grn_obj *expr,
 		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
 		va_end(args);
 
-		PGrnCheck("%s: failed to %s object: %s(%d): %s",
+		PGrnCheck("%s: failed to %s(%d) object: %s: %s",
 				  tag,
 				  grn_operator_to_string(op),
-				  PGrnInspect(object),
 				  nArgs,
+				  PGrnInspect(object),
 				  message);
 #undef MESSAGE_SIZE
 	}
 	else
 	{
-		PGrnCheck("%s: failed to %s object: %s(%d)",
+		PGrnCheck("%s: failed to %s(%d) object: %s",
 				  tag,
 				  grn_operator_to_string(op),
-				  PGrnInspect(object),
-				  nArgs);
+				  nArgs,
+				  PGrnInspect(object));
 	}
 }
