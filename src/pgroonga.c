@@ -5325,8 +5325,13 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 		}
 		else
 		{
-			PGrnExprAppendObject(
-				matchColumns, indexData->index, GRN_OP_PUSH, 1, tag, NULL);
+			PGrnExprAppendObject(matchColumns,
+								 indexData->index,
+								 GRN_OP_PUSH,
+								 1,
+								 tag,
+								 "section:<%d>",
+								 section);
 			grn_expr_append_const_int(
 				ctx, matchColumns, section, GRN_OP_PUSH, 1);
 			PGrnCheck("%s failed to push section of index: <%s>[%d]",
@@ -5474,7 +5479,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 						 GRN_OP_GET_VALUE,
 						 1,
 						 tag,
-						 "target-column %s",
+						 "target-column: %s",
 						 PGrnInspect(targetColumn));
 	PGrnExprAppendConstString(data->expression,
 							  VARDATA_ANY(condition.query),
