@@ -5332,12 +5332,13 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 								 tag,
 								 "section:<%d>",
 								 section);
-			grn_expr_append_const_int(
-				ctx, matchColumns, section, GRN_OP_PUSH, 1);
-			PGrnCheck("%s failed to push section of index: <%s>[%d]",
-					  tag,
-					  indexName,
-					  section);
+			PGrnExprAppendConstInteger(matchColumns,
+									   section,
+									   GRN_OP_PUSH,
+									   1,
+									   tag,
+									   "index: <%s>",
+									   indexName);
 			PGrnExprAppendOp(matchColumns,
 							 GRN_OP_GET_MEMBER,
 							 2,
@@ -5348,13 +5349,14 @@ PGrnSearchBuildConditionPrepareConditionBuildMatchColumns(
 		}
 		if (weight != 1)
 		{
-			grn_expr_append_const_int(
-				ctx, matchColumns, weight, GRN_OP_PUSH, 1);
-			PGrnCheck("%s failed to push weight: <%s>[%d] * <%d>",
-					  tag,
-					  indexName,
-					  section,
-					  weight);
+			PGrnExprAppendConstInteger(matchColumns,
+									   weight,
+									   GRN_OP_PUSH,
+									   1,
+									   tag,
+									   "index: <%s>[%d]",
+									   indexName,
+									   section);
 			PGrnExprAppendOp(matchColumns,
 							 GRN_OP_STAR,
 							 2,
