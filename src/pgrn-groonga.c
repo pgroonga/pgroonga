@@ -699,6 +699,9 @@ PGrnExprAppendConst(
 	grn_obj *expr, grn_obj *object, grn_operator op, int nArgs, const char *tag)
 {
 	grn_expr_append_const(ctx, expr, object, op, nArgs);
+	if (ctx->rc == GRN_SUCCESS)
+		return;
+
 	PGrnCheck("%s: failed to %s(%d) a value: %s",
 			  tag,
 			  grn_operator_to_string(op),
@@ -715,6 +718,9 @@ PGrnExprAppendConstString(grn_obj *expr,
 						  const char *tag)
 {
 	grn_expr_append_const_str(ctx, expr, string, stringSize, op, nArgs);
+	if (ctx->rc == GRN_SUCCESS)
+		return;
+
 	PGrnCheck("%s: failed to %s(%d) string: <%.*s>",
 			  tag,
 			  grn_operator_to_string(op),
