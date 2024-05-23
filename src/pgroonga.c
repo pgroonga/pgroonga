@@ -5559,7 +5559,8 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 	if (GRN_TEXT_LEN(keyword) == 0)
 		return;
 
-	PGrnExprAppendObject(expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
+	PGrnExprAppendObject(
+		expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(keyword),
