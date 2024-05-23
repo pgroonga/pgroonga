@@ -5479,7 +5479,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 						 GRN_OP_GET_VALUE,
 						 1,
 						 tag,
-						 "target-column: %s",
+						 "target-column:%s",
 						 PGrnInspect(targetColumn));
 	PGrnExprAppendConstString(data->expression,
 							  VARDATA_ANY(condition.query),
