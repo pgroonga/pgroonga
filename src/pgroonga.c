@@ -3465,12 +3465,12 @@ pgroonga_prefix_rk_raw(const char *text,
 						1);
 	grn_expr_append_obj(
 		ctx, expression, prefixRKSequentialSearchData.key, GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const_str(ctx,
-							  expression,
+	PGrnExprAppendConstString(expression,
 							  VARDATA_ANY(condition->query),
 							  VARSIZE_ANY_EXHDR(condition->query),
 							  GRN_OP_PUSH,
-							  1);
+							  1,
+							  tag);
 	PGrnExprAppendOp(expression, GRN_OP_CALL, 2, tag, NULL);
 
 	id = grn_table_add(
@@ -5478,16 +5478,12 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 	{
 		PGrnCheck("%s failed to push match columns", tag);
 	}
-	grn_expr_append_const_str(ctx,
-							  data->expression,
+	PGrnExprAppendConstString(data->expression,
 							  VARDATA_ANY(condition.query),
 							  VARSIZE_ANY_EXHDR(condition.query),
 							  GRN_OP_PUSH,
-							  1);
-	PGrnCheck("%s failed to push query: <%.*s>",
-			  tag,
-			  (int) VARSIZE_ANY_EXHDR(condition.query),
-			  VARDATA_ANY(condition.query));
+							  1,
+							  tag);
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 
 	return true;
@@ -5556,12 +5552,12 @@ PGrnSearchBuildConditionLikeMatchFlush(grn_obj *expression,
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
 
-	grn_expr_append_const_str(ctx,
-							  expression,
+	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(keyword),
 							  GRN_TEXT_LEN(keyword),
 							  GRN_OP_PUSH,
-							  1);
+							  1,
+							  tag);
 	PGrnExprAppendOp(expression, GRN_OP_MATCH, 2, tag, NULL);
 	if (*nKeywords > 0)
 		PGrnExprAppendOp(expression, GRN_OP_OR, 2, tag, NULL);
@@ -5745,12 +5741,12 @@ PGrnSearchBuildConditionLikeRegexp(PGrnSearchData *data,
 
 	grn_expr_append_obj(ctx, expression, targetColumn, GRN_OP_PUSH, 1);
 	PGrnExprAppendOp(expression, GRN_OP_GET_VALUE, 1, tag, NULL);
-	grn_expr_append_const_str(ctx,
-							  expression,
+	PGrnExprAppendConstString(expression,
 							  GRN_TEXT_VALUE(&(buffers->pattern)),
 							  GRN_TEXT_LEN(&(buffers->pattern)),
 							  GRN_OP_PUSH,
-							  1);
+							  1,
+							  tag);
 	PGrnExprAppendOp(expression, GRN_OP_REGEXP, 2, tag, NULL);
 }
 
@@ -5803,12 +5799,12 @@ PGrnSearchBuildConditionPrefixRK(PGrnSearchData *data,
 						1);
 	grn_expr_append_obj(
 		ctx, data->expression, targetColumn, GRN_OP_GET_VALUE, 1);
-	grn_expr_append_const_str(ctx,
-							  data->expression,
+	PGrnExprAppendConstString(data->expression,
 							  GRN_TEXT_VALUE(&subFilterScript),
 							  GRN_TEXT_LEN(&subFilterScript),
 							  GRN_OP_PUSH,
-							  1);
+							  1,
+							  tag);
 	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag, NULL);
 
 	GRN_OBJ_FIN(ctx, &subFilterScript);
