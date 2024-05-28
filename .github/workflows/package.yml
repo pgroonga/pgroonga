@@ -83,8 +83,11 @@ jobs:
           - postgresql-16-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-noble
+          - postgresql-16-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-16-pgdg-pgroonga-almalinux-9
           - postgresql-16-pgdg-pgroonga-almalinux-8
+          - postgresql-16-pgroonga-ubuntu-noble
           - postgresql-15-pgdg-pgroonga-debian-bookworm
           - postgresql-15-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-15-pgdg-pgroonga-debian-bullseye
@@ -93,6 +96,8 @@ jobs:
           - postgresql-15-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-noble
+          - postgresql-15-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-15-pgdg-pgroonga-almalinux-9
           - postgresql-15-pgdg-pgroonga-almalinux-8
           - postgresql-15-pgdg-pgroonga-centos-7
@@ -106,6 +111,8 @@ jobs:
           - postgresql-14-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-14-pgdg-pgroonga-ubuntu-noble
+          - postgresql-14-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-14-pgdg-pgroonga-almalinux-8
           - postgresql-14-pgdg-pgroonga-centos-7
           - postgresql-14-pgroonga-ubuntu-jammy
@@ -117,6 +124,8 @@ jobs:
           - postgresql-13-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-13-pgdg-pgroonga-ubuntu-jammy
           - postgresql-13-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-13-pgdg-pgroonga-ubuntu-noble
+          - postgresql-13-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-13-pgdg-pgroonga-almalinux-8
           - postgresql-13-pgdg-pgroonga-centos-7
           - postgresql-13-pgroonga-debian-bullseye
@@ -129,6 +138,8 @@ jobs:
           - postgresql-12-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-12-pgdg-pgroonga-ubuntu-jammy
           - postgresql-12-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-12-pgdg-pgroonga-ubuntu-noble
+          - postgresql-12-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-12-pgdg-pgroonga-almalinux-8
           - postgresql-12-pgdg-pgroonga-centos-7
           - postgresql-12-pgroonga-ubuntu-focal

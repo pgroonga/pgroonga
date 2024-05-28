@@ -1,0 +1,24 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL16PGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("16")
+  end
+
+  def apt_targets_default
+    []
+  end
+
+  def enable_ubuntu?
+    [
+      ["noble", "24.04"],
+    ]
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL16PGroongaPackageTask.new
+task.define
