@@ -444,7 +444,7 @@ BEGIN
 	SELECT * INTO STRICT rec from pg_settings WHERE name = 'server_version';
 	IF SUBSTR(rec.setting, 1, 2) >= '13' THEN
 		CREATE FUNCTION pgroonga_list_lagged_indexes()
-			RETURNS TABLE (name text) AS '
+			RETURNS SETOF text AS '
 				SELECT name FROM pgroonga_wal_status()
 				WHERE current_block != last_block
 					OR current_offset != current_offset
@@ -458,7 +458,7 @@ BEGIN
 			PARALLEL SAFE;
 	ELSE
 		CREATE FUNCTION pgroonga_list_lagged_indexes()
-			RETURNS TABLE (name text) AS '
+			RETURNS SETOF text AS '
 				SELECT name FROM pgroonga_wal_status()
 				WHERE current_block != last_block
 					OR current_offset != current_offset

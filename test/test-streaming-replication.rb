@@ -747,8 +747,8 @@ CREATE TABLE cities_20_01 PARTITION OF cities FOR VALUES IN ('20-01');
       run_sql_standby("SELECT pgroonga_wal_apply();")
       output = <<-OUTPUT
 SELECT * FROM pgroonga_list_lagged_indexes()
- name 
-------
+ pgroonga_list_lagged_indexes 
+------------------------------
 (0 rows)
 
       OUTPUT
@@ -760,8 +760,8 @@ SELECT * FROM pgroonga_list_lagged_indexes()
       run_sql_standby("select * from auther where name &@ 'test'")
       output = <<-OUTPUT
 SELECT * FROM pgroonga_list_lagged_indexes()
-     name      
----------------
+ pgroonga_list_lagged_indexes 
+------------------------------
  memos_content
 (1 row)
 
@@ -772,16 +772,16 @@ SELECT * FROM pgroonga_list_lagged_indexes()
 
     test "lagging: all" do
       output = <<-OUTPUT
-SELECT * FROM pgroonga_list_lagged_indexes() ORDER BY name
-     name      
----------------
- auther_name
+SELECT * FROM pgroonga_list_lagged_indexes()
+ pgroonga_list_lagged_indexes 
+------------------------------
  memos_content
+ auther_name
 (2 rows)
 
       OUTPUT
       assert_equal([output, ""],
-                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes() ORDER BY name"))
+                   run_sql_standby("SELECT * FROM pgroonga_list_lagged_indexes()"))
     end
   end
 end
