@@ -12,11 +12,12 @@ RUN \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
     gnupg \
+    lsb-release \
     software-properties-common \
     wget && \
   add-apt-repository -y universe && \
   add-apt-repository -y ppa:groonga/ppa && \
-  echo "deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main" > \
+  echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release --codename --short)-pgdg main" > \
     /etc/apt/sources.list.d/pgdg.list && \
   wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
     apt-key add - && \
