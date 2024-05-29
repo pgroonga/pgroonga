@@ -9,7 +9,8 @@
 
 #include <groonga.h>
 
-#define PGRN_WAL_RESOURCE_MANAGER_ID RM_EXPERIMENTAL_ID
+/* Registered at https://wiki.postgresql.org/wiki/CustomWALResourceManagers */
+#define PGRN_WAL_RESOURCE_MANAGER_ID 138
 
 #define PGRN_WAL_RECORD_CREATE_TABLE 0x10
 #define PGRN_WAL_RECORD_CREATE_COLUMN 0x20
