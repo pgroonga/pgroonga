@@ -1,5 +1,30 @@
 -- Upgrade SQL
 
+ALTER TYPE pgroonga_condition ADD ATTRIBUTE fuzzy_max_distance_ratio float4;
+CREATE OR REPLACE FUNCTION pgroonga_condition(query text = null,
+				   weights int[] = null,
+				   scorers text[] = null,
+				   schema_name text = null,
+				   index_name text = null,
+				   column_name text = null,
+				   fuzzy_max_distance_ratio float4 = null)
+	RETURNS pgroonga_condition
+	LANGUAGE SQL
+	AS $$
+		SELECT (
+			query,
+			weights,
+			scorers,
+			schema_name,
+			index_name,
+			column_name,
+			fuzzy_max_distance_ratio
+		)::pgroonga_condition
+	$$
+	IMMUTABLE
+	LEAKPROOF
+	PARALLEL SAFE;
+
 DO LANGUAGE plpgsql $$
 DECLARE
 	rec record;

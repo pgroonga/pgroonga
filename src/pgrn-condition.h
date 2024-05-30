@@ -15,6 +15,7 @@ typedef struct
 	text *schemaName;
 	text *indexName;
 	text *columnName;
+	float4 fuzzyMaxDistanceRatio;
 	grn_obj *isTargets;
 } PGrnCondition;
 

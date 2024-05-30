@@ -25,6 +25,7 @@ PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 	int schemaNameIndex = -1;
 	int indexNameIndex = -1;
 	int columnNameIndex = -1;
+	int fuzzyMaxDistanceRatioIndex = -1;
 
 	type = HeapTupleHeaderGetTypeId(header);
 	typmod = HeapTupleHeaderGetTypMod(header);
@@ -63,6 +64,7 @@ PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 		schemaNameIndex = 3;
 		indexNameIndex = 4;
 		columnNameIndex = 5;
+		fuzzyMaxDistanceRatioIndex = 6;
 	}
 
 	for (i = 0; i < desc->natts; i++)
@@ -99,6 +101,10 @@ PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 			{
 				condition->columnName = NULL;
 			}
+			else if (i == fuzzyMaxDistanceRatioIndex)
+			{
+				condition->fuzzyMaxDistanceRatio = 0.0;
+			}
 			continue;
 		}
 
@@ -129,6 +135,10 @@ PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 		else if (i == columnNameIndex)
 		{
 			condition->columnName = DatumGetTextPP(datum);
+		}
+		else if (i == fuzzyMaxDistanceRatioIndex)
+		{
+			condition->fuzzyMaxDistanceRatio = DatumGetFloat4(datum);
 		}
 
 		offset =

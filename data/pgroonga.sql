@@ -19,7 +19,8 @@ CREATE TYPE pgroonga_condition AS (
 	scorers text[],
 	schema_name text,
 	index_name text,
-	column_name text
+	column_name text,
+	fuzzy_max_distance_ratio float4
 );
 
 CREATE FUNCTION pgroonga_condition(query text = null,
@@ -27,7 +28,8 @@ CREATE FUNCTION pgroonga_condition(query text = null,
 				   scorers text[] = null,
 				   schema_name text = null,
 				   index_name text = null,
-				   column_name text = null)
+				   column_name text = null,
+				   fuzzy_max_distance_ratio float4 = null)
 	RETURNS pgroonga_condition
 	LANGUAGE SQL
 	AS $$
@@ -37,7 +39,8 @@ CREATE FUNCTION pgroonga_condition(query text = null,
 			scorers,
 			schema_name,
 			index_name,
-			column_name
+			column_name,
+			fuzzy_max_distance_ratio
 		)::pgroonga_condition
 	$$
 	IMMUTABLE
