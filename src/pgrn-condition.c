@@ -103,7 +103,7 @@ PGrnConditionDeconstruct(PGrnCondition *condition, HeapTupleHeader header)
 			}
 			else if (i == fuzzyMaxDistanceRatioIndex)
 			{
-				condition->fuzzyMaxDistanceRatio = -1.0;
+				condition->fuzzyMaxDistanceRatio = 0.0;
 			}
 			continue;
 		}
