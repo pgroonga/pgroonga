@@ -28,7 +28,7 @@ QUERY PLAN
 Sort
   Sort Key: id
   ->  Index Scan using pgrn_index on tags
-        Index Cond: (name &= '(groonga,,,,pgrn_index,)'::pgroonga_condition)
+        Index Cond: (name &= '(groonga,,,,pgrn_index,,)'::pgroonga_condition)
         Filter: (user_name = CURRENT_USER)
 (5 rows)
 \pset format aligned

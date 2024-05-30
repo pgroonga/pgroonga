@@ -28,10 +28,10 @@ QUERY PLAN
 Sort
   Sort Key: id
   ->  Bitmap Heap Scan on tags
-        Recheck Cond: (name &= '(groonga,,,,pgrn_index,)'::pgroonga_condition)
+        Recheck Cond: (name &= '(groonga,,,,pgrn_index,,)'::pgroonga_condition)
         Filter: (user_name = CURRENT_USER)
         ->  Bitmap Index Scan on pgrn_index
-              Index Cond: (name &= '(groonga,,,,pgrn_index,)'::pgroonga_condition)
+              Index Cond: (name &= '(groonga,,,,pgrn_index,,)'::pgroonga_condition)
 (7 rows)
 \pset format aligned
 SELECT name

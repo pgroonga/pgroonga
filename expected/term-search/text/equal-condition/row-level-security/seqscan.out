@@ -28,7 +28,7 @@ QUERY PLAN
 Sort
   Sort Key: id
   ->  Seq Scan on tags
-        Filter: ((user_name = CURRENT_USER) AND (name &= '(groonga,,,,pgrn_index,)'::pgroonga_condition))
+        Filter: ((user_name = CURRENT_USER) AND (name &= '(groonga,,,,pgrn_index,,)'::pgroonga_condition))
 (4 rows)
 \pset format aligned
 SELECT name
