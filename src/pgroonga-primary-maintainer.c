@@ -24,7 +24,7 @@ void
 pgroonga_primary_maintainer_main(Datum arg)
 {
 	elog(LOG,
-		 TAG ": reindex_wal_blocks=%d",
+		 TAG ": reindex_wal_block_threshold=%d",
 		 PGroongaPrimaryMaintainerReindexWalBlocks);
 	proc_exit(1);
 }
@@ -38,8 +38,9 @@ _PG_init(void)
 		return;
 
 	DefineCustomIntVariable(
-		"pgroonga_primary_maintainer.reindex_wal_blocks",
-		"Specifies the number of blocks of WAL to run `REINDEX CONCURRENTLY`.",
+		"pgroonga_primary_maintainer.reindex_wal_block_threshold",
+		"Specifies the number of WAL blocks. "
+		"If the specified value is exceeded, `REINDEX CONCURRENTLY` is run.",
 		"The default is 1GB in size. "
 		"This parameter specifies the number of blocks, but you can also be "
 		"specified by size. "
