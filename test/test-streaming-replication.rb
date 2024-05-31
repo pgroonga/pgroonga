@@ -439,8 +439,15 @@ SELECT title FROM memos WHERE content &@~ '0'
       ["pgroonga_primary_maintainer"]
     end
 
-    test "(temporary)" do
-      assert @postgresql.read_log.include?("pgroonga: primary-maintainer: debug")
+    sub_test_case "parameter" do
+      def additional_configurations
+        "pgroonga_primary_maintainer.reindex_wal_blocks = 1GB"
+      end
+
+      test "reindex_wal_blocks" do
+        assert @postgresql.read_log
+          .include?("pgroonga: primary-maintainer: reindex_wal_blocks=131072")
+      end
     end
   end
 

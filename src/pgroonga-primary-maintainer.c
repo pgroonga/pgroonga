@@ -1,9 +1,11 @@
 #include "pgrn-compatible.h"
 
+#include <access/relscan.h>
 #include <fmgr.h>
 #include <miscadmin.h>
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
+#include <utils/guc.h>
 
 PG_MODULE_MAGIC;
 
@@ -13,13 +15,17 @@ extern PGDLLEXPORT void pgroonga_primary_maintainer_main(Datum datum)
 
 #define TAG "pgroonga: primary-maintainer"
 
+static int PGroongaPrimaryMaintainerReindexWalBlocks =
+	(1024 * 1024 * 1024) / BLCKSZ; // 1GB in size
 static const char *PGroongaPrimaryMaintainerLibraryName =
 	"pgroonga_primary_maintainer";
 
 void
 pgroonga_primary_maintainer_main(Datum arg)
 {
-	elog(LOG, TAG ": debug");
+	elog(LOG,
+		 TAG ": reindex_wal_blocks=%d",
+		 PGroongaPrimaryMaintainerReindexWalBlocks);
 	proc_exit(1);
 }
 
@@ -30,6 +36,24 @@ _PG_init(void)
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
+
+	DefineCustomIntVariable(
+		"pgroonga_primary_maintainer.reindex_wal_blocks",
+		"Specifies the number of blocks of WAL to run `REINDEX CONCURRENTLY`.",
+		"The default is 1GB in size. "
+		"This parameter specifies the number of blocks, but you can also be "
+		"specified by size. "
+		"When specifying by size, you must always add a unit. "
+		"You can use units `B`, `kB`, `MB`, `GB`, and `TB`.",
+		&PGroongaPrimaryMaintainerReindexWalBlocks,
+		PGroongaPrimaryMaintainerReindexWalBlocks,
+		1,
+		INT_MAX,
+		PGC_SIGHUP,
+		GUC_UNIT_BLOCKS,
+		NULL,
+		NULL,
+		NULL);
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
