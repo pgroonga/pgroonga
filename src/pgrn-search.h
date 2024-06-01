@@ -14,6 +14,7 @@ typedef struct PGrnSearchData
 	grn_obj *expression;
 	grn_obj *expressionVariable;
 	bool isEmptyCondition;
+	float4 fuzzyMaxDistanceRatio;
 	size_t nExpressions;
 } PGrnSearchData;
 

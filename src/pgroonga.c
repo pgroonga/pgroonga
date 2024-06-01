@@ -5414,6 +5414,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 
 	header = DatumGetHeapTupleHeader(key->sk_argument);
 	PGrnConditionDeconstruct(condition, header);
+	data->fuzzyMaxDistanceRatio = condition->fuzzyMaxDistanceRatio;
 	if (PGrnPGTextIsEmpty(condition->query))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
@@ -6308,8 +6309,12 @@ PGrnSearch(IndexScanDesc scan)
 						 0);
 	if (!data.isEmptyCondition)
 	{
-		grn_table_select(
-			ctx, so->sourcesTable, data.expression, so->searched, GRN_OP_OR);
+		grn_table_selector *table_selector = grn_table_selector_open(
+			ctx, so->sourcesTable, data.expression, GRN_OP_OR);
+		grn_table_selector_set_fuzzy_max_distance_ratio(
+			ctx, table_selector, data.fuzzyMaxDistanceRatio);
+		grn_table_selector_select(ctx, table_selector, so->searched);
+		grn_table_selector_close(ctx, table_selector);
 	}
 	PGrnSearchDataFree(&data);
 }
