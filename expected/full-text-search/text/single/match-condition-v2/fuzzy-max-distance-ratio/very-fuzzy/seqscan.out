@@ -17,6 +17,7 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@
          pgroonga_condition(
            'PProonPP',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.8
          )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
@@ -30,10 +31,13 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@
          pgroonga_condition(
            'PProonPP',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.8
          );
- id | content | pgroonga_score 
-----+---------+----------------
-(0 rows)
+ id |                        content                        | pgroonga_score 
+----+-------------------------------------------------------+----------------
+  2 | Groonga is fast full text search engine.              |              0
+  3 | PGroonga is a PostgreSQL extension that uses Groonga. |              0
+(2 rows)
 
 DROP TABLE memos;

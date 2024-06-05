@@ -21,6 +21,7 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@
          pgroonga_condition(
            'PProonPP',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.8
          )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
@@ -31,6 +32,7 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@
          pgroonga_condition(
            'PProonPP',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.8
          );
 

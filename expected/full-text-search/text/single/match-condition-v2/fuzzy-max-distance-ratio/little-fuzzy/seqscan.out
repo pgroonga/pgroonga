@@ -17,6 +17,7 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@~
          pgroonga_condition(
            'PProonga',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.2
          )
 \g |sed -r -e "s/('.+'|ROW.+)::pgroonga/pgroonga/g"
@@ -30,10 +31,12 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@~
          pgroonga_condition(
            'PProonga',
+           index_name => 'pgrn_index',
            fuzzy_max_distance_ratio => 0.2
          );
- id | content | pgroonga_score 
-----+---------+----------------
-(0 rows)
+ id |                        content                        | pgroonga_score 
+----+-------------------------------------------------------+----------------
+  3 | PGroonga is a PostgreSQL extension that uses Groonga. |              0
+(1 row)
 
 DROP TABLE memos;
