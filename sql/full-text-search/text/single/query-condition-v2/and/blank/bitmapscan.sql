@@ -16,7 +16,7 @@ SET enable_bitmapscan = on;
 
 SELECT id, content
   FROM memos
- WHERE content &@~ pgroonga_condition('PGroonga')
- AND content &@~ pgroonga_condition(' ');
+ WHERE content &@~ pgroonga_condition('PGroonga') AND
+       content &@~ pgroonga_condition(' ');
 
 DROP TABLE memos;
