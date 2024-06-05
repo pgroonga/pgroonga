@@ -15,7 +15,7 @@ extern PGDLLEXPORT void pgroonga_primary_maintainer_main(Datum datum)
 
 #define TAG "pgroonga: primary-maintainer"
 
-static int PGroongaPrimaryMaintainerReindexWalBlocks =
+static int PGroongaPrimaryMaintainerReindexThreshold =
 	(1024 * 1024 * 1024) / BLCKSZ; // 1GB in size
 static const char *PGroongaPrimaryMaintainerLibraryName =
 	"pgroonga_primary_maintainer";
@@ -25,7 +25,7 @@ pgroonga_primary_maintainer_main(Datum arg)
 {
 	elog(LOG,
 		 TAG ": reindex_threshold=%d",
-		 PGroongaPrimaryMaintainerReindexWalBlocks);
+		 PGroongaPrimaryMaintainerReindexThreshold);
 	proc_exit(1);
 }
 
@@ -46,8 +46,8 @@ _PG_init(void)
 		"specified by size. "
 		"When specifying by size, you must always add a unit. "
 		"You can use units `B`, `kB`, `MB`, `GB`, and `TB`.",
-		&PGroongaPrimaryMaintainerReindexWalBlocks,
-		PGroongaPrimaryMaintainerReindexWalBlocks,
+		&PGroongaPrimaryMaintainerReindexThreshold,
+		PGroongaPrimaryMaintainerReindexThreshold,
 		1,
 		INT_MAX,
 		PGC_SIGHUP,
