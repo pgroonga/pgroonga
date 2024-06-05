@@ -39,6 +39,7 @@ typedef struct PGrnSequentialSearchDatum
 	grn_obj *expression;
 	grn_obj *variable;
 	bool useIndex;
+	float4 fuzzyMaxDistanceRatio;
 	grn_expr_flags exprFlags;
 	bool used;
 } PGrnSequentialSearchDatum;
@@ -91,6 +92,7 @@ PGrnSequentialSearchDatumInitialize(PGrnSequentialSearchDatum *datum)
 	datum->expression = NULL;
 	datum->variable = NULL;
 	datum->useIndex = false;
+	datum->fuzzyMaxDistanceRatio = 0.0;
 	datum->exprFlags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	datum->used = true;
 }
@@ -320,6 +322,7 @@ PGrnSequentialSearchPrepareIndex(PGrnCondition *condition,
 	currentDatum->attributeIndex = key.attributeIndex;
 	currentDatum->useIndex = key.useIndex;
 	currentDatum->type = key.type;
+	currentDatum->fuzzyMaxDistanceRatio = condition->fuzzyMaxDistanceRatio;
 	if (!currentDatum->useIndex)
 	{
 		return true;
@@ -637,11 +640,12 @@ PGrnSequentialSearchExecute(void)
 
 	if (currentDatum->useIndex)
 	{
-		grn_table_select(ctx,
-						 currentDatum->table,
-						 currentDatum->expression,
-						 currentDatum->matched,
-						 GRN_OP_OR);
+		grn_table_selector *table_selector = grn_table_selector_open(
+			ctx, currentDatum->table, currentDatum->expression, GRN_OP_OR);
+		grn_table_selector_set_fuzzy_max_distance_ratio(
+			ctx, table_selector, currentDatum->fuzzyMaxDistanceRatio);
+		grn_table_selector_select(ctx, table_selector, currentDatum->matched);
+		grn_table_selector_close(ctx, table_selector);
 
 		if (grn_table_size(ctx, currentDatum->matched) == 1)
 		{
