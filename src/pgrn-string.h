@@ -10,3 +10,4 @@ void PGrnStringSubstituteIndex(const char *text,
 void PGrnStringSubstituteVariables(const char *string,
 								   unsigned int stringSize,
 								   grn_obj *output);
+bool PGrnStringIsEmpty(const char *string, unsigned int stringSize);

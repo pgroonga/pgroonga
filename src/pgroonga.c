@@ -5505,6 +5505,12 @@ PGrnSearchBuildConditionQueryCondition(PGrnSearchData *data,
 											 &condition,
 											 &matchTarget,
 											 tag);
+	if (PGrnStringIsEmpty(VARDATA_ANY(condition.query),
+						  VARSIZE_ANY_EXHDR(condition.query)))
+	{
+		data->isEmptyCondition = true;
+		return;
+	}
 
 	if (key->sk_strategy == PGrnEqualQueryFTSConditionStrategyV2Number ||
 		key->sk_strategy == PGrnEqualQueryConditionStrategyV2Number)
@@ -5751,6 +5757,12 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	const char *tag = "[build-condition][query]";
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
+
+	if (PGrnStringIsEmpty(query, querySize))
+	{
+		data->isEmptyCondition = true;
+		return;
+	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
