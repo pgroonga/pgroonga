@@ -441,12 +441,14 @@ SELECT title FROM memos WHERE content &@~ '0'
 
     sub_test_case "parameter" do
       def additional_configurations
-        "pgroonga_primary_maintainer.reindex_threshold= 512MB"
+        "pgroonga_primary_maintainer.reindex_threshold = 512MB"
       end
 
       test "reindex_wal_blocks" do
-        assert @postgresql.read_log
-          .include?("pgroonga: primary-maintainer: reindex_threshold=65536")
+        postgresql_log = @postgresql.read_log
+        assert_equal(["pgroonga: primary-maintainer: reindex_threshold=65536"],
+                     postgresql_log.scan(/pgroonga: primary-maintainer: reindex_threshold=.*$/),
+                     postgresql_log)
       end
     end
   end
