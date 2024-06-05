@@ -153,21 +153,13 @@ echo "::group::Upgrade"
 sudo apt purge -V -y ${pgroonga_package}
 
 if sudo apt install -V -y ${pgroonga_package}; then
-  # Disable upgrade test for first time packages.
-  # TODO: Automate this. We don't want to maintain this manually.
-  # case ${postgresql_version} in
-  #   16) # TODO: Remove this after 3.1.4 release.
-  #     exit
-  #     ;;
-  # esac
-
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
   apt install -V -y \
     ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
   psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
 else
-  echo "Skip because ${pgroonga_package} hasn't been released on ${code_name} yet."
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
