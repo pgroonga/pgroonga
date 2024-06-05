@@ -172,7 +172,7 @@ PGrnStringSubstituteVariables(const char *string,
 }
 
 bool
-PGrnRawStringIsEmpty(const char *string, unsigned int stringSize)
+PGrnStringIsEmpty(const char *string, unsigned int stringSize)
 {
 	grn_raw_string rawString;
 	if (stringSize == 0)

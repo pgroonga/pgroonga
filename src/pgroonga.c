@@ -5752,7 +5752,7 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
-	if (PGrnRawStringIsEmpty(query, querySize))
+	if (PGrnStringIsEmpty(query, querySize))
 	{
 		data->isEmptyCondition = true;
 		return;
