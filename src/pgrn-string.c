@@ -170,3 +170,16 @@ PGrnStringSubstituteVariables(const char *string,
 		current += charLength;
 	}
 }
+
+bool
+PGrnRawStringIsEmpty(const char *string, unsigned int stringSize)
+{
+	grn_raw_string rawString;
+	if (stringSize == 0)
+		return true;
+
+	rawString.value = string;
+	rawString.length = stringSize;
+	grn_raw_string_lstrip(ctx, &rawString);
+	return rawString.length == 0;
+}

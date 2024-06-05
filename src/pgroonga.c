@@ -5752,26 +5752,10 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	grn_obj *matchTarget, *matchTargetVariable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 
-	if (querySize == 0)
+	if (PGrnRawStringIsEmpty(query, querySize))
 	{
 		data->isEmptyCondition = true;
 		return;
-	}
-	{
-		unsigned int spaceSize = 0;
-		while (spaceSize < querySize)
-		{
-			unsigned int spaceLength = grn_plugin_isspace(
-				ctx, query + spaceSize, querySize, PGrnGetEncoding());
-			if (spaceLength == 0)
-				break;
-			spaceSize += spaceLength;
-		}
-		if (spaceSize == querySize)
-		{
-			data->isEmptyCondition = true;
-			return;
-		}
 	}
 
 	GRN_EXPR_CREATE_FOR_QUERY(
