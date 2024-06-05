@@ -70,7 +70,6 @@
 #include <lib/ilist.h>
 
 #include <groonga.h>
-#include <groonga/plugin.h>
 
 #include <math.h>
 #include <stdlib.h>
