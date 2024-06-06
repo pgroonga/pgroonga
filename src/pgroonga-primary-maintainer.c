@@ -54,10 +54,10 @@ pgroonga_primary_maintainer_main(Datum arg)
 	pqsignal(SIGHUP, pgroonga_primary_maintainer_sighup);
 	BackgroundWorkerUnblockSignals();
 
+	elog(LOG, TAG ": naptime=%d", PGroongaPrimaryMaintainerNaptime);
 	elog(LOG,
 		 TAG ": reindex_threshold=%d",
 		 PGroongaPrimaryMaintainerReindexThreshold);
-	elog(LOG, TAG ": naptime=%d", PGroongaPrimaryMaintainerNaptime);
 
 	while (!PGroongaPrimaryMaintainerGotSIGTERM)
 	{
