@@ -150,9 +150,10 @@ fi
 
 echo "::group::Upgrade"
 
-sudo apt purge -V -y ${pgroonga_package}
+sudo apt-get purge -V -y ${pgroonga_package}
 
-if sudo apt install -V -y ${pgroonga_package}; then
+if sudo apt-cache show ${pgroonga_package} > /dev/null 2>&1; then
+  sudo apt-get install -V -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
   apt install -V -y \
