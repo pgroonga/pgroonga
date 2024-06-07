@@ -447,17 +447,17 @@ pgroonga_primary_maintainer.reindex_threshold = 512MB
         CONFIG
       end
 
-      test "reindex_threshold" do
-        postgresql_log = @postgresql.read_log
-        assert_equal(["pgroonga: primary-maintainer: reindex_threshold=65536"],
-                     postgresql_log.scan(/pgroonga: primary-maintainer: reindex_threshold=.*$/),
-                     postgresql_log)
-      end
-
       test "naptime" do
         postgresql_log = @postgresql.read_log
         assert_equal(["pgroonga: primary-maintainer: naptime=1"],
                      postgresql_log.scan(/pgroonga: primary-maintainer: naptime=.*$/),
+                     postgresql_log)
+      end
+
+      test "reindex_threshold" do
+        postgresql_log = @postgresql.read_log
+        assert_equal(["pgroonga: primary-maintainer: reindex_threshold=65536"],
+                     postgresql_log.scan(/pgroonga: primary-maintainer: reindex_threshold=.*$/),
                      postgresql_log)
       end
     end
