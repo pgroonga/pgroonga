@@ -3,6 +3,7 @@
 
 #include <access/heapam.h>
 #include <access/relscan.h>
+#include <access/xact.h>
 #include <catalog/pg_database.h>
 #include <fmgr.h>
 #include <miscadmin.h>
