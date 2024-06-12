@@ -461,6 +461,26 @@ pgroonga_primary_maintainer.reindex_threshold = 512MB
                      postgresql_log)
       end
     end
+
+    sub_test_case "reindex" do
+      def naptime
+        1
+      end
+
+      def additional_configurations
+        <<-CONFIG
+pgroonga_primary_maintainer.naptime = #{naptime}
+pgroonga_primary_maintainer.reindex_threshold = 1
+        CONFIG
+      end
+
+      test "(temporary)" do
+        postgresql_log = @postgresql.read_log
+        assert_equal(["pgroonga: primary-maintainer: DEBUG pgroonga_primary_maintainer_wal_size_check()"],
+                     postgresql_log.scan(/pgroonga: primary-maintainer: DEBUG pgroonga_primary_maintainer_wal_size_check.*$/),
+                     postgresql_log)
+      end
+    end
   end
 
   sub_test_case "pgroonga_standby_maintainer" do

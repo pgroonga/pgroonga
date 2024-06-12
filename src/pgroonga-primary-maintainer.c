@@ -1,6 +1,10 @@
 #include "pgrn-compatible.h"
+#include "pgrn-database-info.h"
 
+#include <access/heapam.h>
 #include <access/relscan.h>
+#include <access/xact.h>
+#include <catalog/pg_database.h>
 #include <fmgr.h>
 #include <miscadmin.h>
 #include <pgstat.h>
@@ -8,10 +12,13 @@
 #include <storage/ipc.h>
 #include <storage/latch.h>
 #include <utils/guc.h>
+#include <utils/snapmgr.h>
 
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
+extern PGDLLEXPORT void pgroonga_primary_maintainer_wal_size_check(Datum datum)
+	pg_attribute_noreturn();
 extern PGDLLEXPORT void pgroonga_primary_maintainer_main(Datum datum)
 	pg_attribute_noreturn();
 
@@ -48,6 +55,86 @@ pgroonga_primary_maintainer_sighup(SIGNAL_ARGS)
 }
 
 void
+pgroonga_primary_maintainer_wal_size_check(Datum databaseInfoDatum)
+{
+	// todo
+	// * Check WAL size
+	// * Run reindex if threshold is over
+	elog(LOG, TAG ": DEBUG pgroonga_primary_maintainer_wal_size_check()");
+	proc_exit(0);
+}
+
+static void
+pgroonga_primary_maintainer_wal_size_check_all(void)
+{
+	StartTransactionCommand();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	pgstat_report_activity(STATE_RUNNING, TAG ": checking all databases");
+
+	{
+		const LOCKMODE lock = AccessShareLock;
+		Relation pg_database;
+		TableScanDesc scan;
+		HeapTuple tuple;
+
+		pg_database = table_open(DatabaseRelationId, lock);
+		scan = table_beginscan_catalog(pg_database, 0, NULL);
+		for (tuple = heap_getnext(scan, ForwardScanDirection);
+			 HeapTupleIsValid(tuple);
+			 tuple = heap_getnext(scan, ForwardScanDirection))
+		{
+			Form_pg_database form = (Form_pg_database) GETSTRUCT(tuple);
+			BackgroundWorker worker = {0};
+			BackgroundWorkerHandle *handle;
+			Oid databaseOid;
+			Oid tableSpaceOid;
+
+			if (PGroongaPrimaryMaintainerGotSIGTERM)
+				break;
+
+			if (strcmp(form->datname.data, "template0") == 0)
+				continue;
+			if (strcmp(form->datname.data, "template1") == 0)
+				continue;
+
+			databaseOid = form->oid;
+			tableSpaceOid = form->dattablespace;
+
+			snprintf(worker.bgw_name,
+					 BGW_MAXLEN,
+					 TAG ": wal size check: %s(%u/%u)",
+					 form->datname.data,
+					 databaseOid,
+					 tableSpaceOid);
+			snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
+			worker.bgw_flags =
+				BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
+			worker.bgw_start_time = BgWorkerStart_ConsistentState;
+			worker.bgw_restart_time = BGW_NEVER_RESTART;
+			snprintf(worker.bgw_library_name,
+					 BGW_MAXLEN,
+					 "%s",
+					 PGroongaPrimaryMaintainerLibraryName);
+			snprintf(worker.bgw_function_name,
+					 BGW_MAXLEN,
+					 "pgroonga_primary_maintainer_wal_size_check");
+			worker.bgw_main_arg =
+				PGRN_DATABASE_INFO_PACK(databaseOid, tableSpaceOid);
+			worker.bgw_notify_pid = MyProcPid;
+			if (!RegisterDynamicBackgroundWorker(&worker, &handle))
+				continue;
+			WaitForBackgroundWorkerShutdown(handle);
+		}
+		table_endscan(scan);
+		table_close(pg_database, lock);
+	}
+
+	PopActiveSnapshot();
+	CommitTransactionCommand();
+	pgstat_report_activity(STATE_IDLE, NULL);
+}
+
+void
 pgroonga_primary_maintainer_main(Datum arg)
 {
 	pqsignal(SIGTERM, pgroonga_primary_maintainer_sigterm);
@@ -58,6 +145,8 @@ pgroonga_primary_maintainer_main(Datum arg)
 	elog(LOG,
 		 TAG ": reindex_threshold=%d",
 		 PGroongaPrimaryMaintainerReindexThreshold);
+
+	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
 	while (!PGroongaPrimaryMaintainerGotSIGTERM)
 	{
@@ -75,7 +164,7 @@ pgroonga_primary_maintainer_main(Datum arg)
 			ProcessConfigFile(PGC_SIGHUP);
 		}
 
-		elog(LOG, TAG ": DEBUG in loop");
+		pgroonga_primary_maintainer_wal_size_check_all();
 	}
 	proc_exit(1);
 }
