@@ -37,16 +37,45 @@ pgroonga_primary_maintainer.reindex_threshold = 512MB
 
     def additional_configurations
       <<-CONFIG
+pgroonga.enable_wal = yes
 pgroonga_primary_maintainer.naptime = #{naptime}
-pgroonga_primary_maintainer.reindex_threshold = 1
+pgroonga_primary_maintainer.reindex_threshold = 2
       CONFIG
     end
 
-    test "(temporary)" do
+    test "nothing" do
+      run_sql("CREATE TABLE notes (content text);")
+      run_sql("CREATE INDEX notes_content ON notes USING pgroonga (content);")
+      run_sql("INSERT INTO notes VALUES ('PGroonga');")
+
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga');")
+
+      before_log = @postgresql.read_log
+      sleep(naptime)
+      after_log = @postgresql.read_log
+      assert_equal(before_log, after_log)
+    end
+
+    test "run" do
+      run_sql("CREATE TABLE notes (content text);")
+      run_sql("CREATE INDEX notes_content ON notes USING pgroonga (content);")
+      run_sql("INSERT INTO notes VALUES ('PGroonga');")
+
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      200.times do
+        run_sql("INSERT INTO memos VALUES ('PGroonga');")
+      end
+      sleep(naptime)
+
       postgresql_log = @postgresql.read_log
-      assert_equal(["pgroonga: primary-maintainer: DEBUG pgroonga_primary_maintainer_wal_size_check()"],
-                   postgresql_log.scan(/pgroonga: primary-maintainer: DEBUG pgroonga_primary_maintainer_wal_size_check.*$/),
+      assert_equal(["pgroonga: primary-maintainer: run reindex: memos_content"],
+                   postgresql_log.scan(/pgroonga: primary-maintainer: run reindex: memos_content$/).uniq, # uniq is temporary
                    postgresql_log)
+
+      # todo Test for size reduction.
     end
   end
 end
