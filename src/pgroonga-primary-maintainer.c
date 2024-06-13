@@ -5,6 +5,7 @@
 #include <access/relscan.h>
 #include <access/xact.h>
 #include <catalog/pg_database.h>
+#include <executor/spi.h>
 #include <fmgr.h>
 #include <miscadmin.h>
 #include <pgstat.h>
@@ -57,10 +58,83 @@ pgroonga_primary_maintainer_sighup(SIGNAL_ARGS)
 void
 pgroonga_primary_maintainer_wal_size_check(Datum databaseInfoDatum)
 {
-	// todo
-	// * Check WAL size
-	// * Run reindex if threshold is over
-	elog(LOG, TAG ": DEBUG pgroonga_primary_maintainer_wal_size_check()");
+	uint64 databaseInfo = DatumGetUInt64(databaseInfoDatum);
+	Oid databaseOid;
+	Oid tableSpaceOid;
+	int result;
+	int nRows = 0;
+	Oid argTypes[1] = {INT8OID};
+	Datum argValues[1] = {
+		Int64GetDatum(PGroongaPrimaryMaintainerReindexThreshold)};
+
+	BackgroundWorkerUnblockSignals();
+
+	PGRN_DATABASE_INFO_UNPACK(databaseInfo, databaseOid, tableSpaceOid);
+	BackgroundWorkerInitializeConnectionByOid(databaseOid, InvalidOid, 0);
+
+	StartTransactionCommand();
+	SPI_connect();
+	PushActiveSnapshot(GetTransactionSnapshot());
+	SetCurrentStatementStartTimestamp();
+	result = SPI_execute(
+		"SELECT 1 FROM pg_extension WHERE extname = 'pgroonga'", true, 0);
+	if (result != SPI_OK_SELECT)
+	{
+		ereport(FATAL,
+				(errmsg(TAG ": failed to check PGroonga extension is enabled: "
+							"%u/%u: %d",
+						databaseOid,
+						tableSpaceOid,
+						result)));
+	}
+
+	if (SPI_processed == 0)
+	{
+		PopActiveSnapshot();
+		SPI_finish();
+		CommitTransactionCommand();
+		pgstat_report_activity(STATE_IDLE, NULL);
+
+		proc_exit(0);
+	}
+
+	result = SPI_execute_with_args(
+		"SELECT name FROM pgroonga_wal_status() WHERE last_block >= $1",
+		1,
+		argTypes,
+		argValues,
+		NULL,
+		true,
+		0);
+	if (result != SPI_OK_SELECT)
+	{
+		ereport(FATAL,
+				(errmsg(TAG ": failed to check PGroonga WAL size: "
+							"%u/%u: %d",
+						databaseOid,
+						tableSpaceOid,
+						result)));
+	}
+
+	nRows = SPI_processed;
+	if (nRows > 0 && SPI_tuptable != NULL)
+	{
+		SPITupleTable *tuptable = SPI_tuptable;
+		TupleDesc tupdesc = tuptable->tupdesc;
+		int row;
+		for (row = 0; row < nRows; row++)
+		{
+			HeapTuple tuple = tuptable->vals[row];
+			char *indexName = SPI_getvalue(tuple, tupdesc, 1);
+			elog(LOG, TAG ": run reindex: %s", indexName);
+			// todo Run: REINDEX INDEX CONCURRENTLY indexName
+		}
+	}
+
+	PopActiveSnapshot();
+	SPI_finish();
+	CommitTransactionCommand();
+	pgstat_report_activity(STATE_IDLE, NULL);
 	proc_exit(0);
 }
 
