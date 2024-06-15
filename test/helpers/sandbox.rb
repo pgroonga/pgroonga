@@ -284,7 +284,10 @@ module Helpers
                     "-D", @dir)
       rescue CommandRunError => error
         if @pid
-          Process.kill(:KILL, @pid)
+          begin
+            Process.kill(:KILL, @pid)
+          rescue SystemCallError
+          end
           @pid = nil
           @running = false
         end
