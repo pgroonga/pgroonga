@@ -697,7 +697,12 @@ pgrnwrm_info_to_string(uint8 info)
 static void
 pgrnwrm_redo(XLogReaderState *record)
 {
-	uint8 info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
+	uint8 info;
+
+	if (!StandbyMode)
+		return;
+
+	info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
 	GRN_LOG(ctx,
 			GRN_LOG_DEBUG,
 			PGRN_TAG ": [redo] <%s>(%u): <%u>",
@@ -741,19 +746,26 @@ pgrnwrm_redo(XLogReaderState *record)
 static void
 pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 {
+	if (!StandbyMode)
+		return;
+
 	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [desc]");
 }
 
 static const char *
 pgrnwrm_identify(uint8 info)
 {
-	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [identify] <%u>", info);
+	if (StandbyMode)
+		GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [identify] <%u>", info);
 	return pgrnwrm_info_to_string(info);
 }
 
 static void
 pgrnwrm_startup(void)
 {
+	if (!StandbyMode)
+		return;
+
 	grn_thread_set_get_limit_func(pgrnwrm_get_thread_limit, NULL);
 	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
 	grn_default_logger_set_max_level(PGrnWRMLogLevel);
@@ -794,6 +806,9 @@ pgrnwrm_cleanup(void)
 {
 	grn_obj *db;
 
+	if (!StandbyMode)
+		return;
+
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup");
 	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
 	db = grn_ctx_db(ctx);
@@ -806,6 +821,9 @@ pgrnwrm_cleanup(void)
 static void
 pgrnwrm_mask(char *pagedata, BlockNumber block_number)
 {
+	if (!StandbyMode)
+		return;
+
 	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": mask");
 }
 
@@ -813,6 +831,9 @@ static void
 pgrnwrm_decode(struct LogicalDecodingContext *context,
 			   struct XLogRecordBuffer *buffer)
 {
+	if (!StandbyMode)
+		return;
+
 	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": decode");
 }
 
