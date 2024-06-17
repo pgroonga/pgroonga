@@ -574,7 +574,8 @@ PGrnEnsureDatabase(void)
 	join_path_components(path, databasePath, PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY)
+	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY &&
+		!PGrnWALResourceManagerGetEnabled())
 	{
 		HTAB *statuses;
 		pid_t crashSaferPID;

@@ -156,6 +156,7 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 								   walRecord.tokenizer,
 								   walRecord.normalizers,
 								   walRecord.tokenFilters);
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -231,6 +232,7 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 									walRecord.nameSize,
 									walRecord.flags,
 									type);
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -297,6 +299,7 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 		}
 
 		PGrnIndexColumnSetSourceIDsRaw(column, &sourceIDs);
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -343,6 +346,7 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 		table = PGrnLookupWithSize(walRecord.name, walRecord.nameSize, ERROR);
 		PGrnRenameTableRawWithSize(
 			table, walRecord.newName, walRecord.newNameSize);
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -497,6 +501,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 			}
 		}
 		grn_db_touch(ctx, grn_ctx_db(ctx));
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -577,6 +582,7 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 				  tag,
 				  PGrnInspectKey(table, walRecord.key, walRecord.keySize));
 		grn_db_touch(ctx, grn_ctx_db(ctx));
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -624,6 +630,7 @@ pgrnwrm_redo_remove_object(XLogReaderState *record)
 					  tag,
 					  (int) (walRecord.nameSize),
 					  walRecord.name);
+			grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 		}
 	}
 	PG_FINALLY();
@@ -662,6 +669,7 @@ pgrnwrm_redo_register_plugin(XLogReaderState *record)
 				(int) (walRecord.nameSize),
 				walRecord.name);
 		PGrnRegisterPluginWithSize(walRecord.name, walRecord.nameSize, tag);
+		grn_obj_flush_only_opened(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{
@@ -796,6 +804,7 @@ pgrnwrm_startup(void)
 				 errmsg(PGRN_TAG ": failed to initialize Groonga context: %d",
 						rc)));
 		}
+		grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_PRIMARY);
 	}
 
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": startup: <%s>", PGRN_VERSION);

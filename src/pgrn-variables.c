@@ -458,7 +458,7 @@ void
 PGrnVariablesApplyInitialValues(void)
 {
 	grn_ctx_set_force_match_escalation(ctx, PGrnForceMatchEscalation);
-	if (PGrnEnableCrashSafe)
+	if (PGrnEnableCrashSafe || PGrnEnableWALResourceManager)
 	{
 		grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_SECONDARY);
 	}

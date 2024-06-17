@@ -1,4 +1,8 @@
+#include <groonga.h>
+
 #define PGRN_TAG "pgroonga: crash-safer"
+
+static grn_ctx *ctx = NULL;
 
 #include "pgrn-compatible.h"
 #include "pgrn-portable.h"
@@ -8,6 +12,9 @@
 #include "pgrn-file.h"
 #include "pgrn-log-level.h"
 #include "pgrn-value.h"
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+#	include "pgrn-wal-custom.h"
+#endif
 
 #include <access/heapam.h>
 #include <access/tableam.h>
@@ -869,6 +876,12 @@ _PG_init(void)
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	/* Use pgroonga-wal-resource-manager for crash safe on standby. */
+	if (StandbyMode && RmgrIdExists(PGRN_WAL_RESOURCE_MANAGER_ID))
+		return;
+#endif
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, PGRN_TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
