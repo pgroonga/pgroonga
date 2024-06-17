@@ -576,6 +576,7 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 		PGrnCheck("%s failed to delete a record: %s",
 				  tag,
 				  PGrnInspectKey(table, walRecord.key, walRecord.keySize));
+		grn_db_touch(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{

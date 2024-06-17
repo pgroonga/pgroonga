@@ -562,4 +562,64 @@ SELECT pgroonga_command(
                    ])
     end
   end
+
+  test "cache: delete" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    sleep(1) # To ensure caching the next pgroonga_command('select') result
+
+    select = <<-SELECT.chomp
+SELECT pgroonga_command(
+         'select',
+         ARRAY['table', pgroonga_table_name('memos_content'), 'cache', 'no']
+       )::jsonb->1->0->0->0
+    SELECT
+
+    run_sql_standby do |input, output, error|
+      input.puts("#{select};")
+      input.flush
+      result = <<-RESULT
+#{select};
+ ?column? 
+----------
+ 1
+(1 row)
+
+      RESULT
+      assert_equal([result, ""],
+                   [
+                     output.read_command_output_all +
+                     output.read_command_output_all(initial_timeout: 5),
+                     error.read_command_output,
+                   ])
+      run_sql("DELETE FROM memos;")
+      before = run_sql_standby("SELECT latest_end_lsn FROM pg_stat_wal_receiver;")
+      # Use index scan to delete the deleted record from Groonga
+      run_sql("SET enable_bitmapscan = no;",
+              "SELECT * FROM memos WHERE content &@ 'pgroonga';")
+      5.times do
+        after = run_sql_standby("SELECT latest_end_lsn FROM pg_stat_wal_receiver;")
+        break if before != after
+        sleep(1)
+      end
+
+      input.puts("#{select};")
+      input.flush
+      result = <<-RESULT
+#{select};
+ ?column? 
+----------
+ 0
+(1 row)
+
+      RESULT
+      assert_equal([result, ""],
+                   [
+                     output.read_command_output_all +
+                     output.read_command_output_all(initial_timeout: 5),
+                     error.read_command_output,
+                   ])
+    end
+  end
 end
