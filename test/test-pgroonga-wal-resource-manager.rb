@@ -600,7 +600,7 @@ SELECT pgroonga_command(
               "SELECT * FROM memos WHERE content &@ 'pgroonga';")
       5.times do
         after = run_sql_standby("SELECT latest_end_lsn FROM pg_stat_wal_receiver;")
-        break if before != after
+        break unless after == before
         sleep(1)
       end
 
