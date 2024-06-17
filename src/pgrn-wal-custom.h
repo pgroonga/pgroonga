@@ -9,6 +9,8 @@
 
 #include <groonga.h>
 
+#include "pgrn-check.h"
+
 /* Registered at https://wiki.postgresql.org/wiki/CustomWALResourceManagers */
 #define PGRN_WAL_RESOURCE_MANAGER_ID 138
 
