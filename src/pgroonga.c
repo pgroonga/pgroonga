@@ -41,7 +41,7 @@
 #include <access/reloptions.h>
 #include <access/relscan.h>
 #include <access/tableam.h>
-#include <access/xlogrecovery.h>
+#include <access/xlog_internal.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_type.h>
