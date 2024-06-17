@@ -41,6 +41,7 @@
 #include <access/reloptions.h>
 #include <access/relscan.h>
 #include <access/tableam.h>
+#include <access/xlogrecovery.h>
 #include <catalog/catalog.h>
 #include <catalog/index.h>
 #include <catalog/pg_type.h>
@@ -6816,7 +6817,7 @@ pgroonga_gettuple_internal(IndexScanDesc scan, ScanDirection direction)
 	PGrnEnsureCursorOpened(scan, direction, true);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL &&
-		PGrnIsWritable())
+		PGrnIsWritable() && !StandbyMode)
 	{
 		grn_id recordID;
 		uint64_t packedCtid;
