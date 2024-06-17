@@ -6,7 +6,7 @@ class SequentialScanTestCase < Test::Unit::TestCase
   def execute(input, output, sql)
     input.puts(sql)
     input.flush
-    read_command_output_all(output)
+    output.read_command_output_all
   end
 
   # This "vacuum" is not related to PostgreSQL's VACUUM command. We
