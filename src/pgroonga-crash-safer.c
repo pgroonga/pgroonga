@@ -1,3 +1,5 @@
+#define PGRN_TAG "pgroonga: crash-safer"
+
 #include "pgrn-compatible.h"
 #include "pgrn-portable.h"
 
@@ -27,7 +29,7 @@
 
 /* #define PGROONGA_CRASH_SAFER_DEBUG */
 #ifdef PGROONGA_CRASH_SAFER_DEBUG
-#	define P(...) ereport(LOG, (errmsg(TAG __VA_ARGS__)))
+#	define P(...) ereport(LOG, (errmsg(PGRN_TAG __VA_ARGS__)))
 #else
 #	define P(...)
 #endif
@@ -43,8 +45,6 @@ extern PGDLLEXPORT void pgroonga_crash_safer_flush_one(Datum datum)
 	pg_attribute_noreturn();
 extern PGDLLEXPORT void pgroonga_crash_safer_main(Datum datum)
 	pg_attribute_noreturn();
-
-#define TAG "pgroonga: crash-safer"
 
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGTERM = false;
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
@@ -139,7 +139,7 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 	StartTransactionCommand();
 	SPI_connect();
 	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, TAG ": resetting position");
+	pgstat_report_activity(STATE_RUNNING, PGRN_TAG ": resetting position");
 
 	pgrn_crash_safer_statuses_set_prepare_pid(
 		NULL, databaseOid, tableSpaceOid, MyProcPid);
@@ -160,9 +160,9 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
-					(errmsg(TAG ": failed to detect "
-								"pgroonga_wal_set_applied_position(): "
-								"%u/%u: %d",
+					(errmsg(PGRN_TAG ": failed to detect "
+									 "pgroonga_wal_set_applied_position(): "
+									 "%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
@@ -175,13 +175,14 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 				"SELECT pgroonga_wal_set_applied_position()", false, 0);
 			if (result != SPI_OK_SELECT)
 			{
-				ereport(FATAL,
-						(errmsg(TAG ": failed to reset WAL applied positions "
-									"of all PGroonga indexes: "
-									"%u/%u: %d",
-								databaseOid,
-								tableSpaceOid,
-								result)));
+				ereport(
+					FATAL,
+					(errmsg(PGRN_TAG ": failed to reset WAL applied positions "
+									 "of all PGroonga indexes: "
+									 "%u/%u: %d",
+							databaseOid,
+							tableSpaceOid,
+							result)));
 			}
 		}
 	}
@@ -209,7 +210,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 	StartTransactionCommand();
 	SPI_connect();
 	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, TAG ": reindexing");
+	pgstat_report_activity(STATE_RUNNING, PGRN_TAG ": reindexing");
 
 	pgrn_crash_safer_statuses_set_prepare_pid(
 		NULL, databaseOid, tableSpaceOid, MyProcPid);
@@ -249,8 +250,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
-					(errmsg(TAG ": failed to detect PGroonga indexes: "
-								"%u/%u: %d",
+					(errmsg(PGRN_TAG ": failed to detect PGroonga indexes: "
+									 "%u/%u: %d",
 							databaseOid,
 							tableSpaceOid,
 							result)));
@@ -289,7 +290,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 							 "'level', 'notice', "
 							 "'message', '%s: reindexing: %s: %u/%u'"
 							 "])",
-							 TAG,
+							 PGRN_TAG,
 							 indexNames[i],
 							 databaseOid,
 							 tableSpaceOid);
@@ -303,8 +304,8 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			if (result != SPI_OK_UTILITY)
 			{
 				ereport(FATAL,
-						(errmsg(TAG ": failed to reindex PGroonga index: "
-									"%u/%u: <%s>: %d",
+						(errmsg(PGRN_TAG ": failed to reindex PGroonga index: "
+										 "%u/%u: <%s>: %d",
 								databaseOid,
 								tableSpaceOid,
 								indexNames[i],
@@ -318,7 +319,7 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 							 "'level', 'notice', "
 							 "'message', '%s: reindexed: %s: %u/%u'"
 							 "])",
-							 TAG,
+							 PGRN_TAG,
 							 indexNames[i],
 							 databaseOid,
 							 tableSpaceOid);
@@ -399,7 +400,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 	P(": flush: %u/%u", databaseOid, tableSpaceOid);
 
-	pgstat_report_activity(STATE_RUNNING, TAG ": flushing");
+	pgstat_report_activity(STATE_RUNNING, PGRN_TAG ": flushing");
 
 	grn_thread_set_get_limit_func(pgroonga_crash_safer_get_thread_limit, NULL);
 	grn_default_logger_set_flags(grn_default_logger_get_flags() | GRN_LOG_PID);
@@ -414,7 +415,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg(TAG ": failed to initialize Groonga")));
+				 errmsg(PGRN_TAG ": failed to initialize Groonga")));
 	}
 
 	grn_set_segv_handler();
@@ -424,18 +425,18 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_SYSTEM_ERROR),
-				 errmsg(TAG ": failed to initialize Groonga context")));
+				 errmsg(PGRN_TAG ": failed to initialize Groonga context")));
 	}
 
 	GRN_LOG(&ctx,
 			GRN_LOG_NOTICE,
-			TAG ": initialize: <%s>: %u/%u",
+			PGRN_TAG ": initialize: <%s>: %u/%u",
 			PGRN_VERSION,
 			databaseOid,
 			tableSpaceOid);
 	GRN_LOG(&ctx,
 			GRN_LOG_DEBUG,
-			TAG ": max_recovery_threads: %d",
+			PGRN_TAG ": max_recovery_threads: %d",
 			grn_get_default_n_workers());
 
 	grn_ctx_set_wal_role(&ctx, GRN_WAL_ROLE_PRIMARY);
@@ -453,17 +454,18 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		GRN_LOG(&ctx,
 				GRN_LOG_WARNING,
-				TAG ": failed to %s database: <%s>",
+				PGRN_TAG ": failed to %s database: <%s>",
 				pgrnDatabasePathExist ? "open" : "create",
 				pgrnDatabasePath);
 		PGrnDatabaseRemoveAllRelatedFiles(databasePath);
 		db = grn_db_create(&ctx, pgrnDatabasePath, NULL);
 		if (!db)
 		{
-			ereport(ERROR,
-					(errcode(ERRCODE_SYSTEM_ERROR),
-					 errmsg(TAG ": failed to recreate Groonga database: %s",
-							ctx.errbuf)));
+			ereport(
+				ERROR,
+				(errcode(ERRCODE_SYSTEM_ERROR),
+				 errmsg(PGRN_TAG ": failed to recreate Groonga database: %s",
+						ctx.errbuf)));
 		}
 		needReindex = true;
 	}
@@ -476,14 +478,14 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 		GRN_LOG(&ctx,
 				GRN_LOG_NOTICE,
-				TAG ": %s: %u/%u",
+				PGRN_TAG ": %s: %u/%u",
 				needReindex ? "reindexing" : "resetting-position",
 				databaseOid,
 				tableSpaceOid);
 
 		snprintf(worker.bgw_name,
 				 BGW_MAXLEN,
-				 TAG ": prepare: %s: %u/%u",
+				 PGRN_TAG ": prepare: %s: %u/%u",
 				 needReindex ? "reindex" : "reset-position",
 				 databaseOid,
 				 tableSpaceOid);
@@ -507,15 +509,18 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 			WaitForBackgroundWorkerShutdown(handle);
 			GRN_LOG(&ctx,
 					GRN_LOG_NOTICE,
-					TAG ": %s: %u/%u",
+					PGRN_TAG ": %s: %u/%u",
 					needReindex ? "reindexed" : "reset-position",
 					databaseOid,
 					tableSpaceOid);
 		}
 	}
 
-	GRN_LOG(
-		&ctx, GRN_LOG_NOTICE, TAG ": ready: %u/%u", databaseOid, tableSpaceOid);
+	GRN_LOG(&ctx,
+			GRN_LOG_NOTICE,
+			PGRN_TAG ": ready: %u/%u",
+			databaseOid,
+			tableSpaceOid);
 
 	statuses = pgrn_crash_safer_statuses_get();
 	pgrn_crash_safer_statuses_start(statuses, databaseOid, tableSpaceOid);
@@ -591,7 +596,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 
 		GRN_LOG(&ctx,
 				GRN_LOG_NOTICE,
-				TAG ": waiting for connections to finish: %u: %u/%u",
+				PGRN_TAG ": waiting for connections to finish: %u: %u/%u",
 				n_using_processes,
 				databaseOid,
 				tableSpaceOid);
@@ -617,26 +622,26 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		GRN_LOG(&ctx,
 				GRN_LOG_NOTICE,
-				TAG ": flushing database before closing: %u/%u",
+				PGRN_TAG ": flushing database before closing: %u/%u",
 				databaseOid,
 				tableSpaceOid);
 		grn_obj_flush_recursive(&ctx, db);
 		GRN_LOG(&ctx,
 				GRN_LOG_NOTICE,
-				TAG ": flushed database before closing: %u/%u",
+				PGRN_TAG ": flushed database before closing: %u/%u",
 				databaseOid,
 				tableSpaceOid);
 	}
 
 	GRN_LOG(&ctx,
 			GRN_LOG_NOTICE,
-			TAG ": closing database: %u/%u",
+			PGRN_TAG ": closing database: %u/%u",
 			databaseOid,
 			tableSpaceOid);
 	grn_obj_close(&ctx, db);
 	GRN_LOG(&ctx,
 			GRN_LOG_NOTICE,
-			TAG ": closed database: %u/%u",
+			PGRN_TAG ": closed database: %u/%u",
 			databaseOid,
 			tableSpaceOid);
 
@@ -663,7 +668,7 @@ pgroonga_crash_safer_main_flush_one(pgrn_crash_safer_statuses_entry *entry)
 	P(": flush: start: %u/%u", databaseOid, tableSpaceOid);
 	snprintf(worker.bgw_name,
 			 BGW_MAXLEN,
-			 TAG ": flush: %u/%u",
+			 PGRN_TAG ": flush: %u/%u",
 			 databaseOid,
 			 tableSpaceOid);
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
@@ -695,7 +700,7 @@ pgroonga_crash_safer_main_flush_all(void)
 	StartTransactionCommand();
 	PushActiveSnapshot(GetTransactionSnapshot());
 	pgstat_report_activity(STATE_RUNNING,
-						   TAG ": start flush process for all databases");
+						   PGRN_TAG ": start flush process for all databases");
 
 	statuses = pgrn_crash_safer_statuses_get();
 
@@ -865,7 +870,7 @@ _PG_init(void)
 	if (!process_shared_preload_libraries_in_progress)
 		return;
 
-	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
+	snprintf(worker.bgw_name, BGW_MAXLEN, PGRN_TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);
 	worker.bgw_flags =
 		BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION;
