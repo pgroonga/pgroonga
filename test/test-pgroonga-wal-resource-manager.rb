@@ -511,4 +511,55 @@ EXPLAIN (COSTS OFF) #{select};
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
+
+  test "cache: insert" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    sleep(1) # To ensure caching the next pgroonga_command('select') result
+
+    select = <<-SELECT.chomp
+SELECT pgroonga_command(
+         'select',
+         ARRAY['table', pgroonga_table_name('memos_content')]
+       )::jsonb->1->0->0->0
+    SELECT
+
+    run_sql_standby do |input, output, error|
+      input.puts("#{select};")
+      input.flush
+      result = <<-RESULT
+#{select};
+ ?column? 
+----------
+ 1
+(1 row)
+
+      RESULT
+      assert_equal([result, ""],
+                   [
+                     output.read_command_output_all +
+                     output.read_command_output_all(initial_timeout: 5),
+                     error.read_command_output,
+                   ])
+      run_sql("INSERT INTO memos VALUES ('PGroonga is very good!');")
+
+      input.puts("#{select};")
+      input.flush
+      result = <<-RESULT
+#{select};
+ ?column? 
+----------
+ 2
+(1 row)
+
+      RESULT
+      assert_equal([result, ""],
+                   [
+                     output.read_command_output_all +
+                     output.read_command_output_all(initial_timeout: 5),
+                     error.read_command_output,
+                   ])
+    end
+  end
 end

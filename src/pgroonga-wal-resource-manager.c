@@ -496,6 +496,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 						  PGrnInspect(columnValue));
 			}
 		}
+		grn_db_touch(ctx, grn_ctx_db(ctx));
 	}
 	PG_FINALLY();
 	{

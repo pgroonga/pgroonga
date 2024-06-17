@@ -24,6 +24,30 @@ module Helpers
     end
   end
 
+  module CommandOutputReadable
+    def read_command_output_all(initial_timeout: 1)
+      all_output = +""
+      timeout = initial_timeout
+      loop do
+        break unless IO.select([self], nil, nil, timeout)
+        all_output << read_command_output
+        timeout = 0
+      end
+      all_output
+    end
+
+    def read_command_output
+      return "" unless IO.select([self], nil, nil, 0)
+      begin
+        data = readpartial(4096).gsub(/\r\n/, "\n")
+        data.force_encoding("UTF-8")
+        data
+      rescue EOFError
+        ""
+      end
+    end
+  end
+
   module CommandRunnable
     def spawn_process(*command_line)
       env = {
@@ -34,6 +58,8 @@ module Helpers
         input_write.sync = true
         IO.pipe do |output_read, output_write|
           IO.pipe do |error_read, error_write|
+            output_read.extend(CommandOutputReadable)
+            error_read.extend(CommandOutputReadable)
             options = {
               in: input_read,
               out: output_write,
@@ -63,28 +89,6 @@ module Helpers
       end
     end
 
-    def read_command_output_all(input, initial_timeout: 1)
-      all_output = +""
-      timeout = initial_timeout
-      loop do
-        break unless IO.select([input], nil, nil, timeout)
-        all_output << read_command_output(input)
-        timeout = 0
-      end
-      all_output
-    end
-
-    def read_command_output(input)
-      return "" unless IO.select([input], nil, nil, 0)
-      begin
-        data = input.readpartial(4096).gsub(/\r\n/, "\n")
-        data.force_encoding("UTF-8")
-        data
-      rescue EOFError
-        ""
-      end
-    end
-
     def run_command(*command_line)
       spawn_process(*command_line) do |pid, input_write, output_read, error_read|
         output = +""
@@ -104,9 +108,9 @@ module Helpers
             timeout = 0
             readables.each do |readable|
               if readable == output_read
-                output << read_command_output(output_read)
+                output << output_read.read_command_output
               else
-                error << read_command_output(error_read)
+                error << error_read.read_command_output
               end
             end
           else
@@ -115,8 +119,8 @@ module Helpers
           _, status = Process.waitpid2(pid, Process::WNOHANG)
           break if status
         end
-        output << read_command_output(output_read)
-        error << read_command_output(error_read)
+        output << output_read.read_command_output
+        error << error_read.read_command_output
         unless status.success?
           raise CommandRunError.new(command_line, output, error)
         end
