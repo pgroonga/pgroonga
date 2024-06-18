@@ -265,7 +265,9 @@ checkPGroongaPrimaryMaintainerHours(char **newval,
 	list_free_deep(elemlist);
 	pfree(rawstring);
 
-	*extra = guc_malloc(LOG, HOURS_SIZE * sizeof(bool));
+	// for 16 or higher
+	// *extra = guc_malloc(LOG, HOURS_SIZE * sizeof(bool));
+	*extra = malloc(HOURS_SIZE * sizeof(bool));
 	memcpy(*extra, hours, HOURS_SIZE * sizeof(bool));
 	return true;
 }
