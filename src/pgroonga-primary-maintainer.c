@@ -15,6 +15,7 @@
 #include <storage/latch.h>
 #include <utils/guc.h>
 #include <utils/snapmgr.h>
+#include <utils/varlena.h>
 
 PG_MODULE_MAGIC;
 
@@ -25,12 +26,15 @@ extern PGDLLEXPORT void pgroonga_primary_maintainer_main(Datum datum)
 	pg_attribute_noreturn();
 
 #define TAG "pgroonga: primary-maintainer"
+#define HOURS_SIZE 24
 
 static volatile sig_atomic_t PGroongaPrimaryMaintainerGotSIGTERM = false;
 static volatile sig_atomic_t PGroongaPrimaryMaintainerGotSIGHUP = false;
 static int PGroongaPrimaryMaintainerNaptime = 60;
 static int PGroongaPrimaryMaintainerReindexThreshold =
 	(1024 * 1024 * 1024) / BLCKSZ; // 1GB in size
+static char *PGroongaPrimaryMaintainerHoursString = NULL;
+static bool *PGroongaPrimaryMaintainerHours = NULL;
 static const char *PGroongaPrimaryMaintainerLibraryName =
 	"pgroonga_primary_maintainer";
 
@@ -209,6 +213,81 @@ pgroonga_primary_maintainer_wal_size_check_all(void)
 	pgstat_report_activity(STATE_IDLE, NULL);
 }
 
+static bool
+checkPGroongaPrimaryMaintainerHours(char **newval,
+									void **extra,
+									GucSource source)
+{
+	char *rawstring;
+	List *elemlist;
+	ListCell *l;
+	int i = 0;
+	bool hours[HOURS_SIZE] = {};
+
+	for (i = 0; i < HOURS_SIZE; i++)
+	{
+		hours[i] = false;
+	}
+
+	if (*newval == NULL || *newval[0] == '\0')
+		return true;
+
+	rawstring = pstrdup(*newval);
+	if (!SplitDirectoriesString(rawstring, ',', &elemlist))
+	{
+		list_free_deep(elemlist);
+		pfree(rawstring);
+		ereport(LOG,
+				(errcode(ERRCODE_SYNTAX_ERROR),
+				 errmsg("invalid syntax in pgroonga_primary_maintainer.hour")));
+		return false;
+	}
+
+	foreach (l, elemlist)
+	{
+		char *hourString = (char *) lfirst(l);
+		int hour = atoi(hourString);
+		if ((strncmp(hourString, "0", 1) != 0 && hour == 0) ||
+			(hour < 0 || hour > 23))
+		{
+			list_free_deep(elemlist);
+			pfree(rawstring);
+			ereport(
+				LOG,
+				(errcode(ERRCODE_DATATYPE_MISMATCH),
+				 errmsg("invalid syntax in pgroonga_primary_maintainer.hour")));
+			return false;
+		}
+
+		hours[hour] = true;
+	}
+
+	list_free_deep(elemlist);
+	pfree(rawstring);
+
+	*extra = guc_malloc(LOG, HOURS_SIZE * sizeof(bool));
+	memcpy(*extra, hours, HOURS_SIZE * sizeof(bool));
+	return true;
+}
+
+static void
+assignPGroongaPrimaryMaintainerHours(const char *newval, void *extra)
+{
+	PGroongaPrimaryMaintainerHours = (bool *) extra;
+}
+
+static bool
+ExecutionHours()
+{
+	pg_time_t now = (pg_time_t) time(NULL);
+	struct pg_tm *tm = pg_localtime(&now, log_timezone);
+
+	if (PGroongaPrimaryMaintainerHoursString == NULL ||
+		PGroongaPrimaryMaintainerHoursString[0] == '\0')
+		return true;
+	return PGroongaPrimaryMaintainerHours[tm->tm_hour];
+}
+
 void
 pgroonga_primary_maintainer_main(Datum arg)
 {
@@ -220,6 +299,7 @@ pgroonga_primary_maintainer_main(Datum arg)
 	elog(LOG,
 		 TAG ": reindex_threshold=%d",
 		 PGroongaPrimaryMaintainerReindexThreshold);
+	elog(LOG, TAG ": hours=%s", PGroongaPrimaryMaintainerHoursString);
 
 	BackgroundWorkerInitializeConnection(NULL, NULL, 0);
 
@@ -232,6 +312,11 @@ pgroonga_primary_maintainer_main(Datum arg)
 		ResetLatch(MyLatch);
 
 		CHECK_FOR_INTERRUPTS();
+
+		if (!ExecutionHours())
+		{
+			continue;
+		}
 
 		if (PGroongaPrimaryMaintainerGotSIGHUP)
 		{
@@ -286,6 +371,23 @@ _PG_init(void)
 		GUC_UNIT_BLOCKS,
 		NULL,
 		NULL,
+		NULL);
+
+	DefineCustomStringVariable(
+		"pgroonga_primary_maintainer.hours",
+		"You can specify the hours of running.",
+		"The default is to run at all hours. "
+		"This parameter specifies the \"hour\". "
+		"Multiple hours can be specified, separated by commas "
+		"Example for '2': Runs only between 2:00 and 2:59. "
+		"Example for '2,20': Execute only between 2:00 and 2:59 and between "
+		"20:00 and 20:59.",
+		&PGroongaPrimaryMaintainerHoursString,
+		PGroongaPrimaryMaintainerHoursString,
+		PGC_SIGHUP,
+		GUC_LIST_INPUT,
+		checkPGroongaPrimaryMaintainerHours,
+		assignPGroongaPrimaryMaintainerHours,
 		NULL);
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, TAG ": main");
