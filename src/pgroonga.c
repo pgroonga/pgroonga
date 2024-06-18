@@ -6818,7 +6818,12 @@ pgroonga_gettuple_internal(IndexScanDesc scan, ScanDirection direction)
 	PGrnEnsureCursorOpened(scan, direction, true);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL &&
-		PGrnIsWritable() && !StandbyMode)
+		PGrnIsWritable()
+	/* StandbyMode isn't exported on Windows in PostgreSQL < 15. */
+#if !defined(_WIN32) || PG_VERSION_NUM >= 150000
+		&& !StandbyMode
+#endif
+	)
 	{
 		grn_id recordID;
 		uint64_t packedCtid;
