@@ -412,6 +412,30 @@ module Helpers
       @postgresql.groonga(*command_line)
     end
 
+    def groonga_version
+      version = groonga("status")[1]["version"]
+      major_minor_micro, tag = version.split("-", 2)
+      major, minor, micro = major_minor_micro.split(".").collect(&:to_i)
+      [major, minor, micro, tag]
+    end
+
+    def require_groonga_version(required_major, required_minor, required_micro)
+      major, minor, micro, tag = groonga_version
+      compared = ([major, minor, micro] <=>
+                  [required_major, required_minor, required_micro])
+      return if compared > 0
+      return if compared == 0 and tag.nil?
+      if tag and [major, minor, micro + 1] ==
+                 [required_major, required_minor, required_micro]
+        # Unreleased version
+        return
+      end
+      omit("Require Groonga " +
+           "#{required_major}.#{required_minor}.#{required_micro}: " +
+           "#{major}.#{minor}.#{micro}#{tag ? "-" : ""}#{tag}")
+
+    end
+
     def setup_tmp_dir
       memory_fs = "/dev/shm"
       if File.exist?(memory_fs)

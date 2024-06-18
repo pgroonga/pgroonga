@@ -361,6 +361,7 @@ EXPLAIN (COSTS OFF) #{select};
   end
 
   test "options: plugins" do
+    require_groonga_version(14, 0, 5)
     run_sql("CREATE TABLE memos (content text);")
     begin
       run_sql(<<-CREATE_INDEX)
