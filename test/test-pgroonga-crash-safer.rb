@@ -197,7 +197,7 @@ INSERT INTO memos
 
     setup def omit_on_ci
       if ENV["CI"]
-        omit("This test may take 2-60 min.") if data[:crash_ratio] > 1.0
+        omit("This test may take 2-60 min.") if data[:crash_ratio] > 0.1
       end
     end
 
