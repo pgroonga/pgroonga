@@ -74,6 +74,7 @@ jobs:
               libmsgpack-dev
           fi
           sudo apt -y -V install \
+            libmecab-dev \
             libxxhash-dev
       - name: Install PostgreSQL
         run: |
