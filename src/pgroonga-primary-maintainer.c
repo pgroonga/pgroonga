@@ -282,7 +282,7 @@ static bool
 ExecutionHours()
 {
 	pg_time_t now = (pg_time_t) time(NULL);
-	struct pg_tm *tm = pg_localtime(&now, log_timezone);
+	struct pg_tm *tm = pg_localtime(&now, session_timezone);
 
 	if (PGroongaPrimaryMaintainerHoursString == NULL ||
 		PGroongaPrimaryMaintainerHoursString[0] == '\0')
