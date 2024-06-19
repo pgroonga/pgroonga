@@ -85,7 +85,7 @@ pgroonga_primary_maintainer.reindex_threshold = 2
     sub_test_case "within hour" do
       def additional_configurations
         super + <<-CONFIG
-pgroonga_primary_maintainer.hours = '#{Time.new.hour},#{Time.new.hour + 1}'
+pgroonga_primary_maintainer.hours = '#{Time.new.hour},#{(Time.new + 3600).hour}'
         CONFIG
       end
 
@@ -107,7 +107,7 @@ pgroonga_primary_maintainer.hours = '#{Time.new.hour},#{Time.new.hour + 1}'
     sub_test_case "out of hours" do
       def additional_configurations
         super + <<-CONFIG
-pgroonga_primary_maintainer.hours = '#{Time.new.hour - 1}'
+pgroonga_primary_maintainer.hours = '#{(Time.new - 3600).hour}'
         CONFIG
       end
 
