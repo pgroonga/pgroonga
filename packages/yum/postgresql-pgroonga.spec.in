@@ -109,7 +109,6 @@ EOF
 %if %{support_jit}
 %{pg_includedir}/server/contrib/pgroonga_check/
 %{pg_includedir}/server/contrib/pgroonga_crash_safer/
-%{pg_includedir}/server/contrib/pgroonga_primary_maintainer/
 %{pg_includedir}/server/contrib/pgroonga_standby_maintainer/
 %{pg_includedir}/server/contrib/pgroonga_wal_applier/
 %{pg_includedir}/server/contrib/pgroonga_wal_resource_manager/
