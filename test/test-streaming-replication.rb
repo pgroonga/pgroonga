@@ -434,16 +434,6 @@ SELECT title FROM memos WHERE content &@~ '0'
     end
   end
 
-  sub_test_case "pgroonga_primary_maintainer" do
-    def shared_preload_libraries
-      ["pgroonga_primary_maintainer"]
-    end
-
-    test "(temporary)" do
-      assert @postgresql.read_log.include?("pgroonga: primary-maintainer: debug")
-    end
-  end
-
   sub_test_case "pgroonga_standby_maintainer" do
     def shared_preload_libraries_standby
       ["pgroonga_standby_maintainer"]
