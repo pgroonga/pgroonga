@@ -4,12 +4,21 @@ set -xueo pipefail
 
 WAL_BLOCK_SIZE=8192
 
+numfmt_available=0
+if type numfmt >/dev/null 2>&1; then
+  numfmt_available=1
+fi
+
 reindex_threshold_size=0
 psql_command=psql
 psql_database_name=""
 psql_options=""
 
 function usage () {
+  size_option_example="-s 10M, -s 1G"
+  if [ ${numfmt_available} -eq 0 ]; then
+    size_option_example="-s 10485760"
+  fi
   cat <<USAGE
 $0 -s REINDEX_THRESHOLD_SIZE [-c PSQL_COMMAND_PATH] [-d DATABASE_NAME] [-o PSQL_COMMAND_OPTIONS]
 
@@ -17,7 +26,7 @@ Options:
 -s:
   If the specified value is exceeded, \`REINDEX INDEX CONCURRENTLY\` is run.
   Specify by size.
-  Example: -s 10M, -s 1G
+  Example: ${size_option_example}
 -c:
   Specify the path to \`psql\` command.
 -d:
@@ -36,10 +45,15 @@ function run_psql () {
     --command "${sql}"
 }
 
+
 while getopts 's:c:d:o:h' flag; do
   case "${flag}" in
     s)
-      reindex_threshold_size=$(numfmt --from iec ${OPTARG})
+      if [ ${numfmt_available} -eq 1 ]; then
+        reindex_threshold_size=$(numfmt --from iec "${OPTARG}")
+      else
+        reindex_threshold_size="${OPTARG}"
+      fi
       ;;
     c)
       psql_command="${OPTARG}"
