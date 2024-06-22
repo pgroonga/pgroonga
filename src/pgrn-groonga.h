@@ -3,6 +3,8 @@
 #include "pgrn-check.h"
 #include "pgrn-column-name.h"
 
+#include <groonga/plugin.h>
+
 #include <c.h>
 #include <miscadmin.h>
 #include <postgres.h>
@@ -98,11 +100,12 @@ PGrnLookupWithSize(const char *name, size_t nameSize, int errorLevel)
 	object = grn_ctx_get(ctx, name, nameSize);
 	if (!object && errorLevel != PGRN_ERROR_LEVEL_IGNORE)
 	{
-		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
-						 errorLevel,
+		GRN_PLUGIN_ERROR(ctx,
+						 GRN_INVALID_ARGUMENT,
 						 "object isn't found: <%.*s>",
 						 (int) nameSize,
 						 name);
+		PGrnCheck("PGrnLookupWithSize");
 	}
 	return object;
 }
@@ -127,13 +130,14 @@ PGrnLookupColumnWithSize(grn_obj *table,
 		int tableNameSize;
 
 		tableNameSize = grn_obj_name(ctx, table, tableName, sizeof(tableName));
-		PGrnCheckRCLevel(GRN_INVALID_ARGUMENT,
-						 errorLevel,
+		GRN_PLUGIN_ERROR(ctx,
+						 GRN_INVALID_ARGUMENT,
 						 "column isn't found: <%.*s>:<%.*s>",
 						 tableNameSize,
 						 tableName,
 						 (int) nameSize,
 						 name);
+		PGrnCheck("PGrnLookupColumnWithSize");
 	}
 
 	return column;
