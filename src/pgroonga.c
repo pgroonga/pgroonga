@@ -7000,7 +7000,6 @@ pgroonga_getbitmap_internal(IndexScanDesc scan, TIDBitmap *tbm)
 	{
 		if (!PGrnParallelScanAcquire(scan))
 		{
-			PGRN_TRACE_LOG_EXIT();
 			return 0;
 		}
 	}
