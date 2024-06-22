@@ -734,6 +734,8 @@ _PG_init(void)
 static void
 PGrnUnmapDB(void)
 {
+	PGRN_TRACE_LOG_ENTER();
+
 	PGrnFinalizeSequentialSearch();
 	PGrnFinalizeHighlightHTML();
 
@@ -741,6 +743,8 @@ PGrnUnmapDB(void)
 
 	PGrnInitializeSequentialSearch();
 	PGrnInitializeHighlightHTML();
+
+	PGRN_TRACE_LOG_EXIT();
 }
 
 static bool
