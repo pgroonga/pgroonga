@@ -5,7 +5,7 @@ set -xueo pipefail
 WAL_BLOCK_SIZE=8192
 
 reindex_threshold_size=0
-psql_command=$(which psql || :)
+psql_command=psql
 psql_database_name=""
 psql_options=""
 
@@ -29,7 +29,7 @@ USAGE
 }
 
 function run_psql () {
-  sql=${1}
+  sql="${1}"
   ${psql_command} \
     ${psql_options} \
     --tuples-only \
@@ -42,13 +42,13 @@ while getopts 's:c:d:o:h' flag; do
       reindex_threshold_size=$(numfmt --from iec ${OPTARG})
       ;;
     c)
-      psql_command=${OPTARG}
+      psql_command="${OPTARG}"
       ;;
     d)
-      psql_database_name=${OPTARG}
+      psql_database_name="${OPTARG}"
       ;;
     o)
-      psql_options=${OPTARG}
+      psql_options="${OPTARG}"
       ;;
     h)
       usage
@@ -63,8 +63,8 @@ done
 
 test -x "${psql_command}" || (echo 'No psql command.' && exit 1)
 
-if [ ! -z "${psql_database_name}" ]; then
-  psql_options="${psql_options} --dbname ${psql_database_name}"
+if [ -n "${psql_database_name}" ]; then
+  psql_options+=" --dbname ${psql_database_name}"
 fi
 
 reindex_threshold_block=$((reindex_threshold_size/WAL_BLOCK_SIZE))
@@ -85,8 +85,8 @@ SQL
 
 for index_name in $(run_psql "${wal_size_check_sql}"); do
   reindex_sql="REINDEX INDEX CONCURRENTLY ${index_name}"
-  echo "Run '$reindex_sql'"
+  echo "Run '${reindex_sql}'"
   date
-  run_psql "$reindex_sql"
+  run_psql "${reindex_sql}"
   date
 done
