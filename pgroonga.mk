@@ -21,6 +21,8 @@ OBJS = $(SRCS:.c=.o)
 $(OBJS): $(HEADERS)
 EXTENSION = pgroonga
 
+SCRIPTS = tools/pgroonga-primary-maintainer.sh
+
 DATA =						\
 	data/pgroonga--$(PGRN_VERSION).sql	\
 	$(shell echo data/pgroonga--*--*.sql)
