@@ -318,6 +318,18 @@ PGrnGetEncoding(void)
 static void PGrnScanOpaqueFin(PGrnScanOpaque so);
 
 static void
+PGrnFinalizeScanOpaques(void)
+{
+	dlist_mutable_iter iter;
+	dlist_foreach_modify(iter, &PGrnScanOpaques)
+	{
+		PGrnScanOpaque so;
+		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
+		PGrnScanOpaqueFin(so);
+	}
+}
+
+static void
 PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 					   bool isCommit,
 					   bool isTopLevel,
@@ -325,7 +337,6 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 {
 	const char *tag = "pgroonga: [release][scan-opaques]";
 	const char *top_level_tag = isTopLevel ? "[top-level]" : "";
-	dlist_mutable_iter iter;
 
 	switch (phase)
 	{
@@ -360,12 +371,7 @@ PGrnReleaseScanOpaques(ResourceReleasePhase phase,
 		break;
 	}
 
-	dlist_foreach_modify(iter, &PGrnScanOpaques)
-	{
-		PGrnScanOpaque so;
-		so = dlist_container(PGrnScanOpaqueData, node, iter.cur);
-		PGrnScanOpaqueFin(so);
-	}
+	PGrnFinalizeScanOpaques();
 
 	GRN_LOG(ctx,
 			GRN_LOG_DEBUG,
@@ -410,6 +416,9 @@ PGrnBeforeShmemExit(int code, Datum arg)
 				db ? "opened" : "not-opened");
 		if (db)
 		{
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][scan-opaques]", tag);
+			PGrnFinalizeScanOpaques();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][auto-close]", tag);
 			PGrnFinalizeAutoClose();
 
