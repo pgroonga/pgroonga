@@ -756,6 +756,29 @@ PGrnUnmapDB(void)
 	PGRN_TRACE_LOG_EXIT();
 }
 
+/* We need to close opened grn_objs after VACUUM. Because VACUUM may
+ * remove opened but unused grn_objs. If we use a removed grn_obj, the
+ * process will be crashed. This closes opened grn_objs only after
+ * VACUUM.
+ *
+ * This should not be called in the following functions:
+ *
+ *   * pgroonga_beginscan()
+ *   * pgroonga_endscan()
+ *   * pgroonga_rescan()
+ *   * pgroonga_getbitmap()
+ *   * pgroonga_gettuple()
+ *
+ * They use PGrnScanOpaques and a PGrnScanOpaque refers grn_obj. This
+ * may close grn_obj referred by PGrnScanOpaque. We may have multiple
+ * PGrnScanOpaques at the same time. We don't want to re-open all
+ * grn_objs referred by all living PGrnScanOpaques after we close
+ * grn_obj after VACUUM. So we should not call this in them.
+ *
+ * We can call this from pgroonga_costestimate() because it doesn't
+ * use any PGrnScanOpaque. And pgroonga_costestimate() is always
+ * called before them. So we'll be able to close opened grn_objs after
+ * VACUUM in a timely manner. */
 static bool
 PGrnEnsureLatestDB(void)
 {
@@ -5094,11 +5117,6 @@ PGrnScanOpaqueReinit(PGrnScanOpaque so)
 	}
 	GRN_BULK_REWIND(&(so->canReturns));
 
-	if (PGrnEnsureLatestDB())
-	{
-		PGrnScanOpaqueInitSources(so);
-	}
-
 	GRN_LOG(ctx,
 			GRN_LOG_DEBUG,
 			"pgroonga: [reinitialize][scan-opaque][end] %u: <%p>",
@@ -5149,7 +5167,9 @@ pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 
 	PGRN_TRACE_LOG_ENTER();
 
-	PGrnEnsureLatestDB();
+	/* We should not call PGrnEnsureLatestDB() here. See the
+	 * PGrnEnsureLatestDB() comment for details. */
+	/* PGrnEnsureLatestDB(); */
 
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
@@ -6974,9 +6994,8 @@ pgroonga_gettuple(IndexScanDesc scan, ScanDirection direction)
 {
 	bool found = false;
 
-	/* We should not call PGrnEnsureLatestDB() here because
-	 * PGrnScanOpaque refers Groonga objects and PGrnEnsureLatestDB()
-	 * may close referred Groonga objects. */
+	/* We should not call PGrnEnsureLatestDB() here. See the
+	 * PGrnEnsureLatestDB() comment for details. */
 	/* PGrnEnsureLatestDB(); */
 
 	/* This may slow down with large result set. */
@@ -7150,6 +7169,9 @@ pgroonga_rescan(IndexScanDesc scan,
 	PGRN_TRACE_LOG_ENTER();
 
 	MemoryContextReset(so->memoryContext);
+	/* We should not call PGrnEnsureLatestDB() here. See the
+	 * PGrnEnsureLatestDB() comment for details. */
+	/* PGrnEnsureLatestDB(); */
 	PGrnScanOpaqueReinit(so);
 
 	if (keys && scan->numberOfKeys > 0)
