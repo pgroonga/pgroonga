@@ -38,8 +38,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   test "nothing" do
-    thresholds = RUBY_PLATFORM.include?("darwin") ? '1048576' : '1M'
-    run_primary_maintainer_command('--thresholds', thresholds)
+    run_primary_maintainer_command('--thresholds', '1048576')
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
@@ -54,6 +53,22 @@ SELECT name, last_block FROM pgroonga_wal_status()
 
   test "reindex" do
     run_primary_maintainer_command('--thresholds', '8192')
+    assert_equal([<<-EXPECTED, ""],
+SELECT name, last_block FROM pgroonga_wal_status()
+     name      | last_block 
+---------------+------------
+ notes_content |          1
+ memos_content |          1
+(2 rows)
+
+                 EXPECTED
+                 run_sql("SELECT name, last_block FROM pgroonga_wal_status()"))
+  end
+
+  test "reindex (numfmt)" do
+    omit("Skip if no numfmt.") unless RUBY_PLATFORM.include?("linux")
+
+    run_primary_maintainer_command('--thresholds', '16K')
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
