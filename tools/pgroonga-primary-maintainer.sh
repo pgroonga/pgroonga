@@ -49,38 +49,8 @@ function run_psql () {
 
 short_options="t:c:d:o:h"
 long_options="thresholds:,psql:,dbname:,psql-options:,help"
-
-# If you run `getopt` with no arguments and get an error,
-# you are in an environment where the `--longoptions` option is available.
-if getopt > /dev/null; then
-  while getopts "${short_options}" opt; do
-    case "${opt}" in
-      t)
-        if [ ${numfmt_available} -eq 1 ]; then
-          reindex_threshold_size=$(numfmt --from iec "${OPTARG}")
-        else
-          reindex_threshold_size="${OPTARG}"
-        fi
-        ;;
-      c)
-        psql_command="${OPTARG}"
-        ;;
-      d)
-        psql_database_name="${OPTARG}"
-        ;;
-      o)
-        psql_options="${OPTARG}"
-        ;;
-      h)
-        usage
-        exit 0
-        ;;
-      *)
-        uasge
-        exit 1
-        ;;
-    esac
-  done
+if [ "$(getopt --help)" = " --" ]; then
+  options=$(getopt "${short_options}" "$@")
 else
   options=$(
     getopt \
@@ -89,45 +59,45 @@ else
       --name "${0}" \
       -- "$@"
   )
-  eval set -- "$options"
-
-  while [[ $# -gt 0 ]]; do
-    case "${1}" in
-      -t|--thresholds)
-        if [ ${numfmt_available} -eq 1 ]; then
-          reindex_threshold_size=$(numfmt --from iec "${2}")
-        else
-          reindex_threshold_size="${2}"
-        fi
-        shift 2
-        ;;
-      -c|--psql)
-        psql_command="${2}"
-        shift 2
-        ;;
-      -d|--dbname)
-        psql_database_name="${2}"
-        shift 2
-        ;;
-      -o|--psql_options)
-        psql_options="${2}"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        exit 0
-        ;;
-      --)
-        shift
-        break
-        ;;
-      *)
-        usage
-        exit 1
-        ;;
-    esac
-  done
 fi
+eval set -- "$options"
+
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    -t|--thresholds)
+      if [ ${numfmt_available} -eq 1 ]; then
+        reindex_threshold_size=$(numfmt --from iec "${2}")
+      else
+        reindex_threshold_size="${2}"
+      fi
+      shift 2
+      ;;
+    -c|--psql)
+      psql_command="${2}"
+      shift 2
+      ;;
+    -d|--dbname)
+      psql_database_name="${2}"
+      shift 2
+      ;;
+    -o|--psql_options)
+      psql_options="${2}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
 
 if ! "${psql_command}" --help > /dev/null; then
   echo 'No psql command.'
