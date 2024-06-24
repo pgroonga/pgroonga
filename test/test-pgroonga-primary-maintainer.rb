@@ -38,7 +38,8 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   test "nothing" do
-    run_primary_maintainer_command('--thresholds', '1M')
+    thresholds = RUBY_PLATFORM.include?("darwin") ? '1048576' : '1M'
+    run_primary_maintainer_command('--thresholds', thresholds)
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
