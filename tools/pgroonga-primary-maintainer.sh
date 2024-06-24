@@ -60,7 +60,7 @@ eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
-    -t|--Thresholds)
+    -t|--thresholds)
       if [ ${numfmt_available} -eq 1 ]; then
         reindex_threshold_size=$(numfmt --from iec "${2}")
       else
