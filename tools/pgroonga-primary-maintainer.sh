@@ -31,7 +31,7 @@ Options:
   Specify the path to \`psql\` command.
 -d, --dbname:
   Specify the database name.
--o, --psql_options:
+-o, --psql-options:
   \`psql\` command options.
   Example: --psql_options "-h example.com -p 5432"
 -h, --help:
@@ -41,24 +41,24 @@ USAGE
 
 function run_psql () {
   sql="${1}"
-  ${psql_command} \
+  "${psql_command}" \
     ${psql_options} \
     --tuples-only \
     --command "${sql}"
 }
 
 short_options="t:c:d:o:h"
-long_options="thresholds:,psql:,dbname:,psql_options:,help"
+long_options="thresholds:,psql:,dbname:,psql-options:,help"
 if [ "$(getopt --help)" = " --" ]; then
- options=$(getopt "${short_options}" "$@")
+  options=$(getopt "${short_options}" "$@")
 else
- options=$(
-   getopt \
-     --options "${short_options}" \
-     --longoptions "${long_options}" \
-     --name "${0}" \
-     -- "$@"
- )
+  options=$(
+    getopt \
+      --options "${short_options}" \
+      --longoptions "${long_options}" \
+      --name "${0}" \
+      -- "$@"
+  )
 fi
 eval set -- "$options"
 
@@ -99,7 +99,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-type "${psql_command}" || (echo 'No psql command.' && exit 1)
+if ! "${psql_command}" --help > /dev/null; then
+  echo 'No psql command.'
+  exit 1
+fi
 
 if [ -n "${psql_database_name}" ]; then
   psql_options+=" --dbname ${psql_database_name}"
