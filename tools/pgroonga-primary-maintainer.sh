@@ -95,7 +95,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-test -x "${psql_command}" || (echo 'No psql command.' && exit 1)
+type "${psql_command}" || (echo 'No psql command.' && exit 1)
 
 if [ -n "${psql_database_name}" ]; then
   psql_options+=" --dbname ${psql_database_name}"
