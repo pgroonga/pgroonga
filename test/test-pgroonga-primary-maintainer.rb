@@ -24,7 +24,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   setup do
-    omit("Omit on Windows: Bash scripts cannot run.") if Gem.win_platform?
+    omit("Omit on Windows: Bash scripts cannot be run.") if Gem.win_platform?
 
     run_sql("CREATE TABLE notes (content text);")
     run_sql("CREATE INDEX notes_content ON notes USING pgroonga (content);")
@@ -68,7 +68,7 @@ SELECT name, last_block FROM pgroonga_wal_status()
   end
 
   test "reindex (numfmt)" do
-    omit("Skip if no numfmt.") unless RUBY_PLATFORM.include?("linux")
+    omit("Require numfmt.") unless RUBY_PLATFORM.include?("linux")
 
     run_primary_maintainer_command('--thresholds', '16K')
     assert_equal([<<-EXPECTED, ""],
