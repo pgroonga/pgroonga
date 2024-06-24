@@ -49,13 +49,17 @@ function run_psql () {
 
 short_options="t:c:d:o:h"
 long_options="thresholds:,psql:,dbname:,psql_options:,help"
-options=$(
-  getopt \
-    --options "${short_options}" \
-    --longoptions "${long_options}" \
-    --name "${0}" \
-    -- "$@"
-)
+if [ "$(getopt --help)" = " --" ]; then
+ options=$(getopt "${short_options}" "$@")
+else
+ options=$(
+   getopt \
+     --options "${short_options}" \
+     --longoptions "${long_options}" \
+     --name "${0}" \
+     -- "$@"
+ )
+fi
 eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do

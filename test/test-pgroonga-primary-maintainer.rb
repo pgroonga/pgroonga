@@ -40,7 +40,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   test "nothing" do
-    run_primary_maintainer_command('--thresholds', '1048576')
+    run_primary_maintainer_command('-t', '1048576')
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
@@ -54,7 +54,7 @@ SELECT name, last_block FROM pgroonga_wal_status()
   end
 
   test "reindex" do
-    run_primary_maintainer_command('--thresholds', '8192')
+    run_primary_maintainer_command('-t', '8192')
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
