@@ -14,7 +14,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
     commane_line = [
       PRIMARY_MAINTAINER_COMMAND,
       "-d", @test_db_name,
-      "-c", psql_options.join(" ")
+      "-o", psql_options.join(" ")
     ] + options
     run_command(*commane_line)
   end
