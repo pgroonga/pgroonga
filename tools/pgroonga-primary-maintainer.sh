@@ -15,25 +15,27 @@ psql_database_name=""
 psql_options=""
 
 function usage () {
-  size_option_example="-s 10M, -s 1G"
+  size_option_example="--thresholds 10M, -s 1G"
   if [ ${numfmt_available} -eq 0 ]; then
-    size_option_example="-s 10485760"
+    size_option_example="--thresholds 10485760"
   fi
   cat <<USAGE
-$0 -s REINDEX_THRESHOLD_SIZE [-c PSQL_COMMAND_PATH] [-d DATABASE_NAME] [-o PSQL_COMMAND_OPTIONS]
+$0 --thresholds REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH] [--dbname DATABASE_NAME] [--psql_options PSQL_COMMAND_OPTIONS]
 
 Options:
--s:
+-t, --thresholds:
   If the specified value is exceeded, \`REINDEX INDEX CONCURRENTLY\` is run.
   Specify by size.
   Example: ${size_option_example}
--c:
+-c, --psql:
   Specify the path to \`psql\` command.
--d:
+-d, --dbname:
   Specify the database name.
--o:
+-o, --psql_options:
   \`psql\` command options.
-  Example: -o "-h example.com -p 5432"
+  Example: --psql_options "-h example.com -p 5432"
+-h, --help:
+  Display help text and exit.
 USAGE
 }
 
@@ -45,31 +47,49 @@ function run_psql () {
     --command "${sql}"
 }
 
+short_options="t:c:d:o:h"
+long_options="thresholds:,psql:,dbname:,psql_options:,help"
+options=$(
+  getopt \
+    --options "${short_options}" \
+    --longoptions "${long_options}" \
+    --name "${0}" \
+    -- "$@"
+)
+eval set -- "$options"
 
-while getopts 's:c:d:o:h' flag; do
-  case "${flag}" in
-    s)
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    -t|--Thresholds)
       if [ ${numfmt_available} -eq 1 ]; then
-        reindex_threshold_size=$(numfmt --from iec "${OPTARG}")
+        reindex_threshold_size=$(numfmt --from iec "${2}")
       else
-        reindex_threshold_size="${OPTARG}"
+        reindex_threshold_size="${2}"
       fi
+      shift 2
       ;;
-    c)
-      psql_command="${OPTARG}"
+    -c|--psql)
+      psql_command="${2}"
+      shift 2
       ;;
-    d)
-      psql_database_name="${OPTARG}"
+    -d|--dbname)
+      psql_database_name="${2}"
+      shift 2
       ;;
-    o)
-      psql_options="${OPTARG}"
+    -o|--psql_options)
+      psql_options="${2}"
+      shift 2
       ;;
-    h)
+    -h|--help)
       usage
       exit 0
       ;;
+    --)
+      shift
+      break
+      ;;
     *)
-      uasge
+      usage
       exit 1
       ;;
   esac
