@@ -6,16 +6,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   PRIMARY_MAINTAINER_COMMAND = "pgroonga-primary-maintainer.sh"
 
   def run_primary_maintainer_command(*options)
-    psql_options = [
-      "--host", @postgresql.host,
-      "--port", @postgresql.port.to_s,
-      "--username", @postgresql.user,
-    ]
-    commane_line = [
-      PRIMARY_MAINTAINER_COMMAND,
-      "-d", @test_db_name,
-      "-o", psql_options.join(" ")
-    ] + options
+    commane_line = [PRIMARY_MAINTAINER_COMMAND] + options
     run_command(*commane_line)
   end
 
@@ -24,6 +15,17 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   setup do
+    @env = {
+      'PGHOST' => @postgresql.host,
+      'PGPORT' => @postgresql.port.to_s,
+      'PGDATABASE' => @test_db_name,
+      'PGUSER' => @postgresql.user
+    }
+    @env_keep = {}
+    @env.keys.each do |name|
+      @env_keep[name], ENV[name] = ENV[name], @env[name]
+    end
+
     omit("Omit on Windows: Bash scripts cannot be run.") if Gem.win_platform?
 
     run_sql("CREATE TABLE notes (content text);")
@@ -37,6 +39,12 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
       run_sql("INSERT INTO memos VALUES ('PGroonga');")
     end
     run_sql("DELETE FROM memos;")
+  end
+
+  teardown do
+    @env.keys.each do |name|
+      ENV[name] = @env_keep[name]
+    end
   end
 
   test "nothing" do

@@ -11,16 +11,14 @@ fi
 
 reindex_threshold_size=0
 psql_command=psql
-psql_database_name=""
-psql_options=""
 
 function usage () {
   size_option_example="--thresholds 10M, -s 1G"
   if [ ${numfmt_available} -eq 0 ]; then
-    size_option_example="--thresholds 10485760"
+    size_option_example="-t 10485760"
   fi
   cat <<USAGE
-$0 --thresholds REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH] [--dbname DATABASE_NAME] [--psql_options PSQL_COMMAND_OPTIONS]
+$0 --thresholds REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
 
 Options:
 -t, --thresholds:
@@ -29,27 +27,26 @@ Options:
   Example: ${size_option_example}
 -c, --psql:
   Specify the path to \`psql\` command.
--d, --dbname:
-  Specify the database name.
--o, --psql-options:
-  \`psql\` command options.
-  Example: --psql_options "-h example.com -p 5432"
 -h, --help:
   Display help text and exit.
+
+Connection information such as \`dbname\` should be set in environment variables.
+See also: https://www.postgresql.org/docs/current/libpq-envars.html
 USAGE
 }
 
 function run_psql () {
   sql="${1}"
   "${psql_command}" \
-    ${psql_options} \
     --tuples-only \
     --command "${sql}"
 }
 
-short_options="t:c:d:o:h"
-long_options="thresholds:,psql:,dbname:,psql-options:,help"
-if [ "$(getopt --help)" = " --" ]; then
+short_options="t:c:h"
+long_options="thresholds:,psql:,help"
+# If you run `getopt` with no arguments and get an error,
+# you are in an environment where the `--longoptions` option is available.
+if getopt > /dev/null; then
   options=$(getopt "${short_options}" "$@")
 else
   options=$(
@@ -76,14 +73,6 @@ while [[ $# -gt 0 ]]; do
       psql_command="${2}"
       shift 2
       ;;
-    -d|--dbname)
-      psql_database_name="${2}"
-      shift 2
-      ;;
-    -o|--psql_options)
-      psql_options="${2}"
-      shift 2
-      ;;
     -h|--help)
       usage
       exit 0
@@ -102,10 +91,6 @@ done
 if ! "${psql_command}" --help > /dev/null; then
   echo 'No psql command.'
   exit 1
-fi
-
-if [ -n "${psql_database_name}" ]; then
-  psql_options+=" --dbname ${psql_database_name}"
 fi
 
 reindex_threshold_block=$((reindex_threshold_size/WAL_BLOCK_SIZE))
