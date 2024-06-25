@@ -89,7 +89,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if ! "${psql_command}" --help > /dev/null; then
-  echo 'No psql command.'
+  echo "No psql command."
   exit 1
 fi
 
