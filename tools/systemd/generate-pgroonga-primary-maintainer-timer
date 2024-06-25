@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+#
+require "optparse"
+
+run_hours = ["3"]
+
+parser = OptionParser.new
+parser.on("--run-hours=HOURS", Array,
+          "Specify the hours of execution, separated by commas.") do |hours|
+  run_hours = hours
+end
+parser.parse!(ARGV)
+
+timer = run_hours.collect do |hour|
+  "OnCalendar=*-*-* #{hour}:00:00"
+end
+
+puts(<<-SERVICE)
+# How to install:
+#   #{$0} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.timer
+#   sudo -H systemctl daemon-reload
+#
+# Usage:
+#
+#   Enable:  sudo -H systemctl enable --now pgroonga-primary-maintainer.timer
+#   Disable: sudo -H systemctl disable --now pgroonga-primary-maintainer.timer
+
+[Unit]
+Description=PGroonga primary maintainer
+[Timer]
+#{timer.join("\n")}
+[Install]
+WantedBy=timers.target
+SERVICE

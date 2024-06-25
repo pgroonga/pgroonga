@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+
+require "optparse"
+require "etc"
+
+pgroonga_primary_maintainer_command = "pgroonga-primary-maintainer.sh"
+thresholds = "1G"
+psql_command = nil
+environments = []
+on_failure_service = nil
+
+parser = OptionParser.new
+parser.on("--pgroonga-primary-maintainer-command=PGROONGA_PRIMARY_MAINTAINER_COMMAND_PATH",
+          "Specify the path to `pgroonga-primary-maintainer.sh`") do |path|
+  pgroonga_primary_maintainer_command = path
+end
+parser.on("--thresholds=REINDEX_THRESHOLD_SIZE",
+          "If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.") do |size|
+  thresholds = size
+end
+parser.on("--environment=KEY=VALUE",
+          "Connection information such as `dbname` should be set in environment variables.",
+          "See also: https://www.postgresql.org/docs/current/libpq-envars.html") do |env|
+  environments << env
+end
+parser.on("--psql-command=PSQL_COMMAND_PATH",
+          "Specify the path to `psql` command.") do |path|
+  psql_command = path
+end
+parser.on("--on-failure-service=SERVICE",
+          "Run SERVICE on failure") do |service|
+  on_failure_service = service
+end
+parser.parse!(ARGV)
+
+user_name = Etc.getpwuid(Process.uid).name
+group_name = Etc.getgrgid(Process.gid).name
+
+pgroonga_primary_maintainer_options = [
+  "--thresholds", thresholds
+]
+if psql_command
+  pgroonga_primary_maintainer_options += [
+    "--psql", psql_command
+  ]
+end
+
+if on_failure_service
+  on_failure = "OnFailure=#{on_failure_service}"
+else
+  on_failure = ""
+end
+puts(<<-SERVICE)
+# How to install:
+#   #{$0} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
+[Unit]
+Description=PGroonga primary maintainer
+#{on_failure}
+[Service]
+Type=oneshot
+User=#{user_name}
+Group=#{group_name}
+Environment=#{environments.join(" ")}
+ExecStart=#{pgroonga_primary_maintainer_command} #{pgroonga_primary_maintainer_options.join(" ")}
+[Install]
+WantedBy=multi-user.target
+SERVICE
