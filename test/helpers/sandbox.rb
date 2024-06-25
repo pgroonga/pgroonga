@@ -50,7 +50,7 @@ module Helpers
 
   module CommandRunnable
     def spawn_process(*command_line)
-      env = {
+      default_env = {
         "LC_ALL" => "C",
         "PGCLIENTENCODING" => "UTF-8",
       }
@@ -65,7 +65,12 @@ module Helpers
               out: output_write,
               err: error_write,
             }
-            pid = spawn(env, *command_line, options)
+            if command_line[0].is_a?(Hash)
+              command_line[0] = default_env.merge(command_line[0])
+            else
+              command_line.unshift(default_env)
+            end
+            pid = spawn(*command_line, options)
             begin
               input_read.close
               output_write.close

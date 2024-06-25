@@ -104,6 +104,7 @@ EOF
 %doc README.md COPYING
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
 %{pg_libdir}/*.so
+%{pg_bindir}/pgroonga-primary-maintainer.sh
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
 %if %{support_jit}
