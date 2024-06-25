@@ -72,6 +72,7 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %doc README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
 %{_libdir}/pgsql/*.so
+%{_bindir}/pgroonga-primary-maintainer.sh
 %{_libdir}/pgsql/bitcode/pgroonga*.index.bc
 %{_libdir}/pgsql/bitcode/pgroonga*/
 %{_datadir}/pgsql/extension/*.control
