@@ -13,15 +13,15 @@ reindex_threshold_size=0
 psql_command=psql
 
 function usage () {
-  size_option_example="--thresholds 10M, -s 1G"
+  size_option_example="--threshold 10M, -s 1G"
   if [ ${numfmt_available} -eq 0 ]; then
     size_option_example="-t 10485760"
   fi
   cat <<USAGE
-$0 --thresholds REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
+$0 --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
 
 Options:
--t, --thresholds:
+-t, --threshold:
   If the specified value is exceeded, \`REINDEX INDEX CONCURRENTLY\` is run.
   Specify by size.
   Example: ${size_option_example}
@@ -43,7 +43,7 @@ function run_psql () {
 }
 
 short_options="t:c:h"
-long_options="thresholds:,psql:,help"
+long_options="threshold:,psql:,help"
 # If you run `getopt` with no arguments and get an error,
 # you are in an environment where the `--longoptions` option is available.
 if getopt > /dev/null; then
@@ -61,7 +61,7 @@ eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
-    -t|--thresholds)
+    -t|--threshold)
       if [ ${numfmt_available} -eq 1 ]; then
         reindex_threshold_size=$(numfmt --from iec "${2}")
       else
@@ -95,7 +95,7 @@ fi
 
 reindex_threshold_block=$((reindex_threshold_size/WAL_BLOCK_SIZE))
 if [ ${reindex_threshold_block} -lt 1 ]; then
-  echo "Thresholds are too small. (${reindex_threshold_size})"
+  echo "Threshold is too small. (${reindex_threshold_size})"
   exit 1
 fi
 
