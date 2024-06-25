@@ -71,12 +71,12 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %license COPYING
 %doc README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
-%{_libdir}/pgsql/*.so
 %{_bindir}/pgroonga-primary-maintainer.sh
-%{_libdir}/pgsql/bitcode/pgroonga*.index.bc
-%{_libdir}/pgsql/bitcode/pgroonga*/
 %{_datadir}/pgsql/extension/*.control
 %{_datadir}/pgsql/extension/*.sql
+%{_libdir}/pgsql/*.so
+%{_libdir}/pgsql/bitcode/pgroonga*.index.bc
+%{_libdir}/pgsql/bitcode/pgroonga*/
 
 %changelog
 * Thu Apr 18 2024 Abe Tomoaki <abe@clear-code.com> - 3.2.0-1
