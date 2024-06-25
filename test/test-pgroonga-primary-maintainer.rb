@@ -5,9 +5,9 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
 
   PRIMARY_MAINTAINER_COMMAND = "pgroonga-primary-maintainer.sh"
 
-  def run_primary_maintainer_command(*options)
+  def run_primary_maintainer_command(env, *options)
     commane_line = [PRIMARY_MAINTAINER_COMMAND] + options
-    run_command(*commane_line)
+    run_command(env, *commane_line)
   end
 
   def additional_configurations
@@ -15,18 +15,14 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   setup do
+    omit("Omit on Windows: Bash scripts cannot be run.") if Gem.win_platform?
+
     @env = {
       'PGHOST' => @postgresql.host,
       'PGPORT' => @postgresql.port.to_s,
       'PGDATABASE' => @test_db_name,
       'PGUSER' => @postgresql.user
     }
-    @env_keep = {}
-    @env.keys.each do |name|
-      @env_keep[name], ENV[name] = ENV[name], @env[name]
-    end
-
-    omit("Omit on Windows: Bash scripts cannot be run.") if Gem.win_platform?
 
     run_sql("CREATE TABLE notes (content text);")
     run_sql("CREATE INDEX notes_content ON notes USING pgroonga (content);")
@@ -41,14 +37,9 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
     run_sql("DELETE FROM memos;")
   end
 
-  teardown do
-    @env.keys.each do |name|
-      ENV[name] = @env_keep[name]
-    end
-  end
-
   test "nothing" do
-    run_primary_maintainer_command('-t', '1048576')
+    options = ['-t', '1048576']
+    run_primary_maintainer_command(@env, *options)
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
@@ -62,7 +53,8 @@ SELECT name, last_block FROM pgroonga_wal_status()
   end
 
   test "reindex" do
-    run_primary_maintainer_command('-t', '8192')
+    options = ['-t', '8192']
+    run_primary_maintainer_command(@env, *options)
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
@@ -78,7 +70,8 @@ SELECT name, last_block FROM pgroonga_wal_status()
   test "reindex (numfmt)" do
     omit("Require numfmt.") unless RUBY_PLATFORM.include?("linux")
 
-    run_primary_maintainer_command('--thresholds', '16K')
+    options = ['--thresholds', '16K']
+    run_primary_maintainer_command(@env, *options)
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
      name      | last_block 
