@@ -3,19 +3,29 @@
 require "etc"
 require "optparse"
 
-pgroonga_primary_maintainer_command = "pgroonga-primary-maintainer.sh"
+pgroonga_primary_maintainer_command = nil
 threshold = "1G"
 psql_command = nil
 environments = []
 on_failure_service = nil
 
+ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
+  next unless File.absolute_path?(path)
+  command = File.join(path, "pgroonga-primary-maintainer.sh")
+  next unless File.executable?(command)
+  pgroonga_primary_maintainer_command = command
+  break
+end
+
 parser = OptionParser.new
 parser.on("--pgroonga-primary-maintainer-command=PATH",
-          "Specify the path to `pgroonga-primary-maintainer.sh`") do |path|
+          "Specify the path to `pgroonga-primary-maintainer.sh`",
+         "(default: #{pgroonga_primary_maintainer_command})") do |path|
   pgroonga_primary_maintainer_command = path
 end
 parser.on("--threshold=REINDEX_THRESHOLD_SIZE",
-          "If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.") do |t|
+          "If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.",
+          "(default: #{threshold})") do |t|
   threshold = t
 end
 parser.on("--environment=KEY=VALUE",
