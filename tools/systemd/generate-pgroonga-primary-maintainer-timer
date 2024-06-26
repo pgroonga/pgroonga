@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-#
+
 require "optparse"
 
 run_hours = ["3"]

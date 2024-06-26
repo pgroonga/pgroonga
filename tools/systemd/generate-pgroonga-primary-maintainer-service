@@ -1,29 +1,29 @@
 #!/usr/bin/env ruby
 
-require "optparse"
 require "etc"
+require "optparse"
 
 pgroonga_primary_maintainer_command = "pgroonga-primary-maintainer.sh"
-thresholds = "1G"
+threshold = "1G"
 psql_command = nil
 environments = []
 on_failure_service = nil
 
 parser = OptionParser.new
-parser.on("--pgroonga-primary-maintainer-command=PGROONGA_PRIMARY_MAINTAINER_COMMAND_PATH",
+parser.on("--pgroonga-primary-maintainer-command=PATH",
           "Specify the path to `pgroonga-primary-maintainer.sh`") do |path|
   pgroonga_primary_maintainer_command = path
 end
-parser.on("--thresholds=REINDEX_THRESHOLD_SIZE",
-          "If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.") do |size|
-  thresholds = size
+parser.on("--threshold=REINDEX_THRESHOLD_SIZE",
+          "If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.") do |t|
+  threshold = t
 end
 parser.on("--environment=KEY=VALUE",
           "Connection information such as `dbname` should be set in environment variables.",
           "See also: https://www.postgresql.org/docs/current/libpq-envars.html") do |env|
   environments << env
 end
-parser.on("--psql-command=PSQL_COMMAND_PATH",
+parser.on("--psql-command=PATH",
           "Specify the path to `psql` command.") do |path|
   psql_command = path
 end
@@ -37,7 +37,7 @@ user_name = Etc.getpwuid(Process.uid).name
 group_name = Etc.getgrgid(Process.gid).name
 
 pgroonga_primary_maintainer_options = [
-  "--thresholds", thresholds
+  "--threshold", threshold
 ]
 if psql_command
   pgroonga_primary_maintainer_options += [
