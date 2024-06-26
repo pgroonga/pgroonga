@@ -69,7 +69,7 @@ SELECT name, last_block FROM pgroonga_wal_status()
   test "reindex (numfmt)" do
     omit("Require numfmt.") unless RUBY_PLATFORM.include?("linux")
 
-    options = ["--thresholds", "16K"]
+    options = ["--threshold", "16K"]
     run_primary_maintainer_command(*options)
     assert_equal([<<-EXPECTED, ""],
 SELECT name, last_block FROM pgroonga_wal_status()
