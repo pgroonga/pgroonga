@@ -102,7 +102,7 @@ Options:
 -t, --threshold:
   If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
   Specify by size.
-  Example: --threshold 10M, -s 1G
+  Example: --threshold 10M, -t 1G
 -c, --psql:
   Specify the path to `psql` command.
 -h, --help:

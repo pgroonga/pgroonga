@@ -13,7 +13,7 @@ reindex_threshold_size=0
 psql_command=psql
 
 function usage () {
-  size_option_example="--threshold 10M, -s 1G"
+  size_option_example="--threshold 10M, -t 1G"
   if [ ${numfmt_available} -eq 0 ]; then
     size_option_example="-t 10485760"
   fi
