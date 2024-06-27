@@ -7,19 +7,18 @@ run_times=()
 function usage () {
   cat <<USAGE
 Options:
--t, --time:
+--time:
   Specify run time,
   Example: --time 2:00 --time 3:30 ...
--h, --help:
+--help:
   Display help text and exit.
 USAGE
 }
 
-short_options="t:h"
 long_options="time:,help"
 options=$(
   getopt \
-    --options "${short_options}" \
+    --options "" \
     --longoptions "${long_options}" \
     --name "${0}" \
     -- "$@"
@@ -28,11 +27,11 @@ eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
-    -t|--time)
+    --time)
       run_times+=("${2}")
       shift 2
       ;;
-    -h|--help)
+    --help)
       usage
       exit 0
       ;;

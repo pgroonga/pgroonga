@@ -73,21 +73,21 @@ No pgroonga-primary-maintainer.sh command.
 
       assert_equal(<<-EXPECTED, output)
 Options:
--s, --pgroonga-primary-maintainer-command:
+--pgroonga-primary-maintainer-command:
   Specify the path to `pgroonga-primary-maintainer.sh`
   (default: /tmp/local/bin//pgroonga-primary-maintainer.sh)
--t, --threshold:
+--threshold:
   If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
   (default: 1G)
--e, --environment
+--environment
   Connection information such as `dbname` should be set in environment variables.
   See also: https://www.postgresql.org/docs/current/libpq-envars.html"
   Example: --environment KEY1=VALUE1 --environment KEY2=VALUE2 ...
--c, --psql:
+--psql:
   Specify the path to `psql` command.
--f, --on-failure-service:
+--on-failure-service:
   Run SERVICE on failure
--h, --help:
+--help:
   Display help text and exit.
                    EXPECTED
     end
@@ -142,10 +142,10 @@ Specify run time with `--time`.
 
       assert_equal(<<-EXPECTED, output)
 Options:
--t, --time:
+--time:
   Specify run time,
   Example: --time 2:00 --time 3:30 ...
--h, --help:
+--help:
   Display help text and exit.
                    EXPECTED
     end

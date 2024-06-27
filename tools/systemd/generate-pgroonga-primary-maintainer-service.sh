@@ -11,30 +11,29 @@ on_failure_service=""
 function usage () {
   cat <<USAGE
 Options:
--s, --pgroonga-primary-maintainer-command:
+--pgroonga-primary-maintainer-command:
   Specify the path to \`pgroonga-primary-maintainer.sh\`
   (default: ${pgroonga_primary_maintainer_command})
--t, --threshold:
+--threshold:
   If the specified value is exceeded, \`REINDEX INDEX CONCURRENTLY\` is run.
   (default: ${threshold})
--e, --environment
+--environment
   Connection information such as \`dbname\` should be set in environment variables.
   See also: https://www.postgresql.org/docs/current/libpq-envars.html"
   Example: --environment KEY1=VALUE1 --environment KEY2=VALUE2 ...
--c, --psql:
+--psql:
   Specify the path to \`psql\` command.
--f, --on-failure-service:
+--on-failure-service:
   Run SERVICE on failure
--h, --help:
+--help:
   Display help text and exit.
 USAGE
 }
 
-short_options="s:t:e:c:f:h"
 long_options="pgroonga-primary-maintainer-command:,threshold:,environment:,psql:,on-failure-service:,help"
 options=$(
   getopt \
-    --options "${short_options}" \
+    --options "" \
     --longoptions "${long_options}" \
     --name "${0}" \
     -- "$@"
@@ -43,27 +42,27 @@ eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
-    -s|--pgroonga-primary-maintainer-command)
+    --pgroonga-primary-maintainer-command)
       pgroonga_primary_maintainer_command="${2}"
       shift 2
       ;;
-    -t|--threshold)
+    --threshold)
       threshold="${2}"
       shift 2
       ;;
-    -e|--environment)
+    --environment)
       environments+=("${2}")
       shift 2
       ;;
-    -c|--psql)
+    --psql)
       psql_command="${2}"
       shift 2
       ;;
-    -f|--on-failure-service)
+    --on-failure-service)
       on_failure_service="${2}"
       shift 2
       ;;
-    -h|--help)
+    --help)
       usage
       exit 0
       ;;
