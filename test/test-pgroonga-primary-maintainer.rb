@@ -22,6 +22,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
       command = File.join(path, command)
       return command if File.executable?(command)
     end
+    nil
   end
 
   def additional_configurations
