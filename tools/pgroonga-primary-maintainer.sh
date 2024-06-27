@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xueo pipefail
+set -ueo pipefail
 
 WAL_BLOCK_SIZE=8192
 
