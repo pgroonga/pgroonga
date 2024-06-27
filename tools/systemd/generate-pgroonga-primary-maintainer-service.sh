@@ -30,19 +30,13 @@ USAGE
 
 short_options="s:t:e:c:h"
 long_options="pgroonga_primary_maintainer_command:,threshold:,environment:,psql:,help"
-# If you run `getopt` with no arguments and get an error,
-# you are in an environment where the `--longoptions` option is available.
-if getopt > /dev/null; then
-  options=$(getopt "${short_options}" "$@")
-else
-  options=$(
-    getopt \
-      --options "${short_options}" \
-      --longoptions "${long_options}" \
-      --name "${0}" \
-      -- "$@"
-  )
-fi
+options=$(
+  getopt \
+    --options "${short_options}" \
+    --longoptions "${long_options}" \
+    --name "${0}" \
+    -- "$@"
+)
 eval set -- "$options"
 
 while [[ $# -gt 0 ]]; do
