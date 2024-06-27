@@ -96,8 +96,8 @@ if [ -n "${on_failure_service}" ]; then
   on_failure="OnFailure=${on_failure_service}"
 fi
 
-user_name=$(whoami)
-group_name=$(groups | awk '{print $1}')
+user_name=$(id --user --name)
+group_name=$(id --group --name)
 cat <<SERVICE
 # How to install:
 #   ${0} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
