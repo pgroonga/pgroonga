@@ -19,8 +19,8 @@ Description=PGroonga primary maintainer
 
 [Service]
 Type=oneshot
-User=pgrn
-Group=pgrn
+User=#{Etc.getpwuid(Process.uid).name}
+Group=#{Etc.getgrgid(Process.gid).name}
 Environment=
 ExecStart=/tmp/local/bin/pgroonga-primary-maintainer.sh --threshold 1G
 [Install]
@@ -49,8 +49,8 @@ Description=PGroonga primary maintainer
 OnFailure=on-failure
 [Service]
 Type=oneshot
-User=pgrn
-Group=pgrn
+User=#{Etc.getpwuid(Process.uid).name}
+Group=#{Etc.getgrgid(Process.gid).name}
 Environment=PGHOST=localhost PGDATABASE=test_db
 ExecStart=#{File.expand_path(pgroonga_primary_maintainer_command)} --threshold 5G --psql psql-path
 [Install]
