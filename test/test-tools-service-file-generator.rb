@@ -26,9 +26,10 @@ WantedBy=multi-user.target
     end
 
     test "full options" do
+      pgroonga_primary_maintainer_command = "tools/pgroonga-primary-maintainer.sh"
       command_line = [
         command,
-        "--pgroonga-primary-maintainer-command", "tools/pgroonga-primary-maintainer.sh",
+        "--pgroonga-primary-maintainer-command", pgroonga_primary_maintainer_command,
         "--threshold", "5G",
         "--environment", "PGHOST=localhost",
         "--environment", "PGDATABASE=test_db",
@@ -47,7 +48,7 @@ Type=oneshot
 User=pgrn
 Group=pgrn
 Environment=PGHOST=localhost PGDATABASE=test_db
-ExecStart=tools/pgroonga-primary-maintainer.sh --threshold 5G --psql psql-path
+ExecStart=#{File.expand_path(pgroonga_primary_maintainer_command)} --threshold 5G --psql psql-path
 [Install]
 WantedBy=multi-user.target
       EXPECTED

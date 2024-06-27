@@ -80,6 +80,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+pgroonga_primary_maintainer_command=$(realpath "$pgroonga_primary_maintainer_command" 2>/dev/null || :)
 if ! "${pgroonga_primary_maintainer_command}" --help > /dev/null 2>&1; then
   echo "No pgroonga-primary-maintainer.sh command."
   exit 1
