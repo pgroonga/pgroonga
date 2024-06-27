@@ -23,13 +23,15 @@ Options:
   Example: --environment KEY1=VALUE1 --environment KEY2=VALUE2 ...
 -c, --psql:
   Specify the path to \`psql\` command.
+-f, --on-failure-service:
+  Run SERVICE on failure
 -h, --help:
   Display help text and exit.
 USAGE
 }
 
-short_options="s:t:e:c:h"
-long_options="pgroonga_primary_maintainer_command:,threshold:,environment:,psql:,help"
+short_options="s:t:e:c:f:h"
+long_options="pgroonga-primary-maintainer-command:,threshold:,environment:,psql:,on-failure-service:,help"
 options=$(
   getopt \
     --options "${short_options}" \
@@ -46,7 +48,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -t|--threshold)
-      reindex_threshold_size=$(numfmt --from iec "${2}")
+      threshold="${2}"
       shift 2
       ;;
     -e|--environment)
@@ -55,6 +57,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -c|--psql)
       psql_command="${2}"
+      shift 2
+      ;;
+    -f|--on-failure-service)
+      on_failure_service="${2}"
       shift 2
       ;;
     -h|--help)
