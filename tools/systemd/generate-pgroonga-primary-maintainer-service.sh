@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xue
+set -ue
 
 pgroonga_primary_maintainer_command=$(
   (which pgroonga-primary-maintainer.sh || '') | \
@@ -80,7 +80,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if ! "${pgroonga_primary_maintainer_command}" --help > /dev/null; then
+if ! "${pgroonga_primary_maintainer_command}" --help > /dev/null 2>&1; then
   echo "No pgroonga-primary-maintainer.sh command."
   exit 1
 fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xue
+set -ue
 
 run_times=()
 

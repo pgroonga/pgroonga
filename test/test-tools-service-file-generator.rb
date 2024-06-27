@@ -7,8 +7,7 @@ class ToolsServiceFileGeneratorTestCase < Test::Unit::TestCase
     command = "tools/systemd/generate-pgroonga-primary-maintainer-service.sh"
 
     test "default" do
-      output, _ =  run_command(command)
-      assert_equal(<<-EXPECTED, output)
+      expected = <<-EXPECTED
 # How to install:
 #   tools/systemd/generate-pgroonga-primary-maintainer-service.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
 [Unit]
@@ -22,7 +21,8 @@ Environment=
 ExecStart=/tmp/local/bin/pgroonga-primary-maintainer.sh --threshold 1G
 [Install]
 WantedBy=multi-user.target
-                   EXPECTED
+      EXPECTED
+      assert_equal([expected, ""], run_command(command))
     end
 
     test "full options" do
@@ -36,8 +36,7 @@ WantedBy=multi-user.target
         "--on-failure-service", "on-failure"
       ]
 
-      output, _ =  run_command(*command_line)
-      assert_equal(<<-EXPECTED, output)
+      expected = <<-EXPECTED
 # How to install:
 #   tools/systemd/generate-pgroonga-primary-maintainer-service.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
 [Unit]
@@ -51,7 +50,8 @@ Environment=PGHOST=localhost PGDATABASE=test_db
 ExecStart=tools/pgroonga-primary-maintainer.sh --threshold 5G --psql psql-path
 [Install]
 WantedBy=multi-user.target
-                   EXPECTED
+      EXPECTED
+      assert_equal([expected, ""], run_command(*command_line))
     end
 
     test "generate-pgroonga-primary-maintainer-service.sh is not found" do
@@ -69,9 +69,7 @@ No pgroonga-primary-maintainer.sh command.
 
     test "help" do
       command_line = [command, "--help"]
-      output, _ = run_command(*command_line)
-
-      assert_equal(<<-EXPECTED, output)
+      expected = <<-EXPECTED
 Options:
 --pgroonga-primary-maintainer-command:
   Specify the path to `pgroonga-primary-maintainer.sh`
@@ -89,7 +87,8 @@ Options:
   Run SERVICE on failure
 --help:
   Display help text and exit.
-                   EXPECTED
+      EXPECTED
+      assert_equal([expected, ""], run_command(*command_line))
     end
   end
 
@@ -103,8 +102,7 @@ Options:
         "--time", "23:30",
       ]
 
-      output, _ =  run_command(*command_line)
-      assert_equal(<<-EXPECTED, output)
+      expected = <<-EXPECTED
 # How to install:
 #   tools/systemd/generate-pgroonga-primary-maintainer-timer.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.timer
 #   sudo -H systemctl daemon-reload
@@ -120,7 +118,8 @@ OnCalendar=*-*-* 1:00:00
 OnCalendar=*-*-* 23:30:00
 [Install]
 WantedBy=timers.target
-                   EXPECTED
+      EXPECTED
+      assert_equal([expected, ""], run_command(*command_line))
     end
 
     test "no options" do
@@ -138,16 +137,16 @@ Specify run time with `--time`.
 
     test "help" do
       command_line = [command, "--help"]
-      output, _ = run_command(*command_line)
 
-      assert_equal(<<-EXPECTED, output)
+      expected = <<-EXPECTED
 Options:
 --time:
   Specify run time,
   Example: --time 2:00 --time 3:30 ...
 --help:
   Display help text and exit.
-                   EXPECTED
+      EXPECTED
+      assert_equal([expected, ""], run_command(*command_line))
     end
   end
 end
