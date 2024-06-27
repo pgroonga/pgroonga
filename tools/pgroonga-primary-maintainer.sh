@@ -46,7 +46,7 @@ short_options="t:c:h"
 long_options="threshold:,psql:,help"
 # If you run `getopt` with no arguments and get an error,
 # you are in an environment where the `--longoptions` option is available.
-if getopt > /dev/null; then
+if getopt > /dev/null 2>&1; then
   options=$(getopt "${short_options}" "$@")
 else
   options=$(
