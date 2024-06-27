@@ -19,7 +19,7 @@ Type=oneshot
 User=pgrn
 Group=pgrn
 Environment=
-ExecStart=/tmp/local/bin//pgroonga-primary-maintainer.sh --threshold 1G
+ExecStart=/tmp/local/bin/pgroonga-primary-maintainer.sh --threshold 1G
 [Install]
 WantedBy=multi-user.target
                    EXPECTED
@@ -75,7 +75,7 @@ No pgroonga-primary-maintainer.sh command.
 Options:
 --pgroonga-primary-maintainer-command:
   Specify the path to `pgroonga-primary-maintainer.sh`
-  (default: /tmp/local/bin//pgroonga-primary-maintainer.sh)
+  (default: /tmp/local/bin/pgroonga-primary-maintainer.sh)
 --threshold:
   If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
   (default: 1G)

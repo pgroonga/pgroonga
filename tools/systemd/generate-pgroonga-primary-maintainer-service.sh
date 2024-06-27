@@ -2,7 +2,10 @@
 
 set -xue
 
-pgroonga_primary_maintainer_command=$(which pgroonga-primary-maintainer.sh || :)
+pgroonga_primary_maintainer_command=$(
+  (which pgroonga-primary-maintainer.sh || '') | \
+    sed -Ee 's#/{2,}#/#g'
+)
 threshold="1G"
 psql_command=""
 environments=()
