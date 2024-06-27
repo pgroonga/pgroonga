@@ -19,8 +19,8 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   def which(command)
     ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
       next unless File.absolute_path?(path)
-      command = File.join(path, command)
-      return command if File.executable?(command)
+      absolute_path_command = File.join(path, command)
+      return absolute_path_command if File.executable?(absolute_path_command)
     end
     nil
   end
@@ -95,6 +95,12 @@ SELECT name, last_block FROM pgroonga_wal_status()
   test "help" do
     command_line = [PRIMARY_MAINTAINER_COMMAND, "-h"]
 
+    if RUBY_PLATFORM.include?("linux")
+      threshold_example = "--threshold 10M, -t 1G"
+    else
+      threshold_example = "-t 10485760"
+    end
+
     expected = <<-EXPECTED
 #{which(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
 
@@ -102,7 +108,7 @@ Options:
 -t, --threshold:
   If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
   Specify by size.
-  Example: --threshold 10M, -t 1G
+  Example: #{threshold_example}
 -c, --psql:
   Specify the path to `psql` command.
 -h, --help:
