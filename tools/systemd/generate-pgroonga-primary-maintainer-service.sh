@@ -3,8 +3,8 @@
 set -ue
 
 pgroonga_primary_maintainer_command=$(
-  (which pgroonga-primary-maintainer.sh || '') | \
-    sed -Ee 's#/{2,}#/#g'
+  (which pgroonga-primary-maintainer.sh || :) | \
+    sed --regexp-extended -e 's#/{2,}#/#g'
 )
 threshold="1G"
 psql_command=""
