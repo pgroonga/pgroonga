@@ -16,6 +16,14 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
     run_command(env, *commane_line)
   end
 
+  def which(command)
+    ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
+      next unless File.absolute_path?(path)
+      command = File.join(path, command)
+      return command if File.executable?(command)
+    end
+  end
+
   def additional_configurations
     "pgroonga.enable_wal = yes"
   end
@@ -81,5 +89,27 @@ SELECT name, last_block FROM pgroonga_wal_status()
 
                  EXPECTED
                  run_sql("SELECT name, last_block FROM pgroonga_wal_status()"))
+  end
+
+  test "help" do
+    command_line = [PRIMARY_MAINTAINER_COMMAND, "-h"]
+
+    expected = <<-EXPECTED
+#{which(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
+
+Options:
+-t, --threshold:
+  If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
+  Specify by size.
+  Example: --threshold 10M, -s 1G
+-c, --psql:
+  Specify the path to `psql` command.
+-h, --help:
+  Display help text and exit.
+
+Connection information such as `dbname` should be set in environment variables.
+See also: https://www.postgresql.org/docs/current/libpq-envars.html
+    EXPECTED
+    assert_equal([expected, ""], run_command(*command_line))
   end
 end
