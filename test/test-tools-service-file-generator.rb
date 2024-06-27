@@ -3,6 +3,10 @@ require_relative "helpers/sandbox"
 class ToolsServiceFileGeneratorTestCase < Test::Unit::TestCase
   include Helpers::CommandRunnable
 
+  setup do
+    omit("Support for Linux only.") unless RUBY_PLATFORM.include?("linux")
+  end
+
   sub_test_case "generate-pgroonga-primary-maintainer-service" do
     command = "tools/systemd/generate-pgroonga-primary-maintainer-service.sh"
 
