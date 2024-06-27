@@ -92,4 +92,62 @@ Options:
                    EXPECTED
     end
   end
+
+  sub_test_case "generate-pgroonga-primary-maintainer-timer" do
+    command = "tools/systemd/generate-pgroonga-primary-maintainer-timer.sh"
+
+    test "generate" do
+      command_line = [
+        command,
+        "--time", "1:00",
+        "--time", "23:30",
+      ]
+
+      output, _ =  run_command(*command_line)
+      assert_equal(<<-EXPECTED, output)
+# How to install:
+#   tools/systemd/generate-pgroonga-primary-maintainer-timer.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.timer
+#   sudo -H systemctl daemon-reload
+#
+# Usage:
+#
+#   Enable:  sudo -H systemctl enable --now pgroonga-primary-maintainer.timer
+#   Disable: sudo -H systemctl disable --now pgroonga-primary-maintainer.timer
+[Unit]
+Description=PGroonga primary maintainer
+[Timer]
+OnCalendar=*-*-* 1:00:00
+OnCalendar=*-*-* 23:30:00
+[Install]
+WantedBy=timers.target
+                   EXPECTED
+    end
+
+    test "no options" do
+      output = nil
+      begin
+        run_command(command)
+      rescue Helpers::CommandRunError => err
+        output = err.output
+      end
+
+      assert_equal(<<-EXPECTED, output)
+Specify run time with `--time`.
+                   EXPECTED
+    end
+
+    test "help" do
+      command_line = [command, "--help"]
+      output, _ = run_command(*command_line)
+
+      assert_equal(<<-EXPECTED, output)
+Options:
+-t, --time:
+  Specify run time,
+  Example: --time 2:00 --time 3:30 ...
+-h, --help:
+  Display help text and exit.
+                   EXPECTED
+    end
+  end
 end
