@@ -2,6 +2,7 @@ require_relative "helpers/sandbox"
 
 class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
+  include Helpers::LinuxCommand
 
   PRIMARY_MAINTAINER_COMMAND = "pgroonga-primary-maintainer.sh"
 
@@ -14,15 +15,6 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
     }
     commane_line = [PRIMARY_MAINTAINER_COMMAND] + options
     run_command(env, *commane_line)
-  end
-
-  def which(command)
-    ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
-      next unless File.absolute_path?(path)
-      absolute_path_command = File.join(path, command)
-      return absolute_path_command if File.executable?(absolute_path_command)
-    end
-    nil
   end
 
   def additional_configurations
