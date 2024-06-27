@@ -55,16 +55,11 @@ WantedBy=multi-user.target
     end
 
     test "generate-pgroonga-primary-maintainer-service.sh is not found" do
-      output = nil
-      begin
+      error = assert_raise(Helpers::CommandRunError) do
         run_command({"PATH" => "/usr/bin"}, command)
-      rescue Helpers::CommandRunError => err
-        output = err.output
       end
-
-      assert_equal(<<-EXPECTED, output)
-No pgroonga-primary-maintainer.sh command.
-                   EXPECTED
+      assert_equal(["No pgroonga-primary-maintainer.sh command.\n", ""],
+                   [error.output, error.error])
     end
 
     test "help" do
@@ -123,16 +118,11 @@ WantedBy=timers.target
     end
 
     test "no options" do
-      output = nil
-      begin
+      error = assert_raise(Helpers::CommandRunError) do
         run_command(command)
-      rescue Helpers::CommandRunError => err
-        output = err.output
       end
-
-      assert_equal(<<-EXPECTED, output)
-Specify run time with `--time`.
-                   EXPECTED
+      assert_equal(["Specify run time with `--time`.\n", ""],
+                   [error.output, error.error])
     end
 
     test "help" do
