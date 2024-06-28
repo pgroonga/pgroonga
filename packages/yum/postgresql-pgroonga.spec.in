@@ -103,6 +103,8 @@ EOF
 %files
 %doc README.md COPYING
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
+%{pg_bindir}/pgroonga-generate-primary-maintainer-service.sh
+%{pg_bindir}/pgroonga-generate-primary-maintainer-timer.sh
 %{pg_bindir}/pgroonga-primary-maintainer.sh
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql

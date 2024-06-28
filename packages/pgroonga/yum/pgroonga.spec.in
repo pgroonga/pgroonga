@@ -71,6 +71,8 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %license COPYING
 %doc README.md
 %config(noreplace) %{_sysconfdir}/logrotate.d/@PACKAGE@
+%{_bindir}/pgroonga-generate-primary-maintainer-service.sh
+%{_bindir}/pgroonga-generate-primary-maintainer-timer.sh
 %{_bindir}/pgroonga-primary-maintainer.sh
 %{_datadir}/pgsql/extension/*.control
 %{_datadir}/pgsql/extension/*.sql
