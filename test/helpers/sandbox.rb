@@ -239,6 +239,7 @@ module Helpers
     def init_replication(primary, shared_preload_libraries: [])
       @dir = File.join(@base_dir, "db-standby")
       @log_path = File.join(@dir, "log", @log_base_name)
+      @pgroonga_log_path = File.join(@dir, "pgroonga.log")
       @port = primary.port + 1
       run_command("pg_basebackup",
                   "--create-slot",
@@ -272,6 +273,7 @@ module Helpers
                     "-D", @dir)
       rescue => error
         error.message << "\nPostgreSQL log:\n#{read_log}"
+        error.message << "\nPGroonga log:\n#{read_pgroonga_log}"
         raise
       end
       loop do
@@ -310,6 +312,7 @@ module Helpers
           @running = false
         end
         error.message << "\nPostgreSQL log:\n#{read_log}"
+        error.message << "\nPGroonga log:\n#{read_pgroonga_log}"
         raise
       else
         @pid = nil
