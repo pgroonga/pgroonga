@@ -5802,7 +5802,8 @@ PGrnSearchBuildConditionQuery(PGrnSearchData *data,
 	GRN_EXPR_CREATE_FOR_QUERY(
 		ctx, data->sourcesTable, matchTarget, matchTargetVariable);
 	GRN_PTR_PUT(ctx, &(data->matchTargets), matchTarget);
-	PGrnExprAppendObject(matchTarget, targetColumn, GRN_OP_PUSH, 1, tag, NULL);
+	PGrnExprAppendObject(
+		matchTarget, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 
 	flags |= PGrnOptionsGetExprParseFlags(data->index);
 	grn_expr_parse(ctx,
