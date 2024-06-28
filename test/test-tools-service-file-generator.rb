@@ -15,7 +15,7 @@ class ToolsServiceFileGeneratorTestCase < Test::Unit::TestCase
     test "default" do
       expected = <<-EXPECTED
 # How to install:
-#   tools/systemd/generate-pgroonga-primary-maintainer-service.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
+#   #{command} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
 [Unit]
 Description=PGroonga primary maintainer
 
@@ -45,7 +45,7 @@ WantedBy=multi-user.target
 
       expected = <<-EXPECTED
 # How to install:
-#   tools/systemd/generate-pgroonga-primary-maintainer-service.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
+#   #{command} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.service
 [Unit]
 Description=PGroonga primary maintainer
 OnFailure=on-failure
@@ -61,7 +61,7 @@ WantedBy=multi-user.target
       assert_equal([expected, ""], run_command(*command_line))
     end
 
-    test "generate-pgroonga-primary-maintainer-service.sh is not found" do
+    test "pgroonga-primary-maintainer.sh is not found" do
       error = assert_raise(Helpers::CommandRunError) do
         run_command({"PATH" => "/usr/bin"}, command)
       end
@@ -106,7 +106,7 @@ Options:
 
       expected = <<-EXPECTED
 # How to install:
-#   tools/systemd/generate-pgroonga-primary-maintainer-timer.sh | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.timer
+#   #{command} | sudo -H tee /lib/systemd/system/pgroonga-primary-maintainer.timer
 #   sudo -H systemctl daemon-reload
 #
 # Usage:
