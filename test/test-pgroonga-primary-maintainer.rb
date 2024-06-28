@@ -16,15 +16,6 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
     run_command(env, *commane_line)
   end
 
-  def which(command)
-    ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
-      next unless File.absolute_path?(path)
-      absolute_path_command = File.join(path, command)
-      return absolute_path_command if File.executable?(absolute_path_command)
-    end
-    nil
-  end
-
   def additional_configurations
     "pgroonga.enable_wal = yes"
   end
@@ -102,7 +93,7 @@ SELECT name, last_block FROM pgroonga_wal_status()
     end
 
     expected = <<-EXPECTED
-#{which(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
+#{find_command(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
 
 Options:
 -t, --threshold:

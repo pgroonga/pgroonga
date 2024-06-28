@@ -132,6 +132,15 @@ module Helpers
         [output, error]
       end
     end
+
+    def find_command(command)
+      ENV["PATH"].split(File::PATH_SEPARATOR).each do |path|
+        next unless File.absolute_path?(path)
+        absolute_path_command = File.join(path, command)
+        return absolute_path_command if File.executable?(absolute_path_command)
+      end
+      nil
+    end
   end
 
   module PlatformDetectable
