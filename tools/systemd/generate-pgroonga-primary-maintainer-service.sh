@@ -77,9 +77,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-pgroonga_primary_maintainer_command=$(realpath "${pgroonga_primary_maintainer_command}" 2>/dev/null || :)
+if [ -z "${pgroonga_primary_maintainer_command}" ]; then
+  echo "Specify the path of pgroonga-primary-maintainer.sh with '--pgroonga-primary-maintainer-command'"
+  exit 1
+fi
+
+pgroonga_primary_maintainer_command=$(realpath "${pgroonga_primary_maintainer_command}")
 if ! "${pgroonga_primary_maintainer_command}" --help > /dev/null 2>&1; then
-  echo "No pgroonga-primary-maintainer.sh command."
+  echo "pgroonga-primary-maintainer.sh isn't available: ${pgroonga_primary_maintainer_command}"
   exit 1
 fi
 

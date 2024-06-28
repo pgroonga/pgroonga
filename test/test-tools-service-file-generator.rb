@@ -65,7 +65,7 @@ WantedBy=multi-user.target
       error = assert_raise(Helpers::CommandRunError) do
         run_command({"PATH" => "/usr/bin"}, command)
       end
-      assert_equal(["No pgroonga-primary-maintainer.sh command.\n", ""],
+      assert_equal(["Specify the path of pgroonga-primary-maintainer.sh with '--pgroonga-primary-maintainer-command'\n", ""],
                    [error.output, error.error])
     end
 
