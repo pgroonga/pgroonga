@@ -2,7 +2,7 @@
 
 set -ue
 
-pgroonga_primary_maintainer_command=$(which pgroonga-primary-maintainer.sh || :)
+pgroonga_primary_maintainer_command=$(which pgroonga-primary-maintainer.sh 2>/dev/null || :)
 threshold="1G"
 psql_command=""
 environments=()
