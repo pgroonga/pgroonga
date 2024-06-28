@@ -3,6 +3,8 @@ require_relative "helpers/sandbox"
 class ToolsServiceFileGeneratorTestCase < Test::Unit::TestCase
   include Helpers::CommandRunnable
 
+  PRIMARY_MAINTAINER_COMMAND = "pgroonga-primary-maintainer.sh"
+
   setup do
     omit("Support for Linux only.") unless RUBY_PLATFORM.include?("linux")
   end
@@ -22,7 +24,7 @@ Type=oneshot
 User=#{Etc.getpwuid(Process.uid).name}
 Group=#{Etc.getgrgid(Process.gid).name}
 Environment=
-ExecStart=/tmp/local/bin/pgroonga-primary-maintainer.sh --threshold 1G
+ExecStart=#{find_command(PRIMARY_MAINTAINER_COMMAND)} --threshold 1G
 [Install]
 WantedBy=multi-user.target
       EXPECTED
@@ -73,7 +75,7 @@ WantedBy=multi-user.target
 Options:
 --pgroonga-primary-maintainer-command:
   Specify the path to `pgroonga-primary-maintainer.sh`
-  (default: /tmp/local/bin/pgroonga-primary-maintainer.sh)
+  (default: #{find_command(PRIMARY_MAINTAINER_COMMAND)})
 --threshold:
   If the specified value is exceeded, `REINDEX INDEX CONCURRENTLY` is run.
   (default: 1G)
