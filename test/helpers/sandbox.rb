@@ -598,5 +598,17 @@ pgroonga.enable_wal = yes
 
     def teardown_reference_test_db
     end
+
+    def require_pgroonga_benchmark
+      begin
+        require "pgroonga-benchmark/config"
+        require "pgroonga-benchmark/processor"
+        require "pgroonga-benchmark/status"
+      rescue LoadError => error
+        message = "pgroonga-benchmark is required: #{error.message}"
+        message = [message, *error.backtrace].join("\n")
+        omit(message)
+      end
+    end
   end
 end

@@ -183,17 +183,7 @@ INSERT INTO memos
   sub_test_case("random crash") do
     include Helpers::Fixture
 
-    setup def setup_pgroonga_benchmark
-      begin
-        require "pgroonga-benchmark/config"
-        require "pgroonga-benchmark/processor"
-        require "pgroonga-benchmark/status"
-      rescue LoadError => error
-        message = "pgroonga-benchmark is required: #{error.message}"
-        message = [message, *error.backtrace].join("\n")
-        omit(message)
-      end
-    end
+    setup :require_pgroonga_benchmark
 
     setup def omit_on_ci
       if ENV["CI"]
