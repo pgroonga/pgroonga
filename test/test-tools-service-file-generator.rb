@@ -9,8 +9,8 @@ class ToolsServiceFileGeneratorTestCase < Test::Unit::TestCase
     omit("Support for Linux only.") unless RUBY_PLATFORM.include?("linux")
   end
 
-  sub_test_case "generate-pgroonga-primary-maintainer-service" do
-    command = "tools/systemd/generate-pgroonga-primary-maintainer-service.sh"
+  sub_test_case "pgroonga-generate-primary-maintainer-service" do
+    command = "tools/systemd/pgroonga-generate-primary-maintainer-service.sh"
 
     test "default" do
       expected = <<-EXPECTED
@@ -94,8 +94,8 @@ Options:
     end
   end
 
-  sub_test_case "generate-pgroonga-primary-maintainer-timer" do
-    command = "tools/systemd/generate-pgroonga-primary-maintainer-timer.sh"
+  sub_test_case "pgroonga-generate-primary-maintainer-timer" do
+    command = "tools/systemd/pgroonga-generate-primary-maintainer-timer.sh"
 
     test "generate" do
       command_line = [
