@@ -2,7 +2,6 @@ require_relative "helpers/sandbox"
 
 class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
-  include Helpers::LinuxCommand
 
   PRIMARY_MAINTAINER_COMMAND = "pgroonga-primary-maintainer.sh"
 
@@ -94,7 +93,7 @@ SELECT name, last_block FROM pgroonga_wal_status()
     end
 
     expected = <<-EXPECTED
-#{which(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
+#{find_command(PRIMARY_MAINTAINER_COMMAND)} --threshold REINDEX_THRESHOLD_SIZE [--psql PSQL_COMMAND_PATH]
 
 Options:
 -t, --threshold:
