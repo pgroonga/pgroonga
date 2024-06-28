@@ -21,7 +21,10 @@ OBJS = $(SRCS:.c=.o)
 $(OBJS): $(HEADERS)
 EXTENSION = pgroonga
 
-SCRIPTS = tools/pgroonga-primary-maintainer.sh
+SCRIPTS = 				\
+	tools/pgroonga-primary-maintainer.sh	\
+	tools/systemd/pgroonga-generate-primary-maintainer-service.sh	\
+	tools/systemd/pgroonga-generate-primary-maintainer-timer.sh
 
 DATA =						\
 	data/pgroonga--$(PGRN_VERSION).sql	\
