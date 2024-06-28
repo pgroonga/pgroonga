@@ -36,9 +36,9 @@ options=$(
     --options "" \
     --longoptions "${long_options}" \
     --name "${0}" \
-    -- "$@"
+    -- "${@}"
 )
-eval set -- "$options"
+eval set -- "${options}"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -77,7 +77,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-pgroonga_primary_maintainer_command=$(realpath "$pgroonga_primary_maintainer_command" 2>/dev/null || :)
+pgroonga_primary_maintainer_command=$(realpath "${pgroonga_primary_maintainer_command}" 2>/dev/null || :)
 if ! "${pgroonga_primary_maintainer_command}" --help > /dev/null 2>&1; then
   echo "No pgroonga-primary-maintainer.sh command."
   exit 1

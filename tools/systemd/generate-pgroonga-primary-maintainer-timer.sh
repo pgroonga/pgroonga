@@ -21,7 +21,7 @@ options=$(
     --options "" \
     --longoptions "${long_options}" \
     --name "${0}" \
-    -- "$@"
+    -- "${@}"
 )
 eval set -- "$options"
 
@@ -64,7 +64,7 @@ cat <<SERVICE
 Description=PGroonga primary maintainer
 [Timer]
 $(
-  for time in ${run_times[@]}; do
+  for time in "${run_times[@]}"; do
     echo "OnCalendar=*-*-* ${time}:00"
   done
 )
