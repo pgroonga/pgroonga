@@ -47,17 +47,17 @@ long_options="threshold:,psql:,help"
 # If you run `getopt` with no arguments and get an error,
 # you are in an environment where the `--longoptions` option is available.
 if getopt > /dev/null 2>&1; then
-  options=$(getopt "${short_options}" "$@")
+  options=$(getopt "${short_options}" "${@}")
 else
   options=$(
     getopt \
       --options "${short_options}" \
       --longoptions "${long_options}" \
       --name "${0}" \
-      -- "$@"
+      -- "${@}"
   )
 fi
-eval set -- "$options"
+eval set -- "${options}"
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
