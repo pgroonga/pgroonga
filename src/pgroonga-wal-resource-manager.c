@@ -151,10 +151,21 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 									  ERROR);
 		}
 		{
+#	ifdef GRN_OBJ_REMOVE_ENSURE
+			grn_ctx_remove(ctx,
+						   walRecord.name,
+						   walRecord.nameSize,
+						   GRN_OBJ_REMOVE_DEPENDENT | GRN_OBJ_REMOVE_ENSURE);
+#	else
 			grn_obj *table =
 				grn_ctx_get(ctx, walRecord.name, walRecord.nameSize);
 			if (table)
 				grn_obj_remove_dependent(ctx, table);
+#	endif
+			PGrnCheck("%s failed to remove existing table: <%.*s>",
+					  tag,
+					  (int) walRecord.nameSize,
+					  walRecord.name);
 		}
 		PGrnCreateTableRawWithSize(walRecord.indexTableSpaceID,
 								   walRecord.name,
@@ -229,10 +240,29 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 								  GRN_TEXT_LEN(walRecord.type),
 								  ERROR);
 		{
+#	ifdef GRN_OBJ_REMOVE_ENSURE
+			char fullColumnName[GRN_TABLE_MAX_KEY_SIZE];
+			snprintf(fullColumnName,
+					 GRN_TABLE_MAX_KEY_SIZE,
+					 "%.*s.%.*s",
+					 (int) GRN_TEXT_LEN(walRecord.table),
+					 GRN_TEXT_VALUE(walRecord.table),
+					 (int) (walRecord.nameSize),
+					 walRecord.name);
+			grn_ctx_remove(ctx,
+						   fullColumnName,
+						   strlen(fullColumnName),
+						   GRN_OBJ_REMOVE_ENSURE);
+#	else
 			grn_obj *column =
 				grn_obj_column(ctx, table, walRecord.name, walRecord.nameSize);
 			if (column)
 				grn_obj_remove(ctx, column);
+#	endif
+			PGrnCheck("%s failed to remove existing column: <%.*s>",
+					  tag,
+					  (int) walRecord.nameSize,
+					  walRecord.name);
 		}
 		PGrnCreateColumnRawWithSize(walRecord.indexTableSpaceID,
 									table,
@@ -351,6 +381,23 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 				walRecord.name,
 				(int) (walRecord.newNameSize),
 				walRecord.newName);
+		{
+#	ifdef GRN_OBJ_REMOVE_ENSURE
+			grn_ctx_remove(ctx,
+						   walRecord.newName,
+						   walRecord.newNameSize,
+						   GRN_OBJ_REMOVE_DEPENDENT | GRN_OBJ_REMOVE_ENSURE);
+#	else
+			grn_obj *table =
+				grn_ctx_get(ctx, walRecord.newName, walRecord.newNameSize);
+			if (table)
+				grn_obj_remove_dependent(ctx, table);
+#	endif
+			PGrnCheck("%s failed to remove existing table: <%.*s>",
+					  tag,
+					  (int) walRecord.newNameSize,
+					  walRecord.newName);
+		}
 		table = PGrnLookupWithSize(walRecord.name, walRecord.nameSize, ERROR);
 		PGrnRenameTableRawWithSize(
 			table, walRecord.newName, walRecord.newNameSize);

@@ -30,7 +30,16 @@ pgroonga.enable_wal_resource_manager = yes
     stop_postgres
     @postgresql.append_configuration(<<-CONFIG)
 synchronous_commit = remote_apply
-synchronous_standby_names = standby
+synchronous_standby_names = 'standby'
+    CONFIG
+    start_postgres
+  end
+
+  def revert_synchronous_replication
+    stop_postgres
+    @postgresql.append_configuration(<<-CONFIG)
+synchronous_commit = on
+synchronous_standby_names = ''
     CONFIG
     start_postgres
   end
@@ -622,5 +631,62 @@ SELECT pgroonga_command(
                      error.read_command_output,
                    ])
     end
+  end
+
+  test "random crash" do
+    require_pgroonga_benchmark
+
+    revert_synchronous_replication
+
+    dir = File.join(@tmp_dir, "pgroonga-benchmark")
+    standby_recovering = false
+    pgroonga_benchmark = Thread.new do
+      ENV["WIKIPEDIA_INSERT_N_PAGES"] = "1000"
+      ENV["PGHOST"] = @postgresql.host
+      ENV["PGPORT"] = @postgresql.port.to_s
+      ENV["PGDATABASE"] = @test_db_name
+      ENV["PGUSER"] = @postgresql.user
+      config = PGroongaBenchmark::Config.new(dir)
+      config.use_builtin_benchmark("wikipedia-insert")
+      status = PGroongaBenchmark::Status.new(dir)
+      processor = PGroongaBenchmark::Processor.new(config, status)
+      processor.process do |n_jobs, n_remained_jobs|
+        Thread.stop if standby_recovering
+      end
+    end
+
+    while pgroonga_benchmark.alive?
+      output, error = run_sql_standby(<<-SELECT)
+SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
+      SELECT
+      pid = Integer(output[/\s+(\d+)$/, 1], 10)
+      Process.kill(:KILL, pid)
+      begin
+        @postgresql_standby.stop
+      rescue CommandRunError
+      end
+      standby_recovering = true
+      # @postgresql_standby.remove_logs
+      @postgresql_standby.start
+      standby_recovering = false
+      begin
+        pgroonga_benchmark.run
+      rescue ThreadError
+        # pgroonga_benchmark may be finished
+      end
+    end
+
+    sleep(1)
+
+    select = "SELECT id FROM pages WHERE content &@~ 'that';"
+    select_result_standby = run_sql_standby(select)
+    previous_select_result_standby = nil
+    # wait for all WALs are applied on standby
+    while select_result_standby != previous_select_result_standby
+      previous_select_result_standby = select_result_standby
+      sleep(1)
+      select_result_standby = run_sql_standby(select)
+    end
+    assert_equal(run_sql(select), select_result_standby)
   end
 end

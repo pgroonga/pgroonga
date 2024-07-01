@@ -355,6 +355,11 @@ module Helpers
       File.read(@pgroonga_log_path)
     end
 
+    def remove_logs
+      FileUtils.rm_f(@log_path) if @log_path
+      FileUtils.rm_f(@pgroonga_log_path) if @pgroonga_log_path
+    end
+
     private
     def psql_internal(db, *sqls, &block)
       command_line = [
