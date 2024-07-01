@@ -43,7 +43,7 @@ typedef struct PGrnWRMRedoData
 } PGrnWRMRedoData;
 
 static void
-pgrnwrm_redo_setup(PGrnWRMRedoData *data)
+pgrnwrm_redo_setup(PGrnWRMRedoData *data, const char *tag)
 {
 	PGrnWALRecordCommon *walRecord = data->walRecord;
 	grn_encoding encoding = PGrnPGEncodingToGrnEncoding(walRecord->dbEncoding);
@@ -66,10 +66,18 @@ pgrnwrm_redo_setup(PGrnWRMRedoData *data)
 	if (pgrn_file_exist(path))
 	{
 		data->db = grn_db_open(ctx, path);
+		PGrnCheck("%s need to recreate this standby "
+				  "because Groonga DB is broken: <%s>",
+				  tag,
+				  path);
 	}
 	else
 	{
 		data->db = grn_db_create(ctx, path, NULL);
+		PGrnCheck("%s need to recreate this standby "
+				  "because can't create Groonga DB: <%s>",
+				  tag,
+				  path);
 	}
 	PGrnWRMCurrentDatabaseID = walRecord->dbID;
 	PGrnWRMCurrentDatabaseTableSpaceID = walRecord->dbTableSpaceID;
@@ -113,7 +121,7 @@ pgrnwrm_redo_create_table(XLogReaderState *record)
 	{
 		grn_obj *type = NULL;
 		PGrnWALRecordCreateTableRead(&walRecord, &raw);
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %x/%08X %u(%s)/%u/%u name=<%.*s> flags=<%u> "
@@ -195,7 +203,7 @@ pgrnwrm_redo_create_column(XLogReaderState *record)
 
 		PGrnWALRecordCreateColumnRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG
@@ -272,7 +280,7 @@ pgrnwrm_redo_set_sources(XLogReaderState *record)
 
 		PGrnWALRecordSetSourcesRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %X/%08X %u(%s)/%u column=<%.*s> sources=<%s>",
@@ -330,7 +338,7 @@ pgrnwrm_redo_rename_table(XLogReaderState *record)
 
 		PGrnWALRecordRenameTableRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s> new-name=<%.*s>",
@@ -389,7 +397,7 @@ pgrnwrm_redo_insert(XLogReaderState *record)
 
 		PGrnWALRecordInsertRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %X/%08X %u(%s)/%u table=<%.*s> columns=<%s>",
@@ -542,7 +550,7 @@ pgrnwrm_redo_delete(XLogReaderState *record)
 
 		PGrnWALRecordDeleteRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		table = PGrnLookupWithSize(
 			walRecord.tableName, walRecord.tableNameSize, ERROR);
 		GRN_LOG(ctx,
@@ -610,7 +618,7 @@ pgrnwrm_redo_remove_object(XLogReaderState *record)
 
 		PGrnWALRecordRemoveObjectRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s>",
@@ -657,7 +665,7 @@ pgrnwrm_redo_register_plugin(XLogReaderState *record)
 	{
 		PGrnWALRecordRegisterPluginRead(&walRecord, &raw);
 
-		pgrnwrm_redo_setup(&data);
+		pgrnwrm_redo_setup(&data, tag);
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				PGRN_TAG ": %s %X/%08X %u(%s)/%u name=<%.*s>",
