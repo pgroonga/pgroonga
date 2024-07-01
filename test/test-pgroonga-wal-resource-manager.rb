@@ -663,7 +663,7 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
       Process.kill(:KILL, pid)
       begin
         @postgresql_standby.stop
-      rescue CommandRunError
+      rescue Helpers::CommandRunError
       end
       standby_recovering = true
       # @postgresql_standby.remove_logs
