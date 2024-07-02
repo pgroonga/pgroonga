@@ -248,8 +248,6 @@ jobs:
 
       # Test
       - name: Install Incus
-        if: |
-          startsWith(env.OS, 'almalinux-')
         run: |
           # We can use the official Ubuntu APT repository when
           # ubuntu-latest is Ubuntu 24.04.
