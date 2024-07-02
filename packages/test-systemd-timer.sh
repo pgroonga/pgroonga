@@ -48,8 +48,7 @@ function wal_last_block () {
   index_name="${1}"
   sudo -u postgres -H psql --dbname "${DBNAME}" \
     --tuples-only \
-    --command "SELECT last_block FROM pgroonga_wal_status() WHERE name = '${index_name}'" |
-    bc
+    --command "SELECT last_block FROM pgroonga_wal_status() WHERE name = '${index_name}'"
 }
 
 ok=0
