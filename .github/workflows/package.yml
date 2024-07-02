@@ -247,6 +247,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       # Test
+      - name: Install Incus
+        run: |
+          # Ubuntu 24.04 beta has already been released as a GitHub Runner image and provides Incus.
+          # However, there is an issue with the combination of Docker, arm64 image and libc-bin on it.
+          # After this issue is resolved, we will use the Ubuntu 24.04 runner image and install Incus using apt.
+          # https://github.com/pgroonga/pgroonga/issues/507#issuecomment-2199634563
+          sudo curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
+          cat <<SOURCES | sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources
+          Enabled: yes
+          Types: deb
+          URIs: https://pkgs.zabbly.com/incus/stable
+          Suites: $(. /etc/os-release && echo ${VERSION_CODENAME})
+          Components: main
+          Architectures: $(dpkg --print-architecture)
+          Signed-By: /etc/apt/keyrings/zabbly.asc
+          SOURCES
+
+          sudo apt update
+          sudo apt install -y -V incus
       - name: Test
         if: |
           env.ARCHITECTURE != 'arm64'
