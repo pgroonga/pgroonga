@@ -36,7 +36,7 @@ sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-timer.sh" \
 
 systemctl enable --now pgroonga-primary-maintainer.timer
 
-function run_update_sqls (){
+function run_update_sqls () {
   sudo -u postgres -H psql --dbname "${DBNAME}" \
     --command "INSERT INTO memos SELECT 'PGroonga' FROM generate_series(1, 200);" \
     --command "DELETE FROM memos;" \
