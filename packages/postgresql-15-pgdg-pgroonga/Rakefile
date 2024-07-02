@@ -28,7 +28,6 @@ class PostgreSQL15PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "almalinux-9",
       "almalinux-8",
-      "centos-7",
     ]
   end
 end

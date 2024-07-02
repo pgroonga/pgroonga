@@ -7,12 +7,9 @@ echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
-  almalinux|centos)
+  almalinux)
     major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
     case ${major_version} in
-      7)
-        DNF=yum
-        ;;
       8)
         DNF="dnf --enablerepo=powertools"
         ${DNF} module -y disable postgresql
@@ -54,12 +51,7 @@ echo "::endgroup::"
 echo "::group::Install packages for test"
 
 case ${os} in
-  almalinux|centos)
-    case ${major_version} in
-      7)
-        ${DNF} install -y centos-release-scl
-        ;;
-    esac
+  almalinux)
     postgresql_package_prefix=$(rpm -qa | \
                                   grep pgroonga | \
                                   grep -E -o '^postgresql[0-9.]+' | \
@@ -110,7 +102,7 @@ cp -a \
    /tmp/
 cd /tmp
 case "${os}" in
-  almalinux|centos)
+  almalinux)
     if [ ${postgresql_version} -lt 12 ]; then
       rm sql/function/highlight-html/declarative-partitioning.sql
       rm sql/function/wal-set-applied-position/declarative-partitioning.sql
