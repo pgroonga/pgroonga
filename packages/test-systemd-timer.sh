@@ -51,12 +51,11 @@ function wal_last_block () {
     --command "SELECT last_block FROM pgroonga_wal_status() WHERE name = '${index_name}'"
 }
 
-ok=0
-for i in {1..10}; do
-  run_update_sqls
+function check_last_block () {
   before_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
   before_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
 
+  ok=0
   for retry in {1..10}; do
     after_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
     after_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
@@ -68,6 +67,13 @@ for i in {1..10}; do
     fi
     sleep 1
   done
+  echo "${ok}"
+}
+
+ok=0
+for i in {1..10}; do
+  run_update_sqls
+  ok=$(check_last_block)
   if [ ${ok} -ne 1 ]; then
     break
   fi
