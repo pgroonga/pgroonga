@@ -47,6 +47,7 @@ function run_update_sqls (){
 function wal_last_block () {
   index_name="${1}"
   sudo -u postgres -H psql --dbname "${DBNAME}" \
+    --no-align \
     --tuples-only \
     --command "SELECT last_block FROM pgroonga_wal_status() WHERE name = '${index_name}'"
 }
