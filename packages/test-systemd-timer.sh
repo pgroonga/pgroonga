@@ -16,13 +16,11 @@ bindir=$(${pg_config} --bindir)
 sudo -u postgres -H psql --command "CREATE DATABASE ${DBNAME};"
 sudo -u postgres -H psql --dbname "${DBNAME}" --command "CREATE extension pgroonga";
 
-sudo -u postgres -H psql --dbname "${DBNAME}" --command "$(cat <<SQL
-CREATE TABLE memos (content text);
-CREATE INDEX ${MEMOS_INDEX_NAME} ON memos USING pgroonga (content);
-CREATE TABLE notes (content text);
-CREATE INDEX ${NOTES_INDEX_NAME} ON notes USING pgroonga (content);
-SQL
-)"
+sudo -u postgres -H psql --dbname "${DBNAME}" \
+  --command "CREATE TABLE memos (content text);" \
+  --command "CREATE INDEX ${MEMOS_INDEX_NAME} ON memos USING pgroonga (content);" \
+  --command "CREATE TABLE notes (content text);" \
+  --command "CREATE INDEX ${NOTES_INDEX_NAME} ON notes USING pgroonga (content);"
 
 sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-service.sh" \
   --pgroonga-primary-maintainer-command "${bindir}/pgroonga-primary-maintainer.sh" \
@@ -38,13 +36,13 @@ sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-timer.sh" \
 
 systemctl enable --now pgroonga-primary-maintainer.timer
 
-sql="$(cat <<SQL
-INSERT INTO memos SELECT 'PGroonga' FROM generate_series(1, 200);
-DELETE FROM memos;
-INSERT INTO notes SELECT 'NOTES' FROM generate_series(1, 200);
-UPDATE notes SET content = 'NOTES-new';
-SQL
-)"
+function run_update_sqls (){
+  sudo -u postgres -H psql --dbname "${DBNAME}" \
+    --command "INSERT INTO memos SELECT 'PGroonga' FROM generate_series(1, 200);" \
+    --command "DELETE FROM memos;" \
+    --command "INSERT INTO notes SELECT 'NOTES' FROM generate_series(1, 200);" \
+    --command "UPDATE notes SET content = 'NOTES-new';"
+}
 
 function wal_last_block () {
   index_name="${1}"
@@ -56,7 +54,7 @@ function wal_last_block () {
 
 ok=0
 for i in {1..10}; do
-  sudo -u postgres -H psql --dbname "${DBNAME}" --command "${sql}"
+  run_update_sqls
   before_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
   before_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
 
