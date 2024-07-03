@@ -117,7 +117,11 @@ sudo -u postgres -H \
      --locale=C \
      --pgdata=${data_dir} \
      --username=root
-echo "max_prepared_transactions = 1" | \
+cat <<CONF | \
+  sudo -u postgres -H tee --append ${data_dir}/postgresql.conf
+max_prepared_transactions = 1
+pgroonga.enable_wal = yes
+CONF
   sudo -u postgres -H tee --append ${data_dir}/postgresql.conf
 sudo -u postgres -H \
      $(pg_config --bindir)/pg_ctl start \
@@ -146,6 +150,15 @@ pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
 echo "::endgroup::"
 
 run_test
+
+echo "::group::Run systemd timer test"
+
+$(pg_config --bindir)/createuser postgres --superuser
+/host/packages/test-systemd-timer.sh
+$(pg_config --bindir)/dropuser postgres
+
+echo "::endgroup::"
+
 
 echo "::group::Upgrade"
 
