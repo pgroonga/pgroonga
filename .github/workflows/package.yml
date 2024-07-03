@@ -188,20 +188,15 @@ jobs:
               echo "PACKAGE_TYPE=yum" >> ${GITHUB_ENV}
               ;;
           esac
-          test_docker_image=$(echo ${os} | sed -E -e 's/-/:/g')
           test_incus_image=$(echo ${os} | sed -E -e 's/-/\//g')
-          case ${test_docker_image} in
-            *:arm64)
+          case ${test_incus_image} in
+            */arm64)
               echo "ARCHITECTURE=arm64" >> ${GITHUB_ENV}
-              test_docker_image="$(echo ${test_docker_image} | \
-                                     sed -E -e 's/:arm64$//g')"
-              test_docker_image="arm64v8/${test_docker_image}"
               ;;
             *)
               echo "ARCHITECTURE=amd64" >> ${GITHUB_ENV}
               ;;
           esac
-          echo "TEST_DOCKER_IMAGE=${test_docker_image}" >> ${GITHUB_ENV}
           echo "TEST_INCUS_IMAGE=images:${test_incus_image}" >> ${GITHUB_ENV}
       - name: Cache ccache
         uses: actions/cache@v4
