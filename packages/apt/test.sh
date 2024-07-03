@@ -85,7 +85,7 @@ echo "::endgroup::"
 
 echo "::group::Prepare test"
 
-sudo systemctl stop postgresql
+systemctl stop postgresql
 data_dir=/tmp/data
 sudo -u postgres -H \
      $(pg_config --bindir)/initdb \
