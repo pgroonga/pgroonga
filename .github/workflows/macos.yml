@@ -74,13 +74,6 @@ jobs:
           random_page_cost = 0
           CONF
           brew services start postgresql@${{ matrix.postgresql-version }}
-      - name: Adjust msgpack-c.pc
-        run: |
-          sed \
-            -i.bak \
-            -E \
-            -e 's,^(include|lib)dir=,\1dir=${prefix}/,g' \
-            $(brew --prefix msgpack)/lib/pkgconfig/msgpack-c.pc
       - name: Run regression test
         run: |
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
