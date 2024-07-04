@@ -9,7 +9,7 @@ class PostgreSQL16PGroongaPackageTask < VersionedPGroongaPackageTask
     []
   end
 
-  def enable_ubuntu?
+  def ubuntu_targets_default
     [
       ["noble", "24.04"],
     ]
