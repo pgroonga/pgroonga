@@ -1,0 +1,5 @@
+postgresql-16-pgroonga (3.2.1-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Horimoto Yasuhiro <horimoto@clear-code.com>  Thu, 04 Jul 2024 05:10:36 -0000
