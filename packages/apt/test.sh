@@ -152,7 +152,7 @@ run_test
 echo "::group::Run systemd timer test"
 
 $(pg_config --bindir)/createuser postgres --superuser
-/host/packages/test-systemd-timer.sh
+/host/packages/test-primary-maintainer.sh
 $(pg_config --bindir)/dropuser postgres
 
 echo "::endgroup::"
