@@ -159,7 +159,7 @@ if [ ${pg_regress_status} -ne 0 ]; then
 fi
 
 
-echo "::group::Run systemd timer test"
+echo "::group::Test primary-maintainer"
 
 $(${pg_config} --bindir)/createuser postgres --superuser
 /host/packages/test-primary-maintainer.sh ${pg_config}
