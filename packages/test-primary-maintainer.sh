@@ -31,10 +31,8 @@ sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-service.sh" 
 
 sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-timer.sh" \
   --time 1:00 | \
-  sed 's/1:00:00/*:*:0,3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57/' | \
+  sed 's/1:00:00/*:*:*/' | \
   tee "${TIMER_PATH}"
-
-systemctl enable --now pgroonga-primary-maintainer.timer
 
 function run_update_sqls () {
   sudo -u postgres -H psql --dbname "${DBNAME}" \
@@ -56,8 +54,9 @@ function check_last_block () {
   before_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
   before_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
 
+  systemctl enable --now pgroonga-primary-maintainer.timer
   ok=0
-  for retry in {1..12}; do
+  for retry in {1..10}; do
     after_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
     after_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
 
@@ -68,13 +67,17 @@ function check_last_block () {
     fi
     sleep 1
   done
+  systemctl disable --now pgroonga-primary-maintainer.timer
   echo "${ok}"
 }
 
 ok=0
 for i in {1..10}; do
   run_update_sqls
-  ok=$((ok + $(check_last_block)))
+  ok=$(check_last_block)
+  if [ ${ok} -ne 1 ]; then
+    break
+  fi
 done
 
 systemctl disable --now pgroonga-primary-maintainer.timer
@@ -82,8 +85,7 @@ rm -f "${SERVICE_PATH}" "${TIMER_PATH}"
 
 sudo -u postgres -H psql --command "DROP DATABASE ${DBNAME};"
 
-# Pass with over 80% success.
-if [ ${ok} -ge 8 ]; then
+if [ ${ok} -eq 1 ]; then
   echo "OK."
 else
   echo "Failed."
