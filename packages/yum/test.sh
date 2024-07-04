@@ -117,11 +117,10 @@ sudo -u postgres -H \
      --locale=C \
      --pgdata=${data_dir} \
      --username=root
-cat <<CONF | \
-  sudo -u postgres -H tee --append ${data_dir}/postgresql.conf
-max_prepared_transactions = 1
-pgroonga.enable_wal = yes
-CONF
+{
+  echo "max_prepared_transactions = 1"
+  echo "pgroonga.enable_wal = yes"
+} | sudo -u postgres -H tee --append ${data_dir}/postgresql.conf
 sudo -u postgres -H \
      $(${pg_config} --bindir)/pg_ctl start \
      --pgdata=${data_dir}
