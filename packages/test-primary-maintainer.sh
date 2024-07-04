@@ -80,7 +80,6 @@ for i in {1..10}; do
   fi
 done
 
-systemctl disable --now pgroonga-primary-maintainer.timer
 rm -f "${SERVICE_PATH}" "${TIMER_PATH}"
 
 sudo -u postgres -H psql --command "DROP DATABASE ${DBNAME};"
