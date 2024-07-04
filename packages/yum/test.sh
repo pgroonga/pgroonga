@@ -160,7 +160,7 @@ echo "::endgroup::"
 
 run_test
 
-echo "::group::Run systemd timer test"
+echo "::group::Test primary-maintainer"
 
 $(${pg_config} --bindir)/createuser postgres --superuser
 /host/packages/test-primary-maintainer.sh ${pg_config}
