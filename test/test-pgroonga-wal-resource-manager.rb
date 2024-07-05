@@ -634,6 +634,7 @@ SELECT pgroonga_command(
   end
 
   test "random crash" do
+    require_groonga_version(14, 0, 5)
     require_pgroonga_benchmark
 
     revert_synchronous_replication
