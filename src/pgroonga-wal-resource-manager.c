@@ -918,25 +918,6 @@ pgrnwrm_cleanup(void)
 	grn_fin();
 }
 
-static void
-pgrnwrm_mask(char *pagedata, BlockNumber block_number)
-{
-	if (!StandbyMode)
-		return;
-
-	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": mask");
-}
-
-static void
-pgrnwrm_decode(struct LogicalDecodingContext *context,
-			   struct XLogRecordBuffer *buffer)
-{
-	if (!StandbyMode)
-		return;
-
-	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": decode");
-}
-
 static RmgrData data = {
 	.rm_name = "PGroonga",
 	.rm_redo = pgrnwrm_redo,
@@ -944,8 +925,8 @@ static RmgrData data = {
 	.rm_identify = pgrnwrm_identify,
 	.rm_startup = pgrnwrm_startup,
 	.rm_cleanup = pgrnwrm_cleanup,
-	.rm_mask = pgrnwrm_mask,
-	.rm_decode = pgrnwrm_decode,
+	.rm_mask = NULL,
+	.rm_decode = NULL,
 };
 #endif
 
