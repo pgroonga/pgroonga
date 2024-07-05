@@ -811,10 +811,44 @@ pgrnwrm_redo(XLogReaderState *record)
 static void
 pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 {
-	if (!StandbyMode)
-		return;
+	uint8 info;
 
-	GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [desc]");
+	if (StandbyMode)
+		GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [desc]");
+
+	appendStringInfo(buffer, "rmid: %d", XLogRecGetRmid(record));
+	/* TODO: Add more information */
+	info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
+	switch (info)
+	{
+	case PGRN_WAL_RECORD_CREATE_TABLE:
+		appendStringInfo(buffer, " action: create-table");
+		break;
+	case PGRN_WAL_RECORD_CREATE_COLUMN:
+		appendStringInfo(buffer, " action: create-column");
+		break;
+	case PGRN_WAL_RECORD_SET_SOURCES:
+		appendStringInfo(buffer, " action: set-sources");
+		break;
+	case PGRN_WAL_RECORD_RENAME_TABLE:
+		appendStringInfo(buffer, " action: rename-table");
+		break;
+	case PGRN_WAL_RECORD_INSERT:
+		appendStringInfo(buffer, " action: insert");
+		break;
+	case PGRN_WAL_RECORD_DELETE:
+		appendStringInfo(buffer, " action: delete");
+		break;
+	case PGRN_WAL_RECORD_REMOVE_OBJECT:
+		appendStringInfo(buffer, " action: remove-object");
+		break;
+	case PGRN_WAL_RECORD_REGISTER_PLUGIN:
+		appendStringInfo(buffer, " action: register-plugin");
+		break;
+	default:
+		appendStringInfo(buffer, " action: unknown(%u)", info);
+		break;
+	}
 }
 
 static const char *
