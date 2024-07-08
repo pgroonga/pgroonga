@@ -68,6 +68,7 @@ function check_last_block () {
     sleep 1
   done
   systemctl disable --now pgroonga-primary-maintainer.timer
+  sleep 3 # Wait a bit because `primary-maintainer` may be running.
   echo "${ok}"
 }
 
