@@ -77,6 +77,8 @@ jobs:
           random_page_cost = 0
           CONF
           brew services start postgresql@${{ matrix.postgresql-version }}
+          echo $(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin >> \
+            ${GITHUB_PATH}
       - name: Run regression test
         run: |
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
