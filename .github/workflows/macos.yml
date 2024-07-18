@@ -30,7 +30,7 @@ jobs:
           - "16"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
-    runs-on: macos-12 # TODO: It fails with macos-latest (macos-14).
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,6 +66,9 @@ jobs:
             -e 's/postgresql/postgresql@${{ matrix.postgresql-version }}/g' \
             Brewfile
           brew bundle
+      - name: Update maxfiles limit
+        # To avoid the error `system call error: Too many open files`.
+        run: sudo launchctl limit maxfiles unlimited unlimited
       - name: Prepare PostgreSQL
         run: |
           cat <<CONF >> $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }}/postgresql.conf
@@ -74,6 +77,8 @@ jobs:
           random_page_cost = 0
           CONF
           brew services start postgresql@${{ matrix.postgresql-version }}
+          echo $(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin >> \
+            ${GITHUB_PATH}
       - name: Run regression test
         run: |
           if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
