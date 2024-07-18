@@ -66,6 +66,9 @@ jobs:
             -e 's/postgresql/postgresql@${{ matrix.postgresql-version }}/g' \
             Brewfile
           brew bundle
+      - name: Update maxfiles limit
+        # To avoid the error `system call error: Too many open files`.
+        run: sudo launchctl limit maxfiles unlimited unlimited
       - name: Prepare PostgreSQL
         run: |
           cat <<CONF >> $(brew --prefix)/var/postgresql@${{ matrix.postgresql-version }}/postgresql.conf
