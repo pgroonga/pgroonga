@@ -6,10 +6,7 @@ class PostgreSQL13PGroongaPackageTask < VersionedPGroongaPackageTask
   end
 
   def apt_targets_default
-    [
-      "debian-bullseye",
-      "debian-bullseye-arm64",
-    ]
+    []
   end
 
   def enable_ubuntu?
