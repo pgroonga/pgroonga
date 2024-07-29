@@ -20,9 +20,6 @@ architecture=$(dpkg --print-architecture)
 repositories_dir=/host/repositories
 
 case "${os}-${code-name}" in
-  debian-bullseye)
-    :
-    ;;
   debian-*)
     wget https://apache.jfrog.io/artifactory/arrow/${os}/apache-arrow-apt-source-latest-${code_name}.deb
     apt install -V -y ./apache-arrow-apt-source-latest-${code_name}.deb
