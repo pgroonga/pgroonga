@@ -34,8 +34,6 @@ sudo -u postgres -H "${bindir}/pgroonga-generate-primary-maintainer-timer.sh" \
   sed 's/1:00:00/*:*:*/' | \
   tee "${TIMER_PATH}"
 
-systemctl enable --now pgroonga-primary-maintainer.timer
-
 function run_update_sqls () {
   sudo -u postgres -H psql --dbname "${DBNAME}" \
     --command "INSERT INTO memos SELECT 'PGroonga' FROM generate_series(1, 200);" \
@@ -56,6 +54,7 @@ function check_last_block () {
   before_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
   before_notes_last_block=$(wal_last_block "${NOTES_INDEX_NAME}")
 
+  systemctl enable --now pgroonga-primary-maintainer.timer
   ok=0
   for retry in {1..10}; do
     after_memos_last_block=$(wal_last_block "${MEMOS_INDEX_NAME}")
@@ -68,6 +67,8 @@ function check_last_block () {
     fi
     sleep 1
   done
+  systemctl disable --now pgroonga-primary-maintainer.timer
+  sleep 3 # Wait a bit because `primary-maintainer` may be running.
   echo "${ok}"
 }
 
@@ -80,7 +81,6 @@ for i in {1..10}; do
   fi
 done
 
-systemctl disable --now pgroonga-primary-maintainer.timer
 rm -f "${SERVICE_PATH}" "${TIMER_PATH}"
 
 sudo -u postgres -H psql --command "DROP DATABASE ${DBNAME};"
