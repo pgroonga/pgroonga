@@ -110,7 +110,7 @@ jobs:
         with:
           ruby-version: ruby
           bundler-cache: true
-          cache-version: "bundler-cache-${{ matrix.postgresql-version }}"
+          cache-version: ${{ matrix.postgresql-version }}
       - uses: actions/cache@v4
         with:
           path: |
