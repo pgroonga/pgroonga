@@ -158,13 +158,14 @@ if apt show ${pgroonga_package} > /dev/null 2>&1; then
   apt install -V -y \
     ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
   psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
+
+  run_test
 else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
 
-run_test
 
 echo "::group::Postpare"
 
