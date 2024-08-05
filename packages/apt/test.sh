@@ -2,7 +2,7 @@
 
 set -eux
 
-function run_test () {
+function run_test() {
   echo "::group::Run test"
 
   set +e
