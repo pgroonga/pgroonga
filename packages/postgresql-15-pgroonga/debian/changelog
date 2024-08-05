@@ -1,3 +1,9 @@
+postgresql-15-pgroonga (3.2.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Abe Tomoaki <abe@clear-code.com>  Mon, 05 Aug 2024 08:31:27 -0000
+
 postgresql-15-pgroonga (3.2.1-1) unstable; urgency=low
 
   * New upstream release.
