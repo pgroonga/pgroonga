@@ -2,6 +2,33 @@
 
 set -eux
 
+function run_test () {
+  echo "::group::Run test"
+
+  set +e
+  ${pg_regress} \
+    --launcher=/host/test/short-pgappname \
+    --load-extension=pgroonga \
+    --schedule=schedule
+  pg_regress_status=$?
+  set -e
+
+  echo "::endgroup::"
+
+
+  if [ ${pg_regress_status} -ne 0 ]; then
+    echo "::group::Diff"
+    cat regression.diffs
+    echo "::endgroup::"
+    mkdir -p /host-rw/logs
+    cp -a regression.diffs /host-rw/logs/
+    cp -a ${data_dir}/log /host-rw/logs/postgresql || :
+    mkdir -p /host-rw/logs/pgroonga/ || :
+    cp -a ${data_dir}/pgroonga.log* /host-rw/logs/pgroonga/ || :
+    chmod -R go+rx /host-rw/logs/
+    exit ${pg_regress_status}
+  fi
+}
 
 echo "::group::Prepare repositories"
 
@@ -129,33 +156,7 @@ pg_regress=$(dirname $(${pg_config} --pgxs))/../test/regress/pg_regress
 
 echo "::endgroup::"
 
-
-echo "::group::Run test"
-
-set +e
-${pg_regress} \
-  --launcher=/host/test/short-pgappname \
-  --load-extension=pgroonga \
-  --schedule=schedule
-pg_regress_status=$?
-set -e
-
-echo "::endgroup::"
-
-
-if [ ${pg_regress_status} -ne 0 ]; then
-  echo "::group::Diff"
-  cat regression.diffs
-  echo "::endgroup::"
-  mkdir -p /host-rw/logs
-  cp -a regression.diffs /host-rw/logs/
-  cp -a ${data_dir}/log /host-rw/logs/postgresql || :
-  mkdir -p /host-rw/logs/pgroonga/ || :
-  cp -a ${data_dir}/pgroonga.log* /host-rw/logs/pgroonga/ || :
-  chmod -R go+rx /host-rw/logs/
-  exit ${pg_regress_status}
-fi
-
+run_test
 
 echo "::group::Upgrade"
 
@@ -177,6 +178,7 @@ psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
 
 echo "::endgroup::"
 
+run_test
 
 echo "::group::Postpare"
 
