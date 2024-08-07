@@ -6,7 +6,7 @@
 
 set -eu
 
-TARGET_RPM_PREFIXS=(mecab)
+TARGET_RPM_PREFIXES=(mecab)
 RPM_FILES_DIRECTORY=${1:-.}
 
 cat <<YAML
@@ -33,7 +33,7 @@ data:
     rpms:
 YAML
 
-for prefix in "${TARGET_RPM_PREFIXS[@]}"; do
+for prefix in "${TARGET_RPM_PREFIXES[@]}"; do
   for rpm_file in $(find ${RPM_FILES_DIRECTORY} -name "${prefix}*.rpm"); do
     echo "    - $(basename ${rpm_file} | sed 's/.rpm$//')"
   done
