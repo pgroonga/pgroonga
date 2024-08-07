@@ -6,7 +6,6 @@
 
 set -eu
 
-TARGET_RPM_PREFIXES=(mecab)
 RPM_FILES_DIRECTORY=${1:-.}
 
 cat <<YAML
@@ -14,29 +13,29 @@ cat <<YAML
 document: modulemd-defaults
 version: 1
 data:
-  module: pgroonga
+  module: mecab
   stream: "rolling"
 ...
 ---
 document: modulemd
 version: 2
 data:
-  name: pgroonga
+  name: mecab
   stream: "rolling"
   version: $(date "+%Y%m%d")
-  summary: "pgroonga local repository module"
-  description: "pgroonga local repository module"
+  summary: "mecab module in pgroonga local repository"
+  description: "mecab module in pgroonga local repository"
   license:
     module:
-    - LGPL-2.0-or-later
+    - GPL-2.0-or-later
+    - LGPL-2.1-or-later
+    - BSD-3-Clause
   artifacts:
     rpms:
 YAML
 
-for prefix in "${TARGET_RPM_PREFIXES[@]}"; do
-  for rpm_file in $(find ${RPM_FILES_DIRECTORY} -name "${prefix}*.rpm"); do
-    echo "    - $(basename ${rpm_file} | sed 's/.rpm$//')"
-  done
+for rpm_file in $(find ${RPM_FILES_DIRECTORY} -name "mecab*.rpm"); do
+  echo "    - $(basename ${rpm_file} | sed 's/.rpm$//')"
 done
 
 cat <<YAML
