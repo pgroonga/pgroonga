@@ -23,8 +23,8 @@ data:
   name: mecab
   stream: "rolling"
   version: $(date "+%Y%m%d")
-  summary: "mecab module in pgroonga local repository"
-  description: "mecab module in pgroonga local repository"
+  summary: "MeCab module in PGroonga local repository"
+  description: "MeCab module in PGroonga local repository"
   license:
     module:
     - GPL-2.0-or-later
