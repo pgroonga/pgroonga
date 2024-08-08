@@ -35,7 +35,15 @@ data:
 YAML
 
 for rpm_file in $(find ${RPM_FILES_DIRECTORY} -name "mecab*.rpm"); do
-  echo "    - $(basename ${rpm_file} | sed 's/.rpm$//')"
+  # Convert to artifact.
+  # The difference from the RPM file name is the epoch before the version.
+  #
+  # Example:
+  # rpm_file = mecab-0.996-2.module_el8.6.0+3340+d764b636.x86_64.rpm
+  # artifact = mecab-0:0.996-2.module_el8.6.0+3340+d764b636.x86_64
+  artifact=$(rpm -qp --queryformat '%{name}-%{epoch}:%{version}-%{release}.%{arch}' ${rpm_file} | \
+               sed -e 's/(none)/0/')
+  echo "    - ${artifact}"
 done
 
 cat <<YAML
