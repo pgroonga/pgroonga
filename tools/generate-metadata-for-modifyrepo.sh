@@ -35,7 +35,16 @@ data:
 YAML
 
 for rpm_file in $(find ${RPM_FILES_DIRECTORY} -name "mecab*.rpm"); do
-  echo "    - $(basename ${rpm_file} | sed 's/.rpm$//')"
+  # Convert
+  # rpm_file (mecab-0.996-2.module_el8.6.0+3340+d764b636.x86_64.rpm)
+  # to
+  # artifact (mecab-0:0.996-2.module_el8.6.0+3340+d764b636.x86_64)
+  #
+  # Add `0:` before the version.
+
+  package_name=$(rpm -qp --queryformat '%{NAME}' ${rpm_file})
+  artifact=$(basename ${rpm_file} | sed -E -e 's/.rpm$//' -e "s/(${package_name})-/\1-0:/")
+  echo "    - ${artifact}"
 done
 
 cat <<YAML
