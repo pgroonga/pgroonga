@@ -507,12 +507,15 @@ PGrnWALStart(Relation index)
 	if (!RelationIsValid(index))
 		return NULL;
 
+#	ifdef PGRN_SUPPORT_WAL
 	if (PGrnWALEnabled)
 		PGrnWALLock(index);
+#	endif
 
 	data = palloc(sizeof(PGrnWALData));
 	data->table = NULL;
 
+#	ifdef PGRN_SUPPORT_WAL
 	if (PGrnWALEnabled)
 	{
 		data->index = index;
@@ -524,6 +527,7 @@ PGrnWALStart(Relation index)
 		PGrnWALDataInitCurrent(data);
 		PGrnWALDataInitMessagePack(data);
 	}
+#	endif
 
 	return data;
 #else
@@ -538,6 +542,7 @@ PGrnWALFinish(PGrnWALData *data)
 	if (!data)
 		return;
 
+#	ifdef PGNR_SUPPORT_WAL
 	if (PGrnWALEnabled)
 	{
 		PGrnWALDataFinish(data);
@@ -546,6 +551,7 @@ PGrnWALFinish(PGrnWALData *data)
 
 		PGrnWALUnlock(data->index);
 	}
+#	endif
 
 	pfree(data);
 #endif
@@ -558,14 +564,15 @@ PGrnWALAbort(PGrnWALData *data)
 	if (!data)
 		return;
 
+#	ifdef PGRN_SUPPORT_WAL
 	if (PGrnWALEnabled)
 	{
 		GenericXLogAbort(data->state);
 
 /* For PostgreSQL on Amazon Linux 2. PostgreSQL 12.8 or later provides this. */
-#	ifndef INTERRUPTS_CAN_BE_PROCESSED
-#		define INTERRUPTS_CAN_BE_PROCESSED() false
-#	endif
+#		ifndef INTERRUPTS_CAN_BE_PROCESSED
+#			define INTERRUPTS_CAN_BE_PROCESSED() false
+#		endif
 
 		if (!INTERRUPTS_CAN_BE_PROCESSED())
 		{
@@ -574,6 +581,7 @@ PGrnWALAbort(PGrnWALData *data)
 			PGrnWALUnlock(data->index);
 		}
 	}
+#	endif
 
 	pfree(data);
 #endif
