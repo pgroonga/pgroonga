@@ -542,7 +542,7 @@ PGrnWALFinish(PGrnWALData *data)
 	if (!data)
 		return;
 
-#	ifdef PGNR_SUPPORT_WAL
+#	ifdef PGRN_SUPPORT_WAL
 	if (PGrnWALEnabled)
 	{
 		PGrnWALDataFinish(data);
