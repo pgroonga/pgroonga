@@ -28,6 +28,15 @@ function run_test() {
     chmod -R go+rx /host-rw/logs/
     exit ${pg_regress_status}
   fi
+
+
+  echo "::group::Test primary-maintainer"
+
+  $(pg_config --bindir)/createuser postgres --superuser
+  /host/packages/test-primary-maintainer.sh
+  $(pg_config --bindir)/dropuser postgres
+
+  echo "::endgroup::"
 }
 
 echo "::group::Prepare APT repositories"
@@ -148,15 +157,6 @@ pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
 echo "::endgroup::"
 
 run_test
-
-echo "::group::Test primary-maintainer"
-
-$(pg_config --bindir)/createuser postgres --superuser
-/host/packages/test-primary-maintainer.sh
-$(pg_config --bindir)/dropuser postgres
-
-echo "::endgroup::"
-
 
 echo "::group::Upgrade"
 
