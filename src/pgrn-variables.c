@@ -48,6 +48,11 @@ static char *PGrnLibgroongaVersion;
 
 static bool PGrnEnableWALResourceManager;
 
+#if GRN_VERSION_OR_LATER(14, 0, 7)
+static int PGrnLogRotateThresholdSize;
+static int PGrnQueryLogRotateThresholdSize;
+#endif
+
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx,
 						grn_log_level level,
@@ -150,6 +155,14 @@ PGrnLogLevelAssign(int new_value, void *extra)
 	grn_logger_set_max_level(ctx, new_value);
 }
 
+#if GRN_VERSION_OR_LATER(14, 0, 7)
+static void
+PGrnLogRotateThresholdSizeAssign(int new_value, void *extra)
+{
+	grn_default_logger_set_rotate_threshold_size(new_value);
+}
+#endif
+
 static void
 PGrnQueryLogPathAssignRaw(const char *new_value)
 {
@@ -178,6 +191,14 @@ PGrnQueryLogPathAssign(const char *new_value, void *extra)
 {
 	PGrnQueryLogPathAssignRaw(new_value);
 }
+
+#if GRN_VERSION_OR_LATER(14, 0, 7)
+static void
+PGrnQueryLogRotateThresholdSizeAssign(int new_value, void *extra)
+{
+	grn_default_query_logger_set_rotate_threshold_size(new_value);
+}
+#endif
 
 static void
 PGrnLockTimeoutAssignRaw(int new_value)
@@ -305,6 +326,25 @@ PGrnInitializeVariables(void)
 							 PGrnLogLevelAssign,
 							 NULL);
 
+#if GRN_VERSION_OR_LATER(14, 0, 7)
+	DefineCustomIntVariable(
+		"pgroonga.log_rotate_threshold_size",
+		"PGroonga log rotation threshold.",
+		"Specifies threshold for log rotation. "
+		"Log file is rotated when log file size is larger "
+		"than or equals to the threshold (default: 0; disabled). "
+		"Unit is bytes.",
+		&PGrnLogRotateThresholdSize,
+		grn_default_logger_get_rotate_threshold_size(),
+		0,
+		INT_MAX,
+		PGC_USERSET,
+		GUC_UNIT_BYTE,
+		NULL,
+		PGrnLogRotateThresholdSizeAssign,
+		NULL);
+#endif
+
 	DefineCustomStringVariable("pgroonga.query_log_path",
 							   "Query log path for PGroonga.",
 							   "Path must be a relative path "
@@ -318,6 +358,25 @@ PGrnInitializeVariables(void)
 							   NULL,
 							   PGrnQueryLogPathAssign,
 							   NULL);
+
+#if GRN_VERSION_OR_LATER(14, 0, 7)
+	DefineCustomIntVariable(
+		"pgroonga.query_log_rotate_threshold_size",
+		"PGroonga query log rotation threshold.",
+		"Specifies threshold for query log rotation. "
+		"Query log file is rotated when query log file size is "
+		"larger than or equals to the threshold (default: 0; disabled). "
+		"Unit is bytes.",
+		&PGrnQueryLogRotateThresholdSize,
+		grn_default_query_logger_get_rotate_threshold_size(),
+		0,
+		INT_MAX,
+		PGC_USERSET,
+		GUC_UNIT_BYTE,
+		NULL,
+		PGrnQueryLogRotateThresholdSizeAssign,
+		NULL);
+#endif
 
 	DefineCustomIntVariable("pgroonga.lock_timeout",
 							"Try pgroonga.lock_timeout times "

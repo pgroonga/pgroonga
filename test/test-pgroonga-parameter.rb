@@ -56,4 +56,43 @@ pgroonga.log_type = postgresql
       end
     end
   end
+
+  sub_test_case "pgroonga.log_rotate_threshold_size" do
+    setup do
+      require_groonga_version(14, 0, 7)
+    end
+
+    def additional_configurations
+      <<-CONFIG
+pgroonga.log_rotate_threshold_size = 10
+      CONFIG
+    end
+
+    test "rotated" do
+      before_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.log*")
+      run_sql("SELECT pgroonga_command('status');")
+      after_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.log*")
+      assert_true(before_log_files.size < after_log_files.size)
+    end
+  end
+
+  sub_test_case "pgroonga.query_log_rotate_threshold_size" do
+    setup do
+      require_groonga_version(14, 0, 7)
+    end
+
+    def additional_configurations
+      <<-CONFIG
+pgroonga.query_log_rotate_threshold_size = 10
+pgroonga.query_log_path = 'pgroonga.query.log'
+      CONFIG
+    end
+
+    test "rotated" do
+      before_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.query.log*")
+      run_sql("SELECT pgroonga_command('status');")
+      after_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.query.log*")
+      assert_true(before_log_files.size < after_log_files.size)
+    end
+  end
 end
