@@ -68,7 +68,14 @@ function check_last_block () {
     sleep 1
   done
   systemctl disable --now pgroonga-primary-maintainer.timer
-  sleep 3 # Wait a bit because `primary-maintainer` may be running.
+  # activating: Running
+  # inactive: Not running
+  # failed: Failure due to multiple startup, etc.
+  #
+  # All status codes are non-zero.
+  while [ -n "$(systemctl is-active pgroonga-primary-maintainer 2>&1 | grep -v inactive 2>&1)" ]; do
+    sleep 1
+  done
   echo "${ok}"
 }
 
