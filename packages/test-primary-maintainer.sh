@@ -73,7 +73,7 @@ function check_last_block () {
   # failed: Failure due to multiple startup, etc.
   #
   # All status codes are non-zero.
-  while [ -n "$(systemctl is-active pgroonga-primary-maintainer 2>&1 | grep -v inactive 2>&1)" ]; do
+  while [ "$(systemctl is-active pgroonga-primary-maintainer)" = "activating" ]; do
     sleep 1
   done
   echo "${ok}"
