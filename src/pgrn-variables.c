@@ -137,7 +137,7 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
-	grn_default_logger_set_max_level(new_value);
+	grn_logger_set_max_level(ctx, new_value);
 }
 
 static void
