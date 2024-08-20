@@ -21,7 +21,7 @@ class PGroongaPrimaryMaintainerTestCase < Test::Unit::TestCase
   end
 
   setup do
-    omit("Omit on Windows: Bash scripts cannot be run.") if Gem.win_platform?
+    omit("Omit on Windows: Bash scripts cannot be run.") if windows?
 
     run_sql("CREATE TABLE notes (content text);")
     run_sql("CREATE INDEX notes_content ON notes USING pgroonga (content);")
