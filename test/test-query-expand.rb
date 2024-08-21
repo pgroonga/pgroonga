@@ -17,7 +17,7 @@ class QueryExpandTestCase < Test::Unit::TestCase
 
   sub_test_case("Sudachi") do
     setup do
-      if Gem.win_platform?
+      if windows?
         omit("Can't use multibyte characters on Windows")
       end
       run_sql(<<-SQL)
