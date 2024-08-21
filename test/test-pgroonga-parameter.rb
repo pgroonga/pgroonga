@@ -4,7 +4,10 @@ class PGroongaParameterTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
   setup do
-    @debug_log_pattern = /\|d\|.*:(set_normalizers NormalizerAuto)/
+    @debug_log_pattern = {
+      pgroonga_log: /\|d\|\d+: (.*)$/,
+      postgresql_log: /\|d\| (.*) \d+$/,
+    }
   end
 
   sub_test_case "pgroonga.log_type = file" do
@@ -18,13 +21,14 @@ pgroonga.log_level = debug
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
-        assert_equal([["set_normalizers NormalizerAuto"], ["set_normalizers NormalizerAuto"]],
-                     pgroonga_log.scan(@debug_log_pattern),
+        assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
+                     pgroonga_log.scan(@debug_log_pattern[:pgroonga_log]).first,
                      pgroonga_log)
 
         postgresql_log = @postgresql.read_log
-        assert_true(postgresql_log.scan(@debug_log_pattern).empty?,
-                    postgresql_log)
+        assert_equal([],
+                     postgresql_log.scan(@debug_log_pattern[:postgresql_log]),
+                     postgresql_log)
       end
     end
   end
@@ -40,12 +44,13 @@ pgroonga.log_level = debug
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
-        assert_true(pgroonga_log.scan(@debug_log_pattern).empty?,
-                    pgroonga_log)
+        assert_equal([],
+                     pgroonga_log.scan(@debug_log_pattern[:pgroonga_log]),
+                     pgroonga_log)
 
         postgresql_log = @postgresql.read_log
-        assert_equal([["set_normalizers NormalizerAuto"], ["set_normalizers NormalizerAuto"]],
-                     postgresql_log.scan(@debug_log_pattern),
+        assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
+                     postgresql_log.scan(@debug_log_pattern[:postgresql_log]).first,
                      postgresql_log)
       end
     end
