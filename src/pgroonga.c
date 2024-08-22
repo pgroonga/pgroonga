@@ -677,15 +677,15 @@ _PG_init(void)
 		PGrnBaseInitialized = false;
 		PGrnGroongaInitialized = false;
 
+		rc = grn_init();
+		PGrnCheckRC(rc, "failed to initialize Groonga");
+
 		PGrnInitializeVariables();
 
 		grn_thread_set_get_limit_func(PGrnGetThreadLimit, NULL);
 
 		grn_default_logger_set_flags(grn_default_logger_get_flags() |
 									 GRN_LOG_PID);
-
-		rc = grn_init();
-		PGrnCheckRC(rc, "failed to initialize Groonga");
 
 		grn_set_segv_handler();
 		grn_set_abrt_handler();
