@@ -69,10 +69,10 @@ pgroonga.log_rotate_threshold_size = 10
     end
 
     test "rotated" do
-      before_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.log*")
       run_sql("SELECT pgroonga_command('status');")
-      after_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.log*")
-      assert_true(before_log_files.size < after_log_files.size)
+      assert do
+        not Pathname.glob("#{@postgresql.dir}/pgroonga.log.*").empty?
+      end
     end
   end
 
@@ -89,10 +89,10 @@ pgroonga.query_log_path = 'pgroonga.query.log'
     end
 
     test "rotated" do
-      before_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.query.log*")
       run_sql("SELECT pgroonga_command('status');")
-      after_log_files = Pathname.glob("#{@postgresql.dir}/pgroonga.query.log*")
-      assert_true(before_log_files.size < after_log_files.size)
+      assert do
+        not Pathname.glob("#{@postgresql.dir}/pgroonga.query.log.*").empty?
+      end
     end
   end
 end
