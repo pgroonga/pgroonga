@@ -3,54 +3,55 @@ require_relative "helpers/sandbox"
 class PGroongaParameterTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
-  setup do
-    @debug_log_pattern = {
-      pgroonga_log: /\|d\|\d+: (.*)$/,
-      postgresql_log: /\|d\| (.*) \d+$/,
-    }
+  def scan_pgroonga_debug_log(log)
+    log.scan(/\|d\|\d+: (.*)$/)
   end
 
-  sub_test_case "pgroonga.log_type = file" do
-    sub_test_case "pgroonga.log_level = debug" do
-      def additional_configurations
-        <<-CONFIG
-pgroonga.log_type = file
+  def scan_postgresql_debug_log(log)
+    log.scan(/\|d\| (.*) \d+$/)
+  end
+
+  sub_test_case "pgroonga.log_level = debug" do
+    def additional_configurations
+      <<-CONFIG
 pgroonga.log_level = debug
+      CONFIG
+    end
+
+    sub_test_case "pgroonga.log_type = file" do
+      def additional_configurations
+        super + <<-CONFIG
+pgroonga.log_type = file
         CONFIG
       end
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     pgroonga_log.scan(@debug_log_pattern[:pgroonga_log]).first,
+                     scan_pgroonga_debug_log(pgroonga_log).first,
                      pgroonga_log)
-
         postgresql_log = @postgresql.read_log
         assert_equal([],
-                     postgresql_log.scan(@debug_log_pattern[:postgresql_log]),
+                     scan_postgresql_debug_log(postgresql_log),
                      postgresql_log)
       end
     end
-  end
 
-  sub_test_case "pgroonga.log_type = postgresql" do
-    sub_test_case "pgroonga.log_level = debug" do
+    sub_test_case "pgroonga.log_type = postgresql" do
       def additional_configurations
-        <<-CONFIG
+        super + <<-CONFIG
 pgroonga.log_type = postgresql
-pgroonga.log_level = debug
         CONFIG
       end
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
         assert_equal([],
-                     pgroonga_log.scan(@debug_log_pattern[:pgroonga_log]),
+                     scan_pgroonga_debug_log(pgroonga_log),
                      pgroonga_log)
-
         postgresql_log = @postgresql.read_log
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     postgresql_log.scan(@debug_log_pattern[:postgresql_log]).first,
+                     scan_postgresql_debug_log(postgresql_log).first,
                      postgresql_log)
       end
     end
