@@ -156,6 +156,9 @@ PGrnLogLevelAssign(int new_value, void *extra)
 static void
 PGrnLogRotateThresholdSizeAssign(int new_value, void *extra)
 {
+	if (new_value == grn_default_logger_get_rotate_threshold_size())
+		return;
+
 #if GRN_VERSION_OR_LATER(14, 0, 7)
 	grn_default_logger_set_rotate_threshold_size(new_value);
 #else
@@ -199,6 +202,9 @@ PGrnQueryLogPathAssign(const char *new_value, void *extra)
 static void
 PGrnQueryLogRotateThresholdSizeAssign(int new_value, void *extra)
 {
+	if (new_value == grn_default_query_logger_get_rotate_threshold_size())
+		return;
+
 #if GRN_VERSION_OR_LATER(14, 0, 7)
 	grn_default_query_logger_set_rotate_threshold_size(new_value);
 #else
