@@ -100,7 +100,8 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		grn_logger_set(ctx, &PGrnPostgreSQLLogger);
 		break;
 	default:
-		grn_logger_set(ctx, NULL);
+		if (PGrnGroongaInitialized)
+			grn_logger_set(ctx, NULL);
 		break;
 	}
 }
@@ -137,6 +138,7 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
+	grn_default_logger_set_max_level(new_value);
 	grn_logger_set_max_level(ctx, new_value);
 }
 
