@@ -60,12 +60,11 @@ pgroonga.log_type = postgresql
   sub_test_case "pgroonga.log_rotate_threshold_size" do
     setup do
       require_groonga_version(14, 0, 7)
-    end
-
-    def additional_configurations
-      <<-CONFIG
+      stop_postgres
+      @postgresql.append_configuration(<<-CONFIG)
 pgroonga.log_rotate_threshold_size = 10
       CONFIG
+      start_postgres
     end
 
     test "rotated" do
@@ -79,13 +78,12 @@ pgroonga.log_rotate_threshold_size = 10
   sub_test_case "pgroonga.query_log_rotate_threshold_size" do
     setup do
       require_groonga_version(14, 0, 7)
-    end
-
-    def additional_configurations
-      <<-CONFIG
+      stop_postgres
+      @postgresql.append_configuration(<<-CONFIG)
 pgroonga.query_log_rotate_threshold_size = 10
 pgroonga.query_log_path = 'pgroonga.query.log'
       CONFIG
+      start_postgres
     end
 
     test "rotated" do
