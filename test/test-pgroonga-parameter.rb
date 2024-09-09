@@ -56,4 +56,41 @@ pgroonga.log_type = postgresql
       end
     end
   end
+
+  sub_test_case "pgroonga.log_rotate_threshold_size" do
+    setup do
+      require_groonga_version(14, 0, 7)
+      stop_postgres
+      @postgresql.append_configuration(<<-CONFIG)
+pgroonga.log_rotate_threshold_size = 10
+      CONFIG
+      start_postgres
+    end
+
+    test "rotated" do
+      run_sql("SELECT pgroonga_command('status');")
+      assert do
+        not Pathname.glob("#{@postgresql.dir}/pgroonga.log.*").empty?
+      end
+    end
+  end
+
+  sub_test_case "pgroonga.query_log_rotate_threshold_size" do
+    setup do
+      require_groonga_version(14, 0, 7)
+      stop_postgres
+      @postgresql.append_configuration(<<-CONFIG)
+pgroonga.query_log_rotate_threshold_size = 10
+pgroonga.query_log_path = 'pgroonga.query.log'
+      CONFIG
+      start_postgres
+    end
+
+    test "rotated" do
+      run_sql("SELECT pgroonga_command('status');")
+      assert do
+        not Pathname.glob("#{@postgresql.dir}/pgroonga.query.log.*").empty?
+      end
+    end
+  end
 end
