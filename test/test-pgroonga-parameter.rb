@@ -35,6 +35,19 @@ pgroonga.log_type = file
                      scan_postgresql_debug_log(postgresql_log),
                      postgresql_log)
       end
+
+      test "override by query" do
+        run_sql do |input, output, error|
+          input.puts("SET pgroonga.log_type = postgresql;")
+          input.puts("SELECT pgroonga_command('status');")
+          input.close
+        end
+
+        postgresql_log = @postgresql.read_log
+        assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
+                     scan_postgresql_debug_log(postgresql_log).first,
+                     postgresql_log)
+      end
     end
 
     sub_test_case "pgroonga.log_type = postgresql" do
@@ -53,6 +66,18 @@ pgroonga.log_type = postgresql
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
                      scan_postgresql_debug_log(postgresql_log).first,
                      postgresql_log)
+      end
+
+      test "override by query" do
+        run_sql do |input, output, error|
+          input.puts("SET pgroonga.log_type = file;")
+          input.puts("SELECT pgroonga_command('status');")
+          input.close
+        end
+        pgroonga_log = @postgresql.read_pgroonga_log
+        assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
+                     scan_pgroonga_debug_log(pgroonga_log).first,
+                     pgroonga_log)
       end
     end
   end
