@@ -13,6 +13,9 @@ if(MSVC_VERSION LESS 1800)
 endif()
 
 add_subdirectory(vendor/groonga)
+if(NOT TARGET Groonga::msgpackc AND TARGET msgpackc)
+  add_library(Groonga::msgpackc ALIAS msgpackc)
+endif()
 
 set(PGRN_POSTGRESQL_DIR "${CMAKE_INSTALL_PREFIX}"
   CACHE PATH "PostgreSQL binary directory")
@@ -54,14 +57,6 @@ string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\3"
 string(REGEX REPLACE ".*comment = '([^']+)'.*" "\\1"
   PGRN_DESCRIPTION "${PGRN_CONTROL}")
 
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/bundled_message_pack_version"
-  PGRN_BUNDLED_MESSAGE_PACK_VERSION)
-string(STRIP
-  "${PGRN_BUNDLED_MESSAGE_PACK_VERSION}"
-  PGRN_BUNDLED_MESSAGE_PACK_VERSION)
-set(PGRN_BUNDLED_MESSAGE_PACK_DIR
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/vendor/msgpack-${PGRN_BUNDLED_MESSAGE_PACK_VERSION}")
-
 add_definitions(
   -DPGRN_VERSION="${PGRN_VERSION}"
   -DPGRN_HAVE_MSGPACK)
@@ -72,8 +67,7 @@ include_directories(
   "${PGRN_POSTGRESQL_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/vendor/groonga/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/vendor/groonga/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/xxHash"
-  "${PGRN_BUNDLED_MESSAGE_PACK_DIR}/include")
+  "${CMAKE_CURRENT_SOURCE_DIR}/vendor/xxHash")
 link_directories(
   "${PGRN_POSTGRESQL_DIR}/lib")
 
@@ -170,7 +164,7 @@ set_target_properties("${PGRN_LIBRARY_NAME}"
   OUTPUT_NAME "${PGRN_DLL_NAME}")
 target_link_libraries("${PGRN_LIBRARY_NAME}"
   libgroonga
-  msgpackc
+  Groonga::msgpackc
   "postgres.lib")
 install(TARGETS "${PGRN_LIBRARY_NAME}"
   DESTINATION "${PGRN_EXTENSION_DIR}")
