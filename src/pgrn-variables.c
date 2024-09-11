@@ -103,8 +103,7 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		grn_logger_set(ctx, &PGrnPostgreSQLLogger);
 		break;
 	default:
-		if (PGrnGroongaInitialized)
-			grn_logger_set(ctx, NULL);
+		grn_logger_set(ctx, NULL);
 		break;
 	}
 }
@@ -141,15 +140,6 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
-	/*
-	 * If `pgroonga.log_type` is not specified, Groonga's default logger is
-	 * used. grn_default_logger_set_max_level() is required for it.
-	 *
-	 * If `pgroonga.log_type` is specified, set the logger with
-	 * grn_logger_set(). In that case, use grn_logger_set_max_level() to change
-	 * the setting.
-	 */
-	grn_default_logger_set_max_level(new_value);
 	grn_logger_set_max_level(ctx, new_value);
 }
 
