@@ -37,6 +37,8 @@ pgroonga.log_type = file
       end
 
       test "override by query" do
+        require_groonga_version(14, 0, 8)
+
         run_sql do |input, output, error|
           input.puts("SET pgroonga.log_type = postgresql;")
           input.puts("SELECT pgroonga_command('status');")
@@ -69,6 +71,8 @@ pgroonga.log_type = postgresql
       end
 
       test "override by query" do
+        require_groonga_version(14, 0, 8)
+
         run_sql do |input, output, error|
           input.puts("SET pgroonga.log_type = file;")
           input.puts("SELECT pgroonga_command('status');")
