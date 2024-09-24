@@ -109,9 +109,8 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		 * (= Do not run grn_logger_set() before PGrnGroongaInitialized.)
 		 * Because it crashes on Windows under Groonga 14.0.8.
 		 */
-		if (!PGrnGroongaInitialized && !PGrnGroongaVersionOrLater(14, 0, 8))
-			break;
-		grn_logger_set(ctx, NULL);
+		if (PGrnGroongaVersionOrLater(14, 0, 8) || PGrnGroongaInitialized)
+			grn_logger_set(ctx, NULL);
 		break;
 	}
 }
