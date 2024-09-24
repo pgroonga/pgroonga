@@ -63,6 +63,20 @@ PGrnInspectName(grn_obj *object)
 	return name;
 }
 
+static inline bool
+PGrnGroongaVersionOrLater(uint32_t major, uint32_t minor, uint32_t micro)
+{
+	// Same as GRN_VERSION_OR_LATER() in Groonga.
+	uint32_t grn_version_major = grn_get_version_major();
+	uint32_t grn_version_minor = grn_get_version_minor();
+	uint32_t grn_version_micro = grn_get_version_micro();
+
+	return (grn_version_major > major ||
+			(grn_version_major == major && grn_version_minor > minor) ||
+			(grn_version_major == major && grn_version_minor == minor &&
+			 grn_version_micro >= micro));
+}
+
 static inline grn_encoding
 PGrnPGEncodingToGrnEncoding(int pgEncoding)
 {

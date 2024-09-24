@@ -2,6 +2,7 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-global.h"
+#include "pgrn-groonga.h"
 #include "pgrn-log-level.h"
 #include "pgrn-row-level-security.h"
 #include "pgrn-trace-log.h"
@@ -103,19 +104,13 @@ PGrnLogTypeAssign(int new_value, void *extra)
 		grn_logger_set(ctx, &PGrnPostgreSQLLogger);
 		break;
 	default:
-#if !GRN_VERSION_OR_LATER(14, 0, 8)
 		/*
 		 * grn_logger_set() is not run to set the default value.
 		 * (= Do not run grn_logger_set() before PGrnGroongaInitialized.)
 		 * Because it crashes on Windows under Groonga 14.0.8.
 		 */
-		if (PGrnGroongaInitialized)
-		{
-#endif
+		if (PGrnGroongaVersionOrLater(14, 0, 8) || PGrnGroongaInitialized)
 			grn_logger_set(ctx, NULL);
-#if !GRN_VERSION_OR_LATER(14, 0, 8)
-		}
-#endif
 		break;
 	}
 }
@@ -152,7 +147,6 @@ PGrnLogPathAssign(const char *new_value, void *extra)
 static void
 PGrnLogLevelAssign(int new_value, void *extra)
 {
-#if !GRN_VERSION_OR_LATER(14, 0, 8)
 	/*
 	 * If `pgroonga.log_type` is not specified, Groonga's default logger is
 	 * used. grn_default_logger_set_max_level() is required for it.
@@ -163,8 +157,8 @@ PGrnLogLevelAssign(int new_value, void *extra)
 	 *
 	 * See also the comments on PGrnLogTypeAssign().
 	 */
-	grn_default_logger_set_max_level(new_value);
-#endif
+	if (!PGrnGroongaVersionOrLater(14, 0, 8))
+		grn_default_logger_set_max_level(new_value);
 	grn_logger_set_max_level(ctx, new_value);
 }
 
