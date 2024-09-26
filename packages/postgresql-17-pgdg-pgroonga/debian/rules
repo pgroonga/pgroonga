@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+# -*- makefile-gmake -*-
+#
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	if pkg-config --exists "libxxhash >= 0.8.0"; then	\
+		dh_auto_build -- HAVE_MSGPACK=1 HAVE_XXHASH=1;	\
+	else							\
+		dh_auto_build -- HAVE_MSGPACK=1;		\
+	fi
+
+# disable 'make check'.
+override_dh_auto_test:
