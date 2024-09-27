@@ -1,4 +1,5 @@
 ARG FROM=almalinux:8
+ARG POSTGRESQL_VERSION
 FROM ${FROM}
 
 ARG DEBUG
@@ -18,6 +19,6 @@ RUN \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
-    postgresql12-devel \
+    postgresql${POSTGRESQL_VERSION}-devel \
     xxhash-devel && \
   dnf clean -y ${quiet} all

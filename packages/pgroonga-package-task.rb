@@ -161,4 +161,10 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
     end
     super
   end
+
+  def docker_build_options(os, architecture)
+    [
+      "--build-arg", "POSTGRESQL_VERSION=#{@postgresql_version}",
+    ]
+  end
 end

@@ -1,4 +1,5 @@
 ARG FROM=debian:bookworm
+ARG POSTGRESQL_VERSION
 FROM ${FROM}
 
 RUN \
@@ -30,5 +31,5 @@ RUN \
     libgroonga-dev \
     libmsgpack-dev \
     pkg-config \
-    postgresql-server-dev-12 && \
+    postgresql-server-dev-${POSTGRESQL_VERSION} && \
   apt clean
