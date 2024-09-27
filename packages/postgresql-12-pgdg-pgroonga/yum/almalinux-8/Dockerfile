@@ -2,6 +2,7 @@ ARG FROM=almalinux:8
 FROM ${FROM}
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "--quiet") && \
@@ -18,6 +19,6 @@ RUN \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
-    postgresql12-devel \
+    postgresql${POSTGRESQL_VERSION}-devel \
     xxhash-devel && \
   dnf clean -y ${quiet} all
