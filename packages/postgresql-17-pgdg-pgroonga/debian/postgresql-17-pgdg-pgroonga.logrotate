@@ -1,4 +1,4 @@
-/var/lib/postgresql/16/main/pgroonga.log {
+/var/lib/postgresql/17/main/pgroonga.log {
     weekly
     missingok
     rotate 10
