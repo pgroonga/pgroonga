@@ -1,8 +1,8 @@
 ARG FROM=almalinux:8
-ARG POSTGRESQL_VERSION
 FROM ${FROM}
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "--quiet") && \

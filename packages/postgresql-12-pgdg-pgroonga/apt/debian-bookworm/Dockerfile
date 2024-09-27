@@ -1,5 +1,4 @@
 ARG FROM=debian:bookworm
-ARG POSTGRESQL_VERSION
 FROM ${FROM}
 
 RUN \
@@ -7,6 +6,7 @@ RUN \
     debconf-set-selections
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \

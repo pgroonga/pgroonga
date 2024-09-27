@@ -1,5 +1,4 @@
 ARG FROM=ubuntu:jammy
-ARG POSTGRESQL_VERSION
 FROM ${FROM}
 
 RUN \
@@ -7,6 +6,7 @@ RUN \
     debconf-set-selections
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
