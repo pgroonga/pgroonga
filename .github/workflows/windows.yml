@@ -204,7 +204,7 @@ jobs:
           } else {
             $PG_REGRESS_PATH =  "pgsql\bin"
           }
-          ..\${PG_REGRESS_PATH}\pg_regress `
+          ..\$PG_REGRESS_PATH\pg_regress `
             --bindir=..\pgsql\bin `
             --encoding=${Env:PGROONGA_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
