@@ -200,9 +200,9 @@ jobs:
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
           if (${{ matrix.postgresql-version-major }} -ge 17) {
-            $PG_REGRESS_PATH =  pgsql\lib\pgxs\src\test\regress
+            $PG_REGRESS_PATH =  "pgsql\lib\pgxs\src\test\regress"
           } else {
-            $PG_REGRESS_PATH =  pgsql\bin
+            $PG_REGRESS_PATH =  "pgsql\bin"
           }
           ..\${PG_REGRESS_PATH}\pg_regress `
             --bindir=..\pgsql\bin `
