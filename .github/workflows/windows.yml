@@ -203,7 +203,7 @@ jobs:
           if (${{ matrix.postgresql-version-major }} -ge 17) {
             $PG_REGRESS = "..\pgsql\lib\pgxs\src\test\regress\pg_regress"
           }
-          "$PG_REGRESS" `
+          & $PG_REGRESS `
             --bindir=..\pgsql\bin `
             --encoding=${Env:PGROONGA_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
