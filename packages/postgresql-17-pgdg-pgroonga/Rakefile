@@ -16,9 +16,8 @@ class PostgreSQL17PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     false
   end
 
-  def yum_targets_default
-    [
-    ]
+  def enable_yum?
+    false
   end
 end
 
