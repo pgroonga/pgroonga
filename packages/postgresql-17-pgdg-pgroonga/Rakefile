@@ -1,0 +1,25 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL17PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("17", "-pgdg")
+  end
+
+  def apt_targets_default
+    [
+      "debian-bookworm",
+      "debian-bookworm-arm64",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL17PGDGPGroongaPackageTask.new
+task.define
