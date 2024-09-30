@@ -28,8 +28,8 @@ jobs:
           - PostgreSQL 14
           - PostgreSQL 15
           - PostgreSQL 16
-          - PostgreSQL 16 with Groonga main
           - PostgreSQL 17
+          - PostgreSQL 17 with Groonga main
         include:
           - label: PostgreSQL 12
             postgresql-version: "12"
@@ -41,11 +41,10 @@ jobs:
             postgresql-version: "15"
           - label: PostgreSQL 16
             postgresql-version: "16"
-          - label: PostgreSQL 16 with Groonga main
-            groonga-main: "yes"
-            postgresql-version: "16"
           - label: PostgreSQL 17
-            postgresql-unreleased: "yes"
+            postgresql-version: "17"
+          - label: PostgreSQL 17 with Groonga main
+            groonga-main: "yes"
             postgresql-version: "17"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
