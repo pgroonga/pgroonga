@@ -34,9 +34,11 @@ jobs:
             postgresql-version: "15.8-1"
           - postgresql-version-major: "16"
             postgresql-version: "16.4-1"
+          - postgresql-version-major: "17"
+            postgresql-version: "17.0-1"
           - groonga-main: "yes"
-            postgresql-version-major: "16"
-            postgresql-version: "16.4-1"
+            postgresql-version-major: "17"
+            postgresql-version: "17.0-1"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"
@@ -197,7 +199,11 @@ jobs:
           }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
-          ..\pgsql\bin\pg_regress `
+          $PG_REGRESS = "..\pgsql\lib\pgxs\src\test\regress\pg_regress"
+          if (${{ matrix.postgresql-version-major }} -lt 17) {
+            $PG_REGRESS = "..\pgsql\bin\pg_regress"
+          }
+          & $PG_REGRESS `
             --bindir=..\pgsql\bin `
             --encoding=${Env:PGROONGA_TEST_ENCODING} `
             --launcher=test\short-pgappname.bat `
