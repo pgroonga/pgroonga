@@ -6,6 +6,7 @@ RUN \
     debconf-set-selections
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
@@ -22,7 +23,7 @@ RUN \
     libgroonga-dev \
     libmsgpack-dev \
     pkg-config \
-    postgresql-server-dev-14 && \
+    postgresql-server-dev-${POSTGRESQL_VERSION} && \
   apt clean && \
   rm -rf /var/lib/apt/lists/*
 
