@@ -28,6 +28,7 @@ jobs:
           - "14"
           - "15"
           - "16"
+          - "17"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
     runs-on: macos-latest
