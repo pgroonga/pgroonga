@@ -6,6 +6,7 @@ RUN \
     debconf-set-selections
 
 ARG DEBUG
+ARG POSTGRESQL_VERSION
 
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "-qq") && \
@@ -31,5 +32,5 @@ RUN \
     libmsgpack-dev \
     libxxhash-dev \
     pkg-config \
-    postgresql-server-dev-16 && \
+    postgresql-server-dev-${POSTGRESQL_VERSION} && \
   apt clean
