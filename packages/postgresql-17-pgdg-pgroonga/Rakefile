@@ -9,6 +9,8 @@ class PostgreSQL17PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "debian-bookworm",
       "debian-bookworm-arm64",
+      "ubuntu-focal",
+      "ubuntu-focal-arm64",
     ]
   end
 
