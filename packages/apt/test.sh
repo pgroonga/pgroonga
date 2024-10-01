@@ -163,20 +163,27 @@ echo "::group::Upgrade"
 apt purge -V -y ${pgroonga_package}
 
 if apt show ${pgroonga_package} > /dev/null 2>&1; then
+  can_upgrade=yes
+else
+  can_upgrade=no
+fi
+
+if [ "${can_upgrade}" = "yes" ]; then
   apt install -V -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
   apt install -V -y \
     ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
   psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
-
-  run_test
 else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
 
+if [ "${can_upgrade}" = "yes" ]; then
+  run_test
+fi
 
 echo "::group::Postpare"
 

@@ -174,6 +174,12 @@ echo "::group::Upgrade"
 ${DNF} remove -y ${pgroonga_package}
 
 if ${DNF} info ${pgroonga_package} > /dev/null 2>&1; then
+  can_upgrade=yes
+else
+  can_upgrade=no
+fi
+
+if [ "${can_upgrade}" = "yes" ]; then
   ${DNF} install -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
@@ -185,7 +191,9 @@ fi
 
 echo "::endgroup::"
 
-run_test
+if [ "${can_upgrade}" = "yes" ]; then
+  run_test
+fi
 
 echo "::group::Postpare"
 
