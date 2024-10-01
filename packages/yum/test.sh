@@ -173,19 +173,15 @@ echo "::group::Upgrade"
 
 ${DNF} remove -y ${pgroonga_package}
 
-# Disable upgrade test for first time packages.
-# TODO: Automate this. We don't want to maintain this manually.
-# case ${postgresql_version} in
-#   16) # TODO: Remove this after 3.1.4 release.
-#     exit
-#     ;;
-# esac
-
-${DNF} install -y ${pgroonga_package}
-createdb upgrade
-psql upgrade -c 'CREATE EXTENSION pgroonga'
-${DNF} install -y ${packages_dir}/*.rpm
-psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
+if ${DNF} info ${pgroonga_package} > /dev/null 2>&1; then
+  ${DNF} install -y ${pgroonga_package}
+  createdb upgrade
+  psql upgrade -c 'CREATE EXTENSION pgroonga'
+  ${DNF} install -y ${packages_dir}/*.rpm
+  psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
+else
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+fi
 
 echo "::endgroup::"
 
