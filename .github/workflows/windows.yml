@@ -34,9 +34,11 @@ jobs:
             postgresql-version: "15.8-1"
           - postgresql-version-major: "16"
             postgresql-version: "16.4-1"
+          - postgresql-version-major: "17"
+            postgresql-version: "17.0-1"
           - groonga-main: "yes"
-            postgresql-version-major: "16"
-            postgresql-version: "16.4-1"
+            postgresql-version-major: "17"
+            postgresql-version: "17.0-1"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"
@@ -197,6 +199,15 @@ jobs:
           }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
+          if (${{ matrix.postgresql-version-major }} -ge 17) {
+            # pg_regress.exe depends on libpq.dll and libpq.dll exists
+            # in pgsql\bin\. We need to set $Env:PATH or use same
+            # directory to resolve the dependency. We use the same
+            # directory approach here.
+            Copy-Item `
+              -Path ..\pgsql\lib\pgxs\src\test\regress\pg_regress.exe `
+              ..\pgsql\bin\
+          }
           ..\pgsql\bin\pg_regress `
             --bindir=..\pgsql\bin `
             --encoding=${Env:PGROONGA_TEST_ENCODING} `
