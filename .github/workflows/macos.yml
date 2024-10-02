@@ -51,8 +51,9 @@ jobs:
               sort --version-sort | \
               head -n1 \
           )
-          if [ "${older_groonga_version}" = "${homebrew_groonga_version}" ] && \
-             [ "${homebrew_groonga_version}" != "${required_groonga_version}" ]; then
+          if ([ "${older_groonga_version}" = "${homebrew_groonga_version}" ] && \
+              [ "${homebrew_groonga_version}" != "${required_groonga_version}" ]) || \
+             ! brew info postgresql@${{ matrix.postgresql-version }}; then
             brew update
             # Force overwriting Python related symbolic links because
             # Python related files in $(brew --prefix)/bin/ are provided
