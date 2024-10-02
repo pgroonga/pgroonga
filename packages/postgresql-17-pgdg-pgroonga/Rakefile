@@ -25,6 +25,7 @@ class PostgreSQL17PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
   def yum_targets_default
     [
       "almalinux-8",
+      "almalinux-9",
     ]
   end
 end
