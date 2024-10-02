@@ -199,7 +199,7 @@ jobs:
           }
           ruby test\prepare.rb > schedule
           $Env:PG_REGRESS_DIFF_OPTS = "-u"
-          if (${{ matrix.postgresql-version-major }} -gt 17) {
+          if (${{ matrix.postgresql-version-major }} -ge 17) {
             # pg_regress.exe depends on libpq.dll and libpq.dll exists
             # in pgsql\bin\. We need to set $Env:PATH or use same
             # directory to resolve the dependency. We use the same
