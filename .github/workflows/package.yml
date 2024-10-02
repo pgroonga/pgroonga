@@ -85,6 +85,7 @@ jobs:
           - postgresql-17-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-noble
           - postgresql-17-pgdg-pgroonga-ubuntu-noble-arm64
+          - postgresql-17-pgdg-pgroonga-almalinux-8
           - postgresql-16-pgdg-pgroonga-debian-bookworm
           - postgresql-16-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-focal
