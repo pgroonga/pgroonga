@@ -31,6 +31,7 @@ def package_names
     "postgresql-15-pgdg-pgroonga",
     "postgresql-16-pgroonga",
     "postgresql-16-pgdg-pgroonga",
+    "postgresql-17-pgdg-pgroonga",
   ]
 end
 
