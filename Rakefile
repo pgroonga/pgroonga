@@ -139,6 +139,21 @@ namespace :version do
       sh("git", "add", downgrade_sql_path)
     end
   end
+
+  desc "Lint"
+  task :lint do
+    package_names.each do |package|
+      next if File.exist?("packages/#{package}")
+      raise "#{__FILE__}: #{package} should be removed too."
+    end
+
+    Dir.glob("*", base: "packages") do |dir|
+      next unless File.directory?("packages/#{dir}")
+      next unless dir.index("pgroonga")
+      next if package_names.include?(dir)
+      raise "#{__FILE__}: #{dir} should be added too."
+    end
+  end
 end
 
 namespace :package do
@@ -203,4 +218,9 @@ namespace :package do
       cp(spec_in, "packages/yum/postgresql-pgroonga.spec.in")
     end
   end
+end
+
+desc "Lint"
+task :lint do
+  ruby("-S", "rake", "version:lint")
 end

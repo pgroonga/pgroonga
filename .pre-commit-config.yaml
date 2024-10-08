@@ -3,5 +3,14 @@ repos:
     rev: "v18.1.4"
     hooks:
       - id: clang-format
+  - repo: local
+    hooks:
+      - id: lint
+        name: Lint
+        language: system
+        entry: |
+          rake lint
+        always_run: true
+        pass_filenames: false
 
 exclude: "^vendor/.*"
