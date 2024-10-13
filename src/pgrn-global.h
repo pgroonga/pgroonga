@@ -35,7 +35,7 @@ struct PGrnBuffers
 	grn_obj head;
 	grn_obj body;
 	grn_obj foot;
-	grn_obj walBuffer;
+	grn_obj walRecord;
 	grn_obj sourceNames;
 	grn_obj sourceNameSizes;
 };

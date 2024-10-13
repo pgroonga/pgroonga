@@ -616,7 +616,7 @@ PGrnWALBulkInsertStartCustom(PGrnWALData *data, grn_obj *table)
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		PGrnWALRecordCommon record = {
 			.dbID = MyDatabaseId,
 			.dbEncoding = GetDatabaseEncoding(),
@@ -652,7 +652,7 @@ PGrnWALBulkInsertFinishCustom(PGrnWALData *data)
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		PGrnWALRecordBulkInsertWriteFinish(buffer);
 	}
 }
@@ -708,7 +708,7 @@ PGrnWALInsertStartCustom(PGrnWALData *data, grn_obj *table, size_t nColumns)
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		PGrnWALRecordCommon record = {
 			.dbID = MyDatabaseId,
 			.dbEncoding = GetDatabaseEncoding(),
@@ -767,7 +767,7 @@ PGrnWALInsertFinishCustom(PGrnWALData *data)
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 			PGrnWALRecordBulkInsertWriteRecordFinish(buffer);
 		else
@@ -818,7 +818,7 @@ PGrnWALInsertColumnStartCustom(PGrnWALData *data,
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 			PGrnWALRecordBulkInsertWriteColumnStart(buffer, name, nameSize);
 		else
@@ -875,7 +875,7 @@ PGrnWALInsertColumnValueKeyCustom(PGrnWALData *data,
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 			PGrnWALRecordBulkInsertWriteColumnValueKey(buffer, key, keySize);
 		else
@@ -1012,7 +1012,7 @@ PGrnWALInsertColumnValueBulkCustom(PGrnWALData *data,
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 		{
 			PGrnWALRecordBulkInsertWriteColumnValueBulk(
@@ -1083,7 +1083,7 @@ PGrnWALInsertColumnValueVectorCustom(PGrnWALData *data,
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 		{
 			PGrnWALRecordBulkInsertWriteColumnValueVector(
@@ -1155,7 +1155,7 @@ PGrnWALInsertColumnUValueVectorCustom(PGrnWALData *data,
 		return;
 
 	{
-		grn_obj *buffer = &(buffers->walBuffer);
+		grn_obj *buffer = &(buffers->walRecord);
 		if (data->bulkInserting)
 		{
 			PGrnWALRecordBulkInsertWriteColumnValueUVector(
