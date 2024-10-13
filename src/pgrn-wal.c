@@ -1517,7 +1517,10 @@ PGrnWALSetSourceIDsCustom(Relation index, grn_obj *column, grn_obj *sourceIDs)
 								MyDatabaseTableSpace,
 								column,
 								sourceIDs);
-	PGrnWALRecordSetSourcesWrite(&record);
+	GRN_BULK_REWIND(&(buffers->sourceNames));
+	GRN_BULK_REWIND(&(buffers->sourceNameSizes));
+	PGrnWALRecordSetSourcesWrite(
+		&record, &(buffers->sourceNames), &(buffers->sourceNameSizes));
 }
 #endif
 

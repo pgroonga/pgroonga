@@ -346,12 +346,12 @@ PGrnWALRecordSetSourcesFill(PGrnWALRecordSetSources *record,
 }
 
 static inline void
-PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record)
+PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record,
+							 grn_obj *sourceNamesBuffer,
+							 grn_obj *sourceNameSizesBuffer)
 {
 	char columnNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	int32 columnNameSize;
-	grn_obj sourceNames;
-	grn_obj sourceNameSizes;
 	size_t i;
 	size_t n = GRN_RECORD_VECTOR_SIZE(record->sourceIDs);
 
@@ -360,8 +360,6 @@ PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record)
 					 offsetof(PGrnWALRecordSetSources, column));
 	PGrnWALRecordWriteGrnObj(record->column, columnNameBuffer, &columnNameSize);
 	XLogRegisterData((char *) &n, sizeof(size_t));
-	GRN_TEXT_INIT(&sourceNames, GRN_OBJ_VECTOR);
-	GRN_INT32_INIT(&sourceNameSizes, GRN_OBJ_VECTOR);
 	for (i = 0; i < n; i++)
 	{
 		grn_id sourceID = GRN_RECORD_VALUE_AT(record->sourceIDs, i);
@@ -372,31 +370,32 @@ PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record)
 			int nameSize =
 				grn_obj_name(ctx, source, name, GRN_TABLE_MAX_KEY_SIZE);
 			grn_vector_add_element(
-				ctx, &sourceNames, name, nameSize, 0, GRN_DB_TEXT);
-			GRN_INT32_PUT(ctx, &sourceNameSizes, nameSize);
+				ctx, sourceNamesBuffer, name, nameSize, 0, GRN_DB_TEXT);
+			GRN_INT32_PUT(ctx, sourceNameSizesBuffer, nameSize);
 		}
 		else
 		{
-			grn_vector_add_element(ctx, &sourceNames, NULL, 0, 0, GRN_DB_TEXT);
-			GRN_INT32_PUT(ctx, &sourceNameSizes, -1);
+			grn_vector_add_element(
+				ctx, sourceNamesBuffer, NULL, 0, 0, GRN_DB_TEXT);
+			GRN_INT32_PUT(ctx, sourceNameSizesBuffer, -1);
 		}
 	}
 	for (i = 0; i < n; i++)
 	{
-		int32_t *rawNameSizes = (int32_t *) GRN_BULK_HEAD(&sourceNameSizes);
+		int32_t *rawNameSizes =
+			(int32_t *) GRN_BULK_HEAD(sourceNameSizesBuffer);
 		int32_t nameSize = rawNameSizes[i];
 		XLogRegisterData((char *) &(rawNameSizes[i]), sizeof(int32));
 		if (nameSize != -1)
 		{
 			const char *name;
-			grn_vector_get_element(ctx, &sourceNames, i, &name, NULL, NULL);
+			grn_vector_get_element(
+				ctx, sourceNamesBuffer, i, &name, NULL, NULL);
 			XLogRegisterData((char *) name, nameSize);
 		}
 	}
 	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
 			   PGRN_WAL_RECORD_SET_SOURCES | XLR_SPECIAL_REL_UPDATE);
-	GRN_OBJ_FIN(ctx, &sourceNames);
-	GRN_OBJ_FIN(ctx, &sourceNameSizes);
 }
 
 static inline void

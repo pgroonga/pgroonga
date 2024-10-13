@@ -36,6 +36,8 @@ struct PGrnBuffers
 	grn_obj body;
 	grn_obj foot;
 	grn_obj walBuffer;
+	grn_obj sourceNames;
+	grn_obj sourceNameSizes;
 };
 
 extern struct PGrnBuffers PGrnBuffers;
