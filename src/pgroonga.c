@@ -112,6 +112,7 @@ typedef struct PGrnBuildStateData
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
 	MemoryContext memoryContext;
+	PGrnWALData *bulkInsertWALData;
 } PGrnBuildStateData;
 
 typedef PGrnBuildStateData *PGrnBuildState;
@@ -4750,24 +4751,32 @@ PGrnInsertColumn(Relation index,
 	return PGrnComputeSize(value);
 }
 
+static bool
+PGrnIsJSONBIndex(Relation index)
+{
+	TupleDesc desc = RelationGetDescr(index);
+	return desc->natts == 1 &&
+		   PGrnAttributeIsJSONB(TupleDescAttr(desc, 0)->atttypid);
+}
+
 static uint32_t
 PGrnInsert(Relation index,
 		   grn_obj *sourcesTable,
 		   grn_obj *sourcesCtidColumn,
 		   Datum *values,
 		   bool *isnull,
-		   ItemPointer ht_ctid)
+		   ItemPointer ht_ctid,
+		   bool isBulkInsert,
+		   PGrnWALData *walData)
 {
 	const char *tag = "[insert]";
 	TupleDesc desc = RelationGetDescr(index);
 	grn_id id;
-	PGrnWALData *walData;
 	uint64_t packedCtid = PGrnCtidPack(ht_ctid);
 	unsigned int i;
 	uint32_t recordSize = 0;
 
-	if (desc->natts == 1 &&
-		PGrnAttributeIsJSONB(TupleDescAttr(desc, 0)->atttypid))
+	if (PGrnIsJSONBIndex(index))
 	{
 		return PGrnJSONBInsert(index,
 							   sourcesTable,
@@ -4777,7 +4786,8 @@ PGrnInsert(Relation index,
 							   PGrnCtidPack(ht_ctid));
 	}
 
-	walData = PGrnWALStart(index);
+	if (!isBulkInsert)
+		walData = PGrnWALStart(index);
 	{
 		size_t nValidAttributes = 1; /* ctid is always valid. */
 
@@ -4857,11 +4867,13 @@ PGrnInsert(Relation index,
 		}
 
 		PGrnWALInsertFinish(walData);
-		PGrnWALFinish(walData);
+		if (!isBulkInsert)
+			PGrnWALFinish(walData);
 	}
 	PG_CATCH();
 	{
-		PGrnWALAbort(walData);
+		if (!isBulkInsert)
+			PGrnWALAbort(walData);
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
@@ -4907,8 +4919,14 @@ pgroonga_insert(Relation index,
 	{
 		sourcesCtidColumn = PGrnLookupSourcesCtidColumn(index, ERROR);
 	}
-	recordSize = PGrnInsert(
-		index, sourcesTable, sourcesCtidColumn, values, isnull, ctid);
+	recordSize = PGrnInsert(index,
+							sourcesTable,
+							sourcesCtidColumn,
+							values,
+							isnull,
+							ctid,
+							false,
+							NULL);
 	if (PGrnNeedMaxRecordSizeUpdate(index))
 		PGrnUpdateMaxRecordSize(index, recordSize);
 	grn_db_touch(ctx, grn_ctx_db(ctx));
@@ -7221,8 +7239,14 @@ PGrnBuildCallback(Relation index,
 
 	oldMemoryContext = MemoryContextSwitchTo(bs->memoryContext);
 
-	recordSize = PGrnInsert(
-		index, bs->sourcesTable, bs->sourcesCtidColumn, values, isnull, tid);
+	recordSize = PGrnInsert(index,
+							bs->sourcesTable,
+							bs->sourcesCtidColumn,
+							values,
+							isnull,
+							tid,
+							PGrnWALResourceManagerIsOnlyEnabled(),
+							bs->bulkInsertWALData);
 	if (bs->needMaxRecordSizeUpdate && recordSize > bs->maxRecordSize)
 	{
 		bs->maxRecordSize = recordSize;
@@ -7306,6 +7330,7 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 	PGrnBuildStateData bs;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
+	bool isBulkInsert = false;
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -7352,6 +7377,10 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 		AllocSetContextCreate(CurrentMemoryContext,
 							  "PGroonga index build temporay context",
 							  ALLOCSET_DEFAULT_SIZES);
+	bs.bulkInsertWALData = NULL;
+
+	isBulkInsert =
+		PGrnWALResourceManagerIsOnlyEnabled() && !PGrnIsJSONBIndex(index);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
@@ -7369,8 +7398,19 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
+		if (isBulkInsert)
+		{
+			bs.bulkInsertWALData = PGrnWALStart(index);
+			PGrnWALBulkInsertStart(bs.bulkInsertWALData, bs.sourcesTable);
+		}
 		nHeapTuples = table_index_build_scan(
 			heap, index, indexInfo, true, true, PGrnBuildCallback, &bs, NULL);
+		if (isBulkInsert)
+		{
+			PGrnWALBulkInsertFinish(bs.bulkInsertWALData);
+			PGrnWALFinish(bs.bulkInsertWALData);
+			bs.bulkInsertWALData = NULL;
+		}
 		grn_ctx_set_progress_callback(ctx, PGrnProgressCallback, &state);
 		PGrnSetSources(index, bs.sourcesTable);
 		grn_ctx_set_progress_callback(ctx, NULL, NULL);
@@ -7379,6 +7419,9 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 	PG_CATCH();
 	{
 		size_t i, n;
+
+		if (isBulkInsert)
+			PGrnWALAbort(bs.bulkInsertWALData);
 
 		n = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
 		for (i = 0; i < n; i++)

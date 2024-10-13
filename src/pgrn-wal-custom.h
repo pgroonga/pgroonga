@@ -22,6 +22,7 @@
 #define PGRN_WAL_RECORD_DELETE 0x60
 #define PGRN_WAL_RECORD_REMOVE_OBJECT 0x70
 #define PGRN_WAL_RECORD_REGISTER_PLUGIN 0x80
+#define PGRN_WAL_RECORD_BULK_INSERT 0x90
 
 #define PGRN_WAL_RECORD_DOMAIN_ID_MASK GRN_ID_MAX
 #define PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK 0xc0000000
@@ -498,6 +499,14 @@ PGrnWALRecordRenameTableRead(PGrnWALRecordRenameTable *record,
 	}
 }
 
+typedef struct PGrnWALTuple
+{
+	uint32 nColumns;
+	grn_obj *columnNames;
+	grn_obj *columnValues;
+	grn_hash *columnVectorValues;
+} PGrnWALTuple;
+
 typedef struct PGrnWALRecordInsert
 {
 	/* PGrnWALRecordCommon */
@@ -507,10 +516,7 @@ typedef struct PGrnWALRecordInsert
 
 	const char *tableName;
 	uint32 tableNameSize;
-	uint32 nColumns;
-	grn_obj *columnNames;
-	grn_obj *columnValues;
-	grn_hash *columnVectorValues;
+	PGrnWALTuple tuple;
 } PGrnWALRecordInsert;
 
 static inline void
@@ -702,7 +708,6 @@ typedef union PGrnWALRecordInsertColumnValueBuffer {
 
 static inline bool
 PGrnWALRecordInsertReadColumnValueRaw(
-	PGrnWALRecordInsert *record,
 	PGrnWALRecordRaw *raw,
 	grn_id domain,
 	PGrnWALRecordInsertColumnValueBuffer *valueBuffer,
@@ -778,8 +783,7 @@ PGrnWALRecordInsertReadColumnValueRaw(
 }
 
 static inline bool
-PGrnWALRecordInsertReadColumnValueVector(PGrnWALRecordInsert *record,
-										 PGrnWALRecordRaw *raw,
+PGrnWALRecordInsertReadColumnValueVector(PGrnWALRecordRaw *raw,
 										 grn_id domain,
 										 grn_obj *vectorValue)
 {
@@ -793,7 +797,7 @@ PGrnWALRecordInsertReadColumnValueVector(PGrnWALRecordInsert *record,
 		const void *value;
 		uint32 valueSize;
 		succeeded = PGrnWALRecordInsertReadColumnValueRaw(
-			record, raw, domain, &valueBuffer, &value, &valueSize);
+			raw, domain, &valueBuffer, &value, &valueSize);
 		if (!succeeded)
 			return false;
 		grn_vector_add_element(ctx, vectorValue, value, valueSize, 0, domain);
@@ -803,8 +807,7 @@ PGrnWALRecordInsertReadColumnValueVector(PGrnWALRecordInsert *record,
 }
 
 static inline bool
-PGrnWALRecordInsertReadColumnValueUVector(PGrnWALRecordInsert *record,
-										  PGrnWALRecordRaw *raw,
+PGrnWALRecordInsertReadColumnValueUVector(PGrnWALRecordRaw *raw,
 										  grn_id domain,
 										  grn_obj *vectorValue)
 {
@@ -818,6 +821,99 @@ PGrnWALRecordInsertReadColumnValueUVector(PGrnWALRecordInsert *record,
 }
 
 static inline void
+PGrnWALRecordInsertReadColumn(PGrnWALTuple *tuple,
+							  PGrnWALRecordRaw *raw,
+							  uint32 i)
+{
+	const char *tag = "[wal][record][read][column][value]";
+	const char *name;
+	uint32 nameSize;
+	grn_id domain;
+	PGrnWALRecordInsertColumnValueBuffer valueBuffer;
+	const void *value;
+	uint32 valueSize;
+
+	PGrnWALRecordRawReadData(raw, &nameSize, sizeof(uint32));
+	name = PGrnWALRecordRawRefer(raw, nameSize);
+	grn_vector_add_element(
+		ctx, tuple->columnNames, name, nameSize, 0, GRN_DB_SHORT_TEXT);
+
+	if (nameSize == GRN_COLUMN_NAME_KEY_LEN &&
+		memcmp(name, GRN_COLUMN_NAME_KEY, GRN_COLUMN_NAME_KEY_LEN) == 0)
+	{
+		domain = GRN_DB_SHORT_TEXT; /* TODO: GRN_DB_SHORT_BINARY */
+		PGrnWALRecordRawReadData(raw, &valueSize, sizeof(uint32));
+		value = PGrnWALRecordRawRefer(raw, valueSize);
+	}
+	else
+	{
+		grn_id domain_and_flags;
+		grn_id flags;
+		bool isVector = false;
+		bool succeeded;
+		PGrnWALRecordRawReadData(raw, &domain_and_flags, sizeof(grn_id));
+		domain = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_ID_MASK;
+		flags = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK;
+		if (flags & PGRN_WAL_RECORD_DOMAIN_FLAG_VECTOR)
+		{
+			isVector = true;
+		}
+		if (isVector)
+		{
+			void *vectorValue;
+			grn_hash_add(ctx,
+						 tuple->columnVectorValues,
+						 &i,
+						 sizeof(uint32),
+						 &vectorValue,
+						 NULL);
+			PGrnCheck("%s failed to allocate a vector column: <%.*s>",
+					  tag,
+					  (int) nameSize,
+					  name);
+			if (grn_type_id_is_text_family(ctx, domain))
+			{
+				succeeded = PGrnWALRecordInsertReadColumnValueVector(
+					raw, domain, vectorValue);
+			}
+			else
+			{
+				succeeded = PGrnWALRecordInsertReadColumnValueUVector(
+					raw, domain, vectorValue);
+			}
+			domain = GRN_DB_VOID;
+			value = NULL;
+			valueSize = 0;
+		}
+		else
+		{
+			succeeded = PGrnWALRecordInsertReadColumnValueRaw(
+				raw, domain, &valueBuffer, &value, &valueSize);
+		}
+		if (!succeeded)
+		{
+			char domainName[GRN_TABLE_MAX_KEY_SIZE];
+			int domainNameSize;
+
+			domainNameSize = grn_table_get_key(ctx,
+											   grn_ctx_db(ctx),
+											   domain,
+											   domainName,
+											   GRN_TABLE_MAX_KEY_SIZE);
+			PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+						"%s unsupported type: <%.*s>: <%.*s>",
+						tag,
+						(int) nameSize,
+						name,
+						domainNameSize,
+						domainName);
+		}
+	}
+	grn_vector_add_element(
+		ctx, tuple->columnValues, value, valueSize, 0, domain);
+}
+
+static inline void
 PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 {
 	uint32 i;
@@ -826,95 +922,10 @@ PGrnWALRecordInsertRead(PGrnWALRecordInsert *record, PGrnWALRecordRaw *raw)
 	PGrnWALRecordRawReadData(raw, &(record->dbTableSpaceID), sizeof(Oid));
 	PGrnWALRecordRawReadData(raw, &(record->tableNameSize), sizeof(uint32));
 	record->tableName = PGrnWALRecordRawRefer(raw, record->tableNameSize);
-	PGrnWALRecordRawReadData(raw, &(record->nColumns), sizeof(uint32));
-	for (i = 0; i < record->nColumns; i++)
+	PGrnWALRecordRawReadData(raw, &(record->tuple.nColumns), sizeof(uint32));
+	for (i = 0; i < record->tuple.nColumns; i++)
 	{
-		const char *tag = "[wal][record][read][column][value]";
-		const char *name;
-		uint32 nameSize;
-		grn_id domain;
-		PGrnWALRecordInsertColumnValueBuffer valueBuffer;
-		const void *value;
-		uint32 valueSize;
-
-		PGrnWALRecordRawReadData(raw, &nameSize, sizeof(uint32));
-		name = PGrnWALRecordRawRefer(raw, nameSize);
-		grn_vector_add_element(
-			ctx, record->columnNames, name, nameSize, 0, GRN_DB_SHORT_TEXT);
-
-		if (nameSize == GRN_COLUMN_NAME_KEY_LEN &&
-			memcmp(name, GRN_COLUMN_NAME_KEY, GRN_COLUMN_NAME_KEY_LEN) == 0)
-		{
-			domain = GRN_DB_SHORT_TEXT; /* TODO: GRN_DB_SHORT_BINARY */
-			PGrnWALRecordRawReadData(raw, &valueSize, sizeof(uint32));
-			value = PGrnWALRecordRawRefer(raw, valueSize);
-		}
-		else
-		{
-			grn_id domain_and_flags;
-			grn_id flags;
-			bool isVector = false;
-			bool succeeded;
-			PGrnWALRecordRawReadData(raw, &domain_and_flags, sizeof(grn_id));
-			domain = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_ID_MASK;
-			flags = domain_and_flags & PGRN_WAL_RECORD_DOMAIN_FLAGS_MASK;
-			if (flags & PGRN_WAL_RECORD_DOMAIN_FLAG_VECTOR)
-			{
-				isVector = true;
-			}
-			if (isVector)
-			{
-				void *vectorValue;
-				grn_hash_add(ctx,
-							 record->columnVectorValues,
-							 &i,
-							 sizeof(uint32),
-							 &vectorValue,
-							 NULL);
-				PGrnCheck("%s failed to allocate a vector column: <%.*s>",
-						  tag,
-						  (int) nameSize,
-						  name);
-				if (grn_type_id_is_text_family(ctx, domain))
-				{
-					succeeded = PGrnWALRecordInsertReadColumnValueVector(
-						record, raw, domain, vectorValue);
-				}
-				else
-				{
-					succeeded = PGrnWALRecordInsertReadColumnValueUVector(
-						record, raw, domain, vectorValue);
-				}
-				domain = GRN_DB_VOID;
-				value = NULL;
-				valueSize = 0;
-			}
-			else
-			{
-				succeeded = PGrnWALRecordInsertReadColumnValueRaw(
-					record, raw, domain, &valueBuffer, &value, &valueSize);
-			}
-			if (!succeeded)
-			{
-				char domainName[GRN_TABLE_MAX_KEY_SIZE];
-				int domainNameSize;
-
-				domainNameSize = grn_table_get_key(ctx,
-												   grn_ctx_db(ctx),
-												   domain,
-												   domainName,
-												   GRN_TABLE_MAX_KEY_SIZE);
-				PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
-							"%s unsupported type: <%.*s>: <%.*s>",
-							tag,
-							(int) nameSize,
-							name,
-							domainNameSize,
-							domainName);
-			}
-		}
-		grn_vector_add_element(
-			ctx, record->columnValues, value, valueSize, 0, domain);
+		PGrnWALRecordInsertReadColumn(&(record->tuple), raw, i);
 	}
 	if (raw->size != 0)
 	{
@@ -1107,4 +1118,131 @@ PGrnWALRecordRegisterPluginRead(PGrnWALRecordRegisterPlugin *record,
 				PGRN_TAG,
 				raw->size));
 	}
+}
+
+typedef struct PGrnWALRecordBulkInsert
+{
+	/* PGrnWALRecordCommon */
+	Oid dbID;
+	int dbEncoding;
+	Oid dbTableSpaceID;
+
+	/* Shared by all records */
+	const char *tableName;
+	uint32 tableNameSize;
+
+	/* For each record */
+	PGrnWALTuple tuple;
+} PGrnWALRecordBulkInsert;
+
+static inline void
+PGrnWALRecordBulkInsertWriteStart(grn_obj *buffer,
+								  PGrnWALRecordCommon *record,
+								  grn_obj *table)
+{
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbID), sizeof(Oid));
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbEncoding), sizeof(int));
+	GRN_TEXT_PUT(ctx, buffer, &(record->dbTableSpaceID), sizeof(Oid));
+	{
+		char name[GRN_TABLE_MAX_KEY_SIZE];
+		uint32 nameSize =
+			grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
+		GRN_TEXT_PUT(ctx, buffer, &nameSize, sizeof(uint32));
+		GRN_TEXT_PUT(ctx, buffer, name, nameSize);
+	}
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteRecordStart(grn_obj *buffer,
+										PGrnWALRecordCommon *record,
+										uint32 nColumns)
+{
+	GRN_TEXT_PUT(ctx, buffer, &nColumns, sizeof(uint32));
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteColumnStart(grn_obj *buffer,
+										const char *name,
+										uint32 nameSize)
+{
+	PGrnWALRecordInsertWriteColumnStart(buffer, name, nameSize);
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteColumnValueKey(grn_obj *buffer,
+										   const char *key,
+										   uint32 keySize)
+{
+	PGrnWALRecordInsertWriteColumnValueKey(buffer, key, keySize);
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteColumnValueBulk(grn_obj *buffer,
+											const char *name,
+											uint32 nameSize,
+											grn_obj *value)
+{
+	PGrnWALRecordInsertWriteColumnValueBulk(buffer, name, nameSize, value);
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteColumnValueVector(grn_obj *buffer,
+											  const char *name,
+											  uint32 nameSize,
+											  grn_obj *vector)
+{
+	PGrnWALRecordInsertWriteColumnValueVector(buffer, name, nameSize, vector);
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteColumnValueUVector(grn_obj *buffer,
+											   const char *name,
+											   uint32 nameSize,
+											   grn_obj *uvector)
+{
+	PGrnWALRecordInsertWriteColumnValueUVector(buffer, name, nameSize, uvector);
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteRecordFinish(grn_obj *buffer)
+{
+}
+
+static inline void
+PGrnWALRecordBulkInsertWriteFinish(grn_obj *buffer)
+{
+	XLogBeginInsert();
+	XLogRegisterData((char *) GRN_TEXT_VALUE(buffer), GRN_TEXT_LEN(buffer));
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
+			   PGRN_WAL_RECORD_BULK_INSERT | XLR_SPECIAL_REL_UPDATE);
+}
+
+static inline void
+PGrnWALRecordBulkInsertRead(PGrnWALRecordBulkInsert *record,
+							PGrnWALRecordRaw *raw)
+{
+	PGrnWALRecordRawReadData(raw, &(record->dbID), sizeof(Oid));
+	PGrnWALRecordRawReadData(raw, &(record->dbEncoding), sizeof(int));
+	PGrnWALRecordRawReadData(raw, &(record->dbTableSpaceID), sizeof(Oid));
+	PGrnWALRecordRawReadData(raw, &(record->tableNameSize), sizeof(uint32));
+	record->tableName = PGrnWALRecordRawRefer(raw, record->tableNameSize);
+}
+
+static inline bool
+PGrnWALRecordBulkInsertReadNext(PGrnWALRecordBulkInsert *record,
+								PGrnWALRecordRaw *raw)
+{
+	uint32 i;
+
+	if (raw->size == 0)
+	{
+		return false;
+	}
+
+	PGrnWALRecordRawReadData(raw, &(record->tuple.nColumns), sizeof(uint32));
+	for (i = 0; i < record->tuple.nColumns; i++)
+	{
+		PGrnWALRecordInsertReadColumn(&(record->tuple), raw, i);
+	}
+	return true;
 }

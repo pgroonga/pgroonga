@@ -11,6 +11,7 @@ class PGroongaWALResourceManagerTestCase < Test::Unit::TestCase
 
   def additional_configurations
     <<-CONFIG
+enable_seqscan = no
 pgroonga.enable_wal_resource_manager = yes
     CONFIG
   end
@@ -73,6 +74,10 @@ EXPLAIN (COSTS OFF) #{select};
     OUTPUT
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
   end
 
   test "text[]" do
@@ -108,6 +113,10 @@ EXPLAIN (COSTS OFF) #{select};
 (2 rows)
 
     OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_contents");
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
@@ -146,6 +155,10 @@ EXPLAIN (COSTS OFF) #{select};
 (1 row)
 
     OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX users_scores");
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
@@ -212,6 +225,10 @@ EXPLAIN (COSTS OFF) #{select};
     OUTPUT
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
   end
 
   test "jsonb: sequential search" do
@@ -240,8 +257,9 @@ EXPLAIN (COSTS OFF) #{select};
               QUERY PLAN              
 --------------------------------------
  Seq Scan on memos
+   Disabled Nodes: 1
    Filter: (content &@ 'Hello'::text)
-(2 rows)
+(3 rows)
 
     OUTPUT
     assert_equal([output, ""],
@@ -301,6 +319,10 @@ EXPLAIN (COSTS OFF) #{select};
     OUTPUT
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX メモ_コンテンツ");
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
   end
 
   test "options: tokenizer" do
@@ -319,6 +341,10 @@ EXPLAIN (COSTS OFF) #{select};
 (1 row)
 
     OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
@@ -344,6 +370,10 @@ EXPLAIN (COSTS OFF) #{select};
     OUTPUT
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
   end
 
   test "options: token filters" do
@@ -365,6 +395,10 @@ EXPLAIN (COSTS OFF) #{select};
 (2 rows)
 
     OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end
@@ -417,6 +451,10 @@ EXPLAIN (COSTS OFF) #{select};
 (3 rows)
 
     OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
+    run_sql("REINDEX INDEX memos_content");
     assert_equal([output, ""],
                  run_sql_standby("#{select};"))
   end

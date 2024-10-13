@@ -19,9 +19,14 @@ bool PGrnWALResourceManagerGetEnabled(void);
 void PGrnWALResourceManagerEnable(void);
 void PGrnWALResourceManagerDisable(void);
 
+bool PGrnWALResourceManagerIsOnlyEnabled(void);
+
 PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);
 void PGrnWALAbort(PGrnWALData *data);
+
+void PGrnWALBulkInsertStart(PGrnWALData *data, grn_obj *table);
+void PGrnWALBulkInsertFinish(PGrnWALData *data);
 
 void PGrnWALInsertStart(PGrnWALData *data, grn_obj *table, size_t nColumns);
 void PGrnWALInsertFinish(PGrnWALData *data);
