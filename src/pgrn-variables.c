@@ -48,6 +48,7 @@ static bool PGrnForceMatchEscalation;
 static char *PGrnLibgroongaVersion;
 
 static bool PGrnEnableWALResourceManager;
+static int PGrnMaxBulkInsertWALRecordSizeKB;
 
 static int PGrnLogRotateThresholdSize;
 static int PGrnQueryLogRotateThresholdSize;
@@ -308,6 +309,12 @@ PGrnEnableWALResourceManagerAssign(bool new_value, void *extra)
 	}
 }
 
+static void
+PGrnMaxBulkInsertWALRecordSizeAssign(int new_value, void *extra)
+{
+	PGrnWALSetMaxBulkInsertRecordSize(new_value * 1024);
+}
+
 void
 PGrnInitializeVariables(void)
 {
@@ -542,6 +549,25 @@ PGrnInitializeVariables(void)
 							 NULL,
 							 PGrnEnableWALResourceManagerAssign,
 							 NULL);
+
+	DefineCustomIntVariable("pgroonga.max_bulk_insert_wal_record_size",
+							"Max bulk insert WAL record size in KiB.",
+							"If bulk insert WAL record size is larger than "
+							"this value, the bulk insert WAL record is split "
+							"to small bulk insert WAL records. "
+							"Note that this is not a hard limit. Some "
+							"bulk insert WAL records may be larger than "
+							"this size. The default is 16MiB. "
+							"If you use 0, you can disable this size limit.",
+							&PGrnMaxBulkInsertWALRecordSizeKB,
+							PGrnWALGetMaxBulkInsertRecordSize() / 1024,
+							0,
+							MAX_KILOBYTES,
+							PGC_USERSET,
+							GUC_UNIT_KB,
+							NULL,
+							PGrnMaxBulkInsertWALRecordSizeAssign,
+							NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
 }

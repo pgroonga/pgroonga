@@ -21,6 +21,9 @@ void PGrnWALResourceManagerDisable(void);
 
 bool PGrnWALResourceManagerIsOnlyEnabled(void);
 
+size_t PGrnWALGetMaxBulkInsertRecordSize(void);
+void PGrnWALSetMaxBulkInsertRecordSize(size_t size);
+
 PGrnWALData *PGrnWALStart(Relation index);
 void PGrnWALFinish(PGrnWALData *data);
 void PGrnWALAbort(PGrnWALData *data);

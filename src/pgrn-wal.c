@@ -18,6 +18,7 @@
 static bool PGrnWALEnabled = false;
 static size_t PGrnWALMaxSize = 0;
 static bool PGrnWALResourceManagerEnabled = false;
+static size_t PGrnWALMaxBulkInsertRecordSize = 16 * 1024 * 1024; /* 16MiB */
 
 bool
 PGrnWALGetEnabled(void)
@@ -71,6 +72,18 @@ bool
 PGrnWALResourceManagerIsOnlyEnabled(void)
 {
 	return !PGrnWALEnabled && PGrnWALResourceManagerEnabled;
+}
+
+size_t
+PGrnWALGetMaxBulkInsertRecordSize(void)
+{
+	return PGrnWALMaxBulkInsertRecordSize;
+}
+
+void
+PGrnWALSetMaxBulkInsertRecordSize(size_t size)
+{
+	PGrnWALMaxBulkInsertRecordSize = size;
 }
 
 static bool
@@ -704,6 +717,13 @@ PGrnWALInsertStartCustom(PGrnWALData *data, grn_obj *table, size_t nColumns)
 
 		if (data->bulkInserting)
 		{
+			if (PGrnWALMaxBulkInsertRecordSize > 0 &&
+				GRN_TEXT_LEN(buffer) > PGrnWALMaxBulkInsertRecordSize)
+			{
+				PGrnWALRecordBulkInsertWriteFinish(buffer);
+				GRN_BULK_REWIND(buffer);
+				PGrnWALRecordBulkInsertWriteStart(buffer, &record, table);
+			}
 			PGrnWALRecordBulkInsertWriteRecordStart(buffer, &record, nColumns);
 		}
 		else

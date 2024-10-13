@@ -13,6 +13,7 @@ class PGroongaWALResourceManagerTestCase < Test::Unit::TestCase
     <<-CONFIG
 enable_seqscan = no
 pgroonga.enable_wal_resource_manager = yes
+pgroonga.max_bulk_insert_wal_record_size = 10kB
     CONFIG
   end
 
@@ -729,5 +730,43 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
       select_result_standby = run_sql_standby(select)
     end
     assert_equal(run_sql(select), select_result_standby)
+  end
+
+  test "pgroonga.max_bulk_insert_wal_record_size" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('#{"aaaaa " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"bbbbb " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"ccccc " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"ddddd " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"eeeee " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"fffff " * 512}');")
+    run_sql("INSERT INTO memos VALUES ('#{"ggggg " * 512}');")
+    run_sql("REINDEX INDEX memos_content");
+
+    select = "SELECT count(*) FROM memos WHERE content &@ 'ggggg'"
+    output = <<-OUTPUT
+EXPLAIN (COSTS OFF) #{select};
+                   QUERY PLAN                   
+------------------------------------------------
+ Aggregate
+   ->  Index Scan using memos_content on memos
+         Index Cond: (content &@ 'ggggg'::text)
+(3 rows)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+    output = <<-OUTPUT
+#{select};
+ count 
+-------
+     1
+(1 row)
+
+    OUTPUT
+    assert_equal([output, ""],
+                 run_sql_standby("#{select};"))
+
   end
 end
