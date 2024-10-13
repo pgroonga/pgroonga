@@ -251,19 +251,21 @@ EXPLAIN (COSTS OFF) #{select};
 }
     JSON
 
+    enable_seqscan = "SET enable_seqscan = yes"
     select = "SELECT jsonb_pretty(content) FROM memos WHERE content &@ 'Hello'"
     output = <<-OUTPUT
+#{enable_seqscan};
 EXPLAIN (COSTS OFF) #{select};
               QUERY PLAN              
 --------------------------------------
  Seq Scan on memos
-   Disabled Nodes: 1
    Filter: (content &@ 'Hello'::text)
-(3 rows)
+(2 rows)
 
     OUTPUT
     assert_equal([output, ""],
-                 run_sql_standby("EXPLAIN (COSTS OFF) #{select};"))
+                 run_sql_standby("#{enable_seqscan};\n" +
+                                 "EXPLAIN (COSTS OFF) #{select};"))
     output = <<-OUTPUT
 #{select};
            jsonb_pretty            
