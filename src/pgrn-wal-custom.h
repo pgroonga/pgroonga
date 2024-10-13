@@ -393,6 +393,8 @@ PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record)
 			XLogRegisterData((char *) name, nameSize);
 		}
 	}
+	GRN_OBJ_FIN(ctx, &sourceNames);
+	GRN_OBJ_FIN(ctx, &sourceNameSizes);
 	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
 			   PGRN_WAL_RECORD_SET_SOURCES | XLR_SPECIAL_REL_UPDATE);
 }
