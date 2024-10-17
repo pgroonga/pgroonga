@@ -7331,6 +7331,7 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
 	bool isBulkInsert = false;
+	grn_wal_role walRoleKeep = grn_ctx_get_wal_role(ctx);
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -7403,8 +7404,22 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 			bs.bulkInsertWALData = PGrnWALStart(index);
 			PGrnWALBulkInsertStart(bs.bulkInsertWALData, bs.sourcesTable);
 		}
+		/* Disable WAL generation while bulk source table creation for
+		 * performance. If PGroonga is crashed while bulk source table
+		 * creation, this source table will be removed in the next
+		 * VACUUM. So, we don't need crash recovery here. */
+		if (walRoleKeep != GRN_WAL_ROLE_NONE)
+			grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_NONE);
 		nHeapTuples = table_index_build_scan(
 			heap, index, indexInfo, true, true, PGrnBuildCallback, &bs, NULL);
+		if (walRoleKeep != GRN_WAL_ROLE_NONE)
+		{
+			/* Flush written data so that we can assume that this
+			 * source table isn't broken by PGroonga crash in index
+			 * creation. */
+			grn_obj_flush_recursive(ctx, data.sourcesTable);
+			grn_ctx_set_wal_role(ctx, walRoleKeep);
+		}
 		if (isBulkInsert)
 		{
 			PGrnWALBulkInsertFinish(bs.bulkInsertWALData);
@@ -7419,6 +7434,10 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 	PG_CATCH();
 	{
 		size_t i, n;
+
+		/* Ensure restoring WAL role on error. */
+		if (walRoleKeep != GRN_WAL_ROLE_NONE)
+			grn_ctx_set_wal_role(ctx, walRoleKeep);
 
 		if (isBulkInsert)
 			PGrnWALAbort(bs.bulkInsertWALData);
