@@ -163,7 +163,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
         input.puts("\\pset tuples_only on")
         output.gets # \pset tuples_only on
         input.puts("SELECT pgroonga_table_name('memos_content');")
-        table_name = read_command_output_all(output).strip
+        table_name = output.read_command_output_all.strip
         input.puts(<<-"SQL")
 SELECT path
 FROM (
@@ -172,7 +172,7 @@ FROM (
 ) table_list
 WHERE name = '"#{table_name}"';
         SQL
-        file_name = File.basename(read_command_output_all(output).strip.delete('"'))
+        file_name = File.basename(output.read_command_output_all.strip.delete('"'))
         input.close
       end
       File.delete(Pathname.glob("#{@test_db_dir}/#{file_name}.*").last)
