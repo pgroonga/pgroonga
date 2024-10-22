@@ -151,7 +151,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
 
   sub_test_case "list-broken-indexes" do
     test "corrupt" do
-      omit("This test takes over 10 minutes, so skip it.") if ENV["CI"] == "true"
+      omit("This test takes over 10 minutes.") if ENV["CI"] == "true"
 
       run_sql("CREATE TABLE memos (content text);")
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
