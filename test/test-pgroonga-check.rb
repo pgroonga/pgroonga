@@ -167,7 +167,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
         input.puts(<<-"SQL")
 SELECT path
 FROM (
-  SELECT value->1 name, value->2 path
+  SELECT value->1 AS name, value->2 AS path
   FROM JSONB_ARRAY_ELEMENTS(pgroonga_command('table_list')::jsonb->1) tmp
 ) table_list
 WHERE name = '"#{table_name}"';
