@@ -159,4 +159,4 @@ jobs:
               test/run-test.rb -v
         env:
           # When scheduled execution, all tests are run.
-          CI: github.event_name != 'schedule'
+          CI: ${{ github.event_name != 'schedule' }}
