@@ -9,8 +9,10 @@ on:
     branches:
       - "*"
   schedule:
+    # * UTC 16:30
+    # * JST 01:30
     - cron: |
-        0 0 * * *
+        30 16 * * *
 jobs:
   test:
     if: >-
@@ -18,7 +20,7 @@ jobs:
       (github.event_name == 'schedule' &&
        github.repository_owner == 'pgroonga')
     name: Test
-    timeout-minutes: 30
+    timeout-minutes: ${{ github.event_name == 'schedule' && 150 || 30 }}
     strategy:
       fail-fast: false
       matrix:
@@ -155,3 +157,6 @@ jobs:
             bundle exec ruby \
               -I${{ github.workspace }}/pgroonga-benchmark/lib \
               test/run-test.rb -v
+        env:
+          # When scheduled execution, all tests are run.
+          CI: github.event_name != 'schedule'
