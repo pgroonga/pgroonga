@@ -186,7 +186,7 @@ INSERT INTO memos
     setup :require_pgroonga_benchmark
 
     setup def omit_on_ci
-      if ENV["CI"]
+      if ENV["CI"] == "true"
         omit("This test may take 2-60 min.") if data[:crash_ratio] > 0.1
       end
     end

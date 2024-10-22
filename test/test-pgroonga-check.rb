@@ -151,7 +151,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
 
   sub_test_case "list-broken-indexes" do
     test "corrupt" do
-      omit("This test takes over 10 minutes, so skip it.") if ENV["CI"]
+      omit("This test takes over 10 minutes.") if ENV["CI"] == "true"
 
       run_sql("CREATE TABLE memos (content text);")
       run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
@@ -167,7 +167,7 @@ SELECT * FROM memos WHERE content %% 'PGroonga';
         input.puts(<<-"SQL")
 SELECT path
 FROM (
-  SELECT value->1 name, value->2 path
+  SELECT value->1 AS name, value->2 AS path
   FROM JSONB_ARRAY_ELEMENTS(pgroonga_command('table_list')::jsonb->1) tmp
 ) table_list
 WHERE name = '"#{table_name}"';
