@@ -4171,7 +4171,8 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 }
 
 static bool
-pgroonga_match_regexp_text_array_raw(ArrayType *targets, PGrnCondition *condition)
+pgroonga_match_regexp_text_array_raw(ArrayType *targets,
+									 PGrnCondition *condition)
 {
 	bool matched = false;
 	int i;
