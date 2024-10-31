@@ -287,6 +287,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_varchar);
@@ -4163,6 +4164,63 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	{
 		matched = pgroonga_match_regexp_raw(
 			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_match_regexp_text_array_raw(ArrayType *targets, PGrnCondition *condition)
+{
+	bool matched = false;
+	int i;
+	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
+	Datum datum;
+	bool isNULL;
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
+
+	for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
+	{
+		const char *target = NULL;
+		unsigned int targetSize = 0;
+
+		if (isNULL)
+			continue;
+
+		PGrnPGDatumExtractString(
+			datum, ARR_ELEMTYPE(targets), &target, &targetSize);
+		if (!target)
+			continue;
+
+		matched = pgroonga_match_regexp_raw(target, targetSize, condition);
+	}
+	array_free_iterator(iterator);
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_regexp_text_array(targets text[], pattern text) : bool
+ */
+Datum
+pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *pattern = PG_GETARG_TEXT_PP(1);
+	PGrnCondition condition = {0};
+	bool matched = false;
+
+	condition.query = pattern;
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
