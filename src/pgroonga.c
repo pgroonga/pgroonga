@@ -4182,6 +4182,8 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 
 	if (ARR_NDIM(targets) == 0)
 		return false;
+	if (PGrnPGTextIsEmpty(condition->query))
+		return false;
 
 	for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
 	{
