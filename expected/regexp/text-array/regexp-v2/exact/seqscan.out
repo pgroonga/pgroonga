@@ -1,0 +1,35 @@
+CREATE TABLE memos (
+  id integer,
+  content text[]
+);
+INSERT INTO memos
+     VALUES (1, ARRAY['PostgreSQL',
+                      'Groonga',
+                      'PGroonga']);
+INSERT INTO memos
+     VALUES (2, ARRAY['MySQL',
+                      'Mroonga']);
+CREATE INDEX pgrn_content_index
+    ON memos
+ USING pgroonga (content pgroonga_text_array_regexp_ops_v2);
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT *
+  FROM memos
+ WHERE content &~ '\Agroonga\z';
+                 QUERY PLAN                 
+--------------------------------------------
+ Seq Scan on memos
+   Filter: (content &~ '\Agroonga\z'::text)
+(2 rows)
+
+SELECT *
+  FROM memos
+ WHERE content &~ '\Agroonga\z';
+ id | content 
+----+---------
+(0 rows)
+
+DROP TABLE memos;
