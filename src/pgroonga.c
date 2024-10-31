@@ -4198,7 +4198,11 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 		if (!target)
 			continue;
 
-		matched = pgroonga_match_regexp_raw(target, targetSize, condition);
+		if (pgroonga_match_regexp_raw(target, targetSize, condition))
+		{
+			matched = true;
+			break;
+		}
 	}
 	array_free_iterator(iterator);
 
