@@ -163,14 +163,12 @@ echo "::group::Upgrade"
 apt purge -V -y ${pgroonga_package}
 
 if apt show ${pgroonga_package} > /dev/null 2>&1; then
-  can_upgrade=yes
-  can_downgrade=yes
+  can_upgrade_downgrade=yes
 else
-  can_upgrade=no
-  can_downgrade=no
+  can_upgrade_downgrade=no
 fi
 
-if [ "${can_upgrade}" = "yes" ]; then
+if [ "${can_upgrade_downgrade}" = "yes" ]; then
   apt install -V -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
@@ -183,13 +181,13 @@ fi
 
 echo "::endgroup::"
 
-if [ "${can_upgrade}" = "yes" ]; then
+if [ "${can_upgrade_downgrade}" = "yes" ]; then
   run_test
 fi
 
 echo "::group::Downgrade"
 
-if [ "${can_downgrade}" = "yes" ]; then
+if [ "${can_upgrade_downgrade}" = "yes" ]; then
   pgroonga_current_version=$(apt-cache search --full \^${pgroonga_package}\$ | \
                                grep Version | \
                                sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-[0-9]/\1/')
@@ -203,7 +201,7 @@ fi
 
 echo "::endgroup::"
 
-if [ "${can_downgrade}" = "yes" ]; then
+if [ "${can_upgrade_downgrade}" = "yes" ]; then
   run_test
 fi
 
