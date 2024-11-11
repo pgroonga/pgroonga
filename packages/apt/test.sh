@@ -158,6 +158,14 @@ echo "::endgroup::"
 
 run_test
 
+pgroonga_latest_released_version_number=$(apt info ${pgroonga_package} | \
+                                            grep Version | \
+                                            sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
+pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_number} | \
+                                     awk '{print $1}')
+pgroonga_release_number=$(echo ${pgroonga_latest_released_version} | \
+                            awk '{print $2}')
+
 echo "::group::Upgrade"
 
 apt purge -V -y ${pgroonga_package}
@@ -188,14 +196,12 @@ fi
 echo "::group::Downgrade"
 
 if [ "${is_fast_release}" = "yes" ]; then
-  pgroonga_latest_released_version=$(apt info ${pgroonga_package} | \
-                                       grep Version | \
-                                       sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-[0-9]/\1/')
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade -c \
        "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
-  apt install -V -y ${pgroonga_package}
+  apt install -V -y \
+      ${pgroonga_package}=${pgroonga_latest_released_version}-${pgroonga_release_number}
 else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
