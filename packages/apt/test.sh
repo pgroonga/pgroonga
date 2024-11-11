@@ -164,8 +164,10 @@ apt purge -V -y ${pgroonga_package}
 
 if apt show ${pgroonga_package} > /dev/null 2>&1; then
   can_upgrade=yes
+  can_downgrade=yes
 else
   can_upgrade=no
+  can_downgrade=no
 fi
 
 if [ "${can_upgrade}" = "yes" ]; then
@@ -184,6 +186,28 @@ echo "::endgroup::"
 if [ "${can_upgrade}" = "yes" ]; then
   run_test
 fi
+
+echo "::group::Downgrade"
+
+if [ "${can_downgrade}" = "yes" ]; then
+  pgroonga_current_version=$(dpkg -l | \
+                               grep pgroonga | \
+                               head -n1 | \
+                               awk '{print $3}' | \
+                               awk -F '-' '{print $1}')
+  createdb downgrade
+  psql downgrade -c 'CREATE EXTENSION pgroonga'
+  psql downgrade -c 'ALTER EXTENSION pgroonga UPDATE TO ${pgroonga_current_version}'
+  apt install -V -y ${pgroonga_package}
+else
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+fi
+
+if [ "${can_downgrade}" = "yes" ]; then
+  run_test
+fi
+
+echo "::endgroup::"
 
 echo "::group::Postpare"
 
