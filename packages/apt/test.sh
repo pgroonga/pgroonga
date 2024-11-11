@@ -81,6 +81,13 @@ fi
 
 echo "::endgroup::"
 
+pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
+                                          grep Version | \
+                                          sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
+pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
+                                     awk '{print $1}')
+pgroonga_release_number=$(echo ${pgroonga_latest_released_version_full} | \
+                            awk '{print $2}')
 
 echo "::group::Install built packages"
 
@@ -157,14 +164,6 @@ pg_regress=$(dirname $(pg_config --pgxs))/../test/regress/pg_regress
 echo "::endgroup::"
 
 run_test
-
-pgroonga_latest_released_version_number=$(apt info ${pgroonga_package} | \
-                                            grep Version | \
-                                            sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
-pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_number} | \
-                                     awk '{print $1}')
-pgroonga_release_number=$(echo ${pgroonga_latest_released_version} | \
-                            awk '{print $2}')
 
 echo "::group::Upgrade"
 
