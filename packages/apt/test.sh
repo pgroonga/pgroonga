@@ -201,11 +201,11 @@ else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
+echo "::endgroup::"
+
 if [ "${can_downgrade}" = "yes" ]; then
   run_test
 fi
-
-echo "::endgroup::"
 
 echo "::group::Postpare"
 
