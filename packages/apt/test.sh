@@ -188,9 +188,9 @@ fi
 echo "::group::Downgrade"
 
 if [ "${can_upgrade_downgrade}" = "yes" ]; then
-  pgroonga_latest_release_version=$(apt-cache search --full \^${pgroonga_package}\$ | \
-                               grep Version | \
-                               sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-[0-9]/\1/')
+  pgroonga_latest_release_version=$(apt info ${pgroonga_package} | \
+                                      grep Version | \
+                                      sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-[0-9]/\1/')
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade -c \
