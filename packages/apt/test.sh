@@ -195,7 +195,7 @@ if [ "${can_downgrade}" = "yes" ]; then
                                sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-[0-9]/\1/')
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
-  psql downgrade -c 'ALTER EXTENSION pgroonga UPDATE TO ${pgroonga_current_version}'
+  psql downgrade -c "'ALTER EXTENSION pgroonga UPDATE TO ${pgroonga_current_version}'"
   apt install -V -y ${pgroonga_package}
 else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
