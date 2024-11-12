@@ -174,24 +174,48 @@ echo "::group::Upgrade"
 ${DNF} remove -y ${pgroonga_package}
 
 if ${DNF} info ${pgroonga_package} > /dev/null 2>&1; then
-  can_upgrade=yes
+  is_first_release=no
 else
-  can_upgrade=no
+  is_first_release=yes
 fi
 
-if [ "${can_upgrade}" = "yes" ]; then
+if [ "${is_first_release}" = "yes" ]; then
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+else
+  pgroonga_latest_released_version_full=$(${DNF} info ${pgroonga_package} | \
+                                            grep Source | \
+                                            awk -F': ' '{print $2}' | \
+                                            awk -F'.src' '{print $1}')
+  pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
+                                       awk -F'-' '{print $4}')
+
   ${DNF} install -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
   ${DNF} install -y ${packages_dir}/*.rpm
   psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
-else
-  echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
 
-if [ "${can_upgrade}" = "yes" ]; then
+if [ "${is_first_release}" = "no" ]; then
+  run_test
+fi
+
+echo "::group::Downgrade"
+
+if [ "${is_first_release}" = "yes" ]; then
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+else
+  createdb downgrade
+  psql downgrade -c 'CREATE EXTENSION pgroonga'
+  psql downgrade -c "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
+  ${DNF} install -y ${pgroonga_latest_released_version_full}
+fi
+
+echo "::endgroup::"
+
+if [ "${is_first_release}" = "no" ]; then
   run_test
 fi
 
