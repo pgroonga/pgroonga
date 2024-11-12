@@ -168,7 +168,9 @@ else
   is_first_release=yes
 fi
 
-if [ "${is_first_release}" = "no" ]; then
+if [ "${is_first_release}" = "yes" ]; then
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+else
   pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
                                             grep Version | \
                                             sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
@@ -183,8 +185,6 @@ if [ "${is_first_release}" = "no" ]; then
   apt install -V -y \
     ${repositories_dir}/${os}/pool/${code_name}/*/*/*/*_${architecture}.deb
   psql upgrade -c 'ALTER EXTENSION pgroonga UPDATE'
-else
-  echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
@@ -195,15 +195,15 @@ fi
 
 echo "::group::Downgrade"
 
-if [ "${is_first_release}" = "no" ]; then
+if [ "${is_first_release}" = "yes" ]; then
+  echo "Skip because ${pgroonga_package} hasn't been released yet."
+else
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade -c \
        "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
   apt install -V -y --allow-downgrades \
       ${pgroonga_package}=${pgroonga_latest_released_version}-${pgroonga_release_number}
-else
-  echo "Skip because ${pgroonga_package} hasn't been released yet."
 fi
 
 echo "::endgroup::"
