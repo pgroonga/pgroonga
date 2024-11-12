@@ -163,9 +163,9 @@ echo "::group::Upgrade"
 apt purge -V -y ${pgroonga_package}
 
 if apt show ${pgroonga_package} > /dev/null 2>&1; then
-  is_first_release=yes
-else
   is_first_release=no
+else
+  is_first_release=yes
 fi
 
 pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
@@ -176,7 +176,7 @@ pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full}
 pgroonga_release_number=$(echo ${pgroonga_latest_released_version_full} | \
                             awk '{print $2}')
 
-if [ "${is_first_release}" = "yes" ]; then
+if [ "${is_first_release}" = "no" ]; then
   apt install -V -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
@@ -189,13 +189,13 @@ fi
 
 echo "::endgroup::"
 
-if [ "${is_first_release}" = "yes" ]; then
+if [ "${is_first_release}" = "no" ]; then
   run_test
 fi
 
 echo "::group::Downgrade"
 
-if [ "${is_first_release}" = "yes" ]; then
+if [ "${is_first_release}" = "no" ]; then
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade -c \
@@ -208,7 +208,7 @@ fi
 
 echo "::endgroup::"
 
-if [ "${is_first_release}" = "yes" ]; then
+if [ "${is_first_release}" = "no" ]; then
   run_test
 fi
 
