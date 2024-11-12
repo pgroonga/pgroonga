@@ -168,15 +168,15 @@ else
   is_first_release=yes
 fi
 
-pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
-                                          grep Version | \
-                                          sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
-pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
-                                     awk '{print $1}')
-pgroonga_release_number=$(echo ${pgroonga_latest_released_version_full} | \
-                            awk '{print $2}')
-
 if [ "${is_first_release}" = "no" ]; then
+  pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
+                                            grep Version | \
+                                            sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
+  pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
+                                       awk '{print $1}')
+  pgroonga_release_number=$(echo ${pgroonga_latest_released_version_full} | \
+                              awk '{print $2}')
+
   apt install -V -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
