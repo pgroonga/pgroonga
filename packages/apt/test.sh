@@ -201,7 +201,7 @@ else
   psql downgrade -c \
        "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
   apt install -V -y --allow-downgrades \
-      ${pgroonga_package}=${pgroonga_latest_released_version_full}
+    ${pgroonga_package}=${pgroonga_latest_released_version_full}
 fi
 
 echo "::endgroup::"
