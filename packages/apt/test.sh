@@ -199,7 +199,7 @@ if [ "${is_fast_release}" = "yes" ]; then
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade -c \
        "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
-  apt install -V -y \
+  apt install -V -y --allow-downgrades \
       ${pgroonga_package}=${pgroonga_latest_released_version}-${pgroonga_release_number}
 else
   echo "Skip because ${pgroonga_package} hasn't been released yet."
