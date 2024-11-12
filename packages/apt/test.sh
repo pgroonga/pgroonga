@@ -198,8 +198,8 @@ if [ "${is_first_release}" = "yes" ]; then
 else
   createdb downgrade
   psql downgrade -c 'CREATE EXTENSION pgroonga'
-  psql downgrade -c \
-       "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
+  psql downgrade \
+    -c "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
   apt install -V -y --allow-downgrades \
     ${pgroonga_package}=${pgroonga_latest_released_version_full}
 fi
