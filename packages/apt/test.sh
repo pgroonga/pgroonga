@@ -173,11 +173,9 @@ if [ "${is_first_release}" = "yes" ]; then
 else
   pgroonga_latest_released_version_full=$(apt info ${pgroonga_package} | \
                                             grep Version | \
-                                            sed -E 's/^Version: ([0-9]\.[0-9]\.[0-9])-([0-9])/\1 \2/')
+                                            cut -d' ' -f2)
   pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
-                                       awk '{print $1}')
-  pgroonga_release_number=$(echo ${pgroonga_latest_released_version_full} | \
-                              awk '{print $2}')
+                                     cut -d'-' -f1)
 
   apt install -V -y ${pgroonga_package}
   createdb upgrade
@@ -203,7 +201,7 @@ else
   psql downgrade -c \
        "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
   apt install -V -y --allow-downgrades \
-      ${pgroonga_package}=${pgroonga_latest_released_version}-${pgroonga_release_number}
+      ${pgroonga_package}=${pgroonga_latest_released_version_full}
 fi
 
 echo "::endgroup::"
