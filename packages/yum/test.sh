@@ -184,7 +184,8 @@ if [ "${is_first_release}" = "yes" ]; then
 else
   ${DNF} install -y ${pgroonga_package}
 
-  # We can use "rpm -q" after installing ${pgroonga_package}.
+  # We can use "rpm -q" for the latest released ${pgroonga_package} while
+  # the latest released ${pgroonga_package} is installed.
   #
   # Example: postgresql16-pgdg-pgroonga-3.2.4-1.el8.x86_64
   pgroonga_latest_released_package=$(rpm -q ${pgroonga_package})
