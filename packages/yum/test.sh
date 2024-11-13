@@ -205,8 +205,7 @@ else
   # The value of "pgroonga_latest_released_version" is shown below in this example.
   #
   # pgroonga_latest_released_version=3.2.4
-  pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
-                                       cut -d'-' -f4)
+  pgroonga_latest_released_version=$(rpm -q --queryformat="%{VERSION}" ${pgroonga_package})
 
   ${DNF} install -y ${pgroonga_package}
   createdb upgrade
