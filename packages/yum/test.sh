@@ -182,23 +182,10 @@ fi
 if [ "${is_first_release}" = "yes" ]; then
   echo "Skip because ${pgroonga_package} hasn't been released yet."
 else
-  # For example, the result of "${DNF} info ${pgroonga_package}" is shown below.
-  #
-  # Available Packages
-  # Name         : postgresql16-pgdg-pgroonga
-  # Version      : 3.2.4
-  # Release      : 1.el8
-  # Architecture : x86_64
-  # Size         : 761 k
-  # Source       : postgresql16-pgdg-pgroonga-3.2.4-1.el8.src.rpm
-  # Repository   : groonga-almalinux
-  # Summary      : Fast full-text search plugin for PostgreSQL based on Groonga
-  # URL          : https://pgroonga.github.io/
-  # License      : PostgreSQL
-  # Description  : This package provides a fast full-text search plugin for PostgreSQL.
-  #              : It is based on Groonga.
-  #
-  # The value of "pgroonga_latest_released_version_full" is shown below in this example.
+  ${DNF} install -y ${pgroonga_package}
+
+  # "rpm -q" get installed packages information.
+  # Therefore, we get PGroonga packages name and version after "${DNF} install -y ${pgroonga_package}".
   #
   # pgroonga_latest_released_version_full=postgresql16-pgdg-pgroonga-3.2.4-1.el8
   pgroonga_latest_released_package=$(rpm -q ${pgroonga_package})
