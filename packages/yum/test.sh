@@ -187,7 +187,7 @@ else
                                             awk -F': ' '{print $2}' | \
                                             awk -F'.src' '{print $1}')
   pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
-                                       awk -F'-' '{print $4}')
+                                       cut -d'-' -f4)
 
   ${DNF} install -y ${pgroonga_package}
   createdb upgrade
