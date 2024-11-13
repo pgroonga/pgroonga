@@ -4192,8 +4192,9 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 		if (isNULL)
 			continue;
 
-		PGrnPGDatumExtractString(
-			datum, ARR_ELEMTYPE(targets), &target, &targetSize);
+		PGrnPGDatumExtractString(datum,
+								 ARR_ELEMTYPE(targets),
+								 &target, &targetSize);
 		if (!target)
 			continue;
 
