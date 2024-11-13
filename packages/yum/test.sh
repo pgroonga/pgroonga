@@ -208,7 +208,7 @@ else
   psql downgrade -c 'CREATE EXTENSION pgroonga'
   psql downgrade \
     -c "ALTER EXTENSION pgroonga UPDATE TO '${pgroonga_latest_released_version}'"
-  ${DNF} install -y ${pgroonga_latest_released_version_full}
+  ${DNF} install -y ${pgroonga_latest_released_package}
 fi
 
 echo "::endgroup::"
