@@ -201,10 +201,7 @@ else
   # The value of "pgroonga_latest_released_version_full" is shown below in this example.
   #
   # pgroonga_latest_released_version_full=postgresql16-pgdg-pgroonga-3.2.4-1.el8
-  pgroonga_latest_released_version_full=$(${DNF} info ${pgroonga_package} | \
-                                            grep Source | \
-                                            awk -F': ' '{print $2}' | \
-                                            awk -F'.src' '{print $1}')
+  pgroonga_latest_released_package=$(rpm -q ${pgroonga_package})
   # The value of "pgroonga_latest_released_version" is shown below in this example.
   #
   # pgroonga_latest_released_version=3.2.4
