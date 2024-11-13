@@ -194,7 +194,6 @@ else
   # pgroonga_latest_released_version=3.2.4
   pgroonga_latest_released_version=$(rpm -q --queryformat="%{VERSION}" ${pgroonga_package})
 
-  ${DNF} install -y ${pgroonga_package}
   createdb upgrade
   psql upgrade -c 'CREATE EXTENSION pgroonga'
   ${DNF} install -y ${packages_dir}/*.rpm
