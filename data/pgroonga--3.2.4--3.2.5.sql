@@ -21,7 +21,3 @@ CREATE OPERATOR &~ (
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
-
-ALTER OPERATOR FAMILY pgroonga_text_array_regexp_ops_v2 USING pgroonga
-        ADD
-                OPERATOR 22 &~ (text[], text);
