@@ -4175,7 +4175,6 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 									 PGrnCondition *condition)
 {
 	bool matched = false;
-	int i;
 	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
 	Datum datum;
 	bool isNULL;
@@ -4185,7 +4184,7 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 	if (PGrnPGTextIsEmpty(condition->query))
 		return false;
 
-	for (i = 0; array_iterate(iterator, &datum, &isNULL); i++)
+	while (array_iterate(iterator, &datum, &isNULL))
 	{
 		const char *target = NULL;
 		unsigned int targetSize = 0;
