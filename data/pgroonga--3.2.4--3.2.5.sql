@@ -1,9 +1,5 @@
 -- Upgrade SQL
 
-CREATE OPERATOR CLASS pgroonga_text_array_regexp_ops_v2 FOR TYPE text[]
-	USING pgroonga AS
-		OPERATOR 22 &~ (text[], text);
-
 CREATE FUNCTION pgroonga_regexp_text_array(targets text[], pattern text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_regexp_text_array'
@@ -21,3 +17,7 @@ CREATE OPERATOR &~ (
 	RESTRICT = contsel,
 	JOIN = contjoinsel
 );
+
+CREATE OPERATOR CLASS pgroonga_text_array_regexp_ops_v2 FOR TYPE text[]
+	USING pgroonga AS
+		OPERATOR 22 &~ (text[], text);
