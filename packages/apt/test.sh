@@ -175,7 +175,7 @@ else
                                             grep Version | \
                                             cut -d' ' -f2)
   pgroonga_latest_released_version=$(echo ${pgroonga_latest_released_version_full} | \
-                                     cut -d'-' -f1)
+                                       cut -d'-' -f1)
 
   apt install -V -y ${pgroonga_package}
   createdb upgrade
