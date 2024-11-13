@@ -187,10 +187,10 @@ else
   # "rpm -q" get installed packages information.
   # Therefore, we get PGroonga packages name and version after "${DNF} install -y ${pgroonga_package}".
   #
-  # pgroonga_latest_released_version_full=postgresql16-pgdg-pgroonga-3.2.4-1.el8
+  # For example, the value of "pgroonga_latest_released_package" is shown below.
+  # pgroonga_latest_released_package=postgresql16-pgdg-pgroonga-3.2.4-1.el8.x86_64
   pgroonga_latest_released_package=$(rpm -q ${pgroonga_package})
-  # The value of "pgroonga_latest_released_version" is shown below in this example.
-  #
+  # For example, the value of "pgroonga_latest_released_version" is shown below in this example.
   # pgroonga_latest_released_version=3.2.4
   pgroonga_latest_released_version=$(rpm -q --queryformat="%{VERSION}" ${pgroonga_package})
 
