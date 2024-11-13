@@ -184,8 +184,7 @@ if [ "${is_first_release}" = "yes" ]; then
 else
   ${DNF} install -y ${pgroonga_package}
 
-  # "rpm -q" get installed packages information.
-  # Therefore, we get PGroonga packages name and version after "${DNF} install -y ${pgroonga_package}".
+  # We can use "rpm -q" after installing ${pgroonga_package}.
   #
   # For example, the value of "pgroonga_latest_released_package" is shown below.
   # pgroonga_latest_released_package=postgresql16-pgdg-pgroonga-3.2.4-1.el8.x86_64
