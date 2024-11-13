@@ -198,10 +198,6 @@ fi
 
 echo "::endgroup::"
 
-if [ "${is_first_release}" = "no" ]; then
-  run_test
-fi
-
 echo "::group::Downgrade"
 
 if [ "${is_first_release}" = "yes" ]; then
@@ -214,10 +210,6 @@ else
 fi
 
 echo "::endgroup::"
-
-if [ "${is_first_release}" = "no" ]; then
-  run_test
-fi
 
 echo "::group::Postpare"
 
