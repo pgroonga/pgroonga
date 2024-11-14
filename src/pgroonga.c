@@ -1156,7 +1156,7 @@ PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 }
 
 static bool
-PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
+PGrnIsRegexpStrategyIndex(Relation index, int nthAttribute)
 {
 	Oid regexpStrategyOID;
 	Oid leftType;
@@ -1169,6 +1169,46 @@ PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
 											rightType,
 											PGrnRegexpStrategyNumber);
 	return OidIsValid(regexpStrategyOID);
+}
+
+static bool
+PGrnIsRegexpStrategyV2Index(Relation index, int nthAttribute)
+{
+	Oid regexpStrategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+
+	switch (leftType)
+	{
+	case VARCHARARRAYOID:
+		rightType = VARCHAROID;
+		break;
+	case TEXTARRAYOID:
+		rightType = TEXTOID;
+		break;
+	default:
+		rightType = leftType;
+		break;
+	}
+
+	regexpStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnRegexpStrategyV2Number);
+	return OidIsValid(regexpStrategyOID);
+}
+static bool
+PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
+{
+	if (PGrnIsRegexpStrategyIndex(index, nthAttribute))
+		return true;
+
+	if (PGrnIsRegexpStrategyV2Index(index, nthAttribute))
+		return true;
+
+	return false;
 }
 
 static bool
