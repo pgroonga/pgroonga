@@ -1182,9 +1182,6 @@ PGrnIsRegexpStrategyV2Index(Relation index, int nthAttribute)
 
 	switch (leftType)
 	{
-	case VARCHARARRAYOID:
-		rightType = VARCHAROID;
-		break;
 	case TEXTARRAYOID:
 		rightType = TEXTOID;
 		break;
