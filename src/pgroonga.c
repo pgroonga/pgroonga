@@ -1196,6 +1196,7 @@ PGrnIsRegexpStrategyV2Index(Relation index, int nthAttribute)
 											PGrnRegexpStrategyV2Number);
 	return OidIsValid(regexpStrategyOID);
 }
+
 static bool
 PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
 {
