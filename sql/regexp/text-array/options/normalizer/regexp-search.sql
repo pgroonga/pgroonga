@@ -4,7 +4,7 @@ CREATE TABLE memos (
 
 CREATE INDEX pgrn_index ON memos
   USING pgroonga (content pgroonga_text_array_regexp_ops_v2)
-  WITH (normalizer = 'none',
+  WITH (normalizers = 'none',
         regexp_search_normalizer = 'NormalizerNFKC150');
 
 SELECT entry->>6 AS tokenizer,
