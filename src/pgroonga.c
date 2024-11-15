@@ -4209,19 +4209,20 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 }
 
 static bool
-pgroonga_match_regexp_text_array_raw(ArrayType *targets,
-									 PGrnCondition *condition)
+pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
 {
 	bool matched = false;
 	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
+	PGrnCondition condition = {0};
 	Datum datum;
 	bool isNULL;
 
 	if (ARR_NDIM(targets) == 0)
 		return false;
-	if (PGrnPGTextIsEmpty(condition->query))
+	if (PGrnPGTextIsEmpty(pattern))
 		return false;
 
+	condition.query = pattern;
 	while (array_iterate(iterator, &datum, &isNULL))
 	{
 		const char *target = NULL;
@@ -4235,7 +4236,7 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 		if (!target)
 			continue;
 
-		if (pgroonga_match_regexp_raw(target, targetSize, condition))
+		if (pgroonga_match_regexp_raw(target, targetSize, &condition))
 		{
 			matched = true;
 			break;
@@ -4254,17 +4255,15 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 {
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
-	PGrnCondition condition = {0};
 	bool matched = false;
 
-	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
 	}
 	PGRN_RLS_ENABLED_END();
 
