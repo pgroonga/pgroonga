@@ -288,6 +288,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text_array);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text_array_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_varchar);
@@ -4271,6 +4272,17 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_regexp_text_array_condition(targets text[],
+ *                                      condition pgroonga_condition) : bool
+ */
+Datum
+pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
+{
+	bool matched = false;
+	PG_RETURN_BOOL(matched);
+}
+
+/**
  * pgroonga_regexp_varchar(target varchar, pattern varchar) : bool
  */
 Datum
@@ -6067,6 +6079,13 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		PGrnSearchBuildConditionBinaryOperationCondition(
 			data, key, targetColumn, attribute, GRN_OP_EQUAL);
+		return;
+	}
+
+	if (key->sk_strategy == PGrnRegexpConditionStrategyV2Number)
+	{
+		PGrnSearchBuildConditionBinaryOperationCondition(
+			data, key, targetColumn, attribute, GRN_OP_REGEXP);
 		return;
 	}
 

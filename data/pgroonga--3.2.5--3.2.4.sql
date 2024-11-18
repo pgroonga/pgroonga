@@ -2,4 +2,6 @@
 
 DROP OPERATOR FAMILY pgroonga_text_array_regexp_ops_v2 USING pgroonga;
 DROP OPERATOR &~ (text[], text);
+DROP OPERATOR &~ (text[], pgroonga_condition);
 DROP FUNCTION pgroonga_regexp_text_array;
+DROP FUNCTION pgroonga_regexp_text_array_condition;
