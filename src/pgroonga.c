@@ -287,6 +287,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_prefix_rk_in_varchar_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_regexp_in_varchar);
@@ -1155,7 +1156,7 @@ PGrnIsForFullTextSearchIndex(Relation index, int nthAttribute)
 }
 
 static bool
-PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
+PGrnIsRegexpStrategyIndex(Relation index, int nthAttribute)
 {
 	Oid regexpStrategyOID;
 	Oid leftType;
@@ -1168,6 +1169,44 @@ PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
 											rightType,
 											PGrnRegexpStrategyNumber);
 	return OidIsValid(regexpStrategyOID);
+}
+
+static bool
+PGrnIsRegexpStrategyV2Index(Relation index, int nthAttribute)
+{
+	Oid regexpStrategyOID;
+	Oid leftType;
+	Oid rightType;
+
+	leftType = index->rd_opcintype[nthAttribute];
+
+	switch (leftType)
+	{
+	case TEXTARRAYOID:
+		rightType = TEXTOID;
+		break;
+	default:
+		rightType = leftType;
+		break;
+	}
+
+	regexpStrategyOID = get_opfamily_member(index->rd_opfamily[nthAttribute],
+											leftType,
+											rightType,
+											PGrnRegexpStrategyV2Number);
+	return OidIsValid(regexpStrategyOID);
+}
+
+static bool
+PGrnIsForRegexpSearchIndex(Relation index, int nthAttribute)
+{
+	if (PGrnIsRegexpStrategyIndex(index, nthAttribute))
+		return true;
+
+	if (PGrnIsRegexpStrategyV2Index(index, nthAttribute))
+		return true;
+
+	return false;
 }
 
 static bool
@@ -4163,6 +4202,68 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	{
 		matched = pgroonga_match_regexp_raw(
 			VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), &condition);
+	}
+	PGRN_RLS_ENABLED_END();
+
+	PG_RETURN_BOOL(matched);
+}
+
+static bool
+pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
+{
+	bool matched = false;
+	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
+	PGrnCondition condition = {0};
+	Datum datum;
+	bool isNULL;
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
+	if (PGrnPGTextIsEmpty(pattern))
+		return false;
+
+	condition.query = pattern;
+	while (array_iterate(iterator, &datum, &isNULL))
+	{
+		const char *target = NULL;
+		unsigned int targetSize = 0;
+
+		if (isNULL)
+			continue;
+
+		PGrnPGDatumExtractString(
+			datum, ARR_ELEMTYPE(targets), &target, &targetSize);
+		if (!target)
+			continue;
+
+		if (pgroonga_match_regexp_raw(target, targetSize, &condition))
+		{
+			matched = true;
+			break;
+		}
+	}
+	array_free_iterator(iterator);
+
+	PG_RETURN_BOOL(matched);
+}
+
+/**
+ * pgroonga_regexp_text_array(targets text[], pattern text) : bool
+ */
+Datum
+pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
+{
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	text *pattern = PG_GETARG_TEXT_PP(1);
+	bool matched = false;
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
 	}
 	PGRN_RLS_ENABLED_END();
 
