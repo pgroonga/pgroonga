@@ -104,8 +104,10 @@
 #define PGrnEqualConditionStrategyV2Number 45
 /* operator &=~ with pgroonga_condition. */
 #define PGrnEqualQueryConditionStrategyV2Number 46
+/* operator &~ with pgroonga_condition. */
+#define PGrnRegexpConditionStrategyV2Number 47
 
-#define PGRN_N_STRATEGIES PGrnEqualQueryConditionStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnRegexpConditionStrategyV2Number
 
 extern grn_ctx PGrnContext;
 static grn_ctx *ctx = &PGrnContext;
