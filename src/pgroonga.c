@@ -4272,7 +4272,7 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga_regexp_text_array(targets text[], pattern pgroonga_condition) : bool
+ * pgroonga_regexp_text_array(targets text[], condition pgroonga_condition) : bool
  */
 Datum
 pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
