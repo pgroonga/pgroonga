@@ -411,102 +411,100 @@ PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 void
 PGrnInitializeOptions(void)
 {
-#ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
 	const LOCKMODE lock_mode = ShareUpdateExclusiveLock;
-#endif
 
 	lexicon = NULL;
 	PGrnReloptionKind = add_reloption_kind();
 
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "tokenizer",
-							  "Tokenizer name to be used for full-text search",
-							  PGRN_DEFAULT_TOKENIZER,
-							  PGrnOptionValidateTokenizer,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "tokenizer_mapping",
-							  "Mapping to specify tokenizer to be used "
-							  "for each target",
-							  NULL,
-							  PGrnOptionValidateTokenizerMapping,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "normalizer",
-							  "Normalizers to be used as fallback. "
-							  "This is deprecated since 2.3.1. "
-							  "Use normalizers instead",
-							  NULL,
-							  PGrnOptionValidateNormalizers,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "token_filters",
-							  "Token filter names separated by \",\" "
-							  "to be used for full-text search",
-							  "",
-							  PGrnOptionValidateTokenFilters,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "plugins",
-							  "Plugin names separated by \",\" to be installed",
-							  "",
-							  PGrnOptionValidatePlugins,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "full_text_search_normalizer",
-							  "Normalizers to be used for full-text search. "
-							  "This is deprecated since 2.3.1. "
-							  "Use normalizers_mapping instead",
-							  NULL,
-							  PGrnOptionValidateNormalizers,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "regexp_search_normalizer",
-							  "Normalizers to be used for regexp search. "
-							  "This is deprecated since 2.3.1. "
-							  "Use normalizers_mapping instead",
-							  NULL,
-							  PGrnOptionValidateNormalizers,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "prefix_search_normalizer",
-							  "Normalizers to be used for prefix search"
-							  "This is deprecated since 2.3.1. "
-							  "Use normalizers_mapping instead",
-							  NULL,
-							  PGrnOptionValidateNormalizers,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "lexicon_type",
-							  "Lexicon type to be used for lexicon",
-							  NULL,
-							  PGrnOptionValidateLexiconType,
-							  lock_mode);
-	pgrn_add_bool_reloption(PGrnReloptionKind,
-							"query_allow_column",
-							"Accept column:... syntax in query",
-							false,
-							lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "normalizers",
-							  "Normalizers to be used as fallback",
-							  NULL,
-							  PGrnOptionValidateNormalizers,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "normalizers_mapping",
-							  "Mapping to specify normalizers to be used "
-							  "for each target",
-							  NULL,
-							  PGrnOptionValidateNormalizersMapping,
-							  lock_mode);
-	pgrn_add_string_reloption(PGrnReloptionKind,
-							  "index_flags_mapping",
-							  "Mapping to specify index flags to be used "
-							  "for each target",
-							  NULL,
-							  PGrnOptionValidateIndexFlagsMapping,
-							  lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "tokenizer",
+						 "Tokenizer name to be used for full-text search",
+						 PGRN_DEFAULT_TOKENIZER,
+						 PGrnOptionValidateTokenizer,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "tokenizer_mapping",
+						 "Mapping to specify tokenizer to be used "
+						 "for each target",
+						 NULL,
+						 PGrnOptionValidateTokenizerMapping,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "normalizer",
+						 "Normalizers to be used as fallback. "
+						 "This is deprecated since 2.3.1. "
+						 "Use normalizers instead",
+						 NULL,
+						 PGrnOptionValidateNormalizers,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "token_filters",
+						 "Token filter names separated by \",\" "
+						 "to be used for full-text search",
+						 "",
+						 PGrnOptionValidateTokenFilters,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "plugins",
+						 "Plugin names separated by \",\" to be installed",
+						 "",
+						 PGrnOptionValidatePlugins,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "full_text_search_normalizer",
+						 "Normalizers to be used for full-text search. "
+						 "This is deprecated since 2.3.1. "
+						 "Use normalizers_mapping instead",
+						 NULL,
+						 PGrnOptionValidateNormalizers,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "regexp_search_normalizer",
+						 "Normalizers to be used for regexp search. "
+						 "This is deprecated since 2.3.1. "
+						 "Use normalizers_mapping instead",
+						 NULL,
+						 PGrnOptionValidateNormalizers,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "prefix_search_normalizer",
+						 "Normalizers to be used for prefix search"
+						 "This is deprecated since 2.3.1. "
+						 "Use normalizers_mapping instead",
+						 NULL,
+						 PGrnOptionValidateNormalizers,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "lexicon_type",
+						 "Lexicon type to be used for lexicon",
+						 NULL,
+						 PGrnOptionValidateLexiconType,
+						 lock_mode);
+	add_bool_reloption(PGrnReloptionKind,
+					   "query_allow_column",
+					   "Accept column:... syntax in query",
+					   false,
+					   lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "normalizers",
+						 "Normalizers to be used as fallback",
+						 NULL,
+						 PGrnOptionValidateNormalizers,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "normalizers_mapping",
+						 "Mapping to specify normalizers to be used "
+						 "for each target",
+						 NULL,
+						 PGrnOptionValidateNormalizersMapping,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "index_flags_mapping",
+						 "Mapping to specify index flags to be used "
+						 "for each target",
+						 NULL,
+						 PGrnOptionValidateIndexFlagsMapping,
+						 lock_mode);
 }
 
 void
