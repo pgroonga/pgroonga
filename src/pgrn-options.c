@@ -1,5 +1,4 @@
 #include "pgroonga.h"
-
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-jsonb.h"
@@ -926,31 +925,12 @@ pgroonga_options(Datum reloptions, bool validate)
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 	};
 
-#ifdef PGRN_HAVE_BUILD_RELOPTIONS
 	grnOptions = build_reloptions(reloptions,
 								  validate,
 								  PGrnReloptionKind,
 								  sizeof(PGrnOptions),
 								  optionsMap,
 								  lengthof(optionsMap));
-#else
-	{
-		relopt_value *options;
-		int nOptions;
-		options =
-			parseRelOptions(reloptions, validate, PGrnReloptionKind, &nOptions);
-		grnOptions =
-			allocateReloptStruct(sizeof(PGrnOptions), options, nOptions);
-		fillRelOptions(grnOptions,
-					   sizeof(PGrnOptions),
-					   options,
-					   nOptions,
-					   validate,
-					   optionsMap,
-					   lengthof(optionsMap));
-		pfree(options);
-	}
-#endif
 
 	return (bytea *) grnOptions;
 }
