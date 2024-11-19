@@ -7385,11 +7385,7 @@ pgroonga_endscan(IndexScanDesc scan)
 
 static void
 PGrnBuildCallback(Relation index,
-#ifdef PGRN_INDEX_BUILD_CALLBACK_USE_ITEM_POINTER
 				  ItemPointer tid,
-#else
-				  HeapTuple htup,
-#endif
 				  Datum *values,
 				  bool *isnull,
 				  bool tupleIsAlive,
@@ -7398,9 +7394,6 @@ PGrnBuildCallback(Relation index,
 	PGrnBuildState bs = (PGrnBuildState) state;
 	MemoryContext oldMemoryContext;
 	uint32_t recordSize;
-#ifndef PGRN_INDEX_BUILD_CALLBACK_USE_ITEM_POINTER
-	ItemPointer tid = &(htup->t_self);
-#endif
 
 	if (!tupleIsAlive)
 		return;
