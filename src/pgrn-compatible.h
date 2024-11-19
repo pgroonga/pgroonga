@@ -18,7 +18,6 @@
 #endif
 
 #if PG_VERSION_NUM >= 130000
-#	define PGRN_SUPPORT_OPTION_LOCK_MODE
 #	define PGRN_HAVE_BUILD_RELOPTIONS
 #	define PGRN_HAVE_JSONB_DATETIME
 #	define PGRN_INDEX_BUILD_CALLBACK_USE_ITEM_POINTER
@@ -34,29 +33,6 @@
 
 #if PG_VERSION_NUM >= 140000
 #	define PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
-#endif
-
-#ifdef PGRN_SUPPORT_OPTION_LOCK_MODE
-#	define pgrn_add_string_reloption(                                         \
-		kinds, name, desc, default_value, validator, lock_mode)                \
-		add_string_reloption((kinds),                                          \
-							 (name),                                           \
-							 (desc),                                           \
-							 (default_value),                                  \
-							 (validator),                                      \
-							 (lock_mode))
-#	define pgrn_add_bool_reloption(                                           \
-		kinds, name, desc, default_value, lock_mode)                           \
-		add_bool_reloption(                                                    \
-			(kinds), (name), (desc), (default_value), (lock_mode))
-#else
-#	define pgrn_add_string_reloption(                                         \
-		kinds, name, desc, default_value, validator, lock_mode)                \
-		add_string_reloption(                                                  \
-			(kinds), (name), (desc), (default_value), (validator))
-#	define pgrn_add_bool_reloption(                                           \
-		kinds, name, desc, default_value, lock_mode)                           \
-		add_bool_reloption((kinds), (name), (desc), (default_value))
 #endif
 
 #if PG_VERSION_NUM >= 130000
