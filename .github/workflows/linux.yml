@@ -25,7 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         label:
-          - PostgreSQL 12
           - PostgreSQL 13
           - PostgreSQL 14
           - PostgreSQL 15
@@ -33,8 +32,6 @@ jobs:
           - PostgreSQL 17
           - PostgreSQL 17 with Groonga main
         include:
-          - label: PostgreSQL 12
-            postgresql-version: "12"
           - label: PostgreSQL 13
             postgresql-version: "13"
           - label: PostgreSQL 14
