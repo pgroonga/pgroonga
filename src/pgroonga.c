@@ -4210,20 +4210,19 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 }
 
 static bool
-pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
+pgroonga_match_regexp_text_array_raw(ArrayType *targets,
+									 PGrnCondition *condition)
 {
 	bool matched = false;
 	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
-	PGrnCondition condition = {0};
 	Datum datum;
 	bool isNULL;
 
 	if (ARR_NDIM(targets) == 0)
 		return false;
-	if (PGrnPGTextIsEmpty(pattern))
+	if (PGrnPGTextIsEmpty(condition->query))
 		return false;
 
-	condition.query = pattern;
 	while (array_iterate(iterator, &datum, &isNULL))
 	{
 		const char *target = NULL;
@@ -4237,7 +4236,7 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
 		if (!target)
 			continue;
 
-		if (pgroonga_match_regexp_raw(target, targetSize, &condition))
+		if (pgroonga_match_regexp_raw(target, targetSize, condition))
 		{
 			matched = true;
 			break;
@@ -4257,14 +4256,16 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
+	PGrnCondition condition = {0};
 
+	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4278,7 +4279,28 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 Datum
 pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 {
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	bool matched = false;
+	PGrnCondition condition = {0};
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
+
+	condition.isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(condition.isTargets);
+	PGrnConditionDeconstruct(&condition, header);
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+	}
+	PGRN_RLS_ENABLED_END();
+
 	PG_RETURN_BOOL(matched);
 }
 
