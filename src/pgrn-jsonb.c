@@ -112,10 +112,8 @@ PGrnJSONBValueTypeToString(enum jbvType type)
 		return "object";
 	case jbvBinary:
 		return "binary";
-#ifdef PGRN_HAVE_JSONB_DATETIME
 	case jbvDatetime:
 		return "datetime";
-#endif
 	default:
 		return "unknown";
 	}
@@ -648,9 +646,7 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 					 JsonbValue *value,
 					 PGrnJSONBInsertData *data)
 {
-#ifdef PGRN_HAVE_JSONB_DATETIME
 	const char *tag = "[jsonb][insert]";
-#endif
 
 	switch (value->type)
 	{
@@ -683,13 +679,11 @@ PGrnJSONBInsertValue(JsonbIterator **iter,
 		GRN_BOOL_SET(ctx, &(data->value), value->val.boolean);
 		PGrnJSONBInsertValueSet(data, data->booleanColumn, "boolean");
 		break;
-#ifdef PGRN_HAVE_JSONB_DATETIME
 	case jbvDatetime:
 		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 					"%s datetime value isn't supported",
 					tag);
 		break;
-#endif
 	case jbvArray:
 		PGrnJSONBInsertContainer(iter, data);
 		break;
@@ -824,9 +818,7 @@ PGrnJSONBInsertValueForFullTextSearch(JsonbIterator **iter,
 		break;
 	case jbvNumeric:
 	case jbvBool:
-#ifdef PGRN_HAVE_JSONB_DATETIME
 	case jbvDatetime:
-#endif
 		break;
 	case jbvArray:
 		PGrnJSONBInsertContainerForFullTextSearch(iter, data);
