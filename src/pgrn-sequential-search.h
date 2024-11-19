@@ -13,6 +13,7 @@ typedef enum
 	PGRN_SEQUENTIAL_SEARCH_QUERY,
 	PGRN_SEQUENTIAL_SEARCH_SCRIPT,
 	PGRN_SEQUENTIAL_SEARCH_EQUAL_QUERY,
+	PGRN_SEQUENTIAL_SEARCH_MATCH_REGEXP,
 } PGrnSequentialSearchType;
 
 void PGrnInitializeSequentialSearch(void);
@@ -31,4 +32,5 @@ void PGrnSequentialSearchSetPrefix(PGrnCondition *condition);
 void PGrnSequentialSearchSetQuery(PGrnCondition *condition,
 								  PGrnSequentialSearchType type);
 void PGrnSequentialSearchSetScript(PGrnCondition *condition);
+void PGrnSequentialSearchSetMatchRegexp(PGrnCondition *condition);
 bool PGrnSequentialSearchExecute(void);

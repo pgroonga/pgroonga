@@ -618,6 +618,32 @@ PGrnSequentialSearchSetScript(PGrnCondition *condition)
 		"%s failed to parse expression: <%.*s>", tag, (int) scriptSize, script);
 }
 
+void
+PGrnSequentialSearchSetMatchRegexp(PGrnCondition *condition)
+{
+	const char *tag = "[sequential-search][match-regexp]";
+
+	if (PGrnSequentialSearchPrepareExpression(
+			condition, PGRN_SEQUENTIAL_SEARCH_MATCH_REGEXP))
+	{
+		return;
+	}
+
+	PGrnExprAppendObject(currentDatum->expression,
+						 currentDatum->targetColumn,
+						 GRN_OP_GET_VALUE,
+						 1,
+						 tag,
+						 NULL);
+	PGrnExprAppendConstString(currentDatum->expression,
+							  VARDATA_ANY(condition->query),
+							  VARSIZE_ANY_EXHDR(condition->query),
+							  GRN_OP_PUSH,
+							  1,
+							  tag);
+	PGrnExprAppendOp(currentDatum->expression, GRN_OP_REGEXP, 2, tag, NULL);
+}
+
 bool
 PGrnSequentialSearchExecute(void)
 {

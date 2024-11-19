@@ -2526,30 +2526,44 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 }
 
 static bool
-pgroonga_match_regexp_raw(const char *text,
-						  unsigned int textSize,
+pgroonga_match_regexp_raw(const char *target,
+						  unsigned int targetSize,
 						  PGrnCondition *condition)
 {
-	grn_bool matched;
-	grn_obj targetBuffer;
-	grn_obj patternBuffer;
 
-	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
+	if (PGrnPGTextIsEmpty(condition->query))
+		return false;
 
-	GRN_TEXT_INIT(&patternBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx,
-				 &patternBuffer,
-				 VARDATA_ANY(condition->query),
-				 VARSIZE_ANY_EXHDR(condition->query));
+	if (!PGrnPGTextIsEmpty(condition->indexName) &&
+		PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchSetTargetText(target, targetSize);
+		PGrnSequentialSearchSetMatchRegexp(condition);
+		return PGrnSequentialSearchExecute();
+	}
+	else
+	{
+		grn_bool matched;
+		grn_obj targetBuffer;
+		grn_obj patternBuffer;
 
-	/* TODO: Use condition->indexName */
-	matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
+		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &targetBuffer, target, targetSize);
 
-	GRN_OBJ_FIN(ctx, &targetBuffer);
-	GRN_OBJ_FIN(ctx, &patternBuffer);
+		GRN_TEXT_INIT(&patternBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx,
+					 &patternBuffer,
+					 VARDATA_ANY(condition->query),
+					 VARSIZE_ANY_EXHDR(condition->query));
 
-	return matched;
+		/* TODO: Use condition->indexName */
+		matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
+
+		GRN_OBJ_FIN(ctx, &targetBuffer);
+		GRN_OBJ_FIN(ctx, &patternBuffer);
+
+		return matched;
+	}
 }
 
 /**
@@ -4219,8 +4233,6 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 	bool isNULL;
 
 	if (ARR_NDIM(targets) == 0)
-		return false;
-	if (PGrnPGTextIsEmpty(condition->query))
 		return false;
 
 	while (array_iterate(iterator, &datum, &isNULL))
