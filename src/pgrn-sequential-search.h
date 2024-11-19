@@ -32,5 +32,5 @@ void PGrnSequentialSearchSetPrefix(PGrnCondition *condition);
 void PGrnSequentialSearchSetQuery(PGrnCondition *condition,
 								  PGrnSequentialSearchType type);
 void PGrnSequentialSearchSetScript(PGrnCondition *condition);
-void PGrnSequentialSearchSetMatchRegexp(PGrnCondition *condition);
+void PGrnSequentialSearchSetRegexp(PGrnCondition *condition);
 bool PGrnSequentialSearchExecute(void);

@@ -2538,7 +2538,7 @@ pgroonga_match_regexp_raw(const char *target,
 		PGrnIsTemporaryIndexSearchAvailable)
 	{
 		PGrnSequentialSearchSetTargetText(target, targetSize);
-		PGrnSequentialSearchSetMatchRegexp(condition);
+		PGrnSequentialSearchSetRegexp(condition);
 		return PGrnSequentialSearchExecute();
 	}
 	else

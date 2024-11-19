@@ -619,7 +619,7 @@ PGrnSequentialSearchSetScript(PGrnCondition *condition)
 }
 
 void
-PGrnSequentialSearchSetMatchRegexp(PGrnCondition *condition)
+PGrnSequentialSearchSetRegexp(PGrnCondition *condition)
 {
 	const char *tag = "[sequential-search][match-regexp]";
 
