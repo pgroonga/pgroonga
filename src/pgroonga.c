@@ -644,7 +644,7 @@ PGrnEnsureDatabase(void)
 
 			conditions =
 				WaitLatch(MyLatch,
-						  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+						  WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
 						  timeout,
 						  PG_WAIT_EXTENSION);
 			if (conditions & WL_LATCH_SET)

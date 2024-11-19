@@ -549,7 +549,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 		{
 			conditions =
 				WaitLatch(MyLatch,
-						  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+						  WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
 						  timeout,
 						  PG_WAIT_EXTENSION);
 		}
@@ -609,7 +609,7 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 				tableSpaceOid);
 		conditions =
 			WaitLatch(MyLatch,
-					  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+					  WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
 					  PGroongaCrashSaferFlushNaptime * 1000,
 					  PG_WAIT_EXTENSION);
 		if (conditions & WL_LATCH_SET)
@@ -774,7 +774,7 @@ pgroonga_crash_safer_main(Datum arg)
 		int conditions;
 
 		conditions = WaitLatch(MyLatch,
-							   WL_LATCH_SET | PGRN_WL_EXIT_ON_PM_DEATH,
+							   WL_LATCH_SET | WL_POSTMASTER_DEATH,
 							   0,
 							   PG_WAIT_EXTENSION);
 		if (conditions & WL_LATCH_SET)
