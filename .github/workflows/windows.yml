@@ -27,8 +27,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - postgresql-version-major: "12"
-            postgresql-version: "12.21-1"
           - postgresql-version-major: "13"
             postgresql-version: "13.17-1"
           - postgresql-version-major: "14"
