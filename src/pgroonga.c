@@ -2556,7 +2556,6 @@ pgroonga_match_regexp_raw(const char *target,
 					 VARDATA_ANY(condition->query),
 					 VARSIZE_ANY_EXHDR(condition->query));
 
-		/* TODO: Use condition->indexName */
 		matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
 
 		GRN_OBJ_FIN(ctx, &targetBuffer);
