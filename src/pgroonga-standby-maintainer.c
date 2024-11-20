@@ -304,11 +304,11 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 					}
 				}
 
-				events = WaitLatch(MyLatch,
-								   WL_LATCH_SET | WL_TIMEOUT |
-									   WL_POSTMASTER_DEATH,
-								   60 * 1000,
-								   WAIT_EVENT_BGWORKER_SHUTDOWN);
+				events =
+					WaitLatch(MyLatch,
+							  WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
+							  60 * 1000,
+							  WAIT_EVENT_BGWORKER_SHUTDOWN);
 				if (events & WL_POSTMASTER_DEATH)
 				{
 					error = true;
