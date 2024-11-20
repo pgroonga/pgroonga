@@ -2522,6 +2522,10 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * We should check of target, targetSize, and condition in caller of this function.
+ * Because this function does not check them.
+ */
 static bool
 pgroonga_match_regexp_raw(const char *target,
 						  unsigned int targetSize,
@@ -4224,6 +4228,10 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * We should check of targets and condition in caller of this function.
+ * Because this function does not check them.
+ */
 static bool
 pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 									 PGrnCondition *condition)
