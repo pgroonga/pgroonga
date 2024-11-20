@@ -4231,9 +4231,6 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets,
 	Datum datum;
 	bool isNULL;
 
-	if (ARR_NDIM(targets) == 0)
-		return false;
-
 	while (array_iterate(iterator, &datum, &isNULL))
 	{
 		const char *target = NULL;
@@ -4268,6 +4265,9 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	text *pattern = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
 	PGrnCondition condition = {0};
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
 
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
