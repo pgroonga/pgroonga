@@ -4310,6 +4310,9 @@ pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 	GRN_BULK_REWIND(condition.isTargets);
 	PGrnConditionDeconstruct(&condition, header);
 
+	if (PGrnPGTextIsEmpty(condition.query))
+		return false;
+
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
