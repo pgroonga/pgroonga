@@ -4,9 +4,7 @@
 #include "pgrn-database-info.h"
 
 #include <c.h>
-#ifdef PGRN_HAVE_COMMON_HASHFN_H
-#	include <common/hashfn.h>
-#endif
+#include <common/hashfn.h>
 #include <miscadmin.h>
 #include <port/atomics.h>
 #include <storage/shmem.h>
@@ -29,12 +27,8 @@ pgrn_crash_safer_statuses_hash(const void *key, Size keysize)
 	Oid tableSpaceOid;
 	PGRN_DATABASE_INFO_UNPACK(
 		*((const uint64 *) key), databaseOid, tableSpaceOid);
-#ifdef PGRN_HAVE_COMMON_HASHFN_H
 	return hash_combine(uint32_hash(&databaseOid, sizeof(Oid)),
 						uint32_hash(&tableSpaceOid, sizeof(Oid)));
-#else
-	return databaseOid ^ tableSpaceOid;
-#endif
 }
 
 static inline HTAB *

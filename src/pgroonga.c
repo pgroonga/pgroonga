@@ -46,9 +46,7 @@
 #include <catalog/index.h>
 #include <catalog/pg_type.h>
 #include <commands/progress.h>
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
-#	include <commands/vacuum.h>
-#endif
+#include <commands/vacuum.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
 #include <nodes/nodeFuncs.h>
@@ -8376,12 +8374,8 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
 	routine->amcaninclude = true;
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 	routine->amusemaintenanceworkmem = false;
-#endif
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 	routine->amparallelvacuumoptions = VACUUM_OPTION_PARALLEL_BULKDEL;
-#endif
 	routine->amkeytype = InvalidOid;
 
 	routine->aminsert = pgroonga_insert;
