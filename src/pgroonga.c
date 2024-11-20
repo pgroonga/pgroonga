@@ -4277,6 +4277,8 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	if (ARR_NDIM(targets) == 0)
 		return false;
 
+	if (PGrnPGTextIsEmpty(pattern))
+		return false;
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
