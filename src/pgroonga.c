@@ -2317,6 +2317,9 @@ pgroonga_match_term_raw(const char *target,
 						unsigned int targetSize,
 						PGrnCondition *condition)
 {
+	if (PGrnPGTextIsEmpty(condition->query))
+		return false;
+
 	if (!PGrnPGTextIsEmpty(condition->indexName) &&
 		PGrnIsTemporaryIndexSearchAvailable)
 	{
@@ -2531,6 +2534,10 @@ pgroonga_match_regexp_raw(const char *target,
 						  unsigned int targetSize,
 						  PGrnCondition *condition)
 {
+
+	if (PGrnPGTextIsEmpty(condition->query))
+		return false;
+
 	if (!PGrnPGTextIsEmpty(condition->indexName) &&
 		PGrnIsTemporaryIndexSearchAvailable)
 	{
@@ -2573,10 +2580,7 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 	PGrnCondition condition = {0};
 	bool matched = false;
 
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 	condition.query = pattern;
-
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_raw(
@@ -2603,10 +2607,7 @@ pgroonga_match_regexp_varchar(PG_FUNCTION_ARGS)
 	PGrnCondition condition = {0};
 	bool matched = false;
 
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 	condition.query = pattern;
-
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_raw(
@@ -4209,10 +4210,7 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	PGrnCondition condition = {0};
 	bool matched = false;
 
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 	condition.query = pattern;
-
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_raw(
@@ -4279,10 +4277,7 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	if (ARR_NDIM(targets) == 0)
 		return false;
 
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 	condition.query = pattern;
-
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
@@ -4314,8 +4309,6 @@ pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 	condition.isTargets = &(buffers->isTargets);
 	GRN_BULK_REWIND(condition.isTargets);
 	PGrnConditionDeconstruct(&condition, header);
-	if (PGrnPGTextIsEmpty(condition.query))
-		return false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4341,10 +4334,7 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 	PGrnCondition condition = {0};
 	bool matched = false;
 
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 	condition.query = pattern;
-
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
 		matched = pgroonga_match_regexp_raw(
