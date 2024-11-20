@@ -623,8 +623,8 @@ PGrnSequentialSearchSetRegexp(PGrnCondition *condition)
 {
 	const char *tag = "[sequential-search][regexp]";
 
-	if (PGrnSequentialSearchPrepareExpression(
-			condition, PGRN_SEQUENTIAL_SEARCH_REGEXP))
+	if (PGrnSequentialSearchPrepareExpression(condition,
+											  PGRN_SEQUENTIAL_SEARCH_REGEXP))
 	{
 		return;
 	}

@@ -2526,8 +2526,8 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 }
 
 /**
- * We should check of target, targetSize, and condition in caller of this function.
- * Because this function does not check them.
+ * We should check of target, targetSize, and condition in caller of this
+ * function. Because this function does not check them.
  */
 static bool
 pgroonga_match_regexp_raw(const char *target,
