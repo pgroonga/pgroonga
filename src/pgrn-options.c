@@ -1,4 +1,5 @@
 #include "pgroonga.h"
+
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-jsonb.h"
