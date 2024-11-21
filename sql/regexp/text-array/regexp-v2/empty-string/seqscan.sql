@@ -7,10 +7,6 @@ INSERT INTO memos
                    'Groonga is fast full text search engine',
                    'PGroonga is a PostgreSQL extension that uses Groonga']);
 
-CREATE INDEX pgrn_content_index
-    ON memos
- USING pgroonga (content pgroonga_text_array_regexp_ops_v2);
-
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
