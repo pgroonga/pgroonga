@@ -1,5 +1,5 @@
 CREATE TABLE memos (
-  content text[]
+  contents text[]
 );
 
 INSERT INTO memos
@@ -10,10 +10,10 @@ INSERT INTO memos
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ '';
+ WHERE contents &~ '';
 
 SELECT *
   FROM memos
- WHERE content &~ '';
+ WHERE contents &~ '';
 
 DROP TABLE memos;
