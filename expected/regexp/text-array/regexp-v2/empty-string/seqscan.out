@@ -1,0 +1,25 @@
+CREATE TABLE memos (
+  contents text[]
+);
+INSERT INTO memos
+     VALUES (ARRAY['PostgreSQL is a RDBMS',
+                   'Groonga is fast full text search engine',
+                   'PGroonga is a PostgreSQL extension that uses Groonga']);
+EXPLAIN (COSTS OFF)
+SELECT *
+  FROM memos
+ WHERE contents &~ '';
+            QUERY PLAN            
+----------------------------------
+ Seq Scan on memos
+   Filter: (contents &~ ''::text)
+(2 rows)
+
+SELECT *
+  FROM memos
+ WHERE contents &~ '';
+ contents 
+----------
+(0 rows)
+
+DROP TABLE memos;
