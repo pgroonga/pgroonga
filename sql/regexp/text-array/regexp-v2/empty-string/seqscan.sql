@@ -7,10 +7,6 @@ INSERT INTO memos
                    'Groonga is fast full text search engine',
                    'PGroonga is a PostgreSQL extension that uses Groonga']);
 
-SET enable_seqscan = on;
-SET enable_indexscan = off;
-SET enable_bitmapscan = off;
-
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
