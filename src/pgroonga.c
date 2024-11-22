@@ -6377,6 +6377,11 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		break;
 	}
 	default:
+		if (operator== GRN_OP_REGEXP && GRN_TEXT_LEN(&(buffers->general)) == 0)
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
 		PGrnSearchBuildConditionBinaryOperation(
 			data, targetColumn, &(buffers->general), operator);
 		break;
