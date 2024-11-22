@@ -6016,12 +6016,6 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 {
 	const char *tag = "[build-condition][binary-operation]";
 
-	if (GRN_TEXT_LEN(value) == 0)
-	{
-		data->isEmptyCondition = true;
-		return;
-	}
-
 	PGrnExprAppendObject(
 		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConst(data->expression, value, GRN_OP_PUSH, 1, tag);
@@ -6383,6 +6377,18 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
 	}
+	case PGrnRegexpStrategyV2Number:
+		if (GRN_TEXT_LEN(&(buffers->general)) == 0)
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
+		else
+		{
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &(buffers->general), operator);
+		}
+		break;
 	default:
 		PGrnSearchBuildConditionBinaryOperation(
 			data, targetColumn, &(buffers->general), operator);
