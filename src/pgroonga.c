@@ -6015,7 +6015,6 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 										grn_operator operator)
 {
 	const char *tag = "[build-condition][binary-operation]";
-
 	PGrnExprAppendObject(
 		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
 	PGrnExprAppendConst(data->expression, value, GRN_OP_PUSH, 1, tag);
