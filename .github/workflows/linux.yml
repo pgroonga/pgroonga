@@ -13,6 +13,9 @@ on:
     # * JST 01:30
     - cron: |
         30 16 * * *
+concurrency:
+  group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
 jobs:
   test:
     if: >-
