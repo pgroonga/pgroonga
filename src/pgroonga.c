@@ -6382,7 +6382,6 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			data->isEmptyCondition = true;
 			return;
 		}
-		/* clang-format on */
 		PGrnSearchBuildConditionBinaryOperation(
 			data, targetColumn, &(buffers->general), operator);
 		break;
