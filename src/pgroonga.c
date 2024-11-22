@@ -6389,6 +6389,16 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		}
 		break;
 	default:
+		/* clang-format off */
+		/* clang-format determine "operator" is overload of operator.
+		 * However, this "operator" just variable(not overload of operator).
+		 */
+		if (operator== GRN_OP_REGEXP && GRN_TEXT_LEN(&(buffers->general)) == 0)
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
+		/* clang-format on */
 		PGrnSearchBuildConditionBinaryOperation(
 			data, targetColumn, &(buffers->general), operator);
 		break;
