@@ -19,6 +19,12 @@ PGrnPGTextIsEmpty(text *text)
 	return false;
 }
 
+static inline bool
+PGrnPGTextIsNULL(text *text)
+{
+	return (text == NULL);
+}
+
 void PGrnPGFullIndexNameSplit(const char *fullName,
 							  size_t fullNameSize,
 							  const char **indexName,
