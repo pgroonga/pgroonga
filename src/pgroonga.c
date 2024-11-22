@@ -6084,6 +6084,19 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 
 	if (key->sk_strategy == PGrnRegexpConditionStrategyV2Number)
 	{
+		PGrnCondition condition = {0};
+		HeapTupleHeader header;
+
+		header = DatumGetHeapTupleHeader(key->sk_argument);
+		PGrnConditionDeconstruct(&condition, header);
+		if (condition.query != NULL &&
+			PGrnStringIsEmpty(VARDATA_ANY(condition.query),
+							  VARSIZE_ANY_EXHDR(condition.query)))
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
+
 		PGrnSearchBuildConditionBinaryOperationCondition(
 			data, key, targetColumn, attribute, GRN_OP_REGEXP);
 		return;
