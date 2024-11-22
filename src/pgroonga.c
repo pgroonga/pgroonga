@@ -6376,18 +6376,6 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
 	}
-	case PGrnRegexpStrategyV2Number:
-		if (GRN_TEXT_LEN(&(buffers->general)) == 0)
-		{
-			data->isEmptyCondition = true;
-			return;
-		}
-		else
-		{
-			PGrnSearchBuildConditionBinaryOperation(
-				data, targetColumn, &(buffers->general), operator);
-		}
-		break;
 	default:
 		/* clang-format off */
 		/* clang-format determine "operator" is overload of operator.
