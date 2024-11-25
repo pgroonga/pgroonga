@@ -5643,7 +5643,7 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			return;
 		}
 		PGrnCheckRC(
-			GRN_INVALID_ARGUMENT, "%s query must not an empty string", tag);
+			GRN_INVALID_ARGUMENT, "%s query must not a space only string", tag);
 	}
 
 	PGrnExprAppendObject(data->expression,
