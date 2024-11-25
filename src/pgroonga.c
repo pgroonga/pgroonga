@@ -5601,6 +5601,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 			PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
 		}
 	}
+
 	if (!condition->weights && !condition->scorers)
 	{
 		*matchTarget = targetColumn;
