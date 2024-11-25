@@ -33,4 +33,12 @@ SELECT *
 ---------
 (0 rows)
 
+SELECT *
+  FROM memos
+ WHERE content &~ pgroonga_condition('	',
+                                     index_name => 'pgrn_content_index');
+ content 
+---------
+(0 rows)
+
 DROP TABLE memos;

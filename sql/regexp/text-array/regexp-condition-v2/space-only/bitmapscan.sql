@@ -30,4 +30,9 @@ SELECT *
  WHERE content &~ pgroonga_condition(' ',
                                      index_name => 'pgrn_content_index');
 
+SELECT *
+  FROM memos
+ WHERE content &~ pgroonga_condition('	',
+                                     index_name => 'pgrn_content_index');
+
 DROP TABLE memos;
