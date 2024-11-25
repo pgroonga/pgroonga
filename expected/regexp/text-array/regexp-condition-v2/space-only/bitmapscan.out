@@ -17,29 +17,19 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(' ',
+ WHERE content &~ pgroonga_condition('	 ',
                                      index_name => 'pgrn_content_index');
-                                      QUERY PLAN                                      
---------------------------------------------------------------------------------------
+                                        QUERY PLAN                                         
+-------------------------------------------------------------------------------------------
  Bitmap Heap Scan on memos
-   Recheck Cond: (content &~ '(" ",,,,pgrn_content_index,,)'::pgroonga_condition)
+   Recheck Cond: (content &~ '("  ",,,,pgrn_content_index,,)'::pgroonga_condition)
    ->  Bitmap Index Scan on pgrn_content_index
-         Index Cond: (content &~ '(" ",,,,pgrn_content_index,,)'::pgroonga_condition)
+         Index Cond: (content &~ '("      ",,,,pgrn_content_index,,)'::pgroonga_condition)
 (4 rows)
 
--- checking only space character
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(' ',
-                                     index_name => 'pgrn_content_index');
- content 
----------
-(0 rows)
-
--- checking only tab character
-SELECT *
-  FROM memos
- WHERE content &~ pgroonga_condition('	',
+ WHERE content &~ pgroonga_condition('	 ',
                                      index_name => 'pgrn_content_index');
  content 
 ---------

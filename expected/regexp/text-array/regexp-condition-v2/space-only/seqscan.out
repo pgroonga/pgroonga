@@ -14,27 +14,17 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(' ',
+ WHERE content &~ pgroonga_condition('	 ',
                                      index_name => 'pgrn_content_index');
-                                 QUERY PLAN                                 
-----------------------------------------------------------------------------
+                                    QUERY PLAN                                     
+-----------------------------------------------------------------------------------
  Seq Scan on memos
-   Filter: (content &~ '(" ",,,,pgrn_content_index,,)'::pgroonga_condition)
+   Filter: (content &~ '("        ",,,,pgrn_content_index,,)'::pgroonga_condition)
 (2 rows)
 
--- checking only space character
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(' ',
-                                     index_name => 'pgrn_content_index');
- content 
----------
-(0 rows)
-
--- checking only tab character
-SELECT *
-  FROM memos
- WHERE content &~ pgroonga_condition('	',
+ WHERE content &~ pgroonga_condition('	 ',
                                      index_name => 'pgrn_content_index');
  content 
 ---------
