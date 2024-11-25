@@ -5581,7 +5581,6 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	header = DatumGetHeapTupleHeader(key->sk_argument);
 	PGrnConditionDeconstruct(condition, header);
 	data->fuzzyMaxDistanceRatio = condition->fuzzyMaxDistanceRatio;
-
 	if (PGrnPGTextIsEmpty(condition->query))
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
