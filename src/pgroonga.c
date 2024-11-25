@@ -5634,8 +5634,17 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			 grn_operator_to_string(operator));
 	PGrnSearchBuildConditionPrepareCondition(
 		data, key, targetColumn, attribute, operator, & condition, &matchTarget, tag);
-	if (data->isEmptyCondition)
-		return;
+	if (PGrnStringIsEmpty(VARDATA_ANY(condition.query),
+						  VARSIZE_ANY_EXHDR(condition.query)))
+	{
+		if (operator== GRN_OP_REGEXP)
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT, "%s query must not an empty string", tag);
+	}
 
 	PGrnExprAppendObject(data->expression,
 						 matchTarget,
