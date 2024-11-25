@@ -5581,25 +5581,10 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	header = DatumGetHeapTupleHeader(key->sk_argument);
 	PGrnConditionDeconstruct(condition, header);
 	data->fuzzyMaxDistanceRatio = condition->fuzzyMaxDistanceRatio;
-	if (operator== GRN_OP_REGEXP)
+
+	if (PGrnPGTextIsEmpty(condition->query))
 	{
-		if (PGrnPGTextIsNULL(condition->query))
-		{
-			PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
-		}
-		if (PGrnStringIsEmpty(VARDATA_ANY(condition->query),
-							  VARSIZE_ANY_EXHDR(condition->query)))
-		{
-			data->isEmptyCondition = true;
-			return;
-		}
-	}
-	else
-	{
-		if (PGrnPGTextIsEmpty(condition->query))
-		{
-			PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
-		}
+		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
 	}
 
 	if (!condition->weights && !condition->scorers)
