@@ -5581,7 +5581,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 	header = DatumGetHeapTupleHeader(key->sk_argument);
 	PGrnConditionDeconstruct(condition, header);
 	data->fuzzyMaxDistanceRatio = condition->fuzzyMaxDistanceRatio;
-	if (PGrnPGTextIsEmpty(condition->query))
+	if (!condition->query)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
 	}
@@ -5634,6 +5634,17 @@ PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 			 grn_operator_to_string(operator));
 	PGrnSearchBuildConditionPrepareCondition(
 		data, key, targetColumn, attribute, operator, & condition, &matchTarget, tag);
+	if (PGrnStringIsEmpty(VARDATA_ANY(condition.query),
+						  VARSIZE_ANY_EXHDR(condition.query)))
+	{
+		if (operator== GRN_OP_REGEXP)
+		{
+			data->isEmptyCondition = true;
+			return;
+		}
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT, "%s query must not a space only string", tag);
+	}
 
 	PGrnExprAppendObject(data->expression,
 						 matchTarget,
