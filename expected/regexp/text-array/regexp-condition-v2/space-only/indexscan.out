@@ -25,6 +25,7 @@ SELECT *
    Index Cond: (content &~ '(" ",,,,pgrn_content_index,,)'::pgroonga_condition)
 (2 rows)
 
+-- checking only space character
 SELECT *
   FROM memos
  WHERE content &~ pgroonga_condition(' ',
@@ -33,6 +34,7 @@ SELECT *
 ---------
 (0 rows)
 
+-- checking only tab character
 SELECT *
   FROM memos
  WHERE content &~ pgroonga_condition('	',
