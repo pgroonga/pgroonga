@@ -4209,6 +4209,12 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * Caller must satisfy the following conditions:
+ * * targets is not empty
+ * * pattern is not NULL
+ * * pattern is not an empty text
+ */
 static bool
 pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
 {
@@ -4217,11 +4223,6 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
 	PGrnCondition condition = {0};
 	Datum datum;
 	bool isNULL;
-
-	if (ARR_NDIM(targets) == 0)
-		return false;
-	if (PGrnPGTextIsEmpty(pattern))
-		return false;
 
 	condition.query = pattern;
 	while (array_iterate(iterator, &datum, &isNULL))
@@ -4257,6 +4258,11 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
+
+	if (ARR_NDIM(targets) == 0)
+		return false;
+	if (PGrnPGTextIsEmpty(pattern))
+		return false;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
