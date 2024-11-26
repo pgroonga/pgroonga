@@ -4278,7 +4278,20 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 Datum
 pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 {
+	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	bool matched = false;
+	PGrnCondition condition = {0};
+
+	condition.isTargets = &(buffers->isTargets);
+	GRN_BULK_REWIND(condition.isTargets);
+	PGrnConditionDeconstruct(&condition, header);
+	if (!condition.query)
+	{
+		const char *tag = "[regexp][text-array-condition]";
+		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
+		return false;
+	}
+
 	PG_RETURN_BOOL(matched);
 }
 
