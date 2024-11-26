@@ -17,12 +17,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 ERROR:  pgroonga: [build-condition][regexp-condition] query must not NULL
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 ERROR:  pgroonga: [build-condition][regexp-condition] query must not NULL
 DROP TABLE memos;

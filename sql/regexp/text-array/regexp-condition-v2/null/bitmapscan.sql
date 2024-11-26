@@ -22,12 +22,10 @@ SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 
 DROP TABLE memos;

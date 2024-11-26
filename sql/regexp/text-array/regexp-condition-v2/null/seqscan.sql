@@ -11,10 +11,6 @@ INSERT INTO memos
      VALUES (ARRAY['MySQL is a RDBMS',
                    'Mroonga is a MySQL storage engine that uses Groonga']);
 
-CREATE INDEX pgrn_content_index
-    ON memos
- USING pgroonga (content pgroonga_text_array_regexp_ops_v2);
-
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
@@ -22,12 +18,10 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL,
-                                     index_name => 'pgrn_content_index');
+ WHERE content &~ pgroonga_condition(NULL);
 
 DROP TABLE memos;
