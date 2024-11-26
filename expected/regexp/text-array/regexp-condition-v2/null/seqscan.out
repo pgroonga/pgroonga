@@ -24,8 +24,5 @@ SELECT *
 SELECT *
   FROM memos
  WHERE content &~ pgroonga_condition(NULL);
- content 
----------
-(0 rows)
-
+ERROR:  pgroonga: [regexp][text-array-condition] query must not NULL
 DROP TABLE memos;
