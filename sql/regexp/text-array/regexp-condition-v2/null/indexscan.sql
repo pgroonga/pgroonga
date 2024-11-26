@@ -22,10 +22,6 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE content &~ pgroonga_condition(NULL);
-
-SELECT *
-  FROM memos
- WHERE content &~ pgroonga_condition(NULL);
+ WHERE contents &~ pgroonga_condition(NULL);
 
 DROP TABLE memos;
