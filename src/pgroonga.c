@@ -4201,6 +4201,9 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	PGrnCondition condition = {0};
 	bool matched = false;
 
+	if (PGrnPGTextIsEmpty(pattern))
+		return false;
+
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
