@@ -441,7 +441,7 @@ CREATE FUNCTION pgroonga_list_lagged_indexes()
 	RETURNS SETOF text AS '
 		SELECT name FROM pgroonga_wal_status()
 		WHERE current_block != last_block
-			OR current_offset != last_offset
+			OR current_offset != current_offset
 			OR current_size != last_size
 			OR EXISTS(
 				SELECT 1 FROM pg_stat_wal_receiver
