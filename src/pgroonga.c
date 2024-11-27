@@ -2525,6 +2525,11 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
 	PG_RETURN_BOOL(matched);
 }
 
+/**
+ * Caller must satisfy the following conditions:
+ * * condition->query is not NULL
+ * * condition->query is not an empty text
+ */
 static bool
 pgroonga_match_regexp_raw(const char *text,
 						  unsigned int textSize,
@@ -2562,6 +2567,9 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 	text *pattern = PG_GETARG_TEXT_PP(1);
 	PGrnCondition condition = {0};
 	bool matched = false;
+
+	if (PGrnPGTextIsEmpty(pattern))
+		return false;
 
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
