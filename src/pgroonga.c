@@ -8424,9 +8424,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
 	routine->amcaninclude = true;
-#ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_USE_MAINTENANCE_WORK_MEM
 	routine->amusemaintenanceworkmem = false;
-#endif
 #ifdef PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
 	routine->amparallelvacuumoptions = VACUUM_OPTION_PARALLEL_BULKDEL;
 #endif
