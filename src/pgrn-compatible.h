@@ -29,10 +29,6 @@
 #	define PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
 #endif
 
-#if PG_VERSION_NUM >= 130000
-#	define PGRN_INDEX_AM_ROUTINE_HAVE_AM_PARALLEL_VACUUM_OPTIONS
-#endif
-
 #if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)                         \
