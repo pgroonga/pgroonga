@@ -6365,10 +6365,10 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;
-		unsigned int i, n, nEmptyKeyword = 0, nNotEmptyKeyword;
+		unsigned int i, n, nTargetKeywords = 0;
 
 		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-		nNotEmptyKeyword = n = grn_vector_size(ctx, keywords);
+		n = grn_vector_size(ctx, keywords);
 		for (i = 0; i < n; i++)
 		{
 			const char *keyword;
@@ -6377,18 +6377,16 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			keywordSize =
 				grn_vector_get_element(ctx, keywords, i, &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
-			if (operator== GRN_OP_REGEXP &&	keywordSize == 0)
+			if (keywordSize == 0 && operator== GRN_OP_REGEXP)
 			{
-				nEmptyKeyword++;
-				nNotEmptyKeyword = n - nEmptyKeyword;
 				continue;
 			}
-
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
 			if (operator== GRN_OP_REGEXP)
 			{
-				if (i > 0 && nNotEmptyKeyword > 1)
+				nTargetKeywords++;
+				if (i > 0 && nTargetKeywords > 1)
 					PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
 			}
 			else
