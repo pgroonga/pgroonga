@@ -1,10 +1,6 @@
 name: Lint
 on:
   push:
-    branches:
-      - main
-    tags:
-      - '*'
   pull_request:
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
