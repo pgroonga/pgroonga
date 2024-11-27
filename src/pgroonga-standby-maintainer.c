@@ -304,12 +304,12 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 					}
 				}
 
-				events = WaitLatch(MyLatch,
-								   WL_LATCH_SET | WL_TIMEOUT |
-									   PGRN_WL_EXIT_ON_PM_DEATH,
-								   60 * 1000,
-								   WAIT_EVENT_BGWORKER_SHUTDOWN);
-				if (events & PGRN_WL_EXIT_ON_PM_DEATH)
+				events =
+					WaitLatch(MyLatch,
+							  WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
+							  60 * 1000,
+							  WAIT_EVENT_BGWORKER_SHUTDOWN);
+				if (events & WL_EXIT_ON_PM_DEATH)
 				{
 					error = true;
 					break;
@@ -463,7 +463,7 @@ pgroonga_standby_maintainer_main(Datum arg)
 	while (!PGroongaStandbyMaintainerGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
-				  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+				  WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
 				  PGroongaStandbyMaintainerNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);

@@ -176,7 +176,7 @@ pgroonga_wal_applier_main(Datum arg)
 	while (!PGroongaWALApplierGotSIGTERM)
 	{
 		WaitLatch(MyLatch,
-				  WL_LATCH_SET | WL_TIMEOUT | PGRN_WL_EXIT_ON_PM_DEATH,
+				  WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
 				  PGroongaWALApplierNaptime * 1000L,
 				  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
