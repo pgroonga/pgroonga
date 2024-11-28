@@ -139,13 +139,6 @@ cp -a \
    /host/expected \
    /tmp/
 cd /tmp
-if [ ${postgresql_version} -lt 12 ]; then
-  rm sql/function/highlight-html/declarative-partitioning.sql
-  rm sql/function/wal-set-applied-position/declarative-partitioning.sql
-fi
-if [ ${postgresql_version} -lt 13 ]; then
-  rm sql/full-text-search/text/single/declarative-partitioning.sql
-fi
 ruby /host/test/prepare.rb > schedule
 PG_REGRESS_DIFF_OPTS="-u"
 if diff --help | grep -q color; then
