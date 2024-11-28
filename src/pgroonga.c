@@ -2567,7 +2567,7 @@ pgroonga_match_regexp_text(PG_FUNCTION_ARGS)
 	bool matched = false;
 
 	if (PGrnPGTextIsEmpty(pattern))
-		return false;
+		PG_RETURN_BOOL(false);
 
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4200,7 +4200,7 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
 	bool matched = false;
 
 	if (PGrnPGTextIsEmpty(pattern))
-		return false;
+		PG_RETURN_BOOL(false);
 
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
@@ -4269,9 +4269,9 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	bool matched = false;
 
 	if (ARR_NDIM(targets) == 0)
-		return false;
+		PG_RETURN_BOOL(false);
 	if (PGrnPGTextIsEmpty(pattern))
-		return false;
+		PG_RETURN_BOOL(false);
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
@@ -4304,7 +4304,7 @@ pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 	{
 		const char *tag = "[regexp][text-array-condition]";
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
-		return false;
+		PG_RETURN_BOOL(false);
 	}
 
 	PG_RETURN_BOOL(matched);
@@ -4322,7 +4322,7 @@ pgroonga_regexp_varchar(PG_FUNCTION_ARGS)
 	bool matched = false;
 
 	if (PGrnPGTextIsEmpty(pattern))
-		return false;
+		PG_RETURN_BOOL(false);
 
 	condition.query = pattern;
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
