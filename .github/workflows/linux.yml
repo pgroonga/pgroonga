@@ -106,9 +106,6 @@ jobs:
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Run regression test
         run: |
-          if [ ${{ matrix.postgresql-version }} -lt 13 ]; then
-            rm sql/full-text-search/text/single/declarative-partitioning.sql
-          fi
           test/run-sql-test.sh
         env:
           HAVE_XXHASH: "1"
