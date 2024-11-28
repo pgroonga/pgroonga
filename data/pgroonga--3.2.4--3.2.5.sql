@@ -42,8 +42,7 @@ CREATE OPERATOR CLASS pgroonga_text_array_regexp_ops_v2 FOR TYPE text[]
 		OPERATOR 22 &~ (text[], text),
                 OPERATOR 47 &~ (text[], pgroonga_condition);
 
-DROP FUNCTION pgroonga_list_lagged_indexes;
-CREATE FUNCTION pgroonga_list_lagged_indexes()
+CREATE OR REPLACE FUNCTION pgroonga_list_lagged_indexes()
 	RETURNS SETOF text AS '
 		SELECT name FROM pgroonga_wal_status()
 		WHERE current_block != last_block
