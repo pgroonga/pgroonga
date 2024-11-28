@@ -6384,17 +6384,9 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			}
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
-			if (operator== GRN_OP_REGEXP)
-			{
-				nTargetKeywords++;
-				if (i > 0 && nTargetKeywords > 1)
-					PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
-			}
-			else
-			{
-				if (i > 0)
-					PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
-			}
+			if (nTargetKeywords > 0)
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
+			nTargetKeywords++;
 		}
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
