@@ -6365,7 +6365,8 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;
-		unsigned int i, n, nTargetKeywords = 0;
+		unsigned int i, n;
+		unsigned int nTargetKeywords = 0;
 
 		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 		n = grn_vector_size(ctx, keywords);
