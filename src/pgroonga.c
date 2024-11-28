@@ -6364,6 +6364,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		grn_obj *keywords = &(buffers->general);
 		grn_obj keywordBuffer;
 		unsigned int i, n;
+		unsigned int nTargetKeywords = 0;
 
 		GRN_TEXT_INIT(&keywordBuffer, GRN_OBJ_DO_SHALLOW_COPY);
 		n = grn_vector_size(ctx, keywords);
@@ -6375,10 +6376,14 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 			keywordSize =
 				grn_vector_get_element(ctx, keywords, i, &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
+			if (keywordSize == 0 && operator== GRN_OP_REGEXP)
+				continue;
+
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
-			if (i > 0)
+			if (nTargetKeywords > 0)
 				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
+			nTargetKeywords++;
 		}
 		GRN_OBJ_FIN(ctx, &keywordBuffer);
 		break;
