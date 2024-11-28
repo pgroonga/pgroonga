@@ -6379,9 +6379,8 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 				grn_vector_get_element(ctx, keywords, i, &keyword, NULL, NULL);
 			GRN_TEXT_SET(ctx, &keywordBuffer, keyword, keywordSize);
 			if (keywordSize == 0 && operator== GRN_OP_REGEXP)
-			{
 				continue;
-			}
+
 			PGrnSearchBuildConditionBinaryOperation(
 				data, targetColumn, &keywordBuffer, operator);
 			if (nTargetKeywords > 0)
