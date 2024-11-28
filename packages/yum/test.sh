@@ -140,16 +140,6 @@ cp -a \
    /tmp/
 cd /tmp
 case "${os}" in
-  almalinux)
-    if [ ${postgresql_version} -lt 12 ]; then
-      rm sql/function/highlight-html/declarative-partitioning.sql
-      rm sql/function/wal-set-applied-position/declarative-partitioning.sql
-      rm sql/vacuum/two-phase-commit.sql
-    fi
-    if [ ${postgresql_version} -lt 13 ]; then
-      rm sql/full-text-search/text/single/declarative-partitioning.sql
-    fi
-    ;;
   fedora)
     # Require Groonga 10.1.0 or later.
     rm sql/function/highlight-html/one-keyword.sql
