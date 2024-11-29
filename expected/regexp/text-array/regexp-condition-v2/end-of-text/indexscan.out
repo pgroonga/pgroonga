@@ -17,18 +17,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
- WHERE contents &~ pgroonga_condition('engine\z',
-                                      index_name => 'pgrn_contents_index');
-                                        QUERY PLAN                                        
-------------------------------------------------------------------------------------------
+ WHERE contents &~ pgroonga_condition('engine\z');
+                              QUERY PLAN                               
+-----------------------------------------------------------------------
  Index Scan using pgrn_contents_index on memos
-   Index Cond: (contents &~ '("engine\\z",,,,pgrn_contents_index,,)'::pgroonga_condition)
+   Index Cond: (contents &~ '("engine\\z",,,,,,)'::pgroonga_condition)
 (2 rows)
 
 SELECT *
   FROM memos
- WHERE contents &~ pgroonga_condition('engine\z',
-                                      index_name => 'pgrn_contents_index');
+ WHERE contents &~ pgroonga_condition('engine\z');
                                                           contents                                                          
 ----------------------------------------------------------------------------------------------------------------------------
  {"PostgreSQL is a RDBMS","Groonga is fast full text search engine","PGroonga is a PostgreSQL extension that uses Groonga"}
