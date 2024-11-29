@@ -1,0 +1,25 @@
+CREATE TABLE memos (
+  content varchar(256)
+);
+INSERT INTO memos VALUES ('PostgreSQL is a RDBMS');
+SET enable_seqscan = on;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT *
+  FROM memos
+ WHERE content &~| ARRAY['']::varchar[];
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Seq Scan on memos
+   Filter: (content &~| '{""}'::character varying[])
+(2 rows)
+
+SELECT *
+  FROM memos
+ WHERE content &~| ARRAY['']::varchar[];
+ content 
+---------
+(0 rows)
+
+DROP TABLE memos;
