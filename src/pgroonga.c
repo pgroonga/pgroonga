@@ -2529,30 +2529,40 @@ pgroonga_match_query_varchar(PG_FUNCTION_ARGS)
  * * condition->query is not an empty text
  */
 static bool
-pgroonga_match_regexp_raw(const char *text,
-						  unsigned int textSize,
+pgroonga_match_regexp_raw(const char *target,
+						  unsigned int targetSize,
 						  PGrnCondition *condition)
 {
-	grn_bool matched;
-	grn_obj targetBuffer;
-	grn_obj patternBuffer;
+	if (!PGrnPGTextIsEmpty(condition->indexName) &&
+		PGrnIsTemporaryIndexSearchAvailable)
+	{
+		PGrnSequentialSearchSetTargetText(target, targetSize);
+		PGrnSequentialSearchSetRegexp(condition);
+		return PGrnSequentialSearchExecute();
+	}
+	else
+	{
+		grn_bool matched;
+		grn_obj targetBuffer;
+		grn_obj patternBuffer;
 
-	GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx, &targetBuffer, text, textSize);
+		GRN_TEXT_INIT(&targetBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx, &targetBuffer, target, targetSize);
 
-	GRN_TEXT_INIT(&patternBuffer, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_SET(ctx,
-				 &patternBuffer,
-				 VARDATA_ANY(condition->query),
-				 VARSIZE_ANY_EXHDR(condition->query));
+		GRN_TEXT_INIT(&patternBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+		GRN_TEXT_SET(ctx,
+					 &patternBuffer,
+					 VARDATA_ANY(condition->query),
+					 VARSIZE_ANY_EXHDR(condition->query));
 
-	/* TODO: Use condition->indexName */
-	matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
+		/* TODO: Use condition->indexName */
+		matched = grn_operator_exec_regexp(ctx, &targetBuffer, &patternBuffer);
 
-	GRN_OBJ_FIN(ctx, &targetBuffer);
-	GRN_OBJ_FIN(ctx, &patternBuffer);
+		GRN_OBJ_FIN(ctx, &targetBuffer);
+		GRN_OBJ_FIN(ctx, &patternBuffer);
 
-	return matched;
+		return matched;
+	}
 }
 
 /**
@@ -4225,15 +4235,14 @@ pgroonga_regexp_text(PG_FUNCTION_ARGS)
  * * pattern is not an empty text
  */
 static bool
-pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
+pgroonga_match_regexp_text_array_raw(ArrayType *targets,
+									 PGrnCondition *condition)
 {
 	bool matched = false;
 	ArrayIterator iterator = array_create_iterator(targets, 0, NULL);
-	PGrnCondition condition = {0};
 	Datum datum;
 	bool isNULL;
 
-	condition.query = pattern;
 	while (array_iterate(iterator, &datum, &isNULL))
 	{
 		const char *target = NULL;
@@ -4247,7 +4256,7 @@ pgroonga_match_regexp_text_array_raw(ArrayType *targets, text *pattern)
 		if (!target)
 			continue;
 
-		if (pgroonga_match_regexp_raw(target, targetSize, &condition))
+		if (pgroonga_match_regexp_raw(target, targetSize, condition))
 		{
 			matched = true;
 			break;
@@ -4267,19 +4276,21 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	text *pattern = PG_GETARG_TEXT_PP(1);
 	bool matched = false;
+	PGrnCondition condition = {0};
 
 	if (ARR_NDIM(targets) == 0)
 		PG_RETURN_BOOL(false);
 	if (PGrnPGTextIsEmpty(pattern))
 		PG_RETURN_BOOL(false);
+	condition.query = pattern;
 
 	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
 	}
 	PGRN_RLS_ENABLED_ELSE();
 	{
-		matched = pgroonga_match_regexp_text_array_raw(targets, pattern);
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
 	}
 	PGRN_RLS_ENABLED_END();
 
@@ -4293,9 +4304,13 @@ pgroonga_regexp_text_array(PG_FUNCTION_ARGS)
 Datum
 pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 {
+	ArrayType *targets = PG_GETARG_ARRAYTYPE_P(0);
 	HeapTupleHeader header = PG_GETARG_HEAPTUPLEHEADER(1);
 	bool matched = false;
 	PGrnCondition condition = {0};
+
+	if (ARR_NDIM(targets) == 0)
+		PG_RETURN_BOOL(false);
 
 	condition.isTargets = &(buffers->isTargets);
 	GRN_BULK_REWIND(condition.isTargets);
@@ -4306,6 +4321,18 @@ pgroonga_regexp_text_array_condition(PG_FUNCTION_ARGS)
 		PGrnCheckRC(GRN_INVALID_ARGUMENT, "%s query must not NULL", tag);
 		PG_RETURN_BOOL(false);
 	}
+	if (PGrnPGTextIsEmpty(condition.query))
+		PG_RETURN_BOOL(false);
+
+	PGRN_RLS_ENABLED_IF(PGrnCheckRLSEnabledSeqScan(fcinfo));
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+	}
+	PGRN_RLS_ENABLED_ELSE();
+	{
+		matched = pgroonga_match_regexp_text_array_raw(targets, &condition);
+	}
+	PGRN_RLS_ENABLED_END();
 
 	PG_RETURN_BOOL(matched);
 }
