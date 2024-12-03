@@ -2,8 +2,6 @@ name: Windows
 on:
   push:
   pull_request:
-    branches:
-      - "*"
   schedule:
     - cron: |
         0 0 * * *
