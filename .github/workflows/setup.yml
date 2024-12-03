@@ -2,8 +2,6 @@ name: Setup
 on:
   push:
   pull_request:
-    branches:
-      - "*"
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
