@@ -40,7 +40,7 @@ CREATE OPERATOR &~ (
 CREATE OPERATOR CLASS pgroonga_text_array_regexp_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
 		OPERATOR 22 &~ (text[], text),
-                OPERATOR 47 &~ (text[], pgroonga_condition);
+		OPERATOR 47 &~ (text[], pgroonga_condition);
 
 CREATE OR REPLACE FUNCTION pgroonga_list_lagged_indexes()
 	RETURNS SETOF text AS '

@@ -2514,7 +2514,7 @@ CREATE OPERATOR CLASS pgroonga_text_regexp_ops_v2 FOR TYPE text
 CREATE OPERATOR CLASS pgroonga_text_array_regexp_ops_v2 FOR TYPE text[]
 	USING pgroonga AS
 		OPERATOR 22 &~ (text[], text),
-                OPERATOR 47 &~ (text[], pgroonga_condition);
+		OPERATOR 47 &~ (text[], pgroonga_condition);
 
 CREATE OPERATOR CLASS pgroonga_varchar_term_search_ops_v2
 	DEFAULT FOR TYPE varchar
