@@ -191,6 +191,7 @@ namespace :package do
       package_names.each do |package_name|
         cd("packages/#{package_name}") do
           ruby("-S", "rake", "version:update")
+          sh("git", "add", *Dir.glob("{debian/changelog,yum/pgroonga.spec.in}"))
         end
       end
       spec_in = nil
@@ -199,6 +200,8 @@ namespace :package do
         break if spec_in
       end
       cp(spec_in, "packages/yum/postgresql-pgroonga.spec.in")
+      sh("git", "add", "packages/yum/postgresql-pgroonga.spec.in")
+      sh("git", "commit", "-m", "packages: update versions for #{version}")
     end
   end
 
