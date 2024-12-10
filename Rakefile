@@ -136,6 +136,8 @@ namespace :version do
       end
       sh("git", "add", downgrade_sql_path)
     end
+
+    sh("git", "commit", "-m", "Start #{new_version}")
   end
 end
 
