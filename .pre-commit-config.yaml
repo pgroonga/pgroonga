@@ -12,5 +12,17 @@ repos:
           rake lint
         always_run: true
         pass_filenames: false
+  - repo: local
+    hooks:
+      - id: test-pair
+        name: Check that `sql/**/*.sql` and `expected/**/*.out` are paired
+        language: system
+        entry: |
+          bash -c " \
+            diff -u \
+              <(cd sql && find . -type f | sed -e 's/\.sql/.out/g' | sort) \
+              <(cd expected && find . -type f | sort)"
+        always_run: true
+        pass_filenames: false
 
 exclude: "^vendor/.*"
