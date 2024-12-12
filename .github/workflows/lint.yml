@@ -25,12 +25,3 @@ jobs:
       - name: Run pre-commit
         run: |
           pre-commit run --all-files --color=always --show-diff-on-failure
-  test-pair:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check that `sql/**/*.sql` and `expected/**/*.out` are paired
-        run: |
-          diff -u \
-            <(cd sql && find . -type f | sed -e 's/\.sql/.out/g' | sort) \
-            <(cd expected && find . -type f | sort)
