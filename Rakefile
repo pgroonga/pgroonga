@@ -231,7 +231,7 @@ namespace :test do
       end
       expected_files = Dir.glob("**/*.out", base: "expected")
       diff = expected_files - sql_files
-      raise "Files only in `expected/`:\n#{diff.sort.join("\n")}" if diff.size > 0
+      raise "Files only in `expected/`:\n#{diff.sort.join("\n")}" unless diff.empty?
     end
   end
 end
