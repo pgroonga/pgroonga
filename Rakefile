@@ -222,5 +222,22 @@ namespace :package do
   end
 end
 
+namespace :test do
+  namespace :lint do
+    desc "Check that `sql/**/*.sql` and `expected/**/*.out` are paired"
+    task :pair do
+      sql_files = Dir.glob("**/*.sql", base: "sql").map do |path|
+        path.ext(".out")
+      end
+      expected_files = Dir.glob("**/*.out", base: "expected")
+      diff = expected_files - sql_files
+      raise "Files only in `expected/`:\n#{diff.sort.join("\n")}" unless diff.empty?
+    end
+  end
+end
+
 desc "Lint"
-task :lint => ["package:lint"]
+task :lint => [
+  "package:lint",
+  "test:lint:pair"
+]
