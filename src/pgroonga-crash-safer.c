@@ -157,13 +157,14 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		int result;
 
 		SetCurrentStatementStartTimestamp();
-		result =
-			SPI_execute("SELECT proname "
-						"  FROM pg_catalog.pg_proc "
-						"  WHERE "
-						"    proname = 'pgroonga_wal_set_applied_position'",
-						true,
-						0);
+		result = SPI_execute(
+			"SELECT namespace.nspname AS schema_name "
+			"FROM pg_catalog.pg_proc AS proc "
+			"JOIN pg_catalog.pg_namespace AS namespace "
+			"  ON proc.pronamespace = namespace.oid "
+			"WHERE proc.proname = 'pgroonga_wal_set_applied_position'",
+			true,
+			0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
@@ -177,9 +178,17 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 
 		if (SPI_processed > 0)
 		{
+			char *schemaName;
+			StringInfo wal_set_applied_position;
+
 			SetCurrentStatementStartTimestamp();
-			result = SPI_execute(
-				"SELECT pgroonga_wal_set_applied_position()", false, 0);
+			schemaName =
+				SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
+			wal_set_applied_position = makeStringInfo();
+			appendStringInfo(wal_set_applied_position,
+							 "SELECT %s.pgroonga_wal_set_applied_position()",
+							 schemaName);
+			result = SPI_execute(wal_set_applied_position->data, false, 0);
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(
@@ -191,6 +200,8 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 							tableSpaceOid,
 							result)));
 			}
+			resetStringInfo(wal_set_applied_position);
+			pfree(schemaName);
 		}
 	}
 
