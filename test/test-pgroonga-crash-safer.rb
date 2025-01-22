@@ -97,29 +97,17 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
     OUTPUT
   end
 
-  sub_test_case "use_custom_schema" do
-    test "recover pgroonga extension in custom schema from WAL" do
-      sql = <<-SQL
-DROP EXTENSION IF EXISTS pgroonga;
-CREATE SCHEMA test_schema;
-CREATE EXTENSION pgroonga WITH SCHEMA test_schema;
-SELECT pg_sleep(10);
-      SQL
-      run_sql(sql)
-      Dir.glob(File.join(@test_db_dir, "pgrn*")) do |path|
-        FileUtils.cp(path, "#{path}.bak")
-      end
-      stop_postgres
-      Dir.glob(File.join(@test_db_dir, "pgrn*.bak")) do |path|
-        FileUtils.cp(path, path.chomp(".bak"))
-      end
-      start_postgres
-      postgres_log = @postgresql.read_log
-      assert_not_equal(
-        ["ERROR:  function pgroonga_wal_set_applied_position() does not exist at character 8"],
-        postgres_log.scan(/ERROR:\s+function pgroonga_wal_set_applied_position\(\) does not exist at character \d+/),
-        postgres_log)
-    end
+  test "recover_pgroonga_extension_in_no_public_schema" do
+    run_sql("DROP EXTENSION IF EXISTS pgroonga;")
+    run_sql("CREATE SCHEMA test_schema;")
+    run_sql("CREATE EXTENSION pgroonga WITH SCHEMA test_schema;")
+    stop_postgres
+    start_postgres
+    postgres_log = @postgresql.read_log
+    assert_not_equal(
+      ["ERROR:  function pgroonga_wal_set_applied_position() does not exist at character 8"],
+      postgres_log.scan(/ERROR:\s+function pgroonga_wal_set_applied_position\(\) does not exist at character \d+/),
+      postgres_log)
   end
 
   test "recover by REINDEX" do
