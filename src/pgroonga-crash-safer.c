@@ -179,16 +179,16 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		if (SPI_processed > 0)
 		{
 			char *schemaName;
-			StringInfo wal_set_applied_position;
+			StringInfo walSetAppliedPosition;
 
 			SetCurrentStatementStartTimestamp();
 			schemaName =
 				SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
-			wal_set_applied_position = makeStringInfo();
-			appendStringInfo(wal_set_applied_position,
+			walSetAppliedPosition = makeStringInfo();
+			appendStringInfo(walSetAppliedPosition,
 							 "SELECT %s.pgroonga_wal_set_applied_position()",
 							 schemaName);
-			result = SPI_execute(wal_set_applied_position->data, false, 0);
+			result = SPI_execute(walSetAppliedPosition->data, false, 0);
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(
@@ -200,7 +200,7 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 							tableSpaceOid,
 							result)));
 			}
-			resetStringInfo(wal_set_applied_position);
+			resetStringInfo(walSetAppliedPosition);
 			pfree(schemaName);
 		}
 	}
