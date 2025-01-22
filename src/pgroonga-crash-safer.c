@@ -191,14 +191,14 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 			}
 			else
 			{
-				StringInfo walSetAppliedPosition;
-				walSetAppliedPosition = makeStringInfo();
+				StringInfoData walSetAppliedPosition;
+				initStringInfo(&walSetAppliedPosition);
 				appendStringInfo(
-					walSetAppliedPosition,
+					&walSetAppliedPosition,
 					"SELECT %s.pgroonga_wal_set_applied_position()",
 					DatumGetCString(schemaNameDatum));
-				result = SPI_execute(walSetAppliedPosition->data, false, 0);
-				resetStringInfo(walSetAppliedPosition);
+				result = SPI_execute(walSetAppliedPosition.data, false, 0);
+				resetStringInfo(&walSetAppliedPosition);
 				if (result != SPI_OK_SELECT)
 				{
 					ereport(FATAL,
