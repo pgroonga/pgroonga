@@ -132,7 +132,13 @@ jobs:
           # - pgroonga-fedora-33
     env:
       APACHE_ARROW_REPOSITORY: ${{ github.workspace }}/apache-arrow
-    runs-on: ubuntu-latest
+    # condition && true-case || false-case
+    # ==
+    # condition ? true-case : false-case
+    runs-on: >-
+      ${{ (contains(matrix.id, 'arm64') ||
+           contains(matrix.id, 'aarch64')) && 'ubuntu-24.04-arm' ||
+                                              'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,11 +151,6 @@ jobs:
         with:
           ruby-version: ruby
           bundler-cache: true
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt -y -V install \
-            qemu-user-static
       - name: Clone dependencies
         run: |
           cd ..
