@@ -185,9 +185,17 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 			SetCurrentStatementStartTimestamp();
 			schemaNameDatum = SPI_getbinval(
 				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, &isNull);
-			if (!isNull)
+			if (isNull)
 			{
-				// TODO: Write the error message
+				ereport(
+					FATAL,
+					(errmsg(PGRN_TAG
+							": failed to detect the schema which "
+							"pgroonga_wal_set_applied_position() is defined: "
+							"%u/%u: %d",
+							databaseOid,
+							tableSpaceOid,
+							result)));
 			}
 			else
 			{
