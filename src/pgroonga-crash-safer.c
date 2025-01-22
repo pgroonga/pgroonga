@@ -157,14 +157,15 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		int result;
 
 		SetCurrentStatementStartTimestamp();
-		result = SPI_execute(
-			"SELECT namespace.nspname AS schema_name "
-			"FROM pg_catalog.pg_proc AS proc "
-			"JOIN pg_catalog.pg_namespace AS namespace "
-			"  ON proc.pronamespace = namespace.oid "
-			"WHERE proc.proname = 'pgroonga_wal_set_applied_position'",
-			true,
-			0);
+		result =
+			SPI_execute("SELECT nspname AS schema_name"
+						"FROM pg_catalog.pg_namespace "
+						"WHERE oid in ( "
+						"  SELECT pronamespace "
+						"  FROM pg_catalog.pg_proc "
+						"  WHERE proname = 'pgroonga_wal_set_applied_position'",
+						true,
+						0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
