@@ -179,30 +179,38 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 
 		if (SPI_processed > 0)
 		{
-			char *schemaName;
-			StringInfo walSetAppliedPosition;
+			bool isNull;
+			Datum schemaNameDatum;
 
 			SetCurrentStatementStartTimestamp();
-			schemaName =
-				SPI_getvalue(SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1);
-			walSetAppliedPosition = makeStringInfo();
-			appendStringInfo(walSetAppliedPosition,
-							 "SELECT %s.pgroonga_wal_set_applied_position()",
-							 schemaName);
-			result = SPI_execute(walSetAppliedPosition->data, false, 0);
-			if (result != SPI_OK_SELECT)
+			schemaNameDatum = SPI_getbinval(
+				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, &isNull);
+			if (!isNull)
 			{
-				ereport(
-					FATAL,
-					(errmsg(PGRN_TAG ": failed to reset WAL applied positions "
-									 "of all PGroonga indexes: "
-									 "%u/%u: %d",
-							databaseOid,
-							tableSpaceOid,
-							result)));
+				// TODO: Write the error message
 			}
-			resetStringInfo(walSetAppliedPosition);
-			pfree(schemaName);
+			else
+			{
+				StringInfo walSetAppliedPosition;
+				walSetAppliedPosition = makeStringInfo();
+				appendStringInfo(
+					walSetAppliedPosition,
+					"SELECT %s.pgroonga_wal_set_applied_position()",
+					DatumGetCString(schemaNameDatum));
+				result = SPI_execute(walSetAppliedPosition->data, false, 0);
+				resetStringInfo(walSetAppliedPosition);
+				if (result != SPI_OK_SELECT)
+				{
+					ereport(FATAL,
+							(errmsg(PGRN_TAG
+									": failed to reset WAL applied positions "
+									"of all PGroonga indexes: "
+									"%u/%u: %d",
+									databaseOid,
+									tableSpaceOid,
+									result)));
+				}
+			}
 		}
 	}
 
