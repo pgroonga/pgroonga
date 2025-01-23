@@ -229,6 +229,7 @@ jobs:
 
       # Test
       - name: Install Incus
+        run: |
           sudo apt update
           sudo apt install -y -V incus
       - name: Allow egress network traffic flows for Incus
