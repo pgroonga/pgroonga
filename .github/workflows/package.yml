@@ -32,8 +32,10 @@ jobs:
       # Artifact
       - uses: actions/upload-artifact@v4
         with:
-          name: source
-          path: pgroonga-*.tar.gz
+          name: release-source
+          path: |
+            pgroonga-*.tar.gz
+            pgroonga-*.zip
 
       # Release
       - uses: actions/checkout@v4
@@ -159,7 +161,7 @@ jobs:
       - name: Download archive
         uses: actions/download-artifact@v4
         with:
-          name: source
+          name: release-source
       - name: Configure
         run: |
           set -eux
@@ -201,23 +203,8 @@ jobs:
       # Artifact
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.package-id }}
+          name: packages-${{ matrix.package-id }}
           path: repositories/
-
-      # Release
-      - name: Create assets
-        if: |
-          startsWith(github.ref, 'refs/tags/')
-        run: |
-          tar czf ${{ matrix.package-id }}.tar.gz repositories/
-      - name: Upload to release
-        if: |
-          startsWith(github.ref, 'refs/tags/')
-        run: |
-          gh release upload ${GITHUB_REF_NAME} \
-            ${{ matrix.package-id }}.tar.gz
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       # Test
       - name: Install Incus
@@ -258,3 +245,41 @@ jobs:
         with:
           name: ${{ matrix.package-id }}-logs
           path: logs/
+
+  prepare-release:
+    name: Prepare for release
+    needs: linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          pattern: packages-*
+      - name: Group by distribution and version
+        run: |
+          set -x
+          for packages_path in packages/packages-*; do
+            # packages/packages-postgresql-17-pgdg-pgroonga-debian-bookworm ->
+            # debian-bookworm
+            os=$(echo ${packages_path} | \
+                   grep -E -o '(almalinux|debian|ubuntu)-[^-]+')
+
+            mkdir -p release/${os}/
+            # packages/packages-postgresql-17-pgdg-pgroonga-debian-bookworm/debian/pool/bookworm/ ->
+            # release/debian-bookworm/debian/pool/bookworm/
+            rsync -a ${packages_path}/ release/${os}/
+          done
+          for release_os_path in release/*; do
+            # release/debian-bookworm ->
+            # debian-bookworm
+            os=$(basename ${release_os_path})
+
+            # release/debian-bookworm/debian/pool/bookworm/ ->
+            # debian-bookworm/debian/pool/bookworm/
+            tar czf ${os}.tar.gz -C $(dirname ${release_os_path}) ${os}
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux-packages
+          path: "*.tar.gz"
