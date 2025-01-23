@@ -179,12 +179,17 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 
 		if (SPI_processed > 0)
 		{
+			bool isNULL;
 			Datum schemaNameDatum;
 			StringInfoData walSetAppliedPosition;
 
 			SetCurrentStatementStartTimestamp();
+			/**
+			 * The nspname column in pg_catalog.pg_namespace must not be NULL
+			 * because of Not NULL constraint.
+			 */
 			schemaNameDatum = SPI_getbinval(
-				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, NULL);
+				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, &isNULL);
 			initStringInfo(&walSetAppliedPosition);
 			appendStringInfo(&walSetAppliedPosition,
 							 "SELECT %s.pgroonga_wal_set_applied_position()",
