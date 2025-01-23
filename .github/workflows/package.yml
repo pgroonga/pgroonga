@@ -70,8 +70,7 @@ jobs:
   linux:
     name: Linux
     needs: source
-    # arm64 packages are often stuck.
-    timeout-minutes: 60
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
