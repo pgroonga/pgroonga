@@ -233,15 +233,10 @@ jobs:
           sudo apt update
           sudo apt install -y -V incus
       - name: Allow egress network traffic flows for Incus
-        if: |
-          env.ARCHITECTURE != 'arm64'
-        # https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker
         run: |
           sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
           sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
       - name: Prepare container
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           set -x
           sudo incus admin init --auto
@@ -255,15 +250,11 @@ jobs:
           # ref: https://discuss.linuxcontainers.org/t/network-issue-with-almalinux-8-9-on-github-actions-using-incus/20046
           sleep 10
       - name: Test
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           sudo incus exec target \
             -- \
             /host/packages/${PACKAGE_TYPE}/test.sh
       - name: Delete container
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           sudo incus stop target
           sudo incus delete target
