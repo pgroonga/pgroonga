@@ -151,6 +151,8 @@ jobs:
         with:
           ruby-version: ruby
           bundler-cache: true
+      - name: Install dependencies
+        run: sudo apt update
       - name: Clone dependencies
         run: |
           cd ..
