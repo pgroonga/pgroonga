@@ -70,8 +70,7 @@ jobs:
   linux:
     name: Linux
     needs: source
-    # arm64 packages are often stuck.
-    timeout-minutes: 60
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -132,7 +131,13 @@ jobs:
           # - pgroonga-fedora-33
     env:
       APACHE_ARROW_REPOSITORY: ${{ github.workspace }}/apache-arrow
-    runs-on: ubuntu-latest
+    # condition && true-case || false-case
+    # ==
+    # condition ? true-case : false-case
+    runs-on: >-
+      ${{ (contains(matrix.package-id, 'arm64') ||
+           contains(matrix.package-id, 'aarch64')) && 'ubuntu-24.04-arm' ||
+                                                      'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -145,11 +150,6 @@ jobs:
         with:
           ruby-version: ruby
           bundler-cache: true
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt -y -V install \
-            qemu-user-static
       - name: Clone dependencies
         run: |
           cd ..
@@ -178,14 +178,6 @@ jobs:
               ;;
           esac
           test_incus_image=$(echo ${os} | sed -E -e 's/-/\//g')
-          case ${test_incus_image} in
-            */arm64)
-              echo "ARCHITECTURE=arm64" >> ${GITHUB_ENV}
-              ;;
-            *)
-              echo "ARCHITECTURE=amd64" >> ${GITHUB_ENV}
-              ;;
-          esac
           echo "TEST_INCUS_IMAGE=images:${test_incus_image}" >> ${GITHUB_ENV}
       - name: Cache ccache
         uses: actions/cache@v4
@@ -229,36 +221,14 @@ jobs:
 
       # Test
       - name: Install Incus
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
-          # Ubuntu 24.04 beta has already been released as a GitHub Runner image and provides Incus.
-          # However, there is an issue with the combination of Docker, arm64 image and libc-bin on it.
-          # After this issue is resolved, we will use the Ubuntu 24.04 runner image and install Incus using apt.
-          # https://github.com/pgroonga/pgroonga/issues/507#issuecomment-2199634563
-          sudo curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
-          cat <<SOURCES | sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources
-          Enabled: yes
-          Types: deb
-          URIs: https://pkgs.zabbly.com/incus/stable
-          Suites: $(. /etc/os-release && echo ${VERSION_CODENAME})
-          Components: main
-          Architectures: $(dpkg --print-architecture)
-          Signed-By: /etc/apt/keyrings/zabbly.asc
-          SOURCES
-
           sudo apt update
           sudo apt install -y -V incus
       - name: Allow egress network traffic flows for Incus
-        if: |
-          env.ARCHITECTURE != 'arm64'
-        # https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker
         run: |
           sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
           sudo iptables -I DOCKER-USER -o incusbr0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
       - name: Prepare container
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           set -x
           sudo incus admin init --auto
@@ -272,15 +242,11 @@ jobs:
           # ref: https://discuss.linuxcontainers.org/t/network-issue-with-almalinux-8-9-on-github-actions-using-incus/20046
           sleep 10
       - name: Test
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           sudo incus exec target \
             -- \
             /host/packages/${PACKAGE_TYPE}/test.sh
       - name: Delete container
-        if: |
-          env.ARCHITECTURE != 'arm64'
         run: |
           sudo incus stop target
           sudo incus delete target
