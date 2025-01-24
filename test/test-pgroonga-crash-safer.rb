@@ -105,8 +105,8 @@ SELECT * FROM memos WHERE content &@~ 'PGroonga';
     start_postgres
     postgres_log = @postgresql.read_log
     assert_not_equal(
-      ["ERROR:  function pgroonga_wal_set_applied_position() does not exist at character 8"],
-      postgres_log.scan(/ERROR:\s+function pgroonga_wal_set_applied_position\(\) does not exist at character \d+/),
+      ["ERROR:  function pgroonga_wal_set_applied_position() does not exist"],
+      postgres_log.scan(/ERROR:\s+function pgroonga_wal_set_applied_position\(\) does not exist/),
       postgres_log)
   end
 
