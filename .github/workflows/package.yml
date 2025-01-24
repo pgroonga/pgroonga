@@ -177,6 +177,7 @@ jobs:
               echo "PACKAGE_TYPE=yum" >> ${GITHUB_ENV}
               ;;
           esac
+          test_incus_image=$(echo ${os} | sed -E -e 's/-/\//g')
           echo "TEST_INCUS_IMAGE=images:${test_incus_image}" >> ${GITHUB_ENV}
       - name: Cache ccache
         uses: actions/cache@v4
