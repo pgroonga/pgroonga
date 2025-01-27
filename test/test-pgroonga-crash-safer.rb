@@ -37,6 +37,23 @@ pgroonga_crash_safer.log_level = debug
                  run_sql(status_sql, may_wait_crash_safer_preparing: true))
   end
 
+  test "reset positions in non public schema" do
+    run_sql("DROP EXTENSION pgroonga;")
+    run_sql("CREATE SCHEMA test_schema;")
+    run_sql("CREATE EXTENSION pgroonga WITH SCHEMA test_schema;")
+    run_sql("CREATE TABLE test_schema.memos (title text);")
+    run_sql("CREATE INDEX memos_title ON test_schema.memos USING pgroonga (title);")
+    run_sql("INSERT INTO test_schema.memos VALUES ('PGroonga');")
+    status_sql = "SELECT test_schema.pgroonga_wal_status();"
+    status = run_sql(status_sql)
+    run_sql("SELECT test_schema.pgroonga_wal_set_applied_position(100, 100);")
+    assert_not_equal(status, run_sql(status_sql))
+    stop_postgres
+    start_postgres
+    assert_equal(status,
+                 run_sql(status_sql, may_wait_crash_safer_preparing: true))
+  end
+
   sub_test_case "standby" do
     setup :setup_standby_db
     teardown :teardown_standby_db

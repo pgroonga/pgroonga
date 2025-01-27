@@ -157,13 +157,16 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 		int result;
 
 		SetCurrentStatementStartTimestamp();
-		result =
-			SPI_execute("SELECT proname "
-						"  FROM pg_catalog.pg_proc "
-						"  WHERE "
-						"    proname = 'pgroonga_wal_set_applied_position'",
-						true,
-						0);
+		result = SPI_execute(
+			"SELECT nspname "
+			"  FROM pg_catalog.pg_namespace "
+			"  WHERE oid in ("
+			"    SELECT pronamespace "
+			"    FROM pg_catalog.pg_proc "
+			"    WHERE proname = 'pgroonga_wal_set_applied_position'"
+			")",
+			true,
+			0);
 		if (result != SPI_OK_SELECT)
 		{
 			ereport(FATAL,
@@ -177,9 +180,23 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 
 		if (SPI_processed > 0)
 		{
+			bool isNULL;
+			Datum schemaNameDatum;
+			StringInfoData walSetAppliedPosition;
+
 			SetCurrentStatementStartTimestamp();
-			result = SPI_execute(
-				"SELECT pgroonga_wal_set_applied_position()", false, 0);
+			/**
+			 * The nspname column in pg_catalog.pg_namespace must not be NULL
+			 * because of NOT NULL constraint.
+			 */
+			schemaNameDatum = SPI_getbinval(
+				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, &isNULL);
+			initStringInfo(&walSetAppliedPosition);
+			appendStringInfo(&walSetAppliedPosition,
+							 "SELECT %s.pgroonga_wal_set_applied_position()",
+							 DatumGetCString(schemaNameDatum));
+			result = SPI_execute(walSetAppliedPosition.data, false, 0);
+			resetStringInfo(&walSetAppliedPosition);
 			if (result != SPI_OK_SELECT)
 			{
 				ereport(
