@@ -187,7 +187,7 @@ pgroonga_crash_safer_reset_position_one(Datum databaseInfoDatum)
 			SetCurrentStatementStartTimestamp();
 			/**
 			 * The nspname column in pg_catalog.pg_namespace must not be NULL
-			 * because of Not NULL constraint.
+			 * because of NOT NULL constraint.
 			 */
 			schemaNameDatum = SPI_getbinval(
 				SPI_tuptable->vals[0], SPI_tuptable->tupdesc, 1, &isNULL);
