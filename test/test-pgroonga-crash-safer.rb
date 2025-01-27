@@ -51,7 +51,7 @@ pgroonga_crash_safer.log_level = debug
     stop_postgres
     start_postgres
     assert_equal(status,
-      run_sql(status_sql, may_wait_crash_safer_preparing: true))
+                 run_sql(status_sql, may_wait_crash_safer_preparing: true))
   end
 
   sub_test_case "standby" do
