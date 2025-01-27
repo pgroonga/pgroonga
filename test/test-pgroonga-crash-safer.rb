@@ -37,7 +37,7 @@ pgroonga_crash_safer.log_level = debug
                  run_sql(status_sql, may_wait_crash_safer_preparing: true))
   end
 
-  test "reset_wal_position_in_non_public_schema" do
+  test "reset positions in non public schema" do
     run_sql("DROP EXTENSION IF EXISTS pgroonga;")
     run_sql("CREATE SCHEMA test_schema;")
     run_sql("CREATE EXTENSION pgroonga WITH SCHEMA test_schema;")
