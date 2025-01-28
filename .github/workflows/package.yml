@@ -80,9 +80,9 @@ jobs:
           - postgresql-17-pgdg-pgroonga-debian-bookworm
           - postgresql-17-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-focal
-          # - postgresql-17-pgdg-pgroonga-ubuntu-focal-arm64
+          - postgresql-17-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-jammy
-          # - postgresql-17-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-17-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-noble
           - postgresql-17-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-17-pgdg-pgroonga-almalinux-8
@@ -90,11 +90,11 @@ jobs:
           - postgresql-16-pgdg-pgroonga-debian-bookworm
           - postgresql-16-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-focal
-          # - postgresql-16-pgdg-pgroonga-ubuntu-focal-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-noble
-          # - postgresql-16-pgdg-pgroonga-ubuntu-noble-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-16-pgdg-pgroonga-almalinux-9
           - postgresql-16-pgdg-pgroonga-almalinux-8
           - postgresql-16-pgroonga-ubuntu-noble
@@ -103,9 +103,9 @@ jobs:
           - postgresql-15-pgdg-pgroonga-ubuntu-focal
           - postgresql-15-pgdg-pgroonga-ubuntu-focal-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy
-          # - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-noble
-          # - postgresql-15-pgdg-pgroonga-ubuntu-noble-arm64
+          - postgresql-15-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-15-pgdg-pgroonga-almalinux-9
           - postgresql-15-pgdg-pgroonga-almalinux-8
           - postgresql-15-pgroonga-debian-bookworm
