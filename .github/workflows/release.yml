@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
       - name: Download artifacts
         run: |
           workflows=(package.yml windows.yml)
@@ -21,16 +20,19 @@ jobs:
                          --branch ${GITHUB_REF_NAME} \
                          --jq '.[].databaseId' \
                          --json databaseId \
+                         --repo ${GITHUB_REPOSITORY} \
                          --workflow ${workflow})
               sleep 1
             done
             gh run watch \
               --exit-status \
               --interval 60 \
+              --repo ${GITHUB_REPOSITORY} \
               ${run_id}
             gh run download ${run_id} \
               --dir release-artifacts \
-              --pattern "release-*"
+              --pattern "release-*" \
+              --repo ${GITHUB_REPOSITORY}
           done
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,6 +55,7 @@ jobs:
           gh release create ${GITHUB_REF_NAME} \
             --discussion-category Releases \
             --notes-file release-note-without-version.md \
+            --repo ${GITHUB_REPOSITORY} \
             --title "${title}" \
             release-artifacts/*/*
         env:
