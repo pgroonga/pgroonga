@@ -69,6 +69,8 @@ jobs:
           $ARTIFACT_ID = "postgresql-${{ matrix.postgresql-version-major }}-x64"
           if ("${{ matrix.groonga-main }}" -eq "yes") {
             $ARTIFACT_ID += "-groonga-main"
+          } else {
+            $ARTIFACT_ID = "release-${ARTIFACT_ID}"
           }
           Write-Output "ARTIFACT_ID=${ARTIFACT_ID}" | `
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -157,16 +159,6 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_ID }}
           path: artifacts
-
-      # Release
-      - name: Upload to release
-        if: |
-          startsWith(github.ref, 'refs/tags/') && matrix.groonga-main != 'yes'
-        run: |
-          gh release upload ${Env:GITHUB_REF_NAME} `
-            artifacts\${{ env.ARTIFACT_BASENAME }}
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       # Test
       - name: Run PostgreSQL for test
