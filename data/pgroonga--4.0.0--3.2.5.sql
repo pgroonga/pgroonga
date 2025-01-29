@@ -8,8 +8,6 @@ BEGIN
 	-- "CREATE SCHEMA pgroonga" and CREATE FUNCTION pgroonga.XXX" don't work
 	-- on Postgres-XL.
 	IF NOT FOUND THEN
-		CREATE SCHEMA pgroonga;
-
 		/* v1 */
 		CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops FOR TYPE text
 			USING pgroonga AS
