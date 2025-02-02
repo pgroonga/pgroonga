@@ -96,3 +96,10 @@ CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
         OPERATOR 13 &? (jsonb, text), -- For backward compatibility
         OPERATOR 15 &` (jsonb, text),
         OPERATOR 28 &@~ (jsonb, text);
+
+CREATE OPERATOR CLASS pgroonga.text_regexp_ops FOR TYPE text
+    USING pgroonga AS
+        OPERATOR 6 ~~,
+        OPERATOR 7 ~~*,
+        OPERATOR 10 @~,
+        OPERATOR 22 &~;
