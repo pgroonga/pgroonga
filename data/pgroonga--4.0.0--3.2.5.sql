@@ -161,3 +161,10 @@ CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
         OPERATOR 21 &^~| (text[], text[]),
         OPERATOR 24 &^> (text[], text), -- For backward compatibility
         OPERATOR 25 &^~> (text[], text); -- For backward compatibility
+
+CREATE OPERATOR CLASS pgroonga.text_regexp_ops_v2 FOR TYPE text
+    USING pgroonga AS
+        OPERATOR 6 ~~,
+        OPERATOR 7 ~~*,
+        OPERATOR 10 @~, -- For backward compatibility
+        OPERATOR 22 &~;
