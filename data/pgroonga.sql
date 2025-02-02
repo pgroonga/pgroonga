@@ -3149,14 +3149,6 @@ BEGIN
 				OPERATOR 4 >=,
 				OPERATOR 5 >;
 
-		CREATE OPERATOR CLASS pgroonga.timestamptz_ops FOR TYPE timestamptz
-			USING pgroonga AS
-				OPERATOR 1 <,
-				OPERATOR 2 <=,
-				OPERATOR 3 =,
-				OPERATOR 4 >=,
-				OPERATOR 5 >;
-
 		CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
