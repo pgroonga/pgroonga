@@ -120,13 +120,6 @@ CREATE OPERATOR CLASS pgroonga.text_full_text_search_ops_v2 FOR TYPE text
         OPERATOR 13 &?, -- For backward compatibility
         OPERATOR 14 &~?, -- For backward compatibility
         OPERATOR 15 &`,
-        OPERATOR 18 &@| (text, text[]),
-        OPERATOR 19 &?| (text, text[]), -- For backward compatibility
-        OPERATOR 26 &@> (text, text[]), -- For backward compatibility
-        OPERATOR 27 &?> (text, text[]), -- For backward compatibility
-        OPERATOR 28 &@~,
-        OPERATOR 29 &@*,
-        OPERATOR 30 &@~| (text, text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2 FOR TYPE text[]
     USING pgroonga AS
@@ -168,3 +161,19 @@ CREATE OPERATOR CLASS pgroonga.text_regexp_ops_v2 FOR TYPE text
         OPERATOR 7 ~~*,
         OPERATOR 10 @~, -- For backward compatibility
         OPERATOR 22 &~;
+
+CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2 FOR TYPE varchar
+    USING pgroonga AS
+        OPERATOR 8 %%, -- For backward compatibility
+        OPERATOR 9 @@, -- For backward compatibility
+        OPERATOR 12 &@,
+        OPERATOR 13 &?, -- For backward compatibility
+        OPERATOR 14 &~?, -- For backward compatibility
+        OPERATOR 15 &`,
+        OPERATOR 18 &@| (text, text[]),
+        OPERATOR 19 &?| (text, text[]), -- For backward compatibility
+        OPERATOR 26 &@> (text, text[]), -- For backward compatibility
+        OPERATOR 27 &?> (text, text[]), -- For backward compatibility
+        OPERATOR 28 &@~,
+        OPERATOR 29 &@*,
+        OPERATOR 30 &@~| (text, text[]);
