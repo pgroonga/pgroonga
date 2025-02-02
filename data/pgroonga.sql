@@ -3156,17 +3156,6 @@ BEGIN
 			IMMUTABLE
 			STRICT
 			PARALLEL SAFE;
-
-		/* v2 */
-		CREATE OPERATOR CLASS pgroonga.jsonb_ops_v2
-			FOR TYPE jsonb
-			USING pgroonga AS
-				OPERATOR 9 @@ (jsonb, text), -- For backward compatibility
-				OPERATOR 11 @>,
-				OPERATOR 12 &@ (jsonb, text),
-				OPERATOR 13 &? (jsonb, text), -- For backward compatibility
-				OPERATOR 15 &` (jsonb, text),
-				OPERATOR 28 &@~ (jsonb, text);
 	END IF;
 
 END;
