@@ -3133,14 +3133,6 @@ BEGIN
 			PARALLEL SAFE;
 
 		/* v1 */
-		CREATE OPERATOR CLASS pgroonga.float8_ops FOR TYPE float8
-			USING pgroonga AS
-				OPERATOR 1 <,
-				OPERATOR 2 <=,
-				OPERATOR 3 =,
-				OPERATOR 4 >=,
-				OPERATOR 5 >;
-
 		CREATE FUNCTION pgroonga.match_script_jsonb(jsonb, text)
 			RETURNS bool
 			AS 'MODULE_PATHNAME', 'pgroonga_match_script_jsonb'
