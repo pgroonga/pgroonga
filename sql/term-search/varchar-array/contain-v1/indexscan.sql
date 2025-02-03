@@ -24,4 +24,3 @@ SELECT title, tags
  WHERE tags %% 'Groonga';
 
 DROP TABLE memos;
-
