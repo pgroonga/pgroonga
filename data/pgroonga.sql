@@ -3133,14 +3133,6 @@ BEGIN
 			PARALLEL SAFE;
 
 		/* v1 */
-		CREATE OPERATOR CLASS pgroonga.varchar_ops FOR TYPE varchar
-			USING pgroonga AS
-				OPERATOR 1 < (text, text),
-				OPERATOR 2 <= (text, text),
-				OPERATOR 3 = (text, text),
-				OPERATOR 4 >= (text, text),
-				OPERATOR 5 > (text, text);
-
 		CREATE OPERATOR CLASS pgroonga.varchar_array_ops
 			FOR TYPE varchar[]
 			USING pgroonga AS
