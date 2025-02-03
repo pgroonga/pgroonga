@@ -2,11 +2,15 @@
 
 #include "pgrn-compatible.h"
 
+#include <nodes/execnodes.h>
+
 #include <groonga.h>
 
 typedef struct PGrnCreateData
 {
+	Relation heap;
 	Relation index;
+	IndexInfo *indexInfo;
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
 	grn_obj *supplementaryTables;

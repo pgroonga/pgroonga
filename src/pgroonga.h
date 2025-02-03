@@ -114,6 +114,7 @@ static grn_ctx *ctx = &PGrnContext;
 extern grn_obj PGrnInspectBuffer;
 
 extern bool PGrnGroongaInitialized;
+extern bool PGrnEnableParallelBuildCopy;
 void PGrnEnsureDatabase(void);
 void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);

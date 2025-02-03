@@ -569,6 +569,21 @@ PGrnInitializeVariables(void)
 							PGrnMaxBulkInsertWALRecordSizeAssign,
 							NULL);
 
+	DefineCustomBoolVariable("pgroonga.enable_parallel_build_copy",
+							 "Enable parallel data copy in index build.",
+							 "It's disabled by default it's slow for now. "
+							 "We may enable it by default when it's faster. "
+							 "On the other hand, "
+							 "parallel index construction is always enabled "
+							 "because it's faster.",
+							 &PGrnEnableParallelBuildCopy,
+							 PGrnEnableParallelBuildCopy,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
 	EmitWarningsOnPlaceholders("pgroonga");
 }
 

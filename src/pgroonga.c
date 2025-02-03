@@ -40,6 +40,7 @@
 #include <access/amapi.h>
 #include <access/reloptions.h>
 #include <access/relscan.h>
+#include <access/table.h>
 #include <access/tableam.h>
 #include <access/xlog_internal.h>
 #include <catalog/catalog.h>
@@ -55,7 +56,9 @@
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
+#include <storage/shm_toc.h>
 #include <storage/smgr.h>
+#include <tcop/tcopprot.h>
 #include <utils/array.h>
 #include <utils/builtins.h>
 #include <utils/lsyscache.h>
@@ -76,6 +79,8 @@
 
 PG_MODULE_MAGIC;
 
+static const char *PGroongaLibraryName = "pgroonga";
+
 #define PROGRESS_PGROONGA_PHASE_IMPORT 2
 #define PROGRESS_PGROONGA_PHASE_INDEX 3
 #define PROGRESS_PGROONGA_PHASE_INDEX_LOAD 4
@@ -88,6 +93,7 @@ static bool PGrnInitialized = false;
 static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
 static bool PGrnCrashSaferInitialized = false;
+bool PGrnEnableParallelBuildCopy = false;
 
 typedef struct PGrnProcessSharedData
 {
@@ -106,11 +112,14 @@ typedef struct PGrnBuildStateData
 {
 	grn_obj *sourcesTable;
 	grn_obj *sourcesCtidColumn;
+	double nProcessedHeapTuples;
 	double nIndexedTuples;
 	bool needMaxRecordSizeUpdate;
 	uint32_t maxRecordSize;
 	MemoryContext memoryContext;
 	PGrnWALData *bulkInsertWALData;
+	bool isBulkInsert;
+	grn_wal_role walRoleKeep;
 } PGrnBuildStateData;
 
 typedef PGrnBuildStateData *PGrnBuildState;
@@ -7435,7 +7444,7 @@ PGrnBuildCallback(Relation index,
 							values,
 							isnull,
 							tid,
-							PGrnWALResourceManagerIsOnlyEnabled(),
+							bs->isBulkInsert,
 							bs->bulkInsertWALData);
 	if (bs->needMaxRecordSizeUpdate && recordSize > bs->maxRecordSize)
 	{
@@ -7445,6 +7454,394 @@ PGrnBuildCallback(Relation index,
 
 	MemoryContextSwitchTo(oldMemoryContext);
 	MemoryContextReset(bs->memoryContext);
+}
+
+static void
+pgroonga_build_copy_source_execute(PGrnCreateData *data,
+								   PGrnBuildStateData *bs,
+								   bool progress,
+								   TableScanDesc scan)
+{
+	if (bs->isBulkInsert)
+	{
+		bs->bulkInsertWALData = PGrnWALStart(data->index);
+		PGrnWALBulkInsertStart(bs->bulkInsertWALData, bs->sourcesTable);
+	}
+	/* Disable WAL generation while bulk source table creation for
+	 * performance. If PGroonga is crashed while bulk source table
+	 * creation, this source table will be removed in the next
+	 * VACUUM. So, we don't need crash recovery here. */
+	if (bs->walRoleKeep != GRN_WAL_ROLE_NONE)
+		grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_NONE);
+	bs->nProcessedHeapTuples = table_index_build_scan(data->heap,
+													  data->index,
+													  data->indexInfo,
+													  true,
+													  progress,
+													  PGrnBuildCallback,
+													  bs,
+													  scan);
+	if (bs->walRoleKeep != GRN_WAL_ROLE_NONE)
+	{
+		/* Flush written data so that we can assume that this
+		 * source table isn't broken by PGroonga crash in index
+		 * creation. */
+		grn_obj_flush_recursive(ctx, data->sourcesTable);
+		grn_ctx_set_wal_role(ctx, bs->walRoleKeep);
+	}
+	if (bs->isBulkInsert)
+	{
+		PGrnWALBulkInsertFinish(bs->bulkInsertWALData);
+		PGrnWALFinish(bs->bulkInsertWALData);
+		bs->bulkInsertWALData = NULL;
+	}
+}
+
+static void
+pgroonga_build_copy_source_serial(PGrnCreateData *data, PGrnBuildStateData *bs)
+{
+	pgroonga_build_copy_source_execute(data, bs, true, NULL);
+}
+
+/*
+ * Parallel source copy related feature is unstable. This
+ * implementation was slower than serial source copy with some
+ * tests.
+ *
+ * The bottle neck of source copy wasn't serial data read from
+ * PostgreSQL and data write to Groonga. The bottle neck of source
+ * copy was casting source data to reference values. In casting to
+ * reference values, we need to add a record to a Groonga table. It
+ * needs a lock. It may be a slow cause. Or grn_obj_cast() related
+ * code may be a slow cause.
+ *
+ * So we disable this by default. We may revisit this when we think
+ * that this is useful.
+ */
+
+typedef struct PGrnParallelBuildLocalData
+{
+	Relation heap;
+	Relation index;
+	ParallelTableScanDesc pscan;
+} PGrnParallelBuildLocalData;
+
+typedef struct PGrnParallelBuildSharedData
+{
+	/* Immutable data */
+	Oid heapOid;
+	Oid indexOid;
+	grn_id sourcesTableID;
+	grn_id sourcesCtidColumnID;
+	bool isConcurrent;
+	bool needMaxRecordSizeUpdate;
+	bool isBulkInsert;
+	uint64 queryID;
+
+	/* For synchronization */
+	slock_t mutex;
+	ConditionVariable conditionVariable;
+
+	/* Mutable data */
+	int nFinishedWorkers;
+	uint32_t maxRecordSize;
+	double nProcessedHeapTuples;
+	double nIndexedTuples;
+	bool haveBrokenHotChain;
+} PGrnParallelBuildSharedData;
+
+#define PGRN_PARALLEL_BUILD_KEY_PSCAN UINT64CONST(0xA000000000000001)
+#define PGRN_PARALLEL_BUILD_KEY_SHARED_DATA UINT64CONST(0xA000000000000002)
+#define PGRN_PARALLEL_BUILD_KEY_DEBUG_QUERY_STRING                             \
+	UINT64CONST(0xA000000000000003)
+#define PGRN_PARALLEL_BUILD_KEY_BUFFER_USAGES UINT64CONST(0xA000000000000004)
+#define PGRN_PARALLEL_BUILD_KEY_WAL_USAGES UINT64CONST(0xA000000000000005)
+
+static void
+pgroonga_build_copy_source_worker(PGrnParallelBuildLocalData *localData,
+								  PGrnParallelBuildSharedData *sharedData,
+								  PGrnBuildStateData *bs)
+{
+	PGrnCreateData createData;
+	bool progress;
+	TableScanDesc scan;
+
+	createData.heap = localData->heap;
+	createData.index = localData->index;
+	createData.indexInfo = BuildIndexInfo(localData->index);
+	createData.indexInfo->ii_Concurrent = sharedData->isConcurrent;
+	progress = (ParallelWorkerNumber == -1);
+	scan = table_beginscan_parallel(localData->heap, localData->pscan);
+	pgroonga_build_copy_source_execute(&createData, bs, progress, scan);
+
+	SpinLockAcquire(&(sharedData->mutex));
+	sharedData->nFinishedWorkers++;
+	if (sharedData->needMaxRecordSizeUpdate &&
+		bs->maxRecordSize > sharedData->maxRecordSize)
+		sharedData->maxRecordSize = bs->maxRecordSize;
+	sharedData->nProcessedHeapTuples += bs->nProcessedHeapTuples;
+	sharedData->nIndexedTuples += bs->nIndexedTuples;
+	if (createData.indexInfo->ii_BrokenHotChain)
+		sharedData->haveBrokenHotChain = true;
+	SpinLockRelease(&(sharedData->mutex));
+
+	ConditionVariableSignal(&(sharedData->conditionVariable));
+}
+
+extern PGDLLEXPORT void
+pgroonga_build_copy_source_parallel_main(dsm_segment *seg, shm_toc *toc);
+
+void
+pgroonga_build_copy_source_parallel_main(dsm_segment *seg, shm_toc *toc)
+{
+	ParallelTableScanDesc pscan;
+	PGrnParallelBuildSharedData *sharedData;
+	PGrnParallelBuildLocalData localData;
+	PGrnBuildStateData bs;
+	LOCKMODE heapLockMode;
+	LOCKMODE indexLockMode;
+
+	/* MyDatabaseId isn't initialized yet when _PG_Init() is called. */
+	PGrnEnsureDatabase();
+
+	debug_query_string =
+		shm_toc_lookup(toc, PGRN_PARALLEL_BUILD_KEY_DEBUG_QUERY_STRING, true);
+	pgstat_report_activity(STATE_RUNNING, debug_query_string);
+
+	pscan = shm_toc_lookup(toc, PGRN_PARALLEL_BUILD_KEY_PSCAN, false);
+	sharedData =
+		shm_toc_lookup(toc, PGRN_PARALLEL_BUILD_KEY_SHARED_DATA, false);
+
+	if (sharedData->isConcurrent)
+	{
+		heapLockMode = ShareUpdateExclusiveLock;
+		indexLockMode = RowExclusiveLock;
+	}
+	else
+	{
+		heapLockMode = ShareLock;
+		indexLockMode = AccessExclusiveLock;
+	}
+
+	pgstat_report_query_id(sharedData->queryID, false);
+
+	InstrStartParallelQuery();
+
+	localData.heap = table_open(sharedData->heapOid, heapLockMode);
+	localData.index = index_open(sharedData->indexOid, indexLockMode);
+	localData.pscan = pscan;
+	bs.memoryContext =
+		AllocSetContextCreate(CurrentMemoryContext,
+							  "PGroonga parallel index build temporay context",
+							  ALLOCSET_DEFAULT_SIZES);
+	bs.sourcesTable = grn_ctx_at(ctx, sharedData->sourcesTableID);
+	if (sharedData->sourcesCtidColumnID == GRN_ID_NIL)
+		bs.sourcesCtidColumn = NULL;
+	else
+		bs.sourcesCtidColumn = grn_ctx_at(ctx, sharedData->sourcesCtidColumnID);
+	bs.needMaxRecordSizeUpdate = sharedData->needMaxRecordSizeUpdate;
+	bs.maxRecordSize = 0;
+	bs.nProcessedHeapTuples = 0.0;
+	bs.nIndexedTuples = 0.0;
+	bs.isBulkInsert = sharedData->isBulkInsert;
+	bs.bulkInsertWALData = NULL;
+	bs.walRoleKeep = grn_ctx_get_wal_role(ctx);
+	pgroonga_build_copy_source_worker(&localData, sharedData, &bs);
+	MemoryContextDelete(bs.memoryContext);
+
+	{
+		BufferUsage *bufferUsages =
+			shm_toc_lookup(toc, PGRN_PARALLEL_BUILD_KEY_BUFFER_USAGES, false);
+		WalUsage *walUsages =
+			shm_toc_lookup(toc, PGRN_PARALLEL_BUILD_KEY_WAL_USAGES, false);
+		InstrEndParallelQuery(&(bufferUsages[ParallelWorkerNumber]),
+							  &(walUsages[ParallelWorkerNumber]));
+	}
+
+	index_close(localData.index, indexLockMode);
+	table_close(localData.heap, heapLockMode);
+}
+
+static void
+pgroonga_build_copy_source_parallel(PGrnCreateData *data,
+									PGrnBuildStateData *bs)
+{
+	ParallelContext *pcxt;
+	Snapshot snapshot;
+	ParallelTableScanDesc pscan;
+	Size pscanSize;
+	PGrnParallelBuildSharedData *sharedData;
+	Size sharedDataSize;
+	Size debugQueryStringSize = 0;
+	BufferUsage *bufferUsages;
+	Size bufferUsagesSize;
+	WalUsage *walUsages;
+	Size walUsagesSize;
+
+	EnterParallelMode();
+	pcxt = CreateParallelContext(PGroongaLibraryName,
+								 "pgroonga_build_copy_source_parallel_main",
+								 data->indexInfo->ii_ParallelWorkers);
+
+	/*
+	 * This is done automatically when we use table_index_build_scan()
+	 * with scan=NULL in serial build. But we need to do this manually
+	 * for parrallel build.
+	 */
+	if (data->indexInfo->ii_Concurrent)
+		snapshot = RegisterSnapshot(GetTransactionSnapshot());
+	else
+		snapshot = SnapshotAny;
+
+	pscanSize = table_parallelscan_estimate(data->heap, snapshot);
+	shm_toc_estimate_chunk(&(pcxt->estimator), pscanSize);
+	shm_toc_estimate_keys(&(pcxt->estimator), 1);
+
+	sharedDataSize = BUFFERALIGN(sizeof(PGrnParallelBuildSharedData));
+	shm_toc_estimate_chunk(&(pcxt->estimator), sharedDataSize);
+	shm_toc_estimate_keys(&(pcxt->estimator), 1);
+
+	if (debug_query_string)
+	{
+		debugQueryStringSize = strlen(debug_query_string) + 1;
+		shm_toc_estimate_chunk(&pcxt->estimator, debugQueryStringSize);
+		shm_toc_estimate_keys(&pcxt->estimator, 1);
+	}
+
+	bufferUsagesSize = mul_size(sizeof(BufferUsage), pcxt->nworkers);
+	shm_toc_estimate_chunk(&(pcxt->estimator), bufferUsagesSize);
+	shm_toc_estimate_keys(&(pcxt->estimator), 1);
+
+	walUsagesSize = mul_size(sizeof(WalUsage), pcxt->nworkers);
+	shm_toc_estimate_chunk(&(pcxt->estimator), walUsagesSize);
+	shm_toc_estimate_keys(&(pcxt->estimator), 1);
+
+	InitializeParallelDSM(pcxt);
+	if (!pcxt->seg)
+	{
+		if (IsMVCCSnapshot(snapshot))
+			UnregisterSnapshot(snapshot);
+		DestroyParallelContext(pcxt);
+		ExitParallelMode();
+
+		/* Fallback to serial build. */
+		pgroonga_build_copy_source_serial(data, bs);
+		return;
+	}
+
+	pscan = shm_toc_allocate(pcxt->toc, pscanSize);
+	table_parallelscan_initialize(data->heap, pscan, snapshot);
+	shm_toc_insert(pcxt->toc, PGRN_PARALLEL_BUILD_KEY_PSCAN, pscan);
+
+	sharedData = shm_toc_allocate(pcxt->toc, sharedDataSize);
+	sharedData->heapOid = RelationGetRelid(data->heap);
+	sharedData->indexOid = RelationGetRelid(data->index);
+	sharedData->sourcesTableID = grn_obj_id(ctx, bs->sourcesTable);
+	if (bs->sourcesCtidColumn)
+		sharedData->sourcesCtidColumnID =
+			grn_obj_id(ctx, bs->sourcesCtidColumn);
+	else
+		sharedData->sourcesCtidColumnID = GRN_ID_NIL;
+	sharedData->isConcurrent = data->indexInfo->ii_Concurrent;
+	sharedData->needMaxRecordSizeUpdate = bs->needMaxRecordSizeUpdate;
+	sharedData->isBulkInsert = bs->isBulkInsert;
+	sharedData->queryID = pgstat_get_my_query_id();
+	sharedData->nFinishedWorkers = 0;
+	sharedData->maxRecordSize = bs->maxRecordSize;
+	sharedData->nProcessedHeapTuples = 0.0;
+	sharedData->nIndexedTuples = 0.0;
+	sharedData->haveBrokenHotChain = false;
+	SpinLockInit(&(sharedData->mutex));
+	ConditionVariableInit(&(sharedData->conditionVariable));
+	shm_toc_insert(pcxt->toc, PGRN_PARALLEL_BUILD_KEY_SHARED_DATA, sharedData);
+
+	if (debugQueryStringSize > 0)
+	{
+		char *sharedDebugQueryString =
+			shm_toc_allocate(pcxt->toc, debugQueryStringSize);
+		memcpy(
+			sharedDebugQueryString, debug_query_string, debugQueryStringSize);
+		shm_toc_insert(pcxt->toc,
+					   PGRN_PARALLEL_BUILD_KEY_DEBUG_QUERY_STRING,
+					   sharedDebugQueryString);
+	}
+
+	bufferUsages = shm_toc_allocate(pcxt->toc, bufferUsagesSize);
+	shm_toc_insert(
+		pcxt->toc, PGRN_PARALLEL_BUILD_KEY_BUFFER_USAGES, bufferUsages);
+
+	walUsages = shm_toc_allocate(pcxt->toc, walUsagesSize);
+	shm_toc_insert(pcxt->toc, PGRN_PARALLEL_BUILD_KEY_WAL_USAGES, walUsages);
+
+	LaunchParallelWorkers(pcxt);
+	if (pcxt->nworkers_launched == 0)
+	{
+		WaitForParallelWorkersToFinish(pcxt);
+		if (IsMVCCSnapshot(snapshot))
+			UnregisterSnapshot(snapshot);
+		DestroyParallelContext(pcxt);
+		ExitParallelMode();
+
+		/* Fallback to serial build. */
+		pgroonga_build_copy_source_serial(data, bs);
+		return;
+	}
+
+	/* Copy source in the leader process too. */
+	{
+		PGrnParallelBuildLocalData localData;
+		PGrnBuildStateData localBS;
+
+		localData.heap = data->heap;
+		localData.index = data->index;
+		localData.pscan = pscan;
+		localBS.memoryContext = bs->memoryContext;
+		localBS.sourcesTable = bs->sourcesTable;
+		localBS.sourcesCtidColumn = bs->sourcesCtidColumn;
+		localBS.needMaxRecordSizeUpdate = bs->needMaxRecordSizeUpdate;
+		localBS.maxRecordSize = 0;
+		localBS.nProcessedHeapTuples = 0.0;
+		localBS.nIndexedTuples = 0.0;
+		localBS.isBulkInsert = bs->isBulkInsert;
+		localBS.bulkInsertWALData = NULL;
+		localBS.walRoleKeep = bs->walRoleKeep;
+		pgroonga_build_copy_source_worker(&localData, sharedData, &localBS);
+	}
+
+	WaitForParallelWorkersToAttach(pcxt);
+
+	while (true)
+	{
+		bool finished;
+		SpinLockAcquire(&(sharedData->mutex));
+		finished =
+			(sharedData->nFinishedWorkers == pcxt->nworkers_launched + 1);
+		SpinLockRelease(&(sharedData->mutex));
+		if (finished)
+			break;
+		ConditionVariableSleep(&(sharedData->conditionVariable),
+							   WAIT_EVENT_PARALLEL_CREATE_INDEX_SCAN);
+	}
+	ConditionVariableCancelSleep();
+
+	if (bs->needMaxRecordSizeUpdate &&
+		sharedData->maxRecordSize > bs->maxRecordSize)
+		bs->maxRecordSize = sharedData->maxRecordSize;
+	bs->nProcessedHeapTuples = sharedData->nProcessedHeapTuples;
+	bs->nIndexedTuples = sharedData->nIndexedTuples;
+	if (sharedData->haveBrokenHotChain)
+		data->indexInfo->ii_BrokenHotChain = true;
+
+	WaitForParallelWorkersToFinish(pcxt);
+	{
+		int i;
+		for (i = 0; i < pcxt->nworkers_launched; i++)
+			InstrAccumParallelQuery(&(bufferUsages[i]), &(walUsages[i]));
+	}
+	if (IsMVCCSnapshot(snapshot))
+		UnregisterSnapshot(snapshot);
+	DestroyParallelContext(pcxt);
+	ExitParallelMode();
 }
 
 typedef struct PGrnProgressState
@@ -7515,13 +7912,11 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 {
 	const char *tag = "[build]";
 	IndexBuildResult *result;
-	double nHeapTuples = 0.0;
 	PGrnCreateData data;
 	PGrnBuildStateData bs;
 	grn_obj supplementaryTables;
 	grn_obj lexicons;
-	bool isBulkInsert = false;
-	grn_wal_role walRoleKeep = grn_ctx_get_wal_role(ctx);
+	int32_t nWorkersKeep = grn_ctx_get_n_workers(ctx);
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -7557,10 +7952,14 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 #endif
 	}
 
+	data.heap = heap;
+	data.index = index;
+	data.indexInfo = indexInfo;
 	data.sourcesTable = NULL;
 
 	bs.sourcesTable = NULL;
 	bs.sourcesCtidColumn = NULL;
+	bs.nProcessedHeapTuples = 0.0;
 	bs.nIndexedTuples = 0.0;
 	bs.needMaxRecordSizeUpdate = PGrnNeedMaxRecordSizeUpdate(index);
 	bs.maxRecordSize = 0;
@@ -7570,16 +7969,17 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 							  ALLOCSET_DEFAULT_SIZES);
 	bs.bulkInsertWALData = NULL;
 
-	isBulkInsert =
+	bs.isBulkInsert =
 		PGrnWALResourceManagerIsOnlyEnabled() && !PGrnIsJSONBIndex(index);
+	bs.walRoleKeep = grn_ctx_get_wal_role(ctx);
 
 	GRN_PTR_INIT(&supplementaryTables, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
 		PGrnProgressState state = {0};
+
 		state.phase = GRN_PROGRESS_INDEX_INVALID;
-		data.index = index;
 		data.supplementaryTables = &supplementaryTables;
 		data.lexicons = &lexicons;
 		data.desc = RelationGetDescr(index);
@@ -7589,47 +7989,39 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 		bs.sourcesCtidColumn = data.sourcesCtidColumn;
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
-		if (isBulkInsert)
+
+		if (indexInfo->ii_ParallelWorkers > 0 && PGrnEnableParallelBuildCopy)
+			pgroonga_build_copy_source_parallel(&data, &bs);
+		else
+			pgroonga_build_copy_source_serial(&data, &bs);
+
+		if (indexInfo->ii_ParallelWorkers > 0)
 		{
-			bs.bulkInsertWALData = PGrnWALStart(index);
-			PGrnWALBulkInsertStart(bs.bulkInsertWALData, bs.sourcesTable);
-		}
-		/* Disable WAL generation while bulk source table creation for
-		 * performance. If PGroonga is crashed while bulk source table
-		 * creation, this source table will be removed in the next
-		 * VACUUM. So, we don't need crash recovery here. */
-		if (walRoleKeep != GRN_WAL_ROLE_NONE)
-			grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_NONE);
-		nHeapTuples = table_index_build_scan(
-			heap, index, indexInfo, true, true, PGrnBuildCallback, &bs, NULL);
-		if (walRoleKeep != GRN_WAL_ROLE_NONE)
-		{
-			/* Flush written data so that we can assume that this
-			 * source table isn't broken by PGroonga crash in index
-			 * creation. */
-			grn_obj_flush_recursive(ctx, data.sourcesTable);
-			grn_ctx_set_wal_role(ctx, walRoleKeep);
-		}
-		if (isBulkInsert)
-		{
-			PGrnWALBulkInsertFinish(bs.bulkInsertWALData);
-			PGrnWALFinish(bs.bulkInsertWALData);
-			bs.bulkInsertWALData = NULL;
+			/* All of workers and leader compute in In PostgreSQL but
+			 * only workers compute in Groonga. So we add +1 here. */
+			grn_ctx_set_n_workers(ctx, indexInfo->ii_ParallelWorkers + 1);
 		}
 		grn_ctx_set_progress_callback(ctx, PGrnProgressCallback, &state);
 		PGrnSetSources(index, bs.sourcesTable);
 		grn_ctx_set_progress_callback(ctx, NULL, NULL);
+		if (indexInfo->ii_ParallelWorkers > 0)
+			grn_ctx_set_n_workers(ctx, nWorkersKeep);
+
 		PGrnCreateSourcesTableFinish(&data);
 	}
 	PG_CATCH();
 	{
 		size_t i, n;
 
-		/* Ensure restoring WAL role on error. */
-		if (walRoleKeep != GRN_WAL_ROLE_NONE)
-			grn_ctx_set_wal_role(ctx, walRoleKeep);
+		/* Ensure restoring the number of workers on error. */
+		if (indexInfo->ii_ParallelWorkers > 0)
+			grn_ctx_set_n_workers(ctx, nWorkersKeep);
 
-		if (isBulkInsert)
+		/* Ensure restoring WAL role on error. */
+		if (bs.walRoleKeep != GRN_WAL_ROLE_NONE)
+			grn_ctx_set_wal_role(ctx, bs.walRoleKeep);
+
+		if (bs.isBulkInsert)
 			PGrnWALAbort(bs.bulkInsertWALData);
 
 		n = GRN_BULK_VSIZE(&lexicons) / sizeof(grn_obj *);
@@ -7662,7 +8054,7 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 	GRN_OBJ_FIN(ctx, &supplementaryTables);
 
 	result = (IndexBuildResult *) palloc(sizeof(IndexBuildResult));
-	result->heap_tuples = nHeapTuples;
+	result->heap_tuples = bs.nProcessedHeapTuples;
 	result->index_tuples = bs.nIndexedTuples;
 
 	MemoryContextDelete(bs.memoryContext);
@@ -7705,7 +8097,9 @@ pgroonga_buildempty(Relation index)
 	GRN_PTR_INIT(&lexicons, GRN_OBJ_VECTOR, GRN_ID_NIL);
 	PG_TRY();
 	{
+		data.heap = NULL;
 		data.index = index;
+		data.indexInfo = NULL;
 		data.sourcesTable = NULL;
 		data.sourcesCtidColumn = NULL;
 		data.supplementaryTables = &supplementaryTables;
@@ -8452,6 +8846,7 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
+	routine->amcanbuildparallel = true;
 	routine->amcaninclude = true;
 	routine->amusemaintenanceworkmem = false;
 	routine->amparallelvacuumoptions = VACUUM_OPTION_PARALLEL_BULKDEL;
