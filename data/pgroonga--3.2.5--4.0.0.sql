@@ -6,3 +6,4 @@ DROP OPERATOR FAMILY pgroonga.varchar_full_text_search_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.varchar_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.varchar_array_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.bool_ops USING pgroonga;
+DROP OPERATOR FAMILY pgroonga.int2_ops USING pgroonga;
