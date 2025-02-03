@@ -79,8 +79,6 @@
 
 PG_MODULE_MAGIC;
 
-static const char *PGroongaLibraryName = "pgroonga";
-
 #define PROGRESS_PGROONGA_PHASE_IMPORT 2
 #define PROGRESS_PGROONGA_PHASE_INDEX 3
 #define PROGRESS_PGROONGA_PHASE_INDEX_LOAD 4
@@ -7503,6 +7501,7 @@ pgroonga_build_copy_source_serial(PGrnCreateData *data, PGrnBuildStateData *bs)
 	pgroonga_build_copy_source_execute(data, bs, true, NULL);
 }
 
+#ifdef PGRN_SUPPORT_PARALLEL_INDEX_BUILD
 /*
  * Parallel source copy related feature is unstable. This
  * implementation was slower than serial source copy with some
@@ -7518,6 +7517,8 @@ pgroonga_build_copy_source_serial(PGrnCreateData *data, PGrnBuildStateData *bs)
  * So we disable this by default. We may revisit this when we think
  * that this is useful.
  */
+
+static const char *PGroongaLibraryName = "pgroonga";
 
 typedef struct PGrnParallelBuildLocalData
 {
@@ -7843,6 +7844,7 @@ pgroonga_build_copy_source_parallel(PGrnCreateData *data,
 	DestroyParallelContext(pcxt);
 	ExitParallelMode();
 }
+#endif
 
 typedef struct PGrnProgressState
 {
@@ -7990,10 +7992,14 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
 									 PROGRESS_PGROONGA_PHASE_IMPORT);
 
+#ifdef PGRN_SUPPORT_PARALLEL_INDEX_BUILD
 		if (indexInfo->ii_ParallelWorkers > 0 && PGrnEnableParallelBuildCopy)
 			pgroonga_build_copy_source_parallel(&data, &bs);
 		else
 			pgroonga_build_copy_source_serial(&data, &bs);
+#else
+		pgroonga_build_copy_source_serial(&data, &bs);
+#endif
 
 		if (indexInfo->ii_ParallelWorkers > 0)
 		{
@@ -8846,7 +8852,9 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amclusterable = true;
 	routine->ampredlocks = false;
 	routine->amcanparallel = true;
+#ifdef PGRN_SUPPORT_PARALLEL_INDEX_BUILD
 	routine->amcanbuildparallel = true;
+#endif
 	routine->amcaninclude = true;
 	routine->amusemaintenanceworkmem = false;
 	routine->amparallelvacuumoptions = VACUUM_OPTION_PARALLEL_BULKDEL;
