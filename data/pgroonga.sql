@@ -3133,12 +3133,6 @@ BEGIN
 			PARALLEL SAFE;
 
 		/* v1 */
-		CREATE OPERATOR CLASS pgroonga.varchar_array_ops
-			FOR TYPE varchar[]
-			USING pgroonga AS
-				OPERATOR 8 %% (varchar[], varchar),
-				OPERATOR 23 &> (varchar[], varchar);
-
 		CREATE OPERATOR CLASS pgroonga.bool_ops FOR TYPE bool
 			USING pgroonga AS
 				OPERATOR 1 <,
