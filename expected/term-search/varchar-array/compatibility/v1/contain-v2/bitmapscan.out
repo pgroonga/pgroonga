@@ -32,4 +32,3 @@ SELECT title, tags
 (2 rows)
 
 DROP TABLE memos;
-
