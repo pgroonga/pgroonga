@@ -1,0 +1,34 @@
+CREATE TABLE ids (
+  id real
+);
+INSERT INTO ids VALUES (1.1);
+INSERT INTO ids VALUES (2.1);
+INSERT INTO ids VALUES (3.1);
+CREATE INDEX pgroonga_index ON ids USING pgroonga (id pgroonga_float4_ops);
+SET enable_seqscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
+EXPLAIN (COSTS OFF)
+SELECT id
+  FROM ids
+ WHERE id = ANY(ARRAY[]::real[])
+ ORDER BY id ASC;
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Sort
+   Sort Key: id
+   ->  Bitmap Heap Scan on ids
+         Recheck Cond: (id = ANY ('{}'::real[]))
+         ->  Bitmap Index Scan on pgroonga_index
+               Index Cond: (id = ANY ('{}'::real[]))
+(6 rows)
+
+SELECT id
+  FROM ids
+ WHERE id = ANY(ARRAY[]::real[])
+ ORDER BY id ASC;
+ id 
+----
+(0 rows)
+
+DROP TABLE ids;
