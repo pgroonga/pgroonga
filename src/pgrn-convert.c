@@ -99,7 +99,7 @@ PGrnConvertFromData(Datum datum, Oid typeID, grn_obj *buffer)
 		GRN_INT64_SET(ctx, buffer, DatumGetInt64(datum));
 		break;
 	case FLOAT4OID:
-		GRN_FLOAT_SET(ctx, buffer, DatumGetFloat4(datum));
+		GRN_FLOAT32_SET(ctx, buffer, DatumGetFloat4(datum));
 		break;
 	case FLOAT8OID:
 		GRN_FLOAT_SET(ctx, buffer, DatumGetFloat8(datum));
