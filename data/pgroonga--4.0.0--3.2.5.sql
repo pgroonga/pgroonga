@@ -184,3 +184,9 @@ CREATE OPERATOR CLASS pgroonga.varchar_full_text_search_ops_v2 FOR TYPE varchar
         OPERATOR 28 &@~,
         OPERATOR 29 &@*,
         OPERATOR 30 &@~| (text, text[]);
+
+CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
+    FOR TYPE varchar[]
+    USING pgroonga AS
+        OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
+        OPERATOR 23 &> (varchar[], varchar);

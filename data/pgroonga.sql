@@ -3158,12 +3158,6 @@ BEGIN
 			PARALLEL SAFE;
 
 		/* v2 */
-		CREATE OPERATOR CLASS pgroonga.varchar_array_term_search_ops_v2
-			FOR TYPE varchar[]
-			USING pgroonga AS
-				OPERATOR 8 %% (varchar[], varchar), -- For backward compatibility
-				OPERATOR 23 &> (varchar[], varchar);
-
 		CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
 			USING pgroonga AS
 				OPERATOR 10 @~, -- For backward compatibility
