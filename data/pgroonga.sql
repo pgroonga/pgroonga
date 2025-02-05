@@ -2673,14 +2673,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.match_positions_byte(target text, keywords text[])
-			RETURNS integer[2][]
-			AS 'MODULE_PATHNAME', 'pgroonga_match_positions_byte'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.match_positions_character(target text, keywords text[])
 			RETURNS integer[2][]
 			AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
