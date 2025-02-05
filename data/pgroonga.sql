@@ -2657,14 +2657,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[], width integer DEFAULT 200)
-			RETURNS text[]
-			AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.highlight_html(target text, keywords text[])
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_highlight_html'
