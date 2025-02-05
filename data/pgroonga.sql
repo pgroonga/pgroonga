@@ -2630,14 +2630,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.command(groongaCommand text)
-			RETURNS text
-			AS 'MODULE_PATHNAME', 'pgroonga_command'
-			LANGUAGE C
-			VOLATILE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.command(groongaCommand text, arguments text[])
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command'
