@@ -2721,14 +2721,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.escape(value text)
-			RETURNS text
-			AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.escape(value text, special_characters text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_escape_string'
