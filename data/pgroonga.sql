@@ -2793,15 +2793,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.escape(value timestamptz)
-			RETURNS text
-			AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			PARALLEL SAFE;
-
-
 		/* v1 */
 		CREATE FUNCTION pgroonga.match_term(target text, term text)
 			RETURNS bool
