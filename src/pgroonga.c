@@ -2030,7 +2030,7 @@ pgroonga_score_ctid(PG_FUNCTION_ARGS)
 }
 
 /**
- * pgroonga.table_name(indexName cstring) : text
+ * pgroonga_table_name(indexName cstring) : text
  */
 Datum
 pgroonga_table_name(PG_FUNCTION_ARGS)
