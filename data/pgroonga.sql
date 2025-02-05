@@ -2681,14 +2681,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.match_positions_character(target text, keywords text[])
-			RETURNS integer[2][]
-			AS 'MODULE_PATHNAME', 'pgroonga_match_positions_character'
-			LANGUAGE C
-			IMMUTABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.query_extract_keywords(query text)
 			RETURNS text[]
 			AS 'MODULE_PATHNAME', 'pgroonga_query_extract_keywords'
