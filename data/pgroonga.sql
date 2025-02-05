@@ -3158,18 +3158,6 @@ BEGIN
 			PARALLEL SAFE;
 
 		/* v2 */
-		CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
-			USING pgroonga AS
-				OPERATOR 1 <,
-				OPERATOR 2 <=,
-				OPERATOR 3 =,
-				OPERATOR 4 >=,
-				OPERATOR 5 >,
-				OPERATOR 16 &^,
-				OPERATOR 17 &^~,
-				OPERATOR 20 &^| (text, text[]),
-				OPERATOR 21 &^~| (text, text[]);
-
 		CREATE OPERATOR CLASS pgroonga.text_array_term_search_ops_v2 FOR TYPE text[]
 			USING pgroonga AS
 				OPERATOR 16 &^ (text[], text),
