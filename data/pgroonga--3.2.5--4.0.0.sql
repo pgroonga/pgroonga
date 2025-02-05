@@ -9,3 +9,4 @@ DROP OPERATOR FAMILY pgroonga.bool_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.int2_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.int4_ops USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.int8_ops USING pgroonga;
+DROP OPERATOR FAMILY pgroonga.timestamp_ops USING pgroonga;
