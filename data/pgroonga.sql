@@ -2622,14 +2622,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.table_name(indexName cstring)
-			RETURNS text
-			AS 'MODULE_PATHNAME', 'pgroonga_table_name'
-			LANGUAGE C
-			STABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.command(groongaCommand text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command'
