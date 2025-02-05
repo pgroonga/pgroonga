@@ -2614,14 +2614,6 @@ BEGIN
 	IF NOT FOUND THEN
 		CREATE SCHEMA pgroonga;
 
-		CREATE FUNCTION pgroonga.score("row" record)
-			RETURNS float8
-			AS 'MODULE_PATHNAME', 'pgroonga_score'
-			LANGUAGE C
-			VOLATILE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.table_name(indexName cstring)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_table_name'
