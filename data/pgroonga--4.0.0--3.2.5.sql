@@ -87,3 +87,12 @@ CREATE OPERATOR CLASS pgroonga.timestamptz_ops FOR TYPE timestamptz
         OPERATOR 3 =,
         OPERATOR 4 >=,
         OPERATOR 5 >;
+
+CREATE OPERATOR CLASS pgroonga.jsonb_ops FOR TYPE jsonb
+    USING pgroonga AS
+        OPERATOR 9 @@ (jsonb, text),
+        OPERATOR 11 @>,
+        OPERATOR 12 &@ (jsonb, text),
+        OPERATOR 13 &? (jsonb, text), -- For backward compatibility
+        OPERATOR 15 &` (jsonb, text),
+        OPERATOR 28 &@~ (jsonb, text);
