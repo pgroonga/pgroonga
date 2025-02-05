@@ -195,3 +195,14 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
     USING pgroonga AS
         OPERATOR 10 @~, -- For backward compatibility
         OPERATOR 22 &~;
+
+CREATE FUNCTION pgroonga.query_expand(tableName cstring,
+                                      termColumnName text,
+                                      synonymsColumnName text,
+                                      query text)
+    RETURNS text
+    AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
+    LANGUAGE C
+    STABLE
+    STRICT
+    PARALLEL SAFE;

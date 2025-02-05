@@ -2646,17 +2646,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.query_expand(tableName cstring,
-						      termColumnName text,
-						      synonymsColumnName text,
-						      query text)
-			RETURNS text
-			AS 'MODULE_PATHNAME', 'pgroonga_query_expand'
-			LANGUAGE C
-			STABLE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.snippet_html(target text, keywords text[], width integer DEFAULT 200)
 			RETURNS text[]
 			AS 'MODULE_PATHNAME', 'pgroonga_snippet_html'
