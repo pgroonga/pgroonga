@@ -2697,14 +2697,6 @@ BEGIN
 			STRICT
 			PARALLEL SAFE;
 
-		CREATE FUNCTION pgroonga.flush(indexName cstring)
-			RETURNS bool
-			AS 'MODULE_PATHNAME', 'pgroonga_flush'
-			LANGUAGE C
-			VOLATILE
-			STRICT
-			PARALLEL SAFE;
-
 		CREATE FUNCTION pgroonga.command_escape_value(value text)
 			RETURNS text
 			AS 'MODULE_PATHNAME', 'pgroonga_command_escape_value'

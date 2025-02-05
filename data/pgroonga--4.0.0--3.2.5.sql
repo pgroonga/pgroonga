@@ -195,3 +195,11 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
     USING pgroonga AS
         OPERATOR 10 @~, -- For backward compatibility
         OPERATOR 22 &~;
+
+CREATE FUNCTION pgroonga.flush(indexName cstring)
+    RETURNS bool
+    AS 'MODULE_PATHNAME', 'pgroonga_flush'
+    LANGUAGE C
+    VOLATILE
+    STRICT
+    PARALLEL SAFE;
