@@ -18,3 +18,4 @@ DROP OPERATOR FAMILY pgroonga.text_full_text_search_ops_v2 USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.text_array_full_text_search_ops_v2 USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.text_term_search_ops_v2 USING pgroonga;
 DROP OPERATOR FAMILY pgroonga.text_array_term_search_ops_v2 USING pgroonga;
+DROP OPERATOR FAMILY pgroonga.text_regexp_ops_v2 USING pgroonga;
