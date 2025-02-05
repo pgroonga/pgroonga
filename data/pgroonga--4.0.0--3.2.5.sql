@@ -195,3 +195,12 @@ CREATE OPERATOR CLASS pgroonga.varchar_regexp_ops_v2 FOR TYPE varchar
     USING pgroonga AS
         OPERATOR 10 @~, -- For backward compatibility
         OPERATOR 22 &~;
+
+CREATE FUNCTION pgroonga.escape(value timestamp)
+    RETURNS text
+    AS 'MODULE_PATHNAME', 'pgroonga_escape_timestamptz'
+    LANGUAGE C
+    IMMUTABLE
+    STRICT
+    PARALLEL SAFE;
+
