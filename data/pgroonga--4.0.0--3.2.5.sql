@@ -143,6 +143,7 @@ CREATE OPERATOR CLASS pgroonga.text_array_full_text_search_ops_v2 FOR TYPE text[
         OPERATOR 30 &@~| (text[], text[]);
 
 CREATE OPERATOR CLASS pgroonga.text_term_search_ops_v2 FOR TYPE text
+    USING pgroonga AS
         OPERATOR 1 <,
         OPERATOR 2 <=,
         OPERATOR 3 =,
