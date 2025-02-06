@@ -72,6 +72,14 @@ CREATE OPERATOR CLASS pgroonga.int8_ops FOR TYPE int8
         OPERATOR 4 >=,
         OPERATOR 5 >;
 
+CREATE OPERATOR CLASS pgroonga.float4_ops FOR TYPE float4
+    USING pgroonga AS
+        OPERATOR 1 <,
+        OPERATOR 2 <=,
+        OPERATOR 3 =,
+        OPERATOR 4 >=,
+        OPERATOR 5 >;
+
 CREATE OPERATOR CLASS pgroonga.timestamp_ops FOR TYPE timestamp
     USING pgroonga AS
         OPERATOR 1 <,
