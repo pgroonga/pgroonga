@@ -7,6 +7,12 @@ package = "pgroonga"
 package_label = "PGroonga"
 rsync_base_path = "packages@packages.groonga.org:public"
 
+def env_var(name, default=nil)
+  value = ENV[name] || default
+  raise "${#{name}} is missing" if value.nil?
+  value
+end
+
 def latest_groonga_version
   @latest_groonga_version ||= Helper.detect_latest_groonga_version
 end
@@ -190,9 +196,17 @@ namespace :package do
   namespace :version do
     desc "Update versions"
     task :update do
+      new_release_date = env_var("NEW_RELEASE_DATE")
+      new_release_time = Time.parse(new_release_date)
+      # version:update uses UTC but NEW_RELEASE_DATE uses local time.
+      # We adds UTC offset here to use the same day in version:update.
+      new_release_time += new_release_time.utc_offset
       package_names.each do |package_name|
         cd("packages/#{package_name}") do
-          ruby("-S", "rake", "version:update")
+          ruby("-S",
+               "rake",
+               "version:update",
+               "RELEASE_TIME=#{new_release_time.iso8601}")
           sh("git", "add", *Dir.glob("{debian/changelog,yum/pgroonga.spec.in}"))
         end
       end
