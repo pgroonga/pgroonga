@@ -70,6 +70,7 @@ DROP FUNCTION pgroonga.contain_varchar_array(varchar[], varchar);
 DROP FUNCTION pgroonga.match_jsonb(jsonb, text);
 DROP FUNCTION pgroonga.query_text(text, text);
 DROP FUNCTION pgroonga.query_text_array(text[], text);
+DROP FUNCTION pgroonga.query_varchar(varchar, varchar);
 DROP FUNCTION pgroonga.query_jsonb(jsonb, text);
 DROP FUNCTION pgroonga.similar_text(text, text);
 DROP FUNCTION pgroonga.similar_text_array(text[], text);
