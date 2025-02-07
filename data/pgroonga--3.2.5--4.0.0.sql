@@ -31,6 +31,9 @@ DROP FUNCTION pgroonga.table_name(indexName cstring);
 DROP FUNCTION pgroonga.command(groongaCommand text);
 DROP FUNCTION pgroonga.command(groongaCommand text, arguments text[]);
 DROP FUNCTION pgroonga.query_expand(tableName cstring,
+                                    termColumnName text,
+                                    synonymsColumnName text,
+                                    query text);
 DROP FUNCTION pgroonga.snippet_html(target text, keywords text[], width integer DEFAULT 200);
 DROP FUNCTION pgroonga.highlight_html(target text, keywords text[]);
 DROP FUNCTION pgroonga.match_positions_byte(target text, keywords text[]);
