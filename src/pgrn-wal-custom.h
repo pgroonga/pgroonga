@@ -594,6 +594,9 @@ PGrnWALRecordInsertWriteColumnValueRaw(grn_obj *buffer,
 	case GRN_DB_UINT64:
 		GRN_TEXT_PUT(ctx, buffer, value, sizeof(uint64_t));
 		break;
+	case GRN_DB_FLOAT32:
+		GRN_TEXT_PUT(ctx, buffer, value, sizeof(float));
+		break;
 	case GRN_DB_FLOAT:
 		GRN_TEXT_PUT(ctx, buffer, value, sizeof(double));
 		break;
@@ -704,6 +707,7 @@ typedef union PGrnWALRecordInsertColumnValueBuffer {
 	uint32_t uint32Value;
 	int64_t int64Value;
 	uint64_t uint64Value;
+	float floatValue;
 	double doubleValue;
 } PGrnWALRecordInsertColumnValueBuffer;
 
@@ -761,6 +765,11 @@ PGrnWALRecordInsertReadColumnValueRaw(
 		*valueSize = sizeof(uint64_t);
 		PGrnWALRecordRawReadData(raw, &(valueBuffer->uint64Value), *valueSize);
 		*value = &(valueBuffer->uint64Value);
+		return true;
+	case GRN_DB_FLOAT32:
+		*valueSize = sizeof(float);
+		PGrnWALRecordRawReadData(raw, &(valueBuffer->floatValue), *valueSize);
+		*value = &(valueBuffer->floatValue);
 		return true;
 	case GRN_DB_FLOAT:
 		*valueSize = sizeof(double);
