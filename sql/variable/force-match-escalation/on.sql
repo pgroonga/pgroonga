@@ -15,12 +15,20 @@ SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
 SHOW pgroonga.force_match_escalation;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@~ 'gro eng';
 SELECT id, content
   FROM memos
  WHERE content &@~ 'gro eng';
 
 SET pgroonga.force_match_escalation = on;
 SHOW pgroonga.force_match_escalation;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@~ 'gro eng';
 SELECT id, content
   FROM memos
  WHERE content &@~ 'gro eng';

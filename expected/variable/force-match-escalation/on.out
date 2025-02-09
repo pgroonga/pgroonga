@@ -16,6 +16,16 @@ SHOW pgroonga.force_match_escalation;
  off
 (1 row)
 
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@~ 'gro eng';
+                 QUERY PLAN                  
+---------------------------------------------
+ Index Scan using grnindex on memos
+   Index Cond: (content &@~ 'gro eng'::text)
+(2 rows)
+
 SELECT id, content
   FROM memos
  WHERE content &@~ 'gro eng';
@@ -29,6 +39,16 @@ SHOW pgroonga.force_match_escalation;
 ---------------------------------
  on
 (1 row)
+
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@~ 'gro eng';
+                 QUERY PLAN                  
+---------------------------------------------
+ Index Scan using grnindex on memos
+   Index Cond: (content &@~ 'gro eng'::text)
+(2 rows)
 
 SELECT id, content
   FROM memos
