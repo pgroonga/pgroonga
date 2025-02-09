@@ -953,6 +953,9 @@ PGrnWALInsertColumnValueRawGeneric(PGrnWALData *data,
 	case GRN_DB_UINT64:
 		msgpack_pack_uint64(packer, *((uint64_t *) (value)));
 		break;
+	case GRN_DB_FLOAT32:
+		msgpack_pack_floatdouble(packer, *((float *) (value)));
+		break;
 	case GRN_DB_FLOAT:
 		msgpack_pack_double(packer, *((double *) (value)));
 		break;
@@ -2291,6 +2294,9 @@ PGrnWALApplyInsertArray(PGrnWALApplyData *data,
 			}
 			break;
 #	undef ELEMENT_VALUE
+		case MSGPACK_OBJECT_FLOAT32:
+			GRN_FLOAT32_PUT(ctx, value, element->via.f32);
+			break;
 		case MSGPACK_OBJECT_FLOAT:
 			GRN_FLOAT_PUT(ctx, value, element->via.f64);
 			break;
@@ -2395,6 +2401,10 @@ PGrnWALApplyInsert(PGrnWALApplyData *data,
 		case MSGPACK_OBJECT_NEGATIVE_INTEGER:
 			grn_obj_reinit(ctx, walValue, GRN_DB_INT64, 0);
 			GRN_INT64_SET(ctx, walValue, value->via.i64);
+			break;
+		case MSGPACK_OBJECT_FLOAT32:
+			grn_obj_reinit(ctx, walValue, GRN_DB_FLOAT32, 0);
+			GRN_FLOAT32_SET(ctx, walValue, value->via.f32);
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			grn_obj_reinit(ctx, walValue, GRN_DB_FLOAT, 0);
@@ -2766,6 +2776,17 @@ PGrnWALApplyObject(PGrnWALApplyData *data, msgpack_object *object)
 						currentBlock,
 						currentOffset,
 						object->via.u64);
+			break;
+		case MSGPACK_OBJECT_FLOAT32:
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s[%s(%u)] %s: <%u><%u>: <float32>: <%g>",
+						tag,
+						RelationGetRelationName(data->index),
+						RelationGetRelid(data->index),
+						message,
+						currentBlock,
+						currentOffset,
+						object->via.f32);
 			break;
 		case MSGPACK_OBJECT_FLOAT:
 			PGrnCheckRC(GRN_INVALID_ARGUMENT,
