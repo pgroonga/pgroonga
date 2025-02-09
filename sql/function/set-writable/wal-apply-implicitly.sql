@@ -53,3 +53,5 @@ SELECT pgroonga_set_writable(true);
 SELECT * FROM memos WHERE content &@~ 'Groonga';
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

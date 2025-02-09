@@ -42,3 +42,5 @@ SELECT count(id)
  WHERE content &@~ 'data 1*';
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

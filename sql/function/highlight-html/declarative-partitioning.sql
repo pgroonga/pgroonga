@@ -27,3 +27,5 @@ SELECT pgroonga_highlight_html(
   'memos_fts');
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

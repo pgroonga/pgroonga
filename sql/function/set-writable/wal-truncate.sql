@@ -17,3 +17,5 @@ SELECT pgroonga_set_writable(true);
 SELECT pgroonga_wal_truncate('pgrn_index');
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

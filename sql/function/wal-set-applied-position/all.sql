@@ -43,3 +43,5 @@ SELECT *
 
 DROP TABLE tags;
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

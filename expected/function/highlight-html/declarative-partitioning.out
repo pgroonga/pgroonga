@@ -23,3 +23,4 @@ SELECT pgroonga_highlight_html(
   'memos_fts');
 ERROR:  pgroonga: [highlight-html] PGrnCreateSimilarTemporaryLexicon: index must not a parent index: <memos_fts>
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;

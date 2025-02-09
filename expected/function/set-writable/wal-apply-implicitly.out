@@ -74,3 +74,4 @@ SELECT * FROM memos WHERE content &@~ 'Groonga';
 (1 row)
 
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;

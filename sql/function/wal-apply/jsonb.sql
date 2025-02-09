@@ -77,3 +77,5 @@ SELECT pgroonga_command('select',
                         ])::jsonb->>1;
 
 DROP TABLE logs;
+
+SET pgroonga.enable_wal = default;

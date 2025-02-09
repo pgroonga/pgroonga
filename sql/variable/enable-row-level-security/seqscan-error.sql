@@ -50,3 +50,5 @@ RESET SESSION AUTHORIZATION;
 DROP TABLE memos;
 
 DROP USER alice;
+
+SET pgroonga.enable_row_level_security = default;

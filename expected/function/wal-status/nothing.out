@@ -4,3 +4,4 @@ SELECT * FROM pgroonga_wal_status();
 ------+-----+---------------+----------------+--------------+------------+-------------+-----------
 (0 rows)
 
+SET pgroonga.enable_wal = default;

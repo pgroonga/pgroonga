@@ -13,3 +13,4 @@ SELECT pgroonga_wal_truncate();
 (1 row)
 
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;

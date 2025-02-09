@@ -38,3 +38,5 @@ SELECT pgroonga_command('select',
                         ])::jsonb->>1;
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

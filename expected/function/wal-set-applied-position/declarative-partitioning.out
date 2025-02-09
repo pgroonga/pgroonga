@@ -65,3 +65,4 @@ SELECT count(id)
 (1 row)
 
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;

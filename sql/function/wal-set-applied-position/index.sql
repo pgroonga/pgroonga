@@ -29,3 +29,5 @@ SELECT *
  WHERE content &@~ 'is';
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

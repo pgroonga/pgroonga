@@ -12,3 +12,5 @@ CREATE INDEX pgrn_memos_index ON memos USING PGroonga (content);
 SELECT pgroonga_wal_truncate();
 
 DROP TABLE memos;
+
+SET pgroonga.enable_wal = default;

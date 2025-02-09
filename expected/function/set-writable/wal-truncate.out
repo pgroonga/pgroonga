@@ -29,3 +29,4 @@ SELECT pgroonga_wal_truncate('pgrn_index');
 (1 row)
 
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;

@@ -129,3 +129,4 @@ SELECT pgroonga_command('select',
 (1 row)
 
 DROP TABLE logs;
+SET pgroonga.enable_wal = default;

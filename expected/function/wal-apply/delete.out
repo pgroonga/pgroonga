@@ -67,3 +67,4 @@ SELECT pgroonga_command('select',
 (1 row)
 
 DROP TABLE memos;
+SET pgroonga.enable_wal = default;
