@@ -954,7 +954,7 @@ PGrnWALInsertColumnValueRawGeneric(PGrnWALData *data,
 		msgpack_pack_uint64(packer, *((uint64_t *) (value)));
 		break;
 	case GRN_DB_FLOAT32:
-		msgpack_pack_floatdouble(packer, *((float *) (value)));
+		msgpack_pack_float(packer, *((float *) (value)));
 		break;
 	case GRN_DB_FLOAT:
 		msgpack_pack_double(packer, *((double *) (value)));
