@@ -116,7 +116,7 @@ end
 namespace :version do
   desc "Update version"
   task :update do
-    new_version = Helper.env_value("NEW_VERSION")
+    new_version = env_var("NEW_VERSION", version.succ)
 
     Dir.glob("*.control") do |control_path|
       package_name = File.basename(control_path, ".*")
