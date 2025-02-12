@@ -35,7 +35,7 @@ body:
       description: Tell us your environment.
       value: |
         - OS: [e.g. Ubuntu]
-        - OS Version: [e.g. Ubuntu 20.04.2 LTS]
+        - OS Version: [e.g. Ubuntu 24.04.2 LTS]
         - PostgreSQL Version: [e.g. 15.1]
         - PGroonga Version: [e.g. 12.1.0]
         - libgroonga Version: [e.g.  8.0.1]
