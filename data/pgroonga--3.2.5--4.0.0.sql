@@ -34,7 +34,8 @@ DROP FUNCTION pgroonga.query_expand(tableName cstring,
                                     termColumnName text,
                                     synonymsColumnName text,
                                     query text);
-DROP FUNCTION pgroonga.snippet_html(target text, keywords text[], width integer);
+DROP FUNCTION IF EXISTS pgroonga.snippet_html(target text, keywords text[]);
+DROP FUNCTION IF EXISTS pgroonga.snippet_html(target text, keywords text[], width integer);
 DROP FUNCTION pgroonga.highlight_html(target text, keywords text[]);
 DROP FUNCTION pgroonga.match_positions_byte(target text, keywords text[]);
 DROP FUNCTION pgroonga.match_positions_character(target text, keywords text[]);
