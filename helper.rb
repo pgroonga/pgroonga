@@ -2,8 +2,8 @@ require "json"
 
 module Helper
   module_function
-  def env_value(name)
-    value = ENV[name]
+  def env_value(name, default=nil)
+    value = ENV[name] || default
     raise "Specify #{name} environment variable" if value.nil?
     value
   end
