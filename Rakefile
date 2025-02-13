@@ -138,6 +138,7 @@ namespace :version do
     end
 
     sh("git", "commit", "-m", "Start #{new_version}")
+    sh("git", "push")
   end
 end
 
@@ -212,6 +213,7 @@ namespace :package do
       cp(spec_in, "packages/yum/postgresql-pgroonga.spec.in")
       sh("git", "add", "packages/yum/postgresql-pgroonga.spec.in")
       sh("git", "commit", "-m", "packages: update versions for #{version}")
+      sh("git", "push")
     end
   end
 
@@ -248,4 +250,11 @@ desc "Lint"
 task :lint => [
   "package:lint",
   "test:lint:pair"
+]
+
+desc "Release"
+task release: [
+  "package:version:update",
+  "tag",
+  "version:update"
 ]
