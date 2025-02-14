@@ -122,6 +122,9 @@ EOF
 %endif
 
 %changelog
+* Fri Feb 14 2025 Sutou Kouhei <kou@clear-code.com> - 4.0.1-1
+- New upstream release.
+
 * Sun Feb 09 2025 Sutou Kouhei <kou@clear-code.com> - 4.0.0-1
 - New upstream release.
 

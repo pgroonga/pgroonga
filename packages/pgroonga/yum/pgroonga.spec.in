@@ -81,6 +81,9 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %{_libdir}/pgsql/bitcode/pgroonga*/
 
 %changelog
+* Fri Feb 14 2025 Sutou Kouhei <kou@clear-code.com> - 4.0.1-1
+- New upstream release.
+
 * Sun Feb 09 2025 Sutou Kouhei <kou@clear-code.com> - 4.0.0-1
 - New upstream release.
 
