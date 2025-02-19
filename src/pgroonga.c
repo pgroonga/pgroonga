@@ -53,6 +53,7 @@
 #include <nodes/nodeFuncs.h>
 #include <optimizer/optimizer.h>
 #include <pgstat.h>
+#include <stdbool.h>
 #include <storage/bufmgr.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
@@ -5387,6 +5388,14 @@ PGrnSearchIsInCondition(ScanKey key)
 			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
+static bool
+PGrnSearchIsMatchIn(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   ((key->sk_strategy == PGrnMatchStrategyNumber)
+			|| (key->sk_strategy == PGrnMatchStrategyV2Number));
+}
+
 static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   ScanKey key,
@@ -6118,6 +6127,13 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 		return;
+	}
+	if (PGrnSearchIsMatchIn(key))
+	{
+		if (key->sk_strategy != PGrnMatchInStrategyV2Number)
+		{
+			key->sk_strategy = PGrnMatchInStrategyV2Number;
+		}
 	}
 
 	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
