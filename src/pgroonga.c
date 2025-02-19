@@ -6129,10 +6129,11 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	}
 	if (PGrnSearchIsMatchIn(key))
 	{
-		if (key->sk_strategy != PGrnMatchInStrategyV2Number)
-		{
-			key->sk_strategy = PGrnMatchInStrategyV2Number;
-		}
+		// PostgreSQL 18 optimaize to "column IN (keyword1, keyword2, ...)" from
+		// "column %% keyword1 OR column %% keyword2 OR ...".
+		// %% is match operator. So, we handle "column %% keyword1 OR column %%
+		// keyword2 OR ..." as "match in" operator.
+		key->sk_strategy = PGrnMatchInStrategyV2Number;
 	}
 
 	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
