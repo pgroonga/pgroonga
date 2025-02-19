@@ -5391,8 +5391,8 @@ static bool
 PGrnSearchIsMatchIn(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
-		   ((key->sk_strategy == PGrnMatchStrategyNumber)
-			|| (key->sk_strategy == PGrnMatchStrategyV2Number));
+		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
 }
 
 static void
