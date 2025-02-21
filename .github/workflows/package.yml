@@ -177,7 +177,7 @@ jobs:
         run: |
           set -x
           sudo incus admin init --auto
-          sudo incus launch ${{ env.TEST_INCUS_IMAGE }} target
+          sudo incus launch --quiet ${{ env.TEST_INCUS_IMAGE }} target
           sudo incus config device add target host-rw disk source=$PWD path=/host-rw
           sudo incus config device add target host disk source=$PWD path=/host readonly=true
           # Ideally, we would use systemctl is-system-running --wait to ensure all services are fully operational.
