@@ -20,7 +20,9 @@ function run_test() {
     echo "::group::Diff"
     cat regression.diffs
     echo "::endgroup::"
-    mkdir -p /host-rw/logs
+    if [ ! -d /host-rw/logs ]; then
+      mkdir -p /host-rw/logs
+    fi
     cp -a regression.diffs /host-rw/logs/
     cp -a ${data_dir}/log /host-rw/logs/postgresql || :
     mkdir -p /host-rw/logs/pgroonga/ || :

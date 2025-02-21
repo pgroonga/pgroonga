@@ -186,6 +186,11 @@ jobs:
           # preventing DNS resolution errors when attempting to dnf install command.
           # ref: https://discuss.linuxcontainers.org/t/network-issue-with-almalinux-8-9-on-github-actions-using-incus/20046
           sleep 10
+
+          # Permission error.
+          # `mkdir: cannot create directory ‘/host-rw/logs’: Permission denied`
+          # To work around this, create `logs` directory on the host side with 777.
+          mkdir -m 777 logs
       - name: Test
         run: |
           sudo incus exec target \
