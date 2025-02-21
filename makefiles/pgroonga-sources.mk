@@ -5,6 +5,7 @@ SRCS =						\
 	src/pgrn-convert.c			\
 	src/pgrn-create.c			\
 	src/pgrn-ctid.c				\
+	src/pgrn-customscan.c			\
 	src/pgrn-escape.c			\
 	src/pgrn-flush.c			\
 	src/pgrn-condition.c			\
