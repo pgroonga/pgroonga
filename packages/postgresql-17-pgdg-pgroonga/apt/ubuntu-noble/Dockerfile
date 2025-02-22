@@ -24,7 +24,7 @@ RUN \
    echo "Suites: $(lsb_release --codename --short)-pgdg"; \
    echo "Components: main"; \
    echo "Signed-By: /usr/share/keyrings/pgdg.asc") | \
-    sudo tee /etc/apt/sources.list.d/pgdg.sources && \
+    tee /etc/apt/sources.list.d/pgdg.sources && \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
     build-essential \
