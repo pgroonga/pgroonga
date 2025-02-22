@@ -18,10 +18,13 @@ RUN \
   wget https://packages.groonga.org/debian/groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
   apt install -y -V ./groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
   rm groonga-apt-source-latest-$(lsb_release --codename --short).deb && \
-  echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release --codename --short)-pgdg main" > \
-    /etc/apt/sources.list.d/pgdg.list && \
-  wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-    apt-key add - && \
+  wget -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc && \
+  (echo "Types: deb"; \
+   echo "URIs: http://apt.postgresql.org/pub/repos/apt"; \
+   echo "Suites: $(lsb_release --codename --short)-pgdg"; \
+   echo "Components: main"; \
+   echo "Signed-By: /usr/share/keyrings/pgdg.asc") | \
+    sudo tee /etc/apt/sources.list.d/pgdg.sources && \
   apt update ${quiet} && \
   apt install -y -V ${quiet} \
     build-essential \
