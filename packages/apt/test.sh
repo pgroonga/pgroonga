@@ -73,10 +73,14 @@ if [ "${os}" = "ubuntu" ]; then
 fi
 
 if find ${repositories_dir} | grep -q "pgdg"; then
-  echo "deb http://apt.postgresql.org/pub/repos/apt/ ${code_name}-pgdg main" | \
-    tee /etc/apt/sources.list.d/pgdg.list
-  wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-    apt-key add -
+  wget -O /usr/share/keyrings/pgdg.asc \
+    https://www.postgresql.org/media/keys/ACCC4CF8.asc
+  (echo "Types: deb"; \
+   echo "URIs: http://apt.postgresql.org/pub/repos/apt"; \
+   echo "Suites: ${code_name}-pgdg"; \
+   echo "Components: main"; \
+   echo "Signed-By: /usr/share/keyrings/pgdg.asc") | \
+    tee /etc/apt/sources.list.d/pgdg.sources
 fi
 
 echo "::endgroup::"
