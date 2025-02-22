@@ -5387,6 +5387,14 @@ PGrnSearchIsInCondition(ScanKey key)
 			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
+static bool
+PGrnSearchIsMatchInCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
+}
+
 static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   ScanKey key,
@@ -6118,6 +6126,14 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 		return;
+	}
+	if (PGrnSearchIsMatchInCondition(key))
+	{
+		// PostgreSQL 18 optimaize to "column IN (keyword1, keyword2, ...)" from
+		// "column %% keyword1 OR column %% keyword2 OR ...".
+		// %% is match operator. So, we handle "column %% keyword1 OR column %%
+		// keyword2 OR ..." as "match in" operator.
+		key->sk_strategy = PGrnMatchInStrategyV2Number;
 	}
 
 	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
