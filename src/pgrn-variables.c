@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-compatible.h"
+#include "pgrn-custom-scan.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-log-level.h"
@@ -52,6 +53,8 @@ static int PGrnMaxBulkInsertWALRecordSizeKB;
 
 static int PGrnLogRotateThresholdSize;
 static int PGrnQueryLogRotateThresholdSize;
+
+static bool PGrnEnableCustomScan;
 
 static void
 PGrnPostgreSQLLoggerLog(grn_ctx *ctx,
@@ -313,6 +316,19 @@ static void
 PGrnMaxBulkInsertWALRecordSizeAssign(int new_value, void *extra)
 {
 	PGrnWALSetMaxBulkInsertRecordSize(new_value * 1024);
+}
+
+static void
+PGrnEnableCustomScanAssign(bool new_value, void *extra)
+{
+	if (new_value)
+	{
+		PGrnCustomScanEnable();
+	}
+	else
+	{
+		PGrnCustomScanDisable();
+	}
 }
 
 void
@@ -582,6 +598,17 @@ PGrnInitializeVariables(void)
 							 0,
 							 NULL,
 							 NULL,
+							 NULL);
+
+	DefineCustomBoolVariable("pgroonga.enable_custom_scan",
+							 "Enable custom scan.", // todo Add description.
+							 "Enable custom scan.", // todo Add description.
+							 &PGrnEnableCustomScan,
+							 PGrnCustomScanGetEnabled(),
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 PGrnEnableCustomScanAssign,
 							 NULL);
 
 	EmitWarningsOnPlaceholders("pgroonga");
