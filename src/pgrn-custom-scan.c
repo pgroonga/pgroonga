@@ -1,5 +1,5 @@
-#include "pgroonga.h"
 #include "pgrn-custom-scan.h"
+#include "pgroonga.h"
 
 typedef struct PGrnScanState
 {
