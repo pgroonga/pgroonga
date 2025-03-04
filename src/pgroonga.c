@@ -10,6 +10,7 @@
 #include "pgrn-crash-safer-statuses.h"
 #include "pgrn-create.h"
 #include "pgrn-ctid.h"
+#include "pgrn-custom-scan.h"
 #include "pgrn-file.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga-tuple-is-alive.h"
@@ -737,6 +738,8 @@ _PG_init(void)
 		PGrnVariablesApplyInitialValues();
 
 		PGrnInitializeOptions();
+
+		PGrnInitializeCustomScan();
 
 		PGrnBaseInitialized = true;
 	}
