@@ -1,3 +1,10 @@
+#include <postgres.h>
+
+#include <nodes/extensible.h>
+#include <optimizer/pathnode.h>
+#include <optimizer/paths.h>
+#include <optimizer/restrictinfo.h>
+
 #include "pgrn-custom-scan.h"
 #include "pgroonga.h"
 
