@@ -31,34 +31,33 @@ static List *PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
 												 RelOptInfo *child_rel);
 static Node *PGrnCreateCustomScanState(CustomScan *cscan);
 static void
-PGrnScanBeginCustomScan(CustomScanState *node, EState *estate, int eflags);
-static TupleTableSlot *PGrnScanExecCustomScan(CustomScanState *node);
-static void PGrnScanEndCustomScan(CustomScanState *node);
-static void PGrnScanReScanCustomScan(CustomScanState *node);
-static void PGrnScanExplainCustomScan(CustomScanState *node,
-									  List *ancestors,
-									  ExplainState *es);
+PGrnBeginCustomScan(CustomScanState *node, EState *estate, int eflags);
+static TupleTableSlot *PGrnExecCustomScan(CustomScanState *node);
+static void PGrnEndCustomScan(CustomScanState *node);
+static void PGrnReScanCustomScan(CustomScanState *node);
+static void
+PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es);
 
-const struct CustomPathMethods PGrnScanPathMethods = {
+const struct CustomPathMethods PGrnPathMethods = {
 	.CustomName = "PGroongaScan",
 	.PlanCustomPath = PGrnPlanCustomPath,
 	.ReparameterizeCustomPathByChild = PGrnReparameterizeCustomPathByChild,
 };
 
-const struct CustomScanMethods PGrnScanScanMethods = {
+const struct CustomScanMethods PGrnScanMethods = {
 	.CustomName = "PGroongaScan",
 	.CreateCustomScanState = PGrnCreateCustomScanState,
 };
 
-const struct CustomExecMethods PGrnScanExecuteMethods = {
+const struct CustomExecMethods PGrnExecuteMethods = {
 	.CustomName = "PGroongaScan",
 
-	.BeginCustomScan = PGrnScanBeginCustomScan,
-	.ExecCustomScan = PGrnScanExecCustomScan,
-	.EndCustomScan = PGrnScanEndCustomScan,
-	.ReScanCustomScan = PGrnScanReScanCustomScan,
+	.BeginCustomScan = PGrnBeginCustomScan,
+	.ExecCustomScan = PGrnExecCustomScan,
+	.EndCustomScan = PGrnEndCustomScan,
+	.ReScanCustomScan = PGrnReScanCustomScan,
 
-	.ExplainCustomScan = PGrnScanExplainCustomScan,
+	.ExplainCustomScan = PGrnExplainCustomScan,
 };
 
 bool
@@ -100,7 +99,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
 	cpath->path.pathtarget = rel->reltarget;
-	cpath->methods = &PGrnScanPathMethods;
+	cpath->methods = &PGrnPathMethods;
 
 	add_path(rel, &cpath->path);
 }
@@ -114,7 +113,7 @@ PGrnPlanCustomPath(PlannerInfo *root,
 				   List *custom_plans)
 {
 	CustomScan *cscan = makeNode(CustomScan);
-	cscan->methods = &PGrnScanScanMethods;
+	cscan->methods = &PGrnScanMethods;
 	return &(cscan->scan.plan);
 }
 
@@ -129,41 +128,39 @@ PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
 static Node *
 PGrnCreateCustomScanState(CustomScan *cscan)
 {
-	PGrnScanState *pgrnScanState =
+	PGrnScanState *state =
 		(PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
 
-	CustomScanState *cscanstate = &pgrnScanState->customScanState;
-	cscanstate->methods = &PGrnScanExecuteMethods;
+	CustomScanState *cscanstate = &state->customScanState;
+	cscanstate->methods = &PGrnExecuteMethods;
 
 	return (Node *) cscanstate;
 }
 
 static void
-PGrnScanBeginCustomScan(CustomScanState *cscanstate, EState *estate, int eflags)
+PGrnBeginCustomScan(CustomScanState *cscanstate, EState *estate, int eflags)
 {
 }
 
 static TupleTableSlot *
-PGrnScanExecCustomScan(CustomScanState *node)
+PGrnExecCustomScan(CustomScanState *node)
 {
 	return NULL;
 }
 
 static void
-PGrnScanExplainCustomScan(CustomScanState *node,
-						  List *ancestors,
-						  ExplainState *es)
+PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es)
 {
 	ExplainPropertyText("PGroongaScan", "DEBUG", es);
 }
 
 static void
-PGrnScanEndCustomScan(CustomScanState *node)
+PGrnEndCustomScan(CustomScanState *node)
 {
 }
 
 static void
-PGrnScanReScanCustomScan(CustomScanState *node)
+PGrnReScanCustomScan(CustomScanState *node)
 {
 }
 
@@ -173,5 +170,5 @@ PGrnInitializeCustomScan(void)
 	PreviousSetRelPathlistHook = set_rel_pathlist_hook;
 	set_rel_pathlist_hook = PGrnSetRelPathlistHook;
 
-	RegisterCustomScanMethods(&PGrnScanScanMethods);
+	RegisterCustomScanMethods(&PGrnScanMethods);
 }
