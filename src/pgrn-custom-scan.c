@@ -115,7 +115,7 @@ PGrnPlanCustomPath(PlannerInfo *root,
 {
 	CustomScan *cscan = makeNode(CustomScan);
 	cscan->methods = &PGrnScanScanMethods;
-	return (Plan *) cscan;
+	return &(cscan->scan.plan);
 }
 
 static List *
