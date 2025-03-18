@@ -10,7 +10,7 @@
 
 typedef struct PGrnScanState
 {
-	CustomScanState customScanState; /* must be first field */
+	CustomScanState parent; /* must be first field */
 } PGrnScanState;
 
 static bool PGrnCustomScanEnabled = false;
@@ -131,10 +131,9 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	PGrnScanState *state =
 		(PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
 
-	CustomScanState *cscanstate = &state->customScanState;
-	cscanstate->methods = &PGrnExecuteMethods;
+	state->parent.methods = &PGrnExecuteMethods;
 
-	return (Node *) cscanstate;
+	return (Node *) &(state->parent);
 }
 
 static void
