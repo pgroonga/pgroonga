@@ -475,6 +475,9 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][options]", tag);
 			PGrnFinalizeOptions();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][custom-scan]", tag);
+			PGrnFinalizeCustomScan();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[db][close]", tag);
 			grn_obj_close(ctx, db);
 		}

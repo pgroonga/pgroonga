@@ -171,3 +171,8 @@ PGrnInitializeCustomScan(void)
 
 	RegisterCustomScanMethods(&PGrnScanMethods);
 }
+
+void
+PGrnFinalizeCustomScan(void)
+{
+}
