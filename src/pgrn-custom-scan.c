@@ -123,7 +123,7 @@ PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
 									List *custom_private,
 									RelOptInfo *child_rel)
 {
-	return NULL;
+	return NIL;
 }
 
 static Node *
