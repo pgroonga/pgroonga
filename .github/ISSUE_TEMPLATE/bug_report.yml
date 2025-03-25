@@ -29,20 +29,32 @@ body:
     validations:
       required: true
   - type: textarea
-    id: environment
+    id: os-and-postgresql-version
     attributes:
-      label: Environment
-      description: Tell us your environment.
+      label: OS and PostgreSQL version
+      description: Tell us your OS version and PostgreSQL version.
       value: |
         - OS: [e.g. Ubuntu]
         - OS Version: [e.g. Ubuntu 24.04.2 LTS]
         - PostgreSQL Version: [e.g. 15.1]
-        - PGroonga Version: [e.g. 12.1.0]
-           - You can check the version by running:
-               SELECT extversion FROM pg_catalog.pg_extension WHERE extname = 'pgroonga';
-        - libgroonga Version: [e.g.  8.0.1]
-           - You can check the version by running:
-               SELECT pgroonga_command('status')::jsonb->1->'version' AS libgroonga_version;
+    validations:
+      required: true
+  - type: textarea
+    id: pgroonga-extension-version
+    attributes:
+      label: pgroonga extension version
+      description: Paste the result of the following SQL.
+      value: |
+        - SELECT extversion FROM pg_catalog.pg_extension WHERE extname = 'pgroonga';
+    validations:
+      required: true
+  - type: textarea
+    id: libgroonga-version
+    attributes:
+      label: libgroonga version
+      description: Paste the result of the following SQL.
+      value: |
+        - SELECT pgroonga_command('status')::jsonb->1->'version' AS libgroonga_version;
     validations:
       required: true
   - type: textarea
