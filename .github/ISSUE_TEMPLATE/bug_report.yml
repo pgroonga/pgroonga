@@ -54,7 +54,7 @@ body:
       label: Groonga version
       description: Paste the result of the following SQL.
       value: |
-        - SELECT pgroonga_command('status')::jsonb->1->'version' AS libgroonga_version;
+        - SELECT pgroonga_command('status')::jsonb->1->'version' AS groonga_version;
     validations:
       required: true
   - type: textarea
