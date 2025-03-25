@@ -40,7 +40,7 @@ body:
     validations:
       required: true
   - type: textarea
-    id: pgroonga-extension-version
+    id: pgroonga-version
     attributes:
       label: pgroonga extension version
       description: Paste the result of the following SQL.
