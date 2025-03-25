@@ -49,7 +49,7 @@ body:
     validations:
       required: true
   - type: textarea
-    id: libgroonga-version
+    id: groonga-version
     attributes:
       label: libgroonga version
       description: Paste the result of the following SQL.
