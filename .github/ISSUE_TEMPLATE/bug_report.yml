@@ -42,7 +42,7 @@ body:
   - type: textarea
     id: pgroonga-version
     attributes:
-      label: pgroonga extension version
+      label: PGroonga version
       description: Paste the result of the following SQL.
       value: |
         - SELECT extversion FROM pg_catalog.pg_extension WHERE extname = 'pgroonga';
