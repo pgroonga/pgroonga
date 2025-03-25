@@ -38,9 +38,11 @@ body:
         - OS Version: [e.g. Ubuntu 24.04.2 LTS]
         - PostgreSQL Version: [e.g. 15.1]
         - PGroonga Version: [e.g. 12.1.0]
-           - SELECT extversion FROM pg_catalog.pg_extension WHERE extname = 'pgroonga';
+           - You can check the version by running:
+               SELECT extversion FROM pg_catalog.pg_extension WHERE extname = 'pgroonga';
         - libgroonga Version: [e.g.  8.0.1]
-           - SELECT pgroonga_command('status')::jsonb->1->'version' AS libgroonga_version;
+           - You can check the version by running:
+               SELECT pgroonga_command('status')::jsonb->1->'version' AS libgroonga_version;
     validations:
       required: true
   - type: textarea
