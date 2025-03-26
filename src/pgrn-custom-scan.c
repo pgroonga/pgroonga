@@ -175,4 +175,9 @@ PGrnInitializeCustomScan(void)
 void
 PGrnFinalizeCustomScan(void)
 {
+	set_rel_pathlist_hook = PreviousSetRelPathlistHook;
+	// todo
+	// Disable registered functions.
+	// See also
+	// https://github.com/pgroonga/pgroonga/pull/722#discussion_r2011284556
 }
