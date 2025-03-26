@@ -1,0 +1,17 @@
+/* Temporary test to be used during implementation of a custom scan. */
+CREATE TABLE memos (content text);
+CREATE INDEX memos_content ON memos USING pgroonga (content);
+INSERT INTO memos VALUES ('PGroonga');
+SET pgroonga.enable_custom_scan = on;
+EXPLAIN (COSTS OFF) SELECT * FROM memos;
+         QUERY PLAN         
+----------------------------
+ Custom Scan (PGroongaScan)
+   PGroongaScan: DEBUG
+(2 rows)
+
+SELECT * FROM memos;
+--
+(0 rows)
+
+DROP TABLE memos;

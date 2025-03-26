@@ -10,6 +10,7 @@
 #include "pgrn-crash-safer-statuses.h"
 #include "pgrn-create.h"
 #include "pgrn-ctid.h"
+#include "pgrn-custom-scan.h"
 #include "pgrn-file.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga-tuple-is-alive.h"
@@ -474,6 +475,9 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][options]", tag);
 			PGrnFinalizeOptions();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][custom-scan]", tag);
+			PGrnFinalizeCustomScan();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[db][close]", tag);
 			grn_obj_close(ctx, db);
 		}
@@ -737,6 +741,8 @@ _PG_init(void)
 		PGrnVariablesApplyInitialValues();
 
 		PGrnInitializeOptions();
+
+		PGrnInitializeCustomScan();
 
 		PGrnBaseInitialized = true;
 	}
