@@ -128,6 +128,7 @@ jobs:
             -S . ^
             -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
             -DCMAKE_INSTALL_PREFIX="..\pgsql" ^
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
             -DGRN_WITH_LZ4=bundled ^
             -DGRN_WITH_MECAB=bundled ^
             -DGRN_WITH_MESSAGE_PACK=bundled ^
