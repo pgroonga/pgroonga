@@ -118,3 +118,4 @@ extern bool PGrnEnableParallelBuildCopy;
 void PGrnEnsureDatabase(void);
 void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);
+Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);

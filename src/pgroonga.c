@@ -830,8 +830,6 @@ PGrnGetType(Relation index, AttrNumber n, unsigned char *flags)
 	return PGrnPGTypeToGrnType(attr->atttypid, flags);
 }
 
-static Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
-
 static Datum
 PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 {
@@ -923,7 +921,7 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 	}
 }
 
-static Datum
+Datum
 PGrnConvertToDatum(grn_obj *value, Oid typeID)
 {
 	const char *tag = "[data][groonga->postgresql]";
