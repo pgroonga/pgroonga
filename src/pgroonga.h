@@ -31,7 +31,7 @@
 #define PGrnRegexpStrategyNumber 10      /* operator @~ (@~ in Groonga)  */
 #define PGrnContainStrategyNumber 11     /* operator @> */
 
-#define PGrnMatchStrategyV2Number 12 /* operator &@	(@ in Groonga) */
+#define PGrnMatchStrategyV2Number 12 /* operator &@ (@ in Groonga) */
 /* operator &? (query in Groonga). Deprecated since 1.2.2. */
 #define PGrnQueryStrategyV2DeprecatedNumber 13
 /* operator &~? (similar search). Deprecated since 1.2.2. */
