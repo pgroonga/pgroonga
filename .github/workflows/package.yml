@@ -178,7 +178,8 @@ jobs:
           set -x
           sudo incus admin init --auto
           sudo incus launch --quiet ${{ env.TEST_INCUS_IMAGE }} target
-          sudo incus config device add target host-rw disk shift=true source=$PWD path=/host-rw
+          mkdir -m 777 "${PWD}/host-rw"
+          sudo incus config device add target host-rw disk source=$PWD/host-rw path=/host-rw
           sudo incus config device add target host disk source=$PWD path=/host readonly=true
           # Ideally, we would use systemctl is-system-running --wait to ensure all services are fully operational.
           # However, this option doesn't work in AlmaLinux 8 and results in an error.
@@ -202,7 +203,7 @@ jobs:
           failure()
         with:
           name: ${{ matrix.package-id }}-logs
-          path: logs/
+          path: host-rw/logs/
 
   prepare-release:
     name: Prepare for release
