@@ -52,12 +52,11 @@ case ${os} in
         ;;
       *)
         DNF="dnf --enablerepo=crb"
-        ${DNF} install -y \
-               https://apache.jfrog.io/artifactory/arrow/${os}/${major_version}/apache-arrow-release-latest.rpm
         ;;
     esac
 
     ${DNF} install -y \
+           https://packages.apache.org/artifactory/arrow/${os}/${major_version}/apache-arrow-release-latest.rpm \
            https://download.postgresql.org/pub/repos/yum/reporpms/EL-${major_version}-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
            https://packages.groonga.org/${os}/${major_version}/groonga-release-latest.noarch.rpm
     ;;
