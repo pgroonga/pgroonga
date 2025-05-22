@@ -4,6 +4,7 @@
 #include <optimizer/pathnode.h>
 #include <optimizer/paths.h>
 #include <optimizer/restrictinfo.h>
+#include <utils/lsyscache.h>
 
 #include "pgrn-custom-scan.h"
 #include "pgroonga.h"
@@ -95,6 +96,12 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 		return;
 	}
 
+	if (get_rel_relkind(rte->relid) != RELKIND_RELATION)
+	{
+		// First, support table scan.
+		return;
+	}
+
 	cpath = makeNode(CustomPath);
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
@@ -114,6 +121,10 @@ PGrnPlanCustomPath(PlannerInfo *root,
 {
 	CustomScan *cscan = makeNode(CustomScan);
 	cscan->methods = &PGrnScanMethods;
+	cscan->scan.scanrelid = rel->relid;
+	cscan->scan.plan.targetlist = tlist;
+	cscan->scan.plan.qual = extract_actual_clauses(clauses, false);
+
 	return &(cscan->scan.plan);
 }
 
