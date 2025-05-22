@@ -121,9 +121,9 @@ PGrnPlanCustomPath(PlannerInfo *root,
 {
 	CustomScan *cscan = makeNode(CustomScan);
 	cscan->methods = &PGrnScanMethods;
-	cscan->scan.scanrelid = rel->relid;
-	cscan->scan.plan.targetlist = tlist;
 	cscan->scan.plan.qual = extract_actual_clauses(clauses, false);
+	cscan->scan.plan.targetlist = tlist;
+	cscan->scan.scanrelid = rel->relid;
 
 	return &(cscan->scan.plan);
 }
