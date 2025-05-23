@@ -150,20 +150,20 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 }
 
 static Relation
-PGrnChooseIndex(Relation table_rel, int errorLevel)
+PGrnChooseIndex(Relation table)
 {
 	// todo: Support pgroonga_condition() index specification.
 	// todo: Implementation of the logic for choosing which index to use.
-	ListCell *lc;
+	ListCell *cell;
 	List *indexes;
 
-	if (!table_rel)
+	if (!table)
 		return NULL;
 
-	indexes = RelationGetIndexList(table_rel);
-	foreach (lc, indexes)
+	indexes = RelationGetIndexList(table);
+	foreach (cell, indexes)
 	{
-		Oid indexId = lfirst_oid(lc);
+		Oid indexId = lfirst_oid(cell);
 
 		Relation index = RelationIdGetRelation(indexId);
 		if (!PGrnIndexIsPGroonga(index))
@@ -177,12 +177,11 @@ PGrnChooseIndex(Relation table_rel, int errorLevel)
 }
 
 static void
-PGrnBeginCustomScan(CustomScanState *node, EState *estate, int eflags)
+PGrnBeginCustomScan(CustomScanState *customScanState,
+					EState *estate,
+					int eflags)
 {
-	PGrnScanState *state = (PGrnScanState *) node;
-	CustomScanState *customScanState = (CustomScanState *) state;
-	Relation index =
-		PGrnChooseIndex(customScanState->ss.ss_currentRelation, ERROR);
+	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
 	grn_obj *sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	elog(LOG, "DEBUG: custom-scan: %s", PGrnInspect(sourcesTable));
 	RelationClose(index);
