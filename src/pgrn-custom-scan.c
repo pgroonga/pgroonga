@@ -181,8 +181,11 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					EState *estate,
 					int eflags)
 {
+	grn_obj *sourcesTable;
 	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
-	grn_obj *sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+	if (!index)
+		return;
+	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	elog(LOG, "DEBUG: custom-scan: %s", PGrnInspect(sourcesTable));
 	RelationClose(index);
 }
