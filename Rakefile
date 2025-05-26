@@ -82,6 +82,11 @@ file windows_archive_name => dist_files do
   rm_r(archive_base_name)
 end
 
+desc "Show version"
+task :version do
+  puts(version)
+end
+
 desc "Create release package"
 task :dist => [archive_name, windows_archive_name]
 
