@@ -6,8 +6,10 @@
 #include <optimizer/restrictinfo.h>
 #include <utils/lsyscache.h>
 
-#include "pgrn-custom-scan.h"
 #include "pgroonga.h"
+
+#include "pgrn-custom-scan.h"
+#include "pgrn-groonga.h"
 
 typedef struct PGrnScanState
 {
@@ -147,9 +149,45 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	return (Node *) &(state->parent);
 }
 
-static void
-PGrnBeginCustomScan(CustomScanState *cscanstate, EState *estate, int eflags)
+static Relation
+PGrnChooseIndex(Relation table)
 {
+	// todo: Support pgroonga_condition() index specification.
+	// todo: Implementation of the logic for choosing which index to use.
+	ListCell *cell;
+	List *indexes;
+
+	if (!table)
+		return NULL;
+
+	indexes = RelationGetIndexList(table);
+	foreach (cell, indexes)
+	{
+		Oid indexId = lfirst_oid(cell);
+
+		Relation index = RelationIdGetRelation(indexId);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+		return index;
+	}
+	return NULL;
+}
+
+static void
+PGrnBeginCustomScan(CustomScanState *customScanState,
+					EState *estate,
+					int eflags)
+{
+	grn_obj *sourcesTable;
+	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
+	if (!index)
+		return;
+	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+	elog(LOG, "DEBUG: custom-scan: %s", PGrnInspect(sourcesTable));
+	RelationClose(index);
 }
 
 static TupleTableSlot *
