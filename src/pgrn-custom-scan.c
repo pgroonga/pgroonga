@@ -16,6 +16,7 @@ typedef struct PGrnScanState
 	CustomScanState parent; /* must be first field */
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
+	grn_obj columnValue;
 } PGrnScanState;
 
 static bool PGrnCustomScanEnabled = false;
@@ -150,6 +151,7 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 
 	state->tableCursor = NULL;
 	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_VOID_INIT(&(state->columnValue));
 
 	return (Node *) &(state->parent);
 }
@@ -223,20 +225,18 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 
 	{
 		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
-		grn_obj value;
 
 		ExecClearTuple(slot);
-		GRN_VOID_INIT(&value);
 		for (unsigned int i = 0; i < slot->tts_tupleDescriptor->natts; i++)
 		{
 			Form_pg_attribute attr = &(slot->tts_tupleDescriptor->attrs[i]);
 			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
-			GRN_BULK_REWIND(&value);
-			grn_obj_get_value(ctx, column, id, &value);
-			slot->tts_values[i] = PGrnConvertToDatum(&value, attr->atttypid);
+			GRN_BULK_REWIND(&(state->columnValue));
+			grn_obj_get_value(ctx, column, id, &(state->columnValue));
+			slot->tts_values[i] =
+				PGrnConvertToDatum(&(state->columnValue), attr->atttypid);
 			slot->tts_isnull[i] = false;
 		}
-		GRN_OBJ_FIN(ctx, &value);
 		return ExecStoreVirtualTuple(slot);
 	}
 }
@@ -267,6 +267,7 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_obj_unlink(ctx, column);
 	}
 	GRN_OBJ_FIN(ctx, &(state->columns));
+	GRN_OBJ_FIN(ctx, &(state->columnValue));
 }
 
 static void
