@@ -270,8 +270,8 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
 		grn_obj_unlink(ctx, column);
 	}
-	GRN_OBJ_FIN(ctx, &(state->columns));
 	GRN_OBJ_FIN(ctx, &(state->columnValue));
+	GRN_OBJ_FIN(ctx, &(state->columns));
 }
 
 static void
