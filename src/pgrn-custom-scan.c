@@ -148,6 +148,9 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 
 	state->parent.methods = &PGrnExecuteMethods;
 
+	state->tableCursor = NULL;
+	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
+
 	return (Node *) &(state->parent);
 }
 
@@ -194,7 +197,6 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	RelationClose(index);
 
-	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	for (unsigned int i = 0; i < tupdesc->natts; i++)
 	{
 		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
