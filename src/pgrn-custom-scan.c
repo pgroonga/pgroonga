@@ -218,7 +218,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 		return NULL;
 
 	id = grn_table_cursor_next(ctx, state->tableCursor);
-	if (!id)
+	if (id == GRN_ID_NIL)
 		return NULL;
 
 	{
