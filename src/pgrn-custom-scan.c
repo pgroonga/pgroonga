@@ -231,6 +231,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 		{
 			Form_pg_attribute attr = &(slot->tts_tupleDescriptor->attrs[i]);
 			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+			GRN_BULK_REWIND(&value);
 			grn_obj_get_value(ctx, column, id, &value);
 			slot->tts_values[i] = PGrnConvertToDatum(&value, attr->atttypid);
 			slot->tts_isnull[i] = false;
