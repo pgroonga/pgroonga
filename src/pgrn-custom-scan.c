@@ -260,7 +260,7 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_table_cursor_close(ctx, state->tableCursor);
 		state->tableCursor = NULL;
 	}
-	nTargetColumns = GRN_BULK_VSIZE(&(state->columns)) / sizeof(grn_obj *);
+	nTargetColumns = GRN_PTR_VECTOR_SIZE(&(state->columns));
 	for (unsigned int i = 0; i < nTargetColumns; i++)
 	{
 		grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
