@@ -14,6 +14,9 @@
 typedef struct PGrnScanState
 {
 	CustomScanState parent; /* must be first field */
+	grn_table_cursor *tableCursor;
+	grn_obj columns;
+	grn_obj columnValue;
 } PGrnScanState;
 
 static bool PGrnCustomScanEnabled = false;
@@ -146,6 +149,10 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 
 	state->parent.methods = &PGrnExecuteMethods;
 
+	state->tableCursor = NULL;
+	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_VOID_INIT(&(state->columnValue));
+
 	return (Node *) &(state->parent);
 }
 
@@ -181,19 +188,61 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					EState *estate,
 					int eflags)
 {
-	grn_obj *sourcesTable;
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	TupleDesc tupdesc =
+		RelationGetDescr(customScanState->ss.ss_currentRelation);
 	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
+	grn_obj *sourcesTable;
+
 	if (!index)
 		return;
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	elog(LOG, "DEBUG: custom-scan: %s", PGrnInspect(sourcesTable));
 	RelationClose(index);
+
+	for (unsigned int i = 0; i < tupdesc->natts; i++)
+	{
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
+		grn_obj *column =
+			PGrnLookupColumn(sourcesTable, NameStr(attr->attname), ERROR);
+		GRN_PTR_PUT(ctx, &(state->columns), column);
+	}
+	state->tableCursor = grn_table_cursor_open(
+		ctx, sourcesTable, NULL, 0, NULL, 0, 0, -1, GRN_CURSOR_ASCENDING);
 }
 
 static TupleTableSlot *
-PGrnExecCustomScan(CustomScanState *node)
+PGrnExecCustomScan(CustomScanState *customScanState)
 {
-	return NULL;
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	grn_id id;
+
+	if (!state->tableCursor)
+		return NULL;
+
+	id = grn_table_cursor_next(ctx, state->tableCursor);
+	if (id == GRN_ID_NIL)
+		return NULL;
+
+	{
+		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
+
+		ExecClearTuple(slot);
+		for (unsigned int i = 0; i < slot->tts_tupleDescriptor->natts; i++)
+		{
+			Form_pg_attribute attr = &(slot->tts_tupleDescriptor->attrs[i]);
+			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+			GRN_BULK_REWIND(&(state->columnValue));
+			grn_obj_get_value(ctx, column, id, &(state->columnValue));
+			slot->tts_values[i] =
+				PGrnConvertToDatum(&(state->columnValue), attr->atttypid);
+			// todo
+			// If there are nullable columns, do not custom scan.
+			// See also
+			// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
+			slot->tts_isnull[i] = false;
+		}
+		return ExecStoreVirtualTuple(slot);
+	}
 }
 
 static void
@@ -203,8 +252,26 @@ PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es)
 }
 
 static void
-PGrnEndCustomScan(CustomScanState *node)
+PGrnEndCustomScan(CustomScanState *customScanState)
 {
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	unsigned int nTargetColumns;
+
+	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
+
+	if (state->tableCursor)
+	{
+		grn_table_cursor_close(ctx, state->tableCursor);
+		state->tableCursor = NULL;
+	}
+	nTargetColumns = GRN_PTR_VECTOR_SIZE(&(state->columns));
+	for (unsigned int i = 0; i < nTargetColumns; i++)
+	{
+		grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+		grn_obj_unlink(ctx, column);
+	}
+	GRN_OBJ_FIN(ctx, &(state->columnValue));
+	GRN_OBJ_FIN(ctx, &(state->columns));
 }
 
 static void

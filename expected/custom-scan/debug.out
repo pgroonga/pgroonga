@@ -19,8 +19,11 @@ SELECT content
 SELECT content
   FROM memos
  WHERE content &@~ 'PGroonga OR Groonga';
- content 
----------
-(0 rows)
+                        content                        
+-------------------------------------------------------
+ PostgreSQL is a RDBMS.
+ Groonga is fast full text search engine.
+ PGroonga is a PostgreSQL extension that uses Groonga.
+(3 rows)
 
 DROP TABLE memos;
