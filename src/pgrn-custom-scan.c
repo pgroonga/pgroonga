@@ -235,6 +235,10 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 			grn_obj_get_value(ctx, column, id, &(state->columnValue));
 			slot->tts_values[i] =
 				PGrnConvertToDatum(&(state->columnValue), attr->atttypid);
+			// todo
+			// If there are nullable columns, do not custom scan.
+			// See also
+			// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
 			slot->tts_isnull[i] = false;
 		}
 		return ExecStoreVirtualTuple(slot);
