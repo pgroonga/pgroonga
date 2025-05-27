@@ -255,7 +255,11 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
 
-	grn_table_cursor_close(ctx, state->tableCursor);
+	if (state->tableCursor)
+	{
+		grn_table_cursor_close(ctx, state->tableCursor);
+		state->tableCursor = NULL;
+	}
 	nTargetColumns = GRN_BULK_VSIZE(&(state->columns)) / sizeof(grn_obj *);
 	for (unsigned int i = 0; i < nTargetColumns; i++)
 	{
