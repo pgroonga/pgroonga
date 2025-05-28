@@ -5391,6 +5391,14 @@ PGrnSearchIsInCondition(ScanKey key)
 			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
+static bool
+PGrnSearchIsMatchInCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
+}
+
 static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   ScanKey key,
@@ -6100,6 +6108,67 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 }
 
 static void
+PGrnSearchSetMatchInStrategy(ScanKey key)
+{
+	// PostgreSQL 18 optimaize to "column &@ ANY (keyword1, keyword2, ...)"
+	// from "column &@ keyword1 OR column &@ keyword2 OR ...".
+	// &@ is match operator. So, we should handle
+	// "column &@ keyword1 OR column &@ keyword2 OR ..." as "match in"
+	// operator.
+	key->sk_strategy = PGrnMatchInStrategyV2Number;
+}
+
+static Oid
+PGrnSearchSetValueTypeID(StrategyNumber strategy, Form_pg_attribute attribute)
+{
+	Oid valueTypeID = attribute->atttypid;
+
+	switch (strategy)
+	{
+	case PGrnContainStrategyNumber:
+	case PGrnPrefixInStrategyV2Number:
+	case PGrnNotPrefixInStrategyV2Number:
+	case PGrnPrefixRKInStrategyV2Number:
+	case PGrnQueryInStrategyV2Number:
+	case PGrnQueryInStrategyV2DeprecatedNumber:
+	case PGrnQueryInStrategyV2Deprecated2Number:
+	case PGrnMatchInStrategyV2Number:
+	case PGrnMatchInStrategyV2DeprecatedNumber:
+	case PGrnRegexpInStrategyV2Number:
+		switch (valueTypeID)
+		{
+		case VARCHAROID:
+		case VARCHARARRAYOID:
+			valueTypeID = VARCHARARRAYOID;
+			break;
+		case TEXTOID:
+		case TEXTARRAYOID:
+			valueTypeID = TEXTARRAYOID;
+			break;
+		}
+		break;
+	default:
+		switch (valueTypeID)
+		{
+		case VARCHARARRAYOID:
+			valueTypeID = VARCHAROID;
+			break;
+		case TEXTARRAYOID:
+			valueTypeID = TEXTOID;
+			break;
+		}
+		break;
+	}
+	return valueTypeID;
+}
+
+static void
+PGrnSearchBuildConditionMatchIn(ScanKey key, Form_pg_attribute attribute)
+{
+	Oid valueTypeID = PGrnSearchSetValueTypeID(key->sk_strategy, attribute);
+}
+
+static void
 PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 {
 	const char *tag = "[build-condition]";
@@ -6122,6 +6191,10 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 	{
 		PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
 		return;
+	}
+	if (PGrnSearchIsMatchInCondition(key))
+	{
+		PGrnSearchSetMatchInStrategy(key);
 	}
 
 	if (key->sk_strategy == PGrnMatchFTSConditionStrategyV2Number ||
@@ -6173,43 +6246,7 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		return;
 	}
 
-	valueTypeID = attribute->atttypid;
-	switch (key->sk_strategy)
-	{
-	case PGrnContainStrategyNumber:
-	case PGrnPrefixInStrategyV2Number:
-	case PGrnNotPrefixInStrategyV2Number:
-	case PGrnPrefixRKInStrategyV2Number:
-	case PGrnQueryInStrategyV2Number:
-	case PGrnQueryInStrategyV2DeprecatedNumber:
-	case PGrnQueryInStrategyV2Deprecated2Number:
-	case PGrnMatchInStrategyV2Number:
-	case PGrnMatchInStrategyV2DeprecatedNumber:
-	case PGrnRegexpInStrategyV2Number:
-		switch (valueTypeID)
-		{
-		case VARCHAROID:
-		case VARCHARARRAYOID:
-			valueTypeID = VARCHARARRAYOID;
-			break;
-		case TEXTOID:
-		case TEXTARRAYOID:
-			valueTypeID = TEXTARRAYOID;
-			break;
-		}
-		break;
-	default:
-		switch (valueTypeID)
-		{
-		case VARCHARARRAYOID:
-			valueTypeID = VARCHAROID;
-			break;
-		case TEXTARRAYOID:
-			valueTypeID = TEXTOID;
-			break;
-		}
-		break;
-	}
+	valueTypeID = PGrnSearchSetValueTypeID(key->sk_strategy, attribute);
 
 	switch (key->sk_strategy)
 	{
