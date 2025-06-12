@@ -19,16 +19,8 @@ pg_pkglibdir = run_command(
 ).stdout().strip()
 pg_includedir_extension = pg_includedir_server / 'extension'
 
-pgrn_control_file = meson.project_source_root() / 'pgroonga.control'
-pgrn_version = run_command(
-  'sh', '-c',
-  'grep default_version @0@ | sed -e "s/.*\'\\([0-9.]*\\)\'.*/\\1/"'.format(
-    pgrn_control_file
-  ),
-  check: true
-).stdout().strip()
-
-pgrn_c_args = ['-DPGRN_VERSION="@0@"'.format(pgrn_version)]
+pgrn_version = meson.project_version()
+pgrn_c_args = [f'-DPGRN_VERSION="@pgrn_version@"']
 if get_option('buildtype').contains('debug')
   pgrn_c_args += ['-O0', '-g3', '-DPGROONGA_DEBUG=1']
 endif
