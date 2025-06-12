@@ -34,7 +34,7 @@ postgresql = declare_dependency(
 
 pgrn_mod_args = {
   'c_args': pgrn_c_args,
-  'dependencies': [groonga, libm, postgresql],
+  'dependencies': [postgresql, groonga, libm],
   'include_directories': [include_directories('src')],
   'name_prefix': '',
   'install': true,
