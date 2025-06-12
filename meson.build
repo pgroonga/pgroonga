@@ -22,7 +22,7 @@ pg_includedir_extension = pg_includedir_server / 'extension'
 pgrn_version = meson.project_version()
 pgrn_c_args = [f'-DPGRN_VERSION="@pgrn_version@"']
 if get_option('buildtype').contains('debug')
-  pgrn_c_args += ['-O0', '-g3', '-DPGROONGA_DEBUG=1']
+  pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
 postgresql = declare_dependency(
