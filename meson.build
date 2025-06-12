@@ -1,4 +1,8 @@
-project('pgroonga', 'c', version: '4.0.2')
+project(
+  'pgroonga',
+  'c',
+  license: 'PostgreSQL',
+  version: '4.0.2')
 
 required_groonga_version = '14.0.0'
 
