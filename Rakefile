@@ -142,6 +142,15 @@ namespace :version do
       sh("git", "add", downgrade_sql_path)
     end
 
+    meson_build_path = "meson.build"
+    meson_content = File.read(meson_build_path)
+    meson_content = meson_content.gsub(/version:\s*'[^']+'/,
+                                       "version: '#{new_version}'")
+    File.open(meson_build_path, "w") do |meson_file|
+      meson_file.print(meson_content)
+    end
+    sh("git", "add", meson_build_path)
+
     sh("git", "commit", "-m", "Start #{new_version}")
     sh("git", "push")
   end
