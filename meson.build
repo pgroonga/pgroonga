@@ -26,7 +26,8 @@ if get_option('buildtype').contains('debug')
 endif
 
 postgresql = declare_dependency(
-  compile_args: run_command(pg_config, '--cflags_sl', check: true).stdout().strip(),
+  compile_args:
+    run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split(),
   include_directories: [
     include_directories(pg_includedir_server, is_system: true),
   ],
