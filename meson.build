@@ -28,7 +28,7 @@ endif
 
 postgresql = declare_dependency(
   compile_args:
-    run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split(),
+    run_command(pg_config, '--cflags_sl', check: true).stdout().strip(),
   include_directories: [
     include_directories(pg_includedir_server, is_system: true),
   ],
