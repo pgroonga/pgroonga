@@ -104,7 +104,7 @@ jobs:
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Install Meson
         run: |
-          sudo apt install meson ninja-build
+          sudo apt install -y -V meson ninja-build
       - name: Configure PGroonga by Meson
         run: |
           meson setup pgroonga.build -Dpg_config=${PG_CONFIG}
