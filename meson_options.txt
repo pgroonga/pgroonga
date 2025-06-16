@@ -1,0 +1,4 @@
+option('pg_config',
+       type: 'string',
+       value: '',
+       description: 'Path to pg_config')

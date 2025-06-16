@@ -10,7 +10,8 @@ groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
 libm = cc.find_library('m')
 
-pg_config = find_program('pg_config')
+pg_config_opt = get_option('pg_config')
+pg_config = find_program(pg_config_opt, 'pg_config')
 pg_includedir_server = run_command(
   pg_config, '--includedir-server', check: true
 ).stdout().strip()
