@@ -22,7 +22,7 @@ pg_includedir_extension = pg_includedir_server / 'extension'
 
 pgrn_version = meson.project_version()
 pgrn_c_args = [f'-DPGRN_VERSION="@pgrn_version@"']
-if get_option('buildtype').contains('debug')
+if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
