@@ -21,6 +21,9 @@ pg_includedir_server = run_command(
 pg_pkglibdir = run_command(
   pg_config, '--pkglibdir', check: true
 ).stdout().strip()
+pg_sharedir = run_command(
+  pg_config, '--sharedir', check: true
+).stdout().strip()
 pg_includedir_extension = pg_includedir_server / 'extension'
 
 pgrn_version = meson.project_version()
@@ -53,4 +56,24 @@ pgroonga_check_sources = files(
 pgroonga_check = shared_module('pgroonga_check',
   pgroonga_check_sources,
   kwargs: pgrn_module_args,
+)
+
+pgroonga_database_sources = files(
+  'src/pgroonga-database.c',
+)
+
+pgroonga_database = shared_module('pgroonga_database',
+  pgroonga_database_sources,
+  kwargs: pgrn_module_args,
+)
+
+install_data('pgroonga_database.control',
+  install_dir: pg_sharedir / 'extension',
+)
+configure_file(
+  input: 'data/pgroonga_database.sql',
+  output: f'pgroonga_database--@pgrn_version@.sql',
+  copy: true,
+  install: true,
+  install_dir: pg_sharedir / 'extension',
 )
