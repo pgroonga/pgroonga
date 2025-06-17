@@ -11,7 +11,11 @@ cc = meson.get_compiler('c')
 libm = cc.find_library('m')
 
 pg_config_option = get_option('pg_config')
-pg_config = find_program(pg_config_option, 'pg_config')
+if pg_config_option != ''
+  pg_config = find_program(pg_config_option)
+else
+  pg_config = find_program('pg_config')
+endif
 pg_includedir_server = run_command(
   pg_config, '--includedir-server', check: true
 ).stdout().strip()
