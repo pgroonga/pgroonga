@@ -10,8 +10,8 @@ groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
 libm = cc.find_library('m')
 
-pg_config_opt = get_option('pg_config')
-pg_config = find_program(pg_config_opt, 'pg_config')
+pg_config_option = get_option('pg_config')
+pg_config = find_program(pg_config_option, 'pg_config')
 pg_includedir_server = run_command(
   pg_config, '--includedir-server', check: true
 ).stdout().strip()
@@ -34,7 +34,7 @@ postgresql = declare_dependency(
   ],
 )
 
-pgrn_mod_args = {
+pgrn_module_args = {
   'c_args': pgrn_c_args,
   'dependencies': [postgresql, groonga, libm],
   'include_directories': [include_directories('src')],
@@ -49,5 +49,5 @@ pgroonga_check_sources = files(
 
 pgroonga_check = shared_module('pgroonga_check',
   pgroonga_check_sources,
-  kwargs: pgrn_mod_args,
+  kwargs: pgrn_module_args,
 )
