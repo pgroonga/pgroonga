@@ -102,6 +102,17 @@ jobs:
           CONF
           sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
+      - name: Install Meson
+        run: |
+          sudo apt install -y -V meson ninja-build
+      - name: Configure PGroonga by Meson
+        run: |
+          meson setup pgroonga.build -Dpg_config=${PG_CONFIG}
+        env:
+          PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
+      - name: Build PGroonga by Meson
+        run: |
+          meson compile -C pgroonga.build
       - name: Run regression test
         run: |
           test/run-sql-test.sh
