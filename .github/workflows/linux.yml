@@ -107,8 +107,7 @@ jobs:
           sudo apt install -y -V meson ninja-build
       - name: Configure PGroonga by Meson
         run: |
-          # Use --prefix to avoid sudo during installation (actual install paths come from pg_config)
-          meson setup pgroonga.build -Dpg_config=${PG_CONFIG} --prefix=/tmp/local
+          meson setup pgroonga.build -Dpg_config=${PG_CONFIG}
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
       - name: Build PGroonga by Meson
@@ -116,7 +115,7 @@ jobs:
           meson compile -C pgroonga.build
       - name: Install PGroonga by Meson
         run: |
-          meson install -C pgroonga.build
+          sudo meson install -C pgroonga.build
       - name: Run regression test
         run: |
           test/run-sql-test.sh
