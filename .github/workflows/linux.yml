@@ -42,6 +42,13 @@ jobs:
           - label: PostgreSQL 17 with Groonga main
             groonga-main: "yes"
             postgresql-version: "17"
+          - label: PostgreSQL 18 snapshot
+            postgresql-unreleased: "yes"
+            postgresql-version: "18"
+          - label: PostgreSQL 18 with Groonga main
+            groonga-main: "yes"
+            postgresql-unreleased: "yes"
+            postgresql-version: "18"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
