@@ -113,6 +113,9 @@ jobs:
       - name: Build PGroonga by Meson
         run: |
           meson compile -C pgroonga.build
+      - name: Install PGroonga by Meson
+        run: |
+          sudo meson install -C pgroonga.build
       - name: Run regression test
         run: |
           test/run-sql-test.sh
