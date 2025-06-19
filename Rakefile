@@ -147,13 +147,14 @@ namespace :version do
       sh("git", "add", downgrade_sql_path)
 
       if package_name == "pgroonga_database"
-        new_upgrade_entry = "  'data/#{upgrade_sql_name}',"
-        new_downgrade_entry = "  'data/#{downgrade_sql_name}',"
-
         meson_content = meson_content.sub(
-          /(pgroonga_database_upgrade_downgrade_sqls = files\([^)]+)(\))/m,
-          "\\1#{new_upgrade_entry}\n#{new_downgrade_entry}\n\\2"
-        )
+          /^  (# #{Regexp.escape(package_name)}: UPDATE SQLS MARKER)/) do
+          <<-MESON_BUILD.chomp
+  '#{upgrade_sql_path}',
+  '#{downgrade_sql_path}',
+  #{$1}
+          MESON_BUILD
+        end
       end
     end
 

@@ -144,6 +144,7 @@ pgroonga_database_upgrade_downgrade_sqls = files(
   'data/pgroonga_database--4.0.1--4.0.0.sql',
   'data/pgroonga_database--4.0.1--4.0.2.sql',
   'data/pgroonga_database--4.0.2--4.0.1.sql',
+  # pgroonga_database: UPDATE SQLS MARKER
 )
 install_data(pgroonga_database_upgrade_downgrade_sqls,
   install_dir: pg_sharedir / 'extension',
