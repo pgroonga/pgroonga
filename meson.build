@@ -78,7 +78,7 @@ configure_file(
   install_dir: pg_sharedir / 'extension',
 )
 
-pgroonga_database_upgrade_downgrade_sqls = files(
+pgroonga_database_update_sqls = files(
   'data/pgroonga_database--2.1.8--2.1.9.sql',
   'data/pgroonga_database--2.1.9--2.2.0.sql',
   'data/pgroonga_database--2.2.0--2.2.1.sql',
@@ -146,6 +146,6 @@ pgroonga_database_upgrade_downgrade_sqls = files(
   'data/pgroonga_database--4.0.2--4.0.1.sql',
   # pgroonga_database: UPDATE SQLS MARKER
 )
-install_data(pgroonga_database_upgrade_downgrade_sqls,
+install_data(pgroonga_database_update_sqls,
   install_dir: pg_sharedir / 'extension',
 )
