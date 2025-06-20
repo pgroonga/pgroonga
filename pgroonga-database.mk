@@ -8,8 +8,8 @@ $(OBJS): $(HEADERS)
 EXTENSION = pgroonga_database
 
 DATA =							\
-	data/pgroonga_database--$(PGRN_VERSION).sql
-#	$(shell echo data/pgroonga_database--*--*.sql)
+	data/pgroonga_database--$(PGRN_VERSION).sql	\
+	$(shell echo data/pgroonga_database--*--*.sql)
 
 include makefiles/pgrn-pgxs.mk
 

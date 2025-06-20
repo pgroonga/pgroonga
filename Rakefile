@@ -117,6 +117,11 @@ namespace :version do
   task :update do
     new_version = Helper.env_value("NEW_VERSION", version.succ)
 
+    meson_build_path = "meson.build"
+    meson_content = File.read(meson_build_path)
+    meson_content = meson_content.sub(/version:\s*'[^']+'/,
+                                      "version: '#{new_version}'")
+
     Dir.glob("*.control") do |control_path|
       package_name = File.basename(control_path, ".*")
       content = File.read(control_path)
@@ -140,12 +145,17 @@ namespace :version do
         downgrade_sql.puts("-- Downgrade SQL")
       end
       sh("git", "add", downgrade_sql_path)
+
+      meson_content = meson_content.sub(
+        /^  (# #{Regexp.escape(package_name)}: UPDATE SQLS MARKER)/) do
+        <<-MESON_BUILD.chomp
+  '#{upgrade_sql_path}',
+  '#{downgrade_sql_path}',
+  #{$1}
+        MESON_BUILD
+      end
     end
 
-    meson_build_path = "meson.build"
-    meson_content = File.read(meson_build_path)
-    meson_content = meson_content.gsub(/version:\s*'[^']+'/,
-                                       "version: '#{new_version}'")
     File.open(meson_build_path, "w") do |meson_file|
       meson_file.print(meson_content)
     end
