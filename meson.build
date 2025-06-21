@@ -76,6 +76,15 @@ pgroonga_wal_applier = shared_module('pgroonga_wal_applier',
   kwargs: pgrn_module_args,
 )
 
+pgroonga_crash_safer_sources = files(
+  'src/pgroonga-crash-safer.c',
+)
+
+pgroonga_crash_safer = shared_module('pgroonga_crash_safer',
+  pgroonga_crash_safer_sources,
+  kwargs: pgrn_module_args,
+)
+
 install_data('pgroonga_database.control',
   install_dir: pg_sharedir / 'extension',
 )
