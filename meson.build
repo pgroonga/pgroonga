@@ -67,6 +67,15 @@ pgroonga_database = shared_module('pgroonga_database',
   kwargs: pgrn_module_args,
 )
 
+pgroonga_wal_applier_sources = files(
+  'src/pgroonga-wal-applier.c',
+)
+
+pgroonga_wal_applier = shared_module('pgroonga_wal_applier',
+  pgroonga_wal_applier_sources,
+  kwargs: pgrn_module_args,
+)
+
 install_data('pgroonga_database.control',
   install_dir: pg_sharedir / 'extension',
 )
