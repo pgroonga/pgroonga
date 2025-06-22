@@ -85,6 +85,15 @@ pgroonga_crash_safer = shared_module('pgroonga_crash_safer',
   kwargs: pgrn_module_args,
 )
 
+pgroonga_standby_maintainer_sources = files(
+  'src/pgroonga-standby-maintainer.c',
+)
+
+pgroonga_standby_maintainer = shared_module('pgroonga_standby_maintainer',
+  pgroonga_standby_maintainer_sources,
+  kwargs: pgrn_module_args,
+)
+
 install_data('pgroonga_database.control',
   install_dir: pg_sharedir / 'extension',
 )
