@@ -94,6 +94,15 @@ pgroonga_standby_maintainer = shared_module('pgroonga_standby_maintainer',
   kwargs: pgrn_module_args,
 )
 
+pgroonga_wal_resource_manager_sources = files(
+  'src/pgroonga-wal-resource-manager.c',
+)
+
+pgroonga_wal_resource_manager = shared_module('pgroonga_wal_resource_manager',
+  pgroonga_wal_resource_manager_sources,
+  kwargs: pgrn_module_args,
+)
+
 install_data('pgroonga_database.control',
   install_dir: pg_sharedir / 'extension',
 )
