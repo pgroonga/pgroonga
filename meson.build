@@ -380,12 +380,3 @@ pgroonga_database_update_sqls = files(
 install_data(pgroonga_database_update_sqls,
   install_dir: pg_sharedir / 'extension',
 )
-
-pgroonga_scripts = files(
-  'tools/pgroonga-primary-maintainer.sh',
-  'tools/systemd/pgroonga-generate-primary-maintainer-service.sh',
-  'tools/systemd/pgroonga-generate-primary-maintainer-timer.sh',
-)
-install_data(pgroonga_scripts,
-  install_dir: pg_bindir,
-)
