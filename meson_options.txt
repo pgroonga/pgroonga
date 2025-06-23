@@ -2,3 +2,15 @@ option('pg_config',
        type: 'string',
        value: '',
        description: 'Path to pg_config')
+option('msgpack',
+       type: 'feature',
+       value: 'disabled',
+       description: 'Enable MessagePack support')
+option('msgpack_package_name',
+       type: 'string',
+       value: 'msgpack',
+       description: 'MessagePack package name (e.g. "msgpack-c" on macOS)')
+option('xxhash',
+       type: 'feature',
+       value: 'disabled',
+       description: 'Enable xxHash support')
