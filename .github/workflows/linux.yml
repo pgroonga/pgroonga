@@ -118,8 +118,14 @@ jobs:
           meson compile -C ../pgroonga.build
       - name: Install PGroonga by Meson
         run: |
-          # Install to /tmp/local/ to avoid conflicts with Make-based installation.
-          meson install -C ../pgroonga.build --destdir=/tmp/local/
+          # Temporarily install under system PostgreSQL. We will remove installed files later after testing.
+          sudo meson install -C ../pgroonga.build
+      - name: Test PGroonga by Meson
+        run: |
+          meson test -C ../pgroonga.build
+          # Remove Meson-built files to avoid conflicts with Make-based test
+          sudo rm -f /usr/lib/postgresql/${{ matrix.postgresql-version }}/lib/pgroonga*.so
+          sudo rm -f /usr/share/postgresql/${{ matrix.postgresql-version }}/extension/pgroonga*
       - name: Run regression test
         run: |
           test/run-sql-test.sh
