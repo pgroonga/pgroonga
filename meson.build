@@ -53,13 +53,16 @@ if not message_pack_option.disabled()
     msgpack = dependency('msgpack-c', required: false)
   endif
   if msgpack.found()
-    pgrn_dependencies += msgpack
-    pgrn_cpp_args += '-DPGRN_HAVE_MSGPACK'
+    pgrn_msgpack = declare_dependency(
+      compile_args: ['-DPGRN_HAVE_MSGPACK'],
+      dependencies: [msgpack]
+    )
+    pgrn_dependencies += pgrn_msgpack
     message(f'MessagePack: @msgpack.name()@ (system)')
   elif message_pack_option.enabled()
-    error('No MessagePack found.')
-  esle
-    message('No MessagePack found.')
+    error('MessagePack: not found.')
+  else
+    message('MessagePack: not found (disabled)')
   endif
 endif
 
