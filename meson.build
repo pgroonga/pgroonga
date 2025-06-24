@@ -45,7 +45,6 @@ postgresql = declare_dependency(
 
 pgrn_dependencies = [postgresql, groonga, libm]
 
-pgrn_cpp_args = []
 message_pack_option = get_option('message_pack')
 if not message_pack_option.disabled()
   msgpack = dependency('msgpack', required: false)
@@ -84,7 +83,6 @@ endif
 
 pgrn_module_args = {
   'c_args': pgrn_c_args,
-  'cpp_args': pgrn_cpp_args,
   'dependencies': pgrn_dependencies,
   'include_directories': [include_directories('src')],
   'name_prefix': '',
