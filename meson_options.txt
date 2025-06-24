@@ -4,7 +4,7 @@ option('pg_config',
        description: 'Path to pg_config')
 option('msgpack',
        type: 'feature',
-       value: 'disabled',
+       value: 'auto',
        description: 'Enable MessagePack support')
 option('msgpack_package_name',
        type: 'string',
@@ -12,5 +12,5 @@ option('msgpack_package_name',
        description: 'MessagePack package name (e.g. "msgpack-c" on macOS)')
 option('xxhash',
        type: 'feature',
-       value: 'disabled',
+       value: 'auto',
        description: 'Enable xxHash support')
