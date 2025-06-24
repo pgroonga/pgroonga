@@ -2,7 +2,7 @@ option('pg_config',
        type: 'string',
        value: '',
        description: 'Path to pg_config')
-option('msgpack',
+option('message_pack',
        type: 'feature',
        value: 'auto',
        description: 'Enable MessagePack support')

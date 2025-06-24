@@ -109,7 +109,7 @@ jobs:
         run: |
           meson setup ../pgroonga.build \
             -Dpg_config=${PG_CONFIG} \
-            -Dmsgpack=enabled \
+            -Dmessage_pack=enabled \
             -Dxxhash=enabled
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
