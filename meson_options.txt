@@ -6,10 +6,6 @@ option('message_pack',
        type: 'feature',
        value: 'auto',
        description: 'Enable MessagePack support')
-option('msgpack_package_name',
-       type: 'string',
-       value: 'msgpack',
-       description: 'MessagePack package name (e.g. "msgpack-c" on macOS)')
 option('xxhash',
        type: 'feature',
        value: 'auto',

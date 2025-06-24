@@ -46,10 +46,21 @@ postgresql = declare_dependency(
 pgrn_dependencies = [postgresql, groonga, libm]
 
 pgrn_cpp_args = []
-if get_option('msgpack').enabled()
-  msgpack = dependency(get_option('msgpack_package_name'), required: true)
-  pgrn_dependencies += msgpack
-  pgrn_cpp_args += '-DPGRN_HAVE_MSGPACK'
+message_pack_option = get_option('message_pack')
+if not message_pack_option.disabled()
+  msgpack = dependency('msgpack', required: false)
+  if not msgpack.found()
+    msgpack = dependency('msgpack-c', required: false)
+  endif
+  if msgpack.found()
+    pgrn_dependencies += msgpack
+    pgrn_cpp_args += '-DPGRN_HAVE_MSGPACK'
+    message(f'MessagePack: @msgpack.name()@ (system)')
+  elif message_pack_option.enabled()
+    error('No MessagePack found.')
+  esle
+    message('No MessagePack found.')
+  endif
 endif
 
 if get_option('xxhash').enabled()
