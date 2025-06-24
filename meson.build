@@ -53,12 +53,12 @@ if not message_pack_option.disabled()
     msgpack = dependency('msgpack-c', required: false)
   endif
   if msgpack.found()
-    pgrn_msgpack = declare_dependency(
+    pgrn_message_pack = declare_dependency(
       compile_args: ['-DPGRN_HAVE_MSGPACK'],
       dependencies: [msgpack]
     )
-    pgrn_dependencies += pgrn_msgpack
-    message(f'MessagePack: @msgpack.name()@ (system)')
+    pgrn_dependencies += pgrn_message_pack
+    message('MessagePack: system')
   elif message_pack_option.enabled()
     error('MessagePack: not found.')
   else
@@ -66,13 +66,20 @@ if not message_pack_option.disabled()
   endif
 endif
 
-if get_option('xxhash').enabled()
-  xxhash = declare_dependency(
-    dependencies: [dependency('libxxhash', required: true)],
-    sources: files('vendor/xxHash/xxhash.c'),
-    include_directories: include_directories('vendor/xxHash'),
-  )
-  pgrn_dependencies += xxhash
+xxhash_option = get_option('xxhash')
+if not xxhash_option.disabled()
+  xxhash = dependency('libxxhash', required: false)
+  if xxhash.found()
+    pgrn_dependencies += xxhash
+    message('xxHash: system')
+  else
+    pgrn_xxhash = declare_dependency(
+      sources: files('vendor/xxHash/xxhash.c'),
+      include_directories: include_directories('vendor/xxHash'),
+    )
+    pgrn_dependencies += pgrn_xxhash
+    message('xxHash: vendored')
+  endif
 endif
 
 pgrn_module_args = {
