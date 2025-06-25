@@ -45,24 +45,14 @@ postgresql = declare_dependency(
 
 pgrn_dependencies = [postgresql, groonga, libm]
 
-message_pack_option = get_option('message_pack')
-if not message_pack_option.disabled()
-  msgpack = dependency('msgpack-c', required: false)
-  if not msgpack.found()
-    msgpack = dependency('msgpack', required: false)
-  endif
-  if msgpack.found()
-    pgrn_message_pack = declare_dependency(
-      compile_args: ['-DPGRN_HAVE_MSGPACK'],
-      dependencies: [msgpack]
-    )
-    pgrn_dependencies += pgrn_message_pack
-    message('MessagePack: system')
-  elif message_pack_option.enabled()
-    error('MessagePack: not found.')
-  else
-    message('MessagePack: not found (disabled)')
-  endif
+msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
+if msgpack.found()
+  pgrn_msgpack = declare_dependency(
+    compile_args: ['-DPGRN_HAVE_MSGPACK'],
+    dependencies: [msgpack]
+  )
+  pgrn_dependencies += pgrn_msgpack
+  message('MessagePack: system')
 endif
 
 xxhash_option = get_option('xxhash')
