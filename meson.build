@@ -391,7 +391,9 @@ install_data(pgroonga_database_update_sqls,
 )
 
 pg_regress = pg_pkglibdir / 'pgxs/src/test/regress/pg_regress'
-run_command('mkdir', '-p', meson.current_build_dir() / 'results/column-name', check: true)
+run_command('mkdir', '-p', meson.current_build_dir() / 'results/function/highlight-html/', check: true)
+run_command('mkdir', '-p', meson.current_build_dir() / 'results/function/command/', check: true)
+
 test('regression',
   find_program(pg_regress),
   args: [
@@ -400,7 +402,8 @@ test('regression',
     '--bindir=' + pg_bindir,
     '--dlpath=' + meson.current_build_dir(),
     '--load-extension=pgroonga',
-    'column-name/japanese',
+    'function/highlight-html/multiple-keywords',
+    'function/command/select'
   ],
   workdir: meson.current_source_dir(),
   depends: [pgroonga],
