@@ -54,20 +54,9 @@ if msgpack.found()
   pgrn_dependencies += pgrn_msgpack
 endif
 
-xxhash_option = get_option('xxhash')
-if not xxhash_option.disabled()
-  xxhash = dependency('libxxhash', required: false)
-  if xxhash.found()
-    pgrn_dependencies += xxhash
-    message('xxHash: system')
-  else
-    pgrn_xxhash = declare_dependency(
-      sources: files('vendor/xxHash/xxhash.c'),
-      include_directories: include_directories('vendor/xxHash'),
-    )
-    pgrn_dependencies += pgrn_xxhash
-    message('xxHash: vendored')
-  endif
+xxhash = dependency('libxxhash', required: get_option('xxhash'))
+if xxhash.found()
+  pgrn_dependencies += xxhash
 endif
 
 pgrn_module_args = {
