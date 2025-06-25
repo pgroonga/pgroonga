@@ -31,4 +31,5 @@
 /regression.*
 /results/
 /sql/vacuum/tablespace.sql
+/subprojects/xxHash-*
 /tmp/
