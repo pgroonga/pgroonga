@@ -52,7 +52,6 @@ if msgpack.found()
     dependencies: [msgpack]
   )
   pgrn_dependencies += pgrn_msgpack
-  message('MessagePack: system')
 endif
 
 xxhash_option = get_option('xxhash')
