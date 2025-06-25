@@ -107,10 +107,7 @@ jobs:
           sudo apt install -y -V meson ninja-build
       - name: Configure PGroonga by Meson
         run: |
-          meson setup ../pgroonga.build \
-            -Dpg_config=${PG_CONFIG} \
-            -Dmessage_pack=enabled \
-            -Dxxhash=enabled
+          meson setup ../pgroonga.build -Dpg_config=${PG_CONFIG}
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
       - name: Build PGroonga by Meson
