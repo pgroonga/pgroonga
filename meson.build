@@ -54,7 +54,7 @@ if msgpack.found()
   pgrn_dependencies += pgrn_msgpack
 endif
 
-xxhash = dependency('xxhash',
+xxhash = dependency('libxxhash',
   fallback: ['xxhash', 'xxhash_dep'],
   required: get_option('xxhash'),
 )
