@@ -47,9 +47,9 @@ pgrn_dependencies = [postgresql, groonga, libm]
 
 message_pack_option = get_option('message_pack')
 if not message_pack_option.disabled()
-  msgpack = dependency('msgpack', required: false)
+  msgpack = dependency('msgpack-c', required: false)
   if not msgpack.found()
-    msgpack = dependency('msgpack-c', required: false)
+    msgpack = dependency('msgpack', required: false)
   endif
   if msgpack.found()
     pgrn_message_pack = declare_dependency(
