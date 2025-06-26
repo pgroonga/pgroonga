@@ -8,7 +8,6 @@ required_groonga_version = '14.0.0'
 
 groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
-libm = cc.find_library('m')
 
 pg_config_path = get_option('pg_config')
 if pg_config_path == ''
@@ -43,7 +42,12 @@ postgresql = declare_dependency(
   ],
 )
 
-pgrn_dependencies = [postgresql, groonga, libm]
+pgrn_dependencies = [postgresql, groonga]
+
+if host_machine.system() != 'windows'
+  libm = cc.find_library('m', required: false)
+  pgrn_dependencies += libm
+endif
 
 msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
 if msgpack.found()
