@@ -6,6 +6,7 @@ Build-Depends:
   debhelper (>= 13.11.4),
   libgroonga-dev,
   libmsgpack-dev,
+  libxxhash-dev,
   pkg-config,
   postgresql-server-dev-15
 Standards-Version: 4.6.2
