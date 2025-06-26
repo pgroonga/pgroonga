@@ -25,6 +25,7 @@ RUN \
     devscripts \
     libgroonga-dev \
     libmsgpack-dev \
+    libxxhash-dev \
     pkg-config \
     postgresql-server-dev-${POSTGRESQL_VERSION} && \
   apt clean
