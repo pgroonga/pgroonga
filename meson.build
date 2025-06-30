@@ -8,7 +8,6 @@ required_groonga_version = '14.0.0'
 
 groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
-libm = cc.find_library('m')
 
 pg_config_path = get_option('pg_config')
 if pg_config_path == ''
@@ -35,15 +34,27 @@ if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
+pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip()
+if pg_cflags_sl == ''
+  pg_compile_args = []
+else
+  pg_compile_args = [pg_cflags_sl]
+endif
+
 postgresql = declare_dependency(
-  compile_args:
-    run_command(pg_config, '--cflags_sl', check: true).stdout().strip(),
+  compile_args: pg_compile_args,
   include_directories: [
     include_directories(pg_includedir_server, is_system: true),
   ],
 )
 
-pgrn_dependencies = [postgresql, groonga, libm]
+pgrn_dependencies = [postgresql, groonga]
+
+# MSVC includes math functions in its runtime libraries.
+if cc.get_id() != 'msvc'
+  libm = cc.find_library('m', required: true)
+  pgrn_dependencies += libm
+endif
 
 msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
 if msgpack.found()
@@ -54,7 +65,10 @@ if msgpack.found()
   pgrn_dependencies += pgrn_msgpack
 endif
 
-xxhash = dependency('libxxhash', required: get_option('xxhash'))
+xxhash = dependency('libxxhash',
+  fallback: ['xxhash', 'xxhash_dep'],
+  required: get_option('xxhash'),
+)
 if xxhash.found()
   pgrn_dependencies += xxhash
 endif
