@@ -44,9 +44,12 @@ postgresql = declare_dependency(
 
 pgrn_dependencies = [postgresql, groonga]
 
-if host_machine.system() != 'windows'
+# MSVC includes math functions in its runtime libraries.
+if cc.get_id() != 'msvc'
   libm = cc.find_library('m', required: false)
-  pgrn_dependencies += libm
+  if libm.found()
+    pgrn_dependencies += libm
+  endif
 endif
 
 msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
