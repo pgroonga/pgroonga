@@ -34,9 +34,15 @@ if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
+pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip()
+if pg_cflags_sl == ''
+  pg_compile_args = []
+else
+  pg_compile_args = [pg_cflags_sl]
+endif
+
 postgresql = declare_dependency(
-  compile_args:
-    run_command(pg_config, '--cflags_sl', check: true).stdout().strip(),
+  compile_args: pg_compile_args,
   include_directories: [
     include_directories(pg_includedir_server, is_system: true),
   ],
