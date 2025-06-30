@@ -151,14 +151,12 @@ jobs:
       - name: Configure PGroonga by Meson
         shell: cmd
         run: |
-          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           set PKG_CONFIG_PATH=..\pgsql\lib\pkgconfig
           meson setup ..\pgroonga.meson.build ^
             -Dpg_config="..\pgsql\bin\pg_config.exe"
       - name: Build PGroonga by Meson
         shell: cmd
         run: |
-          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           meson compile -C ..\pgroonga.meson.build
 
       # Upload artifacts
