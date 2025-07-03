@@ -28,6 +28,7 @@ jobs:
           - PostgreSQL 16
           - PostgreSQL 17
           - PostgreSQL 17 with Groonga main
+          - PostgreSQL 18
         include:
           - label: PostgreSQL 13
             postgresql-version: "13"
@@ -39,9 +40,13 @@ jobs:
             postgresql-version: "16"
           - label: PostgreSQL 17
             postgresql-version: "17"
+          # TODO: Use 18 when we're ready for 18
           - label: PostgreSQL 17 with Groonga main
             groonga-main: "yes"
             postgresql-version: "17"
+          - label: PostgreSQL 18
+            postgresql-unreleased: "yes"
+            postgresql-version: "18"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
@@ -111,19 +116,27 @@ jobs:
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
       - name: Build PGroonga by Meson
+        # TODO: Remove this when we're PostgreSQL 18 ready
+        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           meson compile -C ../pgroonga.build
       - name: Install PGroonga by Meson
+        # TODO: Remove this when we're PostgreSQL 18 ready
+        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           # Temporarily install under system PostgreSQL. We will remove installed files later after testing.
           sudo meson install -C ../pgroonga.build
       - name: Test PGroonga by Meson
+        # TODO: Remove this when we're PostgreSQL 18 ready
+        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           meson test -C ../pgroonga.build
           # Remove Meson-built files to avoid conflicts with Make-based test
           sudo rm -f /usr/lib/postgresql/${{ matrix.postgresql-version }}/lib/pgroonga*.so
           sudo rm -f /usr/share/postgresql/${{ matrix.postgresql-version }}/extension/pgroonga*
       - name: Run regression test
+        # TODO: Remove this when we're PostgreSQL 18 ready
+        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           test/run-sql-test.sh
         env:
@@ -164,6 +177,8 @@ jobs:
             ~/.cache/red-datasets
           key: red-datasets-ubuntu
       - name: Run unit test
+        # TODO: Remove this when we're PostgreSQL 18 ready
+        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           PATH="/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin:$PATH" \
             bundle exec ruby \
