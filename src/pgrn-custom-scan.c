@@ -229,7 +229,8 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 		ExecClearTuple(slot);
 		for (unsigned int i = 0; i < slot->tts_tupleDescriptor->natts; i++)
 		{
-			Form_pg_attribute attr = &(slot->tts_tupleDescriptor->attrs[i]);
+			Form_pg_attribute attr =
+				TupleDescAttr(slot->tts_tupleDescriptor, i);
 			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
 			GRN_BULK_REWIND(&(state->columnValue));
 			grn_obj_get_value(ctx, column, id, &(state->columnValue));
