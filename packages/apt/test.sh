@@ -8,7 +8,7 @@ function copy_logs() {
   cp -a /var/log/postgresql ${log_dir} || :
   mkdir -p ${log_dir}/pgroonga/ || :
   cp -a ${data_dir}/pgroonga*.log* ${log_dir}/pgroonga/ || :
-  chmod -R go+rx /host-rw/logs/
+  chmod -R go+rx ${log_dir}
 }
 
 function run_test() {
