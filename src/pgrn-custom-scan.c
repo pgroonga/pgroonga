@@ -1,5 +1,8 @@
 #include <postgres.h>
 
+#if PG_VERSION_NUM >= 180000
+#	include <commands/explain_format.h>
+#endif
 #include <nodes/extensible.h>
 #include <optimizer/pathnode.h>
 #include <optimizer/paths.h>
