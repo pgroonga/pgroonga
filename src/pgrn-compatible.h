@@ -80,6 +80,11 @@ static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
 					 Relation indexRelation,
 					 Snapshot snapshot,
+#if PG_VERSION_NUM >= 180000
+					 IndexScanInstrumentation *instrument,
+#else
+					 void *instrument,
+#endif
 					 int nKeys,
 					 int nOrderBys)
 {
@@ -88,7 +93,7 @@ pgrn_index_beginscan(Relation heapRelation,
 						   indexRelation,
 						   snapshot,
 #if PG_VERSION_NUM >= 180000
-						   NULL,
+						   instrument,
 #endif
 						   nKeys,
 						   nOrderBys);
