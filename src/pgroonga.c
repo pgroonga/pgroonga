@@ -8805,7 +8805,8 @@ pgroonga_parallelrescan(IndexScanDesc scan)
 {
 	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
 	PGrnParallelScanDesc pgrnParallelScan =
-		OffsetToPointer((void *) (parallelScan), parallelScan->ps_offset);
+		OffsetToPointer((void *) (parallelScan),
+						PGRN_PARALLEL_SCAN_GET_PS_OFFSET_AM(parallelScan));
 
 	PGRN_TRACE_LOG_ENTER();
 
@@ -8820,7 +8821,8 @@ PGrnParallelScanAcquire(IndexScanDesc scan)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	ParallelIndexScanDesc parallelScan = scan->parallel_scan;
 	PGrnParallelScanDesc pgrnParallelScan =
-		OffsetToPointer((void *) (parallelScan), parallelScan->ps_offset);
+		OffsetToPointer((void *) (parallelScan),
+						PGRN_PARALLEL_SCAN_GET_PS_OFFSET_AM(parallelScan));
 	bool acquired = false;
 
 	if (so->indexCursor)
