@@ -559,8 +559,12 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 		int nKeys = 1;
 		int nOrderBys = 0;
 		PGRN_TRACE_LOG("index_begin_scan");
-		currentData.scan = index_beginscan(
-			currentData.table, index, currentData.snapshot, nKeys, nOrderBys);
+		currentData.scan = pgrn_index_beginscan(currentData.table,
+												index,
+												currentData.snapshot,
+												NULL,
+												nKeys,
+												nOrderBys);
 		currentData.slot = table_slot_create(currentData.table, NULL);
 	}
 	else
