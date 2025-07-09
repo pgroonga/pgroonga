@@ -76,6 +76,14 @@ typedef Oid PGrnRelFileNumber;
 		 (relkind) == RELKIND_MATVIEW)
 #endif
 
+#if PG_VERSION_NUM >= 180000
+#	define PGRN_PARALLEL_SCAN_GET_PS_OFFSET_AM(parallelScan)                  \
+		((parallelScan)->ps_offset_am)
+#else
+#	define PGRN_PARALLEL_SCAN_GET_PS_OFFSET_AM(parallelScan)                  \
+		((parallelScan)->ps_offset)
+#endif
+
 static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
 					 Relation indexRelation,
