@@ -8778,7 +8778,9 @@ pgroonga_validate(Oid opClassOid)
 }
 
 static Size
-#if PG_VERSION_NUM >= 170000
+#if PG_VERSION_NUM >= 180000
+pgroonga_estimateparallelscan(Relation indexRelation, int nkeys, int norderbys)
+#elif PG_VERSION_NUM >= 170000
 pgroonga_estimateparallelscan(int nkeys, int norderbys)
 #else
 pgroonga_estimateparallelscan(void)
