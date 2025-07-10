@@ -84,6 +84,12 @@ typedef Oid PGrnRelFileNumber;
 		((parallelScan)->ps_offset)
 #endif
 
+#if PG_VERSION_NUM >= 180000
+#	define pg_attribute_noreturn()
+#else
+#	define pg_noreturn
+#endif
+
 static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
 					 Relation indexRelation,
