@@ -385,18 +385,17 @@ pg_regress = find_program(
 )
 
 schedule = meson.current_build_dir() / 'schedule'
-test('prepare',
-     ruby,
-     args: [
-       meson.current_source_dir() / 'test' / 'prepare.rb',
-       schedule,
-     ],
-     env: {
-       'BUILD_DIR': meson.current_build_dir(),
-     },
-     priority: 10,
-     suite: 'setup',
-     workdir: meson.current_source_dir(),
+prepare_test = custom_target(
+  'prepare',
+  output: 'schedule',
+  command: [
+    ruby,
+    meson.current_source_dir() / 'test' / 'prepare.rb',
+    schedule
+  ],
+  env: {
+    'BUILD_DIR': meson.current_build_dir(),
+  }
 )
 
 test('regression',
@@ -421,6 +420,7 @@ test('regression',
        pgroonga_standby_maintainer,
        pgroonga_wal_applier,
        pgroonga_wal_resource_manager,
+       prepare_test
      ],
      timeout: 600,
      suite: 'regression',
