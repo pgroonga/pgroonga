@@ -19,12 +19,12 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT void pgroonga_standby_maintainer_apply_wal(Datum datum)
-	pg_attribute_noreturn();
-extern PGDLLEXPORT void pgroonga_standby_maintainer_maintain(Datum datum)
-	pg_attribute_noreturn();
-extern PGDLLEXPORT void pgroonga_standby_maintainer_main(Datum datum)
-	pg_attribute_noreturn();
+extern PGDLLEXPORT pg_noreturn void
+pgroonga_standby_maintainer_apply_wal(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT pg_noreturn void
+pgroonga_standby_maintainer_maintain(Datum datum) pg_attribute_noreturn();
+extern PGDLLEXPORT pg_noreturn void
+pgroonga_standby_maintainer_main(Datum datum) pg_attribute_noreturn();
 
 #define TAG "pgroonga: standby-maintainer"
 
