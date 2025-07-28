@@ -405,9 +405,9 @@ test('regression',
        '--dlpath', meson.current_build_dir(),
        '--inputdir', meson.current_source_dir(),
        '--outputdir', meson.current_build_dir(),
-       '--launcher=' + meson.current_source_dir() / 'test' / 'short-pgappname',
-       '--load-extension=pgroonga',
-       f'--schedule=@schedule@'
+       '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+       '--load-extension', meson.project_name(),
+       '--schedule', schedule
      ],
      env: {
        'PG_REGRESS_DIFF_OPTS': '-u --color=always',
