@@ -130,7 +130,7 @@ jobs:
         # TODO: Remove this when we're PostgreSQL 18 ready
         continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
-          meson test -C ../pgroonga.build
+          meson test -C ../pgroonga.build -v
           # Remove Meson-built files to avoid conflicts with Make-based test
           sudo rm -f /usr/lib/postgresql/${{ matrix.postgresql-version }}/lib/pgroonga*.so
           sudo rm -f /usr/share/postgresql/${{ matrix.postgresql-version }}/extension/pgroonga*
