@@ -2,6 +2,15 @@
 
 set -eux
 
+function copy_logs() {
+  log_dir=/host-rw/logs
+  mkdir -p ${log_dir}
+  cp -a /var/log/postgresql ${log_dir} || :
+  mkdir -p ${log_dir}/pgroonga/ || :
+  cp -a ${data_dir}/pgroonga*.log* ${log_dir}/pgroonga/ || :
+  chmod -R go+rx ${log_dir}
+}
+
 function run_test() {
   echo "::group::Run test"
 
@@ -20,23 +29,28 @@ function run_test() {
     echo "::group::Diff"
     cat regression.diffs
     echo "::endgroup::"
-    mkdir -p /host-rw/logs
+    copy_logs
     cp -a regression.diffs /host-rw/logs/
-    cp -a ${data_dir}/log /host-rw/logs/postgresql || :
-    mkdir -p /host-rw/logs/pgroonga/ || :
-    cp -a ${data_dir}/pgroonga.log* /host-rw/logs/pgroonga/ || :
-    chmod -R go+rx /host-rw/logs/
     exit ${pg_regress_status}
   fi
 
 
   echo "::group::Test primary-maintainer"
 
+  set +e
   $(pg_config --bindir)/createuser postgres --superuser
   /host/packages/test-primary-maintainer.sh
+  test_status=$?
   $(pg_config --bindir)/dropuser postgres
+  set -e
 
   echo "::endgroup::"
+
+
+  if [ ${test_status} -ne 0 ]; then
+    copy_logs
+    exit ${test_status}
+  fi
 }
 
 echo "::group::Prepare APT repositories"
