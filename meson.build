@@ -395,7 +395,8 @@ prepare_test = custom_target(
   ],
   env: {
     'BUILD_DIR': meson.current_build_dir(),
-  }
+  },
+  build_always_stale: true
 )
 
 test('regression',
