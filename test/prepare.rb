@@ -31,7 +31,7 @@ open_output(ARGV[0]) do |output|
       FileUtils.mkdir_p(results_directory)
     elsif File.file?(entry)
       next unless entry.end_with?(".sql")
-      test_file = relative_path.to_s.sub(/\.sql\z/, "")
+      test_file = relative_path.sub_ext("")
       output.puts("test: #{test_file}")
     end
   end
