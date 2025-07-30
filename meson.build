@@ -378,6 +378,17 @@ install_data(pgroonga_database_update_sqls,
   install_dir: pg_sharedir / 'extension',
 )
 
+maintainer_scripts = files(
+  'tools/pgroonga-primary-maintainer.sh',
+  'tools/systemd/pgroonga-generate-primary-maintainer-service.sh',
+  'tools/systemd/pgroonga-generate-primary-maintainer-timer.sh',
+)
+
+install_data(maintainer_scripts,
+  install_dir: pg_bindir,
+  install_mode: 'rwxr-xr-x',
+)
+
 ruby = find_program('ruby')
 pg_regress = find_program(
   'pg_regress',
