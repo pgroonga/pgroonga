@@ -110,44 +110,30 @@ jobs:
       - name: Install Meson
         run: |
           sudo apt install -y -V meson ninja-build
-      - name: Configure PGroonga by Meson
+      - name: Configure PGroonga
         run: |
           meson setup ../pgroonga.build -Dpg_config=${PG_CONFIG}
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
-      - name: Build PGroonga by Meson
+      - name: Build PGroonga
         # TODO: Remove this when we're PostgreSQL 18 ready
         continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           meson compile -C ../pgroonga.build
-      - name: Install PGroonga by Meson
+      - name: Install PGroonga
         # TODO: Remove this when we're PostgreSQL 18 ready
         continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
-          # Temporarily install under system PostgreSQL. We will remove installed files later after testing.
           sudo meson install -C ../pgroonga.build
-      - name: Test PGroonga by Meson
-        # TODO: Remove this when we're PostgreSQL 18 ready
-        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
-        run: |
-          meson test -C ../pgroonga.build -v
-          # Remove Meson-built files to avoid conflicts with Make-based test
-          sudo rm -f /usr/lib/postgresql/${{ matrix.postgresql-version }}/lib/pgroonga*.so
-          sudo rm -f /usr/share/postgresql/${{ matrix.postgresql-version }}/extension/pgroonga*
       - name: Run regression test
         # TODO: Remove this when we're PostgreSQL 18 ready
         continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
-          test/run-sql-test.sh
-        env:
-          HAVE_XXHASH: "1"
-          NEED_SUDO: "yes"
-          PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
-          SUPPRESS_LOG: "no"
+          meson test -C ../pgroonga.build -v
       - name: Show diff
         if: failure()
         run: |
-          cat regression.diffs
+          cat ../pgroonga.build/regression.diffs
       - name: Show pgroonga.log
         if: failure()
         run: |
