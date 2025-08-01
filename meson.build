@@ -378,25 +378,63 @@ install_data(pgroonga_database_update_sqls,
   install_dir: pg_sharedir / 'extension',
 )
 
-pg_regress = pg_pkglibdir / 'pgxs/src/test/regress/pg_regress'
-run_command('mkdir', '-p', meson.current_build_dir() / 'results/function/highlight-html/', check: true)
-run_command('mkdir', '-p', meson.current_build_dir() / 'results/function/command/', check: true)
+maintainer_scripts = files(
+  'tools/pgroonga-primary-maintainer.sh',
+  'tools/systemd/pgroonga-generate-primary-maintainer-service.sh',
+  'tools/systemd/pgroonga-generate-primary-maintainer-timer.sh',
+)
+
+install_data(maintainer_scripts,
+  install_dir: pg_bindir,
+  install_mode: 'rwxr-xr-x',
+)
+
+ruby = find_program('ruby')
+pg_regress = find_program(
+  'pg_regress',
+  dirs: [pg_pkglibdir / 'pgxs/src/test/regress']
+)
+
+schedule = meson.current_build_dir() / 'schedule'
+prepare_test = custom_target(
+  'prepare',
+  output: 'schedule',
+  command: [
+    ruby,
+    meson.current_source_dir() / 'test' / 'prepare.rb',
+    schedule
+  ],
+  env: {
+    'BUILD_DIR': meson.current_build_dir(),
+  },
+  build_always_stale: true
+)
 
 test('regression',
-  find_program(pg_regress),
+  pg_regress,
   args: [
-    '--inputdir=' + meson.current_source_dir(),
-    '--outputdir=' + meson.current_build_dir(),
-    '--bindir=' + pg_bindir,
-    '--dlpath=' + meson.current_build_dir(),
-    '--load-extension=pgroonga',
-    'function/highlight-html/multiple-keywords',
-    'function/command/select'
+    '--bindir', pg_bindir,
+    '--dlpath', meson.current_build_dir(),
+    '--inputdir', meson.current_source_dir(),
+    '--outputdir', meson.current_build_dir(),
+    '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+    '--load-extension', meson.project_name(),
+    '--schedule', schedule
   ],
-  workdir: meson.current_source_dir(),
-  depends: [pgroonga],
-  suite: 'regression',
   env: {
     'PG_REGRESS_DIFF_OPTS': '-u --color=always',
   },
+  depends: [
+    pgroonga,
+    pgroonga_check,
+    pgroonga_crash_safer,
+    pgroonga_database,
+    pgroonga_standby_maintainer,
+    pgroonga_wal_applier,
+    pgroonga_wal_resource_manager,
+    prepare_test
+  ],
+  timeout: 600,
+  suite: 'regression',
+  workdir: meson.current_source_dir(),
 )
