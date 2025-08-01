@@ -411,30 +411,30 @@ prepare_test = custom_target(
 )
 
 test('regression',
-     pg_regress,
-     args: [
-       '--bindir', pg_bindir,
-       '--dlpath', meson.current_build_dir(),
-       '--inputdir', meson.current_source_dir(),
-       '--outputdir', meson.current_build_dir(),
-       '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
-       '--load-extension', meson.project_name(),
-       '--schedule', schedule
-     ],
-     env: {
-       'PG_REGRESS_DIFF_OPTS': '-u --color=always',
-     },
-     depends: [
-       pgroonga,
-       pgroonga_check,
-       pgroonga_crash_safer,
-       pgroonga_database,
-       pgroonga_standby_maintainer,
-       pgroonga_wal_applier,
-       pgroonga_wal_resource_manager,
-       prepare_test
-     ],
-     timeout: 600,
-     suite: 'regression',
-     workdir: meson.current_source_dir(),
+  pg_regress,
+  args: [
+    '--bindir', pg_bindir,
+    '--dlpath', meson.current_build_dir(),
+    '--inputdir', meson.current_source_dir(),
+    '--outputdir', meson.current_build_dir(),
+    '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+    '--load-extension', meson.project_name(),
+    '--schedule', schedule
+  ],
+  env: {
+    'PG_REGRESS_DIFF_OPTS': '-u --color=always',
+  },
+  depends: [
+    pgroonga,
+    pgroonga_check,
+    pgroonga_crash_safer,
+    pgroonga_database,
+    pgroonga_standby_maintainer,
+    pgroonga_wal_applier,
+    pgroonga_wal_resource_manager,
+    prepare_test
+  ],
+  timeout: 600,
+  suite: 'regression',
+  workdir: meson.current_source_dir(),
 )
