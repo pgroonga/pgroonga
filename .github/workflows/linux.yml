@@ -116,13 +116,9 @@ jobs:
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
       - name: Build PGroonga
-        # TODO: Remove this when we're PostgreSQL 18 ready
-        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           meson compile -C ../pgroonga.build
       - name: Install PGroonga
-        # TODO: Remove this when we're PostgreSQL 18 ready
-        continue-on-error: ${{ matrix.postgresql-unreleased == 'yes' && true || false }}
         run: |
           sudo meson install -C ../pgroonga.build
       - name: Run regression test
