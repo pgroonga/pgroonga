@@ -40,7 +40,7 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: "pgroonga/pgroonga.github.io"
           path: "pgroonga.github.io"
