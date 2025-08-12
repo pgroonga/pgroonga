@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: ruby/setup-ruby@v1
@@ -106,10 +106,10 @@ jobs:
            contains(matrix.package-id, 'aarch64')) && 'ubuntu-24.04-arm' ||
                                                       'ubuntu-latest' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: apache-arrow
           repository: apache/arrow

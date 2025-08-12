@@ -50,7 +50,7 @@ jobs:
       - name: Use JST
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Install Visual Studio
@@ -208,7 +208,7 @@ jobs:
         if: failure()
         run: |
           Get-Content regression.diffs
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark
