@@ -6099,7 +6099,7 @@ PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 	PGrnExprAppendOp(data->expression, operator, 2, tag, NULL);
 }
 
-static void
+void
 PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 {
 	const char *tag = "[build-condition]";
@@ -6508,7 +6508,7 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 	}
 }
 
-static void
+void
 PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 {
 	data->index = index;
@@ -6523,7 +6523,7 @@ PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 	data->nExpressions = 0;
 }
 
-static void
+void
 PGrnSearchDataFree(PGrnSearchData *data)
 {
 	unsigned int i;
