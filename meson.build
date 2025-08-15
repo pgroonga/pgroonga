@@ -35,9 +35,15 @@ if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
+# Note: Meson's split() is NOT shell-compatible
+# It splits only on whitespace and doesn't understand shell quoting
+# For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd']
+# This works for most PostgreSQL flags but may break with quoted paths containing spaces
+pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
+pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
+
 postgresql = declare_dependency(
-  compile_args:
-    run_command(pg_config, '--cflags_sl', check: true).stdout().strip(),
+  compile_args: pg_cppflags + pg_cflags_sl,
   include_directories: [
     include_directories(pg_includedir_server, is_system: true),
   ],
@@ -59,11 +65,18 @@ if xxhash.found()
   pgrn_dependencies += xxhash
 endif
 
+name_suffix = 'so'
+if host_machine.system() == 'darwin' and \
+   pg_config.version().version_compare('>= 16')
+  name_suffix = 'dylib'
+endif
+
 pgrn_module_args = {
   'c_args': pgrn_c_args,
   'dependencies': pgrn_dependencies,
   'include_directories': [include_directories('src')],
   'name_prefix': '',
+  'name_suffix': name_suffix,
   'install': true,
   'install_dir': pg_pkglibdir,
 }

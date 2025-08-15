@@ -1,3 +1,5 @@
 brew "groonga"
+brew "meson"
+brew "ninja"
 brew "postgresql"
 brew "xxhash"
