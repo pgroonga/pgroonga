@@ -5391,11 +5391,20 @@ PGrnSearchIsInCondition(ScanKey key)
 			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
+static bool
+PGrnSearchIsMatchInCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
+}
+
 static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
 						   ScanKey key,
 						   grn_obj *targetColumn,
-						   Form_pg_attribute attribute)
+						   Form_pg_attribute attribute,
+						   bool matchIn)
 {
 	const char *tag = "[build-condition][in]";
 	const char *tag_any = "[build-condition][any]";
@@ -5431,15 +5440,18 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 	grn_obj_reinit(ctx, &(buffers->general), domain, flags);
 	n = ARR_DIMS(values)[0];
 
-	PGrnExprAppendObject(data->expression,
-						 PGrnLookup("in_values", ERROR),
-						 GRN_OP_PUSH,
-						 1,
-						 tag,
-						 NULL);
-	PGrnExprAppendObject(
-		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
-	nArgs++;
+	if (!matchIn)
+	{
+		PGrnExprAppendObject(data->expression,
+							 PGrnLookup("in_values", ERROR),
+							 GRN_OP_PUSH,
+							 1,
+							 tag,
+							 NULL);
+		PGrnExprAppendObject(
+			data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
+		nArgs++;
+	}
 
 	for (i = 1; i <= n; i++)
 	{
@@ -5459,12 +5471,25 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 
 		PGrnConvertFromData(
 			valueDatum, attribute->atttypid, &(buffers->general));
-		PGrnExprAppendConst(
-			data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
+
+		if (matchIn)
+		{
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &(buffers->general), GRN_OP_MATCH);
+			if (nArgs > 0)
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
+		}
+		else
+		{
+			PGrnExprAppendConst(
+				data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
+		}
+
 		nArgs++;
 	}
 
-	PGrnExprAppendOp(data->expression, GRN_OP_CALL, nArgs, tag, NULL);
+	if (!matchIn)
+		PGrnExprAppendOp(data->expression, GRN_OP_CALL, nArgs, tag, NULL);
 }
 
 static void
@@ -6118,9 +6143,18 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		PGrnLookupColumn(data->sourcesTable, targetColumnName, ERROR);
 	GRN_PTR_PUT(ctx, &(data->targetColumns), targetColumn);
 
-	if (PGrnSearchIsInCondition(key))
+	if (PGrnSearchIsInCondition(key) || PGrnSearchIsMatchInCondition(key))
 	{
-		PGrnSearchBuildConditionIn(data, key, targetColumn, attribute);
+		// PostgreSQL 18 optimaize to "column &@ ANY (keyword1, keyword2, ...)"
+		// from "column &@ keyword1 OR column &@ keyword2 OR ...".
+		// &@ is match operator. So, we should handle
+		// "column &@ keyword1 OR column &@ keyword2 OR ..." as "match in"
+		// operator.
+		PGrnSearchBuildConditionIn(data,
+								   key,
+								   targetColumn,
+								   attribute,
+								   PGrnSearchIsMatchInCondition(key));
 		return;
 	}
 
