@@ -127,16 +127,19 @@ jobs:
         run: |
           meson test -C ../pgroonga.build -v
       - name: Show diff
-        if: failure()
+        # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
+        if: matrix.postgresql-unreleased == 'yes' || failure()
         run: |
           cat ../pgroonga.build/regression.diffs
       - name: Show pgroonga.log
-        if: failure()
+        # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
+        if: matrix.postgresql-unreleased == 'yes' || failure()
         run: |
           sudo cat \
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
       - name: Show pgroonga.log of parsed backtrace
-        if: failure()
+        # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
+        if: matrix.postgresql-unreleased == 'yes' || failure()
         run: |
           wget --quiet https://raw.githubusercontent.com/groonga/groonga/main/tools/parse-backtrace.rb
           options=""
