@@ -211,6 +211,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									Relation index)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
+	const char *tag = "pgroonga: [custom-scan][build-conditions]";
 
 	List *quals = customScanState->ss.ps.plan->qual;
 	ListCell *cell;
@@ -224,11 +225,20 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 		Const *value;
 
 		if (!IsA(expr, OpExpr))
+		{
+			elog(DEBUG1, "%s node type is not OpExpr <%d>", tag, nodeTag(expr));
 			continue;
+		}
 
 		opexpr = (OpExpr *) expr;
 		if (list_length(opexpr->args) != 2)
+		{
+			elog(DEBUG1,
+				 "%s The number of arguments is not 2. <%d>",
+				 tag,
+				 list_length(opexpr->args));
 			continue;
+		}
 
 		left = linitial(opexpr->args);
 		right = lsecond(opexpr->args);
@@ -245,6 +255,11 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 		}
 		else
 		{
+			elog(DEBUG1,
+				 "%s The arguments are not a pair of Var and Const. <%d op %d>",
+				 tag,
+				 nodeTag(left),
+				 nodeTag(right));
 			continue;
 		}
 
