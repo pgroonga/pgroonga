@@ -6,11 +6,13 @@
 
 #include <postgres.h>
 
+#include <access/skey.h>
 #include <fmgr.h>
 #include <utils/rel.h>
 
 #include "pgrn-compatible.h"
 #include "pgrn-constant.h"
+#include "pgrn-search.h"
 
 /* Used for pgroonga.so not other pgroonga_*.so. */
 #define PGRN_MODULE_PGROONGA
@@ -119,3 +121,9 @@ void PGrnEnsureDatabase(void);
 void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);
 Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
+
+void
+PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data);
+void
+PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable);
+void PGrnSearchDataFree(PGrnSearchData *data);
