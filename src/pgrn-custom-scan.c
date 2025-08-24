@@ -21,6 +21,7 @@ typedef struct PGrnScanState
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
 	grn_obj columnValue;
+	PGrnSearchData searchData;
 	grn_obj *searched;
 } PGrnScanState;
 
@@ -207,9 +208,10 @@ PGrnSetTargetColumns(CustomScanState *customScanState, grn_obj *targetTable)
 
 static void
 PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
-									Relation index,
-									PGrnSearchData *data)
+									Relation index)
 {
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+
 	List *quals = customScanState->ss.ps.plan->qual;
 	ListCell *cell;
 	foreach (cell, quals)
@@ -265,7 +267,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 						strategy,
 						opexpr->opfuncid,
 						value->constvalue);
-			PGrnSearchBuildCondition(index, &scankey, data);
+			PGrnSearchBuildCondition(index, &scankey, &(state->searchData));
 		}
 	}
 }
@@ -278,20 +280,19 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	PGrnScanState *state = (PGrnScanState *) customScanState;
 	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
 	grn_obj *sourcesTable;
-	PGrnSearchData searchData;
 
 	if (!index)
 		return;
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
-	PGrnSearchDataInit(&searchData, index, sourcesTable);
-	PGrnSearchBuildCustomScanConditions(customScanState, index, &searchData);
+	PGrnSearchDataInit(&(state->searchData), index, sourcesTable);
+	PGrnSearchBuildCustomScanConditions(customScanState, index);
 	RelationClose(index);
 
-	if (!searchData.isEmptyCondition)
+	if (!state->searchData.isEmptyCondition)
 	{
 		grn_table_selector *table_selector = grn_table_selector_open(
-			ctx, sourcesTable, searchData.expression, GRN_OP_OR);
+			ctx, sourcesTable, state->searchData.expression, GRN_OP_OR);
 
 		state->searched =
 			grn_table_create(ctx,
@@ -315,7 +316,7 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 												   GRN_CURSOR_ASCENDING);
 	}
 
-	PGrnSearchDataFree(&searchData);
+	PGrnSearchDataFree(&(state->searchData));
 }
 
 static TupleTableSlot *
@@ -386,6 +387,7 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_obj_close(ctx, state->searched);
 		state->searched = NULL;
 	}
+	PGrnSearchDataFree(&(state->searchData));
 }
 
 static void
