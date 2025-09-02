@@ -121,9 +121,3 @@ void PGrnEnsureDatabase(void);
 void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);
 Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);
-
-void
-PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data);
-void
-PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable);
-void PGrnSearchDataFree(PGrnSearchData *data);

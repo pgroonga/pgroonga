@@ -27,3 +27,9 @@ void PGrnSearchBuildConditionBinaryOperation(PGrnSearchData *data,
 											 grn_obj *targetColumn,
 											 grn_obj *value,
 											 grn_operator operator);
+
+void
+PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data);
+void
+PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable);
+void PGrnSearchDataFree(PGrnSearchData *data);
