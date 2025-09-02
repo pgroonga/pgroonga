@@ -158,6 +158,7 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	state->tableCursor = NULL;
 	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_VOID_INIT(&(state->columnValue));
+	memset(&(state->searchData), 0, sizeof(state->searchData));
 	state->searched = NULL;
 
 	return (Node *) &(state->parent);
@@ -332,6 +333,7 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	}
 
 	PGrnSearchDataFree(&(state->searchData));
+	memset(&(state->searchData), 0, sizeof(state->searchData));
 }
 
 static TupleTableSlot *
@@ -397,6 +399,12 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	}
 	GRN_OBJ_FIN(ctx, &(state->columnValue));
 	GRN_OBJ_FIN(ctx, &(state->columns));
+
+	if (state->searchData.index != NULL)
+	{
+		PGrnSearchDataFree(&(state->searchData));
+		memset(&(state->searchData), 0, sizeof(state->searchData));
+	}
 	if (state->searched)
 	{
 		grn_obj_close(ctx, state->searched);
