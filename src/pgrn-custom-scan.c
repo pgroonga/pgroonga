@@ -410,7 +410,6 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_obj_close(ctx, state->searched);
 		state->searched = NULL;
 	}
-	PGrnSearchDataFree(&(state->searchData));
 }
 
 static void
