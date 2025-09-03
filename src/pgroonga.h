@@ -6,7 +6,6 @@
 
 #include <postgres.h>
 
-#include <access/skey.h>
 #include <fmgr.h>
 #include <utils/rel.h>
 
