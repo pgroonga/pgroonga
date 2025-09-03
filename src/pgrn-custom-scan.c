@@ -400,7 +400,7 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	GRN_OBJ_FIN(ctx, &(state->columnValue));
 	GRN_OBJ_FIN(ctx, &(state->columns));
 
-	if (state->searchData.index != NULL)
+	if (state->searchData.index)
 	{
 		PGrnSearchDataFree(&(state->searchData));
 		memset(&(state->searchData), 0, sizeof(state->searchData));
