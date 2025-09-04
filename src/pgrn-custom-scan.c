@@ -13,6 +13,7 @@
 
 #include "pgrn-custom-scan.h"
 #include "pgrn-groonga.h"
+#include "pgrn-search.h"
 
 typedef struct PGrnScanState
 {
@@ -20,6 +21,8 @@ typedef struct PGrnScanState
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
 	grn_obj columnValue;
+	PGrnSearchData searchData;
+	grn_obj *searched;
 } PGrnScanState;
 
 static bool PGrnCustomScanEnabled = false;
@@ -155,6 +158,8 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	state->tableCursor = NULL;
 	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
 	GRN_VOID_INIT(&(state->columnValue));
+	memset(&(state->searchData), 0, sizeof(state->searchData));
+	state->searched = NULL;
 
 	return (Node *) &(state->parent);
 }
@@ -187,30 +192,148 @@ PGrnChooseIndex(Relation table)
 }
 
 static void
+PGrnSetTargetColumns(CustomScanState *customScanState, grn_obj *targetTable)
+{
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	TupleDesc tupdesc =
+		RelationGetDescr(customScanState->ss.ss_currentRelation);
+
+	for (int i = 0; i < tupdesc->natts; i++)
+	{
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
+		grn_obj *column =
+			PGrnLookupColumn(targetTable, NameStr(attr->attname), ERROR);
+		GRN_PTR_PUT(ctx, &(state->columns), column);
+	}
+}
+
+static void
+PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
+									Relation index)
+{
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	const char *tag = "pgroonga: [custom-scan][build-conditions]";
+
+	List *quals = customScanState->ss.ps.plan->qual;
+	ListCell *cell;
+	foreach (cell, quals)
+	{
+		Expr *expr = (Expr *) lfirst(cell);
+		OpExpr *opexpr;
+		Node *left;
+		Node *right;
+		Var *column;
+		Const *value;
+
+		if (!IsA(expr, OpExpr))
+		{
+			elog(DEBUG1, "%s node type is not OpExpr <%d>", tag, nodeTag(expr));
+			continue;
+		}
+
+		opexpr = (OpExpr *) expr;
+		if (list_length(opexpr->args) != 2)
+		{
+			elog(DEBUG1,
+				 "%s The number of arguments is not 2. <%d>",
+				 tag,
+				 list_length(opexpr->args));
+			continue;
+		}
+
+		left = linitial(opexpr->args);
+		right = lsecond(opexpr->args);
+
+		if (nodeTag(left) == T_Var && nodeTag(right) == T_Const)
+		{
+			column = (Var *) left;
+			value = (Const *) right;
+		}
+		else if (nodeTag(left) == T_Const && nodeTag(right) == T_Var)
+		{
+			column = (Var *) right;
+			value = (Const *) left;
+		}
+		else
+		{
+			elog(DEBUG1,
+				 "%s The arguments are not a pair of Var and Const. <%d op %d>",
+				 tag,
+				 nodeTag(left),
+				 nodeTag(right));
+			continue;
+		}
+
+		for (int i = 0; i < index->rd_att->natts; i++)
+		{
+			Oid opfamily = index->rd_opfamily[i];
+			int strategy;
+			Oid leftType;
+			Oid rightType;
+			ScanKeyData scankey;
+
+			get_op_opfamily_properties(opexpr->opno,
+									   opfamily,
+									   false,
+									   &strategy,
+									   &leftType,
+									   &rightType);
+			ScanKeyInit(&scankey,
+						column->varattno,
+						strategy,
+						opexpr->opfuncid,
+						value->constvalue);
+			PGrnSearchBuildCondition(index, &scankey, &(state->searchData));
+		}
+	}
+}
+
+static void
 PGrnBeginCustomScan(CustomScanState *customScanState,
 					EState *estate,
 					int eflags)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	TupleDesc tupdesc =
-		RelationGetDescr(customScanState->ss.ss_currentRelation);
 	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
 	grn_obj *sourcesTable;
 
 	if (!index)
 		return;
+
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
+	PGrnSearchDataInit(&(state->searchData), index, sourcesTable);
+	PGrnSearchBuildCustomScanConditions(customScanState, index);
 	RelationClose(index);
 
-	for (unsigned int i = 0; i < tupdesc->natts; i++)
+	if (!state->searchData.isEmptyCondition)
 	{
-		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
-		grn_obj *column =
-			PGrnLookupColumn(sourcesTable, NameStr(attr->attname), ERROR);
-		GRN_PTR_PUT(ctx, &(state->columns), column);
+		grn_table_selector *table_selector = grn_table_selector_open(
+			ctx, sourcesTable, state->searchData.expression, GRN_OP_OR);
+
+		state->searched =
+			grn_table_create(ctx,
+							 NULL,
+							 0,
+							 NULL,
+							 GRN_OBJ_TABLE_HASH_KEY | GRN_OBJ_WITH_SUBREC,
+							 sourcesTable,
+							 0);
+		grn_table_selector_select(ctx, table_selector, state->searched);
+		grn_table_selector_close(ctx, table_selector);
+		PGrnSetTargetColumns(customScanState, state->searched);
+		state->tableCursor = grn_table_cursor_open(ctx,
+												   state->searched,
+												   NULL,
+												   0,
+												   NULL,
+												   0,
+												   0,
+												   -1,
+												   GRN_CURSOR_ASCENDING);
 	}
-	state->tableCursor = grn_table_cursor_open(
-		ctx, sourcesTable, NULL, 0, NULL, 0, 0, -1, GRN_CURSOR_ASCENDING);
+
+	PGrnSearchDataFree(&(state->searchData));
+	memset(&(state->searchData), 0, sizeof(state->searchData));
 }
 
 static TupleTableSlot *
@@ -276,6 +399,17 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	}
 	GRN_OBJ_FIN(ctx, &(state->columnValue));
 	GRN_OBJ_FIN(ctx, &(state->columns));
+
+	if (state->searchData.index)
+	{
+		PGrnSearchDataFree(&(state->searchData));
+		memset(&(state->searchData), 0, sizeof(state->searchData));
+	}
+	if (state->searched)
+	{
+		grn_obj_close(ctx, state->searched);
+		state->searched = NULL;
+	}
 }
 
 static void

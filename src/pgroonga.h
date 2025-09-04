@@ -11,6 +11,7 @@
 
 #include "pgrn-compatible.h"
 #include "pgrn-constant.h"
+#include "pgrn-search.h"
 
 /* Used for pgroonga.so not other pgroonga_*.so. */
 #define PGRN_MODULE_PGROONGA
