@@ -8842,6 +8842,7 @@ PGrnParallelScanAcquire(IndexScanDesc scan)
 	return acquired;
 }
 
+#ifdef PGRN_SUPPORT_AMTRANSLATE_ROUTINE
 static CompareType
 pgroonga_translatestrategy(StrategyNumber strategy, Oid opfamily)
 {
@@ -8881,6 +8882,7 @@ pgroonga_translatecmptype(CompareType cmptype, Oid opfamily)
 		return InvalidStrategy;
 	}
 }
+#endif
 
 Datum
 pgroonga_handler(PG_FUNCTION_ARGS)
