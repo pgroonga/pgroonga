@@ -8842,6 +8842,46 @@ PGrnParallelScanAcquire(IndexScanDesc scan)
 	return acquired;
 }
 
+static CompareType
+pgroonga_translatestrategy(StrategyNumber strategy, Oid opfamily)
+{
+	switch (strategy)
+	{
+	case PGrnLessStrategyNumber:
+		return COMPARE_LT;
+	case PGrnLessEqualStrategyNumber:
+		return COMPARE_LE;
+	case PGrnEqualStrategyNumber:
+		return COMPARE_EQ;
+	case PGrnGreaterStrategyNumber:
+		return COMPARE_GT;
+	case PGrnGreaterEqualStrategyNumber:
+		return COMPARE_GE;
+	default:
+		return COMPARE_INVALID;
+	}
+}
+
+static StrategyNumber
+pgroonga_translatecmptype(CompareType cmptype, Oid opfamily)
+{
+	switch (cmptype)
+	{
+	case COMPARE_LT:
+		return PGrnLessStrategyNumber;
+	case COMPARE_LE:
+		return PGrnLessEqualStrategyNumber;
+	case COMPARE_EQ:
+		return PGrnEqualStrategyNumber;
+	case COMPARE_GT:
+		return PGrnGreaterStrategyNumber;
+	case COMPARE_GE:
+		return PGrnGreaterEqualStrategyNumber;
+	default:
+		return InvalidStrategy;
+	}
+}
+
 Datum
 pgroonga_handler(PG_FUNCTION_ARGS)
 {
@@ -8889,6 +8929,10 @@ pgroonga_handler(PG_FUNCTION_ARGS)
 	routine->amestimateparallelscan = pgroonga_estimateparallelscan;
 	routine->aminitparallelscan = pgroonga_initparallelscan;
 	routine->amparallelrescan = pgroonga_parallelrescan;
+#ifdef PGRN_SUPPORT_AMTRANSLATE_ROUTINE
+	routine->amtranslatecmptype = pgroonga_translatecmptype;
+	routine->amtranslatestrategy = pgroonga_translatestrategy;
+#endif
 
 	PG_RETURN_POINTER(routine);
 }
