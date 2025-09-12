@@ -35,6 +35,10 @@
 #	define PGRN_SUPPORT_PARALLEL_INDEX_BUILD
 #endif
 
+#if PG_VERSION_NUM >= 180000
+#	define PGRN_SUPPORT_AMTRANSLATE_ROUTINE
+#endif
+
 #if PG_VERSION_NUM >= 160000
 #	define PGRN_RELATION_GET_LOCATOR(relation) ((relation)->rd_locator)
 #	define PGRN_RELATION_GET_LOCATOR_NUMBER(relation)                         \
