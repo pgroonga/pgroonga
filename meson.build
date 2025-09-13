@@ -35,10 +35,10 @@ if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
 endif
 
-# Note: Meson's split() is NOT shell-compatible
-# It splits only on whitespace and doesn't understand shell quoting
-# For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd']
-# This works for most PostgreSQL flags but may break with quoted paths containing spaces
+# Note: Meson's split() is NOT shell-compatible.
+# It splits only on whitespace and doesn't understand shell quoting.
+# For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd'].
+# This works for most PostgreSQL flags but may break with quoted paths containing spaces.
 pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
 pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
 
