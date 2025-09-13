@@ -77,20 +77,27 @@ jobs:
           brew services start postgresql@${{ matrix.postgresql-version }}
           echo $(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin >> \
             ${GITHUB_PATH}
+      - name: Configure PGroonga
+        run: |
+          meson setup \
+            --buildtype=debug \
+            -Dpg_config=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
+            ../pgroonga.build
+      - name: Build PGroonga
+        run: |
+          meson compile -C ../pgroonga.build
+      - name: Install PGroonga
+        run: |
+          meson install -C ../pgroonga.build
       - name: Run regression test
         run: |
           # TODO: Remove me when groonga formula enables libstemmer
           rm sql/full-text-search/text/options/token-filters/custom.sql
-          PG_CONFIG=$(brew --prefix postgresql@${{ matrix.postgresql-version }})/bin/pg_config \
-            test/run-sql-test.sh
-        env:
-          HAVE_XXHASH: "1"
-          MSGPACK_PACKAGE_NAME: "msgpack-c"
-          SUPPRESS_LOG: "no"
+          meson test -C ../pgroonga.build -v
       - name: Show diff
         if: failure()
         run: |
-          cat regression.diffs
+          cat ../pgroonga.build/regression.diffs
       - name: Show pgroonga.log
         if: failure()
         run: |
