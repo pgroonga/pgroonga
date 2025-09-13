@@ -39,6 +39,7 @@ endif
 # It splits only on whitespace and doesn't understand shell quoting.
 # For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd'].
 # This works for most PostgreSQL flags but may break with quoted paths containing spaces.
+# Related upstream issue: https://github.com/mesonbuild/meson/issues/15000
 pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
 pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
 
