@@ -3,6 +3,9 @@ on:
   push:
     tags:
       - "*"
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
 jobs:
   github:
     name: GitHub
@@ -10,6 +13,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Download artifacts
+        if: |
+          github.ref_type == 'tag'
         run: |
           workflows=(package.yml windows.yml)
           for workflow in "${workflows[@]}"; do
@@ -42,17 +47,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - uses: actions/checkout@v5
         with:
+          fetch-depth: 0
+      - uses: actions/checkout@v5
+        with:
           repository: "pgroonga/pgroonga.github.io"
           path: "pgroonga.github.io"
       - name: Extract release note
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           ruby \
             -e 'print("## PGroonga "); \
                 puts(ARGF.read.split(/^## /)[1]. \
                        gsub(/ {.+?}/, ""). \
                        gsub(/\[(.+?)\]\[.+?\]/) {$1})' \
-            pgroonga.github.io/news/index.md > release-note.md
+            pgroonga.github.io/news/index.md | tee release-note.md
+
+          previous_tag=$(gh release list \
+                           --jq '.[].tagName' \
+                           --json tagName \
+                           --limit 1)
+
+          echo "### Contributors" | tee -a release-note.md
+          echo | tee -a release-note.md
+          command_line="git shortlog -sn ${previous_tag}.."
+          echo '```console' | tee -a release-note.md
+          echo "\$ ${command_line}" | tee -a release-note.md
+          ${command_line} | tee -a release-note.md
+          echo '```' | tee -a release-note.md
       - name: Publish
+        if: |
+          github.ref_type == 'tag'
         run: |
           title=$(head -n1 release-note.md | sed -e 's/^## //')
           tail -n +2 release-note.md > release-note-without-version.md
