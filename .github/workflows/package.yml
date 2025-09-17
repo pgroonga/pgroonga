@@ -81,6 +81,8 @@ jobs:
           - postgresql-15-pgroonga-debian-bookworm-arm64
           - postgresql-14-pgdg-pgroonga-debian-bookworm
           - postgresql-14-pgdg-pgroonga-debian-bookworm-arm64
+          - postgresql-14-pgdg-pgroonga-debian-trixie
+          - postgresql-14-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-noble
