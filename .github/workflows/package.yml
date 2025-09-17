@@ -86,6 +86,7 @@ jobs:
           - postgresql-14-pgdg-pgroonga-ubuntu-noble
           - postgresql-14-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-14-pgdg-pgroonga-almalinux-8
+          - postgresql-14-pgdg-pgroonga-almalinux-9
           - postgresql-14-pgroonga-ubuntu-jammy
           - postgresql-13-pgdg-pgroonga-debian-bookworm
           - postgresql-13-pgdg-pgroonga-debian-bookworm-arm64
