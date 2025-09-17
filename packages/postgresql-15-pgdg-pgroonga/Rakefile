@@ -9,6 +9,8 @@ class PostgreSQL15PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "debian-bookworm",
       "debian-bookworm-arm64",
+      "debian-trixie",
+      "debian-trixie-arm64",
       "ubuntu-jammy",
       "ubuntu-jammy-arm64",
       "ubuntu-noble",
