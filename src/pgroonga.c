@@ -5394,16 +5394,16 @@ static bool
 PGrnSearchIsInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
-		((key->sk_strategy == PGrnEqualStrategyNumber) ||
-		 (key->sk_strategy == PGrnEqualStrategyV2Number));
+		   ((key->sk_strategy == PGrnEqualStrategyNumber) ||
+			(key->sk_strategy == PGrnEqualStrategyV2Number));
 }
 
 static bool
 PGrnSearchIsMatchInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
-		((key->sk_strategy == PGrnMatchStrategyNumber) ||
-		 (key->sk_strategy == PGrnMatchStrategyV2Number));
+		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
 }
 
 static void
@@ -6195,11 +6195,11 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 
 	if (PGrnSearchIsInCondition(key))
 	{
-		// PostgreSQL 18 optimaize to "column &=/= ANY (keyword1, keyword2, ...)"
-		// from "column &=/= keyword1 OR column &=/= keyword2 OR ...".
+		// PostgreSQL 18 optimaize to "column &=/= ANY (keyword1, keyword2,
+		// ...)" from "column &=/= keyword1 OR column &=/= keyword2 OR ...".
 		// &= or = are equal operator. So, we should handle
-		// "column &=/= keyword1 OR column &=/= keyword2 OR ..." as "in_values()"
-		// function.
+		// "column &=/= keyword1 OR column &=/= keyword2 OR ..." as
+		// "in_values()" function.
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_EQUAL);
 		return;
