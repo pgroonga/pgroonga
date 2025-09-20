@@ -6,9 +6,20 @@ project(
 
 required_groonga_version = '14.1.0'
 
-groonga = dependency('groonga', version: '>= ' + required_groonga_version)
+if host_machine.system() == 'windows'
+  # On Windows, use CMake to find Groonga since pkg-config is not reliably
+  # available.
+  groonga = dependency('Groonga',
+    version: '>= ' + required_groonga_version,
+    method: 'cmake',
+    modules: ['Groonga::libgroonga'])
+else
+  groonga = dependency('groonga', version: '>= ' + required_groonga_version)
+endif
 cc = meson.get_compiler('c')
-libm = cc.find_library('m')
+if host_machine.system() == 'windows'
+  windows = import('windows')
+endif
 
 pg_config_path = get_option('pg_config')
 if pg_config_path == ''
@@ -17,6 +28,9 @@ endif
 pg_config = find_program(pg_config_path)
 pg_includedir_server = run_command(
   pg_config, '--includedir-server', check: true
+).stdout().strip()
+pg_includedir = run_command(
+  pg_config, '--includedir', check: true
 ).stdout().strip()
 pg_pkglibdir = run_command(
   pg_config, '--pkglibdir', check: true
@@ -29,10 +43,26 @@ pg_bindir = run_command(
 ).stdout().strip()
 pg_includedir_extension = pg_includedir_server / 'extension'
 
+pgrn_project_id = meson.project_name()
 pgrn_version = meson.project_version()
+
+pgrn_version_components = pgrn_version.split('.')
+pgrn_rc_config = {
+  'PGRN_VERSION_MAJOR': pgrn_version_components[0],
+  'PGRN_VERSION_MINOR': pgrn_version_components[1],
+  'PGRN_VERSION_MICRO': pgrn_version_components[2],
+  'PGRN_VERSION': pgrn_version,
+  'PGRN_VENDOR': 'The PGroonga Project',
+  'PGRN_DESCRIPTION': 'Super fast and all languages supported full text search index based on Groonga',
+  'PGRN_PROJECT_NAME': 'PGroonga',
+}
+
 pgrn_c_args = [f'-DPGRN_VERSION="@pgrn_version@"']
 if get_option('buildtype').startswith('debug')
   pgrn_c_args += ['-DPGROONGA_DEBUG=1']
+endif
+if host_machine.system() == 'windows'
+  pgrn_c_args += ['/EHsc']
 endif
 
 # Note: Meson's split() is NOT shell-compatible.
@@ -40,17 +70,44 @@ endif
 # For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd'].
 # This works for most PostgreSQL flags but may break with quoted paths containing spaces.
 # Related upstream issue: https://github.com/mesonbuild/meson/issues/15000
-pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
-pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
+if host_machine.system() == 'windows'
+  pg_cppflags = []
+  pg_cflags_sl = []
+else
+  pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
+  pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
+endif
+
+pg_include_dirs = []
+if host_machine.system() == 'windows'
+  # Windows needs port-specific includes first for platform headers
+  # These provide Windows implementations of Unix headers (netdb.h, etc.)
+  pg_include_dirs += [
+    include_directories(pg_includedir_server / 'port' / 'win32_msvc', is_system: true),
+    include_directories(pg_includedir_server / 'port' / 'win32', is_system: true),
+    include_directories(pg_includedir, is_system: true),
+  ]
+endif
+pg_include_dirs += [
+  include_directories(pg_includedir_server, is_system: true),
+]
 
 postgresql = declare_dependency(
   compile_args: pg_cppflags + pg_cflags_sl,
-  include_directories: [
-    include_directories(pg_includedir_server, is_system: true),
-  ],
+  include_directories: pg_include_dirs,
 )
 
-pgrn_dependencies = [postgresql, groonga, libm]
+pgrn_dependencies = [postgresql, groonga]
+if host_machine.system() == 'windows'
+  # On Windows, extensions must explicitly link against postgres.lib
+  # to access PostgreSQL server functions
+  postgresql_lib = cc.find_library('postgres', dirs: [pg_pkglibdir])
+  pgrn_dependencies += postgresql_lib
+else
+  # On Unix/Linux, link against libm (math library)
+  libm = cc.find_library('m')
+  pgrn_dependencies += libm
+endif
 
 if meson.version().version_compare('>= 0.60.0')
   msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
@@ -68,14 +125,18 @@ if msgpack.found()
   pgrn_dependencies += pgrn_msgpack
 endif
 
-xxhash = dependency('libxxhash', required: get_option('xxhash'))
+xxhash = dependency('libxxhash',
+  required: get_option('xxhash'),
+  fallback: ['xxhash', 'xxhash_dep'])
 if xxhash.found()
   pgrn_dependencies += xxhash
 endif
 
 name_suffix = 'so'
-if host_machine.system() == 'darwin' and \
-   pg_config.version().version_compare('>= 16')
+if host_machine.system() == 'windows'
+  name_suffix = 'dll'
+elif host_machine.system() == 'darwin' and \
+     pg_config.version().version_compare('>= 16')
   name_suffix = 'dylib'
 endif
 
@@ -134,6 +195,16 @@ pgroonga_sources = files(
   'src/pgroonga.c',
 )
 
+if host_machine.system() == 'windows'
+  pgroonga_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga.rc.in',
+      output: 'pgroonga.rc',
+      configuration: pgrn_rc_config + {'PGRN_DLL_NAME': pgrn_project_id}
+    )
+  )
+endif
+
 pgroonga = shared_module('pgroonga',
   pgroonga_sources,
   kwargs: pgrn_module_args,
@@ -142,6 +213,16 @@ pgroonga = shared_module('pgroonga',
 pgroonga_check_sources = files(
   'src/pgroonga-check.c',
 )
+
+if host_machine.system() == 'windows'
+  pgroonga_check_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-check.rc.in',
+      output: 'pgroonga-check.rc',
+      configuration: pgrn_rc_config + {'PGRN_CHECK_DLL_NAME': pgrn_project_id + '_check'}
+    )
+  )
+endif
 
 pgroonga_check = shared_module('pgroonga_check',
   pgroonga_check_sources,
@@ -152,6 +233,16 @@ pgroonga_database_sources = files(
   'src/pgroonga-database.c',
 )
 
+if host_machine.system() == 'windows'
+  pgroonga_database_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-database.rc.in',
+      output: 'pgroonga-database.rc',
+      configuration: pgrn_rc_config + {'PGRN_DATABASE_DLL_NAME': pgrn_project_id + '_database'}
+    )
+  )
+endif
+
 pgroonga_database = shared_module('pgroonga_database',
   pgroonga_database_sources,
   kwargs: pgrn_module_args,
@@ -160,6 +251,16 @@ pgroonga_database = shared_module('pgroonga_database',
 pgroonga_wal_applier_sources = files(
   'src/pgroonga-wal-applier.c',
 )
+
+if host_machine.system() == 'windows'
+  pgroonga_wal_applier_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-wal-applier.rc.in',
+      output: 'pgroonga-wal-applier.rc',
+      configuration: pgrn_rc_config + {'PGRN_WAL_APPLIER_DLL_NAME': pgrn_project_id + '_wal_applier'}
+    )
+  )
+endif
 
 pgroonga_wal_applier = shared_module('pgroonga_wal_applier',
   pgroonga_wal_applier_sources,
@@ -170,6 +271,16 @@ pgroonga_crash_safer_sources = files(
   'src/pgroonga-crash-safer.c',
 )
 
+if host_machine.system() == 'windows'
+  pgroonga_crash_safer_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-crash-safer.rc.in',
+      output: 'pgroonga-crash-safer.rc',
+      configuration: pgrn_rc_config + {'PGRN_CRASH_SAFER_DLL_NAME': pgrn_project_id + '_crash_safer'}
+    )
+  )
+endif
+
 pgroonga_crash_safer = shared_module('pgroonga_crash_safer',
   pgroonga_crash_safer_sources,
   kwargs: pgrn_module_args,
@@ -179,6 +290,16 @@ pgroonga_standby_maintainer_sources = files(
   'src/pgroonga-standby-maintainer.c',
 )
 
+if host_machine.system() == 'windows'
+  pgroonga_standby_maintainer_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-standby-maintainer.rc.in',
+      output: 'pgroonga-standby-maintainer.rc',
+      configuration: pgrn_rc_config + {'PGRN_STANDBY_MAINTAINER_DLL_NAME': pgrn_project_id + '_standby_maintainer'}
+    )
+  )
+endif
+
 pgroonga_standby_maintainer = shared_module('pgroonga_standby_maintainer',
   pgroonga_standby_maintainer_sources,
   kwargs: pgrn_module_args,
@@ -187,6 +308,16 @@ pgroonga_standby_maintainer = shared_module('pgroonga_standby_maintainer',
 pgroonga_wal_resource_manager_sources = files(
   'src/pgroonga-wal-resource-manager.c',
 )
+
+if host_machine.system() == 'windows'
+  pgroonga_wal_resource_manager_sources += windows.compile_resources(
+    configure_file(
+      input: 'src/pgroonga-wal-resource-manager.rc.in',
+      output: 'pgroonga-wal-resource-manager.rc',
+      configuration: pgrn_rc_config + {'PGRN_WAL_RESOURCE_MANAGER_DLL_NAME': pgrn_project_id + '_wal_resource_manager'}
+    )
+  )
+endif
 
 pgroonga_wal_resource_manager = shared_module('pgroonga_wal_resource_manager',
   pgroonga_wal_resource_manager_sources,
@@ -429,19 +560,32 @@ install_data(maintainer_scripts,
 
 if get_option('test')
   ruby = find_program('ruby')
+  # For PostgreSQL 17+ on Windows, pg_regress.exe in pgxs depends on libpq.dll
+  # which is in the bin directory. We copy pg_regress.exe to bin in CI,
+  # so search bin directory first for PostgreSQL 17+ on Windows only.
+  if host_machine.system() == 'windows' and pg_config.version().version_compare('>= 17')
+    pg_regress_dirs = [
+      pg_bindir,
+      pg_pkglibdir / 'pgxs/src/test/regress',
+    ]
+  else
+    pg_regress_dirs = [
+      pg_pkglibdir / 'pgxs/src/test/regress',
+      pg_bindir,
+    ]
+  endif
   pg_regress = find_program(
     'pg_regress',
-    dirs: [pg_pkglibdir / 'pgxs/src/test/regress']
+    dirs: pg_regress_dirs
   )
 
-  schedule = meson.current_build_dir() / 'schedule'
   prepare_test = custom_target(
     'prepare',
     output: 'schedule',
     command: [
       ruby,
       meson.current_source_dir() / 'test' / 'prepare.rb',
-      schedule
+      '@OUTPUT@'
     ],
     env: {
       'BUILD_DIR': meson.current_build_dir(),
@@ -449,6 +593,12 @@ if get_option('test')
     build_always_stale: true
   )
 
+  schedule = prepare_test.full_path()
+  if host_machine.system() == 'windows'
+    launcher = meson.current_source_dir() / 'test' / 'short-pgappname.bat'
+  else
+    launcher = meson.current_source_dir() / 'test' / 'short-pgappname'
+  endif
   test('regression',
     pg_regress,
     args: [
@@ -456,7 +606,7 @@ if get_option('test')
       '--dlpath', meson.current_build_dir(),
       '--inputdir', meson.current_source_dir(),
       '--outputdir', meson.current_build_dir(),
-      '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+      '--launcher', launcher,
       '--load-extension', meson.project_name(),
       '--schedule', schedule
     ],
