@@ -375,7 +375,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 static void
 PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es)
 {
-	ExplainPropertyText("PGroongaScan", "DEBUG", es);
+	// todo Add the necessary information when we find it.
 }
 
 static void
