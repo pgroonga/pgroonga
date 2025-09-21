@@ -9,11 +9,11 @@ INSERT INTO memos VALUES ('PGroonga is a PostgreSQL extension that uses Groonga.
 SET pgroonga.enable_custom_scan = on;
 
 EXPLAIN (COSTS OFF)
-SELECT content
+SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~ 'PGroonga OR Groonga';
 
-SELECT content
+SELECT content, pgroonga_score(tableoid, ctid)
   FROM memos
  WHERE content &@~ 'PGroonga OR Groonga';
 

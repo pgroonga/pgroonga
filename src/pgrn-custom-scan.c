@@ -3,7 +3,9 @@
 #if PG_VERSION_NUM >= 180000
 #	include <commands/explain_format.h>
 #endif
+#include <executor/executor.h>
 #include <nodes/extensible.h>
+#include <nodes/nodeFuncs.h>
 #include <optimizer/pathnode.h>
 #include <optimizer/paths.h>
 #include <optimizer/restrictinfo.h>
@@ -23,6 +25,7 @@ typedef struct PGrnScanState
 	grn_obj columnValue;
 	PGrnSearchData searchData;
 	grn_obj *searched;
+	grn_obj *scoreAccessor;
 } PGrnScanState;
 
 static bool PGrnCustomScanEnabled = false;
@@ -117,6 +120,11 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
 	cpath->path.pathtarget = rel->reltarget;
+
+#if (PG_VERSION_NUM >= 150000)
+	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
+#endif
+
 	cpath->methods = &PGrnPathMethods;
 
 	add_path(rel, &cpath->path);
@@ -160,6 +168,7 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	GRN_VOID_INIT(&(state->columnValue));
 	memset(&(state->searchData), 0, sizeof(state->searchData));
 	state->searched = NULL;
+	state->scoreAccessor = NULL;
 
 	return (Node *) &(state->parent);
 }
@@ -330,6 +339,10 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 												   0,
 												   -1,
 												   GRN_CURSOR_ASCENDING);
+		state->scoreAccessor = grn_obj_column(ctx,
+											  state->searched,
+											  GRN_COLUMN_NAME_SCORE,
+											  GRN_COLUMN_NAME_SCORE_LEN);
 	}
 
 	PGrnSearchDataFree(&(state->searchData));
@@ -351,22 +364,55 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 
 	{
 		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
+		unsigned int i = 0;
+		ListCell *cell;
 
 		ExecClearTuple(slot);
-		for (unsigned int i = 0; i < slot->tts_tupleDescriptor->natts; i++)
+		// We might add state->targetlist instead of ss.ps.plan->targetlist.
+		foreach (cell, customScanState->ss.ps.plan->targetlist)
 		{
-			Form_pg_attribute attr =
-				TupleDescAttr(slot->tts_tupleDescriptor, i);
-			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+			TargetEntry *entry = (TargetEntry *) lfirst(cell);
 			GRN_BULK_REWIND(&(state->columnValue));
-			grn_obj_get_value(ctx, column, id, &(state->columnValue));
-			slot->tts_values[i] =
-				PGrnConvertToDatum(&(state->columnValue), attr->atttypid);
-			// todo
-			// If there are nullable columns, do not custom scan.
-			// See also
-			// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
-			slot->tts_isnull[i] = false;
+
+			if (IsA(entry->expr, Var))
+			{
+				Oid typeId = exprType((Node *) entry->expr);
+				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+				grn_obj_get_value(ctx, column, id, &(state->columnValue));
+				slot->tts_values[i] =
+					PGrnConvertToDatum(&(state->columnValue), typeId);
+				// todo
+				// If there are nullable columns, do not custom scan.
+				// See also
+				// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
+				slot->tts_isnull[i] = false;
+			}
+			else if (IsA(entry->expr, FuncExpr))
+			{
+				FuncExpr *funcExpr = (FuncExpr *) entry->expr;
+				if (strcmp(get_func_name(funcExpr->funcid), "pgroonga_score") ==
+					0)
+				{
+					grn_obj_get_value(
+						ctx, state->scoreAccessor, id, &(state->columnValue));
+					slot->tts_values[i] =
+						PGrnConvertToDatum(&(state->columnValue), FLOAT8OID);
+					slot->tts_isnull[i] = false;
+				}
+				else
+				{
+					ExprContext *econtext =
+						customScanState->ss.ps.ps_ExprContext;
+					ExprState *exprstate =
+						ExecInitExpr((Expr *) funcExpr, NULL);
+					bool isNull = false;
+					ResetExprContext(econtext);
+					slot->tts_values[i] =
+						ExecEvalExpr(exprstate, econtext, &isNull);
+					slot->tts_isnull[i] = isNull;
+				}
+			}
+			i++;
 		}
 		return ExecStoreVirtualTuple(slot);
 	}
@@ -409,6 +455,11 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	{
 		grn_obj_close(ctx, state->searched);
 		state->searched = NULL;
+	}
+	if (state->scoreAccessor)
+	{
+		grn_obj_close(ctx, state->scoreAccessor);
+		state->scoreAccessor = NULL;
 	}
 }
 
