@@ -13,8 +13,7 @@ SELECT content
 -----------------------------------------------------
  Custom Scan (PGroongaScan) on memos
    Filter: (content &@~ 'PGroonga OR Groonga'::text)
-   PGroongaScan: DEBUG
-(3 rows)
+(2 rows)
 
 SELECT content
   FROM memos
