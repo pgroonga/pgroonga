@@ -376,11 +376,11 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 
 			if (IsA(entry->expr, Var))
 			{
-				Oid typeId = exprType((Node *) entry->expr);
+				Oid typeID = exprType((Node *) (entry->expr));
 				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
 				grn_obj_get_value(ctx, column, id, &(state->columnValue));
 				slot->tts_values[i] =
-					PGrnConvertToDatum(&(state->columnValue), typeId);
+					PGrnConvertToDatum(&(state->columnValue), typeID);
 				// todo
 				// If there are nullable columns, do not custom scan.
 				// See also
@@ -389,7 +389,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 			}
 			else if (IsA(entry->expr, FuncExpr))
 			{
-				FuncExpr *funcExpr = (FuncExpr *) entry->expr;
+				FuncExpr *funcExpr = (FuncExpr *) (entry->expr);
 				if (strcmp(get_func_name(funcExpr->funcid), "pgroonga_score") ==
 					0)
 				{
@@ -403,12 +403,11 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				{
 					ExprContext *econtext =
 						customScanState->ss.ps.ps_ExprContext;
-					ExprState *exprstate =
-						ExecInitExpr((Expr *) funcExpr, NULL);
+					ExprState *state = ExecInitExpr((Expr *) funcExpr, NULL);
 					bool isNull = false;
 					ResetExprContext(econtext);
 					slot->tts_values[i] =
-						ExecEvalExpr(exprstate, econtext, &isNull);
+						ExecEvalExpr(state, econtext, &isNull);
 					slot->tts_isnull[i] = isNull;
 				}
 			}
