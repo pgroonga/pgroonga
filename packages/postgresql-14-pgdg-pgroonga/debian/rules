@@ -10,10 +10,10 @@ export DH_OPTIONS
 	dh $@
 
 override_dh_auto_build:
-	if [ "$$(lsb_release --codename --short)" = "trixie" ]; then		\
-		dh_auto_build -- HAVE_MSGPACK=1 MSGPACK_PACKAGE_NAME=msgpack-c;	\
-	else									\
+	if [ "$$(lsb_release --codename --short)" = "bookworm" ]; then		\
 		dh_auto_build -- HAVE_MSGPACK=1;				\
+	else									\
+		dh_auto_build -- HAVE_MSGPACK=1 MSGPACK_PACKAGE_NAME=msgpack-c;	\
 	fi
 
 # disable 'make check'.
