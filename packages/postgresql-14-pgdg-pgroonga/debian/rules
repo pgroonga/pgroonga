@@ -10,7 +10,7 @@ export DH_OPTIONS
 	dh $@
 
 override_dh_auto_build:
-	# We can remove this condition after Debian 12 (bookworm) is EOLed.
+	# We can remove this condition after Debian 12 (bookworm) is EOL.
 	if [ "$$(lsb_release --codename --short)" = "bookworm" ]; then		\
 		dh_auto_build -- HAVE_MSGPACK=1;				\
 	else									\
