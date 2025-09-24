@@ -410,6 +410,10 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				{
 					ExprContext *econtext =
 						customScanState->ss.ps.ps_ExprContext;
+					// todo
+					// Initialization in BeginCustomScan.
+					// See also
+					// https://github.com/pgroonga/pgroonga/pull/783/files#r2374165154
 					ExprState *state = ExecInitExpr((Expr *) funcExpr, NULL);
 					bool isNull = false;
 					ResetExprContext(econtext);
