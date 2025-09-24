@@ -941,7 +941,13 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		PG_RETURN_INT64(GRN_INT64_VALUE(value));
 		break;
 	case FLOAT4OID:
-		PG_RETURN_FLOAT4(GRN_FLOAT_VALUE(value));
+		// For backward compatibility.
+		// `FLOAT4OID` was also `GRN_DB_FLOAT` before.
+		// Changed from this commit: 441411db727fa60186e01e3a564eccb6e192bb1a
+		if (value->header.domain == GRN_DB_FLOAT)
+			PG_RETURN_FLOAT4(GRN_FLOAT_VALUE(value));
+		else
+			PG_RETURN_FLOAT4(GRN_FLOAT32_VALUE(value));
 		break;
 	case FLOAT8OID:
 		PG_RETURN_FLOAT8(GRN_FLOAT_VALUE(value));
