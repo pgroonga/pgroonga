@@ -397,6 +397,9 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				if (strcmp(get_func_name(funcExpr->funcid), "pgroonga_score") ==
 					0)
 				{
+					// todo
+					// Reject this function if the argument isn't
+					// `(tableoid, ctid)` nor `(record)`.
 					grn_obj_get_value(
 						ctx, state->scoreAccessor, id, &(state->columnValue));
 					slot->tts_values[ttsIndex] =
