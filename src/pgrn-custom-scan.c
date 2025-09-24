@@ -380,8 +380,8 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 			if (IsA(entry->expr, Var))
 			{
 				Oid typeID = exprType((Node *) (entry->expr));
-				grn_obj *column =
-					GRN_PTR_VALUE_AT(&(state->columns), varIndex++);
+				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), varIndex);
+				varIndex++;
 				grn_obj_get_value(ctx, column, id, &(state->columnValue));
 				slot->tts_values[ttsIndex] =
 					PGrnConvertToDatum(&(state->columnValue), typeID);
