@@ -204,15 +204,17 @@ static void
 PGrnSetTargetColumns(CustomScanState *customScanState, grn_obj *targetTable)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	TupleDesc tupdesc =
-		RelationGetDescr(customScanState->ss.ss_currentRelation);
+	ListCell *cell;
 
-	for (int i = 0; i < tupdesc->natts; i++)
+	foreach (cell, customScanState->ss.ps.plan->targetlist)
 	{
-		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
-		grn_obj *column =
-			PGrnLookupColumn(targetTable, NameStr(attr->attname), ERROR);
-		GRN_PTR_PUT(ctx, &(state->columns), column);
+		TargetEntry *entry = (TargetEntry *) lfirst(cell);
+		if (IsA(entry->expr, Var))
+		{
+			grn_obj *column =
+				PGrnLookupColumn(targetTable, entry->resname, ERROR);
+			GRN_PTR_PUT(ctx, &(state->columns), column);
+		}
 	}
 }
 
@@ -364,7 +366,8 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 
 	{
 		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
-		unsigned int i = 0;
+		unsigned int ttsIndex = 0;
+		unsigned int varIndex = 0;
 		ListCell *cell;
 
 		ExecClearTuple(slot);
@@ -377,15 +380,16 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 			if (IsA(entry->expr, Var))
 			{
 				Oid typeID = exprType((Node *) (entry->expr));
-				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), i);
+				grn_obj *column =
+					GRN_PTR_VALUE_AT(&(state->columns), varIndex++);
 				grn_obj_get_value(ctx, column, id, &(state->columnValue));
-				slot->tts_values[i] =
+				slot->tts_values[ttsIndex] =
 					PGrnConvertToDatum(&(state->columnValue), typeID);
 				// todo
 				// If there are nullable columns, do not custom scan.
 				// See also
 				// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
-				slot->tts_isnull[i] = false;
+				slot->tts_isnull[ttsIndex] = false;
 			}
 			else if (IsA(entry->expr, FuncExpr))
 			{
@@ -395,9 +399,9 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				{
 					grn_obj_get_value(
 						ctx, state->scoreAccessor, id, &(state->columnValue));
-					slot->tts_values[i] =
+					slot->tts_values[ttsIndex] =
 						PGrnConvertToDatum(&(state->columnValue), FLOAT8OID);
-					slot->tts_isnull[i] = false;
+					slot->tts_isnull[ttsIndex] = false;
 				}
 				else
 				{
@@ -406,12 +410,12 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 					ExprState *state = ExecInitExpr((Expr *) funcExpr, NULL);
 					bool isNull = false;
 					ResetExprContext(econtext);
-					slot->tts_values[i] =
+					slot->tts_values[ttsIndex] =
 						ExecEvalExpr(state, econtext, &isNull);
-					slot->tts_isnull[i] = isNull;
+					slot->tts_isnull[ttsIndex] = isNull;
 				}
 			}
-			i++;
+			ttsIndex++;
 		}
 		return ExecStoreVirtualTuple(slot);
 	}
