@@ -5393,9 +5393,8 @@ pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 static bool
 PGrnSearchIsInCondition(ScanKey key)
 {
-	return (key->sk_flags & SK_SEARCHARRAY) &&
-		   ((key->sk_strategy == PGrnEqualStrategyNumber) ||
-			(key->sk_strategy == PGrnEqualStrategyV2Number));
+	return (key->sk_flags & SK_SEARCHARRAY &&
+			key->sk_strategy == PGrnEqualStrategyNumber);
 }
 
 static bool
@@ -6195,11 +6194,9 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 
 	if (PGrnSearchIsInCondition(key))
 	{
-		// PostgreSQL 18 optimaize to "column &=/= ANY (keyword1, keyword2,
-		// ...)" from "column &=/= keyword1 OR column &=/= keyword2 OR ...".
-		// &= or = are equal operator. So, we should handle
-		// "column &=/= keyword1 OR column &=/= keyword2 OR ..." as
-		// "in_values()" function.
+		// Optimaize to "in_values()" function from
+		// "column &=/= ANY (keyword1, keyword2,
+		// ...)" or "column &=/= keyword1 OR column &=/= keyword2 OR ...".
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_EQUAL);
 		return;
