@@ -10,16 +10,14 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
-                                   QUERY PLAN                                    
----------------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: ((content &@ 'PGroonga'::text) OR (content &@ 'Groonga'::text))
-   ->  BitmapOr
-         ->  Bitmap Index Scan on grnindex
-               Index Cond: (content &@ 'PGroonga'::text)
-         ->  Bitmap Index Scan on grnindex
-               Index Cond: (content &@ 'Groonga'::text)
-(7 rows)
+SELECT id, content
+  FROM memos
+ WHERE content &@ 'PGroonga' OR content &@ 'Groonga';
+                                QUERY PLAN                                 
+---------------------------------------------------------------------------
+ Seq Scan on memos
+   Filter: ((content &@ 'PGroonga'::text) OR (content &@ 'Groonga'::text))
+(2 rows)
 
 SELECT id, content
   FROM memos
