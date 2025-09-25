@@ -24,8 +24,8 @@ SELECT id, content
  WHERE content &@ 'PGroonga' OR content &@ 'Groonga';
  id |                        content                        
 ----+-------------------------------------------------------
-  2 | Groonga is fast full text search engine.
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
+  2 | Groonga is fast full text search engine.
 (2 rows)
 
 DROP TABLE memos;
