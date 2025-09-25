@@ -237,8 +237,9 @@ pgroonga_standby_maintainer_maintain(Datum databaseInfoDatum)
 			}
 			else
 			{
-				indexName = VARDATA_ANY(indexNameDatum);
-				indexNameSize = VARSIZE_ANY_EXHDR(indexNameDatum);
+				indexName = VARDATA_ANY(DatumGetPointer(indexNameDatum));
+				indexNameSize =
+					VARSIZE_ANY_EXHDR(DatumGetPointer(indexNameDatum));
 			}
 			BGWORKER_SET_INDEX_NAME(worker, indexName, indexNameSize);
 		}
