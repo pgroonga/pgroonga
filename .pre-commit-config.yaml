@@ -16,5 +16,7 @@ repos:
     rev: "v1.8.2"
     hooks:
       - id: meson-fmt
+        types:
+          - meson
 
 exclude: "^vendor/.*"
