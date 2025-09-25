@@ -5393,8 +5393,9 @@ pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 static bool
 PGrnSearchIsInCondition(ScanKey key)
 {
-	return (key->sk_flags & SK_SEARCHARRAY &&
-			key->sk_strategy == PGrnEqualStrategyNumber);
+	return ((key->sk_flags & SK_SEARCHARRAY) &&
+			((key->sk_strategy == PGrnEqualStrategyNumber) ||
+			 (key->sk_strategy == PGrnEqualStrategyV2Number)));
 }
 
 static bool
