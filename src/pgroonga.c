@@ -6194,20 +6194,25 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 
 	if (PGrnSearchIsInCondition(key))
 	{
-		// Optimaize to "in_values()" function from
-		// "column &=/= ANY (keyword1, keyword2,
-		// ...)" or "column &=/= keyword1 OR column &=/= keyword2 OR ...".
+		// column &= IN (keyword1, keyword2, ...) in PostgreSQL ->
+		// in_values(column, keyword1, keyword2, ...) in Groonga
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_EQUAL);
 		return;
 	}
 	if (PGrnSearchIsMatchInCondition(key))
 	{
-		// PostgreSQL 18 optimaize to "column &@ ANY (keyword1, keyword2, ...)"
-		// from "column &@ keyword1 OR column &@ keyword2 OR ...".
-		// &@ is match operator. So, we should handle
-		// "column &@ keyword1 OR column &@ keyword2 OR ..." as "match in"
-		// operator.
+		// column &@ IN (keyword1, keyword2, ...) in PostgreSQL ->
+		// column @ keyword1 || column @ keyword2 || ... in Groonga
+		//
+		// PostgreSQL 18 or later optimizes
+		//   column &@ keyword1 OR column &@ keyword2 OR ...
+		// to
+		//   column &@ IN (keyword1, keyword2, ...)
+		// .
+		//
+		// So this is used for "column &@ IN (keyword1, keyword2,
+		// ...)" too with PostgreSQL 18 or later.
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_MATCH);
 		return;
