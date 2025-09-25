@@ -870,14 +870,14 @@ PGrnInitializeJSONB(void)
 {
 	PGrnJSONBCreateData data;
 
-	tmpPathsTable = PGrnJSONBCreatePathsTable(InvalidRelation, NULL);
-	tmpTypesTable = PGrnJSONBCreateTypesTable(InvalidRelation, NULL);
-	tmpValuesTable = PGrnJSONBCreateValuesTable(InvalidRelation, NULL);
+	tmpPathsTable = PGrnJSONBCreatePathsTable(NULL, NULL);
+	tmpTypesTable = PGrnJSONBCreateTypesTable(NULL, NULL);
+	tmpValuesTable = PGrnJSONBCreateValuesTable(NULL, NULL);
 
 	data.pathsTable = tmpPathsTable;
 	data.typesTable = tmpTypesTable;
 	data.valuesTable = tmpValuesTable;
-	PGrnJSONBCreateDataColumns(InvalidRelation, &data);
+	PGrnJSONBCreateDataColumns(NULL, &data);
 }
 
 void
