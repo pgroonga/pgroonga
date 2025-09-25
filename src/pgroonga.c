@@ -5478,17 +5478,17 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		PGrnConvertFromData(
 			valueDatum, attribute->atttypid, &(buffers->general));
 
-		if (operator== GRN_OP_MATCH)
-		{
-			PGrnSearchBuildConditionBinaryOperation(
-				data, targetColumn, &(buffers->general), GRN_OP_MATCH);
-			if (nArgs > 0)
-				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
-		}
-		else
+		if (operator== GRN_OP_EQUAL)
 		{
 			PGrnExprAppendConst(
 				data->expression, &(buffers->general), GRN_OP_PUSH, 1, tag);
+		}
+		else
+		{
+			PGrnSearchBuildConditionBinaryOperation(
+				data, targetColumn, &(buffers->general), operator);
+			if (nArgs > 0)
+				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
 		}
 		nArgs++;
 	}
