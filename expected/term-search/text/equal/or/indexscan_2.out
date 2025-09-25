@@ -16,7 +16,7 @@ SELECT name
   FROM tags
  WHERE name = 'groonga' OR name = 'pgroonga'
  ORDER BY id;
-                               QUERY PLAN
+                               QUERY PLAN                                
 -------------------------------------------------------------------------
  Sort
    Sort Key: id
@@ -28,7 +28,7 @@ SELECT name
   FROM tags
  WHERE name = 'groonga' OR name = 'pgroonga'
  ORDER BY id;
-  name
+  name   
 ---------
  groonga
 (1 row)
