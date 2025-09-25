@@ -8517,7 +8517,7 @@ PGrnRemoveUnusedTables(void)
 		{
 			Oid relationFileNodeID =
 				GRN_UINT32_VALUE_AT(&targetRelationFileNodIDs, i);
-			PGrnRemoveUnusedTable(InvalidRelation, relationFileNodeID);
+			PGrnRemoveUnusedTable(NULL, relationFileNodeID);
 		}
 	}
 	GRN_OBJ_FIN(ctx, &targetRelationFileNodIDs);

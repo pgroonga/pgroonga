@@ -309,8 +309,8 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 				  const char *columnName,
 				  size_t columnNameSize)
 {
-	Relation termIndex = InvalidRelation;
-	Relation preferedIndex = InvalidRelation;
+	Relation termIndex = NULL;
+	Relation preferedIndex = NULL;
 	List *indexOIDList;
 	ListCell *cell;
 
@@ -319,7 +319,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 	indexOIDList = RelationGetIndexList(data->table);
 	foreach (cell, indexOIDList)
 	{
-		Relation index = InvalidRelation;
+		Relation index = NULL;
 		Oid indexOID = lfirst_oid(cell);
 		int i;
 
@@ -384,7 +384,7 @@ PGrnFindTermIndex(PGrnQueryExpandData *data,
 			continue;
 
 		index_close(index, lockMode);
-		index = InvalidRelation;
+		index = NULL;
 	}
 	list_free(indexOIDList);
 

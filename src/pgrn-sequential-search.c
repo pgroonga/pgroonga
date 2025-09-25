@@ -382,14 +382,13 @@ PGrnSequentialSearchPrepareIndex(PGrnCondition *condition,
 
 		PG_TRY();
 		{
-			currentDatum->indexColumn = PGrnCreateColumn(InvalidRelation,
+			currentDatum->indexColumn = PGrnCreateColumn(NULL,
 														 currentDatum->lexicon,
 														 "index",
 														 indexFlags,
 														 currentDatum->table);
-			PGrnIndexColumnSetSource(InvalidRelation,
-									 currentDatum->indexColumn,
-									 currentDatum->targetColumn);
+			PGrnIndexColumnSetSource(
+				NULL, currentDatum->indexColumn, currentDatum->targetColumn);
 		}
 		PG_CATCH();
 		{
@@ -420,21 +419,20 @@ PGrnSequentialSearchPrepareIndex(PGrnCondition *condition,
 			}
 			GRN_TEXT_SETS(ctx, normalizers, PGRN_DEFAULT_NORMALIZERS);
 			currentDatum->lexicon =
-				PGrnCreateTable(InvalidRelation,
+				PGrnCreateTable(NULL,
 								NULL,
 								tableFlags,
 								grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 								tokenizer,
 								normalizers,
 								NULL);
-			currentDatum->indexColumn = PGrnCreateColumn(InvalidRelation,
+			currentDatum->indexColumn = PGrnCreateColumn(NULL,
 														 currentDatum->lexicon,
 														 "index",
 														 indexFlags,
 														 currentDatum->table);
-			PGrnIndexColumnSetSource(InvalidRelation,
-									 currentDatum->indexColumn,
-									 currentDatum->targetColumn);
+			PGrnIndexColumnSetSource(
+				NULL, currentDatum->indexColumn, currentDatum->targetColumn);
 		}
 		PG_CATCH();
 		{

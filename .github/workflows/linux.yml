@@ -29,6 +29,7 @@ jobs:
           - PostgreSQL 17
           - PostgreSQL 17 with Groonga main
           - PostgreSQL 18
+          - PostgreSQL 19
         include:
           - label: PostgreSQL 13
             postgresql-version: "13"
@@ -47,6 +48,9 @@ jobs:
           - label: PostgreSQL 18
             postgresql-unreleased: "yes"
             postgresql-version: "18"
+          - label: PostgreSQL 19
+            postgresql-unreleased: "yes"
+            postgresql-version: "19"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
@@ -116,9 +120,13 @@ jobs:
         env:
           PG_CONFIG: "/usr/lib/postgresql/${{ matrix.postgresql-version }}/bin/pg_config"
       - name: Build PGroonga
+        # TODO: Remove this when we're PostgreSQL 19 ready
+        continue-on-error: ${{ matrix.postgresql-version == '19' && true || false }}
         run: |
           meson compile -C ../pgroonga.build
       - name: Install PGroonga
+        # TODO: Remove this when we're PostgreSQL 19 ready
+        continue-on-error: ${{ matrix.postgresql-version == '19' && true || false }}
         run: |
           sudo meson install -C ../pgroonga.build
       - name: Run regression test
@@ -130,13 +138,13 @@ jobs:
         # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
         if: matrix.postgresql-unreleased == 'yes' || failure()
         run: |
-          cat ../pgroonga.build/regression.diffs
+          cat ../pgroonga.build/regression.diffs || :
       - name: Show pgroonga.log
         # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
         if: matrix.postgresql-unreleased == 'yes' || failure()
         run: |
           sudo cat \
-            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
+            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log || :
       - name: Show pgroonga.log of parsed backtrace
         # TODO: Remove "matrix.postgresql-unreleased == 'yes' ||" when we're PostgreSQL 18 ready
         if: matrix.postgresql-unreleased == 'yes' || failure()
@@ -151,7 +159,7 @@ jobs:
           fi
           sudo ruby ./parse-backtrace.rb \
             ${options} \
-            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log
+            /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log || :
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ruby

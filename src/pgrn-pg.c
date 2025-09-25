@@ -149,7 +149,7 @@ Relation
 PGrnPGResolveFileNodeID(Oid fileNodeID, Oid *relationID, LOCKMODE lockMode)
 {
 	PGrnTablespaceIterator iterator;
-	Relation relation = InvalidRelation;
+	Relation relation = NULL;
 
 	PGrnTablespaceIteratorInitialize(&iterator, AccessShareLock);
 	while (true)
