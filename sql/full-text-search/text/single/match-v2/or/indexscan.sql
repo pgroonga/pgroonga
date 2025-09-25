@@ -13,6 +13,11 @@ SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@ 'PGroonga' OR content &@ 'Groonga';
+
 SELECT id, content
   FROM memos
  WHERE content &@ 'PGroonga' OR content &@ 'Groonga';

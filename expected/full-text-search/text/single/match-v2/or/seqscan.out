@@ -9,6 +9,16 @@ CREATE INDEX grnindex ON memos USING pgroonga (content);
 SET enable_seqscan = on;
 SET enable_indexscan = off;
 SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content &@ 'PGroonga' OR content &@ 'Groonga';
+                                QUERY PLAN                                 
+---------------------------------------------------------------------------
+ Seq Scan on memos
+   Filter: ((content &@ 'PGroonga'::text) OR (content &@ 'Groonga'::text))
+(2 rows)
+
 SELECT id, content
   FROM memos
  WHERE content &@ 'PGroonga' OR content &@ 'Groonga';
