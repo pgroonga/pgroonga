@@ -1,8 +1,0 @@
-((c-mode . ((c-file-style . "bsd")
-            (c-basic-offset . 4)
-            (tab-width . 4)
-            (indent-tabs-mode . t)
-            (show-trailing-whitespace . t)))
- (sh-mode . ((indent-tabs-mode . nil)
-             (sh-indentation   . 2)
-             (sh-basic-offset  . 2))))

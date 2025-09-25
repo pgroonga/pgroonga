@@ -1,0 +1,19 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+spelling_language = en
+trim_trailing_whitespace = true
+
+[*.{c,h}]
+indent_size = 4
+indent_style = tab
+
+[*.sh]
+indent_size = 2
+indent_style = space
+
+[rules]
+indent_size = 8
+indent_style = tab
