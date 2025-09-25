@@ -260,12 +260,19 @@ namespace :test do
   namespace :lint do
     desc "Check that `sql/**/*.sql` and `expected/**/*.out` are paired"
     task :pair do
-      sql_files = Dir.glob("**/*.sql", base: "sql").map do |path|
-        path.ext(".out")
+      sql_files = {}
+      Dir.glob("**/*.sql", base: "sql") do |sql_file|
+        sql_files[sql_file] = true
       end
       expected_files = Dir.glob("**/*.out", base: "expected")
-      diff = expected_files - sql_files
-      raise "Files only in `expected/`:\n#{diff.sort.join("\n")}" unless diff.empty?
+      no_sql_expected_files = expected_files.reject do |expected_file|
+        sql_file = expected_file.gsub(/(?:_\d)?\.out\z/, ".sql")
+        sql_files.key?(sql_file)
+      end
+      unless no_sql_expected_files.empty?
+        raise "Files only in `expected/`:\n" +
+              no_sql_expected_files.sort.join("\n")
+      end
     end
   end
 end
