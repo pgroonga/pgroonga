@@ -41,6 +41,14 @@ PGrnIsTargetPlanState(PlanState *state, FunctionCallInfo fcinfo)
 		{
 		case EEOP_FUNCEXPR:
 		case EEOP_FUNCEXPR_STRICT:
+/* EEOP_FUNCEXPR_STRICT_1 and EEOP_FUNCEXPR_STRICT_2 are added since
+ * PostgreSQL 18. Please refer to
+ * https://github.com/postgres/postgres/commit/d35d32d7112bc632c6a305e9dffdec0082bbdf00
+ */
+#ifdef PGRN_SUPPORT_FUNCEXPR_STRICT_1_2
+		case EEOP_FUNCEXPR_STRICT_1:
+		case EEOP_FUNCEXPR_STRICT_2:
+#endif
 			if (step->d.func.fcinfo_data == fcinfo)
 				return true;
 			break;
