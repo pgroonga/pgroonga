@@ -6,6 +6,10 @@ option('message_pack',
        type: 'feature',
        value: 'auto',
        description: 'Enable MessagePack support')
+option('test',
+       type: 'boolean',
+       value: 'true',
+       description: 'Enable test')
 option('xxhash',
        type: 'feature',
        value: 'auto',

@@ -407,52 +407,54 @@ install_data(maintainer_scripts,
   install_mode: 'rwxr-xr-x',
 )
 
-ruby = find_program('ruby')
-pg_regress = find_program(
-  'pg_regress',
-  dirs: [pg_pkglibdir / 'pgxs/src/test/regress']
-)
+if get_option('test')
+  ruby = find_program('ruby')
+  pg_regress = find_program(
+    'pg_regress',
+    dirs: [pg_pkglibdir / 'pgxs/src/test/regress']
+  )
 
-schedule = meson.current_build_dir() / 'schedule'
-prepare_test = custom_target(
-  'prepare',
-  output: 'schedule',
-  command: [
-    ruby,
-    meson.current_source_dir() / 'test' / 'prepare.rb',
-    schedule
-  ],
-  env: {
-    'BUILD_DIR': meson.current_build_dir(),
-  },
-  build_always_stale: true
-)
+  schedule = meson.current_build_dir() / 'schedule'
+  prepare_test = custom_target(
+    'prepare',
+    output: 'schedule',
+    command: [
+      ruby,
+      meson.current_source_dir() / 'test' / 'prepare.rb',
+      schedule
+    ],
+    env: {
+      'BUILD_DIR': meson.current_build_dir(),
+    },
+    build_always_stale: true
+  )
 
-test('regression',
-  pg_regress,
-  args: [
-    '--bindir', pg_bindir,
-    '--dlpath', meson.current_build_dir(),
-    '--inputdir', meson.current_source_dir(),
-    '--outputdir', meson.current_build_dir(),
-    '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
-    '--load-extension', meson.project_name(),
-    '--schedule', schedule
-  ],
-  env: {
-    'PG_REGRESS_DIFF_OPTS': '-u --color=always',
-  },
-  depends: [
-    pgroonga,
-    pgroonga_check,
-    pgroonga_crash_safer,
-    pgroonga_database,
-    pgroonga_standby_maintainer,
-    pgroonga_wal_applier,
-    pgroonga_wal_resource_manager,
-    prepare_test
-  ],
-  timeout: 600,
-  suite: 'regression',
-  workdir: meson.current_source_dir(),
-)
+  test('regression',
+    pg_regress,
+    args: [
+      '--bindir', pg_bindir,
+      '--dlpath', meson.current_build_dir(),
+      '--inputdir', meson.current_source_dir(),
+      '--outputdir', meson.current_build_dir(),
+      '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+      '--load-extension', meson.project_name(),
+      '--schedule', schedule
+    ],
+    env: {
+      'PG_REGRESS_DIFF_OPTS': '-u --color=always',
+    },
+    depends: [
+      pgroonga,
+      pgroonga_check,
+      pgroonga_crash_safer,
+      pgroonga_database,
+      pgroonga_standby_maintainer,
+      pgroonga_wal_applier,
+      pgroonga_wal_resource_manager,
+      prepare_test
+    ],
+    timeout: 600,
+    suite: 'regression',
+    workdir: meson.current_source_dir(),
+  )
+endif
