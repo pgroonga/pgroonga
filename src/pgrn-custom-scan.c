@@ -501,7 +501,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 					}
 					else
 					{
-						slot->tts_values[ttsIndex] = (Datum) 0;
+						slot->tts_values[ttsIndex] = 0;
 						slot->tts_isnull[ttsIndex] = true;
 					}
 
