@@ -209,6 +209,8 @@ jobs:
           ..\pgsql\bin\pg_ctl stop `
             --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Show diff
+        # TODO: Remove "matrix.postgresql-version-major == '18' ||" when we're PostgreSQL 18 on Windows ready
+        continue-on-error: ${{ matrix.postgresql-version-major == '18' && true || false }}
         if: failure()
         run: |
           Get-Content regression.diffs
