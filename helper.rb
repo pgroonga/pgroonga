@@ -35,7 +35,10 @@ module Helper
 
   def detect_latest_groonga_version
     releases_uri = URI("https://api.github.com/repos/groonga/groonga/releases")
-    releases_uri.open do |releases_output|
+    options = {}
+    gh_token = ENV["GH_TOKEN"]
+    options["Authorization"] = "token #{gh_token}" if gh_token
+    releases_uri.open(options) do |releases_output|
       releases = JSON.parse(releases_output.read)
       releases[0]["tag_name"].delete_prefix("v")
     end
