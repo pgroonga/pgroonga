@@ -54,6 +54,8 @@ jobs:
         package-id:
           - postgresql-17-pgdg-pgroonga-debian-bookworm
           - postgresql-17-pgdg-pgroonga-debian-bookworm-arm64
+          - postgresql-17-pgdg-pgroonga-debian-trixie
+          - postgresql-17-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-jammy
           - postgresql-17-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-noble
