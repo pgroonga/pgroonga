@@ -1,5 +1,5 @@
 CREATE TABLE memos (
-  content text
+  content varchar(256)
 );
 INSERT INTO memos VALUES ('PostgreSQL is a RDBMS');
 SET enable_seqscan = on;
@@ -9,12 +9,11 @@ EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
  WHERE content &~| NULL;
-        QUERY PLAN         
----------------------------
+        QUERY PLAN        
+--------------------------
  Result
-   Replaces: Scan on memos
    One-Time Filter: false
-(3 rows)
+(2 rows)
 
 SELECT *
   FROM memos
