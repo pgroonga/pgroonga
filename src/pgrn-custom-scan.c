@@ -3,16 +3,21 @@
 #if PG_VERSION_NUM >= 180000
 #	include <commands/explain_format.h>
 #endif
+#include <access/heapam.h>
+#include <catalog/index.h>
 #include <executor/executor.h>
 #include <nodes/extensible.h>
 #include <nodes/nodeFuncs.h>
 #include <optimizer/pathnode.h>
 #include <optimizer/paths.h>
 #include <optimizer/restrictinfo.h>
+#include <storage/bufmgr.h>
 #include <utils/lsyscache.h>
+#include <utils/snapmgr.h>
 
 #include "pgroonga.h"
 
+#include "pgrn-ctid.h"
 #include "pgrn-custom-scan.h"
 #include "pgrn-groonga.h"
 #include "pgrn-search.h"
@@ -25,6 +30,7 @@ typedef struct PGrnScanState
 	grn_obj columnValue;
 	PGrnSearchData searchData;
 	grn_obj *searched;
+	grn_obj *ctidAccessor;
 	grn_obj *scoreAccessor;
 } PGrnScanState;
 
@@ -200,8 +206,23 @@ PGrnChooseIndex(Relation table)
 	return NULL;
 }
 
+static bool
+PGrnIndexContainColumn(Relation index, const char *name)
+{
+	TupleDesc tupdesc = RelationGetDescr(index);
+	for (unsigned int i = 0; i < tupdesc->natts; i++)
+	{
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
+		if (strcmp(NameStr(attr->attname), name) == 0)
+			return true;
+	}
+	return false;
+}
+
 static void
-PGrnSetTargetColumns(CustomScanState *customScanState, grn_obj *targetTable)
+PGrnSetTargetColumns(CustomScanState *customScanState,
+					 Relation index,
+					 grn_obj *targetTable)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
 	ListCell *cell;
@@ -211,11 +232,34 @@ PGrnSetTargetColumns(CustomScanState *customScanState, grn_obj *targetTable)
 		TargetEntry *entry = (TargetEntry *) lfirst(cell);
 		if (IsA(entry->expr, Var))
 		{
-			grn_obj *column =
-				PGrnLookupColumn(targetTable, entry->resname, ERROR);
-			GRN_PTR_PUT(ctx, &(state->columns), column);
+			if (PGrnIndexContainColumn(index, entry->resname))
+			{
+				grn_obj *column =
+					PGrnLookupColumn(targetTable, entry->resname, ERROR);
+				GRN_PTR_PUT(ctx, &(state->columns), column);
+			}
+			else
+			{
+				GRN_PTR_PUT(ctx, &(state->columns), NULL);
+			}
 		}
 	}
+}
+
+static int
+PGrnGetIndexColumnAttributeNumber(Relation index, int tableAttnum)
+{
+	IndexInfo *indexInfo = BuildIndexInfo(index);
+	for (unsigned int i = 0; i < indexInfo->ii_NumIndexAttrs; i++)
+	{
+		if (indexInfo->ii_IndexAttrNumbers[i] == tableAttnum)
+		{
+			pfree(indexInfo);
+			return i + 1;
+		}
+	}
+	pfree(indexInfo);
+	return 0;
 }
 
 static void
@@ -275,9 +319,10 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 			continue;
 		}
 
-		for (int i = 0; i < index->rd_att->natts; i++)
 		{
-			Oid opfamily = index->rd_opfamily[i];
+			int attributeNumber =
+				PGrnGetIndexColumnAttributeNumber(index, column->varattno);
+			Oid opfamily = index->rd_opfamily[attributeNumber - 1];
 			int strategy;
 			Oid leftType;
 			Oid rightType;
@@ -290,7 +335,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									   &leftType,
 									   &rightType);
 			ScanKeyInit(&scankey,
-						column->varattno,
+						attributeNumber,
 						strategy,
 						opexpr->opfuncid,
 						value->constvalue);
@@ -314,7 +359,6 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	PGrnSearchDataInit(&(state->searchData), index, sourcesTable);
 	PGrnSearchBuildCustomScanConditions(customScanState, index);
-	RelationClose(index);
 
 	if (!state->searchData.isEmptyCondition)
 	{
@@ -331,7 +375,7 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 							 0);
 		grn_table_selector_select(ctx, table_selector, state->searched);
 		grn_table_selector_close(ctx, table_selector);
-		PGrnSetTargetColumns(customScanState, state->searched);
+		PGrnSetTargetColumns(customScanState, index, state->searched);
 		state->tableCursor = grn_table_cursor_open(ctx,
 												   state->searched,
 												   NULL,
@@ -341,12 +385,28 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 												   0,
 												   -1,
 												   GRN_CURSOR_ASCENDING);
+		if (sourcesTable->header.type == GRN_TABLE_NO_KEY)
+		{
+			state->ctidAccessor =
+				grn_obj_column(ctx,
+							   state->searched,
+							   PGrnSourcesCtidColumnName,
+							   PGrnSourcesCtidColumnNameLength);
+		}
+		else
+		{
+			state->ctidAccessor = grn_obj_column(ctx,
+												 state->searched,
+												 GRN_COLUMN_NAME_KEY,
+												 GRN_COLUMN_NAME_KEY_LEN);
+		}
 		state->scoreAccessor = grn_obj_column(ctx,
 											  state->searched,
 											  GRN_COLUMN_NAME_SCORE,
 											  GRN_COLUMN_NAME_SCORE_LEN);
 	}
 
+	RelationClose(index);
 	PGrnSearchDataFree(&(state->searchData));
 	memset(&(state->searchData), 0, sizeof(state->searchData));
 }
@@ -354,8 +414,12 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 static TupleTableSlot *
 PGrnExecCustomScan(CustomScanState *customScanState)
 {
+	const char *tag = "pgroonga: [custom-scan][exec]";
 	PGrnScanState *state = (PGrnScanState *) customScanState;
+	Relation table = customScanState->ss.ss_currentRelation;
+	ItemPointerData ctid;
 	grn_id id;
+	uint64_t packedCtid;
 
 	if (!state->tableCursor)
 		return NULL;
@@ -363,6 +427,21 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 	id = grn_table_cursor_next(ctx, state->tableCursor);
 	if (id == GRN_ID_NIL)
 		return NULL;
+
+	GRN_BULK_REWIND(&(state->columnValue));
+	grn_obj_get_value(ctx, state->ctidAccessor, id, &(state->columnValue));
+	packedCtid = GRN_UINT64_VALUE(&(state->columnValue));
+	ctid = PGrnCtidUnpack(packedCtid);
+	if (!PGrnCtidIsAlive(table, &ctid))
+	{
+		GRN_LOG(ctx,
+				GRN_LOG_DEBUG,
+				"%s[dead] <%s>: <%ld>",
+				tag,
+				table->rd_rel->relname.data,
+				packedCtid);
+		return NULL;
+	}
 
 	{
 		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
@@ -379,17 +458,46 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 
 			if (IsA(entry->expr, Var))
 			{
-				Oid typeID = exprType((Node *) (entry->expr));
 				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), varIndex);
 				varIndex++;
-				grn_obj_get_value(ctx, column, id, &(state->columnValue));
-				slot->tts_values[ttsIndex] =
-					PGrnConvertToDatum(&(state->columnValue), typeID);
-				// todo
-				// If there are nullable columns, do not custom scan.
-				// See also
-				// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
-				slot->tts_isnull[ttsIndex] = false;
+				if (column)
+				{
+					Oid typeID = exprType((Node *) (entry->expr));
+					grn_obj_get_value(ctx, column, id, &(state->columnValue));
+					slot->tts_values[ttsIndex] =
+						PGrnConvertToDatum(&(state->columnValue), typeID);
+					// todo
+					// If there are nullable columns, do not custom scan.
+					// See also
+					// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
+					slot->tts_isnull[ttsIndex] = false;
+				}
+				else
+				{
+					Var *var = (Var *) entry->expr;
+					HeapTupleData tuple;
+					Buffer buffer;
+					bool found = false;
+					bool isnull = false;
+					ItemPointerCopy(&ctid, &tuple.t_self);
+					tuple.t_tableOid = RelationGetRelid(table);
+					found = pgrn_heap_fetch(
+						table, GetActiveSnapshot(), &tuple, &buffer, false);
+					if (found)
+					{
+						slot->tts_values[ttsIndex] = heap_getattr(
+							&tuple, var->varattno, table->rd_att, &isnull);
+						slot->tts_isnull[ttsIndex] = isnull;
+					}
+					else
+					{
+						slot->tts_values[ttsIndex] = (Datum) 0;
+						slot->tts_isnull[ttsIndex] = true;
+					}
+
+					if (BufferIsValid(buffer))
+						ReleaseBuffer(buffer);
+				}
 			}
 			else if (IsA(entry->expr, FuncExpr))
 			{
@@ -460,6 +568,11 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	{
 		PGrnSearchDataFree(&(state->searchData));
 		memset(&(state->searchData), 0, sizeof(state->searchData));
+	}
+	if (state->ctidAccessor)
+	{
+		grn_obj_close(ctx, state->ctidAccessor);
+		state->ctidAccessor = NULL;
 	}
 	if (state->searched)
 	{
