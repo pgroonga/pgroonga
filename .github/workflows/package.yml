@@ -160,6 +160,8 @@ jobs:
           key: package-${{ matrix.package-id }}-ccache-${{ hashFiles('src/*.c', 'src/*.h') }}
           restore-keys: package-${{ matrix.package-id }}-ccache-
       - name: Build with Docker
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -x
           cd packages/${PACKAGE}
