@@ -297,8 +297,9 @@ pgroonga_crash_safer_reindex_one(Datum databaseInfoDatum)
 			}
 			else
 			{
-				indexNames[i] = pnstrdup(VARDATA_ANY(indexName),
-										 VARSIZE_ANY_EXHDR(indexName));
+				indexNames[i] =
+					pnstrdup(VARDATA_ANY(DatumGetPointer(indexName)),
+							 VARSIZE_ANY_EXHDR(DatumGetPointer(indexName)));
 			}
 		}
 
