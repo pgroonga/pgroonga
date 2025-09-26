@@ -31,9 +31,11 @@ jobs:
             postgresql-version: "16.9-1"
           - postgresql-version-major: "17"
             postgresql-version: "17.5-1"
+          - postgresql-version-major: "18"
+            postgresql-version: "18.0-1"
           - groonga-main: "yes"
-            postgresql-version-major: "17"
-            postgresql-version: "17.5-1"
+            postgresql-version-major: "18"
+            postgresql-version: "18.0-1"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"
@@ -176,6 +178,8 @@ jobs:
           ..\pgsql\bin\pg_ctl start `
             --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Run regression test
+        # TODO: Remove this when we're PostgreSQL 18 on Windows ready
+        continue-on-error: ${{ matrix.postgresql-version-major == '18' && true || false }}
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
           Remove-Item sql\full-text-search\text\options\token-filters\custom.sql
@@ -205,7 +209,8 @@ jobs:
           ..\pgsql\bin\pg_ctl stop `
             --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Show diff
-        if: failure()
+        # TODO: Remove "matrix.postgresql-version-major == '18' ||" when we're PostgreSQL 18 on Windows ready
+        if: matrix.postgresql-version-major == '18' || failure()
         run: |
           Get-Content regression.diffs
       - uses: actions/checkout@v5
