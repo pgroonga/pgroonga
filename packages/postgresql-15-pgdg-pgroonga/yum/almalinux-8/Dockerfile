@@ -20,6 +20,8 @@ RUN \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
+    ninja-build \
     postgresql${POSTGRESQL_VERSION}-devel \
+    python3.12-pip \
     xxhash-devel && \
   dnf clean -y ${quiet} all
