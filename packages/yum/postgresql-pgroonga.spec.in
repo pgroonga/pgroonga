@@ -109,17 +109,6 @@ EOF
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
 %{pg_libdir}/*.so
-%if %{support_jit}
-%{pg_includedir}/server/contrib/pgroonga_check/
-%{pg_includedir}/server/contrib/pgroonga_crash_safer/
-%{pg_includedir}/server/contrib/pgroonga_standby_maintainer/
-%{pg_includedir}/server/contrib/pgroonga_wal_applier/
-%{pg_includedir}/server/contrib/pgroonga_wal_resource_manager/
-%{pg_includedir}/server/extension/pgroonga/
-%{pg_includedir}/server/extension/pgroonga_database/
-%{pg_libdir}/bitcode/pgroonga*.index.bc
-%{pg_libdir}/bitcode/pgroonga*/
-%endif
 
 %changelog
 * Fri Sep 12 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.2-1
