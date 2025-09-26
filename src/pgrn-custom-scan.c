@@ -210,7 +210,7 @@ static bool
 PGrnIndexContainColumn(Relation index, const char *name)
 {
 	TupleDesc tupdesc = RelationGetDescr(index);
-	for (unsigned int i = 0; i < tupdesc->natts; i++)
+	for (AttrNumber i = 0; i < tupdesc->natts; i++)
 	{
 		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
 		if (strcmp(NameStr(attr->attname), name) == 0)
@@ -250,7 +250,7 @@ static int
 PGrnGetIndexColumnAttributeNumber(Relation index, int tableAttnum)
 {
 	IndexInfo *indexInfo = BuildIndexInfo(index);
-	for (unsigned int i = 0; i < indexInfo->ii_NumIndexAttrs; i++)
+	for (int i = 0; i < indexInfo->ii_NumIndexAttrs; i++)
 	{
 		if (indexInfo->ii_IndexAttrNumbers[i] == tableAttnum)
 		{
