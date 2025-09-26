@@ -75,20 +75,20 @@ It is based on Groonga.
 
 %build
 
+pip3 install meson
 PATH="%{pg_bindir}:$PATH" \
-  PKG_CONFIG_PATH="${PWD}" \
-  make \
-    HAVE_MSGPACK=1 \
-    HAVE_XXHASH=1 \
-    enable_rpath=no \
-    %{?_smp_mflags}
+  meson setup build \
+    --buildtype=debugoptimized \
+    --libdir=%{_libdir} \
+    --prefix=%{_prefix} \
+    -Dtest=false
+meson compile -C build %{?_smp_mflags}
 
 %install
-PATH="%{pg_bindir}:$PATH" \
-  make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+DESTDIR=%{buildroot} meson install -C build
 
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/
-cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
+mkdir -p %{buildroot}%{_sysconfdir}/logrotate.d/
+cat > %{buildroot}%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
 /var/lib/pgsql/*/data/pgroonga.log {
     weekly
     missingok
