@@ -296,7 +296,7 @@ PGrnPGHavePreparedTransaction(void)
 		econtext = CreateExprContext(estate);
 		fmgr_info(F_PG_PREPARED_XACT, &flinfo);
 		InitFunctionCallInfoData(
-			*fcinfo, &flinfo, 0, InvalidOid, NULL, (fmNodePtr) &rsinfo);
+			*fcinfo, &flinfo, 0, InvalidOid, NULL, (Node *) &rsinfo);
 		rsinfo.type = T_ReturnSetInfo;
 		rsinfo.econtext = econtext;
 		rsinfo.expectedDesc = NULL;
