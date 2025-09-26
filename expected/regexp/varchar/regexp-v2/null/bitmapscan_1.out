@@ -7,18 +7,17 @@ INSERT INTO memos VALUES ('PGroonga is a PostgreSQL extension that uses Groonga'
 CREATE INDEX pgrn_content_index ON memos
  USING pgroonga (content pgroonga_varchar_regexp_ops_v2);
 SET enable_seqscan = off;
-SET enable_indexscan = on;
-SET enable_bitmapscan = off;
+SET enable_indexscan = off;
+SET enable_bitmapscan = on;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
  WHERE content &~ NULL;
-        QUERY PLAN         
----------------------------
+        QUERY PLAN        
+--------------------------
  Result
-   Replaces: Scan on memos
    One-Time Filter: false
-(3 rows)
+(2 rows)
 
 SELECT *
   FROM memos

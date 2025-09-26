@@ -18,12 +18,11 @@ EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
  WHERE contents &~ NULL;
-        QUERY PLAN         
----------------------------
+        QUERY PLAN        
+--------------------------
  Result
-   Replaces: Scan on memos
    One-Time Filter: false
-(3 rows)
+(2 rows)
 
 SELECT *
   FROM memos

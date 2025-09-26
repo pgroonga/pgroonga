@@ -126,24 +126,19 @@ jobs:
         run: |
           sudo meson install -C ../pgroonga.build
       - name: Run regression test
-        # TODO: Remove this when we're PostgreSQL 19 ready
-        continue-on-error: ${{ matrix.postgresql-version == '19' && true || false }}
         run: |
           meson test -C ../pgroonga.build -v
       - name: Show diff
-        # TODO: Remove "matrix.postgresql-version == '19' ||" when we're PostgreSQL 19 ready
-        if: matrix.postgresql-version == '19' || failure()
+        if: failure()
         run: |
           cat ../pgroonga.build/regression.diffs || :
       - name: Show pgroonga.log
-        # TODO: Remove "matrix.postgresql-version == '19' ||" when we're PostgreSQL 19 ready
-        if: matrix.postgresql-version == '19' || failure()
+        if: failure()
         run: |
           sudo cat \
             /var/lib/postgresql/${{ matrix.postgresql-version }}/main/pgroonga.log || :
       - name: Show pgroonga.log of parsed backtrace
-        # TODO: Remove "matrix.postgresql-version == '19' ||" when we're PostgreSQL 19 ready
-        if: matrix.postgresql-version == '19' || failure()
+        if: failure()
         run: |
           wget --quiet https://raw.githubusercontent.com/groonga/groonga/main/tools/parse-backtrace.rb
           options=""

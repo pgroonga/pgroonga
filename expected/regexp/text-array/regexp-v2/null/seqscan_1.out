@@ -8,22 +8,18 @@ INSERT INTO memos
 INSERT INTO memos
      VALUES (ARRAY['MySQL is a RDBMS',
                    'Mroonga is a MySQL storage engine that uses Groonga']);
-CREATE INDEX pgrn_contents_index
-    ON memos
- USING pgroonga (contents pgroonga_text_array_regexp_ops_v2);
-SET enable_seqscan = off;
-SET enable_indexscan = on;
+SET enable_seqscan = on;
+SET enable_indexscan = off;
 SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT *
   FROM memos
  WHERE contents &~ NULL;
-        QUERY PLAN         
----------------------------
+        QUERY PLAN        
+--------------------------
  Result
-   Replaces: Scan on memos
    One-Time Filter: false
-(3 rows)
+(2 rows)
 
 SELECT *
   FROM memos
