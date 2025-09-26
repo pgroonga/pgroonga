@@ -320,16 +320,24 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 		}
 
 		{
-			int attributeNumber =
-				PGrnGetIndexColumnAttributeNumber(index, column->varattno);
-			Oid opfamily = index->rd_opfamily[attributeNumber - 1];
 			int strategy;
 			Oid leftType;
 			Oid rightType;
 			ScanKeyData scankey;
 
+			int attributeNumber =
+				PGrnGetIndexColumnAttributeNumber(index, column->varattno);
+			if (attributeNumber == 0)
+			{
+				ereport(ERROR,
+						(errcode(ERRCODE_UNDEFINED_COLUMN),
+						 errmsg("pgroonga: %s "
+								"attribute number <%d> not found in index",
+								tag,
+								column->varattno)));
+			}
 			get_op_opfamily_properties(opexpr->opno,
-									   opfamily,
+									   index->rd_opfamily[attributeNumber - 1],
 									   false,
 									   &strategy,
 									   &leftType,
