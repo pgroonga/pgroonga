@@ -27,8 +27,8 @@ jobs:
           - PostgreSQL 15
           - PostgreSQL 16
           - PostgreSQL 17
-          - PostgreSQL 17 with Groonga main
           - PostgreSQL 18
+          - PostgreSQL 18 with Groonga main
           - PostgreSQL 19
         include:
           - label: PostgreSQL 13
@@ -41,12 +41,10 @@ jobs:
             postgresql-version: "16"
           - label: PostgreSQL 17
             postgresql-version: "17"
-          # TODO: Use 18 when we're ready for 18
-          - label: PostgreSQL 17 with Groonga main
-            groonga-main: "yes"
-            postgresql-version: "17"
           - label: PostgreSQL 18
-            postgresql-unreleased: "yes"
+            postgresql-version: "18"
+          - label: PostgreSQL 18 with Groonga main
+            groonga-main: "yes"
             postgresql-version: "18"
           - label: PostgreSQL 19
             postgresql-unreleased: "yes"
