@@ -436,10 +436,12 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 	{
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
-				"%s[dead] <%s>: <%ld>",
+				"%s[dead] <%s>: <(%u,%u),%u>",
 				tag,
 				table->rd_rel->relname.data,
-				packedCtid);
+				ctid.ip_blkid.bi_hi,
+				ctid.ip_blkid.bi_lo,
+				ctid.ip_posid);
 		return NULL;
 	}
 
