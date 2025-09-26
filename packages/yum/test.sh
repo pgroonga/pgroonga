@@ -58,7 +58,7 @@ echo "::group::Prepare repositories"
 os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
   almalinux)
-    major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -o "^[0-9]")
+    major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -E -o "^[0-9]+")
     case ${major_version} in
       8)
         DNF="dnf --enablerepo=powertools"
