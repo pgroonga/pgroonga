@@ -7,6 +7,8 @@ Build-Depends:
   libgroonga-dev,
   libmsgpack-dev,
   libxxhash-dev,
+  meson,
+  ninja-build,
   pkg-config,
   postgresql-server-dev-16
 Standards-Version: 4.3.0

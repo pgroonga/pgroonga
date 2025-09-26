@@ -23,6 +23,8 @@ RUN \
     libgroonga-dev \
     libmsgpack-dev \
     libxxhash-dev \
+    meson \
+    ninja-build \
     pkg-config \
     postgresql-server-dev-${POSTGRESQL_VERSION} && \
   apt clean && \
