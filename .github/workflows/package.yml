@@ -52,6 +52,17 @@ jobs:
       fail-fast: false
       matrix:
         package-id:
+          - postgresql-18-pgdg-pgroonga-debian-bookworm
+          - postgresql-18-pgdg-pgroonga-debian-bookworm-arm64
+          - postgresql-18-pgdg-pgroonga-debian-trixie
+          - postgresql-18-pgdg-pgroonga-debian-trixie-arm64
+          - postgresql-18-pgdg-pgroonga-ubuntu-jammy
+          - postgresql-18-pgdg-pgroonga-ubuntu-jammy-arm64
+          - postgresql-18-pgdg-pgroonga-ubuntu-noble
+          - postgresql-18-pgdg-pgroonga-ubuntu-noble-arm64
+          - postgresql-18-pgdg-pgroonga-almalinux-8
+          - postgresql-18-pgdg-pgroonga-almalinux-9
+          - postgresql-18-pgdg-pgroonga-almalinux-10
           - postgresql-17-pgdg-pgroonga-debian-bookworm
           - postgresql-17-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-17-pgdg-pgroonga-debian-trixie
