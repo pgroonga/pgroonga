@@ -17,9 +17,9 @@ RUN \
     groonga-devel \
     llvm-toolset \
     llvm-devel \
+    meson \
     msgpack-devel \
     ninja-build \
     postgresql${POSTGRESQL_VERSION}-devel \
-    python3-pip \
     xxhash-devel && \
   dnf clean -y ${quiet} all

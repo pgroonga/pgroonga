@@ -32,7 +32,9 @@ Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel >= @GROONGA_VERSION@
+BuildRequires:	meson
 BuildRequires:	msgpack-devel
+BuildRequires:	ninja-build
 %if %{is_amazon_linux}
   %if %{pg_package_version} != 13
 BuildRequires:  libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
@@ -75,17 +77,11 @@ It is based on Groonga.
 
 %build
 
-pip3 install meson
-PATH="%{pg_bindir}:$PATH" \
-  meson setup build \
-    --buildtype=debugoptimized \
-    --libdir=%{_libdir} \
-    --prefix=%{_prefix} \
-    -Dtest=false
-meson compile -C build %{?_smp_mflags}
+PATH="%{pg_bindir}:$PATH" %meson -Dtest=false
+%meson_build
 
 %install
-DESTDIR=%{buildroot} meson install -C build
+%meson_install
 
 mkdir -p %{buildroot}%{_sysconfdir}/logrotate.d/
 cat > %{buildroot}%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
