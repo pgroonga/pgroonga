@@ -17,7 +17,9 @@ RUN \
     groonga-devel \
     llvm-toolset \
     llvm-devel \
+    meson \
     msgpack-devel \
+    ninja-build \
     postgresql${POSTGRESQL_VERSION}-devel \
     xxhash-devel && \
   dnf clean -y ${quiet} all
