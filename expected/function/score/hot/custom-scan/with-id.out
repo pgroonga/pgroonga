@@ -9,7 +9,17 @@ INSERT INTO memos VALUES (2, 'groonga', 'Groonga is fast full text search engine
 INSERT INTO memos VALUES (3, 'pgsql', 'PGroonga is a PostgreSQL extension that uses Groonga.');
 UPDATE memos SET tag = 'groonga'
  WHERE id = 3;
-SET groonga.enable_custom_scan = on;
+SET pgroonga.enable_custom_scan = on;
+EXPLAIN (COSTS OFF)
+SELECT id, content, pgroonga_score(memos)
+  FROM memos
+ WHERE content &@~ 'PGroonga OR Groonga';
+                     QUERY PLAN                      
+-----------------------------------------------------
+ Custom Scan (PGroongaScan) on memos
+   Filter: (content &@~ 'PGroonga OR Groonga'::text)
+(2 rows)
+
 SELECT id, content, pgroonga_score(memos)
   FROM memos
  WHERE content &@~ 'PGroonga OR Groonga';

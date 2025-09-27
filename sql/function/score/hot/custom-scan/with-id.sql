@@ -12,7 +12,12 @@ INSERT INTO memos VALUES (3, 'pgsql', 'PGroonga is a PostgreSQL extension that u
 UPDATE memos SET tag = 'groonga'
  WHERE id = 3;
 
-SET groonga.enable_custom_scan = on;
+SET pgroonga.enable_custom_scan = on;
+
+EXPLAIN (COSTS OFF)
+SELECT id, content, pgroonga_score(memos)
+  FROM memos
+ WHERE content &@~ 'PGroonga OR Groonga';
 
 SELECT id, content, pgroonga_score(memos)
   FROM memos
