@@ -175,6 +175,7 @@ jobs:
       - name: Build with Docker
         env:
           GH_TOKEN: ${{ github.token }}
+          GROONGA_REPOSITORY: ../../../groonga
         run: |
           set -x
           cd packages/${PACKAGE}
@@ -184,8 +185,6 @@ jobs:
             $(echo ${PACKAGE_TYPE} | tr 'a-z' 'A-Z')_TARGETS=${OS} \
             BUILD_DIR=build
           mv ${PACKAGE_TYPE}/repositories/ ../../
-        env:
-          GROONGA_REPOSITORY: ../../../groonga
 
       # Artifact
       - uses: actions/upload-artifact@v4
