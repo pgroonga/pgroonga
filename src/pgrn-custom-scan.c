@@ -99,6 +99,33 @@ PGrnCustomScanDisable(void)
 	PGrnCustomScanEnabled = false;
 }
 
+static Relation
+PGrnChooseIndex(Relation table)
+{
+	// todo: Support pgroonga_condition() index specification.
+	// todo: Implementation of the logic for choosing which index to use.
+	ListCell *cell;
+	List *indexes;
+
+	if (!table)
+		return NULL;
+
+	indexes = RelationGetIndexList(table);
+	foreach (cell, indexes)
+	{
+		Oid indexId = lfirst_oid(cell);
+
+		Relation index = RelationIdGetRelation(indexId);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+		return index;
+	}
+	return NULL;
+}
+
 static void
 PGrnSetRelPathlistHook(PlannerInfo *root,
 					   RelOptInfo *rel,
@@ -120,6 +147,21 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	{
 		// First, support table scan.
 		return;
+	}
+
+	{
+		// Do not custom scan when no index exists for PGroonga.
+		Relation table = relation_open(rte->relid, AccessShareLock);
+		if (table)
+		{
+			Relation index = PGrnChooseIndex(table);
+			relation_close(table, AccessShareLock);
+			if (!index)
+			{
+				return;
+			}
+			RelationClose(index);
+		}
 	}
 
 	cpath = makeNode(CustomPath);
@@ -177,33 +219,6 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	state->scoreAccessor = NULL;
 
 	return (Node *) &(state->parent);
-}
-
-static Relation
-PGrnChooseIndex(Relation table)
-{
-	// todo: Support pgroonga_condition() index specification.
-	// todo: Implementation of the logic for choosing which index to use.
-	ListCell *cell;
-	List *indexes;
-
-	if (!table)
-		return NULL;
-
-	indexes = RelationGetIndexList(table);
-	foreach (cell, indexes)
-	{
-		Oid indexId = lfirst_oid(cell);
-
-		Relation index = RelationIdGetRelation(indexId);
-		if (!PGrnIndexIsPGroonga(index))
-		{
-			RelationClose(index);
-			continue;
-		}
-		return index;
-	}
-	return NULL;
 }
 
 static bool
