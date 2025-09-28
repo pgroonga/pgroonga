@@ -387,6 +387,8 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	{
 		grn_table_selector *table_selector = grn_table_selector_open(
 			ctx, sourcesTable, state->searchData.expression, GRN_OP_OR);
+		grn_table_selector_set_fuzzy_max_distance_ratio(
+			ctx, table_selector, state->searchData.fuzzyMaxDistanceRatio);
 
 		state->searched =
 			grn_table_create(ctx,
