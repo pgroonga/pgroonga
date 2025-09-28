@@ -32,7 +32,9 @@ Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
 BuildRequires:	groonga-devel >= @GROONGA_VERSION@
+BuildRequires:	meson
 BuildRequires:	msgpack-devel
+BuildRequires:	ninja-build
 %if %{is_amazon_linux}
   %if %{pg_package_version} != 13
 BuildRequires:  libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
@@ -75,20 +77,19 @@ It is based on Groonga.
 
 %build
 
-PATH="%{pg_bindir}:$PATH" \
-  PKG_CONFIG_PATH="${PWD}" \
-  make \
-    HAVE_MSGPACK=1 \
-    HAVE_XXHASH=1 \
-    enable_rpath=no \
-    %{?_smp_mflags}
+PATH="%{pg_bindir}:$PATH" %meson -Dtest=false
+# This is workaround for debuginfo package. Meson uses relative path
+# for source files on build. But it seems that
+# find-debuginfo/debugedit don't like relative path. If we convert
+# relative source paths to absolute source paths, they work.
+sed -i -e "s,\.\./src/,$(pwd)/src/,g" %{_vpath_builddir}/build.ninja
+%meson_build
 
 %install
-PATH="%{pg_bindir}:$PATH" \
-  make install DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p"
+%meson_install
 
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/
-cat > $RPM_BUILD_ROOT%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
+mkdir -p %{buildroot}%{_sysconfdir}/logrotate.d/
+cat > %{buildroot}%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
 /var/lib/pgsql/*/data/pgroonga.log {
     weekly
     missingok
@@ -109,17 +110,6 @@ EOF
 %{pg_datadir}/extension/*.control
 %{pg_datadir}/extension/*.sql
 %{pg_libdir}/*.so
-%if %{support_jit}
-%{pg_includedir}/server/contrib/pgroonga_check/
-%{pg_includedir}/server/contrib/pgroonga_crash_safer/
-%{pg_includedir}/server/contrib/pgroonga_standby_maintainer/
-%{pg_includedir}/server/contrib/pgroonga_wal_applier/
-%{pg_includedir}/server/contrib/pgroonga_wal_resource_manager/
-%{pg_includedir}/server/extension/pgroonga/
-%{pg_includedir}/server/extension/pgroonga_database/
-%{pg_libdir}/bitcode/pgroonga*.index.bc
-%{pg_libdir}/bitcode/pgroonga*/
-%endif
 
 %changelog
 * Fri Sep 12 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.2-1
