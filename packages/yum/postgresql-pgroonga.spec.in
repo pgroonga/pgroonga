@@ -1,24 +1,12 @@
 # -*- sh-shell: rpm -*-
 
-%define _amzn %{?amzn:%{amzn}}%{!?amzn:0}
-%define is_amazon_linux (%{_amzn} != 0)
-
 %define pg_version         @PG_VERSION@
 %define pg_package_version @PG_PACKAGE_VERSION@
-%if %{is_amazon_linux}
-%define pg_bindir          %{_bindir}
-%define pg_libdir          %{_libdir}/pgsql
-%define pg_datadir         %{_datadir}/pgsql
-%define pg_includedir      %{_includedir}/pgsql
-%else
 %define pg_prefix          /usr/pgsql-%{pg_version}
 %define pg_bindir          %{pg_prefix}/bin
 %define pg_libdir          %{pg_prefix}/lib
 %define pg_datadir         %{pg_prefix}/share
 %define pg_includedir      %{pg_prefix}/include
-%endif
-
-%define support_jit %{pg_package_version} >= 11 && %{pg_package_version} < 94
 
 Name:		@PACKAGE@
 Version:	@VERSION@
@@ -31,40 +19,18 @@ URL:		https://pgroonga.github.io/
 Source0:	https://packages.groonga.org/source/pgroonga/pgroonga-%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-%(%{__id_u} -n)
+BuildRequires:	ccache
 BuildRequires:	groonga-devel >= @GROONGA_VERSION@
+BuildRequires:	llvm-devel
+BuildRequires:	llvm-toolset
 BuildRequires:	meson
 BuildRequires:	msgpack-devel
 BuildRequires:	ninja-build
-%if %{is_amazon_linux}
-  %if %{pg_package_version} != 13
-BuildRequires:  libpq-devel >= %{pg_package_version}, libpq-devel < %(expr %{pg_package_version} + 1)
-  %endif
-BuildRequires:	postgresql-server-devel >= %{pg_package_version}, postgresql-server-devel < %(expr %{pg_package_version} + 1)
-%else
 BuildRequires:	postgresql%{pg_package_version}-devel
-%endif
-%if %{support_jit}
-  %if %{is_amazon_linux}
-BuildRequires:	ccache
-  %else
-    %if %{rhel} >= 8
-BuildRequires:	ccache
-BuildRequires:	llvm-devel
-BuildRequires:	llvm-toolset
-    %else
-BuildRequires:	llvm5.0-devel
-BuildRequires:	llvm-toolset-7
-    %endif
-  %endif
-%endif
 BuildRequires:	xxhash-devel
 Requires:	groonga-libs >= @GROONGA_VERSION@
 Requires:	msgpack
-%if %{is_amazon_linux}
-Requires:	postgresql-server >= %{pg_package_version}, postgresql-server < %(expr %{pg_package_version} + 1)
-%else
 Requires:	postgresql%{pg_package_version}-server
-%endif
 Requires:	xxhash-libs
 
 %description
