@@ -78,6 +78,11 @@ It is based on Groonga.
 %build
 
 PATH="%{pg_bindir}:$PATH" %meson -Dtest=false
+# This is workaround for debuginfo package. Meson uses relative path
+# for source files on build. But it seems that
+# find-debuginfo/debugedit don't like relative path. If we convert
+# relative source paths to absolute source paths, they work.
+sed -i -e "s,\.\./src/,$(pwd)/src/,g" %{_vpath_builddir}/build.ninja
 %meson_build
 
 %install

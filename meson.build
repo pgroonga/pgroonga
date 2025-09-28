@@ -52,7 +52,14 @@ postgresql = declare_dependency(
 
 pgrn_dependencies = [postgresql, groonga, libm]
 
-msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
+if meson.version() >= "0.60.0"
+  msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
+else
+  # We assume that users on environments that use old Meson use old
+  # MessagePack. We don't check 'msgpack-c' here because we don't want
+  # to maintain code for old Meson as much as possible.
+  msgpack = dependency('msgpack', required: get_option('message_pack'))
+endif
 if msgpack.found()
   pgrn_msgpack = declare_dependency(
     compile_args: ['-DPGRN_HAVE_MSGPACK'],
