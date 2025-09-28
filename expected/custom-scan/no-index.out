@@ -1,0 +1,26 @@
+CREATE TABLE ids (
+  id integer
+);
+INSERT INTO ids VALUES (1);
+INSERT INTO ids VALUES (2);
+INSERT INTO ids VALUES (3);
+SET pgroonga.enable_custom_scan = on;
+EXPLAIN (COSTS OFF)
+SELECT id
+  FROM ids
+ WHERE id = 2;
+     QUERY PLAN     
+--------------------
+ Seq Scan on ids
+   Filter: (id = 2)
+(2 rows)
+
+SELECT id
+  FROM ids
+ WHERE id = 2;
+ id 
+----
+  2
+(1 row)
+
+DROP TABLE ids;
