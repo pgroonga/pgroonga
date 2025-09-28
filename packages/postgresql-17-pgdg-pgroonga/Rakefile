@@ -26,6 +26,7 @@ class PostgreSQL17PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
     [
       "almalinux-8",
       "almalinux-9",
+      "almalinux-10",
     ]
   end
 end
