@@ -106,7 +106,7 @@ case ${os} in
                                   grep -E -o '^postgresql[0-9.]+' | \
                                   sed -e 's/\.//g')
     ${DNF} install -y ${postgresql_package_prefix}-devel
-    pg_config=$(echo /usr/pgsql-*/bin/pg_config)
+    pg_config=$(echo /usr/pgsql-${postgresql_version}/bin/pg_config)
     groonga_token_filter_stem_package_name=groonga-token-filter-stem
     ;;
   *)
