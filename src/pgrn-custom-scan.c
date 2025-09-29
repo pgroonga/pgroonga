@@ -262,18 +262,15 @@ PGrnSetTargetColumns(CustomScanState *customScanState,
 }
 
 static int
-PGrnGetIndexColumnAttributeNumber(Relation index, int tableAttnum)
+PGrnGetIndexColumnAttributeNumber(IndexInfo *indexInfo, int tableAttnum)
 {
-	IndexInfo *indexInfo = BuildIndexInfo(index);
 	for (int i = 0; i < indexInfo->ii_NumIndexAttrs; i++)
 	{
 		if (indexInfo->ii_IndexAttrNumbers[i] == tableAttnum)
 		{
-			pfree(indexInfo);
 			return i + 1;
 		}
 	}
-	pfree(indexInfo);
 	return 0;
 }
 
@@ -282,6 +279,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									Relation index)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
+	IndexInfo *indexInfo = BuildIndexInfo(index);
 	const char *tag = "pgroonga: [custom-scan][build-conditions]";
 
 	List *quals = customScanState->ss.ps.plan->qual;
@@ -341,7 +339,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 			ScanKeyData scankey;
 
 			int attributeNumber =
-				PGrnGetIndexColumnAttributeNumber(index, column->varattno);
+				PGrnGetIndexColumnAttributeNumber(indexInfo, column->varattno);
 			if (attributeNumber == 0)
 			{
 				ereport(ERROR,
@@ -365,6 +363,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 			PGrnSearchBuildCondition(index, &scankey, &(state->searchData));
 		}
 	}
+	pfree(indexInfo);
 }
 
 static void
