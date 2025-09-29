@@ -73,6 +73,7 @@ jobs:
           - postgresql-17-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-17-pgdg-pgroonga-almalinux-8
           - postgresql-17-pgdg-pgroonga-almalinux-9
+          - postgresql-17-pgdg-pgroonga-almalinux-10
           - postgresql-16-pgdg-pgroonga-debian-bookworm
           - postgresql-16-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-16-pgdg-pgroonga-debian-trixie
@@ -81,8 +82,9 @@ jobs:
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-noble
           - postgresql-16-pgdg-pgroonga-ubuntu-noble-arm64
-          - postgresql-16-pgdg-pgroonga-almalinux-9
           - postgresql-16-pgdg-pgroonga-almalinux-8
+          - postgresql-16-pgdg-pgroonga-almalinux-9
+          - postgresql-16-pgdg-pgroonga-almalinux-10
           - postgresql-16-pgroonga-ubuntu-noble
           - postgresql-15-pgdg-pgroonga-debian-bookworm
           - postgresql-15-pgdg-pgroonga-debian-bookworm-arm64
@@ -92,8 +94,9 @@ jobs:
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-noble
           - postgresql-15-pgdg-pgroonga-ubuntu-noble-arm64
-          - postgresql-15-pgdg-pgroonga-almalinux-9
           - postgresql-15-pgdg-pgroonga-almalinux-8
+          - postgresql-15-pgdg-pgroonga-almalinux-9
+          - postgresql-15-pgdg-pgroonga-almalinux-10
           - postgresql-15-pgroonga-debian-bookworm
           - postgresql-15-pgroonga-debian-bookworm-arm64
           - postgresql-14-pgdg-pgroonga-debian-bookworm
@@ -106,6 +109,7 @@ jobs:
           - postgresql-14-pgdg-pgroonga-ubuntu-noble-arm64
           - postgresql-14-pgdg-pgroonga-almalinux-8
           - postgresql-14-pgdg-pgroonga-almalinux-9
+          - postgresql-14-pgdg-pgroonga-almalinux-10
           - postgresql-14-pgroonga-ubuntu-jammy
           - postgresql-13-pgdg-pgroonga-debian-bookworm
           - postgresql-13-pgdg-pgroonga-debian-bookworm-arm64

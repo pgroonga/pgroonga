@@ -58,7 +58,7 @@ echo "::group::Prepare repositories"
 os=$(cut -d: -f4 /etc/system-release-cpe)
 case ${os} in
   almalinux)
-    major_version=$(cut -d: -f5 /etc/system-release-cpe | grep -E -o "^[0-9]+")
+    major_version=$(cut -d: -f5 /etc/system-release-cpe | cut -d. -f1)
     case ${major_version} in
       8)
         DNF="dnf --enablerepo=powertools"
@@ -106,7 +106,7 @@ case ${os} in
                                   grep -E -o '^postgresql[0-9.]+' | \
                                   sed -e 's/\.//g')
     ${DNF} install -y ${postgresql_package_prefix}-devel
-    pg_config=$(echo /usr/pgsql-*/bin/pg_config)
+    pg_config=$(echo /usr/pgsql-${postgresql_version}/bin/pg_config)
     groonga_token_filter_stem_package_name=groonga-token-filter-stem
     ;;
   *)
