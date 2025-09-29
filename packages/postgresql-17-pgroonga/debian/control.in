@@ -1,0 +1,27 @@
+Source: postgresql-17-pgroonga
+Section: database
+Priority: optional
+Maintainer: PGroonga Project <packages@groonga.org>
+Build-Depends:
+  debhelper-compat (= 13),
+  libgroonga-dev,
+  libmsgpack-dev,
+  libxxhash-dev,
+  meson,
+  ninja-build,
+  pkg-config,
+  postgresql-server-dev-17
+Standards-Version: 4.7.2
+Homepage: https://pgroonga.github.io/
+
+Package: postgresql-17-pgroonga
+Architecture: any
+Conflicts: postgresql-17-pgdg-pgroonga
+Depends:
+  ${misc:Depends},
+  ${shlibs:Depends},
+  libgroonga0 (>= @GROONGA_VERSION@),
+  postgresql-17
+Description: Fast full-text search plugin for PostgreSQL based on Groonga
+ PGroonga is a PostgreSQL plugin. It provides fast full-text search feature.
+ It is based on Groonga full-text search engine.
