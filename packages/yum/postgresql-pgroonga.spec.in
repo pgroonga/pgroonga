@@ -29,9 +29,7 @@ BuildRequires:	ninja-build
 BuildRequires:	postgresql%{pg_package_version}-devel
 BuildRequires:	xxhash-devel
 Requires:	groonga-libs >= @GROONGA_VERSION@
-Requires:	msgpack
 Requires:	postgresql%{pg_package_version}-server
-Requires:	xxhash-libs
 
 %description
 This package provides a fast full-text search plugin for PostgreSQL.
