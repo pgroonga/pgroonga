@@ -1,0 +1,25 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL17PGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("17")
+  end
+
+  def apt_targets_default
+    [
+      "debian-trixie",
+      "debian-trixie-arm64",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def enable_yum?
+    false
+  end
+end
+
+task = PostgreSQL17PGroongaPackageTask.new
+task.define
