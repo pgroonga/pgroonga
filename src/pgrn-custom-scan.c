@@ -500,19 +500,17 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				}
 				else
 				{
-					Var *var = (Var *) entry->expr;
-					HeapTupleData tuple;
-					Buffer buffer;
 					bool found = false;
-					bool isnull = false;
-					ItemPointerCopy(&ctid, &tuple.t_self);
-					tuple.t_tableOid = RelationGetRelid(table);
-					found = pgrn_heap_fetch(
-						table, GetActiveSnapshot(), &tuple, &buffer, false);
+					TupleTableSlot *tupleSlot = MakeSingleTupleTableSlot(
+						RelationGetDescr(table), &TTSOpsBufferHeapTuple);
+					found = table_tuple_fetch_row_version(
+						table, &ctid, GetTransactionSnapshot(), tupleSlot);
 					if (found)
 					{
-						slot->tts_values[ttsIndex] = heap_getattr(
-							&tuple, var->varattno, table->rd_att, &isnull);
+						Var *var = (Var *) entry->expr;
+						bool isnull = false;
+						slot->tts_values[ttsIndex] =
+							slot_getattr(tupleSlot, var->varattno, &isnull);
 						slot->tts_isnull[ttsIndex] = isnull;
 					}
 					else
@@ -520,9 +518,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 						slot->tts_values[ttsIndex] = 0;
 						slot->tts_isnull[ttsIndex] = true;
 					}
-
-					if (BufferIsValid(buffer))
-						ReleaseBuffer(buffer);
+					ExecDropSingleTupleTableSlot(tupleSlot);
 				}
 			}
 			else if (IsA(entry->expr, FuncExpr))
