@@ -3,7 +3,6 @@
 #include <postgres.h>
 
 #include <access/genam.h>
-#include <access/heapam.h>
 
 #ifdef _WIN32
 #	define PRId64 "I64d"
@@ -117,22 +116,4 @@ pgrn_index_beginscan(Relation heapRelation,
 #endif
 						   nKeys,
 						   nOrderBys);
-}
-
-static inline bool
-pgrn_heap_fetch(Relation relation,
-				Snapshot snapshot,
-				HeapTuple tuple,
-				Buffer *userbuf,
-				bool keep_buf)
-{
-	return heap_fetch(relation,
-					  snapshot,
-					  tuple,
-					  userbuf
-#if PG_VERSION_NUM >= 150000
-					  ,
-					  keep_buf
-#endif
-	);
 }
