@@ -12,6 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v5
+        with:
+          repository: "pgroonga/pgroonga.github.io"
+          path: "pgroonga.github.io"
       - name: Download artifacts
         if: |
           github.ref_type == 'tag'
@@ -45,13 +52,6 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - uses: actions/checkout@v5
-        with:
-          repository: "pgroonga/pgroonga.github.io"
-          path: "pgroonga.github.io"
       - name: Extract release note
         env:
           GH_TOKEN: ${{ github.token }}
