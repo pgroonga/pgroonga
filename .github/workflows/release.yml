@@ -33,7 +33,6 @@ jobs:
                          --jq '.[].databaseId' \
                          --json databaseId \
                          --limit 1 \
-                         --repo ${GITHUB_REPOSITORY} \
                          --workflow ${workflow})
               if [ -n "${run_id}" ]; then
                 break
@@ -43,12 +42,10 @@ jobs:
             gh run watch \
               --exit-status \
               --interval 300 \
-              --repo ${GITHUB_REPOSITORY} \
               ${run_id}
             gh run download ${run_id} \
               --dir release-artifacts \
-              --pattern "release-*" \
-              --repo ${GITHUB_REPOSITORY}
+              --pattern "release-*"
           done
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,7 +81,6 @@ jobs:
           gh release create ${GITHUB_REF_NAME} \
             --discussion-category Releases \
             --notes-file release-note-without-version.md \
-            --repo ${GITHUB_REPOSITORY} \
             --title "${title}" \
             release-artifacts/*/*
         env:
