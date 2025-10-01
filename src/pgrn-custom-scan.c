@@ -26,7 +26,7 @@ typedef struct PGrnScanIndexData
 {
 	Oid indexOID;
 	ScanKeyData *scanKeys;
-	int nScankeys;
+	int nScanKeys;
 } PGrnScanIndexData;
 
 typedef struct PGrnScanState
@@ -141,7 +141,7 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 	ListCell *cell;
 
 	data->indexOID = RelationGetRelid(index);
-	data->nScankeys = 0;
+	data->nScanKeys = 0;
 	foreach (cell, quals)
 	{
 		Expr *expr = (Expr *) lfirst(cell);
@@ -213,7 +213,7 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			ScanKeyInit(&(data->scanKeys[(data->nScankeys)++]),
+			ScanKeyInit(&(data->scanKeys[(data->nScanKeys)++]),
 						attributeNumber,
 						strategy,
 						opexpr->opfuncid,
@@ -246,7 +246,7 @@ PGrnChooseIndex(Relation table, List *quals, PGrnScanIndexData *data)
 			continue;
 		}
 		PGrnScanIndexDataInit(index, quals, data);
-		if (data->nScankeys == 0)
+		if (data->nScanKeys == 0)
 		{
 			RelationClose(index);
 			continue;
@@ -411,7 +411,7 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									Relation index)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	for (unsigned int i = 0; i < state->scanData->nScankeys; i++)
+	for (unsigned int i = 0; i < state->scanData->nScanKeys; i++)
 	{
 		PGrnSearchBuildCondition(
 			index, &(state->scanData->scanKeys[i]), &(state->searchData));
