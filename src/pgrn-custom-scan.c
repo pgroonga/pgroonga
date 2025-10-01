@@ -22,9 +22,17 @@
 #include "pgrn-groonga.h"
 #include "pgrn-search.h"
 
+typedef struct PGrnScanIndexData
+{
+	Oid indexOid;
+	ScanKeyData *scankeys;
+	int scankeySize;
+} PGrnScanIndexData;
+
 typedef struct PGrnScanState
 {
 	CustomScanState parent; /* must be first field */
+	PGrnScanIndexData *scanData;
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
 	grn_obj columnValue;
@@ -99,170 +107,17 @@ PGrnCustomScanDisable(void)
 	PGrnCustomScanEnabled = false;
 }
 
-static Relation
-PGrnChooseIndex(Relation table)
-{
-	// todo: Support pgroonga_condition() index specification.
-	// todo: Implementation of the logic for choosing which index to use.
-	ListCell *cell;
-	List *indexes;
-
-	if (!table)
-		return NULL;
-
-	indexes = RelationGetIndexList(table);
-	foreach (cell, indexes)
-	{
-		Oid indexId = lfirst_oid(cell);
-
-		Relation index = RelationIdGetRelation(indexId);
-		if (!PGrnIndexIsPGroonga(index))
-		{
-			RelationClose(index);
-			continue;
-		}
-		return index;
-	}
-	return NULL;
-}
-
-static void
-PGrnSetRelPathlistHook(PlannerInfo *root,
-					   RelOptInfo *rel,
-					   Index rti,
-					   RangeTblEntry *rte)
-{
-	CustomPath *cpath;
-	if (PreviousSetRelPathlistHook)
-	{
-		PreviousSetRelPathlistHook(root, rel, rti, rte);
-	}
-
-	if (!PGrnCustomScanGetEnabled())
-	{
-		return;
-	}
-
-	if (get_rel_relkind(rte->relid) != RELKIND_RELATION)
-	{
-		// First, support table scan.
-		return;
-	}
-
-	{
-		// Do not custom scan when no index exists for PGroonga.
-		Relation table = relation_open(rte->relid, AccessShareLock);
-		if (table)
-		{
-			Relation index = PGrnChooseIndex(table);
-			relation_close(table, AccessShareLock);
-			if (!index)
-			{
-				return;
-			}
-			RelationClose(index);
-		}
-	}
-
-	cpath = makeNode(CustomPath);
-	cpath->path.pathtype = T_CustomScan;
-	cpath->path.parent = rel;
-	cpath->path.pathtarget = rel->reltarget;
-
-#if (PG_VERSION_NUM >= 150000)
-	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
-#endif
-
-	cpath->methods = &PGrnPathMethods;
-
-	add_path(rel, &cpath->path);
-}
-
-static Plan *
-PGrnPlanCustomPath(PlannerInfo *root,
-				   RelOptInfo *rel,
-				   struct CustomPath *best_path,
-				   List *tlist,
-				   List *clauses,
-				   List *custom_plans)
-{
-	CustomScan *cscan = makeNode(CustomScan);
-	cscan->methods = &PGrnScanMethods;
-	cscan->scan.plan.qual = extract_actual_clauses(clauses, false);
-	cscan->scan.plan.targetlist = tlist;
-	cscan->scan.scanrelid = rel->relid;
-
-	return &(cscan->scan.plan);
-}
-
 static List *
-PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
-									List *custom_private,
-									RelOptInfo *child_rel)
+PGrnConvertExprList(List *baserestrictinfo)
 {
-	return NIL;
-}
-
-static Node *
-PGrnCreateCustomScanState(CustomScan *cscan)
-{
-	PGrnScanState *state =
-		(PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
-
-	state->parent.methods = &PGrnExecuteMethods;
-
-	state->tableCursor = NULL;
-	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
-	GRN_VOID_INIT(&(state->columnValue));
-	memset(&(state->searchData), 0, sizeof(state->searchData));
-	state->searched = NULL;
-	state->scoreAccessor = NULL;
-
-	return (Node *) &(state->parent);
-}
-
-static bool
-PGrnIndexContainColumn(Relation index, const char *name)
-{
-	TupleDesc tupdesc = RelationGetDescr(index);
-	for (AttrNumber i = 0; i < tupdesc->natts; i++)
-	{
-		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
-		if (strcmp(NameStr(attr->attname), name) == 0)
-			return true;
-	}
-	return false;
-}
-
-static void
-PGrnSetTargetColumns(CustomScanState *customScanState,
-					 Relation index,
-					 grn_obj *targetTable)
-{
-	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation table = customScanState->ss.ss_currentRelation;
+	List *exprList = NIL;
 	ListCell *cell;
-
-	foreach (cell, customScanState->ss.ps.plan->targetlist)
+	foreach (cell, baserestrictinfo)
 	{
-		TargetEntry *entry = (TargetEntry *) lfirst(cell);
-		if (IsA(entry->expr, Var))
-		{
-			Var *var = (Var *) entry->expr;
-			Form_pg_attribute attr =
-				TupleDescAttr(table->rd_att, var->varattno - 1);
-			const char *name = NameStr(attr->attname);
-			if (PGrnIndexContainColumn(index, name))
-			{
-				grn_obj *column = PGrnLookupColumn(targetTable, name, ERROR);
-				GRN_PTR_PUT(ctx, &(state->columns), column);
-			}
-			else
-			{
-				GRN_PTR_PUT(ctx, &(state->columns), NULL);
-			}
-		}
+		RestrictInfo *info = (RestrictInfo *) lfirst(cell);
+		exprList = lappend(exprList, info->clause);
 	}
+	return exprList;
 }
 
 static int
@@ -279,15 +134,14 @@ PGrnGetIndexColumnAttributeNumber(IndexInfo *indexInfo, int tableAttnum)
 }
 
 static void
-PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
-									Relation index)
+PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 {
-	PGrnScanState *state = (PGrnScanState *) customScanState;
+	const char *tag = "pgroonga: [custom-scan][index-data][init]";
 	IndexInfo *indexInfo = BuildIndexInfo(index);
-	const char *tag = "pgroonga: [custom-scan][build-conditions]";
-
-	List *quals = customScanState->ss.ps.plan->qual;
 	ListCell *cell;
+
+	data->indexOid = RelationGetRelid(index);
+	data->scankeySize = 0;
 	foreach (cell, quals)
 	{
 		Expr *expr = (Expr *) lfirst(cell);
@@ -340,18 +194,18 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 			int strategy;
 			Oid leftType;
 			Oid rightType;
-			ScanKeyData scankey;
 
 			int attributeNumber =
 				PGrnGetIndexColumnAttributeNumber(indexInfo, column->varattno);
 			if (attributeNumber == 0)
 			{
-				ereport(ERROR,
+				ereport(DEBUG1,
 						(errcode(ERRCODE_UNDEFINED_COLUMN),
 						 errmsg("pgroonga: %s "
 								"attribute number <%d> not found in index",
 								tag,
 								column->varattno)));
+				continue;
 			}
 			get_op_opfamily_properties(opexpr->opno,
 									   index->rd_opfamily[attributeNumber - 1],
@@ -359,15 +213,209 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			ScanKeyInit(&scankey,
+			ScanKeyInit(&(data->scankeys[(data->scankeySize)++]),
 						attributeNumber,
 						strategy,
 						opexpr->opfuncid,
 						value->constvalue);
-			PGrnSearchBuildCondition(index, &scankey, &(state->searchData));
 		}
 	}
 	pfree(indexInfo);
+}
+
+static Relation
+PGrnChooseIndex(Relation table, List *quals, PGrnScanIndexData *data)
+{
+	// todo: Support pgroonga_condition() index specification.
+	// todo: Implementation of the logic for choosing which index to use.
+	ListCell *cell;
+	List *indexes;
+
+	if (!table)
+		return NULL;
+
+	indexes = RelationGetIndexList(table);
+	foreach (cell, indexes)
+	{
+		Oid indexId = lfirst_oid(cell);
+
+		Relation index = RelationIdGetRelation(indexId);
+		if (!PGrnIndexIsPGroonga(index))
+		{
+			RelationClose(index);
+			continue;
+		}
+		PGrnScanIndexDataInit(index, quals, data);
+		if (data->scankeySize == 0)
+		{
+			RelationClose(index);
+			continue;
+		}
+
+		return index;
+	}
+	return NULL;
+}
+
+static void
+PGrnSetRelPathlistHook(PlannerInfo *root,
+					   RelOptInfo *rel,
+					   Index rti,
+					   RangeTblEntry *rte)
+{
+	CustomPath *cpath;
+	PGrnScanIndexData *scanData = NULL;
+
+	if (PreviousSetRelPathlistHook)
+	{
+		PreviousSetRelPathlistHook(root, rel, rti, rte);
+	}
+
+	if (!PGrnCustomScanGetEnabled())
+	{
+		return;
+	}
+
+	if (get_rel_relkind(rte->relid) != RELKIND_RELATION)
+	{
+		// First, support table scan.
+		return;
+	}
+
+	{
+		// Do not custom scan when no index exists for PGroonga.
+		Relation table = relation_open(rte->relid, AccessShareLock);
+		if (table)
+		{
+			Relation index;
+			List *quals = PGrnConvertExprList(rel->baserestrictinfo);
+			scanData = palloc(sizeof(PGrnScanIndexData));
+			scanData->scankeys =
+				palloc(sizeof(ScanKeyData) * list_length(quals));
+			index = PGrnChooseIndex(table, quals, scanData);
+			relation_close(table, AccessShareLock);
+			if (!index)
+			{
+				return;
+			}
+			RelationClose(index);
+		}
+	}
+
+	cpath = makeNode(CustomPath);
+	cpath->path.pathtype = T_CustomScan;
+	cpath->path.parent = rel;
+	cpath->path.pathtarget = rel->reltarget;
+	cpath->custom_private = list_make1(scanData);
+
+#if (PG_VERSION_NUM >= 150000)
+	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
+#endif
+
+	cpath->methods = &PGrnPathMethods;
+
+	add_path(rel, &cpath->path);
+}
+
+static Plan *
+PGrnPlanCustomPath(PlannerInfo *root,
+				   RelOptInfo *rel,
+				   struct CustomPath *best_path,
+				   List *tlist,
+				   List *clauses,
+				   List *custom_plans)
+{
+	CustomScan *cscan = makeNode(CustomScan);
+	cscan->methods = &PGrnScanMethods;
+	cscan->scan.plan.qual = extract_actual_clauses(clauses, false);
+	cscan->scan.plan.targetlist = tlist;
+	cscan->scan.scanrelid = rel->relid;
+	cscan->custom_private = best_path->custom_private;
+
+	return &(cscan->scan.plan);
+}
+
+static List *
+PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
+									List *custom_private,
+									RelOptInfo *child_rel)
+{
+	return NIL;
+}
+
+static Node *
+PGrnCreateCustomScanState(CustomScan *cscan)
+{
+	PGrnScanState *state =
+		(PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
+
+	state->parent.methods = &PGrnExecuteMethods;
+
+	state->tableCursor = NULL;
+	GRN_PTR_INIT(&(state->columns), GRN_OBJ_VECTOR, GRN_ID_NIL);
+	GRN_VOID_INIT(&(state->columnValue));
+	memset(&(state->searchData), 0, sizeof(state->searchData));
+	state->searched = NULL;
+	state->scoreAccessor = NULL;
+	state->scanData = linitial(cscan->custom_private);
+
+	return (Node *) &(state->parent);
+}
+
+static bool
+PGrnIndexContainColumn(Relation index, const char *name)
+{
+	TupleDesc tupdesc = RelationGetDescr(index);
+	for (AttrNumber i = 0; i < tupdesc->natts; i++)
+	{
+		Form_pg_attribute attr = TupleDescAttr(tupdesc, i);
+		if (strcmp(NameStr(attr->attname), name) == 0)
+			return true;
+	}
+	return false;
+}
+
+static void
+PGrnSetTargetColumns(CustomScanState *customScanState,
+					 Relation index,
+					 grn_obj *targetTable)
+{
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	Relation table = customScanState->ss.ss_currentRelation;
+	ListCell *cell;
+
+	foreach (cell, customScanState->ss.ps.plan->targetlist)
+	{
+		TargetEntry *entry = (TargetEntry *) lfirst(cell);
+		if (IsA(entry->expr, Var))
+		{
+			Var *var = (Var *) entry->expr;
+			Form_pg_attribute attr =
+				TupleDescAttr(table->rd_att, var->varattno - 1);
+			const char *name = NameStr(attr->attname);
+			if (PGrnIndexContainColumn(index, name))
+			{
+				grn_obj *column = PGrnLookupColumn(targetTable, name, ERROR);
+				GRN_PTR_PUT(ctx, &(state->columns), column);
+			}
+			else
+			{
+				GRN_PTR_PUT(ctx, &(state->columns), NULL);
+			}
+		}
+	}
+}
+
+static void
+PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
+									Relation index)
+{
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	for (unsigned int i = 0; i < state->scanData->scankeySize; i++)
+	{
+		PGrnSearchBuildCondition(
+			index, &(state->scanData->scankeys[i]), &(state->searchData));
+	}
 }
 
 static void
@@ -376,11 +424,8 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					int eflags)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation index = PGrnChooseIndex(customScanState->ss.ss_currentRelation);
+	Relation index = RelationIdGetRelation(state->scanData->indexOid);
 	grn_obj *sourcesTable;
-
-	if (!index)
-		return;
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	PGrnSearchDataInit(&(state->searchData), index, sourcesTable);
@@ -575,6 +620,15 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	unsigned int nTargetColumns;
 
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
+	if (state->scanData)
+	{
+		if (state->scanData->scankeys)
+		{
+			pfree(state->scanData->scankeys);
+		}
+		pfree(state->scanData);
+		state->scanData = NULL;
+	}
 
 	if (state->tableCursor)
 	{
