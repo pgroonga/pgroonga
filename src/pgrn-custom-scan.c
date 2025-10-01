@@ -240,6 +240,7 @@ PGrnSetTargetColumns(CustomScanState *customScanState,
 					 grn_obj *targetTable)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
+	Relation table = customScanState->ss.ss_currentRelation;
 	ListCell *cell;
 
 	foreach (cell, customScanState->ss.ps.plan->targetlist)
@@ -247,10 +248,13 @@ PGrnSetTargetColumns(CustomScanState *customScanState,
 		TargetEntry *entry = (TargetEntry *) lfirst(cell);
 		if (IsA(entry->expr, Var))
 		{
-			if (PGrnIndexContainColumn(index, entry->resname))
+			Var *var = (Var *) entry->expr;
+			Form_pg_attribute attr =
+				TupleDescAttr(table->rd_att, var->varattno - 1);
+			const char *name = NameStr(attr->attname);
+			if (PGrnIndexContainColumn(index, name))
 			{
-				grn_obj *column =
-					PGrnLookupColumn(targetTable, entry->resname, ERROR);
+				grn_obj *column = PGrnLookupColumn(targetTable, name, ERROR);
 				GRN_PTR_PUT(ctx, &(state->columns), column);
 			}
 			else
