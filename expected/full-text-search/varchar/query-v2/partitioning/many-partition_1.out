@@ -39,29 +39,17 @@ Hash Join
   Hash Cond: ((t2.prefecture)::text = (t1.city)::text)
   ->  Append
         ->  Seq Scan on infection_numbers_influenza_20_01
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_20_02
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_20_03
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_20_04
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_21_01
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_21_02
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_21_03
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_21_04
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_22_01
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_22_02
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_22_03
-              Disabled: true
         ->  Seq Scan on infection_numbers_influenza_22_04
-              Disabled: true
   ->  Hash
         ->  Append
               ->  Index Scan using infection_numbers_influenza_20_01_remarks_idx on infection_numbers_influenza_20_01
@@ -88,7 +76,7 @@ Hash Join
                     Index Cond: (remarks &@~ 'age'::character varying)
               ->  Index Scan using infection_numbers_influenza_22_04_remarks_idx on infection_numbers_influenza_22_04
                     Index Cond: (remarks &@~ 'age'::character varying)
-(53 rows)
+(41 rows)
 \pset format aligned
 SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
