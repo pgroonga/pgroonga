@@ -24,9 +24,9 @@
 
 typedef struct PGrnScanIndexData
 {
-	Oid indexOid;
-	ScanKeyData *scankeys;
-	int scankeySize;
+	Oid indexOID;
+	ScanKeyData *scanKeys;
+	int nScankeys;
 } PGrnScanIndexData;
 
 typedef struct PGrnScanState
@@ -140,8 +140,8 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 	IndexInfo *indexInfo = BuildIndexInfo(index);
 	ListCell *cell;
 
-	data->indexOid = RelationGetRelid(index);
-	data->scankeySize = 0;
+	data->indexOID = RelationGetRelid(index);
+	data->nScankeys = 0;
 	foreach (cell, quals)
 	{
 		Expr *expr = (Expr *) lfirst(cell);
@@ -213,7 +213,7 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			ScanKeyInit(&(data->scankeys[(data->scankeySize)++]),
+			ScanKeyInit(&(data->scanKeys[(data->nScankeys)++]),
 						attributeNumber,
 						strategy,
 						opexpr->opfuncid,
@@ -246,7 +246,7 @@ PGrnChooseIndex(Relation table, List *quals, PGrnScanIndexData *data)
 			continue;
 		}
 		PGrnScanIndexDataInit(index, quals, data);
-		if (data->scankeySize == 0)
+		if (data->nScankeys == 0)
 		{
 			RelationClose(index);
 			continue;
@@ -290,7 +290,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 			Relation index;
 			List *quals = PGrnConvertExprList(rel->baserestrictinfo);
 			scanData = palloc(sizeof(PGrnScanIndexData));
-			scanData->scankeys =
+			scanData->scanKeys =
 				palloc(sizeof(ScanKeyData) * list_length(quals));
 			index = PGrnChooseIndex(table, quals, scanData);
 			relation_close(table, AccessShareLock);
@@ -411,10 +411,10 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									Relation index)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	for (unsigned int i = 0; i < state->scanData->scankeySize; i++)
+	for (unsigned int i = 0; i < state->scanData->nScankeys; i++)
 	{
 		PGrnSearchBuildCondition(
-			index, &(state->scanData->scankeys[i]), &(state->searchData));
+			index, &(state->scanData->scanKeys[i]), &(state->searchData));
 	}
 }
 
@@ -424,7 +424,7 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					int eflags)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation index = RelationIdGetRelation(state->scanData->indexOid);
+	Relation index = RelationIdGetRelation(state->scanData->indexOID);
 	grn_obj *sourcesTable;
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -622,9 +622,9 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
 	if (state->scanData)
 	{
-		if (state->scanData->scankeys)
+		if (state->scanData->scanKeys)
 		{
-			pfree(state->scanData->scankeys);
+			pfree(state->scanData->scanKeys);
 		}
 		pfree(state->scanData);
 		state->scanData = NULL;
