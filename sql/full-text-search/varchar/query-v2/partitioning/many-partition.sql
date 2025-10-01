@@ -25,7 +25,7 @@ INSERT INTO infection_numbers_influenza_20_04 VALUES ('Japan','Mie','Ise','134',
 INSERT INTO infection_numbers_influenza_21_04 VALUES ('Germany','BER','BER','221','21-04','age: 50, gender:male, overseas travel history: false');
 INSERT INTO infection_numbers_influenza_22_04 VALUES ('U.S.A','NY','NY','10221','22-04','age: 10, gender:male, overseas travel history: false');
 
-CREATE INDEX remarks_index ON infection_numbers_influenza USING pgroonga (remarks pgroonga_varchar_full_text_search_ops_v2);
+CREATE INDEX remarks_index ON infection_numbers_influenza USING pgroonga (remarks);
 
 \pset format unaligned
 EXPLAIN (COSTS OFF)
@@ -33,7 +33,7 @@ SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
   INNER JOIN infection_numbers_influenza t2
     ON t1.city = t2.prefecture
- WHERE t1.remarks &@~ 'age'
+ WHERE t1.remarks  &@~ 'age'
 \g |sed -r -e "s/ t[1,2](_[0-9]{1,2}){0,1}//g"
 \pset format aligned
 
@@ -41,6 +41,6 @@ SELECT t1.n_infection, t1.remarks
   FROM infection_numbers_influenza t1
   INNER JOIN infection_numbers_influenza t2
     ON t1.city = t2.prefecture
- WHERE t1.remarks &@~ 'age';
+ WHERE t1.remarks  &@~ 'age';
 
 DROP TABLE infection_numbers_influenza;
