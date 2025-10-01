@@ -27,6 +27,10 @@ INSERT INTO infection_numbers_influenza_22_04 VALUES ('U.S.A','NY','NY','10221',
 
 CREATE INDEX remarks_index ON infection_numbers_influenza USING pgroonga (remarks pgroonga_varchar_full_text_search_ops_v2);
 
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+
 \pset format unaligned
 EXPLAIN (COSTS OFF)
 SELECT t1.n_infection, t1.remarks
