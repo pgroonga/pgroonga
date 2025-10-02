@@ -76,6 +76,9 @@ EOF
 %{pg_libdir}/*.so
 
 %changelog
+* Thu Oct 02 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.4-1
+- New upstream release.
+
 * Tue Sep 30 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.3-1
 - New upstream release.
 
