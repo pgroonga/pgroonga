@@ -24,6 +24,7 @@
 
 typedef struct PGrnScanIndexData
 {
+	NodeTag type;
 	Oid indexOID;
 	ScanKeyData *scanKeys;
 	int nScanKeys;
@@ -67,6 +68,18 @@ static void PGrnReScanCustomScan(CustomScanState *node);
 static void
 PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es);
 
+static Size PGrnEstimateDSMCustomScan(CustomScanState *customScanState,
+									  ParallelContext *pcxt);
+static void PGrnInitializeDSMCustomScan(CustomScanState *customScanState,
+										ParallelContext *pcxt,
+										void *coordinate);
+static void PGrnReInitializeDSMCustomScan(CustomScanState *customScanState,
+										  ParallelContext *pcxt,
+										  void *coordinate);
+static void PGrnInitializeWorkerCustomScan(CustomScanState *customScanState,
+										   shm_toc *toc,
+										   void *coordinate);
+
 const struct CustomPathMethods PGrnPathMethods = {
 	.CustomName = "PGroongaScan",
 	.PlanCustomPath = PGrnPlanCustomPath,
@@ -87,6 +100,11 @@ const struct CustomExecMethods PGrnExecuteMethods = {
 	.ReScanCustomScan = PGrnReScanCustomScan,
 
 	.ExplainCustomScan = PGrnExplainCustomScan,
+
+	.EstimateDSMCustomScan = PGrnEstimateDSMCustomScan,
+	.InitializeDSMCustomScan = PGrnInitializeDSMCustomScan,
+	.ReInitializeDSMCustomScan = PGrnReInitializeDSMCustomScan,
+	.InitializeWorkerCustomScan = PGrnInitializeWorkerCustomScan,
 };
 
 bool
@@ -292,6 +310,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 			scanData = palloc(sizeof(PGrnScanIndexData));
 			scanData->scanKeys =
 				palloc(sizeof(ScanKeyData) * list_length(quals));
+			scanData->type = T_CustomScan;
 			index = PGrnChooseIndex(table, quals, scanData);
 			relation_close(table, AccessShareLock);
 			if (!index)
@@ -668,6 +687,34 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 
 static void
 PGrnReScanCustomScan(CustomScanState *node)
+{
+}
+
+static Size
+PGrnEstimateDSMCustomScan(CustomScanState *customScanState,
+						  ParallelContext *pcxt)
+{
+	return 0;
+}
+
+static void
+PGrnInitializeDSMCustomScan(CustomScanState *customScanState,
+							ParallelContext *pcxt,
+							void *coordinate)
+{
+}
+
+static void
+PGrnReInitializeDSMCustomScan(CustomScanState *customScanState,
+							  ParallelContext *pcxt,
+							  void *coordinate)
+{
+}
+
+static void
+PGrnInitializeWorkerCustomScan(CustomScanState *customScanState,
+							   shm_toc *toc,
+							   void *coordinate)
 {
 }
 
