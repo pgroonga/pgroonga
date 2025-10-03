@@ -144,12 +144,36 @@ PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
 static List *
 PGrnScanKeySourceMake(int indexAttributeNumber,
 					  int indexStrategy,
-					  Oid opfuncid,
+					  Oid opFuncID,
 					  Const *value)
 {
 	return list_make3(list_make2_int(indexAttributeNumber, indexStrategy),
-					  list_make1_oid(opfuncid),
+					  list_make1_oid(opFuncID),
 					  list_make1(value));
+}
+
+static int
+PGrnScanKeySourceGetIndexAttrNumber(List *source)
+{
+	return linitial_int(linitial(source));
+}
+
+static int
+PGrnScanKeySourceGetIndexStrategy(List *source)
+{
+	return lsecond_int(linitial(source));
+}
+
+static Oid
+PGrnScanKeySourceGetOpFuncID(List *source)
+{
+	return linitial_oid(lsecond(source));
+}
+
+static Const *
+PGrnScanKeySourceGetValue(List *source)
+{
+	return linitial(lthird(source));
 }
 
 static void
@@ -447,16 +471,11 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 	foreach (cell, state->scanKeySources)
 	{
 		List *scanKeySource = (List *) lfirst(cell);
-		/*
-		 * scanKeySource is created as follows:
-		 * list_make3(list_make2_int(attributeNumber, strategy),
-		 *            list_make1_oid(opexpr->opfuncid),
-		 *            list_make1(value))
-		 */
-		int attributeNumber = linitial_int(linitial(scanKeySource));
-		int strategy = lsecond_int(linitial(scanKeySource));
-		Oid opfuncid = linitial_oid(lsecond(scanKeySource));
-		Const *value = linitial(lthird(scanKeySource));
+		int attributeNumber =
+			PGrnScanKeySourceGetIndexAttrNumber(scanKeySource);
+		int strategy = PGrnScanKeySourceGetIndexStrategy(scanKeySource);
+		Oid opfuncid = PGrnScanKeySourceGetOpFuncID(scanKeySource);
+		Const *value = PGrnScanKeySourceGetValue(scanKeySource);
 
 		ScanKeyData key;
 		ScanKeyInit(
