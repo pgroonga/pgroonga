@@ -194,11 +194,12 @@ PGrnCustomPrivateGetScanKeySources(List *privateData)
 	return lsecond(privateData);
 }
 
-static void
-PGrnTraverseQuals(Relation index, List *quals, List **scanKeySources)
+static List *
+PGrnCollectScanKeySources(Relation index, List *quals)
 {
-	const char *tag = "pgroonga: [custom-scan][index-data][init]";
+	const char *tag = "pgroonga: [custom-scan][scankey-sources][collect]";
 	IndexInfo *indexInfo = BuildIndexInfo(index);
+	List *scanKeySources = NIL;
 	ListCell *cell;
 
 	foreach (cell, quals)
@@ -278,13 +279,14 @@ PGrnTraverseQuals(Relation index, List *quals, List **scanKeySources)
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			*scanKeySources = lappend(
-				*scanKeySources,
+			scanKeySources = lappend(
+				scanKeySources,
 				PGrnScanKeySourceMake(
 					attributeNumber, strategy, opexpr->opfuncid, value));
 		}
 	}
 	pfree(indexInfo);
+	return scanKeySources;
 }
 
 static Relation
@@ -309,7 +311,7 @@ PGrnChooseIndex(Relation table, List *quals, List **scanKeySources)
 			RelationClose(index);
 			continue;
 		}
-		PGrnTraverseQuals(index, quals, scanKeySources);
+		*scanKeySources = PGrnCollectScanKeySources(index, quals);
 		if (!*scanKeySources)
 		{
 			RelationClose(index);
