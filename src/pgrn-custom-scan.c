@@ -289,13 +289,14 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 	return scanKeySources;
 }
 
-static Relation
-PGrnChooseIndex(Relation table, List *quals, List **scanKeySources)
+static List *
+PGrnChooseIndex(Relation table, List *quals)
 {
 	// todo: Support pgroonga_condition() index specification.
 	// todo: Implementation of the logic for choosing which index to use.
 	ListCell *cell;
-	List *indexes;
+	List *indexes = NIL;
+	List *scanKeySources = NIL;
 
 	if (!table)
 		return NULL;
@@ -303,24 +304,23 @@ PGrnChooseIndex(Relation table, List *quals, List **scanKeySources)
 	indexes = RelationGetIndexList(table);
 	foreach (cell, indexes)
 	{
-		Oid indexId = lfirst_oid(cell);
-
-		Relation index = RelationIdGetRelation(indexId);
+		Oid indexOID = lfirst_oid(cell);
+		Relation index = RelationIdGetRelation(indexOID);
 		if (!PGrnIndexIsPGroonga(index))
 		{
 			RelationClose(index);
 			continue;
 		}
-		*scanKeySources = PGrnCollectScanKeySources(index, quals);
-		if (!*scanKeySources)
+		scanKeySources = PGrnCollectScanKeySources(index, quals);
+		if (!scanKeySources)
 		{
 			RelationClose(index);
 			continue;
 		}
-
-		return index;
+		RelationClose(index);
+		return PGrnCustomPrivateMake(indexOID, scanKeySources);
 	}
-	return NULL;
+	return NIL;
 }
 
 static void
@@ -330,8 +330,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 					   RangeTblEntry *rte)
 {
 	CustomPath *cpath;
-	Oid indexOID = InvalidOid;
-	List *scanKeySources = NIL;
+	List *privateData = NIL;
 
 	if (PreviousSetRelPathlistHook)
 	{
@@ -354,16 +353,13 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 		Relation table = relation_open(rte->relid, AccessShareLock);
 		if (table)
 		{
-			Relation index;
 			List *quals = PGrnConvertExprList(rel->baserestrictinfo);
-			index = PGrnChooseIndex(table, quals, &scanKeySources);
+			privateData = PGrnChooseIndex(table, quals);
 			relation_close(table, AccessShareLock);
-			if (!index)
+			if (!privateData)
 			{
 				return;
 			}
-			indexOID = RelationGetRelid(index);
-			RelationClose(index);
 		}
 	}
 
@@ -371,7 +367,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
 	cpath->path.pathtarget = rel->reltarget;
-	cpath->custom_private = PGrnCustomPrivateMake(indexOID, scanKeySources);
+	cpath->custom_private = privateData;
 
 #if (PG_VERSION_NUM >= 150000)
 	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
