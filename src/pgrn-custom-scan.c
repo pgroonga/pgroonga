@@ -133,6 +133,20 @@ PGrnGetIndexColumnAttributeNumber(IndexInfo *indexInfo, int tableAttnum)
 	return 0;
 }
 
+static bool
+PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
+{
+	for (unsigned int i = 0; i < index->rd_att->natts; i++)
+	{
+		Oid opfamily = index->rd_opfamily[i];
+		if (op_in_opfamily(opexpr->opno, opfamily))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 static void
 PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 {
@@ -158,6 +172,12 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 		}
 
 		opexpr = (OpExpr *) expr;
+		if (!PGrnOpInOpfamily(index, opexpr))
+		{
+			elog(DEBUG1, "%s Unsupported operator <%d>", tag, nodeTag(expr));
+			continue;
+		}
+
 		if (list_length(opexpr->args) != 2)
 		{
 			elog(DEBUG1,
