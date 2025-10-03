@@ -141,6 +141,17 @@ PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
 	return false;
 }
 
+static List *
+PGrnScanKeySourceMake(int indexAttributeNumber,
+					  int indexStrategy,
+					  Oid opfuncid,
+					  Const *value)
+{
+	return list_make3(list_make2_int(indexAttributeNumber, indexStrategy),
+					  list_make1_oid(opfuncid),
+					  list_make1(value));
+}
+
 static void
 PGrnTraverseQuals(Relation index, List *quals, List **scanKeySources)
 {
@@ -225,11 +236,10 @@ PGrnTraverseQuals(Relation index, List *quals, List **scanKeySources)
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			*scanKeySources =
-				lappend(*scanKeySources,
-						list_make3(list_make2_int(attributeNumber, strategy),
-								   list_make1_oid(opexpr->opfuncid),
-								   list_make1(value)));
+			*scanKeySources = lappend(
+				*scanKeySources,
+				PGrnScanKeySourceMake(
+					attributeNumber, strategy, opexpr->opfuncid, value));
 		}
 	}
 	pfree(indexInfo);
