@@ -7,11 +7,11 @@ CREATE USER alice NOLOGIN;
 GRANT ALL ON TABLE memos TO alice;
 INSERT INTO memos VALUES
   (1,
-   'nonexistent',
+   'alice',
    '{"title": "PostgreSQL", "content": "PostgreSQL is a RDBMS."}');
 INSERT INTO memos VALUES
   (2,
-   'alice',
+   'nonexistent',
    '{"title": "Groonga", "content": "Groonga is fast full text search engine."}');
 INSERT INTO memos VALUES
   (3,
@@ -42,9 +42,8 @@ SELECT id, record
  WHERE record &@ 'groonga';
  id |                                          record                                           
 ----+-------------------------------------------------------------------------------------------
-  2 | {"title": "Groonga", "content": "Groonga is fast full text search engine."}
   3 | {"title": "PGroonga", "content": "PGroonga is a PostgreSQL extension that uses Groonga."}
-(2 rows)
+(1 row)
 
 RESET SESSION AUTHORIZATION;
 DROP TABLE memos;

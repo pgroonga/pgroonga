@@ -9,11 +9,11 @@ GRANT ALL ON TABLE memos TO alice;
 
 INSERT INTO memos VALUES
   (1,
-   'nonexistent',
+   'alice',
    '{"title": "PostgreSQL", "content": "PostgreSQL is a RDBMS."}');
 INSERT INTO memos VALUES
   (2,
-   'alice',
+   'nonexistent',
    '{"title": "Groonga", "content": "Groonga is fast full text search engine."}');
 INSERT INTO memos VALUES
   (3,
