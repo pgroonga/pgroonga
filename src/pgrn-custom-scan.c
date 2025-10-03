@@ -147,6 +147,11 @@ PGrnScanKeySourceMake(int indexAttributeNumber,
 					  Oid opFuncID,
 					  Const *value)
 {
+	/*
+	 * ScanKeySource will be set to `custom_private`.
+	 * Since only a `Node` can be set to `custom_private`, a `List`, which is a
+	 * `Node`, will be used to create the value.
+	 */
 	return list_make3(list_make2_int(indexAttributeNumber, indexStrategy),
 					  list_make1_oid(opFuncID),
 					  list_make1(value));
@@ -179,6 +184,8 @@ PGrnScanKeySourceGetValue(List *source)
 static List *
 PGrnCustomPrivateMake(Oid indexOID, List *scanKeySources)
 {
+	// Only a `Node` can be set to `custom_private`.
+	// See also the comments in PGrnScanKeySourceMake().
 	return list_make2(list_make1_oid(indexOID), scanKeySources);
 }
 
