@@ -312,12 +312,9 @@ PGrnChooseIndex(Relation table, List *quals)
 			continue;
 		}
 		scanKeySources = PGrnCollectScanKeySources(index, quals);
-		if (!scanKeySources)
-		{
-			RelationClose(index);
-			continue;
-		}
 		RelationClose(index);
+		if (!scanKeySources)
+			continue;
 		return PGrnCustomPrivateMake(indexOID, scanKeySources);
 	}
 	return NIL;
