@@ -375,6 +375,14 @@ PGrnIndexContainColumn(Relation index, const char *name)
 	return false;
 }
 
+static bool
+PGrnIsIndexValueUsed(Relation index, const char *columnName, Oid typeID)
+{
+	if (typeID == JSONBOID)
+		return false;
+	return PGrnIndexContainColumn(index, columnName);
+}
+
 static void
 PGrnSetTargetColumns(CustomScanState *customScanState,
 					 Relation index,
@@ -393,7 +401,8 @@ PGrnSetTargetColumns(CustomScanState *customScanState,
 			Form_pg_attribute attr =
 				TupleDescAttr(table->rd_att, var->varattno - 1);
 			const char *name = NameStr(attr->attname);
-			if (PGrnIndexContainColumn(index, name))
+			if (PGrnIsIndexValueUsed(
+					index, name, exprType((Node *) (entry->expr))))
 			{
 				grn_obj *column = PGrnLookupColumn(targetTable, name, ERROR);
 				GRN_PTR_PUT(ctx, &(state->columns), column);
