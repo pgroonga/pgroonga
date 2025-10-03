@@ -176,6 +176,24 @@ PGrnScanKeySourceGetValue(List *source)
 	return linitial(lthird(source));
 }
 
+static List *
+PGrnCustomPrivateMake(Oid indexOID, List *scanKeySources)
+{
+	return list_make2(list_make1_oid(indexOID), scanKeySources);
+}
+
+static Oid
+PGrnCustomPrivateGetIndexOID(List *privateData)
+{
+	return linitial_oid(linitial(privateData));
+}
+
+static List *
+PGrnCustomPrivateGetScanKeySources(List *privateData)
+{
+	return lsecond(privateData);
+}
+
 static void
 PGrnTraverseQuals(Relation index, List *quals, List **scanKeySources)
 {
@@ -351,8 +369,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
 	cpath->path.pathtarget = rel->reltarget;
-	cpath->custom_private =
-		list_make2(list_make1_oid(indexOID), scanKeySources);
+	cpath->custom_private = PGrnCustomPrivateMake(indexOID, scanKeySources);
 
 #if (PG_VERSION_NUM >= 150000)
 	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
@@ -403,8 +420,9 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	memset(&(state->searchData), 0, sizeof(state->searchData));
 	state->searched = NULL;
 	state->scoreAccessor = NULL;
-	state->indexOID = linitial_oid(linitial(cscan->custom_private));
-	state->scanKeySources = lsecond(cscan->custom_private);
+	state->indexOID = PGrnCustomPrivateGetIndexOID(cscan->custom_private);
+	state->scanKeySources =
+		PGrnCustomPrivateGetScanKeySources(cscan->custom_private);
 
 	return (Node *) &(state->parent);
 }
