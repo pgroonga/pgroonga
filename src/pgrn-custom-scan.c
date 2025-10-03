@@ -258,7 +258,7 @@ PGrnChooseIndex(Relation table, List *quals, List **scanKeySources)
 			continue;
 		}
 		PGrnTraverseQuals(index, quals, scanKeySources);
-		if (*scanKeySources == NIL)
+		if (!*scanKeySources)
 		{
 			RelationClose(index);
 			continue;
