@@ -22,17 +22,11 @@
 #include "pgrn-groonga.h"
 #include "pgrn-search.h"
 
-typedef struct PGrnScanIndexData
-{
-	Oid indexOID;
-	ScanKeyData *scanKeys;
-	int nScanKeys;
-} PGrnScanIndexData;
-
 typedef struct PGrnScanState
 {
 	CustomScanState parent; /* must be first field */
-	PGrnScanIndexData *scanData;
+	Oid indexOID;
+	List *scanKeySources;
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
 	grn_obj columnValue;
@@ -147,15 +141,74 @@ PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
 	return false;
 }
 
-static void
-PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
+static List *
+PGrnScanKeySourceMake(int indexAttributeNumber,
+					  int indexStrategy,
+					  Oid opFuncID,
+					  Const *value)
 {
-	const char *tag = "pgroonga: [custom-scan][index-data][init]";
+	/*
+	 * ScanKeySource will be set to `custom_private`.
+	 * Since only a `Node` can be set to `custom_private`, a `List`, which is a
+	 * `Node`, will be used to create the value.
+	 */
+	return list_make3(list_make2_int(indexAttributeNumber, indexStrategy),
+					  list_make1_oid(opFuncID),
+					  list_make1(value));
+}
+
+static int
+PGrnScanKeySourceGetIndexAttrNumber(List *source)
+{
+	return linitial_int(linitial(source));
+}
+
+static int
+PGrnScanKeySourceGetIndexStrategy(List *source)
+{
+	return lsecond_int(linitial(source));
+}
+
+static Oid
+PGrnScanKeySourceGetOpFuncID(List *source)
+{
+	return linitial_oid(lsecond(source));
+}
+
+static Const *
+PGrnScanKeySourceGetValue(List *source)
+{
+	return linitial(lthird(source));
+}
+
+static List *
+PGrnCustomPrivateMake(Oid indexOID, List *scanKeySources)
+{
+	// Only a `Node` can be set to `custom_private`.
+	// See also the comments in PGrnScanKeySourceMake().
+	return list_make2(list_make1_oid(indexOID), scanKeySources);
+}
+
+static Oid
+PGrnCustomPrivateGetIndexOID(List *privateData)
+{
+	return linitial_oid(linitial(privateData));
+}
+
+static List *
+PGrnCustomPrivateGetScanKeySources(List *privateData)
+{
+	return lsecond(privateData);
+}
+
+static List *
+PGrnCollectScanKeySources(Relation index, List *quals)
+{
+	const char *tag = "pgroonga: [custom-scan][scankey-sources][collect]";
 	IndexInfo *indexInfo = BuildIndexInfo(index);
+	List *scanKeySources = NIL;
 	ListCell *cell;
 
-	data->indexOID = RelationGetRelid(index);
-	data->nScanKeys = 0;
 	foreach (cell, quals)
 	{
 		Expr *expr = (Expr *) lfirst(cell);
@@ -233,23 +286,24 @@ PGrnScanIndexDataInit(Relation index, List *quals, PGrnScanIndexData *data)
 									   &strategy,
 									   &leftType,
 									   &rightType);
-			ScanKeyInit(&(data->scanKeys[(data->nScanKeys)++]),
-						attributeNumber,
-						strategy,
-						opexpr->opfuncid,
-						value->constvalue);
+			scanKeySources = lappend(
+				scanKeySources,
+				PGrnScanKeySourceMake(
+					attributeNumber, strategy, opexpr->opfuncid, value));
 		}
 	}
 	pfree(indexInfo);
+	return scanKeySources;
 }
 
-static Relation
-PGrnChooseIndex(Relation table, List *quals, PGrnScanIndexData *data)
+static List *
+PGrnChooseIndex(Relation table, List *quals)
 {
 	// todo: Support pgroonga_condition() index specification.
 	// todo: Implementation of the logic for choosing which index to use.
 	ListCell *cell;
-	List *indexes;
+	List *indexes = NIL;
+	List *scanKeySources = NIL;
 
 	if (!table)
 		return NULL;
@@ -257,24 +311,20 @@ PGrnChooseIndex(Relation table, List *quals, PGrnScanIndexData *data)
 	indexes = RelationGetIndexList(table);
 	foreach (cell, indexes)
 	{
-		Oid indexId = lfirst_oid(cell);
-
-		Relation index = RelationIdGetRelation(indexId);
+		Oid indexOID = lfirst_oid(cell);
+		Relation index = RelationIdGetRelation(indexOID);
 		if (!PGrnIndexIsPGroonga(index))
 		{
 			RelationClose(index);
 			continue;
 		}
-		PGrnScanIndexDataInit(index, quals, data);
-		if (data->nScanKeys == 0)
-		{
-			RelationClose(index);
+		scanKeySources = PGrnCollectScanKeySources(index, quals);
+		RelationClose(index);
+		if (!scanKeySources)
 			continue;
-		}
-
-		return index;
+		return PGrnCustomPrivateMake(indexOID, scanKeySources);
 	}
-	return NULL;
+	return NIL;
 }
 
 static void
@@ -284,7 +334,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 					   RangeTblEntry *rte)
 {
 	CustomPath *cpath;
-	PGrnScanIndexData *scanData = NULL;
+	List *privateData = NIL;
 
 	if (PreviousSetRelPathlistHook)
 	{
@@ -307,18 +357,13 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 		Relation table = relation_open(rte->relid, AccessShareLock);
 		if (table)
 		{
-			Relation index;
 			List *quals = PGrnConvertExprList(rel->baserestrictinfo);
-			scanData = palloc(sizeof(PGrnScanIndexData));
-			scanData->scanKeys =
-				palloc(sizeof(ScanKeyData) * list_length(quals));
-			index = PGrnChooseIndex(table, quals, scanData);
+			privateData = PGrnChooseIndex(table, quals);
 			relation_close(table, AccessShareLock);
-			if (!index)
+			if (!privateData)
 			{
 				return;
 			}
-			RelationClose(index);
 		}
 	}
 
@@ -326,7 +371,7 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	cpath->path.pathtype = T_CustomScan;
 	cpath->path.parent = rel;
 	cpath->path.pathtarget = rel->reltarget;
-	cpath->custom_private = list_make1(scanData);
+	cpath->custom_private = privateData;
 
 #if (PG_VERSION_NUM >= 150000)
 	cpath->flags |= CUSTOMPATH_SUPPORT_PROJECTION;
@@ -377,7 +422,9 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	memset(&(state->searchData), 0, sizeof(state->searchData));
 	state->searched = NULL;
 	state->scoreAccessor = NULL;
-	state->scanData = linitial(cscan->custom_private);
+	state->indexOID = PGrnCustomPrivateGetIndexOID(cscan->custom_private);
+	state->scanKeySources =
+		PGrnCustomPrivateGetScanKeySources(cscan->custom_private);
 
 	return (Node *) &(state->parent);
 }
@@ -440,10 +487,20 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 									Relation index)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	for (unsigned int i = 0; i < state->scanData->nScanKeys; i++)
+	ListCell *cell;
+	foreach (cell, state->scanKeySources)
 	{
-		PGrnSearchBuildCondition(
-			index, &(state->scanData->scanKeys[i]), &(state->searchData));
+		List *scanKeySource = (List *) lfirst(cell);
+		int attributeNumber =
+			PGrnScanKeySourceGetIndexAttrNumber(scanKeySource);
+		int strategy = PGrnScanKeySourceGetIndexStrategy(scanKeySource);
+		Oid opfuncid = PGrnScanKeySourceGetOpFuncID(scanKeySource);
+		Const *value = PGrnScanKeySourceGetValue(scanKeySource);
+
+		ScanKeyData key;
+		ScanKeyInit(
+			&key, attributeNumber, strategy, opfuncid, value->constvalue);
+		PGrnSearchBuildCondition(index, &key, &(state->searchData));
 	}
 }
 
@@ -453,7 +510,7 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					int eflags)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation index = RelationIdGetRelation(state->scanData->indexOID);
+	Relation index = RelationIdGetRelation(state->indexOID);
 	grn_obj *sourcesTable;
 
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
@@ -649,15 +706,8 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	unsigned int nTargetColumns;
 
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
-	if (state->scanData)
-	{
-		if (state->scanData->scanKeys)
-		{
-			pfree(state->scanData->scanKeys);
-		}
-		pfree(state->scanData);
-		state->scanData = NULL;
-	}
+	state->indexOID = InvalidOid;
+	state->scanKeySources = NIL;
 
 	if (state->tableCursor)
 	{
