@@ -185,12 +185,10 @@ PGrnScanKeySourceMake(Relation index,
 		PGrnGetIndexColumnAttributeNumber(indexInfo, column->varattno);
 	if (attributeNumber == 0)
 	{
-		ereport(DEBUG1,
-				(errcode(ERRCODE_UNDEFINED_COLUMN),
-				 errmsg("pgroonga: %s "
-						"attribute number <%d> not found in index",
-						tag,
-						column->varattno)));
+		elog(DEBUG1,
+			 "%s attribute number <%d> not found in index",
+			 tag,
+			 column->varattno);
 		return NIL;
 	}
 
@@ -294,7 +292,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 				elog(DEBUG1,
 					 "%s Unsupported OpExpr operator <%d>",
 					 tag,
-					 nodeTag(expr));
+					 opexpr->opno);
 				continue;
 			}
 			if (list_length(opexpr->args) != 2)
@@ -322,7 +320,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 				elog(DEBUG1,
 					 "%s Unsupported ScalarArrayOpExpr operator <%d>",
 					 tag,
-					 nodeTag(expr));
+					 opexpr->opno);
 				continue;
 			}
 			if (list_length(opexpr->args) != 2)
