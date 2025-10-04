@@ -128,12 +128,12 @@ PGrnGetIndexColumnAttributeNumber(IndexInfo *indexInfo, int tableAttnum)
 }
 
 static bool
-PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
+PGrnOpInOpfamily(Relation index, Oid opNo)
 {
 	for (unsigned int i = 0; i < index->rd_att->natts; i++)
 	{
 		Oid opfamily = index->rd_opfamily[i];
-		if (op_in_opfamily(opexpr->opno, opfamily))
+		if (op_in_opfamily(opNo, opfamily))
 		{
 			return true;
 		}
@@ -142,37 +142,107 @@ PGrnOpInOpfamily(Relation index, OpExpr *opexpr)
 }
 
 static List *
-PGrnScanKeySourceMake(int indexAttributeNumber,
-					  int indexStrategy,
-					  Oid opFuncID,
-					  Const *value)
+PGrnScanKeySourceMake(Relation index,
+					  IndexInfo *indexInfo,
+					  List *args,
+					  Oid opNo,
+					  int flags,
+					  Oid collation,
+					  Oid opFuncID)
 {
+	const char *tag = "pgroonga: [custom-scan][scankey-source][make]";
+	Node *left = linitial(args);
+	Node *right = lsecond(args);
+	Var *column;
+	Const *value;
+
+	int attributeNumber = 0;
+	int strategy;
+	Oid leftType;
+	Oid rightType;
+
+	if (nodeTag(left) == T_Var && nodeTag(right) == T_Const)
+	{
+		column = (Var *) left;
+		value = (Const *) right;
+	}
+	else if (nodeTag(left) == T_Const && nodeTag(right) == T_Var)
+	{
+		column = (Var *) right;
+		value = (Const *) left;
+	}
+	else
+	{
+		elog(DEBUG1,
+			 "%s The arguments are not a pair of Var and Const. <%d op %d>",
+			 tag,
+			 nodeTag(left),
+			 nodeTag(right));
+		return NIL;
+	}
+
+	attributeNumber =
+		PGrnGetIndexColumnAttributeNumber(indexInfo, column->varattno);
+	if (attributeNumber == 0)
+	{
+		elog(DEBUG1,
+			 "%s attribute number <%d> not found in index",
+			 tag,
+			 column->varattno);
+		return NIL;
+	}
+
+	get_op_opfamily_properties(opNo,
+							   index->rd_opfamily[attributeNumber - 1],
+							   false,
+							   &strategy,
+							   &leftType,
+							   &rightType);
+
 	/*
 	 * ScanKeySource will be set to `custom_private`.
 	 * Since only a `Node` can be set to `custom_private`, a `List`, which is a
 	 * `Node`, will be used to create the value.
 	 */
-	return list_make3(list_make2_int(indexAttributeNumber, indexStrategy),
-					  list_make1_oid(opFuncID),
+	return list_make3(list_make3_int(flags, attributeNumber, strategy),
+					  list_make3_oid(column->vartype, collation, opFuncID),
 					  list_make1(value));
 }
 
 static int
-PGrnScanKeySourceGetIndexAttrNumber(List *source)
+PGrnScanKeySourceGetFlags(List *source)
 {
 	return linitial_int(linitial(source));
 }
 
 static int
-PGrnScanKeySourceGetIndexStrategy(List *source)
+PGrnScanKeySourceGetIndexAttrNumber(List *source)
 {
 	return lsecond_int(linitial(source));
+}
+
+static int
+PGrnScanKeySourceGetIndexStrategy(List *source)
+{
+	return lthird_int(linitial(source));
+}
+
+static Oid
+PGrnScanKeySourceGetVarType(List *source)
+{
+	return linitial_oid(lsecond(source));
+}
+
+static Oid
+PGrnScanKeySourceGetCollation(List *source)
+{
+	return lsecond_oid(lsecond(source));
 }
 
 static Oid
 PGrnScanKeySourceGetOpFuncID(List *source)
 {
-	return linitial_oid(lsecond(source));
+	return lthird_oid(lsecond(source));
 }
 
 static Const *
@@ -212,85 +282,71 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 	foreach (cell, quals)
 	{
 		Expr *expr = (Expr *) lfirst(cell);
-		OpExpr *opexpr;
-		Node *left;
-		Node *right;
-		Var *column;
-		Const *value;
+		List *scanKeySource = NIL;
 
-		if (!IsA(expr, OpExpr))
+		if (IsA(expr, OpExpr))
 		{
-			elog(DEBUG1, "%s node type is not OpExpr <%d>", tag, nodeTag(expr));
-			continue;
+			OpExpr *opexpr = (OpExpr *) expr;
+			if (!PGrnOpInOpfamily(index, opexpr->opno))
+			{
+				elog(DEBUG1,
+					 "%s Unsupported OpExpr operator <%d>",
+					 tag,
+					 opexpr->opno);
+				continue;
+			}
+			if (list_length(opexpr->args) != 2)
+			{
+				elog(DEBUG1,
+					 "%s The number of opExpr->args is not 2. <%d>",
+					 tag,
+					 list_length(opexpr->args));
+				continue;
+			}
+
+			scanKeySource = PGrnScanKeySourceMake(index,
+												  indexInfo,
+												  opexpr->args,
+												  opexpr->opno,
+												  0,
+												  exprCollation((Node *) expr),
+												  opexpr->opfuncid);
 		}
-
-		opexpr = (OpExpr *) expr;
-		if (!PGrnOpInOpfamily(index, opexpr))
+		else if (IsA(expr, ScalarArrayOpExpr))
 		{
-			elog(DEBUG1, "%s Unsupported operator <%d>", tag, nodeTag(expr));
-			continue;
-		}
-
-		if (list_length(opexpr->args) != 2)
-		{
-			elog(DEBUG1,
-				 "%s The number of arguments is not 2. <%d>",
-				 tag,
-				 list_length(opexpr->args));
-			continue;
-		}
-
-		left = linitial(opexpr->args);
-		right = lsecond(opexpr->args);
-
-		if (nodeTag(left) == T_Var && nodeTag(right) == T_Const)
-		{
-			column = (Var *) left;
-			value = (Const *) right;
-		}
-		else if (nodeTag(left) == T_Const && nodeTag(right) == T_Var)
-		{
-			column = (Var *) right;
-			value = (Const *) left;
+			ScalarArrayOpExpr *opexpr = (ScalarArrayOpExpr *) expr;
+			if (!PGrnOpInOpfamily(index, opexpr->opno))
+			{
+				elog(DEBUG1,
+					 "%s Unsupported ScalarArrayOpExpr operator <%d>",
+					 tag,
+					 opexpr->opno);
+				continue;
+			}
+			if (list_length(opexpr->args) != 2)
+			{
+				elog(DEBUG1,
+					 "%s The number of scalarArrayOpExpr->args is not 2. <%d>",
+					 tag,
+					 list_length(opexpr->args));
+				continue;
+			}
+			scanKeySource = PGrnScanKeySourceMake(index,
+												  indexInfo,
+												  opexpr->args,
+												  opexpr->opno,
+												  SK_SEARCHARRAY,
+												  exprCollation((Node *) expr),
+												  opexpr->opfuncid);
 		}
 		else
 		{
-			elog(DEBUG1,
-				 "%s The arguments are not a pair of Var and Const. <%d op %d>",
-				 tag,
-				 nodeTag(left),
-				 nodeTag(right));
+			elog(DEBUG1, "%s Unsupported Expr <%d>", tag, nodeTag(expr));
 			continue;
 		}
 
-		{
-			int strategy;
-			Oid leftType;
-			Oid rightType;
-
-			int attributeNumber =
-				PGrnGetIndexColumnAttributeNumber(indexInfo, column->varattno);
-			if (attributeNumber == 0)
-			{
-				ereport(DEBUG1,
-						(errcode(ERRCODE_UNDEFINED_COLUMN),
-						 errmsg("pgroonga: %s "
-								"attribute number <%d> not found in index",
-								tag,
-								column->varattno)));
-				continue;
-			}
-			get_op_opfamily_properties(opexpr->opno,
-									   index->rd_opfamily[attributeNumber - 1],
-									   false,
-									   &strategy,
-									   &leftType,
-									   &rightType);
-			scanKeySources = lappend(
-				scanKeySources,
-				PGrnScanKeySourceMake(
-					attributeNumber, strategy, opexpr->opfuncid, value));
-		}
+		if (scanKeySource)
+			scanKeySources = lappend(scanKeySources, scanKeySource);
 	}
 	pfree(indexInfo);
 	return scanKeySources;
@@ -491,15 +547,25 @@ PGrnSearchBuildCustomScanConditions(CustomScanState *customScanState,
 	foreach (cell, state->scanKeySources)
 	{
 		List *scanKeySource = (List *) lfirst(cell);
+		int flags = PGrnScanKeySourceGetFlags(scanKeySource);
 		int attributeNumber =
 			PGrnScanKeySourceGetIndexAttrNumber(scanKeySource);
 		int strategy = PGrnScanKeySourceGetIndexStrategy(scanKeySource);
+		Oid varType = PGrnScanKeySourceGetVarType(scanKeySource);
+		Oid collation = PGrnScanKeySourceGetCollation(scanKeySource);
 		Oid opfuncid = PGrnScanKeySourceGetOpFuncID(scanKeySource);
 		Const *value = PGrnScanKeySourceGetValue(scanKeySource);
 
 		ScanKeyData key;
-		ScanKeyInit(
-			&key, attributeNumber, strategy, opfuncid, value->constvalue);
+		ScanKeyEntryInitialize(&key,
+							   flags,
+							   attributeNumber,
+							   strategy,
+							   varType,
+							   collation,
+							   opfuncid,
+							   value->constvalue);
+
 		PGrnSearchBuildCondition(index, &key, &(state->searchData));
 	}
 }
