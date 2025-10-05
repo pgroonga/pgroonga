@@ -17,11 +17,6 @@ CREATE INDEX pgroonga_index ON ids USING pgroonga (id pgroonga_float4_ops);
 
 SET pgroonga.enable_custom_scan = on;
 
-/*
- * todo
- * Support sorting by index.
- * If supported, the EXPLAIN results will change.
- */
 EXPLAIN (COSTS OFF)
 SELECT id
   FROM ids

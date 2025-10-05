@@ -95,6 +95,12 @@ typedef Oid PGrnRelFileNumber;
 #	define pg_noreturn
 #endif
 
+#if PG_VERSION_NUM < 180000
+#	define COMPARE_LT BTLessStrategyNumber
+#	define COMPARE_GT BTGreaterStrategyNumber
+#	define pk_cmptype pk_strategy
+#endif
+
 static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
 					 Relation indexRelation,
