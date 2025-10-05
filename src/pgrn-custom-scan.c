@@ -36,6 +36,7 @@ typedef struct PGrnScanState
 	grn_obj *scoreAccessor;
 } PGrnScanState;
 
+bool PGrnCustomScanInitialized = false;
 static bool PGrnCustomScanEnabled = false;
 static set_rel_pathlist_hook_type PreviousSetRelPathlistHook = NULL;
 
@@ -336,6 +337,9 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	CustomPath *cpath;
 	List *privateData = NIL;
 
+	if (!PGrnCustomScanInitialized)
+		return;
+
 	if (PreviousSetRelPathlistHook)
 	{
 		PreviousSetRelPathlistHook(root, rel, rti, rte);
@@ -411,9 +415,12 @@ PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
 static Node *
 PGrnCreateCustomScanState(CustomScan *cscan)
 {
-	PGrnScanState *state =
-		(PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
+	PGrnScanState *state;
 
+	if (!PGrnCustomScanInitialized)
+		return NULL;
+
+	state = (PGrnScanState *) newNode(sizeof(PGrnScanState), T_CustomScanState);
 	state->parent.methods = &PGrnExecuteMethods;
 
 	state->tableCursor = NULL;
@@ -509,10 +516,15 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 					EState *estate,
 					int eflags)
 {
-	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation index = RelationIdGetRelation(state->indexOID);
+	PGrnScanState *state;
+	Relation index;
 	grn_obj *sourcesTable;
 
+	if (!PGrnCustomScanInitialized)
+		return;
+
+	state = (PGrnScanState *) customScanState;
+	index = RelationIdGetRelation(state->indexOID);
 	sourcesTable = PGrnLookupSourcesTable(index, ERROR);
 	PGrnSearchDataInit(&(state->searchData), index, sourcesTable);
 	PGrnSearchBuildCustomScanConditions(customScanState, index);
@@ -574,12 +586,17 @@ static TupleTableSlot *
 PGrnExecCustomScan(CustomScanState *customScanState)
 {
 	const char *tag = "pgroonga: [custom-scan][exec]";
-	PGrnScanState *state = (PGrnScanState *) customScanState;
-	Relation table = customScanState->ss.ss_currentRelation;
+	PGrnScanState *state;
+	Relation table;
 	ItemPointerData ctid;
 	grn_id id;
 	uint64_t packedCtid;
 
+	if (!PGrnCustomScanInitialized)
+		return NULL;
+
+	state = (PGrnScanState *) customScanState;
+	table = customScanState->ss.ss_currentRelation;
 	if (!state->tableCursor)
 		return NULL;
 
@@ -705,6 +722,9 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	PGrnScanState *state = (PGrnScanState *) customScanState;
 	unsigned int nTargetColumns;
 
+	if (!PGrnCustomScanInitialized)
+		return;
+
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
 	state->indexOID = InvalidOid;
 	state->scanKeySources = NIL;
@@ -757,14 +777,12 @@ PGrnInitializeCustomScan(void)
 	set_rel_pathlist_hook = PGrnSetRelPathlistHook;
 
 	RegisterCustomScanMethods(&PGrnScanMethods);
+	PGrnCustomScanInitialized = true;
 }
 
 void
 PGrnFinalizeCustomScan(void)
 {
+	PGrnCustomScanInitialized = false;
 	set_rel_pathlist_hook = PreviousSetRelPathlistHook;
-	// todo
-	// Disable registered functions.
-	// See also
-	// https://github.com/pgroonga/pgroonga/pull/722#discussion_r2011284556
 }
