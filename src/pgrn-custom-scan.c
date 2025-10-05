@@ -501,8 +501,12 @@ PGrnIndexContainColumn(Relation index, const char *name)
 static bool
 PGrnIsIndexValueUsed(Relation index, const char *columnName, Oid typeID)
 {
-	if (typeID == JSONBOID)
+	switch (typeID)
+	{
+	case JSONBOID:
+	case VARCHAROID:
 		return false;
+	}
 	return PGrnIndexContainColumn(index, columnName);
 }
 
