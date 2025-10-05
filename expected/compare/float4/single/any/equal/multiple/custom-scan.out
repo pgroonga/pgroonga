@@ -13,23 +13,16 @@ INSERT INTO ids VALUES (3.1);
 INSERT INTO ids VALUES (9.1);
 CREATE INDEX pgroonga_index ON ids USING pgroonga (id pgroonga_float4_ops);
 SET pgroonga.enable_custom_scan = on;
-/*
- * todo
- * Support sorting by index.
- * If supported, the EXPLAIN results will change.
- */
 EXPLAIN (COSTS OFF)
 SELECT id
   FROM ids
  WHERE id = ANY(ARRAY[6.1, 1.1, 7.1]::real[])
  ORDER BY id ASC;
-                      QUERY PLAN                      
-------------------------------------------------------
- Sort
-   Sort Key: id
-   ->  Custom Scan (PGroongaScan) on ids
-         Filter: (id = ANY ('{6.1,1.1,7.1}'::real[]))
-(4 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Custom Scan (PGroongaScan) on ids
+   Filter: (id = ANY ('{6.1,1.1,7.1}'::real[]))
+(2 rows)
 
 SELECT id
   FROM ids
