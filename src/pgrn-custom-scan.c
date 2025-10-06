@@ -57,13 +57,15 @@ static List *PGrnReparameterizeCustomPathByChild(PlannerInfo *root,
 												 List *custom_private,
 												 RelOptInfo *child_rel);
 static Node *PGrnCreateCustomScanState(CustomScan *cscan);
-static void
-PGrnBeginCustomScan(CustomScanState *node, EState *estate, int eflags);
-static TupleTableSlot *PGrnExecCustomScan(CustomScanState *node);
-static void PGrnEndCustomScan(CustomScanState *node);
-static void PGrnReScanCustomScan(CustomScanState *node);
-static void
-PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es);
+static void PGrnBeginCustomScan(CustomScanState *customScanState,
+								EState *estate,
+								int eflags);
+static TupleTableSlot *PGrnExecCustomScan(CustomScanState *customScanState);
+static void PGrnEndCustomScan(CustomScanState *customScanState);
+static void PGrnReScanCustomScan(CustomScanState *customScanState);
+static void PGrnExplainCustomScan(CustomScanState *customScanState,
+								  List *ancestors,
+								  ExplainState *es);
 
 static Size PGrnEstimateDSMCustomScan(CustomScanState *customScanState,
 									  ParallelContext *pcxt);
@@ -568,6 +570,7 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	memset(&(state->searchData), 0, sizeof(state->searchData));
 	state->searched = NULL;
 	state->sorted = NULL;
+	state->ctidAccessor = NULL;
 	state->scoreAccessor = NULL;
 	state->indexOID = PGrnCustomPrivateGetIndexOID(cscan->custom_private);
 	state->scanKeySources =
@@ -765,6 +768,97 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 }
 
 static TupleTableSlot *
+PGrnResultTupleSlot(CustomScanState *customScanState,
+					grn_id id,
+					ItemPointerData ctid)
+{
+	PGrnScanState *state = (PGrnScanState *) customScanState;
+	Relation table = customScanState->ss.ss_currentRelation;
+	TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
+	ExprContext *econtext = customScanState->ss.ps.ps_ExprContext;
+	unsigned int ttsIndex = 0;
+	unsigned int varIndex = 0;
+	ListCell *cell;
+	ExecClearTuple(slot);
+	econtext->ecxt_scantuple = slot;
+	// We might add state->targetlist instead of ss.ps.plan->targetlist.
+	foreach (cell, customScanState->ss.ps.plan->targetlist)
+	{
+		TargetEntry *entry = (TargetEntry *) lfirst(cell);
+		GRN_BULK_REWIND(&(state->columnValue));
+		if (IsA(entry->expr, Var))
+		{
+			grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), varIndex);
+			varIndex++;
+			if (column)
+			{
+				Oid typeID = exprType((Node *) (entry->expr));
+				grn_obj_get_value(ctx, column, id, &(state->columnValue));
+				slot->tts_values[ttsIndex] =
+					PGrnConvertToDatum(&(state->columnValue), typeID);
+				// todo
+				// If there are nullable columns, do not custom scan.
+				// See also
+				// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
+				slot->tts_isnull[ttsIndex] = false;
+			}
+			else
+			{
+				bool found = false;
+				TupleTableSlot *tupleSlot = MakeSingleTupleTableSlot(
+					RelationGetDescr(table), &TTSOpsBufferHeapTuple);
+				found = table_tuple_fetch_row_version(
+					table, &ctid, GetTransactionSnapshot(), tupleSlot);
+				if (found)
+				{
+					Var *var = (Var *) entry->expr;
+					bool isnull = false;
+					slot->tts_values[ttsIndex] =
+						slot_getattr(tupleSlot, var->varattno, &isnull);
+					slot->tts_isnull[ttsIndex] = isnull;
+				}
+				else
+				{
+					slot->tts_values[ttsIndex] = 0;
+					slot->tts_isnull[ttsIndex] = true;
+				}
+				ExecDropSingleTupleTableSlot(tupleSlot);
+			}
+		}
+		else if (IsA(entry->expr, FuncExpr))
+		{
+			FuncExpr *funcExpr = (FuncExpr *) (entry->expr);
+			if (strcmp(get_func_name(funcExpr->funcid), "pgroonga_score") == 0)
+			{
+				// todo
+				// Reject this function if the argument isn't
+				// `(tableoid, ctid)` nor `(record)`.
+				grn_obj_get_value(
+					ctx, state->scoreAccessor, id, &(state->columnValue));
+				slot->tts_values[ttsIndex] =
+					PGrnConvertToDatum(&(state->columnValue), FLOAT8OID);
+				slot->tts_isnull[ttsIndex] = false;
+			}
+			else
+			{
+				// todo
+				// Initialization in BeginCustomScan.
+				// See also
+				// https://github.com/pgroonga/pgroonga/pull/783/files#r2374165154
+				ExprState *state = ExecInitExpr((Expr *) funcExpr, NULL);
+				bool isNull = false;
+				ResetExprContext(econtext);
+				slot->tts_values[ttsIndex] =
+					ExecEvalExpr(state, econtext, &isNull);
+				slot->tts_isnull[ttsIndex] = isNull;
+			}
+		}
+		ttsIndex++;
+	}
+	return ExecStoreVirtualTuple(slot);
+}
+
+static TupleTableSlot *
 PGrnExecCustomScan(CustomScanState *customScanState)
 {
 	const char *tag = "pgroonga: [custom-scan][exec]";
@@ -778,10 +872,10 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 		return NULL;
 
 	state = (PGrnScanState *) customScanState;
-	table = customScanState->ss.ss_currentRelation;
 	if (!state->tableCursor)
 		return NULL;
 
+	table = customScanState->ss.ss_currentRelation;
 	while (true)
 	{
 		id = grn_table_cursor_next(ctx, state->tableCursor);
@@ -792,110 +886,27 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 		grn_obj_get_value(ctx, state->ctidAccessor, id, &(state->columnValue));
 		packedCtid = GRN_UINT64_VALUE(&(state->columnValue));
 		ctid = PGrnCtidUnpack(packedCtid);
-		if (PGrnCtidIsAlive(table, &ctid))
-			break;
-
-		GRN_LOG(ctx,
-				GRN_LOG_DEBUG,
-				"%s[dead] <%s>: <(%u,%u),%u>",
-				tag,
-				table->rd_rel->relname.data,
-				ctid.ip_blkid.bi_hi,
-				ctid.ip_blkid.bi_lo,
-				ctid.ip_posid);
-	}
-
-	{
-		TupleTableSlot *slot = customScanState->ss.ps.ps_ResultTupleSlot;
-		unsigned int ttsIndex = 0;
-		unsigned int varIndex = 0;
-		ListCell *cell;
-
-		ExecClearTuple(slot);
-		// We might add state->targetlist instead of ss.ps.plan->targetlist.
-		foreach (cell, customScanState->ss.ps.plan->targetlist)
+		if (!PGrnCtidIsAlive(table, &ctid))
 		{
-			TargetEntry *entry = (TargetEntry *) lfirst(cell);
-			GRN_BULK_REWIND(&(state->columnValue));
-
-			if (IsA(entry->expr, Var))
-			{
-				grn_obj *column = GRN_PTR_VALUE_AT(&(state->columns), varIndex);
-				varIndex++;
-				if (column)
-				{
-					Oid typeID = exprType((Node *) (entry->expr));
-					grn_obj_get_value(ctx, column, id, &(state->columnValue));
-					slot->tts_values[ttsIndex] =
-						PGrnConvertToDatum(&(state->columnValue), typeID);
-					// todo
-					// If there are nullable columns, do not custom scan.
-					// See also
-					// https://github.com/pgroonga/pgroonga/pull/742#discussion_r2107937927
-					slot->tts_isnull[ttsIndex] = false;
-				}
-				else
-				{
-					bool found = false;
-					TupleTableSlot *tupleSlot = MakeSingleTupleTableSlot(
-						RelationGetDescr(table), &TTSOpsBufferHeapTuple);
-					found = table_tuple_fetch_row_version(
-						table, &ctid, GetTransactionSnapshot(), tupleSlot);
-					if (found)
-					{
-						Var *var = (Var *) entry->expr;
-						bool isnull = false;
-						slot->tts_values[ttsIndex] =
-							slot_getattr(tupleSlot, var->varattno, &isnull);
-						slot->tts_isnull[ttsIndex] = isnull;
-					}
-					else
-					{
-						slot->tts_values[ttsIndex] = 0;
-						slot->tts_isnull[ttsIndex] = true;
-					}
-					ExecDropSingleTupleTableSlot(tupleSlot);
-				}
-			}
-			else if (IsA(entry->expr, FuncExpr))
-			{
-				FuncExpr *funcExpr = (FuncExpr *) (entry->expr);
-				if (strcmp(get_func_name(funcExpr->funcid), "pgroonga_score") ==
-					0)
-				{
-					// todo
-					// Reject this function if the argument isn't
-					// `(tableoid, ctid)` nor `(record)`.
-					grn_obj_get_value(
-						ctx, state->scoreAccessor, id, &(state->columnValue));
-					slot->tts_values[ttsIndex] =
-						PGrnConvertToDatum(&(state->columnValue), FLOAT8OID);
-					slot->tts_isnull[ttsIndex] = false;
-				}
-				else
-				{
-					ExprContext *econtext =
-						customScanState->ss.ps.ps_ExprContext;
-					// todo
-					// Initialization in BeginCustomScan.
-					// See also
-					// https://github.com/pgroonga/pgroonga/pull/783/files#r2374165154
-					ExprState *state = ExecInitExpr((Expr *) funcExpr, NULL);
-					bool isNull = false;
-					ResetExprContext(econtext);
-					slot->tts_values[ttsIndex] =
-						ExecEvalExpr(state, econtext, &isNull);
-					slot->tts_isnull[ttsIndex] = isNull;
-				}
-			}
-			ttsIndex++;
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[dead] <%s>: <(%u,%u),%u>",
+					tag,
+					table->rd_rel->relname.data,
+					ctid.ip_blkid.bi_hi,
+					ctid.ip_blkid.bi_lo,
+					ctid.ip_posid);
+			continue;
 		}
-		return ExecStoreVirtualTuple(slot);
+		return PGrnResultTupleSlot(customScanState, id, ctid);
 	}
+	return NULL;
 }
 
 static void
-PGrnExplainCustomScan(CustomScanState *node, List *ancestors, ExplainState *es)
+PGrnExplainCustomScan(CustomScanState *customScanState,
+					  List *ancestors,
+					  ExplainState *es)
 {
 	// todo Add the necessary information when we find it.
 }
@@ -956,7 +967,7 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 }
 
 static void
-PGrnReScanCustomScan(CustomScanState *node)
+PGrnReScanCustomScan(CustomScanState *customScanState)
 {
 }
 
