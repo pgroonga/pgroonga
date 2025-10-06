@@ -1,0 +1,27 @@
+CREATE TABLE numbers (
+  number1 real,
+  number2 real
+);
+
+INSERT INTO numbers VALUES (2.1,  20.1);
+INSERT INTO numbers VALUES (7.1,  70.1);
+INSERT INTO numbers VALUES (6.1,  60.1);
+
+CREATE INDEX grnindex
+    ON numbers
+ USING pgroonga (number1 pgroonga_float4_ops, number2 pgroonga_float4_ops);
+
+SET pgroonga.enable_custom_scan = on;
+
+EXPLAIN (COSTS OFF)
+SELECT number1, number2
+  FROM numbers
+ WHERE number1 = (6.1::real) AND number2 = (60.1::real)
+ ORDER BY number1 ASC;
+
+SELECT number1, number2
+  FROM numbers
+ WHERE number1 = (6.1::real) AND number2 = (60.1::real)
+ ORDER BY number1 ASC;
+
+DROP TABLE numbers;
