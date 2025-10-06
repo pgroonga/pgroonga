@@ -782,16 +782,19 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 	if (!state->tableCursor)
 		return NULL;
 
-	id = grn_table_cursor_next(ctx, state->tableCursor);
-	if (id == GRN_ID_NIL)
-		return NULL;
-
-	GRN_BULK_REWIND(&(state->columnValue));
-	grn_obj_get_value(ctx, state->ctidAccessor, id, &(state->columnValue));
-	packedCtid = GRN_UINT64_VALUE(&(state->columnValue));
-	ctid = PGrnCtidUnpack(packedCtid);
-	if (!PGrnCtidIsAlive(table, &ctid))
+	while (true)
 	{
+		id = grn_table_cursor_next(ctx, state->tableCursor);
+		if (id == GRN_ID_NIL)
+			return NULL;
+
+		GRN_BULK_REWIND(&(state->columnValue));
+		grn_obj_get_value(ctx, state->ctidAccessor, id, &(state->columnValue));
+		packedCtid = GRN_UINT64_VALUE(&(state->columnValue));
+		ctid = PGrnCtidUnpack(packedCtid);
+		if (PGrnCtidIsAlive(table, &ctid))
+			break;
+
 		GRN_LOG(ctx,
 				GRN_LOG_DEBUG,
 				"%s[dead] <%s>: <(%u,%u),%u>",
@@ -800,7 +803,6 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 				ctid.ip_blkid.bi_hi,
 				ctid.ip_blkid.bi_lo,
 				ctid.ip_posid);
-		return NULL;
 	}
 
 	{
