@@ -337,9 +337,6 @@ PGrnSetRelPathlistHook(PlannerInfo *root,
 	CustomPath *cpath;
 	List *privateData = NIL;
 
-	if (!PGrnCustomScanInitialized)
-		return;
-
 	if (PreviousSetRelPathlistHook)
 	{
 		PreviousSetRelPathlistHook(root, rel, rti, rte);
