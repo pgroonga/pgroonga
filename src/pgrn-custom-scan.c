@@ -687,7 +687,7 @@ PGrnCustomScanSort(CustomScanState *customScanState)
 		ctx, state->searched, 0, -1, state->sorted, sortKeys, nSortKeys);
 
 	for (unsigned int i = 0; i < nSortKeys; i++)
-		grn_obj_close(ctx, sortKeys[i].key);
+		grn_obj_unlink(ctx, sortKeys[i].key);
 	pfree(sortKeys);
 }
 
@@ -919,20 +919,20 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 		grn_obj_close(ctx, state->ctidAccessor);
 		state->ctidAccessor = NULL;
 	}
-	if (state->searched)
+	if (state->scoreAccessor)
 	{
-		grn_obj_close(ctx, state->searched);
-		state->searched = NULL;
+		grn_obj_close(ctx, state->scoreAccessor);
+		state->scoreAccessor = NULL;
 	}
 	if (state->sorted)
 	{
 		grn_obj_close(ctx, state->sorted);
 		state->sorted = NULL;
 	}
-	if (state->scoreAccessor)
+	if (state->searched)
 	{
-		grn_obj_close(ctx, state->scoreAccessor);
-		state->scoreAccessor = NULL;
+		grn_obj_close(ctx, state->searched);
+		state->searched = NULL;
 	}
 }
 
