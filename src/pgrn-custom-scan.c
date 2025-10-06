@@ -768,9 +768,9 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 }
 
 static TupleTableSlot *
-PGrnResultTupleSlot(CustomScanState *customScanState,
-					grn_id id,
-					ItemPointerData ctid)
+PGrnMakeTupleTableSlot(CustomScanState *customScanState,
+					   grn_id id,
+					   ItemPointerData ctid)
 {
 	PGrnScanState *state = (PGrnScanState *) customScanState;
 	Relation table = customScanState->ss.ss_currentRelation;
@@ -898,7 +898,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 					ctid.ip_posid);
 			continue;
 		}
-		return PGrnResultTupleSlot(customScanState, id, ctid);
+		return PGrnMakeTupleTableSlot(customScanState, id, ctid);
 	}
 	return NULL;
 }
