@@ -28,6 +28,8 @@ typedef struct PGrnScanState
 	CustomScanState parent; /* must be first field */
 	Oid indexOID;
 	List *scanKeySources;
+	List *otherQuals;
+	ExprState *otherExprState;
 	List *pathKeys;
 	grn_table_cursor *tableCursor;
 	grn_obj columns;
@@ -275,11 +277,15 @@ PGrnScanKeySourceGetValue(List *source)
 }
 
 static List *
-PGrnCustomPrivateMake(Oid indexOID, List *scanKeySources, List *pathKeys)
+PGrnCustomPrivateMake(Oid indexOID,
+					  List *scanKeySources,
+					  List *otherQuals,
+					  List *pathKeys)
 {
 	// Only a `Node` can be set to `custom_private`.
 	// See also the comments in PGrnScanKeySourceMake().
-	return list_make3(list_make1_oid(indexOID), scanKeySources, pathKeys);
+	return list_make4(
+		list_make1_oid(indexOID), scanKeySources, otherQuals, pathKeys);
 }
 
 static Oid
@@ -295,13 +301,19 @@ PGrnCustomPrivateGetScanKeySources(List *privateData)
 }
 
 static List *
-PGrnCustomPrivateGetPathKeys(List *privateData)
+PGrnCustomPrivateGetOtherQuals(List *privateData)
 {
 	return lthird(privateData);
 }
 
 static List *
-PGrnCollectScanKeySources(Relation index, List *quals)
+PGrnCustomPrivateGetPathKeys(List *privateData)
+{
+	return lfourth(privateData);
+}
+
+static List *
+PGrnCollectScanKeySources(Relation index, List *quals, List **otherQuals)
 {
 	const char *tag = "pgroonga: [custom-scan][scankey-sources][collect]";
 	IndexInfo *indexInfo = BuildIndexInfo(index);
@@ -322,6 +334,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 					 "%s Unsupported OpExpr operator <%d>",
 					 tag,
 					 opexpr->opno);
+				*otherQuals = lappend(*otherQuals, expr);
 				continue;
 			}
 			if (list_length(opexpr->args) != 2)
@@ -330,6 +343,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 					 "%s The number of opExpr->args is not 2. <%d>",
 					 tag,
 					 list_length(opexpr->args));
+				*otherQuals = lappend(*otherQuals, expr);
 				continue;
 			}
 
@@ -350,6 +364,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 					 "%s Unsupported ScalarArrayOpExpr operator <%d>",
 					 tag,
 					 opexpr->opno);
+				*otherQuals = lappend(*otherQuals, expr);
 				continue;
 			}
 			if (list_length(opexpr->args) != 2)
@@ -358,6 +373,7 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 					 "%s The number of scalarArrayOpExpr->args is not 2. <%d>",
 					 tag,
 					 list_length(opexpr->args));
+				*otherQuals = lappend(*otherQuals, expr);
 				continue;
 			}
 			scanKeySource = PGrnScanKeySourceMake(index,
@@ -371,11 +387,14 @@ PGrnCollectScanKeySources(Relation index, List *quals)
 		else
 		{
 			elog(DEBUG1, "%s Unsupported Expr <%d>", tag, nodeTag(expr));
+			*otherQuals = lappend(*otherQuals, expr);
 			continue;
 		}
 
 		if (scanKeySource)
 			scanKeySources = lappend(scanKeySources, scanKeySource);
+		else
+			*otherQuals = lappend(*otherQuals, expr);
 	}
 	pfree(indexInfo);
 	return scanKeySources;
@@ -442,6 +461,7 @@ PGrnChooseIndex(Relation table, PlannerInfo *plannerInfo, List *quals)
 		Oid indexOID = lfirst_oid(cell);
 		Relation index = RelationIdGetRelation(indexOID);
 		List *scanKeySources = NIL;
+		List *otherQuals = NIL;
 		List *sortClauses = NIL;
 		List *pathKeys = NIL;
 		if (!PGrnIndexIsPGroonga(index))
@@ -449,7 +469,7 @@ PGrnChooseIndex(Relation table, PlannerInfo *plannerInfo, List *quals)
 			RelationClose(index);
 			continue;
 		}
-		scanKeySources = PGrnCollectScanKeySources(index, quals);
+		scanKeySources = PGrnCollectScanKeySources(index, quals, &otherQuals);
 		sortClauses = PGrnIndexSortClauses(table, index, plannerInfo);
 		RelationClose(index);
 		if (!scanKeySources)
@@ -460,7 +480,8 @@ PGrnChooseIndex(Relation table, PlannerInfo *plannerInfo, List *quals)
 			pathKeys = make_pathkeys_for_sortclauses(
 				plannerInfo, sortClauses, plannerInfo->parse->targetList);
 		}
-		return PGrnCustomPrivateMake(indexOID, scanKeySources, pathKeys);
+		return PGrnCustomPrivateMake(
+			indexOID, scanKeySources, otherQuals, pathKeys);
 	}
 	return NIL;
 }
@@ -575,6 +596,8 @@ PGrnCreateCustomScanState(CustomScan *cscan)
 	state->indexOID = PGrnCustomPrivateGetIndexOID(cscan->custom_private);
 	state->scanKeySources =
 		PGrnCustomPrivateGetScanKeySources(cscan->custom_private);
+	state->otherQuals = PGrnCustomPrivateGetOtherQuals(cscan->custom_private);
+	state->otherExprState = NULL;
 	state->pathKeys = PGrnCustomPrivateGetPathKeys(cscan->custom_private);
 
 	return (Node *) &(state->parent);
@@ -765,6 +788,17 @@ PGrnBeginCustomScan(CustomScanState *customScanState,
 	RelationClose(index);
 	PGrnSearchDataFree(&(state->searchData));
 	memset(&(state->searchData), 0, sizeof(state->searchData));
+
+	if (state->otherQuals)
+	{
+		// todo: Support complex conditions.
+		// Currently, only simple AND conditions are supported.
+		BoolExpr *andExpr = makeNode(BoolExpr);
+		andExpr->boolop = AND_EXPR;
+		andExpr->args = state->otherQuals;
+		state->otherExprState =
+			ExecInitExpr((Expr *) andExpr, &(customScanState->ss.ps));
+	}
 }
 
 static TupleTableSlot *
@@ -855,7 +889,10 @@ PGrnMakeTupleTableSlot(CustomScanState *customScanState,
 		}
 		ttsIndex++;
 	}
-	return ExecStoreVirtualTuple(slot);
+	if (!state->otherExprState || ExecQual(state->otherExprState, econtext))
+		return ExecStoreVirtualTuple(slot);
+	else
+		return NULL;
 }
 
 static TupleTableSlot *
@@ -878,6 +915,7 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 	table = customScanState->ss.ss_currentRelation;
 	while (true)
 	{
+		TupleTableSlot *slot;
 		id = grn_table_cursor_next(ctx, state->tableCursor);
 		if (id == GRN_ID_NIL)
 			return NULL;
@@ -898,7 +936,9 @@ PGrnExecCustomScan(CustomScanState *customScanState)
 					ctid.ip_posid);
 			continue;
 		}
-		return PGrnMakeTupleTableSlot(customScanState, id, ctid);
+		slot = PGrnMakeTupleTableSlot(customScanState, id, ctid);
+		if (slot)
+			return slot;
 	}
 	return NULL;
 }
@@ -923,6 +963,8 @@ PGrnEndCustomScan(CustomScanState *customScanState)
 	ExecClearTuple(customScanState->ss.ps.ps_ResultTupleSlot);
 	state->indexOID = InvalidOid;
 	state->scanKeySources = NIL;
+	state->otherQuals = NIL;
+	state->otherExprState = NULL;
 	state->pathKeys = NIL;
 
 	if (state->tableCursor)
