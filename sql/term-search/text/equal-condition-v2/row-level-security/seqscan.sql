@@ -8,9 +8,10 @@ CREATE USER alice NOLOGIN;
 GRANT ALL ON TABLE tags TO alice;
 
 INSERT INTO tags VALUES (1, 'nonexistent', 'PostgreSQL');
-INSERT INTO tags VALUES (2, 'alice', 'Groonga');
-INSERT INTO tags VALUES (3, 'alice', 'groonga');
-INSERT INTO tags VALUES (4, 'alice', 'PGroonga');
+INSERT INTO tags VALUES (2, 'nonexistent', 'GROONGA');
+INSERT INTO tags VALUES (3, 'alice', 'Groonga');
+INSERT INTO tags VALUES (4, 'alice', 'groonga');
+INSERT INTO tags VALUES (5, 'alice', 'PGroonga');
 
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tags_myself ON tags USING (user_name = current_user);
