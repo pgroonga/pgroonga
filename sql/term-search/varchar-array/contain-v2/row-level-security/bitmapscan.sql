@@ -8,8 +8,9 @@ CREATE USER alice NOLOGIN;
 GRANT ALL ON TABLE memos TO alice;
 
 INSERT INTO memos VALUES (1, 'nonexistent', ARRAY['PostgreSQL']);
-INSERT INTO memos VALUES (2, 'alice', ARRAY['Groonga']);
-INSERT INTO memos VALUES (3, 'alice', ARRAY['PGroonga', 'PostgreSQL', 'Groonga']);
+INSERT INTO memos VALUES (2, 'nonexistent', ARRAY['PostgreSQL', 'Groonga']);
+INSERT INTO memos VALUES (3, 'alice', ARRAY['Groonga']);
+INSERT INTO memos VALUES (4, 'alice', ARRAY['PGroonga', 'PostgreSQL', 'Groonga']);
 
 ALTER TABLE memos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY memos_myself ON memos USING (user_name = current_user);
