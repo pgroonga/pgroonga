@@ -9,6 +9,7 @@ INSERT INTO tags VALUES (1, 'alice', ARRAY['PostgreSQL', 'ポスグレ']);
 INSERT INTO tags VALUES (2, 'alice', ARRAY['Groonga', 'グルンガ']);
 INSERT INTO tags VALUES (3, 'alice', ARRAY['PGroonga', 'ピージールンガ']);
 INSERT INTO tags VALUES (4, 'nonexistent', ARRAY['Mroonga', 'ムルンガ']);
+INSERT INTO tags VALUES (4, 'nonexistent', ARRAY['groonga', 'グルンガ']);
 CREATE INDEX pgroonga_index ON tags
   USING pgroonga (names pgroonga_varchar_array_term_search_ops_v2)
   WITH (normalizer = 'NormalizerNFKC150("unify_kana", true)');
