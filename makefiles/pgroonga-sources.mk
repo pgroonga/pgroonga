@@ -17,6 +17,7 @@ SRCS =						\
 	src/pgrn-index-status.c			\
 	src/pgrn-jsonb.c			\
 	src/pgrn-keywords.c			\
+	src/pgrn-language-model-vectorize.c	\
 	src/pgrn-list-broken-indexes.c		\
 	src/pgrn-match-positions-byte.c		\
 	src/pgrn-match-positions-character.c	\
