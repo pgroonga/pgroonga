@@ -1,3 +1,10 @@
+-- Only test when `PGRN_LANGUAGE_MODEL_TEST` is set.
+\getenv language_model_test PGRN_LANGUAGE_MODEL_TEST
+SELECT NOT :{?language_model_test} AS omit \gset
+\if :omit
+  \quit
+\endif
+
 CREATE TABLE memos (
   content text
 );
