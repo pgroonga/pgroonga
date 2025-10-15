@@ -4,7 +4,7 @@ project(
   license: 'PostgreSQL',
   version: '4.0.5')
 
-required_groonga_version = '15.1.8'
+required_groonga_version = '14.1.0'
 
 groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
