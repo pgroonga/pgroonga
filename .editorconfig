@@ -17,6 +17,13 @@ indent_style = space
 [*.out]
 trim_trailing_whitespace = false
 
+[data/*.sql]
+indent_size = 8
+indent_style = tab
+
+[sql/**.sql]
+indent_style = space
+
 [rules]
 indent_size = 8
 indent_style = tab
