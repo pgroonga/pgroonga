@@ -10,6 +10,10 @@
 #endif
 
 static grn_language_model_loader *loader = NULL;
+static grn_language_model *model = NULL;
+static grn_language_model_inferencer *inferencer = NULL;
+static char *cacheModelName = NULL;
+
 static grn_obj vector;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_language_model_vectorize);
@@ -21,10 +25,40 @@ PGrnInitializeLanguageModelVectorize(void)
 	GRN_FLOAT32_INIT(&vector, GRN_OBJ_VECTOR);
 }
 
+static void
+PGrnLanguageModelClose(void)
+{
+	if (inferencer)
+	{
+		grn_language_model_inferencer_close(ctx, inferencer);
+		inferencer = NULL;
+	}
+	if (model)
+	{
+		grn_language_model_close(ctx, model);
+		model = NULL;
+	}
+}
+
+static grn_rc
+PGrnLanguageModelInit(const char *modelName)
+{
+	grn_language_model_loader_set_model(
+		ctx, loader, modelName, strlen(modelName));
+
+	model = grn_language_model_loader_load(ctx, loader);
+	if (!model)
+		return ctx->rc;
+
+	inferencer = grn_language_model_open_inferencer(ctx, model);
+	return ctx->rc;
+}
+
 void
 PGrnFinalizeLanguageModelVectorize(void)
 {
 	GRN_OBJ_FIN(ctx, &vector);
+	PGrnLanguageModelClose();
 	if (loader)
 	{
 		grn_language_model_loader_close(ctx, loader);
@@ -36,28 +70,22 @@ Datum
 pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[language-model-vectorize]";
-	text *modelName = PG_GETARG_TEXT_PP(0);
+	const char *modelName = PG_GETARG_CSTRING(0);
 
-	grn_language_model *model = NULL;
-	grn_language_model_inferencer *inferencer = NULL;
-
-	grn_language_model_loader_set_model(
-		ctx, loader, VARDATA_ANY(modelName), VARSIZE_ANY_EXHDR(modelName));
-
-	model = grn_language_model_loader_load(ctx, loader);
-	if (!model)
+	if (cacheModelName && strcmp(cacheModelName, modelName) != 0)
 	{
-		PGrnCheckRC(ctx->rc, "%s failed to load model: %s", tag, ctx->errbuf);
+		pfree(cacheModelName);
+		cacheModelName = NULL;
 	}
 
-	inferencer = grn_language_model_open_inferencer(ctx, model);
-	if (!inferencer)
+	if (!cacheModelName)
 	{
-		grn_language_model_close(ctx, model);
-		PGrnCheckRC(ctx->rc,
-					"%s failed to open model inferencer: %s",
-					tag,
-					ctx->errbuf);
+		PGrnLanguageModelClose();
+		if (PGrnLanguageModelInit(modelName) != GRN_SUCCESS)
+			PGrnCheck("%s[model][init]", tag);
+
+		cacheModelName = (char *) palloc(strlen(modelName) + 1);
+		strcpy(cacheModelName, modelName);
 	}
 
 	GRN_BULK_REWIND(&vector);
@@ -69,14 +97,9 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 													VARDATA_ANY(target),
 													VARSIZE_ANY_EXHDR(target),
 													&vector);
-		grn_language_model_inferencer_close(ctx, inferencer);
-		grn_language_model_close(ctx, model);
 
 		if (rc != GRN_SUCCESS)
-		{
-			PGrnCheckRC(
-				ctx->rc, "%s failed to vectorize: %s", tag, ctx->errbuf);
-		}
+			PGrnCheck("%s[vectorize]", tag);
 	}
 
 	return PGrnConvertToDatum(&vector, FLOAT4ARRAYOID);
