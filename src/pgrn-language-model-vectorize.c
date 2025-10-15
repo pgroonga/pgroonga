@@ -42,7 +42,7 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 	grn_language_model_inferencer *inferencer = NULL;
 
 	grn_language_model_loader_set_model(
-		ctx, loader, text_to_cstring(modelName), VARSIZE_ANY_EXHDR(modelName));
+		ctx, loader, VARDATA_ANY(modelName), VARSIZE_ANY_EXHDR(modelName));
 
 	model = grn_language_model_loader_load(ctx, loader);
 	if (!model)
@@ -66,7 +66,7 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 		grn_rc rc =
 			grn_language_model_inferencer_vectorize(ctx,
 													inferencer,
-													text_to_cstring(target),
+													VARDATA_ANY(target),
 													VARSIZE_ANY_EXHDR(target),
 													&vector);
 		grn_language_model_inferencer_close(ctx, inferencer);
