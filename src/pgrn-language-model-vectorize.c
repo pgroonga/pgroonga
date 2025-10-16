@@ -54,6 +54,18 @@ PGrnLanguageModelLoad(const char *modelName)
 	return ctx->rc;
 }
 
+static void
+PGrnLanguageModelEnsureLoaded(const char *modelName)
+{
+	if (currentModelName && strcmp(currentModelName, modelName) == 0)
+		return;
+
+	currentModelName = pstrdup(modelName);
+
+	PGrnLanguageModelClose();
+	PGrnLanguageModelLoad(modelName);
+}
+
 void
 PGrnFinalizeLanguageModelVectorize(void)
 {
@@ -73,20 +85,8 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 	const char *modelName = PG_GETARG_CSTRING(0);
 	text *target = PG_GETARG_TEXT_PP(1);
 
-	if (currentModelName && strcmp(currentModelName, modelName) != 0)
-	{
-		currentModelName = NULL;
-	}
-
-	if (!currentModelName)
-	{
-		PGrnLanguageModelClose();
-		PGrnLanguageModelLoad(modelName);
-		PGrnCheck("%s[model][load]", tag);
-
-		currentModelName = (char *) palloc(strlen(modelName) + 1);
-		currentModelName = pstrdup(modelName);
-	}
+	PGrnLanguageModelEnsureLoaded(modelName);
+	PGrnCheck("%s[model][load]", tag);
 
 	GRN_BULK_REWIND(&vector);
 	grn_language_model_inferencer_vectorize(ctx,
