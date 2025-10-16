@@ -12,7 +12,7 @@
 static grn_language_model_loader *loader = NULL;
 static grn_language_model *model = NULL;
 static grn_language_model_inferencer *inferencer = NULL;
-static char *cacheModelName = NULL;
+static char *currentModelName = NULL;
 
 static grn_obj vector;
 
@@ -41,7 +41,7 @@ PGrnLanguageModelClose(void)
 }
 
 static grn_rc
-PGrnLanguageModelInit(const char *modelName)
+PGrnLanguageModelLoad(const char *modelName)
 {
 	grn_language_model_loader_set_model(
 		ctx, loader, modelName, strlen(modelName));
@@ -72,20 +72,20 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 	const char *tag = "[language-model-vectorize]";
 	const char *modelName = PG_GETARG_CSTRING(0);
 
-	if (cacheModelName && strcmp(cacheModelName, modelName) != 0)
+	if (currentModelName && strcmp(currentModelName, modelName) != 0)
 	{
-		pfree(cacheModelName);
-		cacheModelName = NULL;
+		pfree(currentModelName);
+		currentModelName = NULL;
 	}
 
-	if (!cacheModelName)
+	if (!currentModelName)
 	{
 		PGrnLanguageModelClose();
-		if (PGrnLanguageModelInit(modelName) != GRN_SUCCESS)
+		if (PGrnLanguageModelLoad(modelName) != GRN_SUCCESS)
 			PGrnCheck("%s[model][init]", tag);
 
-		cacheModelName = (char *) palloc(strlen(modelName) + 1);
-		strcpy(cacheModelName, modelName);
+		currentModelName = (char *) palloc(strlen(modelName) + 1);
+		strcpy(currentModelName, modelName);
 	}
 
 	GRN_BULK_REWIND(&vector);
