@@ -71,6 +71,7 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[language-model-vectorize]";
 	const char *modelName = PG_GETARG_CSTRING(0);
+	text *target = PG_GETARG_TEXT_PP(1);
 
 	if (currentModelName && strcmp(currentModelName, modelName) != 0)
 	{
@@ -80,26 +81,20 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 	if (!currentModelName)
 	{
 		PGrnLanguageModelClose();
-		if (PGrnLanguageModelLoad(modelName) != GRN_SUCCESS)
-			PGrnCheck("%s[model][init]", tag);
+		PGrnLanguageModelLoad(modelName);
+		PGrnCheck("%s[model][load]", tag);
 
 		currentModelName = (char *) palloc(strlen(modelName) + 1);
 		currentModelName = pstrdup(modelName);
 	}
 
 	GRN_BULK_REWIND(&vector);
-	{
-		text *target = PG_GETARG_TEXT_PP(1);
-		grn_rc rc =
-			grn_language_model_inferencer_vectorize(ctx,
-													inferencer,
-													VARDATA_ANY(target),
-													VARSIZE_ANY_EXHDR(target),
-													&vector);
-
-		if (rc != GRN_SUCCESS)
-			PGrnCheck("%s[vectorize]", tag);
-	}
+	grn_language_model_inferencer_vectorize(ctx,
+											inferencer,
+											VARDATA_ANY(target),
+											VARSIZE_ANY_EXHDR(target),
+											&vector);
+	PGrnCheck("%s[vectorize]", tag);
 
 	return PGrnConvertToDatum(&vector, FLOAT4ARRAYOID);
 }
