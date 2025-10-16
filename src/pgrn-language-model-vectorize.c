@@ -74,7 +74,6 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 
 	if (currentModelName && strcmp(currentModelName, modelName) != 0)
 	{
-		pfree(currentModelName);
 		currentModelName = NULL;
 	}
 
@@ -85,7 +84,7 @@ pgroonga_language_model_vectorize(PG_FUNCTION_ARGS)
 			PGrnCheck("%s[model][init]", tag);
 
 		currentModelName = (char *) palloc(strlen(modelName) + 1);
-		strcpy(currentModelName, modelName);
+		currentModelName = pstrdup(modelName);
 	}
 
 	GRN_BULK_REWIND(&vector);
