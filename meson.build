@@ -4,7 +4,7 @@ project(
   license: 'PostgreSQL',
   version: '4.0.5')
 
-required_groonga_version = '14.0.0'
+required_groonga_version = '14.1.0'
 
 groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
@@ -108,6 +108,7 @@ pgroonga_sources = files(
   'src/pgrn-index-status.c',
   'src/pgrn-jsonb.c',
   'src/pgrn-keywords.c',
+  'src/pgrn-language-model-vectorize.c',
   'src/pgrn-list-broken-indexes.c',
   'src/pgrn-match-positions-byte.c',
   'src/pgrn-match-positions-character.c',

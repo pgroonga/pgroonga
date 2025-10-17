@@ -19,6 +19,7 @@
 #include "pgrn-index-status.h"
 #include "pgrn-jsonb.h"
 #include "pgrn-keywords.h"
+#include "pgrn-language-model-vectorize.h"
 #include "pgrn-match-positions-byte.h"
 #include "pgrn-match-positions-character.h"
 #include "pgrn-normalize.h"
@@ -431,6 +432,12 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][auto-close]", tag);
 			PGrnFinalizeAutoClose();
 
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][language-model-vectorize]",
+					tag);
+			PGrnFinalizeLanguageModelVectorize();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][normalize]", tag);
 			PGrnFinalizeNormalize();
 
@@ -574,6 +581,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeTokenize();
 
 	PGrnInitializeNormalize();
+
+	PGrnInitializeLanguageModelVectorize();
 
 	PGrnInitializeAutoClose();
 }
@@ -849,6 +858,12 @@ PGrnConvertToDatumArrayType(grn_obj *vector, Oid typeID)
 		elementByValue = true;
 		elementAlign = 'i';
 		break;
+	case FLOAT4ARRAYOID:
+		elementTypeID = FLOAT4OID;
+		elementLength = 4;
+		elementByValue = true;
+		elementAlign = 'i';
+		break;
 	case VARCHARARRAYOID:
 		elementTypeID = VARCHAROID;
 		elementLength = -1;
@@ -1004,6 +1019,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		break;
 #endif
 	case INT4ARRAYOID:
+	case FLOAT4ARRAYOID:
 	case VARCHARARRAYOID:
 	case TEXTARRAYOID:
 		return PGrnConvertToDatumArrayType(value, typeID);
