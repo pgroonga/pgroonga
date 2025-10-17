@@ -46,10 +46,14 @@ PGrnLanguageModelLoad(const char *modelName)
 	grn_language_model_loader_set_model(
 		ctx, loader, modelName, strlen(modelName));
 
+	if (model)
+		grn_language_model_close(ctx, model);
 	model = grn_language_model_loader_load(ctx, loader);
 	if (!model)
 		return ctx->rc;
 
+	if (inferencer)
+		grn_language_model_inferencer_close(ctx, inferencer);
 	inferencer = grn_language_model_open_inferencer(ctx, model);
 	return ctx->rc;
 }
@@ -60,6 +64,8 @@ PGrnLanguageModelEnsureLoaded(const char *modelName)
 	if (currentModelName && strcmp(currentModelName, modelName) == 0)
 		return;
 
+	if (currentModelName)
+		pfree(currentModelName);
 	currentModelName = pstrdup(modelName);
 
 	PGrnLanguageModelClose();
@@ -70,6 +76,11 @@ void
 PGrnFinalizeLanguageModelVectorize(void)
 {
 	GRN_OBJ_FIN(ctx, &vector);
+	if (currentModelName)
+	{
+		pfree(currentModelName);
+		currentModelName = NULL;
+	}
 	PGrnLanguageModelClose();
 	if (loader)
 	{
