@@ -65,7 +65,9 @@ jobs:
       - name: Prepare environments
         if: matrix.groonga-main == 'yes'
         run: |
-          echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR=${PWD}/cache/language-models" >> ${GITHUB_ENV}
+          download_cache_dir="${PWD}/cache/language-models"
+          mkdir -p "${download_cache_dir}"
+          echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR=${download_cache_dir}" >> ${GITHUB_ENV}
           echo "PGRN_LANGUAGE_MODEL_TEST=true" >> ${GITHUB_ENV}
       - name: Cache language-models
         if: matrix.groonga-main == 'yes'
