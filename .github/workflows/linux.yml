@@ -62,6 +62,18 @@ jobs:
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark
+      - name: Prepare environments
+        if: matrix.groonga-main == 'yes'
+        run: |
+          echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR=${PWD}/cache/language-models" >> ${GITHUB_ENV}
+          echo "PGRN_LANGUAGE_MODEL_TEST=true" >> ${GITHUB_ENV}
+      - name: Cache language-models
+        if: matrix.groonga-main == 'yes'
+        uses: actions/cache@v4
+        with:
+          path: cache/language-models
+          key: linux-test-cache-language-models-${{ hashFiles('src/**', 'data/**', 'sql/**', 'expected/**') }}
+          restore-keys: linux-test-cache-language-models-
       - name: Install dependency
         run: |
           curl \
