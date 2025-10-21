@@ -13,7 +13,7 @@ INSERT INTO memos VALUES ('I am a king.');
 INSERT INTO memos VALUES ('I am a queen.');
 
 SELECT array_length(pgroonga_language_model_vectorize(
-  'hf:///groonga/bge-m3-Q4_K_M-GGUF',
+  'hf:///groonga/all-MiniLM-L6-v2-Q4_K_M-GGUF',
   content), 1)
 FROM memos;
 
