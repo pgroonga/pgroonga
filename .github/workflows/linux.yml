@@ -65,14 +65,14 @@ jobs:
       - name: Prepare language model caching
         if: matrix.groonga-main == 'yes'
         run: |
-          download_cache_dir="${PWD}/cache/language-models"
+          download_cache_dir="/tmp/cache/language-models"
           mkdir -p "${download_cache_dir}"
           echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR=${download_cache_dir}" >> ${GITHUB_ENV}
       - name: Cache language models
         if: matrix.groonga-main == 'yes'
         uses: actions/cache@v4
         with:
-          path: cache/language-models
+          path: /tmp/cache/language-models
           key: linux-test-cache-language-models-${{ hashFiles('src/**', 'data/**', 'sql/**', 'expected/**') }}
           restore-keys: linux-test-cache-language-models-
       - name: Install dependency
@@ -120,6 +120,11 @@ jobs:
           max_prepared_transactions = 1
           random_page_cost = 0
           CONF
+          if [ "${GROONGA_MAIN}" = "yes" ]; then
+            echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR = '${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}'" |
+              sudo tee --append /etc/postgresql/*/main/environment
+            sudo chown -R postgres: "${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}"
+          fi
           sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
       - name: Install Meson
