@@ -73,7 +73,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/cache/language-models
-          key: linux-test-cache-language-models-${{ hashFiles('src/**', 'data/**', 'sql/**', 'expected/**') }}
+          key: linux-test-cache-language-models-${{ hashFiles('sql/function/language-model-vectorize/**') }}
           restore-keys: linux-test-cache-language-models-
       - name: Install dependency
         run: |
