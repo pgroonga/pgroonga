@@ -123,7 +123,6 @@ jobs:
           if [ "${GROONGA_MAIN}" = "yes" ]; then
             echo "GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR = '${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}'" |
               sudo tee --append /etc/postgresql/*/main/environment
-            sudo chown -R postgres: "${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}"
           fi
           sudo systemctl restart postgresql
           sudo -u postgres -H psql -c "CREATE ROLE ${USER} SUPERUSER LOGIN;"
@@ -141,9 +140,18 @@ jobs:
       - name: Install PGroonga
         run: |
           sudo meson install -C ../pgroonga.build
+      - name: Permission settings for the language model's cache directory
+        if: matrix.groonga-main == 'yes'
+        run: |
+          sudo chown -R postgres: "${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}"
       - name: Run regression test
         run: |
           meson test -C ../pgroonga.build -v
+      - name: Reset the language model's cache directory
+        # Because a permission error occurs when posting the cache during the shutdown process.
+        if: matrix.groonga-main == 'yes'
+        run: |
+          sudo chown -R ${USER}: "${GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR}"
       - name: Show diff
         if: failure()
         run: |
