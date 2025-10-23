@@ -8,7 +8,6 @@ required_groonga_version = '14.1.0'
 
 groonga = dependency('groonga', version: '>= ' + required_groonga_version)
 cc = meson.get_compiler('c')
-libm = cc.find_library('m')
 
 pg_config_path = get_option('pg_config')
 if pg_config_path == ''
@@ -17,6 +16,9 @@ endif
 pg_config = find_program(pg_config_path)
 pg_includedir_server = run_command(
   pg_config, '--includedir-server', check: true
+).stdout().strip()
+pg_includedir = run_command(
+  pg_config, '--includedir', check: true
 ).stdout().strip()
 pg_pkglibdir = run_command(
   pg_config, '--pkglibdir', check: true
@@ -40,20 +42,49 @@ endif
 # For example: 'a "b c" d' becomes ['a', '"b', 'c"', 'd'] instead of ['a', 'b c', 'd'].
 # This works for most PostgreSQL flags but may break with quoted paths containing spaces.
 # Related upstream issue: https://github.com/mesonbuild/meson/issues/15000
-pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
-pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
+if host_machine.system() == 'windows'
+  pg_cppflags = []
+  pg_cflags_sl = []
+else
+  pg_cppflags = run_command(pg_config, '--cppflags', check: true).stdout().strip().split()
+  pg_cflags_sl = run_command(pg_config, '--cflags_sl', check: true).stdout().strip().split()
+endif
+
+pg_include_dirs = []
+if host_machine.system() == 'windows'
+  # Windows needs port-specific includes first for platform headers
+  # These provide Windows implementations of Unix headers (netdb.h, etc.)
+  pg_include_dirs += [
+    include_directories(pg_includedir_server / 'port' / 'win32_msvc', is_system: true),
+    include_directories(pg_includedir_server / 'port' / 'win32', is_system: true),
+    include_directories(pg_includedir, is_system: true),
+  ]
+endif
+pg_include_dirs += [
+  include_directories(pg_includedir_server, is_system: true),
+]
 
 postgresql = declare_dependency(
   compile_args: pg_cppflags + pg_cflags_sl,
-  include_directories: [
-    include_directories(pg_includedir_server, is_system: true),
-  ],
+  include_directories: pg_include_dirs,
 )
 
-pgrn_dependencies = [postgresql, groonga, libm]
+pgrn_dependencies = [postgresql, groonga]
+if host_machine.system() == 'windows'
+  # On Windows, extensions must explicitly link against postgres.lib
+  # to access PostgreSQL server functions
+  postgresql_lib = cc.find_library('postgres', dirs: [pg_pkglibdir])
+  pgrn_dependencies += postgresql_lib
+else
+  # On Unix/Linux, link against libm (math library)
+  libm = cc.find_library('m')
+  pgrn_dependencies += libm
+endif
 
 if meson.version().version_compare('>= 0.60.0')
-  msgpack = dependency('msgpack-c', 'msgpack', required: get_option('message_pack'))
+  # On Windows, msgpack-c from vcpkg provides CMake config but not pkg-config
+  pkg_tool = host_machine.system() == 'windows' ? 'cmake' : 'pkg-config'
+  msgpack = dependency('msgpack-c', 'msgpack', method: pkg_tool, required: get_option('message_pack'))
 else
   # We assume that users on environments that use old Meson use old
   # MessagePack. We don't check 'msgpack-c' here because we don't want
@@ -68,14 +99,18 @@ if msgpack.found()
   pgrn_dependencies += pgrn_msgpack
 endif
 
-xxhash = dependency('libxxhash', required: get_option('xxhash'))
+xxhash = dependency('libxxhash',
+  required: get_option('xxhash'),
+  fallback: ['xxhash', 'xxhash_dep'])
 if xxhash.found()
   pgrn_dependencies += xxhash
 endif
 
 name_suffix = 'so'
-if host_machine.system() == 'darwin' and \
-   pg_config.version().version_compare('>= 16')
+if host_machine.system() == 'windows'
+  name_suffix = 'dll'
+elif host_machine.system() == 'darwin' and \
+     pg_config.version().version_compare('>= 16')
   name_suffix = 'dylib'
 endif
 
@@ -425,19 +460,32 @@ install_data(maintainer_scripts,
 
 if get_option('test')
   ruby = find_program('ruby')
+  # For PostgreSQL 17+ on Windows, pg_regress.exe in pgxs depends on libpq.dll
+  # which is in the bin directory. We copy pg_regress.exe to bin in CI,
+  # so search bin directory first for PostgreSQL 17+ on Windows only.
+  if host_machine.system() == 'windows' and pg_config.version().version_compare('>= 17')
+    pg_regress_dirs = [
+      pg_bindir,
+      pg_pkglibdir / 'pgxs/src/test/regress',
+    ]
+  else
+    pg_regress_dirs = [
+      pg_pkglibdir / 'pgxs/src/test/regress',
+      pg_bindir,
+    ]
+  endif
   pg_regress = find_program(
     'pg_regress',
-    dirs: [pg_pkglibdir / 'pgxs/src/test/regress']
+    dirs: pg_regress_dirs
   )
 
-  schedule = meson.current_build_dir() / 'schedule'
   prepare_test = custom_target(
     'prepare',
     output: 'schedule',
     command: [
       ruby,
       meson.current_source_dir() / 'test' / 'prepare.rb',
-      schedule
+      '@OUTPUT@'
     ],
     env: {
       'BUILD_DIR': meson.current_build_dir(),
@@ -445,16 +493,22 @@ if get_option('test')
     build_always_stale: true
   )
 
+  if host_machine.system() == 'windows'
+    launcher = meson.current_source_dir() / 'test' / 'short-pgappname.bat'
+  else
+    launcher = meson.current_source_dir() / 'test' / 'short-pgappname'
+  endif
   test('regression',
     pg_regress,
     args: [
       '--bindir', pg_bindir,
       '--dlpath', meson.current_build_dir(),
+      '--encoding', 'UTF-8',
       '--inputdir', meson.current_source_dir(),
       '--outputdir', meson.current_build_dir(),
-      '--launcher', meson.current_source_dir() / 'test' / 'short-pgappname',
+      '--launcher', launcher,
       '--load-extension', meson.project_name(),
-      '--schedule', schedule
+      '--schedule', prepare_test.full_path()
     ],
     env: {
       'PG_REGRESS_DIFF_OPTS': '-u --color=always',
