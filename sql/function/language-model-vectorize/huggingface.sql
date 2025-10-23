@@ -1,5 +1,5 @@
--- Only test when `PGRN_LANGUAGE_MODEL_TEST` is set.
-\getenv language_model_test PGRN_LANGUAGE_MODEL_TEST
+-- Only test when `GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR` is set.
+\getenv language_model_test GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR
 SELECT NOT :{?language_model_test} AS omit \gset
 \if :omit
   \quit
@@ -12,9 +12,9 @@ CREATE TABLE memos (
 INSERT INTO memos VALUES ('I am a king.');
 INSERT INTO memos VALUES ('I am a queen.');
 
-SELECT (pgroonga_language_model_vectorize(
-  'hf:///groonga/bge-m3-Q4_K_M-GGUF',
-  content))[1:3]
+SELECT array_length(pgroonga_language_model_vectorize(
+  'hf:///groonga/all-MiniLM-L6-v2-Q4_K_M-GGUF',
+  content), 1)
 FROM memos;
 
 DROP TABLE memos;
