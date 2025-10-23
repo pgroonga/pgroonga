@@ -8,7 +8,7 @@ GRANT ALL ON TABLE memos TO alice;
 INSERT INTO memos VALUES
   (1, 'nonexistent', 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES
-  (2, 'nonexistent', 'Rroonga is the Ruby bindings of GROONGA.');
+  (2, 'nonexistent', 'Rroonga is the Ruby bindings of Groonga.');
 INSERT INTO memos VALUES
   (3, 'alice', 'Groonga is fast full text search engine.');
 INSERT INTO memos VALUES
