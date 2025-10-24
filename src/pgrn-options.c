@@ -517,12 +517,12 @@ PGrnFinalizeOptions(void)
 }
 
 static void
-PGrnApplyOptionValuesTokenizer(PGrnOptions *options,
-							   Relation index,
-							   int i,
-							   PGrnOptionUseCase useCase,
-							   grn_obj **tokenizer,
-							   const char *defaultTokenizer)
+PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
+								 Relation index,
+								 int i,
+								 PGrnOptionUseCase useCase,
+								 const char *defaultTokenizer,
+								 PGrnResolvedOptions *resolvedOptions)
 {
 	const char *rawTokenizer;
 
@@ -556,10 +556,11 @@ PGrnApplyOptionValuesTokenizer(PGrnOptions *options,
 			if (!isTarget)
 				continue;
 
-			*tokenizer = &(buffers->tokenizer);
-			GRN_BULK_REWIND(*tokenizer);
-			PGrnStringSubstituteVariables(
-				value.val.string.val, value.val.string.len, *tokenizer);
+			resolvedOptions->tokenizer = &(buffers->tokenizer);
+			GRN_BULK_REWIND(resolvedOptions->tokenizer);
+			PGrnStringSubstituteVariables(value.val.string.val,
+										  value.val.string.len,
+										  resolvedOptions->tokenizer);
 			return;
 		}
 	}
@@ -567,40 +568,41 @@ PGrnApplyOptionValuesTokenizer(PGrnOptions *options,
 	rawTokenizer = ((const char *) options) + options->tokenizerOffset;
 	if (useCase == PGRN_OPTION_USE_CASE_REGEXP_SEARCH)
 	{
-		*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
+		resolvedOptions->tokenizer = PGrnLookup(defaultTokenizer, ERROR);
 	}
 	else if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
 	{
-		*tokenizer = NULL;
+		resolvedOptions->tokenizer = NULL;
 	}
 	else
 	{
 		if (PGrnIsExplicitNoneValue(rawTokenizer))
 		{
-			*tokenizer = NULL;
+			resolvedOptions->tokenizer = NULL;
 		}
 		else if (PGrnIsNoneValue(rawTokenizer))
 		{
 			if (defaultTokenizer)
-				*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
+				resolvedOptions->tokenizer =
+					PGrnLookup(defaultTokenizer, ERROR);
 			else
-				*tokenizer = NULL;
+				resolvedOptions->tokenizer = NULL;
 		}
 		else
 		{
-			*tokenizer = &(buffers->tokenizer);
-			GRN_TEXT_SETS(ctx, *tokenizer, rawTokenizer);
+			resolvedOptions->tokenizer = &(buffers->tokenizer);
+			GRN_TEXT_SETS(ctx, resolvedOptions->tokenizer, rawTokenizer);
 		}
 	}
 }
 
 static void
-PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
-								 Relation index,
-								 int i,
-								 PGrnOptionUseCase useCase,
-								 grn_obj **normalizers,
-								 const char *defaultNormalizers)
+PGrnResolveOptionValuesNormalizers(PGrnOptions *options,
+								   Relation index,
+								   int i,
+								   PGrnOptionUseCase useCase,
+								   const char *defaultNormalizers,
+								   PGrnResolvedOptions *resolvedOptions)
 {
 	const char *rawNormalizers;
 
@@ -634,10 +636,11 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 			if (!isTarget)
 				continue;
 
-			*normalizers = &(buffers->normalizers);
-			GRN_BULK_REWIND(*normalizers);
-			PGrnStringSubstituteVariables(
-				value.val.string.val, value.val.string.len, *normalizers);
+			resolvedOptions->normalizers = &(buffers->normalizers);
+			GRN_BULK_REWIND(resolvedOptions->normalizers);
+			PGrnStringSubstituteVariables(value.val.string.val,
+										  value.val.string.len,
+										  resolvedOptions->normalizers);
 			return;
 		}
 	}
@@ -687,40 +690,39 @@ PGrnApplyOptionValuesNormalizers(PGrnOptions *options,
 
 	if (PGrnIsExplicitNoneValue(rawNormalizers))
 	{
-		*normalizers = NULL;
+		resolvedOptions->normalizers = NULL;
 	}
 	else if (PGrnIsNoneValue(rawNormalizers))
 	{
 		if (defaultNormalizers)
 		{
-			*normalizers = &(buffers->normalizers);
-			GRN_BULK_REWIND(*normalizers);
-			PGrnStringSubstituteVariables(
-				defaultNormalizers, strlen(defaultNormalizers), *normalizers);
+			resolvedOptions->normalizers = &(buffers->normalizers);
+			GRN_BULK_REWIND(resolvedOptions->normalizers);
+			PGrnStringSubstituteVariables(defaultNormalizers,
+										  strlen(defaultNormalizers),
+										  resolvedOptions->normalizers);
 		}
 		else
 		{
-			*normalizers = NULL;
+			resolvedOptions->normalizers = NULL;
 		}
 	}
 	else
 	{
-		*normalizers = &(buffers->normalizers);
-		GRN_BULK_REWIND(*normalizers);
-		PGrnStringSubstituteVariables(
-			rawNormalizers, strlen(rawNormalizers), *normalizers);
+		resolvedOptions->normalizers = &(buffers->normalizers);
+		GRN_BULK_REWIND(resolvedOptions->normalizers);
+		PGrnStringSubstituteVariables(rawNormalizers,
+									  strlen(rawNormalizers),
+									  resolvedOptions->normalizers);
 	}
 }
 
 static void
-PGrnApplyOptionValuesIndexFlags(PGrnOptions *options,
-								Relation index,
-								int i,
-								grn_column_flags *indexFlags)
+PGrnResolveOptionValuesIndexFlags(PGrnOptions *options,
+								  Relation index,
+								  int i,
+								  PGrnResolvedOptions *resolvedOptions)
 {
-	if (!indexFlags)
-		return;
-
 	if (options->indexFlagsMappingOffset != 0 && i >= 0)
 	{
 		TupleDesc desc = RelationGetDescr(index);
@@ -759,16 +761,16 @@ PGrnApplyOptionValuesIndexFlags(PGrnOptions *options,
 				rawFlag.value = value.val.string.val;
 				rawFlag.length = value.val.string.len;
 				if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "SMALL"))
-					*indexFlags |= GRN_OBJ_INDEX_SMALL;
+					resolvedOptions->indexFlags |= GRN_OBJ_INDEX_SMALL;
 				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "MEDIUM"))
-					*indexFlags |= GRN_OBJ_INDEX_MEDIUM;
+					resolvedOptions->indexFlags |= GRN_OBJ_INDEX_MEDIUM;
 				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "LARGE"))
-					*indexFlags |= GRN_OBJ_INDEX_LARGE;
+					resolvedOptions->indexFlags |= GRN_OBJ_INDEX_LARGE;
 				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "WITH_WEIGHT"))
-					*indexFlags |= GRN_OBJ_WITH_WEIGHT;
+					resolvedOptions->indexFlags |= GRN_OBJ_WITH_WEIGHT;
 				else if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag,
 													  "WEIGHT_FLOAT32"))
-					*indexFlags |= GRN_OBJ_WEIGHT_FLOAT32;
+					resolvedOptions->indexFlags |= GRN_OBJ_WEIGHT_FLOAT32;
 			}
 			if (isTarget)
 				return;
@@ -777,17 +779,12 @@ PGrnApplyOptionValuesIndexFlags(PGrnOptions *options,
 }
 
 void
-PGrnApplyOptionValues(Relation index,
-					  int i,
-					  PGrnOptionUseCase useCase,
-					  grn_obj **tokenizer,
-					  const char *defaultTokenizer,
-					  grn_obj **normalizers,
-					  const char *defaultNormalizers,
-					  grn_obj **tokenFilters,
-					  grn_obj **plugins,
-					  grn_table_flags *lexiconType,
-					  grn_column_flags *indexFlags)
+PGrnResolveOptionValues(Relation index,
+						int i,
+						PGrnOptionUseCase useCase,
+						const char *defaultTokenizer,
+						const char *defaultNormalizers,
+						PGrnResolvedOptions *resolvedOptions)
 {
 	PGrnOptions *options;
 	const char *rawTokenFilters;
@@ -797,48 +794,46 @@ PGrnApplyOptionValues(Relation index,
 	if (!options)
 	{
 		if (defaultTokenizer)
-			*tokenizer = PGrnLookup(defaultTokenizer, ERROR);
+			resolvedOptions->tokenizer = PGrnLookup(defaultTokenizer, ERROR);
 		else
-			*tokenizer = NULL;
+			resolvedOptions->tokenizer = NULL;
 
 		if (defaultNormalizers)
 		{
-			*normalizers = &(buffers->normalizers);
-			GRN_TEXT_SETS(ctx, *normalizers, defaultNormalizers);
+			resolvedOptions->normalizers = &(buffers->normalizers);
+			GRN_TEXT_SETS(
+				ctx, resolvedOptions->normalizers, defaultNormalizers);
 		}
 		else
 		{
-			*normalizers = NULL;
+			resolvedOptions->normalizers = NULL;
 		}
 
-		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+		resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 
 		return;
 	}
 
-	PGrnApplyOptionValuesTokenizer(
-		options, index, i, useCase, tokenizer, defaultTokenizer);
+	PGrnResolveOptionValuesTokenizer(
+		options, index, i, useCase, defaultTokenizer, resolvedOptions);
 
-	PGrnApplyOptionValuesNormalizers(
-		options, index, i, useCase, normalizers, defaultNormalizers);
+	PGrnResolveOptionValuesNormalizers(
+		options, index, i, useCase, defaultNormalizers, resolvedOptions);
 
 	rawTokenFilters = ((const char *) options) + options->tokenFiltersOffset;
 	if (!PGrnIsNoneValue(rawTokenFilters))
 	{
-		*tokenFilters = &(buffers->tokenFilters);
-		GRN_TEXT_SETS(ctx, *tokenFilters, rawTokenFilters);
+		resolvedOptions->tokenFilters = &(buffers->tokenFilters);
+		GRN_TEXT_SETS(ctx, resolvedOptions->tokenFilters, rawTokenFilters);
 	}
 
-	if (plugins)
+	const char *rawPlugins = ((const char *) options) + options->pluginsOffset;
+	if (!PGrnIsNoneValue(rawPlugins))
 	{
-		const char *rawPlugins =
-			((const char *) options) + options->pluginsOffset;
-		if (!PGrnIsNoneValue(rawPlugins))
-		{
-			*plugins = &(buffers->plugins);
-			GRN_BULK_REWIND(*plugins);
-			PGrnOptionParseNames(rawPlugins, PGrnOptionAppendName, *plugins);
-		}
+		resolvedOptions->plugins = &(buffers->plugins);
+		GRN_BULK_REWIND(resolvedOptions->plugins);
+		PGrnOptionParseNames(
+			rawPlugins, PGrnOptionAppendName, resolvedOptions->plugins);
 	}
 
 	lexiconTypeName = GET_STRING_RELOPTION(options, lexiconTypeOffset);
@@ -846,24 +841,24 @@ PGrnApplyOptionValues(Relation index,
 	{
 		if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_HASH_TABLE) == 0)
 		{
-			*lexiconType |= GRN_OBJ_TABLE_HASH_KEY;
+			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_HASH_KEY;
 		}
 		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_PATRICIA_TRIE) == 0)
 		{
-			*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 		}
 		else if (strcmp(lexiconTypeName, PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE) ==
 				 0)
 		{
-			*lexiconType |= GRN_OBJ_TABLE_DAT_KEY;
+			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_DAT_KEY;
 		}
 	}
 	else
 	{
-		*lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+		resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 	}
 
-	PGrnApplyOptionValuesIndexFlags(options, index, i, indexFlags);
+	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
 }
 
 grn_expr_flags

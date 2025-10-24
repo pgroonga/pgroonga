@@ -140,6 +140,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		const char *tokenizerName = NULL;
 		const char *normalizersName = PGRN_DEFAULT_NORMALIZERS;
 		PGrnOptionUseCase useCase = PGRN_OPTION_USE_CASE_UNKNOWN;
+		PGrnResolvedOptions resolvedOptions = {0};
 
 		if (data->forFullTextSearch)
 		{
@@ -157,17 +158,17 @@ PGrnCreateLexicon(PGrnCreateData *data)
 			useCase = PGRN_OPTION_USE_CASE_PREFIX_SEARCH;
 		}
 
-		PGrnApplyOptionValues(data->index,
-							  data->i,
-							  useCase,
-							  &tokenizer,
-							  tokenizerName,
-							  &normalizers,
-							  normalizersName,
-							  &tokenFilters,
-							  &plugins,
-							  &flags,
-							  NULL);
+		PGrnResolveOptionValues(data->index,
+								data->i,
+								useCase,
+								tokenizerName,
+								normalizersName,
+								&resolvedOptions);
+		tokenizer = resolvedOptions.tokenizer;
+		normalizers = resolvedOptions.normalizers;
+		tokenFilters = resolvedOptions.tokenFilters;
+		plugins = resolvedOptions.plugins;
+		flags |= resolvedOptions.lexiconType;
 	}
 	else
 	{
@@ -222,21 +223,14 @@ PGrnCreateIndexColumn(PGrnCreateData *data)
 		}
 	}
 	{
-		grn_obj *tokenizer = NULL;
-		grn_obj *normalizers = NULL;
-		grn_obj *tokenFilters = NULL;
-		grn_table_flags tableFlags = 0;
-		PGrnApplyOptionValues(data->index,
-							  data->i,
-							  PGRN_OPTION_USE_CASE_UNKNOWN,
-							  &tokenizer,
-							  NULL,
-							  &normalizers,
-							  NULL,
-							  &tokenFilters,
-							  NULL,
-							  &tableFlags,
-							  &flags);
+		PGrnResolvedOptions resolvedOptions = {0};
+		PGrnResolveOptionValues(data->index,
+								data->i,
+								PGRN_OPTION_USE_CASE_UNKNOWN,
+								NULL,
+								NULL,
+								&resolvedOptions);
+		flags |= resolvedOptions.indexFlags;
 	}
 	PGrnCreateColumn(
 		data->index, lexicon, PGrnIndexColumnName, flags, data->sourcesTable);
