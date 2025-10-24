@@ -408,6 +408,15 @@ void PGrnExprAppendConstInteger(grn_obj *expr,
 								const char *tag,
 								const char *format,
 								...) GRN_ATTRIBUTE_PRINTF(6);
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+void PGrnExprAppendConstUInt32(grn_obj *expr,
+							   uint32_t value,
+							   grn_operator op,
+							   int nArgs,
+							   const char *tag,
+							   const char *format,
+							   ...) GRN_ATTRIBUTE_PRINTF(6);
+#endif
 void PGrnExprAppendConstString(grn_obj *expr,
 							   const char *string,
 							   unsigned int stringSize,

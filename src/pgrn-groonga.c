@@ -833,3 +833,48 @@ PGrnExprAppendConstInteger(grn_obj *expr,
 				  PGrnInspect(expr));
 	}
 }
+
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+void
+PGrnExprAppendConstUInt32(grn_obj *expr,
+						  uint32_t value,
+						  grn_operator op,
+						  int nArgs,
+						  const char *tag,
+						  const char *format,
+						  ...)
+{
+	grn_expr_append_const_uint32(ctx, expr, value, op, nArgs);
+	if (ctx->rc == GRN_SUCCESS)
+		return;
+
+	if (format)
+	{
+#	define MESSAGE_SIZE 4096
+		va_list args;
+		char message[MESSAGE_SIZE];
+
+		va_start(args, format);
+		grn_vsnprintf(message, MESSAGE_SIZE, format, args);
+		va_end(args);
+
+		PGrnCheck("%s: failed to %s(%d) uint32: <%d>: %s: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  value,
+				  message,
+				  PGrnInspect(expr));
+#	undef MESSAGE_SIZE
+	}
+	else
+	{
+		PGrnCheck("%s: failed to %s(%d) uint32: <%d>: %s",
+				  tag,
+				  grn_operator_to_string(op),
+				  nArgs,
+				  value,
+				  PGrnInspect(expr));
+	}
+}
+#endif
