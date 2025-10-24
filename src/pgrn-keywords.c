@@ -45,21 +45,15 @@ PGrnKeywordsResolveNormalizer(const char *indexName,
 	}
 
 	{
-		grn_obj *tokenizer = NULL;
-		grn_obj *tokenFilters = NULL;
-		grn_table_flags flags = 0;
 		Relation index = PGrnPGResolveIndexName(indexName);
-		PGrnApplyOptionValues(index,
-							  -1,
-							  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
-							  &tokenizer,
-							  PGRN_DEFAULT_TOKENIZER,
-							  normalizers,
-							  PGRN_DEFAULT_NORMALIZERS,
-							  &tokenFilters,
-							  NULL,
-							  &flags,
-							  NULL);
+		PGrnResolvedOptions resolvedOptions = {0};
+		PGrnResolveOptionValues(index,
+								-1,
+								PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
+								PGRN_DEFAULT_TOKENIZER,
+								PGRN_DEFAULT_NORMALIZERS,
+								&resolvedOptions);
+		*normalizers = resolvedOptions.normalizers;
 		RelationClose(index);
 	}
 	return true;

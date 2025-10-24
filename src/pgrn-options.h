@@ -13,20 +13,25 @@ typedef enum
 	PGRN_OPTION_USE_CASE_PREFIX_SEARCH
 } PGrnOptionUseCase;
 
+typedef struct PGrnResolvedOptions
+{
+	grn_obj *tokenizer;
+	grn_obj *normalizers;
+	grn_obj *tokenFilters;
+	grn_obj *plugins;
+	grn_table_flags lexiconType;
+	grn_column_flags indexFlags;
+} PGrnResolvedOptions;
+
 void PGrnInitializeOptions(void);
 void PGrnFinalizeOptions(void);
 
-void PGrnApplyOptionValues(Relation index,
-						   int i,
-						   PGrnOptionUseCase useCase,
-						   grn_obj **tokenizer,
-						   const char *defaultTokenizer,
-						   grn_obj **normalizers,
-						   const char *defaultNormalizers,
-						   grn_obj **tokenFilters,
-						   grn_obj **plugins,
-						   grn_table_flags *lexiconType,
-						   grn_column_flags *indexFlags);
+void PGrnResolveOptionValues(Relation index,
+							 int i,
+							 PGrnOptionUseCase useCase,
+							 const char *defaultTokenizer,
+							 const char *defaultNormalizers,
+							 PGrnResolvedOptions *resolvedOptions);
 
 grn_expr_flags PGrnOptionsGetExprParseFlags(Relation index);
 

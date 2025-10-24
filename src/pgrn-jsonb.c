@@ -933,31 +933,22 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 										 PGrnJSONBCreateData *jsonbData)
 {
 	char lexiconName[GRN_TABLE_MAX_KEY_SIZE];
-	grn_table_flags flags = 0;
 	grn_obj *type;
 	grn_obj *lexicon;
-	grn_obj *tokenizer = NULL;
-	grn_obj *normalizers = NULL;
-	grn_obj *tokenFilters = NULL;
-	grn_obj *plugins = NULL;
-	grn_column_flags indexFlags = GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION;
+	PGrnResolvedOptions resolvedOptions = {0};
 
-	PGrnApplyOptionValues(data->index,
-						  data->i,
-						  PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
-						  &tokenizer,
-						  PGRN_DEFAULT_TOKENIZER,
-						  &normalizers,
-						  PGRN_DEFAULT_NORMALIZERS,
-						  &tokenFilters,
-						  &plugins,
-						  &flags,
-						  &indexFlags);
+	resolvedOptions.indexFlags = GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION;
+	PGrnResolveOptionValues(data->index,
+							data->i,
+							PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
+							PGRN_DEFAULT_TOKENIZER,
+							PGRN_DEFAULT_NORMALIZERS,
+							&resolvedOptions);
 
-	if (!tokenizer)
+	if (!resolvedOptions.tokenizer)
 		return;
 
-	PGrnWALRegisterPlugins(data->index, plugins);
+	PGrnWALRegisterPlugins(data->index, resolvedOptions.plugins);
 
 	snprintf(lexiconName,
 			 sizeof(lexiconName),
@@ -968,17 +959,17 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	type = grn_ctx_at(ctx, GRN_DB_SHORT_TEXT);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
-							  flags,
+							  resolvedOptions.lexiconType,
 							  type,
-							  tokenizer,
-							  normalizers,
-							  tokenFilters);
+							  resolvedOptions.tokenizer,
+							  resolvedOptions.normalizers,
+							  resolvedOptions.tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
 
 	PGrnCreateColumn(data->index,
 					 lexicon,
 					 PGrnIndexColumnName,
-					 GRN_OBJ_COLUMN_INDEX | GRN_OBJ_WITH_POSITION,
+					 resolvedOptions.indexFlags,
 					 jsonbData->valuesTable);
 }
 
