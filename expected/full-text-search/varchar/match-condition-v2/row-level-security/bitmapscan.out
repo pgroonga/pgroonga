@@ -8,9 +8,11 @@ GRANT ALL ON TABLE memos TO alice;
 INSERT INTO memos VALUES
   (1, 'nonexistent', 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES
-  (2, 'alice', 'Groonga is fast full text search engine.');
+  (2, 'nonexistent', 'Rroonga is the Ruby bindings of Groonga.');
 INSERT INTO memos VALUES
-  (3, 'alice', 'PGroonga is a PostgreSQL extension that uses Groonga.');
+  (3, 'alice', 'Groonga is fast full text search engine.');
+INSERT INTO memos VALUES
+  (4, 'alice', 'PGroonga is a PostgreSQL extension that uses Groonga.');
 ALTER TABLE memos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY memos_myself ON memos USING (user_name = current_user);
 CREATE INDEX pgrn_index ON memos
@@ -38,8 +40,8 @@ SELECT id, content, pgroonga_score(tableoid, ctid)
  WHERE content &@ pgroonga_condition('Groonga', index_name => 'pgrn_index');
  id |                        content                        | pgroonga_score 
 ----+-------------------------------------------------------+----------------
-  2 | Groonga is fast full text search engine.              |              1
-  3 | PGroonga is a PostgreSQL extension that uses Groonga. |              1
+  3 | Groonga is fast full text search engine.              |              1
+  4 | PGroonga is a PostgreSQL extension that uses Groonga. |              1
 (2 rows)
 
 RESET SESSION AUTHORIZATION;
