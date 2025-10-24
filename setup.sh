@@ -24,16 +24,9 @@ else
 fi
 
 case "${distribution}-${code_name}" in
-  debian-*)
-    wget https://apache.jfrog.io/artifactory/arrow/${distribution}/apache-arrow-apt-source-latest-${code_name}.deb
-    ${SUDO} apt install -y -V ./apache-arrow-apt-source-latest-${code_name}.deb
+  debian-*|ubuntu-*)
     wget https://packages.groonga.org/${distribution}/groonga-apt-source-latest-${code_name}.deb
     ${SUDO} apt install -y -V ./groonga-apt-source-latest-${code_name}.deb
-    ;;
-  ubuntu-*)
-    ${SUDO} apt install -y -V software-properties-common
-    ${SUDO} add-apt-repository -y universe
-    ${SUDO} add-apt-repository -y ppa:groonga/ppa
     ;;
 esac
 
@@ -64,8 +57,10 @@ case "${distribution}-${code_name}" in
          libgroonga-dev \
          libmsgpack-dev \
          libxxhash-dev \
-         make \
+         meson \
+         ninja-build \
          postgresql-${latest_postgresql_version} \
-         postgresql-server-dev-${latest_postgresql_version}
+         postgresql-server-dev-${latest_postgresql_version} \
+         ruby
     ;;
 esac

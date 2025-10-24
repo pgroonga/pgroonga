@@ -15,10 +15,8 @@ build_directory="$1"
 shift
 
 rm -rf "${build_directory}"
-cp -a "${source_directory}" "${build_directory}"
-cd "${build_directory}"
-make clean
-export HAVE_XXHASH=1
-export NEED_SUDO=yes
-export TEMP_INSTANCE="${PWD}/db"
-test/run-sql-test.sh "$@"
+meson setup "${build_directory}" "${source_directory}"
+export BUILD_DIR="${build_directory}"
+export NEED_SUDO="yes"
+export TEMP_INSTANCE="${build_directory}/db"
+"${source_directory}/test/run-sql-test.sh" "$@"
