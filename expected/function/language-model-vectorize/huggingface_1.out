@@ -1,5 +1,5 @@
--- Only test when `GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR` is set.
-\getenv language_model_test GRN_LANGUAGE_MODEL_DOWNLOAD_CACHE_DIR
+-- Only test when `PGRN_LANGUAGE_MODEL_TEST` is set.
+\getenv language_model_test PGRN_LANGUAGE_MODEL_TEST
 SELECT NOT :{?language_model_test} AS omit \gset
 \if :omit
   \quit
