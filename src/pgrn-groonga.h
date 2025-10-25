@@ -136,7 +136,8 @@ PGrnLookupColumnWithSize(grn_obj *table,
 	size_t columnNameSize;
 	grn_obj *column;
 
-	columnNameSize = PGrnColumnNameEncodeWithSize(name, nameSize, columnName);
+	columnNameSize =
+		PGrnColumnNameEncodeWithSize(name, nameSize, NULL, 0, columnName);
 	column = grn_obj_column(ctx, table, columnName, columnNameSize);
 	if (!column)
 	{

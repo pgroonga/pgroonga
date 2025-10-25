@@ -45,9 +45,9 @@ done
 
 meson compile -C ${BUILD_DIR}
 if [ "${NEED_SUDO:-no}" = "yes" ]; then
-  sudo -H meson install -C ${BUILD_DIR} --no-rebuild
+  sudo -H meson install -C ${BUILD_DIR} --no-rebuild > /dev/null
 else
-  meson install -C ${BUILD_DIR} --no-rebuild
+  meson install -C ${BUILD_DIR} --no-rebuild > /dev/null
 fi
 PG_REGRESS_DIFF_OPTS="-u"
 if diff --help | grep -q color; then
