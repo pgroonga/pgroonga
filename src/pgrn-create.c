@@ -3,10 +3,13 @@
 #include "pgrn-alias.h"
 #include "pgrn-column-name.h"
 #include "pgrn-create.h"
+#include "pgrn-global.h"
 #include "pgrn-groonga.h"
 #include "pgrn-options.h"
 #include "pgrn-value.h"
 #include "pgrn-wal.h"
+
+static struct PGrnBuffers *buffers = &PGrnBuffers;
 
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
@@ -107,6 +110,24 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 							 columnName);
 		PGrnCreateColumn(
 			data->index, data->sourcesTable, columnName, flags, range);
+		if (data->forSemanticSearch)
+		{
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+			char codeColumnName[GRN_TABLE_MAX_KEY_SIZE];
+			PGrnCodeColumnNameEncode(
+				TupleDescAttr(data->desc, data->i)->attname.data,
+				codeColumnName);
+			PGrnCreateColumn(data->index,
+							 data->sourcesTable,
+							 codeColumnName,
+							 GRN_OBJ_COLUMN_SCALAR,
+							 grn_ctx_at(ctx, GRN_DB_BINARY));
+#else
+			PGrnCheckRC(
+				GRN_FUNCTION_NOT_IMPLEMENTED,
+				"Groonga 15.1.8 or later is required for semantic search");
+#endif
+		}
 	}
 }
 
@@ -135,7 +156,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	}
 
 	if (data->forFullTextSearch || data->forRegexpSearch ||
-		data->forPrefixSearch)
+		data->forPrefixSearch || data->forSemanticSearch)
 	{
 		const char *tokenizerName = NULL;
 		const char *normalizersName = PGRN_DEFAULT_NORMALIZERS;
@@ -157,6 +178,12 @@ PGrnCreateLexicon(PGrnCreateData *data)
 			tokenizerName = NULL;
 			useCase = PGRN_OPTION_USE_CASE_PREFIX_SEARCH;
 		}
+		else if (data->forSemanticSearch)
+		{
+			tokenizerName = NULL;
+			normalizersName = NULL;
+			useCase = PGRN_OPTION_USE_CASE_SEMANTIC_SEARCH;
+		}
 
 		PGrnResolveOptionValues(data->index,
 								data->i,
@@ -169,6 +196,22 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		tokenFilters = resolvedOptions.tokenFilters;
 		plugins = resolvedOptions.plugins;
 		flags |= resolvedOptions.lexiconType;
+		if (data->forSemanticSearch)
+		{
+			char codeColumnName[GRN_TABLE_MAX_KEY_SIZE];
+			PGrnCodeColumnNameEncode(
+				TupleDescAttr(data->desc, data->i)->attname.data,
+				codeColumnName);
+
+			tokenizer = &(buffers->tokenizer);
+			GRN_BULK_REWIND(tokenizer);
+			grn_text_printf(ctx,
+							tokenizer,
+							"TokenLanguageModel(\"model\", \"%s\", "
+							"\"code_column\", \"%s\")",
+							resolvedOptions.modelName,
+							codeColumnName);
+		}
 	}
 	else
 	{

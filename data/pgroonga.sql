@@ -1241,6 +1241,25 @@ CREATE OPERATOR &@* (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_similar_text_condition
+	(query text, condition pgroonga_condition)
+	RETURNS bool
+	AS 'MODULE_PATHNAME', 'pgroonga_similar_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 10000;
+
+CREATE OPERATOR &@* (
+	PROCEDURE = pgroonga_similar_text_condition,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_condition,
+	RESTRICT = contsel,
+	JOIN = contjoinsel
+);
+
 CREATE FUNCTION pgroonga_prefix_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text'
@@ -2474,6 +2493,13 @@ CREATE OPERATOR CLASS pgroonga_text_array_full_text_search_ops_v2
 		OPERATOR 34 &@~ (text[], pgroonga_full_text_search_condition_with_scorers),
 		OPERATOR 42 &@ (text[], pgroonga_condition),
 		OPERATOR 43 &@~ (text[], pgroonga_condition);
+
+
+CREATE OPERATOR CLASS pgroonga_text_semantic_search_ops_v2 FOR TYPE text
+	USING pgroonga AS
+		OPERATOR 29 &@*,
+		OPERATOR 48 &@* (text, pgroonga_condition);
+
 
 CREATE OPERATOR CLASS pgroonga_text_term_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
