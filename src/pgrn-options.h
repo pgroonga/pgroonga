@@ -10,7 +10,8 @@ typedef enum
 	PGRN_OPTION_USE_CASE_UNKNOWN,
 	PGRN_OPTION_USE_CASE_FULL_TEXT_SEARCH,
 	PGRN_OPTION_USE_CASE_REGEXP_SEARCH,
-	PGRN_OPTION_USE_CASE_PREFIX_SEARCH
+	PGRN_OPTION_USE_CASE_PREFIX_SEARCH,
+	PGRN_OPTION_USE_CASE_SEMANTIC_SEARCH,
 } PGrnOptionUseCase;
 
 typedef struct PGrnResolvedOptions
@@ -21,6 +22,7 @@ typedef struct PGrnResolvedOptions
 	grn_obj *plugins;
 	grn_table_flags lexiconType;
 	grn_column_flags indexFlags;
+	const char *modelName;
 } PGrnResolvedOptions;
 
 void PGrnInitializeOptions(void);

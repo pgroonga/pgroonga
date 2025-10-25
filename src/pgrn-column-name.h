@@ -39,6 +39,8 @@ PGrnColumnNameCheckSize(size_t size, const char *tag)
 static inline size_t
 PGrnColumnNameEncodeUTF8WithSize(const char *name,
 								 size_t nameSize,
+								 const char *suffix,
+								 size_t suffixSize,
 								 char *encodedName)
 {
 	const char *tag = "[column-name][encode][utf8]";
@@ -86,6 +88,15 @@ PGrnColumnNameEncodeUTF8WithSize(const char *name,
 		current += length;
 	}
 
+	{
+		size_t i;
+		for (i = 0; i < suffixSize; i++)
+		{
+			*encodedCurrent++ = suffix[i];
+			encodedNameSize++;
+		}
+	}
+
 	*encodedCurrent = '\0';
 
 	return encodedNameSize;
@@ -94,6 +105,8 @@ PGrnColumnNameEncodeUTF8WithSize(const char *name,
 static inline size_t
 PGrnColumnNameEncodeWithSize(const char *name,
 							 size_t nameSize,
+							 const char *suffix,
+							 size_t suffixSize,
 							 char *encodedName)
 {
 	const char *tag = "[column-name][encode]";
@@ -103,7 +116,8 @@ PGrnColumnNameEncodeWithSize(const char *name,
 	size_t encodedNameSize = 0;
 
 	if (GRN_CTX_GET_ENCODING(ctx) == GRN_ENC_UTF8)
-		return PGrnColumnNameEncodeUTF8WithSize(name, nameSize, encodedName);
+		return PGrnColumnNameEncodeUTF8WithSize(
+			name, nameSize, suffix, suffixSize, encodedName);
 
 	current = name;
 	end = name + nameSize;
@@ -141,6 +155,15 @@ PGrnColumnNameEncodeWithSize(const char *name,
 		current++;
 	}
 
+	{
+		size_t i;
+		for (i = 0; i < suffixSize; i++)
+		{
+			*encodedCurrent++ = suffix[i];
+			encodedNameSize++;
+		}
+	}
+
 	*encodedCurrent = '\0';
 
 	return encodedNameSize;
@@ -149,7 +172,16 @@ PGrnColumnNameEncodeWithSize(const char *name,
 static inline size_t
 PGrnColumnNameEncode(const char *name, char *encodedName)
 {
-	return PGrnColumnNameEncodeWithSize(name, strlen(name), encodedName);
+	return PGrnColumnNameEncodeWithSize(
+		name, strlen(name), NULL, 0, encodedName);
+}
+
+static inline size_t
+PGrnCodeColumnNameEncode(const char *name, char *encodedName)
+{
+	const char *suffix = "_code";
+	return PGrnColumnNameEncodeWithSize(
+		name, strlen(name), suffix, strlen(suffix), encodedName);
 }
 
 static inline size_t

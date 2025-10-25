@@ -123,3 +123,48 @@ pgrn_index_beginscan(Relation heapRelation,
 						   nKeys,
 						   nOrderBys);
 }
+
+#if PG_VERSION_NUM >= 180000
+#	include <utils/lsyscache.h>
+#	define pgrn_get_opfamily_name(opfid, missing_ok)                          \
+		get_opfamily_name((opfid), (missing_ok))
+#else
+/* Borrowed from src/backend/utils/cache/lsyscache.c in PostgreSQL.
+ *
+ * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
+ * Portions Copyright (c) 1994, Regents of the University of California
+ */
+#	include <access/htup_details.h>
+#	include <catalog/pg_opfamily.h>
+#	include <utils/syscache.h>
+
+static inline void *
+pgrn_GETSTRUCT(const HeapTupleData *tuple)
+{
+	return ((char *) (tuple->t_data) + tuple->t_data->t_hoff);
+}
+
+static inline char *
+pgrn_get_opfamily_name(Oid opfid, bool missing_ok)
+{
+	HeapTuple tup;
+	char *opfname;
+	Form_pg_opfamily opfform;
+
+	tup = SearchSysCache1(OPFAMILYOID, ObjectIdGetDatum(opfid));
+
+	if (!HeapTupleIsValid(tup))
+	{
+		if (!missing_ok)
+			elog(ERROR, "cache lookup failed for operator family %u", opfid);
+		return NULL;
+	}
+
+	opfform = (Form_pg_opfamily) pgrn_GETSTRUCT(tup);
+	opfname = pstrdup(NameStr(opfform->opfname));
+
+	ReleaseSysCache(tup);
+
+	return opfname;
+}
+#endif
