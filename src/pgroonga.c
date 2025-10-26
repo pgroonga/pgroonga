@@ -259,6 +259,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_varchar_condition_with_scorers);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_varchar);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_varchar);
@@ -749,9 +750,12 @@ _PG_init(void)
 
 		PGrnVariablesApplyInitialValues();
 
-		PGrnInitializeOptions();
-
 		PGrnInitializeCustomScan();
+
+		/* PGrnInitializeOptions() may use Groonga DB. */
+		PGrnEnsureDatabase();
+
+		PGrnInitializeOptions();
 
 		PGrnBaseInitialized = true;
 	}
@@ -1305,6 +1309,33 @@ PGrnIsForPrefixSearchIndex(Relation index, int nthAttribute)
 	return false;
 }
 
+static bool
+PGrnIsForInclude(Relation index, int nthAttribute)
+{
+	return nthAttribute >= IndexRelationGetNumberOfKeyAttributes(index);
+}
+
+static bool
+PGrnIsForSemanticSearchIndex(Relation index, int nthAttribute)
+{
+	Oid opFamilyOID;
+	char *name;
+	bool forSemanticSearch;
+
+	if (PGrnIsForInclude(index, nthAttribute))
+		return false;
+
+	opFamilyOID = index->rd_opfamily[nthAttribute];
+	if (!OidIsValid(opFamilyOID))
+		return false;
+
+	name = pgrn_get_opfamily_name(opFamilyOID, false);
+	forSemanticSearch =
+		(strcmp(name, "pgroonga_text_semantic_search_ops_v2") == 0);
+	pfree(name);
+	return forSemanticSearch;
+}
+
 static void
 PGrnCreateCheckType(PGrnCreateData *data)
 {
@@ -1368,8 +1399,7 @@ PGrnCreate(PGrnCreateData *data)
 
 	for (data->i = 0; data->i < data->desc->natts; data->i++)
 	{
-		bool forInclude =
-			(data->i >= IndexRelationGetNumberOfKeyAttributes(data->index));
+		bool forInclude = PGrnIsForInclude(data->index, data->i);
 		Form_pg_attribute attribute = TupleDescAttr(data->desc, data->i);
 		if (PGrnAttributeIsJSONB(attribute->atttypid))
 		{
@@ -1378,6 +1408,7 @@ PGrnCreate(PGrnCreateData *data)
 			data->forFullTextSearch = false;
 			data->forRegexpSearch = false;
 			data->forPrefixSearch = false;
+			data->forSemanticSearch = false;
 			PGrnJSONBCreate(data);
 		}
 		else
@@ -1388,6 +1419,8 @@ PGrnCreate(PGrnCreateData *data)
 				PGrnIsForRegexpSearchIndex(data->index, data->i);
 			data->forPrefixSearch =
 				PGrnIsForPrefixSearchIndex(data->index, data->i);
+			data->forSemanticSearch =
+				PGrnIsForSemanticSearchIndex(data->index, data->i);
 			data->attributeTypeID =
 				PGrnGetType(data->index, data->i, &(data->attributeFlags));
 			PGrnCreateCheckType(data);
@@ -1410,7 +1443,7 @@ PGrnSetSources(Relation index, grn_obj *sourcesTable)
 	desc = RelationGetDescr(index);
 	for (i = 0; i < desc->natts; i++)
 	{
-		bool forInclude = (i >= IndexRelationGetNumberOfKeyAttributes(index));
+		bool forInclude = PGrnIsForInclude(index, i);
 		Form_pg_attribute attribute = TupleDescAttr(desc, i);
 		NameData *name = &(attribute->attname);
 		grn_obj *source;
@@ -3226,6 +3259,21 @@ pgroonga_similar_varchar(PG_FUNCTION_ARGS)
 	const char *tag = "[similar][varchar]";
 	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
 				"%s similar search is available only in index scan",
+				tag);
+
+	PG_RETURN_BOOL(false);
+}
+
+/**
+ * pgroonga_similar_text_condition(query text, condition pgroonga_condition) :
+ * bool
+ */
+Datum
+pgroonga_similar_text_condition(PG_FUNCTION_ARGS)
+{
+	const char *tag = "[similar][text][condition]";
+	PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+				"%s similar search available only in index scan",
 				tag);
 
 	PG_RETURN_BOOL(false);
@@ -5733,6 +5781,56 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 }
 
 static void
+PGrnSearchBuildConditionSemanticSearch(PGrnSearchData *data,
+									   ScanKey key,
+									   grn_obj *targetColumn,
+									   Form_pg_attribute attribute)
+{
+	const char *tag = "[build-condition][semantic-search-condition]";
+	PGrnCondition condition = {0};
+	grn_obj *matchTarget;
+
+	if (key->sk_strategy == PGrnSimilarStrategyV2Number)
+	{
+		condition.query = DatumGetTextPP(key->sk_argument);
+	}
+	else
+	{
+		PGrnSearchBuildConditionPrepareCondition(data,
+												 key,
+												 targetColumn,
+												 attribute,
+												 GRN_OP_SIMILAR,
+												 &condition,
+												 &matchTarget,
+												 tag);
+	}
+
+	if (PGrnPGTextIsEmpty(condition.query))
+	{
+		data->isEmptyCondition = true;
+		return;
+	}
+
+	PGrnExprAppendObject(data->expression,
+						 PGrnLookup("language_model_knn", ERROR),
+						 GRN_OP_PUSH,
+						 2,
+						 tag,
+						 NULL);
+	PGrnExprAppendObject(
+		data->expression, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
+	PGrnExprAppendConstString(data->expression,
+							  VARDATA_ANY(condition.query),
+							  VARSIZE_ANY_EXHDR(condition.query),
+							  GRN_OP_PUSH,
+							  1,
+							  tag);
+	// TODO: Add support for n_probes and k.
+	PGrnExprAppendOp(data->expression, GRN_OP_CALL, 2, tag, NULL);
+}
+
+static void
 PGrnSearchBuildConditionBinaryOperationCondition(PGrnSearchData *data,
 												 ScanKey key,
 												 grn_obj *targetColumn,
@@ -6232,6 +6330,12 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		// ...)" too with PostgreSQL 18 or later.
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_MATCH);
+		return;
+	}
+	if (PGrnIsForSemanticSearchIndex(index, key->sk_attno - 1))
+	{
+		PGrnSearchBuildConditionSemanticSearch(
+			data, key, targetColumn, attribute);
 		return;
 	}
 

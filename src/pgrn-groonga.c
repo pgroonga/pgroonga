@@ -14,6 +14,8 @@
 bool PGrnIsLZ4Available;
 bool PGrnIsZlibAvailable;
 bool PGrnIsZstdAvailable;
+bool PGrnIsLlamaCppAvailable;
+bool PGrnIsFaissAvailable;
 bool PGrnIsTemporaryIndexSearchAvailable;
 
 static struct PGrnBuffers *buffers = &PGrnBuffers;
@@ -55,6 +57,23 @@ PGrnInitializeGroongaInformation(void)
 	GRN_BULK_REWIND(&grnIsSupported);
 	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_ZSTD, &grnIsSupported);
 	PGrnIsZstdAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
+
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+	GRN_BULK_REWIND(&grnIsSupported);
+	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_LLAMA_CPP, &grnIsSupported);
+	PGrnIsLlamaCppAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
+#else
+	PGrnIsLlamaCppAvailable = false;
+#endif
+
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+	GRN_BULK_REWIND(&grnIsSupported);
+	grn_obj_get_info(ctx, NULL, GRN_INFO_SUPPORT_FAISS, &grnIsSupported);
+	PGrnIsFaissAvailable = (GRN_BOOL_VALUE(&grnIsSupported));
+#else
+	PGrnIsFaissAvailable = false;
+#endif
+
 	PGrnIsTemporaryIndexSearchAvailable = IsTemporaryIndexSearchAvailable();
 
 	GRN_OBJ_FIN(ctx, &grnIsSupported);

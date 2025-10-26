@@ -29,6 +29,7 @@ typedef struct PGrnOptions
 	int normalizersOffset;
 	int normalizersMappingOffset;
 	int indexFlagsMappingOffset;
+	int modelOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -408,6 +409,45 @@ PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 	}
 }
 
+static void
+PGrnOptionValidateModel(const char *rawModel)
+{
+	const char *tag = "[option][model][validate]";
+	grn_language_model_loader *loader;
+	grn_language_model *model;
+	grn_rc rc = GRN_SUCCESS;
+	char message[GRN_CTX_MSGSIZE];
+
+	if (!rawModel || rawModel[0] == '\0')
+		return;
+
+	if (!PGrnIsLlamaCppAvailable)
+		PGrnCheckRC(rc, "%s Groonga's llama.cpp support isn't enabled", tag);
+
+	if (!PGrnIsFaissAvailable)
+		PGrnCheckRC(rc, "%s Groonga's Faiss support isn't enabled", tag);
+
+	loader = grn_language_model_loader_open(ctx);
+	grn_language_model_loader_set_model(
+		ctx, loader, rawModel, strlen(rawModel));
+	model = grn_language_model_loader_load(ctx, loader);
+	if (model)
+	{
+		grn_language_model_close(ctx, model);
+	}
+	else
+	{
+		rc = ctx->rc;
+		if (rc == GRN_SUCCESS)
+			rc = GRN_INVALID_ARGUMENT;
+		strncpy(message, ctx->errbuf, GRN_CTX_MSGSIZE - 1);
+	}
+	grn_language_model_loader_close(ctx, loader);
+
+	PGrnCheckRC(
+		rc, "%s can't load language model: <%s>: %s", tag, rawModel, message);
+}
+
 void
 PGrnInitializeOptions(void)
 {
@@ -504,6 +544,12 @@ PGrnInitializeOptions(void)
 						 "for each target",
 						 NULL,
 						 PGrnOptionValidateIndexFlagsMapping,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "model",
+						 "Language model name to be used by semantic search",
+						 NULL,
+						 PGrnOptionValidateModel,
 						 lock_mode);
 }
 
@@ -855,10 +901,19 @@ PGrnResolveOptionValues(Relation index,
 	}
 	else
 	{
-		resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+		if (useCase == PGRN_OPTION_USE_CASE_SEMANTIC_SEARCH)
+		{
+			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_HASH_KEY;
+		}
+		else
+		{
+			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
+		}
 	}
 
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
+
+	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
 }
 
 grn_expr_flags
@@ -919,6 +974,7 @@ pgroonga_options(Datum reloptions, bool validate)
 		{"index_flags_mapping",
 		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
+		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
 	};
 
 	grnOptions = build_reloptions(reloptions,

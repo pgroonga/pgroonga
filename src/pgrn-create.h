@@ -21,6 +21,7 @@ typedef struct PGrnCreateData
 	bool forFullTextSearch;
 	bool forRegexpSearch;
 	bool forPrefixSearch;
+	bool forSemanticSearch;
 	grn_id attributeTypeID;
 	unsigned char attributeFlags;
 } PGrnCreateData;
