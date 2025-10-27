@@ -91,7 +91,7 @@ pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | 
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 
-if [ "${os}" = "almalinux" ] || [ ${major_version} = "10" ]; then
+if [ "${os}" = "almalinux" ] && [ ${major_version} = "10" ]; then
     ${DNF} --disablerepo=epel install -y postgresql${postgresql_version}-contrib
 else
     ${DNF} install -y postgresql${postgresql_version}-contrib
