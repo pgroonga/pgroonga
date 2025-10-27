@@ -91,7 +91,15 @@ pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | 
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 
-${DNF} install -y postgresql${postgresql_version}-contrib
+# TODO: This condition is workaround.
+# We can remove when the following issue resolved.
+# https://github.com/pgdg-packaging/pgdg-rpms/issues/105
+if [ "${os}" = "almalinux" ] && [ ${major_version} = "10" ]; then
+    ${DNF} --disablerepo=epel install -y postgresql${postgresql_version}-contrib
+else
+    ${DNF} install -y postgresql${postgresql_version}-contrib
+fi
+
 ${DNF} install -y ${packages_dir}/*.rpm
 
 echo "::endgroup::"
