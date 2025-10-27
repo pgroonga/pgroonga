@@ -56,9 +56,9 @@ function run_test() {
 echo "::group::Prepare repositories"
 
 os=$(cut -d: -f4 /etc/system-release-cpe)
+major_version=$(cut -d: -f5 /etc/system-release-cpe | cut -d. -f1)
 case ${os} in
   almalinux)
-    major_version=$(cut -d: -f5 /etc/system-release-cpe | cut -d. -f1)
     case ${major_version} in
       8)
         DNF="dnf --enablerepo=powertools"
@@ -91,7 +91,12 @@ pgroonga_package=$(basename $(ls ${packages_dir}/*-pgroonga-*.rpm | head -n1) | 
                      sed -e 's/-pgroonga-.*$/-pgroonga/g')
 postgresql_version=$(echo ${pgroonga_package} | grep -E -o '[0-9.]+')
 
-${DNF} install -y postgresql${postgresql_version}-contrib
+if [ "${os}" = "almalinux" ] || [ ${major_version} = "10" ]; then
+    ${DNF} --disablerepo=epel install -y postgresql${postgresql_version}-contrib
+else
+    ${DNF} install -y postgresql${postgresql_version}-contrib
+fi
+
 ${DNF} install -y ${packages_dir}/*.rpm
 
 echo "::endgroup::"
