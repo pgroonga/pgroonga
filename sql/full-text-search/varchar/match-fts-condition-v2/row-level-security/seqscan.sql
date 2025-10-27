@@ -10,9 +10,11 @@ GRANT ALL ON TABLE memos TO alice;
 INSERT INTO memos VALUES
   (1, 'nonexistent', 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES
-  (2, 'alice', 'Groonga is fast full text search engine.');
+  (2, 'nonexistent', 'Rroonga is the Ruby bindings of Groonga.');
 INSERT INTO memos VALUES
-  (3, 'alice', 'PGroonga is a PostgreSQL extension that uses Groonga.');
+  (3, 'alice', 'Groonga is fast full text search engine.');
+INSERT INTO memos VALUES
+  (4, 'alice', 'PGroonga is a PostgreSQL extension that uses Groonga.');
 
 ALTER TABLE memos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY memos_myself ON memos USING (user_name = current_user);
