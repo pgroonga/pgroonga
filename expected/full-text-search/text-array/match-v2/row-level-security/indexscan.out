@@ -32,22 +32,21 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@ 'Groonga'
+ WHERE contents &@ 'PostgreSQL'
 \g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 QUERY PLAN
 Index Scan using pgroonga_memos_index on memos
-  Index Cond: (contents &@ 'Groonga'::text)
+  Index Cond: (contents &@ 'PostgreSQL'::text)
   Filter: (user_name = CURRENT_USER)
 (3 rows)
 \pset format aligned
 SELECT id, contents
   FROM memos
- WHERE contents &@ 'Groonga';
+ WHERE contents &@ 'PostgreSQL';
  id |                                                         contents                                                         
 ----+--------------------------------------------------------------------------------------------------------------------------
-  2 | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}
   3 | {"PGroonga is an OSS PostgreSQL extension","PGroonga adds full full-text search support based on Groonga to PostgreSQL"}
-(2 rows)
+(1 row)
 
 RESET SESSION AUTHORIZATION;
 DROP TABLE memos;
