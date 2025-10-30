@@ -38,13 +38,13 @@ SET SESSION AUTHORIZATION alice;
 EXPLAIN (COSTS OFF)
 SELECT id, contents
   FROM memos
- WHERE contents &@ 'Groonga'
+ WHERE contents &@ 'PostgreSQL'
 \g |sed -r -e "s/\(CURRENT_USER\)::text/CURRENT_USER/g"
 \pset format aligned
 
 SELECT id, contents
   FROM memos
- WHERE contents &@ 'Groonga';
+ WHERE contents &@ 'PostgreSQL';
 RESET SESSION AUTHORIZATION;
 
 DROP TABLE memos;
