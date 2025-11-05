@@ -207,7 +207,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 			GRN_BULK_REWIND(tokenizer);
 			grn_text_printf(ctx,
 							tokenizer,
-							"TokenLanguageModel(\"model\", \"%s\", "
+							"TokenLanguageModelKNN(\"model\", \"%s\", "
 							"\"code_column\", \"%s\")",
 							resolvedOptions.modelName,
 							codeColumnName);
