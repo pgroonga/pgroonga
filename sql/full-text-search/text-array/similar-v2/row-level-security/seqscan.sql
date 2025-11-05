@@ -14,11 +14,16 @@ INSERT INTO memos VALUES
          'PostgreSQL has partial full-text search support']);
 INSERT INTO memos VALUES
   (2,
+   'nonexistent',
+    ARRAY['Rroonga is an OSS Ruby binding for Groonga',
+          'Rroonga has full full-text search support based on Groonga to Ruby']);
+INSERT INTO memos VALUES
+  (3,
    'alice',
     ARRAY['Groonga is an OSS full-text search engine',
           'Groonga has full full-text search support']);
 INSERT INTO memos VALUES
-  (3,
+  (4,
    'alice',
    ARRAY['PGroonga is an OSS PostgreSQL extension',
          'PGroonga adds full full-text search support based on Groonga to PostgreSQL']);
