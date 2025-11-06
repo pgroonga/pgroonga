@@ -12,11 +12,16 @@ INSERT INTO memos VALUES
          'PostgreSQL has partial full-text search support']);
 INSERT INTO memos VALUES
   (2,
+   'nonexistent',
+    ARRAY['Rroonga is an OSS Ruby binding for Groonga',
+          'Rroonga has full full-text search support based on Groonga to Ruby']);
+INSERT INTO memos VALUES
+  (3,
    'alice',
     ARRAY['Groonga is an OSS full-text search engine',
           'Groonga has full full-text search support']);
 INSERT INTO memos VALUES
-  (3,
+  (4,
    'alice',
    ARRAY['PGroonga is an OSS PostgreSQL extension',
          'PGroonga adds full full-text search support based on Groonga to PostgreSQL']);
@@ -47,8 +52,8 @@ SELECT id, contents
  WHERE contents &@* 'Mroonga: A MySQL plugin that uses Groonga';
  id |                                                         contents                                                         
 ----+--------------------------------------------------------------------------------------------------------------------------
-  2 | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}
-  3 | {"PGroonga is an OSS PostgreSQL extension","PGroonga adds full full-text search support based on Groonga to PostgreSQL"}
+  3 | {"Groonga is an OSS full-text search engine","Groonga has full full-text search support"}
+  4 | {"PGroonga is an OSS PostgreSQL extension","PGroonga adds full full-text search support based on Groonga to PostgreSQL"}
 (2 rows)
 
 RESET SESSION AUTHORIZATION;
