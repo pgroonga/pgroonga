@@ -260,6 +260,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_condition);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_distance_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_varchar);
@@ -3280,6 +3281,22 @@ pgroonga_similar_text_condition(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_similar_distance_text_condition(query text, condition
+ * pgroonga_condition) : float8
+ */
+Datum
+pgroonga_similar_distance_text_condition(PG_FUNCTION_ARGS)
+{
+	// const char *tag = "[similar][text][distance][condition]";
+	// PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+	// 			"%s similar distance available only in index scan",
+	// 			tag);
+	elog(DEBUG1, "pgroonga_similar_distance_text_condition()");
+
+	PG_RETURN_FLOAT8(0.0);
+}
+
+/**
  * pgroonga_script_text(target text, script text) : bool
  */
 Datum
@@ -5463,6 +5480,13 @@ PGrnSearchIsInCondition(ScanKey key)
 }
 
 static bool
+PGrnSearchIsSimilarCondition(ScanKey key)
+{
+	return key->sk_strategy == PGrnSimilarConditionStrategyV2Number ||
+		   key->sk_strategy == PGrnSimilarDistanceConditionStrategyV2Number;
+}
+
+static bool
 PGrnSearchIsMatchInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
@@ -6659,11 +6683,24 @@ PGrnSearchBuildConditions(IndexScanDesc scan,
 	Relation index = scan->indexRelation;
 	int i;
 
+	ScanKey keys = NULL;
+	int nKeys = 0;
+	if (scan->keyData)
+	{
+		keys = scan->keyData;
+		nKeys = scan->numberOfKeys;
+	}
+	else if (scan->orderByData)
+	{
+		keys = scan->orderByData;
+		nKeys = scan->numberOfOrderBys;
+	}
+
 	PGrnAutoCloseUseIndex(index);
 
-	for (i = 0; i < scan->numberOfKeys; i++)
+	for (i = 0; i < nKeys; i++)
 	{
-		ScanKey key = &(scan->keyData[i]);
+		ScanKey key = &(keys[i]);
 
 		/* NULL key is not supported */
 		if (key->sk_flags & SK_ISNULL)
@@ -6736,7 +6773,7 @@ PGrnSearch(IndexScanDesc scan)
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
 	PGrnSearchData data;
 
-	if (scan->numberOfKeys == 0)
+	if (scan->numberOfKeys == 0 && scan->numberOfOrderBys == 0)
 		return;
 
 	PGrnSearchDataInit(&data, so->index, so->sourcesTable);
@@ -6781,15 +6818,27 @@ PGrnSort(IndexScanDesc scan)
 	Form_pg_attribute attribute;
 	const char *targetColumnName;
 	grn_table_sort_key sort_key;
+	ScanKey keys = NULL;
+	int nKeys = 0;
+	if (scan->keyData)
+	{
+		keys = scan->keyData;
+		nKeys = scan->numberOfKeys;
+	}
+	else if (scan->orderByData)
+	{
+		keys = scan->orderByData;
+		nKeys = scan->numberOfOrderBys;
+	}
 
 	if (!so->searched)
 		return;
 
-	if (scan->numberOfKeys != 1)
+	if (nKeys != 1)
 		return;
 
-	key = &(scan->keyData[0]);
-	if (!PGrnSearchIsInCondition(key))
+	key = &(keys[0]);
+	if (!PGrnSearchIsInCondition(key) && !PGrnSearchIsSimilarCondition(key))
 		return;
 
 	so->sorted = grn_table_create(
@@ -7125,14 +7174,26 @@ static void
 PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir, bool needSort)
 {
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	ScanKey keys = NULL;
+	int nKeys = 0;
+	if (scan->keyData)
+	{
+		keys = scan->keyData;
+		nKeys = scan->numberOfKeys;
+	}
+	else if (scan->orderByData)
+	{
+		keys = scan->orderByData;
+		nKeys = scan->numberOfOrderBys;
+	}
 
 	scan->xs_recheck = false;
 
 	{
 		int i;
-		for (i = 0; i < scan->numberOfKeys; i++)
+		for (i = 0; i < nKeys; i++)
 		{
-			ScanKey key = &(scan->keyData[i]);
+			ScanKey key = &(keys[i]);
 			if (key->sk_strategy == PGrnLikeStrategyNumber ||
 				key->sk_strategy == PGrnILikeStrategyNumber)
 			{
@@ -7582,6 +7643,10 @@ pgroonga_rescan(IndexScanDesc scan,
 
 	if (keys && scan->numberOfKeys > 0)
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
+	else if (orderBys && scan->numberOfOrderBys > 0)
+		memmove(scan->orderByData,
+				orderBys,
+				scan->numberOfOrderBys * sizeof(ScanKeyData));
 
 	PGRN_TRACE_LOG_EXIT();
 }

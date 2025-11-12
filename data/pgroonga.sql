@@ -1260,6 +1260,23 @@ CREATE OPERATOR &@* (
 	JOIN = contjoinsel
 );
 
+CREATE FUNCTION pgroonga_similar_distance_text_condition
+	(query text, condition pgroonga_condition)
+	RETURNS float8
+	AS 'MODULE_PATHNAME', 'pgroonga_similar_distance_text_condition'
+	LANGUAGE C
+	IMMUTABLE
+	STRICT
+	LEAKPROOF
+	PARALLEL SAFE
+	COST 10000;
+
+CREATE OPERATOR <&@*> (
+	PROCEDURE = pgroonga_similar_distance_text_condition,
+	LEFTARG = text,
+	RIGHTARG = pgroonga_condition
+);
+
 CREATE FUNCTION pgroonga_prefix_text(text, text)
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_prefix_text'
@@ -2498,7 +2515,8 @@ CREATE OPERATOR CLASS pgroonga_text_array_full_text_search_ops_v2
 CREATE OPERATOR CLASS pgroonga_text_semantic_search_ops_v2 FOR TYPE text
 	USING pgroonga AS
 		OPERATOR 29 &@*,
-		OPERATOR 48 &@* (text, pgroonga_condition);
+		OPERATOR 48 &@* (text, pgroonga_condition),
+		OPERATOR 49 <&@*> (text, pgroonga_condition) FOR ORDER BY float_ops;
 
 
 CREATE OPERATOR CLASS pgroonga_text_term_search_ops_v2 FOR TYPE text
