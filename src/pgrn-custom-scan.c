@@ -781,8 +781,7 @@ PGrnMakeTupleTableSlot(CustomScanState *customScanState,
 	ListCell *cell;
 	ExecClearTuple(slot);
 	econtext->ecxt_scantuple = slot;
-	Snapshot snapshot = SnapshotAny;
-	snapshot = RegisterSnapshot(GetTransactionSnapshot());
+	Snapshot snapshot = RegisterSnapshot(GetTransactionSnapshot());
 	// We might add state->targetlist instead of ss.ps.plan->targetlist.
 	foreach (cell, customScanState->ss.ps.plan->targetlist)
 	{
@@ -857,8 +856,7 @@ PGrnMakeTupleTableSlot(CustomScanState *customScanState,
 		}
 		ttsIndex++;
 	}
-	if (snapshot != SnapshotAny)
-		UnregisterSnapshot(snapshot);
+	UnregisterSnapshot(snapshot);
 	return ExecStoreVirtualTuple(slot);
 }
 
