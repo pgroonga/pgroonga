@@ -5750,7 +5750,7 @@ PGrnSearchBuildConditionPrepareCondition(PGrnSearchData *data,
 										 grn_obj *targetColumn,
 										 Form_pg_attribute attribute,
 										 grn_operator operator,
-										 PGrnCondition *condition,
+										 PGrnCondition * condition,
 										 grn_obj **matchTarget,
 										 const char *tag)
 {
@@ -6811,8 +6811,6 @@ PGrnSort(IndexScanDesc scan)
 	if (scan->numberOfOrderBys == 0)
 		return;
 
-	scan->xs_recheckorderby = true;
-
 	{
 		int i;
 		for (i = 0; i < scan->numberOfOrderBys; i++)
@@ -6820,7 +6818,11 @@ PGrnSort(IndexScanDesc scan)
 			ScanKey key = &(scan->orderByData[i]);
 			if (!(PGrnSearchIsInCondition(key) ||
 				  PGrnSearchIsSimilarCondition(key)))
+			{
+				// TODO: Set scan->xs_recheckorderby = true and
+				// scan->xs_orderbyvals/scan->xs_orderbynulls.
 				return;
+			}
 		}
 	}
 
@@ -6842,7 +6844,8 @@ PGrnSort(IndexScanDesc scan)
 		for (i = 0; i < scan->numberOfOrderBys; i++)
 		{
 			ScanKey key = &(scan->orderByData[i]);
-			Form_pg_attribute attribute = TupleDescAttr(desc, key->sk_attno - 1);
+			Form_pg_attribute attribute =
+				TupleDescAttr(desc, key->sk_attno - 1);
 			const char *targetColumnName = attribute->attname.data;
 			grn_obj *targetColumn = grn_obj_column(
 				ctx, targetTable, targetColumnName, strlen(targetColumnName));
@@ -6853,7 +6856,8 @@ PGrnSort(IndexScanDesc scan)
 			}
 			else if (PGrnSearchIsSimilarCondition(key))
 			{
-				HeapTupleHeader header = DatumGetHeapTupleHeader(key->sk_argument);
+				HeapTupleHeader header =
+					DatumGetHeapTupleHeader(key->sk_argument);
 				PGrnCondition condition;
 				grn_obj *sorter;
 				grn_obj *variable;
@@ -6884,16 +6888,17 @@ PGrnSort(IndexScanDesc scan)
 			sortKeys[i].offset = 0;
 		}
 	}
-	grn_table_sort(ctx, targetTable, 0, -1, so->sorted, sortKeys, scan->numberOfOrderBys);
+	grn_table_sort(
+		ctx, targetTable, 0, -1, so->sorted, sortKeys, scan->numberOfOrderBys);
 	{
 		int i;
 		for (i = 0; i < scan->numberOfOrderBys; i++)
 		{
 			if (grn_obj_is_accessor(ctx, sortKeys[i].key) ||
-				grn_obj_is_expr(ctx, sortKeys[i].key)) {
+				grn_obj_is_expr(ctx, sortKeys[i].key))
+			{
 				grn_obj_close(ctx, sortKeys[i].key);
 			}
-
 		}
 	}
 	pfree(sortKeys);
