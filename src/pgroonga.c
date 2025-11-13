@@ -5483,13 +5483,6 @@ PGrnSearchIsInCondition(ScanKey key)
 }
 
 static bool
-PGrnSearchIsSimilarCondition(ScanKey key)
-{
-	return key->sk_strategy == PGrnSimilarConditionStrategyV2Number ||
-		   key->sk_strategy == PGrnSimilarDistanceConditionStrategyV2Number;
-}
-
-static bool
 PGrnSearchIsMatchInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
@@ -6799,6 +6792,12 @@ PGrnSearch(IndexScanDesc scan)
 	PGrnSearchDataFree(&data);
 }
 
+static bool
+PGrnSortIsSimilarDistance(ScanKey key)
+{
+	return key->sk_strategy == PGrnSimilarDistanceConditionStrategyV2Number;
+}
+
 static void
 PGrnSort(IndexScanDesc scan)
 {
@@ -6817,7 +6816,7 @@ PGrnSort(IndexScanDesc scan)
 		{
 			ScanKey key = &(scan->orderByData[i]);
 			if (!(PGrnSearchIsInCondition(key) ||
-				  PGrnSearchIsSimilarCondition(key)))
+				  PGrnSortIsSimilarDistance(key)))
 			{
 				// TODO: Set scan->xs_recheckorderby = true and
 				// scan->xs_orderbyvals/scan->xs_orderbynulls.
@@ -6854,7 +6853,7 @@ PGrnSort(IndexScanDesc scan)
 				sortKeys[i].key = targetColumn;
 				sortKeys[i].flags = GRN_TABLE_SORT_ASC;
 			}
-			else if (PGrnSearchIsSimilarCondition(key))
+			else if (PGrnSortIsSimilarDistance(key))
 			{
 				HeapTupleHeader header =
 					DatumGetHeapTupleHeader(key->sk_argument);
