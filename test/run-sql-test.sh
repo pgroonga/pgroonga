@@ -70,7 +70,7 @@ if [ -n "${test_names}" ]; then
     "${extra_regress_opts[@]}" \
     ${test_names}
 else
-  meson test -C ${BUILD_DIR}
+  meson test -C ${BUILD_DIR} -v
 fi
 success=$?
 if [ $success != 0 ]; then

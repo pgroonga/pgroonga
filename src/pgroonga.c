@@ -6803,18 +6803,39 @@ PGrnSort(IndexScanDesc scan)
 {
 	const char *tag = "[sort]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
+	int nSortKeys;
+	ScanKey keys;
 	grn_obj *targetTable;
 	grn_table_sort_key *sortKeys;
 	TupleDesc desc;
 
 	if (scan->numberOfOrderBys == 0)
-		return;
+	{
+		/* Workaround: We don't know why 'WHERE id = ANY(ARRAY[...])
+		 * ORDER BY id ASC' doesn't set scan->numberOfOrderBys but
+		 * sorted result is required. We use scan->keyData for this
+		 * case. */
+		if (scan->numberOfKeys != 1)
+		{
+			/* We use this workaround only for one key because we
+			 * don't know whether this is needed for multiple keys
+			 * case. */
+			return;
+		}
+		nSortKeys = scan->numberOfKeys;
+		keys = scan->keyData;
+	}
+	else
+	{
+		nSortKeys = scan->numberOfOrderBys;
+		keys = scan->orderByData;
+	}
 
 	{
 		int i;
-		for (i = 0; i < scan->numberOfOrderBys; i++)
+		for (i = 0; i < nSortKeys; i++)
 		{
-			ScanKey key = &(scan->orderByData[i]);
+			ScanKey key = &(keys[i]);
 			if (!(PGrnSearchIsInCondition(key) ||
 				  PGrnSortIsSimilarDistance(key)))
 			{
@@ -6835,14 +6856,14 @@ PGrnSort(IndexScanDesc scan)
 
 	scan->xs_recheckorderby = false;
 
-	sortKeys = palloc(sizeof(grn_table_sort_key) * scan->numberOfOrderBys);
+	sortKeys = palloc(sizeof(grn_table_sort_key) * nSortKeys);
 	desc = RelationGetDescr(scan->indexRelation);
 
 	{
 		int i;
-		for (i = 0; i < scan->numberOfOrderBys; i++)
+		for (i = 0; i < nSortKeys; i++)
 		{
-			ScanKey key = &(scan->orderByData[i]);
+			ScanKey key = &(keys[i]);
 			Form_pg_attribute attribute =
 				TupleDescAttr(desc, key->sk_attno - 1);
 			const char *targetColumnName = attribute->attname.data;
@@ -6887,11 +6908,10 @@ PGrnSort(IndexScanDesc scan)
 			sortKeys[i].offset = 0;
 		}
 	}
-	grn_table_sort(
-		ctx, targetTable, 0, -1, so->sorted, sortKeys, scan->numberOfOrderBys);
+	grn_table_sort(ctx, targetTable, 0, -1, so->sorted, sortKeys, nSortKeys);
 	{
 		int i;
-		for (i = 0; i < scan->numberOfOrderBys; i++)
+		for (i = 0; i < nSortKeys; i++)
 		{
 			if (grn_obj_is_accessor(ctx, sortKeys[i].key) ||
 				grn_obj_is_expr(ctx, sortKeys[i].key))
