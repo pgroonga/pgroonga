@@ -14,28 +14,30 @@ INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groon
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (content pgroonga_text_semantic_search_ops_v2)
  WITH (plugins = 'language_model/knn',
-       model = 'hf:///groonga/all-MiniLM-L6-v2-Q4_K_M-GGUF');
+       model = 'hf:///groonga/multilingual-e5-base-Q4_K_M-GGUF');
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?');
-                                        QUERY PLAN                                        
-------------------------------------------------------------------------------------------
- Index Scan using pgrn_index on memos
-   Order By: (content <&@*> '("What is a MySQL alternative?",,,,,,)'::pgroonga_condition)
-(2 rows)
+ ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
+ LIMIT 2;
+                                           QUERY PLAN                                           
+------------------------------------------------------------------------------------------------
+ Limit
+   ->  Index Scan using pgrn_index on memos
+         Order By: (content <&@*> '("What is a MySQL alternative?",,,,,,)'::pgroonga_condition)
+(3 rows)
 
 SELECT id, content
   FROM memos
- ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?');
+ ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
+ LIMIT 2;
  id |                        content                        
 ----+-------------------------------------------------------
-  2 | Groonga is fast full text search engine.
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
   1 | PostgreSQL is a RDBMS.
-(3 rows)
+(2 rows)
 
 DROP TABLE memos;
