@@ -6879,7 +6879,7 @@ PGrnSort(IndexScanDesc scan)
 										  GRN_OP_PUSH,
 										  1,
 										  tag);
-				// TODO: Add support for n_probes and k.
+				// TODO: Add support for n_probes.
 				PGrnExprAppendOp(sorter, GRN_OP_CALL, 2, tag, NULL);
 				sortKeys[i].key = sorter;
 				sortKeys[i].flags = GRN_TABLE_SORT_DESC;
