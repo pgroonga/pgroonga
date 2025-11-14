@@ -40,9 +40,7 @@ CREATE FUNCTION pgroonga_similar_distance_text_condition
 CREATE OPERATOR <&@*> (
 	PROCEDURE = pgroonga_similar_distance_text_condition,
 	LEFTARG = text,
-	RIGHTARG = pgroonga_condition,
-	RESTRICT = contsel,
-	JOIN = contjoinsel
+	RIGHTARG = pgroonga_condition
 );
 
 CREATE OPERATOR CLASS pgroonga_text_semantic_search_ops_v2 FOR TYPE text
