@@ -34,6 +34,7 @@ while [ $# -gt 0 ]; do
       if [ -d "${arg}" ]; then
         for test_path in $(find ${arg} -name "*.sql"); do
           test_name=$(echo "${test_path}" | sed -E -e 's,^sql/|\.sql,,g')
+          mkdir -p ${BUILD_DIR}/results/$(dirname ${test_name})
           test_names="${test_names[@]} ${test_name}"
         done
       else
@@ -70,7 +71,7 @@ if [ -n "${test_names}" ]; then
     "${extra_regress_opts[@]}" \
     ${test_names}
 else
-  meson test -C ${BUILD_DIR}
+  meson test -C ${BUILD_DIR} -v
 fi
 success=$?
 if [ $success != 0 ]; then

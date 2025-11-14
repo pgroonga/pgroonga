@@ -109,8 +109,10 @@
 #define PGrnRegexpConditionStrategyV2Number 47
 /* operator &@* with pgroonga_condition. */
 #define PGrnSimilarConditionStrategyV2Number 48
+/* operator <&@*> with pgroonga_condition. */
+#define PGrnSimilarDistanceConditionStrategyV2Number 49
 
-#define PGRN_N_STRATEGIES PGrnSimilarConditionStrategyV2Number
+#define PGRN_N_STRATEGIES PGrnSimilarDistanceConditionStrategyV2Number
 
 extern grn_ctx PGrnContext;
 static grn_ctx *ctx = &PGrnContext;

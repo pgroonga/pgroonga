@@ -260,6 +260,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_varchar);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_text_condition);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_similar_distance_text_condition);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_text_array);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_script_varchar);
@@ -3280,6 +3281,25 @@ pgroonga_similar_text_condition(PG_FUNCTION_ARGS)
 }
 
 /**
+ * pgroonga_similar_distance_text_condition(query text, condition
+ * pgroonga_condition) : float8
+ */
+Datum
+pgroonga_similar_distance_text_condition(PG_FUNCTION_ARGS)
+{
+	/* We want to raise an exception here because we handle sorting by
+	 * distance in index scan but PostgreSQL calls this even if we
+	 * use index scan. So we always return a dummy value. */
+
+	/* const char *tag = "[similar][text][distance][condition]"; */
+	/* PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED, */
+	/* 			"%s similar distance available only in index scan", */
+	/* 			tag); */
+
+	PG_RETURN_FLOAT8(0.0);
+}
+
+/**
  * pgroonga_script_text(target text, script text) : bool
  */
 Datum
@@ -5815,7 +5835,7 @@ PGrnSearchBuildConditionSemanticSearch(PGrnSearchData *data,
 	PGrnExprAppendObject(data->expression,
 						 PGrnLookup("language_model_knn", ERROR),
 						 GRN_OP_PUSH,
-						 2,
+						 1,
 						 tag,
 						 NULL);
 	PGrnExprAppendObject(
@@ -6772,39 +6792,135 @@ PGrnSearch(IndexScanDesc scan)
 	PGrnSearchDataFree(&data);
 }
 
+static bool
+PGrnSortIsSimilarDistance(ScanKey key)
+{
+	return key->sk_strategy == PGrnSimilarDistanceConditionStrategyV2Number;
+}
+
 static void
 PGrnSort(IndexScanDesc scan)
 {
+	const char *tag = "[sort]";
 	PGrnScanOpaque so = (PGrnScanOpaque) scan->opaque;
-	ScanKey key;
+	int nSortKeys;
+	ScanKey keys;
+	grn_obj *targetTable;
+	grn_table_sort_key *sortKeys;
 	TupleDesc desc;
-	Form_pg_attribute attribute;
-	const char *targetColumnName;
-	grn_table_sort_key sort_key;
 
-	if (!so->searched)
-		return;
+	if (scan->numberOfOrderBys == 0)
+	{
+		/* Workaround: We don't know why 'WHERE id = ANY(ARRAY[...])
+		 * ORDER BY id ASC' doesn't set scan->numberOfOrderBys but
+		 * sorted result is required. We use scan->keyData for this
+		 * case. */
+		if (scan->numberOfKeys != 1)
+		{
+			/* We use this workaround only for one key because we
+			 * don't know whether this is needed for multiple keys
+			 * case. */
+			return;
+		}
+		nSortKeys = scan->numberOfKeys;
+		keys = scan->keyData;
+	}
+	else
+	{
+		nSortKeys = scan->numberOfOrderBys;
+		keys = scan->orderByData;
+	}
 
-	if (scan->numberOfKeys != 1)
-		return;
+	{
+		int i;
+		for (i = 0; i < nSortKeys; i++)
+		{
+			ScanKey key = &(keys[i]);
+			if (!(PGrnSearchIsInCondition(key) ||
+				  PGrnSortIsSimilarDistance(key)))
+			{
+				// TODO: Set scan->xs_recheckorderby = true and
+				// scan->xs_orderbyvals/scan->xs_orderbynulls.
+				return;
+			}
+		}
+	}
 
-	key = &(scan->keyData[0]);
-	if (!PGrnSearchIsInCondition(key))
-		return;
+	if (so->searched)
+		targetTable = so->searched;
+	else
+		targetTable = so->sourcesTable;
 
 	so->sorted = grn_table_create(
-		ctx, NULL, 0, NULL, GRN_OBJ_TABLE_NO_KEY, NULL, so->searched);
+		ctx, NULL, 0, NULL, GRN_OBJ_TABLE_NO_KEY, NULL, targetTable);
 
+	scan->xs_recheckorderby = false;
+
+	sortKeys = palloc(sizeof(grn_table_sort_key) * nSortKeys);
 	desc = RelationGetDescr(scan->indexRelation);
-	attribute = TupleDescAttr(desc, key->sk_attno - 1);
-	targetColumnName = attribute->attname.data;
-	sort_key.key = grn_obj_column(
-		ctx, so->searched, targetColumnName, strlen(targetColumnName));
 
-	sort_key.flags = GRN_TABLE_SORT_ASC;
-	sort_key.offset = 0;
-	grn_table_sort(ctx, so->searched, 0, -1, so->sorted, &sort_key, 1);
-	grn_obj_close(ctx, sort_key.key);
+	{
+		int i;
+		for (i = 0; i < nSortKeys; i++)
+		{
+			ScanKey key = &(keys[i]);
+			Form_pg_attribute attribute =
+				TupleDescAttr(desc, key->sk_attno - 1);
+			const char *targetColumnName = attribute->attname.data;
+			grn_obj *targetColumn = grn_obj_column(
+				ctx, targetTable, targetColumnName, strlen(targetColumnName));
+			if (PGrnSearchIsInCondition(key))
+			{
+				sortKeys[i].key = targetColumn;
+				sortKeys[i].flags = GRN_TABLE_SORT_ASC;
+			}
+			else if (PGrnSortIsSimilarDistance(key))
+			{
+				HeapTupleHeader header =
+					DatumGetHeapTupleHeader(key->sk_argument);
+				PGrnCondition condition;
+				grn_obj *sorter;
+				grn_obj *variable;
+
+				PGrnConditionDeconstruct(&condition, header);
+
+				GRN_EXPR_CREATE_FOR_QUERY(ctx, targetTable, sorter, variable);
+				PGrnExprAppendObject(sorter,
+									 PGrnLookup("language_model_knn", ERROR),
+									 GRN_OP_PUSH,
+									 1,
+									 tag,
+									 NULL);
+				PGrnExprAppendObject(
+					sorter, targetColumn, GRN_OP_GET_VALUE, 1, tag, NULL);
+				grn_expr_take_obj(ctx, sorter, targetColumn);
+				PGrnExprAppendConstString(sorter,
+										  VARDATA_ANY(condition.query),
+										  VARSIZE_ANY_EXHDR(condition.query),
+										  GRN_OP_PUSH,
+										  1,
+										  tag);
+				// TODO: Add support for n_probes.
+				PGrnExprAppendOp(sorter, GRN_OP_CALL, 2, tag, NULL);
+				sortKeys[i].key = sorter;
+				sortKeys[i].flags = GRN_TABLE_SORT_DESC;
+			}
+			sortKeys[i].offset = 0;
+		}
+	}
+	grn_table_sort(ctx, targetTable, 0, -1, so->sorted, sortKeys, nSortKeys);
+	{
+		int i;
+		for (i = 0; i < nSortKeys; i++)
+		{
+			if (grn_obj_is_accessor(ctx, sortKeys[i].key) ||
+				grn_obj_is_expr(ctx, sortKeys[i].key))
+			{
+				grn_obj_close(ctx, sortKeys[i].key);
+			}
+		}
+	}
+	pfree(sortKeys);
 }
 
 static void
@@ -7116,6 +7232,16 @@ PGrnIsRangeSearchable(IndexScanDesc scan)
 			return false;
 			break;
 		}
+	}
+
+	if (scan->numberOfOrderBys > scan->numberOfKeys)
+		return false;
+	for (i = 0; i < scan->numberOfOrderBys; i++)
+	{
+		ScanKey key = &(scan->keyData[i]);
+		ScanKey sortKey = &(scan->orderByData[i]);
+		if (key->sk_attno != sortKey->sk_attno)
+			return false;
 	}
 
 	return true;
@@ -7582,6 +7708,10 @@ pgroonga_rescan(IndexScanDesc scan,
 
 	if (keys && scan->numberOfKeys > 0)
 		memmove(scan->keyData, keys, scan->numberOfKeys * sizeof(ScanKeyData));
+	if (orderBys && scan->numberOfOrderBys > 0)
+		memmove(scan->orderByData,
+				orderBys,
+				scan->numberOfOrderBys * sizeof(ScanKeyData));
 
 	PGRN_TRACE_LOG_EXIT();
 }
