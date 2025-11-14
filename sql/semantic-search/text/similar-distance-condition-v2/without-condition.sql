@@ -12,7 +12,7 @@ CREATE TABLE memos (
 
 INSERT INTO memos VALUES (1, 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES (2, 'Groonga is fast full text search engine.');
-INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groonga.');
+INSERT INTO memos VALUES (3, 'Ruby is a object oriented script language.');
 
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (content pgroonga_text_semantic_search_ops_v2)
@@ -27,11 +27,11 @@ EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
  ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
- LIMIT 2;
+ LIMIT 1;
 
 SELECT id, content
   FROM memos
  ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
- LIMIT 2;
+ LIMIT 1;
 
 DROP TABLE memos;
