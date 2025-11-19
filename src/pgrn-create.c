@@ -205,12 +205,28 @@ PGrnCreateLexicon(PGrnCreateData *data)
 
 			tokenizer = &(buffers->tokenizer);
 			GRN_BULK_REWIND(tokenizer);
-			grn_text_printf(ctx,
-							tokenizer,
-							"TokenLanguageModelKNN(\"model\", \"%s\", "
-							"\"code_column\", \"%s\")",
-							resolvedOptions.modelName,
-							codeColumnName);
+			if (resolvedOptions.passagePrefix == "")
+			{
+				grn_text_printf(ctx,
+								tokenizer,
+								"TokenLanguageModelKNN(\"model\", \"%s\", "
+								"\"code_column\", \"%s\")",
+								resolvedOptions.modelName,
+								codeColumnName);
+			}
+			else if (resolvedOptions.passagePrefix != "" && resolvedOptions.queryPrefix != "")
+			{
+				grn_text_printf(ctx,
+								tokenizer,
+								"TokenLanguageModelKNN(\"model\", \"%s\", "
+								"\"code_column\", \"%s\", "
+								"\"passage_prefix\", \"%s\", "
+								"\"query_prefix\", \"%s\")",
+								resolvedOptions.modelName,
+								codeColumnName,
+								resolvedOptions.passagePrefix,
+								resolvedOptions.queryPrefix);
+			}
 		}
 	}
 	else

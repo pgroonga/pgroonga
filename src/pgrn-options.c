@@ -30,6 +30,8 @@ typedef struct PGrnOptions
 	int normalizersMappingOffset;
 	int indexFlagsMappingOffset;
 	int modelOffset;
+	int passagePrefixOffset;
+	int queryPrefixOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -551,6 +553,18 @@ PGrnInitializeOptions(void)
 						 NULL,
 						 PGrnOptionValidateModel,
 						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "passage_prefix",
+						 "Specify prefix for search target text",
+						 NULL,
+						 false,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "query_prefix",
+						 "Specify  prefix for query text",
+						 NULL,
+						 false,
+						 lock_mode);
 }
 
 void
@@ -914,6 +928,8 @@ PGrnResolveOptionValues(Relation index,
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
 
 	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
+	resolvedOptions->passagePrefix = GET_STRING_RELOPTION(options, passagePrefixOffset);
+        resolvedOptions->queryPrefix = GET_STRING_RELOPTION(options, queryPrefixOffset);
 }
 
 grn_expr_flags
@@ -975,6 +991,8 @@ pgroonga_options(Datum reloptions, bool validate)
 		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
+		{"passage_prefix", RELOPT_TYPE_STRING, offsetof(PGrnOptions, passagePrefixOffset)},
+		{"query_prefix", RELOPT_TYPE_STRING, offsetof(PGrnOptions, queryPrefixOffset)},
 	};
 
 	grnOptions = build_reloptions(reloptions,

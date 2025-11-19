@@ -23,6 +23,8 @@ typedef struct PGrnResolvedOptions
 	grn_table_flags lexiconType;
 	grn_column_flags indexFlags;
 	const char *modelName;
+	const char *passagePrefix;
+	const char *queryPrefix;
 } PGrnResolvedOptions;
 
 void PGrnInitializeOptions(void);
