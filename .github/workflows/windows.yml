@@ -52,7 +52,7 @@ jobs:
       - name: Use JST
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Install Visual Studio
@@ -213,7 +213,7 @@ jobs:
         if: matrix.postgresql-version-major == '18' || failure()
         run: |
           Get-Content regression.diffs
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark

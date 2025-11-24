@@ -30,10 +30,10 @@ jobs:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}/pgroonga-benchmark/Gemfile
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark

@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           repository: "pgroonga/pgroonga.github.io"
           path: "pgroonga.github.io"
