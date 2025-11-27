@@ -86,6 +86,8 @@ PG_MODULE_MAGIC;
 #define PROGRESS_PGROONGA_PHASE_INDEX_LOAD 4
 #define PROGRESS_PGROONGA_PHASE_INDEX_COMMIT 5
 #define PROGRESS_PGROONGA_PHASE_DONE 6
+#define PROGRESS_PGROONGA_PHASE_INDEX_VECTORIZE 7
+#define PROGRESS_PGROONGA_PHASE_INDEX_CLUSTER 8
 
 grn_ctx PGrnContext;
 grn_obj PGrnInspectBuffer;
@@ -8166,6 +8168,38 @@ typedef struct PGrnProgressState
 } PGrnProgressState;
 
 static void
+PGrnUpdateProgressCreateIndexSubphase(grn_progress_index_phase phase)
+{
+	switch (phase)
+	{
+	case GRN_PROGRESS_INDEX_LOAD:
+		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
+									 PROGRESS_PGROONGA_PHASE_INDEX_LOAD);
+		break;
+	case GRN_PROGRESS_INDEX_COMMIT:
+		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
+									 PROGRESS_PGROONGA_PHASE_INDEX_COMMIT);
+		break;
+	case GRN_PROGRESS_INDEX_DONE:
+		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
+									 PROGRESS_PGROONGA_PHASE_DONE);
+		break;
+#if GRN_VERSION_OR_LATER(15, 2, 1)
+	case GRN_PROGRESS_INDEX_VECTORIZE:
+		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
+									 PROGRESS_PGROONGA_PHASE_INDEX_VECTORIZE);
+		break;
+	case GRN_PROGRESS_INDEX_CLUSTER:
+		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
+									 PROGRESS_PGROONGA_PHASE_INDEX_CLUSTER);
+		break;
+#endif
+	default:
+		break;
+	}
+}
+
+static void
 PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 {
 	PGrnProgressState *state = user_data;
@@ -8180,12 +8214,15 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 	switch (phase)
 	{
 	case GRN_PROGRESS_INDEX_LOAD:
+#if GRN_VERSION_OR_LATER(15, 2, 1)
+	case GRN_PROGRESS_INDEX_VECTORIZE:
+	case GRN_PROGRESS_INDEX_CLUSTER:
+#endif
 		if (phase != state->phase)
 		{
 			uint32_t n_target_records =
 				grn_progress_index_get_n_target_records(ctx, progress);
-			pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
-										 PROGRESS_PGROONGA_PHASE_INDEX_LOAD);
+			PGrnUpdateProgressCreateIndexSubphase(phase);
 			pgstat_progress_update_param(PROGRESS_CREATEIDX_TUPLES_TOTAL,
 										 n_target_records);
 		}
@@ -8201,8 +8238,7 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 		{
 			uint32_t n_target_terms =
 				grn_progress_index_get_n_target_terms(ctx, progress);
-			pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
-										 PROGRESS_PGROONGA_PHASE_INDEX_COMMIT);
+			PGrnUpdateProgressCreateIndexSubphase(phase);
 			pgstat_progress_update_param(PROGRESS_CREATEIDX_TUPLES_TOTAL,
 										 n_target_terms);
 		}
@@ -8214,8 +8250,7 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 		}
 		break;
 	case GRN_PROGRESS_INDEX_DONE:
-		pgstat_progress_update_param(PROGRESS_CREATEIDX_SUBPHASE,
-									 PROGRESS_PGROONGA_PHASE_DONE);
+		PGrnUpdateProgressCreateIndexSubphase(phase);
 		break;
 	default:
 		break;
