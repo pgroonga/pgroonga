@@ -422,10 +422,14 @@ PGrnOptionValidateModel(const char *rawModel)
 		return;
 
 	if (!PGrnIsLlamaCppAvailable)
-		PGrnCheckRC(rc, "%s Groonga's llama.cpp support isn't enabled", tag);
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s Groonga's llama.cpp support isn't enabled",
+					tag);
 
 	if (!PGrnIsFaissAvailable)
-		PGrnCheckRC(rc, "%s Groonga's Faiss support isn't enabled", tag);
+		PGrnCheckRC(GRN_FUNCTION_NOT_IMPLEMENTED,
+					"%s Groonga's Faiss support isn't enabled",
+					tag);
 
 	loader = grn_language_model_loader_open(ctx);
 	grn_language_model_loader_set_model(
