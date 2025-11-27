@@ -9,8 +9,6 @@
 #include "pgrn-value.h"
 #include "pgrn-wal.h"
 
-static struct PGrnBuffers *buffers = &PGrnBuffers;
-
 void
 PGrnCreateSourcesTable(PGrnCreateData *data)
 {
@@ -42,6 +40,24 @@ PGrnCreateSourcesTableFinish(PGrnCreateData *data)
 	PGrnRenameTable(data->index, data->sourcesTable, sourcesTableName);
 	if (!data->sourcesCtidColumn)
 		PGrnAliasAdd(data->index);
+}
+
+static grn_column_flags
+PGrnAddCompressionColumnFlag(grn_column_flags flags)
+{
+	if (PGrnIsZstdAvailable)
+	{
+		flags |= GRN_OBJ_COMPRESS_ZSTD;
+	}
+	else if (PGrnIsLZ4Available)
+	{
+		flags |= GRN_OBJ_COMPRESS_LZ4;
+	}
+	else if (PGrnIsZlibAvailable)
+	{
+		flags |= GRN_OBJ_COMPRESS_ZLIB;
+	}
+	return flags;
 }
 
 void
@@ -88,18 +104,7 @@ PGrnCreateDataColumn(PGrnCreateData *data)
 		case GRN_DB_SHORT_TEXT:
 		case GRN_DB_TEXT:
 		case GRN_DB_LONG_TEXT:
-			if (PGrnIsZstdAvailable)
-			{
-				flags |= GRN_OBJ_COMPRESS_ZSTD;
-			}
-			else if (PGrnIsLZ4Available)
-			{
-				flags |= GRN_OBJ_COMPRESS_LZ4;
-			}
-			else if (PGrnIsZlibAvailable)
-			{
-				flags |= GRN_OBJ_COMPRESS_ZLIB;
-			}
+			flags = PGrnAddCompressionColumnFlag(flags);
 			break;
 		}
 	}
@@ -143,6 +148,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 	grn_obj *normalizers = NULL;
 	grn_obj *tokenFilters = NULL;
 	grn_obj *plugins = NULL;
+	PGrnResolvedOptions resolvedOptions = {0};
 
 	switch (data->attributeTypeID)
 	{
@@ -161,8 +167,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		const char *tokenizerName = NULL;
 		const char *normalizersName = PGRN_DEFAULT_NORMALIZERS;
 		PGrnOptionUseCase useCase = PGRN_OPTION_USE_CASE_UNKNOWN;
-		PGrnResolvedOptions resolvedOptions = {0};
 
+		resolvedOptions.lexiconKeyTypeID = typeID;
 		if (data->forFullTextSearch)
 		{
 			tokenizerName = PGRN_DEFAULT_TOKENIZER;
@@ -195,23 +201,8 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		normalizers = resolvedOptions.normalizers;
 		tokenFilters = resolvedOptions.tokenFilters;
 		plugins = resolvedOptions.plugins;
+		typeID = resolvedOptions.lexiconKeyTypeID;
 		flags |= resolvedOptions.lexiconType;
-		if (data->forSemanticSearch)
-		{
-			char codeColumnName[GRN_TABLE_MAX_KEY_SIZE];
-			PGrnCodeColumnNameEncode(
-				TupleDescAttr(data->desc, data->i)->attname.data,
-				codeColumnName);
-
-			tokenizer = &(buffers->tokenizer);
-			GRN_BULK_REWIND(tokenizer);
-			grn_text_printf(ctx,
-							tokenizer,
-							"TokenLanguageModelKNN(\"model\", \"%s\", "
-							"\"code_column\", \"%s\")",
-							resolvedOptions.modelName,
-							codeColumnName);
-		}
 	}
 	else
 	{
@@ -234,6 +225,17 @@ PGrnCreateLexicon(PGrnCreateData *data)
 							  normalizers,
 							  tokenFilters);
 	GRN_PTR_PUT(ctx, data->lexicons, lexicon);
+
+	if (data->forSemanticSearch && resolvedOptions.needCentroidColumn)
+	{
+		grn_column_flags flags =
+			PGrnAddCompressionColumnFlag(GRN_COLUMN_VAR_SIZE);
+		PGrnCreateColumn(data->index,
+						 lexicon,
+						 PGrnCentroidColumnName,
+						 flags,
+						 grn_ctx_at(ctx, GRN_DB_FLOAT32));
+	}
 }
 
 void

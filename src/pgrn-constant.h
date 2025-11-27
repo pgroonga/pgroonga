@@ -39,6 +39,7 @@
 #define PGrnLexiconNameFormat PGrnLexiconNamePrefix "%u_%u"
 #define PGrnIndexColumnName "index"
 #define PGrnIndexColumnNameFormat PGrnLexiconNameFormat "." PGrnIndexColumnName
+#define PGrnCentroidColumnName "centroid"
 
 #define PGRN_EXPR_QUERY_PARSE_FLAGS                                            \
 	(GRN_EXPR_SYNTAX_QUERY | GRN_EXPR_ALLOW_LEADING_NOT |                      \
