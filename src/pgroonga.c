@@ -8213,11 +8213,11 @@ PGrnProgressCallback(grn_ctx *ctx, grn_progress *progress, void *user_data)
 	phase = grn_progress_index_get_phase(ctx, progress);
 	switch (phase)
 	{
+	case GRN_PROGRESS_INDEX_LOAD:
 #if GRN_VERSION_OR_LATER(15, 2, 1)
 	case GRN_PROGRESS_INDEX_VECTORIZE:
 	case GRN_PROGRESS_INDEX_CLUSTER:
 #endif
-	case GRN_PROGRESS_INDEX_LOAD:
 		if (phase != state->phase)
 		{
 			uint32_t n_target_records =
