@@ -30,12 +30,14 @@ typedef struct PGrnOptions
 	int normalizersMappingOffset;
 	int indexFlagsMappingOffset;
 	int modelOffset;
+	int nGPULayers;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
 
 static struct PGrnBuffers *buffers = &PGrnBuffers;
 static grn_obj *lexicon = NULL;
+static grn_language_model_loader *languageModelLoader = NULL;
 
 typedef void (*PGrnOptionNameFunction)(const char *name,
 									   size_t nameSize,
@@ -413,10 +415,7 @@ static void
 PGrnOptionValidateModel(const char *rawModel)
 {
 	const char *tag = "[option][model][validate]";
-	grn_language_model_loader *loader;
 	grn_language_model *model;
-	grn_rc rc = GRN_SUCCESS;
-	char message[GRN_CTX_MSGSIZE];
 
 	if (!rawModel || rawModel[0] == '\0')
 		return;
@@ -431,25 +430,20 @@ PGrnOptionValidateModel(const char *rawModel)
 					"%s Groonga's Faiss support isn't enabled",
 					tag);
 
-	loader = grn_language_model_loader_open(ctx);
 	grn_language_model_loader_set_model(
-		ctx, loader, rawModel, strlen(rawModel));
-	model = grn_language_model_loader_load(ctx, loader);
+		ctx, languageModelLoader, rawModel, strlen(rawModel));
+#if GRN_VERSION_OR_LATER(15, 2, 1)
+	grn_language_model_loader_set_n_gpu_layers(ctx, languageModelLoader, 0);
+#endif
+	model = grn_language_model_loader_load(ctx, languageModelLoader);
 	if (model)
 	{
 		grn_language_model_close(ctx, model);
 	}
 	else
 	{
-		rc = ctx->rc;
-		if (rc == GRN_SUCCESS)
-			rc = GRN_INVALID_ARGUMENT;
-		strncpy(message, ctx->errbuf, GRN_CTX_MSGSIZE - 1);
+		PGrnCheck("%s failed to load model: <%s>", tag, rawModel);
 	}
-	grn_language_model_loader_close(ctx, loader);
-
-	PGrnCheckRC(
-		rc, "%s can't load language model: <%s>: %s", tag, rawModel, message);
 }
 
 void
@@ -458,6 +452,7 @@ PGrnInitializeOptions(void)
 	const LOCKMODE lock_mode = ShareUpdateExclusiveLock;
 
 	lexicon = NULL;
+	languageModelLoader = grn_language_model_loader_open(ctx);
 	PGrnReloptionKind = add_reloption_kind();
 
 	add_string_reloption(PGrnReloptionKind,
@@ -555,6 +550,16 @@ PGrnInitializeOptions(void)
 						 NULL,
 						 PGrnOptionValidateModel,
 						 lock_mode);
+#ifndef GRN_LANGUAGE_MODEL_LOADER_N_GPU_LAYERS_DEFAULT
+#	define GRN_LANGUAGE_MODEL_LOADER_N_GPU_LAYERS_DEFAULT 999
+#endif
+	add_int_reloption(PGrnReloptionKind,
+					  "n_gpu_layers",
+					  "The number of layers used by language model",
+					  GRN_LANGUAGE_MODEL_LOADER_N_GPU_LAYERS_DEFAULT,
+					  0,
+					  GRN_LANGUAGE_MODEL_LOADER_N_GPU_LAYERS_DEFAULT,
+					  lock_mode);
 }
 
 void
@@ -563,6 +568,12 @@ PGrnFinalizeOptions(void)
 	if (lexicon)
 	{
 		grn_obj_close(ctx, lexicon);
+		lexicon = NULL;
+	}
+	if (languageModelLoader)
+	{
+		grn_language_model_loader_close(ctx, languageModelLoader);
+		languageModelLoader = NULL;
 	}
 }
 
@@ -575,11 +586,11 @@ PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
 								 PGrnResolvedOptions *resolvedOptions)
 {
 	const char *rawTokenizer;
+	TupleDesc desc = RelationGetDescr(index);
+	Name name = &(TupleDescAttr(desc, i)->attname);
 
 	if (options->tokenizerMappingOffset != 0 && i >= 0)
 	{
-		TupleDesc desc = RelationGetDescr(index);
-		Name name = &(TupleDescAttr(desc, i)->attname);
 		const char *rawTokenizerMapping =
 			((const char *) options) + options->tokenizerMappingOffset;
 		Jsonb *jsonb = PGrnJSONBParse(rawTokenizerMapping);
@@ -623,6 +634,67 @@ PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
 	else if (useCase == PGRN_OPTION_USE_CASE_PREFIX_SEARCH)
 	{
 		resolvedOptions->tokenizer = NULL;
+	}
+	else if (useCase == PGRN_OPTION_USE_CASE_SEMANTIC_SEARCH)
+	{
+		char codeColumnName[GRN_TABLE_MAX_KEY_SIZE];
+		grn_language_model *model;
+
+		PGrnCodeColumnNameEncode(name->data, codeColumnName);
+
+		grn_language_model_loader_set_model(ctx,
+											languageModelLoader,
+											resolvedOptions->modelName,
+											strlen(resolvedOptions->modelName));
+#if GRN_VERSION_OR_LATER(15, 2, 1)
+		grn_language_model_loader_set_n_gpu_layers(
+			ctx, languageModelLoader, resolvedOptions->nGPULayers);
+#endif
+		model = grn_language_model_loader_load(ctx, languageModelLoader);
+		if (!model)
+		{
+			PGrnCheck("failed to load model: <%s>", resolvedOptions->modelName);
+		}
+#if GRN_VERSION_OR_LATER(15, 2, 1)
+		/* float * 1024 dimensions == 4KiB == The max key size
+		 *
+		 * If this model uses 1025 or more dimensions, we can't store
+		 * a centroid as a lexicon key. In the case, we need to store
+		 * a centroid as a column value.
+		 */
+		resolvedOptions->needCentroidColumn =
+			(grn_language_model_get_n_embedding_dimensions(ctx, model) > 1024);
+#else
+		resolvedOptions->needCentroidColumn = false;
+#endif
+
+		resolvedOptions->tokenizer = &(buffers->tokenizer);
+		GRN_BULK_REWIND(resolvedOptions->tokenizer);
+		grn_text_printf(ctx,
+						resolvedOptions->tokenizer,
+						"TokenLanguageModelKNN(\"model\", \"%s\", "
+						"\"code_column\", \"%s\", "
+						"\"n_gpu_layers\", %d",
+						resolvedOptions->modelName,
+						codeColumnName,
+						resolvedOptions->nGPULayers);
+		if (resolvedOptions->needCentroidColumn)
+		{
+			resolvedOptions->lexiconKeyTypeID = GRN_DB_UINT32;
+			grn_text_printf(ctx,
+							resolvedOptions->tokenizer,
+							", \"centroid_column\", \"%s\"",
+							PGrnCentroidColumnName);
+		}
+		else
+		{
+#if GRN_VERSION_OR_LATER(15, 1, 8)
+			resolvedOptions->lexiconKeyTypeID = GRN_DB_SHORT_BINARY;
+#else
+			resolvedOptions->lexiconKeyTypeID = GRN_DB_SHORT_TEXT;
+#endif
+		}
+		GRN_TEXT_PUTS(ctx, resolvedOptions->tokenizer, ")");
 	}
 	else
 	{
@@ -864,6 +936,9 @@ PGrnResolveOptionValues(Relation index,
 		return;
 	}
 
+	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
+	resolvedOptions->nGPULayers = options->nGPULayers;
+
 	PGrnResolveOptionValuesTokenizer(
 		options, index, i, useCase, defaultTokenizer, resolvedOptions);
 
@@ -916,8 +991,6 @@ PGrnResolveOptionValues(Relation index,
 	}
 
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
-
-	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
 }
 
 grn_expr_flags
@@ -979,6 +1052,7 @@ pgroonga_options(Datum reloptions, bool validate)
 		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
+		{"n_gpu_layers", RELOPT_TYPE_INT, offsetof(PGrnOptions, nGPULayers)},
 	};
 
 	grnOptions = build_reloptions(reloptions,

@@ -20,9 +20,12 @@ typedef struct PGrnResolvedOptions
 	grn_obj *normalizers;
 	grn_obj *tokenFilters;
 	grn_obj *plugins;
+	grn_id lexiconKeyTypeID;
 	grn_table_flags lexiconType;
 	grn_column_flags indexFlags;
 	const char *modelName;
+	bool needCentroidColumn;
+	int32_t nGPULayers;
 } PGrnResolvedOptions;
 
 void PGrnInitializeOptions(void);
