@@ -5,6 +5,7 @@
 
 #include <catalog/pg_type_d.h>
 #include <utils/builtins.h>
+#include <utils/memutils.h>
 #ifdef PGRN_HAVE_VARATT_H
 #	include <varatt.h>
 #endif
@@ -66,7 +67,13 @@ PGrnLanguageModelEnsureLoaded(const char *modelName)
 
 	if (currentModelName)
 		pfree(currentModelName);
-	currentModelName = pstrdup(modelName);
+
+	// The default is short lived in `CurrentMemoryContext`,
+	// so it is persistentized in `TopMemoryContext`.
+	MemoryContext oldContext = MemoryContextSwitchTo(TopMemoryContext);
+	char *persistentName = pstrdup(modelName);
+	MemoryContextSwitchTo(oldContext);
+	currentModelName = persistentName;
 
 	PGrnLanguageModelClose();
 	PGrnLanguageModelLoad(modelName);
