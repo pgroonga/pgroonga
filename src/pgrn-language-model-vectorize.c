@@ -12,8 +12,8 @@
 static grn_language_model_loader *loader = NULL;
 static grn_language_model *model = NULL;
 static grn_language_model_inferencer *inferencer = NULL;
-static char *currentModelName = NULL;
 
+static grn_obj currentModelName;
 static grn_obj vector;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_language_model_vectorize);
@@ -23,6 +23,7 @@ PGrnInitializeLanguageModelVectorize(void)
 {
 	loader = grn_language_model_loader_open(ctx);
 	GRN_FLOAT32_INIT(&vector, GRN_OBJ_VECTOR);
+	GRN_TEXT_INIT(&currentModelName, GRN_OBJ_DO_SHALLOW_COPY);
 }
 
 static void
@@ -61,12 +62,13 @@ PGrnLanguageModelLoad(const char *modelName)
 static void
 PGrnLanguageModelEnsureLoaded(const char *modelName)
 {
-	if (currentModelName && strcmp(currentModelName, modelName) == 0)
+	size_t modelNameSize = strlen(modelName);
+	if (GRN_TEXT_LEN(&currentModelName) == modelNameSize &&
+		strncmp(GRN_TEXT_VALUE(&currentModelName), modelName, modelNameSize) ==
+			0)
 		return;
 
-	if (currentModelName)
-		pfree(currentModelName);
-	currentModelName = pstrdup(modelName);
+	GRN_TEXT_SET(ctx, &currentModelName, modelName, modelNameSize);
 
 	PGrnLanguageModelClose();
 	PGrnLanguageModelLoad(modelName);
@@ -76,11 +78,7 @@ void
 PGrnFinalizeLanguageModelVectorize(void)
 {
 	GRN_OBJ_FIN(ctx, &vector);
-	if (currentModelName)
-	{
-		pfree(currentModelName);
-		currentModelName = NULL;
-	}
+	GRN_OBJ_FIN(ctx, &currentModelName);
 	PGrnLanguageModelClose();
 	if (loader)
 	{
