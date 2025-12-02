@@ -23,7 +23,7 @@ PGrnInitializeLanguageModelVectorize(void)
 {
 	loader = grn_language_model_loader_open(ctx);
 	GRN_FLOAT32_INIT(&vector, GRN_OBJ_VECTOR);
-	GRN_TEXT_INIT(&currentModelName, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&currentModelName, 0);
 }
 
 static void
