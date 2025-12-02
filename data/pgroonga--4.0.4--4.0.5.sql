@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION pgroonga_language_model_vectorize(model_name cstring,
 	RETURNS float4[]
 	AS 'MODULE_PATHNAME', 'pgroonga_language_model_vectorize'
 	LANGUAGE C
+	IMMUTABLE
 	STRICT
 	PARALLEL SAFE;
 
