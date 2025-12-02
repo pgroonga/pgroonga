@@ -462,6 +462,7 @@ CREATE FUNCTION pgroonga_language_model_vectorize(model_name cstring, target tex
 	RETURNS float4[]
 	AS 'MODULE_PATHNAME', 'pgroonga_language_model_vectorize'
 	LANGUAGE C
+	IMMUTABLE
 	STRICT
 	PARALLEL SAFE;
 
