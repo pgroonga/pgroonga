@@ -14,7 +14,9 @@ INSERT INTO memos VALUES (3, 'Ruby is a object oriented script language.');
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (content pgroonga_text_semantic_search_ops_v2)
  WITH (plugins = 'language_model/knn',
-       model = 'hf:///groonga/multilingual-e5-base-Q4_K_M-GGUF');
+       model = 'hf:///groonga/multilingual-e5-base-Q4_K_M-GGUF',
+       passage_prefix = 'passage: ',
+       query_prefix = 'query: ');
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
