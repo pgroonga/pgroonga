@@ -26,6 +26,8 @@ typedef struct PGrnResolvedOptions
 	const char *modelName;
 	bool needCentroidColumn;
 	int32_t nGPULayers;
+	const char *passagePrefix;
+	const char *queryPrefix;
 } PGrnResolvedOptions;
 
 void PGrnInitializeOptions(void);
