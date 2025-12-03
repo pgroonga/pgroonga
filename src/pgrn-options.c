@@ -693,7 +693,7 @@ PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
 						codeColumnName,
 						resolvedOptions->nGPULayers);
 
-		if (resolvedOptions->passagePrefix != "")
+		if (resolvedOptions->passagePrefix)
 		{
 			grn_text_printf(ctx,
 							resolvedOptions->tokenizer,
@@ -701,7 +701,7 @@ PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
 							resolvedOptions->passagePrefix);
 		}
 
-		if (resolvedOptions->queryPrefix != "")
+		if (resolvedOptions->queryPrefix)
 		{
 			grn_text_printf(ctx,
 							resolvedOptions->tokenizer,
@@ -969,8 +969,10 @@ PGrnResolveOptionValues(Relation index,
 
 	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
 	resolvedOptions->nGPULayers = options->nGPULayers;
-	resolvedOptions->passagePrefix = GET_STRING_RELOPTION(options, passagePrefixOffset);
-	resolvedOptions->queryPrefix = GET_STRING_RELOPTION(options, queryPrefixOffset);
+	resolvedOptions->passagePrefix =
+		GET_STRING_RELOPTION(options, passagePrefixOffset);
+	resolvedOptions->queryPrefix =
+		GET_STRING_RELOPTION(options, queryPrefixOffset);
 
 	PGrnResolveOptionValuesTokenizer(
 		options, index, i, useCase, defaultTokenizer, resolvedOptions);
@@ -1086,8 +1088,12 @@ pgroonga_options(Datum reloptions, bool validate)
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
 		{"n_gpu_layers", RELOPT_TYPE_INT, offsetof(PGrnOptions, nGPULayers)},
-		{"passage_prefix", RELOPT_TYPE_STRING, offsetof(PGrnOptions, passagePrefixOffset)},
-		{"query_prefix", RELOPT_TYPE_STRING, offsetof(PGrnOptions, queryPrefixOffset)},
+		{"passage_prefix",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, passagePrefixOffset)},
+		{"query_prefix",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, queryPrefixOffset)},
 	};
 
 	grnOptions = build_reloptions(reloptions,
