@@ -570,7 +570,7 @@ PGrnInitializeOptions(void)
 						 lock_mode);
 	add_string_reloption(PGrnReloptionKind,
 						 "query_prefix",
-						 "Specify  prefix for query text",
+						 "Specify prefix for query text",
 						 NULL,
 						 false,
 						 lock_mode);
