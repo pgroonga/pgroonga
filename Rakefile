@@ -170,7 +170,6 @@ end
 
 namespace :package do
   namespace :source do
-    rsync_path = "#{rsync_base_path}/source/#{package}"
     namespace :snapshot do
       desc "Upload snapshot sources"
       task :upload => [archive_name, windows_archive_name] do
