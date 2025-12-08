@@ -216,7 +216,7 @@ namespace :package do
   namespace :version do
     desc "Update versions"
     task :update do
-      new_release_date = Helper.env_value("NEW_RELEASE_DATE")
+      new_release_date = Helper.env_value("NEW_RELEASE_DATE", Date.today.iso8601)
       new_release_time = Time.parse(new_release_date)
       # version:update uses UTC but NEW_RELEASE_DATE uses local time.
       # We adds UTC offset here to use the same day in version:update.
