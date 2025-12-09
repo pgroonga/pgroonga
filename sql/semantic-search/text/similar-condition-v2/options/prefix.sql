@@ -4,41 +4,36 @@ SELECT NOT :{?language_model_test} AS omit \gset
 \if :omit
   \quit
 \endif
+
 CREATE TABLE memos (
   id integer,
   content text
 );
+
 INSERT INTO memos VALUES (1, 'PostgreSQL is a RDBMS.');
 INSERT INTO memos VALUES (2, 'Groonga is fast full text search engine.');
-INSERT INTO memos VALUES (3, 'Ruby is a object oriented script language.');
+INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groonga.');
+
 CREATE INDEX pgrn_index ON memos
  USING pgroonga (content pgroonga_text_semantic_search_ops_v2)
  WITH (plugins = 'language_model/knn',
        model = 'hf:///groonga/multilingual-e5-base-Q4_K_M-GGUF',
        passage_prefix = 'passage: ',
        query_prefix = 'query: ');
+
 SET enable_seqscan = off;
 SET enable_indexscan = on;
 SET enable_bitmapscan = off;
+
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
- LIMIT 1;
-                                           QUERY PLAN                                           
-------------------------------------------------------------------------------------------------
- Limit
-   ->  Index Scan using pgrn_index on memos
-         Order By: (content <&@*> '("What is a MySQL alternative?",,,,,,)'::pgroonga_condition)
-(3 rows)
+ WHERE content &@* pgroonga_condition('What is a MySQL alternative?')
+ ORDER BY pgroonga_score(tableoid, ctid) DESC;
 
 SELECT id, content
   FROM memos
- ORDER BY content <&@*> pgroonga_condition('What is a MySQL alternative?')
- LIMIT 1;
- id |        content         
-----+------------------------
-  1 | PostgreSQL is a RDBMS.
-(1 row)
+ WHERE content &@* pgroonga_condition('What is a MySQL alternative?')
+ ORDER BY pgroonga_score(tableoid, ctid) DESC;
 
 DROP TABLE memos;

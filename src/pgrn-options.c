@@ -31,6 +31,8 @@ typedef struct PGrnOptions
 	int indexFlagsMappingOffset;
 	int modelOffset;
 	int nGPULayers;
+	int passagePrefixOffset;
+	int queryPrefixOffset;
 } PGrnOptions;
 
 static relopt_kind PGrnReloptionKind;
@@ -560,6 +562,18 @@ PGrnInitializeOptions(void)
 					  0,
 					  GRN_LANGUAGE_MODEL_LOADER_N_GPU_LAYERS_DEFAULT,
 					  lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "passage_prefix",
+						 "Specify prefix for search target text",
+						 NULL,
+						 false,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "query_prefix",
+						 "Specify prefix for query text",
+						 NULL,
+						 false,
+						 lock_mode);
 }
 
 void
@@ -678,6 +692,23 @@ PGrnResolveOptionValuesTokenizer(PGrnOptions *options,
 						resolvedOptions->modelName,
 						codeColumnName,
 						resolvedOptions->nGPULayers);
+
+		if (resolvedOptions->passagePrefix)
+		{
+			grn_text_printf(ctx,
+							resolvedOptions->tokenizer,
+							", \"passage_prefix\", \"%s\"",
+							resolvedOptions->passagePrefix);
+		}
+
+		if (resolvedOptions->queryPrefix)
+		{
+			grn_text_printf(ctx,
+							resolvedOptions->tokenizer,
+							", \"query_prefix\", \"%s\"",
+							resolvedOptions->queryPrefix);
+		}
+
 		if (resolvedOptions->needCentroidColumn)
 		{
 			resolvedOptions->lexiconKeyTypeID = GRN_DB_UINT32;
@@ -938,6 +969,10 @@ PGrnResolveOptionValues(Relation index,
 
 	resolvedOptions->modelName = GET_STRING_RELOPTION(options, modelOffset);
 	resolvedOptions->nGPULayers = options->nGPULayers;
+	resolvedOptions->passagePrefix =
+		GET_STRING_RELOPTION(options, passagePrefixOffset);
+	resolvedOptions->queryPrefix =
+		GET_STRING_RELOPTION(options, queryPrefixOffset);
 
 	PGrnResolveOptionValuesTokenizer(
 		options, index, i, useCase, defaultTokenizer, resolvedOptions);
@@ -1053,6 +1088,12 @@ pgroonga_options(Datum reloptions, bool validate)
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
 		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
 		{"n_gpu_layers", RELOPT_TYPE_INT, offsetof(PGrnOptions, nGPULayers)},
+		{"passage_prefix",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, passagePrefixOffset)},
+		{"query_prefix",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, queryPrefixOffset)},
 	};
 
 	grnOptions = build_reloptions(reloptions,
