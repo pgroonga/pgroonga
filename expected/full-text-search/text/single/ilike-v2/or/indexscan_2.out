@@ -15,21 +15,16 @@ SET enable_bitmapscan = off;
 EXPLAIN (COSTS OFF)
 SELECT id, content
   FROM memos
- WHERE content LIKE 'Po%' OR content LIKE 'Gr%';
-                               QUERY PLAN                               
-------------------------------------------------------------------------
- Bitmap Heap Scan on memos
-   Recheck Cond: ((content ~~ 'Po%'::text) OR (content ~~ 'Gr%'::text))
-   ->  BitmapOr
-         ->  Bitmap Index Scan on grnindex
-               Index Cond: (content ~~ 'Po%'::text)
-         ->  Bitmap Index Scan on grnindex
-               Index Cond: (content ~~ 'Gr%'::text)
-(7 rows)
+ WHERE content ILIKE 'Po%' OR content ILIKE 'Gr%';
+                             QUERY PLAN                             
+--------------------------------------------------------------------
+ Seq Scan on memos
+   Filter: ((content ~~* 'Po%'::text) OR (content ~~* 'Gr%'::text))
+(2 rows)
 
 SELECT id, content
   FROM memos
- WHERE content LIKE 'Po%' OR content LIKE 'Gr%';
+ WHERE content ILIKE 'Po%' OR content ILIKE 'Gr%';
  id |                 content                  
 ----+------------------------------------------
   1 | PostgreSQL is a RDBMS.
