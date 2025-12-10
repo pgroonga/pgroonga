@@ -101,6 +101,13 @@ typedef Oid PGrnRelFileNumber;
 #	define pk_cmptype pk_strategy
 #endif
 
+#include <utils/jsonb.h>
+#if PG_VERSION_NUM >= 190000
+typedef JsonbInState PGrnJsonState;
+#else
+typedef JsonbParseState *PGrnJsonState;
+#endif
+
 static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
 					 Relation indexRelation,
@@ -168,3 +175,16 @@ pgrn_get_opfamily_name(Oid opfid, bool missing_ok)
 	return opfname;
 }
 #endif
+
+static inline Jsonb *
+PGrnJsonbValueToJsonb(PGrnJsonState state)
+{
+#if PG_VERSION_NUM >= 190000
+	pushJsonbValue(&state, WJB_END_ARRAY, NULL);
+	return JsonbValueToJsonb(state.result);
+#else
+	JsonbValue *objects;
+	objects = pushJsonbValue(&state, WJB_END_ARRAY, NULL);
+	return JsonbValueToJsonb(objects);
+#endif
+}
