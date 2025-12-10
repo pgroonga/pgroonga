@@ -5489,9 +5489,21 @@ PGrnSearchIsMatchInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
 		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
-			(key->sk_strategy == PGrnMatchStrategyV2Number) ||
-			(key->sk_strategy == PGrnLikeStrategyNumber) ||
-			(key->sk_strategy == PGrnILikeStrategyNumber));
+			(key->sk_strategy == PGrnMatchStrategyV2Number));
+}
+
+static bool
+PGrnSearchIsLikeAnyCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   (key->sk_strategy == PGrnLikeStrategyNumber);
+}
+
+static bool
+PGrnSearchIsILikeAnyCondition(ScanKey key)
+{
+	return (key->sk_flags & SK_SEARCHARRAY) &&
+		   (key->sk_strategy == PGrnILikeStrategyNumber);
 }
 
 static void PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
@@ -6366,6 +6378,20 @@ PGrnSearchBuildCondition(Relation index, ScanKey key, PGrnSearchData *data)
 		//
 		// So this is used for "column &@ IN (keyword1, keyword2,
 		// ...)" too with PostgreSQL 18 or later.
+		PGrnSearchBuildConditionIn(
+			data, key, targetColumn, attribute, GRN_OP_MATCH);
+		return;
+	}
+	if (PGrnSearchIsLikeAnyCondition(key) || PGrnSearchIsILikeAnyCondition(key))
+	{
+		// PostgreSQL 18 or later optimizes
+		//   column LIKE/ILIKE keyword1 OR column LIKE/ILIKE keyword2 OR ...
+		// to
+		//   column ~~ ANY ('{keyword1, keyword2, ...}'::text[])
+		// .
+		//
+		// So this is used for "column LIKE/ILIKE keyword1 OR column
+		// LIKE/ILIKE keyword2 OR ..." too with PostgreSQL 18 or later.
 		PGrnSearchBuildConditionIn(
 			data, key, targetColumn, attribute, GRN_OP_MATCH);
 		return;
