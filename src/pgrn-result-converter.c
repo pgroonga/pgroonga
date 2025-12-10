@@ -602,7 +602,7 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 Jsonb *
 PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 {
-	JsonbParseState *state = NULL;
+  JsonbInState state = {0};
 
 	PGrnResultConverterBuildTupleDesc(converter);
 
@@ -657,8 +657,7 @@ PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 	}
 
 	{
-		JsonbValue *objects;
-		objects = pushJsonbValue(&state, WJB_END_ARRAY, NULL);
-		return JsonbValueToJsonb(objects);
+		pushJsonbValue(&state, WJB_END_ARRAY, NULL);
+		return JsonbValueToJsonb(state.result);
 	}
 }
