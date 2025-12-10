@@ -5489,8 +5489,14 @@ PGrnSearchIsMatchInCondition(ScanKey key)
 {
 	return (key->sk_flags & SK_SEARCHARRAY) &&
 		   ((key->sk_strategy == PGrnMatchStrategyNumber) ||
-			(key->sk_strategy == PGrnMatchStrategyV2Number));
+			(key->sk_strategy == PGrnMatchStrategyV2Number) ||
+			(key->sk_strategy == PGrnLikeStrategyNumber) ||
+			(key->sk_strategy == PGrnILikeStrategyNumber));
 }
+
+static void PGrnSearchBuildConditionLikeMatch(PGrnSearchData *data,
+											  grn_obj *targetColumn,
+											  grn_obj *query);
 
 static void
 PGrnSearchBuildConditionIn(PGrnSearchData *data,
@@ -5572,8 +5578,18 @@ PGrnSearchBuildConditionIn(PGrnSearchData *data,
 		}
 		else
 		{
-			PGrnSearchBuildConditionBinaryOperation(
-				data, targetColumn, &(buffers->general), operator);
+			switch (key->sk_strategy)
+			{
+			case PGrnLikeStrategyNumber:
+			case PGrnILikeStrategyNumber:
+				PGrnSearchBuildConditionLikeMatch(
+					data, targetColumn, &(buffers->general));
+				break;
+			default:
+				PGrnSearchBuildConditionBinaryOperation(
+					data, targetColumn, &(buffers->general), operator);
+				break;
+			}
 			if (nArgs > 0)
 				PGrnExprAppendOp(data->expression, GRN_OP_OR, 2, tag, NULL);
 		}
