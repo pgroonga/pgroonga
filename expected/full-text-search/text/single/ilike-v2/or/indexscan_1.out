@@ -1,0 +1,39 @@
+CREATE TABLE memos (
+  id integer,
+  content text
+);
+INSERT INTO memos VALUES (1, 'PostgreSQL is a RDBMS.');
+INSERT INTO memos VALUES (2, 'Groonga is fast full text search engine.');
+INSERT INTO memos VALUES (3, 'PGroonga is a PostgreSQL extension that uses Groonga.');
+CREATE INDEX grnindex
+    ON memos
+ USING pgroonga (content pgroonga_text_full_text_search_ops_v2)
+  WITH (tokenizer='TokenNgram("unify_alphabet", false)');
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+EXPLAIN (COSTS OFF)
+SELECT id, content
+  FROM memos
+ WHERE content ILIKE 'Po%' OR content ILIKE 'Gr%';
+                                QUERY PLAN                                
+--------------------------------------------------------------------------
+ Bitmap Heap Scan on memos
+   Recheck Cond: ((content ~~* 'Po%'::text) OR (content ~~* 'Gr%'::text))
+   ->  BitmapOr
+         ->  Bitmap Index Scan on grnindex
+               Index Cond: (content ~~* 'Po%'::text)
+         ->  Bitmap Index Scan on grnindex
+               Index Cond: (content ~~* 'Gr%'::text)
+(7 rows)
+
+SELECT id, content
+  FROM memos
+ WHERE content ILIKE 'Po%' OR content ILIKE 'Gr%';
+ id |                 content                  
+----+------------------------------------------
+  1 | PostgreSQL is a RDBMS.
+  2 | Groonga is fast full text search engine.
+(2 rows)
+
+DROP TABLE memos;
