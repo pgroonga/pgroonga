@@ -659,7 +659,5 @@ PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 		pushJsonbValue(&state, WJB_END_OBJECT, NULL);
 	}
 
-	{
-		PGrnJsonbValueToJsonb(state);
-	}
+	return PGrnJsonbValueToJsonb(state);
 }
