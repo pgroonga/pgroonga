@@ -602,8 +602,11 @@ PGrnResultConverterBuildTuple(PGrnResultConverter *converter)
 Jsonb *
 PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 {
-	JsonbParseState *state = NULL;
-
+#if PG_VERSION_NUM >= 190000
+	PGrnJsonState state = {0};
+#else
+	PGrnJsonState state = NULL;
+#endif
 	PGrnResultConverterBuildTupleDesc(converter);
 
 	pushJsonbValue(&state, WJB_BEGIN_ARRAY, NULL);
@@ -656,9 +659,5 @@ PGrnResultConverterBuildJSONBObjects(PGrnResultConverter *converter)
 		pushJsonbValue(&state, WJB_END_OBJECT, NULL);
 	}
 
-	{
-		JsonbValue *objects;
-		objects = pushJsonbValue(&state, WJB_END_ARRAY, NULL);
-		return JsonbValueToJsonb(objects);
-	}
+	return PGrnJsonbValueToJsonb(state);
 }
