@@ -81,6 +81,9 @@ rm -rf $RPM_BUILD_ROOT%{_includedir}
 %{_libdir}/pgsql/bitcode/pgroonga*/
 
 %changelog
+* Fri Dec 12 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.5-1
+- New upstream release.
+
 * Thu Oct 02 2025 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.4-1
 - New upstream release.
 
