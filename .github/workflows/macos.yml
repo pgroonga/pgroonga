@@ -109,7 +109,7 @@ jobs:
           ruby-version: ruby
           bundler-cache: true
           cache-version: ${{ matrix.postgresql-version }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             ~/Library/Caches/red-datasets
