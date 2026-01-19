@@ -5161,9 +5161,7 @@ pgroonga_insert(Relation index,
 				ItemPointer ctid,
 				Relation heap,
 				IndexUniqueCheck checkUnique,
-#ifdef PGRN_AM_INSERT_HAVE_INDEX_UNCHANGED
 				bool indexUnchanged,
-#endif
 				struct IndexInfo *indexInfo)
 {
 	const char *tag = "[insert]";

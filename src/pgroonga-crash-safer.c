@@ -63,28 +63,6 @@ static int PGroongaCrashSaferMaxRecoveryThreads = 0;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
-#if PG_VERSION_NUM < 140000
-/* Borrowed from src/backend/utils/adt/timestamp.c in PostgreSQL.
- *
- * Portions Copyright (c) 1996-2022, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- */
-static inline long
-PGrnTimestampDifferenceMilliseconds(TimestampTz start_time,
-									TimestampTz stop_time)
-{
-	TimestampTz diff = stop_time - start_time;
-
-	if (diff <= 0)
-		return 0;
-	else
-		return (long) ((diff + 999) / 1000);
-}
-#else
-#	define PGrnTimestampDifferenceMilliseconds(start_time, stop_time)         \
-		TimestampDifferenceMilliseconds((start_time), (stop_time))
-#endif
-
 static uint32_t
 pgroonga_crash_safer_get_thread_limit(void *data)
 {
@@ -556,8 +534,8 @@ pgroonga_crash_safer_flush_one(Datum databaseInfoDatum)
 	{
 		TimestampTz nextFlushTime = TimestampTzPlusMilliseconds(
 			lastFlushTime, PGroongaCrashSaferFlushNaptime * 1000);
-		long timeout = PGrnTimestampDifferenceMilliseconds(
-			GetCurrentTimestamp(), nextFlushTime);
+		long timeout = TimestampDifferenceMilliseconds(GetCurrentTimestamp(),
+													   nextFlushTime);
 		int conditions;
 		if (timeout <= 0)
 		{
