@@ -79,7 +79,7 @@ jobs:
         with:
           path: ccache
           key: windows-msvc-${{ env.ARTIFACT_ID }}-ccache-${{ hashFiles('src/**') }}
-          restore-keys: cmake-windows-msvc-${{ env.ARTIFACT_ID }}-ccache-
+          restore-keys: windows-msvc-${{ env.ARTIFACT_ID }}-ccache-
       - name: Prepare ccache
         run: |
           choco install ccache
@@ -118,41 +118,100 @@ jobs:
             rm groonga-latest.zip
             mv groonga-* vendor\groonga
           }
-      - name: Run CMake
+      - name: Configure Groonga
         shell: cmd
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           cmake ^
-            -B ..\build ^
+            -B vendor\groonga.build ^
             -G Ninja ^
-            -S . ^
+            -S vendor\groonga ^
             -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
-            -DCMAKE_INSTALL_PREFIX="..\pgsql" ^
+            -DCMAKE_INSTALL_PREFIX="vendor\groonga.install" ^
             -DGRN_WITH_LZ4=bundled ^
             -DGRN_WITH_MECAB=bundled ^
             -DGRN_WITH_MESSAGE_PACK=bundled ^
             -DGRN_WITH_MRUBY=yes ^
             -DGRN_WITH_RAPIDJSON=bundled ^
-            -DGRN_WITH_ZSTD=bundled ^
-            -DPGRN_POSTGRESQL_VERSION_MAJOR=${{ matrix.postgresql-version-major }}
-      - name: Build
+            -DGRN_WITH_XXHASH=bundled ^
+            -DGRN_WITH_ZSTD=bundled
+      - name: Build Groonga
         shell: cmd
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
-          cmake --build ..\build
-      - name: Install
+          cmake --build vendor\groonga.build
+      - name: Install Groonga
+        shell: cmd
         run: |
-          cmake --install ..\build
+          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          cmake --install vendor\groonga.build
+      - name: Add Groonga to PATH
+        run: |
+          $GROONGA_BIN = "$(Get-Location)\vendor\groonga.install\bin"
+          $env:PATH = "$GROONGA_BIN;$env:PATH"
+          echo "PATH=$env:PATH" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Install Build Tools
+        run: |
+          choco install meson
+          $env:PATH = "C:\Program Files\Meson;$env:PATH"
+          echo "PATH=$env:PATH" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Get-Command meson
+          (Get-Command meson).Source
+          meson --version
+      - name: Install MessagePack
+        run: |
+          vcpkg install msgpack-c:x64-windows
+          $MSGPACK_INSTALL_DIR = "C:\vcpkg\installed\x64-windows"
+          $env:CMAKE_PREFIX_PATH = "$MSGPACK_INSTALL_DIR;$env:CMAKE_PREFIX_PATH"
+          Write-Output "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH;" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Add Groonga to CMAKE_PREFIX_PATH
+        run: |
+          $GROONGA_INSTALL_DIR = "$(Get-Location)\vendor\groonga.install"
+          $env:CMAKE_PREFIX_PATH = "$GROONGA_INSTALL_DIR;$env:CMAKE_PREFIX_PATH"
+          Write-Output "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Prepare pg_regress for PostgreSQL 17+
+        if: ${{ matrix.postgresql-version-major >= 17 }}
+        run: |
+          # pg_regress.exe depends on libpq.dll and libpq.dll exists
+          # in pgsql\bin\. We add the bin directory to PATH so that
+          # pg_regress.exe can find libpq.dll.
+          # This must run BEFORE meson setup so the dependency is resolved.
+          $PGSQL_BIN = "$(Get-Location)\..\pgsql\bin"
+          $env:PATH = "$PGSQL_BIN;$env:PATH"
+          echo "PATH=$env:PATH" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Configure PGroonga
+        shell: cmd
+        run: |
+          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          for %%I in (%CD%\..) do set "PARENT_DIR=%%~fI"
+          meson setup ^
+            --wipe ^
+            ..\pgroonga.build ^
+            --prefix="%PARENT_DIR%\pgsql" ^
+            -Dpg_config="%PARENT_DIR%\pgsql\bin\pg_config.exe"
+      - name: Build PGroonga
+        shell: cmd
+        run: |
+          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          meson compile -C ..\pgroonga.build
+      - name: Install PGroonga
+        shell: cmd
+        run: |
+          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          meson install -C ..\pgroonga.build
 
       # Upload artifacts
       - name: Package
         run: |
           New-Item artifacts -ItemType Directory
-          cmake `
-            --build ..\build `
-            --target package `
-            --verbose
-          Copy-Item -Path ..\build\*.zip -Destination artifacts
+          Compress-Archive `
+            -Path ..\pgsql\* `
+            -DestinationPath artifacts\pgroonga-${{ matrix.postgresql-version-major }}-windows-x64.zip
           Write-Output "ARTIFACT_BASENAME=$((Get-Item artifacts\*.zip).name)" | `
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - uses: actions/upload-artifact@v6
@@ -168,49 +227,33 @@ jobs:
             --locale=C `
             --pgdata=${Env:PGROONGA_TEST_DATA} `
             --username=${Env:PGROONGA_TEST_USER}
-          Write-Output "max_prepared_transactions = 1" | `
-            Out-File `
-              -FilePath ${Env:PGROONGA_TEST_DATA}\postgresql.conf `
-              -Encoding utf8 `
-              -Append
+          Add-Content `
+            -Path ${Env:PGROONGA_TEST_DATA}\postgresql.conf `
+            -Value "enable_partitionwise_join = on","max_prepared_transactions = 1","random_page_cost = 0" `
+            -Encoding utf8
           ..\pgsql\bin\pg_ctl start `
             --pgdata=${Env:PGROONGA_TEST_DATA}
-      - name: Run regression test
-        # TODO: Remove this when we're PostgreSQL 18 on Windows ready
-        continue-on-error: ${{ matrix.postgresql-version-major == '18' && true || false }}
+      - name: Prepare test files
         run: |
           # TODO: Remove me when Groonga bundles libstemmer
           Remove-Item sql\full-text-search\text\options\token-filters\custom.sql
           # Reduce tests to reduce test time
           Remove-Item sql\compatibility -Recurse -Force
-          ruby test\prepare.rb > schedule
-          $Env:PG_REGRESS_DIFF_OPTS = "-u"
-          if (${{ matrix.postgresql-version-major }} -ge 17) {
-            # pg_regress.exe depends on libpq.dll and libpq.dll exists
-            # in pgsql\bin\. We need to set $Env:PATH or use same
-            # directory to resolve the dependency. We use the same
-            # directory approach here.
-            Copy-Item `
-              -Path ..\pgsql\lib\pgxs\src\test\regress\pg_regress.exe `
-              ..\pgsql\bin\
-          }
-          ..\pgsql\bin\pg_regress `
-            --bindir=..\pgsql\bin `
-            --encoding=${Env:PGROONGA_TEST_ENCODING} `
-            --launcher=test\short-pgappname.bat `
-            --load-extension=pgroonga `
-            --schedule=schedule `
-            --user=${Env:PGROONGA_TEST_USER}
+      - name: Run regression test
+        shell: cmd
+        run: |
+          call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
+          set PGUSER=%PGROONGA_TEST_USER%
+          meson test -C ..\pgroonga.build -v
       - name: Shutdown PostgreSQL for test
         if: always()
         run: |
           ..\pgsql\bin\pg_ctl stop `
             --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Show diff
-        # TODO: Remove "matrix.postgresql-version-major == '18' ||" when we're PostgreSQL 18 on Windows ready
-        if: matrix.postgresql-version-major == '18' || failure()
+        if: failure()
         run: |
-          Get-Content regression.diffs
+          Get-Content ..\pgroonga.build\regression.diffs
       - uses: actions/checkout@v6
         with:
           repository: pgroonga/benchmark
