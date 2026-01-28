@@ -51,6 +51,8 @@ sed -i -e "s,\.\./src/,$(pwd)/src/,g" %{_vpath_builddir}/build.ninja
 
 %install
 %meson_install
+# PGroonga's documents are packaged by \%doc.
+rm -rf %{buildroot}%{pg_datadir}/pgroonga/
 
 mkdir -p %{buildroot}%{_sysconfdir}/logrotate.d/
 cat > %{buildroot}%{_sysconfdir}/logrotate.d/@PACKAGE@ <<EOF
