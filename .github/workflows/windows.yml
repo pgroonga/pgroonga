@@ -148,18 +148,22 @@ jobs:
       - name: Add Groonga to PATH
         run: |
           $GROONGA_BIN = "$(Get-Location)\vendor\groonga.install\bin"
-          $env:PATH = "$GROONGA_BIN;$env:PATH"
-          echo "PATH=$env:PATH" | `
-            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "$GROONGA_BIN" | `
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Install Build Tools
         run: |
+          # This returns 3010 not 0 because this requires reboot. If
+          # reboot is required, MSI returns 3010 and "choco install"
+          # also returns 3010. 3010 is one of success exit codes.
+          #
+          # See also:
+          # https://github.com/chocolatey/choco/issues/512#issuecomment-214284461
           choco install meson
-          $env:PATH = "C:\Program Files\Meson;$env:PATH"
-          echo "PATH=$env:PATH" | `
-            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Get-Command meson
-          (Get-Command meson).Source
-          meson --version
+          $MESON_PATH = "C:\Program Files\Meson"
+          Write-Output ${MESON_PATH} | `
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # Check whether Meson can be used.
+          & "${MESON_PATH}\meson.exe" --version
       - name: Install MessagePack
         run: |
           vcpkg install msgpack-c:x64-windows
@@ -181,9 +185,8 @@ jobs:
           # pg_regress.exe can find libpq.dll.
           # This must run BEFORE meson setup so the dependency is resolved.
           $PGSQL_BIN = "$(Get-Location)\..\pgsql\bin"
-          $env:PATH = "$PGSQL_BIN;$env:PATH"
-          echo "PATH=$env:PATH" | `
-            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Output "${PGSQL_BIN}" | `
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Configure PGroonga
         shell: cmd
         run: |
