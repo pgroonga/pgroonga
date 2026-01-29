@@ -39,7 +39,8 @@ jobs:
       - name: Update Homebrew if needed
         run: |
           set -x
-          required_groonga_version=$(grep "^REQUIRED_GROONGA_VERSION" makefiles/pgrn-pgxs.mk | cut -d' ' -f 3)
+          required_groonga_version=$(grep "^required_groonga_version" meson.build |
+            grep -o '[0-9]*\.[0-9]*\.[0-9]*')
           homebrew_groonga_version=$(brew info --json groonga | jq -r '.[0].versions.stable')
           older_groonga_version=$( \
             (echo ${required_groonga_version}; \

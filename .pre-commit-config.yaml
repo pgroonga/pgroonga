@@ -18,5 +18,3 @@ repos:
       - id: meson-fmt
         types:
           - meson
-
-exclude: "^vendor/.*"
