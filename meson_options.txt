@@ -1,11 +1,15 @@
-option('pg_config',
-       type: 'string',
-       value: '',
-       description: 'Path to pg_config')
+option('install_to_postgresql',
+       type: 'boolean',
+       value: true,
+       description: 'Install to PostgreSQL directory')
 option('message_pack',
        type: 'feature',
        value: 'auto',
        description: 'Enable MessagePack support')
+option('pg_config',
+       type: 'string',
+       value: '',
+       description: 'Path to pg_config')
 option('test',
        type: 'boolean',
        value: true,

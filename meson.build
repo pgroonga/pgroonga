@@ -43,7 +43,6 @@ pg_bindir = run_command(
 ).stdout().strip()
 pg_includedir_extension = pg_includedir_server / 'extension'
 
-pgrn_project_id = meson.project_name()
 pgrn_version = meson.project_version()
 
 pgrn_version_components = pgrn_version.split('.')
@@ -140,6 +139,18 @@ elif host_machine.system() == 'darwin' and \
   name_suffix = 'dylib'
 endif
 
+if get_option('install_to_postgresql')
+  bin_install_dir = pg_bindir
+  document_install_dir = pg_sharedir / 'pgroonga'
+  extension_install_dir = pg_sharedir / 'extension'
+  module_install_dir = pg_pkglibdir
+else
+  bin_install_dir = get_option('bindir')
+  document_install_dir = get_option('datadir') / 'pgroonga'
+  extension_install_dir = get_option('datadir') / 'extension'
+  module_install_dir = get_option('libdir')
+endif
+
 pgrn_module_args = {
   'c_args': pgrn_c_args,
   'dependencies': pgrn_dependencies,
@@ -147,7 +158,7 @@ pgrn_module_args = {
   'name_prefix': '',
   'name_suffix': name_suffix,
   'install': true,
-  'install_dir': pg_pkglibdir,
+  'install_dir': module_install_dir,
 }
 
 pgroonga_sources = files(
@@ -200,7 +211,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga.rc.in',
       output: 'pgroonga.rc',
-      configuration: pgrn_rc_config + {'PGRN_DLL_NAME': pgrn_project_id}
+      configuration: pgrn_rc_config + {'PGRN_DLL_NAME': 'pgroonga'}
     )
   )
 endif
@@ -219,7 +230,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-check.rc.in',
       output: 'pgroonga-check.rc',
-      configuration: pgrn_rc_config + {'PGRN_CHECK_DLL_NAME': pgrn_project_id + '_check'}
+      configuration: pgrn_rc_config + {'PGRN_CHECK_DLL_NAME': 'pgroonga_check'}
     )
   )
 endif
@@ -238,7 +249,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-database.rc.in',
       output: 'pgroonga-database.rc',
-      configuration: pgrn_rc_config + {'PGRN_DATABASE_DLL_NAME': pgrn_project_id + '_database'}
+      configuration: pgrn_rc_config + {'PGRN_DATABASE_DLL_NAME': 'pgroonga_database'}
     )
   )
 endif
@@ -257,7 +268,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-wal-applier.rc.in',
       output: 'pgroonga-wal-applier.rc',
-      configuration: pgrn_rc_config + {'PGRN_WAL_APPLIER_DLL_NAME': pgrn_project_id + '_wal_applier'}
+      configuration: pgrn_rc_config + {'PGRN_WAL_APPLIER_DLL_NAME': 'pgroonga_wal_applier'}
     )
   )
 endif
@@ -276,7 +287,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-crash-safer.rc.in',
       output: 'pgroonga-crash-safer.rc',
-      configuration: pgrn_rc_config + {'PGRN_CRASH_SAFER_DLL_NAME': pgrn_project_id + '_crash_safer'}
+      configuration: pgrn_rc_config + {'PGRN_CRASH_SAFER_DLL_NAME': 'pgroonga_crash_safer'}
     )
   )
 endif
@@ -295,7 +306,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-standby-maintainer.rc.in',
       output: 'pgroonga-standby-maintainer.rc',
-      configuration: pgrn_rc_config + {'PGRN_STANDBY_MAINTAINER_DLL_NAME': pgrn_project_id + '_standby_maintainer'}
+      configuration: pgrn_rc_config + {'PGRN_STANDBY_MAINTAINER_DLL_NAME': 'pgroonga_standby_maintainer'}
     )
   )
 endif
@@ -314,7 +325,7 @@ if host_machine.system() == 'windows'
     configure_file(
       input: 'src/pgroonga-wal-resource-manager.rc.in',
       output: 'pgroonga-wal-resource-manager.rc',
-      configuration: pgrn_rc_config + {'PGRN_WAL_RESOURCE_MANAGER_DLL_NAME': pgrn_project_id + '_wal_resource_manager'}
+      configuration: pgrn_rc_config + {'PGRN_WAL_RESOURCE_MANAGER_DLL_NAME': 'pgroonga_wal_resource_manager'}
     )
   )
 endif
@@ -325,14 +336,14 @@ pgroonga_wal_resource_manager = shared_module('pgroonga_wal_resource_manager',
 )
 
 install_data('pgroonga.control',
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 configure_file(
   input: 'data/pgroonga.sql',
   output: f'pgroonga--@pgrn_version@.sql',
   copy: true,
   install: true,
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 pgroonga_update_sqls = files(
   'data/pgroonga--1.0.0--1.0.1.sql',
@@ -454,18 +465,18 @@ pgroonga_update_sqls = files(
   # pgroonga: UPDATE SQLS MARKER
 )
 install_data(pgroonga_update_sqls,
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 
 install_data('pgroonga_database.control',
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 configure_file(
   input: 'data/pgroonga_database.sql',
   output: f'pgroonga_database--@pgrn_version@.sql',
   copy: true,
   install: true,
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 pgroonga_database_update_sqls = files(
   'data/pgroonga_database--2.1.8--2.1.9.sql',
@@ -544,7 +555,7 @@ pgroonga_database_update_sqls = files(
   # pgroonga_database: UPDATE SQLS MARKER
 )
 install_data(pgroonga_database_update_sqls,
-  install_dir: pg_sharedir / 'extension',
+  install_dir: extension_install_dir,
 )
 
 maintainer_scripts = files(
@@ -552,11 +563,16 @@ maintainer_scripts = files(
   'tools/systemd/pgroonga-generate-primary-maintainer-service.sh',
   'tools/systemd/pgroonga-generate-primary-maintainer-timer.sh',
 )
-
 install_data(maintainer_scripts,
-  install_dir: pg_bindir,
+  install_dir: bin_install_dir,
   install_mode: 'rwxr-xr-x',
 )
+
+documents = files(
+  'COPYING',
+  'README.md',
+)
+install_data(documents, install_dir: document_install_dir)
 
 if get_option('test')
   ruby = find_program('ruby')
