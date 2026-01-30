@@ -116,8 +116,8 @@ jobs:
           if ("${{ matrix.groonga-main }}" -eq "yes") {
             git clone --depth 1 `
               https://github.com/groonga/groonga.git `
-            vendor\groonga
-            cd vendor\groonga
+              ..\groonga
+            cd ..\groonga
             git submodule update --init
             cd vendor
             ruby download_groonga_normalizer_mysql.rb
@@ -131,16 +131,16 @@ jobs:
               -OutFile groonga-latest.zip
             Expand-Archive -Path groonga-latest.zip -DestinationPath .
             rm groonga-latest.zip
-            mv groonga-* vendor\groonga
+            mv groonga-* ..\groonga
           }
       - name: Configure Groonga
         shell: cmd
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           cmake ^
-            -B vendor\groonga.build ^
+            -B ..\groonga.build ^
             -G Ninja ^
-            -S vendor\groonga ^
+            -S ..\groonga ^
             -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
             -DCMAKE_INSTALL_PREFIX="%ARCHIVE_DIR%" ^
             -DGRN_BUNDLED_MESSAGE_PACK_SHARED=ON ^
@@ -155,12 +155,12 @@ jobs:
         shell: cmd
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
-          cmake --build vendor\groonga.build
+          cmake --build ..\groonga.build
       - name: Install Groonga
         shell: cmd
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
-          cmake --install vendor\groonga.build
+          cmake --install ..\groonga.build
       - name: Install Build Tools
         run: |
           # This returns 3010 not 0 because this requires reboot. If

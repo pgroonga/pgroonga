@@ -11,12 +11,12 @@ def latest_groonga_version
   @latest_groonga_version ||= Helper.detect_latest_groonga_version
 end
 
-def export_source(base_name)
-  sh("git archive --prefix=#{base_name}/ --format=tar HEAD | " +
-     "tar xf -")
-  sh("(cd vendor/xxHash && " +
-     "git archive --prefix=#{base_name}/vendor/xxHash/ --format=tar HEAD) | " +
-     "tar xf -")
+def export_source(base_name, format)
+  sh("git",
+     "archive",
+     "--output=#{base_name}.#{format}",
+     "--prefix=#{base_name}/",
+     "HEAD")
 end
 
 def package_names
@@ -50,37 +50,11 @@ dist_files = `git ls-files`.split("\n").reject do |file|
 end
 
 file archive_name => dist_files do
-  export_source(archive_base_name)
-  sh("tar", "czf", archive_name, archive_base_name)
-  rm_r(archive_base_name)
+  export_source(archive_base_name, "tar.gz")
 end
 
 file windows_archive_name => dist_files do
-  export_source(archive_base_name)
-  groonga_base_name = "groonga-#{latest_groonga_version}"
-  groonga_suffix = ENV["GROONGA_SUFFIX"]
-  if groonga_suffix
-    groonga_base_name << groonga_suffix
-    groonga_archive_name = "#{groonga_base_name}.zip"
-    sh("curl",
-       "--location",
-       "--remote-name",
-       "https://packages.groonga.org/tmp/#{groonga_archive_name}")
-  else
-    groonga_archive_name = "#{groonga_base_name}.zip"
-    sh("curl",
-       "--location",
-       "--remote-name",
-       "https://packages.groonga.org/source/groonga/#{groonga_archive_name}")
-  end
-  rm_rf(groonga_base_name)
-  sh("unzip", groonga_archive_name)
-  rm(groonga_archive_name)
-  mkdir_p("#{archive_base_name}/vendor")
-  mv(groonga_base_name, "#{archive_base_name}/vendor/groonga")
-  rm_f(windows_archive_name)
-  sh("zip", "-r", windows_archive_name, archive_base_name)
-  rm_r(archive_base_name)
+  export_source(archive_base_name, "zip")
 end
 
 desc "Show version"
