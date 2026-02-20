@@ -201,6 +201,8 @@ PGrnTokenizeSetModule(const char *moduleName,
 		GRN_TEXT_SET(
 			ctx, value, VARDATA_ANY(newValue), VARSIZE_ANY_EXHDR(newValue));
 		grn_obj_set_info(ctx, lexicon, type, value);
+		if (ctx->rc != GRN_SUCCESS)
+			GRN_BULK_REWIND(value);
 		PGrnCheck("tokenize: failed to set %s", moduleName);
 	}
 	else
