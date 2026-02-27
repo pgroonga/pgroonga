@@ -6761,6 +6761,7 @@ PGrnSearchDataInit(PGrnSearchData *data, Relation index, grn_obj *sourcesTable)
 	GRN_EXPR_CREATE_FOR_QUERY(
 		ctx, sourcesTable, data->expression, data->expressionVariable);
 	data->isEmptyCondition = false;
+	data->fuzzyMaxDistanceRatio = 0.0;
 	data->nExpressions = 0;
 }
 
