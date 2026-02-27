@@ -259,6 +259,10 @@ jobs:
         if: failure()
         run: |
           Get-Content ..\pgroonga.build\regression.diffs
+      - name: Show pgroonga.log
+        if: failure()
+        run: |
+          Get-Content ${Env:PGROONGA_TEST_DATA}\pgroonga.log
       - uses: actions/checkout@v6
         with:
           repository: pgroonga/benchmark
