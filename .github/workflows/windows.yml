@@ -214,7 +214,7 @@ jobs:
           Compress-Archive `
             -DestinationPath "artifacts\${Env:ARCHIVE_BASE_NAME}.zip" `
             -Path ${Env:ARCHIVE_DIR}\*
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ARTIFACT_ID }}
           path: artifacts
