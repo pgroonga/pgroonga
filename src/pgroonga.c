@@ -50,12 +50,14 @@
 #include <catalog/pg_type.h>
 #include <commands/progress.h>
 #include <commands/vacuum.h>
+#include <executor/instrument.h>
 #include <mb/pg_wchar.h>
 #include <miscadmin.h>
 #include <nodes/nodeFuncs.h>
 #include <optimizer/optimizer.h>
 #include <pgstat.h>
 #include <storage/bufmgr.h>
+#include <storage/condition_variable.h>
 #include <storage/ipc.h>
 #include <storage/latch.h>
 #include <storage/shm_toc.h>
@@ -70,6 +72,7 @@
 #include <utils/snapmgr.h>
 #include <utils/timestamp.h>
 #include <utils/typcache.h>
+#include <utils/wait_event.h>
 
 #include <lib/ilist.h>
 
