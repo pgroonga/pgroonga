@@ -2,20 +2,12 @@
 
 require "test-unit"
 
-if ENV["NEED_MAKE"] == "yes"
-  env = {
-    "PGRN_DEBUG" => "1",
-    "HAVE_MSGPACK" => "1",
-  }
-  pg_config = ENV["PG_CONFIG"] || "pg_config"
-  if RUBY_PLATFORM.include?("darwin")
-    n_cpus = Integer(`sysctl -n hw.logicalcpu`.chomp, 10)
-  else
-    n_cpus = Integer(`nproc`.chomp, 10)
-  end
-  command_line = ["make", "-j#{n_cpus}", "PG_CONFIG=#{pg_config}", "install"]
-  command_line.prepend("sudo") if ENV["NEED_SUDO"] == "yes"
-  system(env, *command_line, out: IO::NULL) || exit(false)
+if ENV["NEED_BUILD"] == "yes"
+  build_dir = ENV["BUILD_DIR"] || Dir.pwd
+  system("meson", "compile", "-C", build_dir) || exit(false)
+  install_command = ["meson", "install", "-C", build_dir, "--no-rebuild"]
+  install_command.prepend("sudo", "-H") if ENV["NEED_SUDO"] == "yes"
+  system(*install_command, out: IO::NULL) || exit(false)
 end
 
 ENV["TEST_UNIT_MAX_DIFF_TARGET_STRING_SIZE"] = "1_000_000"
