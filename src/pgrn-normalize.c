@@ -26,7 +26,7 @@ PGrnInitializeNormalize(void)
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
 	GRN_TEXT_INIT(&normalizers, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&normalizersBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&normalizersBuffer, 0);
 }
 
 void
