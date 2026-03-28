@@ -11,7 +11,6 @@
 
 static grn_obj *lexicon = NULL;
 static grn_obj normalizers;
-static grn_obj normalizersBuffer;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_normalize);
 
@@ -25,14 +24,12 @@ PGrnInitializeNormalize(void)
 							   GRN_OBJ_TABLE_PAT_KEY,
 							   grn_ctx_at(ctx, GRN_DB_SHORT_TEXT),
 							   NULL);
-	GRN_TEXT_INIT(&normalizers, GRN_OBJ_DO_SHALLOW_COPY);
-	GRN_TEXT_INIT(&normalizersBuffer, GRN_OBJ_DO_SHALLOW_COPY);
+	GRN_TEXT_INIT(&normalizers, 0);
 }
 
 void
 PGrnFinalizeNormalize(void)
 {
-	GRN_OBJ_FIN(ctx, &normalizersBuffer);
 	GRN_OBJ_FIN(ctx, &normalizers);
 	grn_obj_close(ctx, lexicon);
 }
@@ -70,17 +67,13 @@ pgroonga_normalize(PG_FUNCTION_ARGS)
 				 GRN_TEXT_VALUE(&normalizers),
 				 GRN_TEXT_LEN(&normalizers)) == 0))
 	{
-		GRN_BULK_REWIND(&normalizersBuffer);
+		GRN_BULK_REWIND(&normalizers);
 		PGrnStringSubstituteVariables(
-			rawNormalizersData, rawNormalizersLength, &normalizersBuffer);
-		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER, &normalizersBuffer);
+			rawNormalizersData, rawNormalizersLength, &normalizers);
+		grn_obj_set_info(ctx, lexicon, GRN_INFO_NORMALIZER, &normalizers);
 		PGrnCheck("normalize: failed to set normalizers: <%.*s>",
-				  (int) GRN_TEXT_LEN(&normalizersBuffer),
-				  GRN_TEXT_VALUE(&normalizersBuffer));
-		GRN_TEXT_SET(ctx,
-					 &normalizers,
-					 GRN_TEXT_VALUE(&normalizersBuffer),
-					 GRN_TEXT_LEN(&normalizersBuffer));
+				  (int) GRN_TEXT_LEN(&normalizers),
+				  GRN_TEXT_VALUE(&normalizers));
 	}
 	string = grn_string_open(
 		ctx, VARDATA_ANY(target), VARSIZE_ANY_EXHDR(target), lexicon, 0);
