@@ -11,6 +11,7 @@
 
 static grn_obj *table = NULL;
 static grn_obj *textColumn = NULL;
+static grn_obj *expression = NULL;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_query_extract_keywords);
 
@@ -31,6 +32,11 @@ PGrnInitializeQueryExtractKeywords(void)
 void
 PGrnFinalizeQueryExtractKeywords(void)
 {
+	if (expression)
+	{
+		grn_obj_close(ctx, expression);
+		expression = NULL;
+	}
 	if (textColumn)
 	{
 		grn_obj_close(ctx, textColumn);
@@ -49,7 +55,6 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 {
 	const char *tag = "[query-extract-keywords]";
 	grn_obj *targetTable = table;
-	grn_obj *expression;
 	grn_obj *variable;
 	grn_expr_flags flags = PGRN_EXPR_QUERY_PARSE_FLAGS;
 	ArrayType *keywords;
@@ -62,6 +67,11 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 		RelationClose(index);
 	}
 
+	if (expression)
+	{
+		grn_obj_close(ctx, expression);
+		expression = NULL;
+	}
 	GRN_EXPR_CREATE_FOR_QUERY(ctx, targetTable, expression, variable);
 	if (!expression)
 	{
@@ -109,6 +119,8 @@ PGrnQueryExtractKeywords(text *query, text *indexName)
 			elements, NULL, 1, dims, lbs, TEXTOID, -1, false, 'i');
 
 		GRN_OBJ_FIN(ctx, &extractedKeywords);
+		grn_obj_close(ctx, expression);
+		expression = NULL;
 	}
 
 	return keywords;
