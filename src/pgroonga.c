@@ -7932,7 +7932,8 @@ pgroonga_build_copy_source_worker(PGrnParallelBuildLocalData *localData,
 	createData.indexInfo = BuildIndexInfo(localData->index);
 	createData.indexInfo->ii_Concurrent = sharedData->isConcurrent;
 	progress = (ParallelWorkerNumber == -1);
-	scan = table_beginscan_parallel(localData->heap, localData->pscan);
+	scan = pgrn_table_beginscan_parallel(
+		localData->heap, localData->pscan, SO_NONE);
 	pgroonga_build_copy_source_execute(&createData, bs, progress, scan);
 
 	SpinLockAcquire(&(sharedData->mutex));
