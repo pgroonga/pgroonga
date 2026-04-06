@@ -3,6 +3,11 @@
 #include <postgres.h>
 
 #include <access/genam.h>
+#include <access/tableam.h>
+
+#ifndef SO_NONE
+#	define SO_NONE 0
+#endif
 
 #ifdef _WIN32
 #	define PRId64 "I64d"
@@ -114,7 +119,8 @@ pgrn_index_beginscan(Relation heapRelation,
 					 void *instrument,
 #endif
 					 int nKeys,
-					 int nOrderBys)
+					 int nOrderBys,
+					 uint32 flags)
 {
 
 	return index_beginscan(heapRelation,
@@ -124,7 +130,44 @@ pgrn_index_beginscan(Relation heapRelation,
 						   instrument,
 #endif
 						   nKeys,
-						   nOrderBys);
+						   nOrderBys
+#if PG_VERSION_NUM >= 190000
+						   ,
+						   flags
+#endif
+	);
+}
+
+static inline TableScanDesc
+pgrn_table_beginscan(Relation relation,
+					 Snapshot snapshot,
+					 int nKeys,
+					 ScanKeyData *scanKeys,
+					 uint32 flags)
+{
+	return table_beginscan(relation,
+						   snapshot,
+						   nKeys,
+						   scanKeys
+#if PG_VERSION_NUM >= 190000
+						   ,
+						   flags
+#endif
+	);
+}
+
+static inline TableScanDesc
+pgrn_table_beginscan_parallel(Relation relation,
+							  ParallelTableScanDesc pscan,
+							  uint32 flags)
+{
+	return table_beginscan_parallel(relation,
+									pscan
+#if PG_VERSION_NUM >= 190000
+									,
+									flags
+#endif
+	);
 }
 
 #if PG_VERSION_NUM >= 180000

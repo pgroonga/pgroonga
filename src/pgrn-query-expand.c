@@ -104,8 +104,8 @@ func_query_expander_postgresql(grn_ctx *ctx,
 					InvalidStrategy,
 					currentData.scanProcedure,
 					scanKeyDatum);
-		heapScan = table_beginscan(
-			currentData.table, currentData.snapshot, nKeys, scanKeys);
+		heapScan = pgrn_table_beginscan(
+			currentData.table, currentData.snapshot, nKeys, scanKeys, SO_NONE);
 	}
 
 	while (true)
@@ -564,7 +564,8 @@ pgroonga_query_expand(PG_FUNCTION_ARGS)
 												currentData.snapshot,
 												NULL,
 												nKeys,
-												nOrderBys);
+												nOrderBys,
+												SO_NONE);
 		currentData.slot = table_slot_create(currentData.table, NULL);
 	}
 	else
