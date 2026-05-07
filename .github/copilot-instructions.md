@@ -1,1 +1,1 @@
-GitHub Copilot must put `GitHub: Fix GH-${ISSUE_NUMBER}` as the first line of PR description. The `${ISSUE_NUMBER}` part must be replaced with the corresponding issue number.
+GitHub Copilot must put `GitHub: Fix GH-${ISSUE_NUMBER}` as the first line of PR description. The `${ISSUE_NUMBER}` part must be replaced with the corresponding issue number. If there are multiple issues, use the primary issue number. If there is no associated issue, omit this line.
