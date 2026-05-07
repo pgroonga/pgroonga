@@ -1036,7 +1036,7 @@ PGrnConvertToDatum(grn_obj *value, Oid typeID)
 		break;
 	case UUIDOID:
 	{
-#define UUID_TEXT_SIZE 33 /* "12345678-abcd-bcde-cdef-123456789012" + '\0'*/
+#define UUID_TEXT_SIZE 37 /* "12345678-1234-1234-1234-123456789012" + '\0' */
 		char uuid[UUID_TEXT_SIZE];
 		memcpy(uuid,
 			   GRN_TEXT_VALUE(value),
