@@ -1,6 +1,8 @@
 name: macOS
 on:
   push:
+    branches-ignore:
+      - "copilot/**"
   pull_request:
   schedule:
     - cron: |

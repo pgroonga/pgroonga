@@ -1,6 +1,8 @@
 name: Setup
 on:
   push:
+    branches-ignore:
+      - "copilot/**"
   pull_request:
 concurrency:
   group: ${{ github.head_ref || github.sha }}-${{ github.workflow }}
