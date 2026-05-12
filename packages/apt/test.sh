@@ -80,12 +80,6 @@ wget \
   https://packages.groonga.org/${os}/groonga-apt-source-latest-${code_name}.deb
 apt install -V -y ./groonga-apt-source-latest-${code_name}.deb
 
-if [ "${os}" = "ubuntu" ]; then
-  apt install -y software-properties-common
-  add-apt-repository -y universe
-  add-apt-repository -y ppa:groonga/ppa
-fi
-
 if find ${repositories_dir} | grep -q "pgdg"; then
   wget -O /usr/share/keyrings/pgdg.asc \
     https://www.postgresql.org/media/keys/ACCC4CF8.asc
