@@ -192,6 +192,7 @@ jobs:
         run: |
           call "%VC_PREFIX%\Auxiliary\Build\vcvars64.bat"
           meson setup ^
+            --buildtype=release ^
             --cmake-prefix-path="%ARCHIVE_DIR%" ^
             --prefix="%ARCHIVE_DIR%" ^
             -Dinstall_to_postgresql=false ^
