@@ -44,14 +44,12 @@ static grn_ctx *ctx = NULL;
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT pg_noreturn void
-pgroonga_crash_safer_reset_position_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT pg_noreturn void
-pgroonga_crash_safer_reindex_one(Datum datum) pg_attribute_noreturn();
-extern PGDLLEXPORT pg_noreturn void pgroonga_crash_safer_flush_one(Datum datum)
-	pg_attribute_noreturn();
-extern PGDLLEXPORT pg_noreturn void pgroonga_crash_safer_main(Datum datum)
-	pg_attribute_noreturn();
+pg_noreturn extern PGDLLEXPORT void
+pgroonga_crash_safer_reset_position_one(Datum datum);
+pg_noreturn extern PGDLLEXPORT void
+pgroonga_crash_safer_reindex_one(Datum datum);
+pg_noreturn extern PGDLLEXPORT void pgroonga_crash_safer_flush_one(Datum datum);
+pg_noreturn extern PGDLLEXPORT void pgroonga_crash_safer_main(Datum datum);
 
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGTERM = false;
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
