@@ -37,7 +37,7 @@ pgrn_crash_safer_statuses_get(void)
 	const char *name = "pgrn-crash-safer-statuses";
 	HASHCTL info;
 	int flags;
-	memset(&info, 0, sizeof(HASHCTL));
+	memset(&info, 0, sizeof(info));
 	info.keysize = sizeof(uint64);
 	info.entrysize = sizeof(pgrn_crash_safer_statuses_entry);
 	info.hash = pgrn_crash_safer_statuses_hash;
