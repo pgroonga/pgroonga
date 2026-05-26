@@ -110,7 +110,7 @@ typedef JsonbParseState *PGrnJsonState;
 #endif
 
 #if PG_VERSION_NUM >= 190000
-#	define PGRN_SIG_DFL ((pqsigfunc) SIG_DFL)
+#	define PGRN_SIG_DFL PG_SIG_DFL
 #else
 #	define PGRN_SIG_DFL SIG_DFL
 #endif
