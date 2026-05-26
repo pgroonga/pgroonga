@@ -42,11 +42,8 @@ pgrn_crash_safer_statuses_get(void)
 	info.entrysize = sizeof(pgrn_crash_safer_statuses_entry);
 	info.hash = pgrn_crash_safer_statuses_hash;
 	flags = HASH_ELEM | HASH_FUNCTION;
-#if PG_VERSION_NUM >= 190000
-	return ShmemInitHash(name, 32 /* TODO: configurable */, &info, flags);
-#else
-	return ShmemInitHash(name, 1, 32 /* TODO: configurable */, &info, flags);
-#endif
+	return PGrnShmemInitHash(
+		name, 1, 32 /* TODO: configurable */, &info, flags);
 }
 
 static inline pgrn_crash_safer_statuses_entry *
