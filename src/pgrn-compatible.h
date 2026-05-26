@@ -114,20 +114,13 @@ typedef JsonbParseState *PGrnJsonState;
 #	define PGRN_SIG_DFL SIG_DFL
 #endif
 
-static inline HTAB *
-PGrnShmemInitHash(const char *name,
-				  long init_size,
-				  long max_size,
-				  HASHCTL *infoP,
-				  int hash_flags)
-{
 #if PG_VERSION_NUM >= 190000
-	(void) init_size;
-	return ShmemInitHash(name, max_size, infoP, hash_flags);
+#	define PGrnShmemInitHash(name, init_size, max_size, infoP, hash_flags)      \
+		ShmemInitHash((name), (max_size), (infoP), (hash_flags))
 #else
-	return ShmemInitHash(name, init_size, max_size, infoP, hash_flags);
+#	define PGrnShmemInitHash(name, init_size, max_size, infoP, hash_flags)      \
+		ShmemInitHash((name), (init_size), (max_size), (infoP), (hash_flags))
 #endif
-}
 
 static inline IndexScanDesc
 pgrn_index_beginscan(Relation heapRelation,
