@@ -90,9 +90,7 @@ typedef Oid PGrnRelFileNumber;
 		((parallelScan)->ps_offset)
 #endif
 
-#if PG_VERSION_NUM >= 180000
-#	define pg_attribute_noreturn()
-#else
+#if PG_VERSION_NUM < 180000
 #	define pg_noreturn
 #endif
 

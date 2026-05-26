@@ -18,10 +18,8 @@
 PG_MODULE_MAGIC;
 
 extern PGDLLEXPORT void _PG_init(void);
-extern PGDLLEXPORT pg_noreturn void pgroonga_wal_applier_apply(Datum datum)
-	pg_attribute_noreturn();
-extern PGDLLEXPORT pg_noreturn void pgroonga_wal_applier_main(Datum datum)
-	pg_attribute_noreturn();
+pg_noreturn extern PGDLLEXPORT void pgroonga_wal_applier_apply(Datum datum);
+pg_noreturn extern PGDLLEXPORT void pgroonga_wal_applier_main(Datum datum);
 
 #define TAG "pgroonga: wal-applier"
 
