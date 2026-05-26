@@ -519,11 +519,11 @@ PGrnBeforeShmemExit(int code, Datum arg)
 	pgwin32_install_crashdump_handler();
 #else
 #	ifdef SIGSEGV
-	pqsignal(SIGSEGV, SIG_DFL);
+	pqsignal(SIGSEGV, PGRN_SIG_DFL);
 #	endif
 #endif
 #ifdef SIGABRT
-	pqsignal(SIGABRT, SIG_DFL);
+	pqsignal(SIGABRT, PGRN_SIG_DFL);
 #endif
 	grn_fin();
 

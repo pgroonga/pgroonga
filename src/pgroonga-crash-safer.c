@@ -61,6 +61,12 @@ static int PGroongaCrashSaferMaxRecoveryThreads = 0;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
+#if PG_VERSION_NUM >= 190000
+#	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg, pg_siginfo
+#else
+#	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg
+#endif
+
 static uint32_t
 pgroonga_crash_safer_get_thread_limit(void *data)
 {
@@ -92,7 +98,7 @@ pgroonga_crash_safer_sighup(SIGNAL_ARGS)
 static void
 pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 {
-	procsignal_sigusr1_handler(postgres_signal_arg);
+	procsignal_sigusr1_handler(PGRN_SIGNAL_ARG_NAMES);
 
 	PGroongaCrashSaferGotSIGUSR1 = true;
 }
