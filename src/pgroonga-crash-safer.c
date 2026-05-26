@@ -64,10 +64,10 @@ PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
 #if PG_VERSION_NUM >= 190000
-#	define PGRN_CRASH_SAFER_SIGNAL_ARGS_PASS                                 \
+#	define PGRN_SIGNAL_ARG_NAMES                                             \
 		postgres_signal_arg, info, context
 #else
-#	define PGRN_CRASH_SAFER_SIGNAL_ARGS_PASS postgres_signal_arg
+#	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg
 #endif
 
 static uint32_t
@@ -101,7 +101,7 @@ pgroonga_crash_safer_sighup(SIGNAL_ARGS)
 static void
 pgroonga_crash_safer_sigusr1(SIGNAL_ARGS)
 {
-	procsignal_sigusr1_handler(PGRN_CRASH_SAFER_SIGNAL_ARGS_PASS);
+	procsignal_sigusr1_handler(PGRN_SIGNAL_ARG_NAMES);
 
 	PGroongaCrashSaferGotSIGUSR1 = true;
 }
