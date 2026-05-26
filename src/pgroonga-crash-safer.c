@@ -64,7 +64,7 @@ PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
 static const char *PGroongaCrashSaferLibraryName = "pgroonga_crash_safer";
 
 #if PG_VERSION_NUM >= 190000
-#	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg, info, context
+#	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg, pg_siginfo
 #else
 #	define PGRN_SIGNAL_ARG_NAMES postgres_signal_arg
 #endif
