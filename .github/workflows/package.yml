@@ -91,6 +91,8 @@ jobs:
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-noble
           - postgresql-16-pgdg-pgroonga-ubuntu-noble-arm64
+          - postgresql-16-pgdg-pgroonga-ubuntu-resolute
+          - postgresql-16-pgdg-pgroonga-ubuntu-resolute-arm64
           - postgresql-16-pgdg-pgroonga-almalinux-8
           - postgresql-16-pgdg-pgroonga-almalinux-9
           - postgresql-16-pgdg-pgroonga-almalinux-10
