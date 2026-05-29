@@ -22,6 +22,7 @@ typedef struct PGrnResolvedOptions
 	grn_obj *plugins;
 	grn_id lexiconKeyTypeID;
 	grn_table_flags lexiconType;
+	grn_table_flags lexiconTotalKeySize;
 	grn_column_flags indexFlags;
 	const char *modelName;
 	bool needCentroidColumn;

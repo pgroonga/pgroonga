@@ -13,6 +13,8 @@ static const char *PGRN_LEXICON_TYPE_HASH_TABLE = "hash_table";
 static const char *PGRN_LEXICON_TYPE_PATRICIA_TRIE = "patricia_trie";
 static const char *PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE = "double_array_trie";
 
+static const char *PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE = "large";
+
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
@@ -25,6 +27,7 @@ typedef struct PGrnOptions
 	int regexpSearchNormalizerOffset;
 	int prefixSearchNormalizerOffset;
 	int lexiconTypeOffset;
+	int lexiconTotalKeySizeOffset;
 	bool queryAllowColumn;
 	int normalizersOffset;
 	int normalizersMappingOffset;
@@ -333,6 +336,26 @@ PGrnOptionValidateLexiconType(const char *name)
 }
 
 static void
+PGrnOptionValidateLexiconTotalKeySize(const char *name)
+{
+	const char *tag = "[option][lexicon-total-key-size][validate]";
+
+	if (!name)
+		return;
+
+	if (strcmp(name, PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE) == 0)
+		return;
+
+	PGrnCheckRC(GRN_INVALID_ARGUMENT,
+				"%s invalid lexicon total key size: <%s>: "
+				"available types: "
+				"%s",
+				tag,
+				name,
+				PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE);
+}
+
+static void
 PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 {
 	const char *tag = "[option][index-flags-mapping][validate]";
@@ -520,6 +543,12 @@ PGrnInitializeOptions(void)
 						 "Lexicon type to be used for lexicon",
 						 NULL,
 						 PGrnOptionValidateLexiconType,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "lexicon_total_key_size",
+						 "Lexicon total key size flag to be used for lexicon",
+						 NULL,
+						 PGrnOptionValidateLexiconTotalKeySize,
 						 lock_mode);
 	add_bool_reloption(PGrnReloptionKind,
 					   "query_allow_column",
@@ -942,6 +971,7 @@ PGrnResolveOptionValues(Relation index,
 	PGrnOptions *options;
 	const char *rawTokenFilters;
 	const char *lexiconTypeName;
+        const char *lexiconTotalKeySize;
 
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
@@ -1024,6 +1054,14 @@ PGrnResolveOptionValues(Relation index,
 			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 		}
 	}
+	lexiconTotalKeySize = GET_STRING_RELOPTION(options, lexiconTotalKeySizeOffset);
+	if (lexiconTotalKeySize)
+	{
+		if (strcmp(lexiconTotalKeySize, PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE) == 0)
+		{
+                  resolvedOptions->lexiconTotalKeySize |= GRN_OBJ_KEY_LARGE;
+		}
+	}
 
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
 }
@@ -1074,6 +1112,9 @@ pgroonga_options(Datum reloptions, bool validate)
 		{"lexicon_type",
 		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, lexiconTypeOffset)},
+		{"lexicon_total_key_size",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, lexiconTotalKeySizeOffset)},
 		{"query_allow_column",
 		 RELOPT_TYPE_BOOL,
 		 offsetof(PGrnOptions, queryAllowColumn)},

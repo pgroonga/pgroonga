@@ -203,6 +203,7 @@ PGrnCreateLexicon(PGrnCreateData *data)
 		plugins = resolvedOptions.plugins;
 		typeID = resolvedOptions.lexiconKeyTypeID;
 		flags |= resolvedOptions.lexiconType;
+                flags |= resolvedOptions.lexiconTotalKeySize;
 	}
 	else
 	{
