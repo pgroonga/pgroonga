@@ -971,7 +971,7 @@ PGrnResolveOptionValues(Relation index,
 	PGrnOptions *options;
 	const char *rawTokenFilters;
 	const char *lexiconTypeName;
-        const char *lexiconTotalKeySize;
+	const char *lexiconTotalKeySize;
 
 	options = (PGrnOptions *) (index->rd_options);
 	if (!options)
@@ -1054,12 +1054,13 @@ PGrnResolveOptionValues(Relation index,
 			resolvedOptions->lexiconType |= GRN_OBJ_TABLE_PAT_KEY;
 		}
 	}
-	lexiconTotalKeySize = GET_STRING_RELOPTION(options, lexiconTotalKeySizeOffset);
+	lexiconTotalKeySize =
+		GET_STRING_RELOPTION(options, lexiconTotalKeySizeOffset);
 	if (lexiconTotalKeySize)
 	{
 		if (strcmp(lexiconTotalKeySize, PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE) == 0)
 		{
-                  resolvedOptions->lexiconTotalKeySize |= GRN_OBJ_KEY_LARGE;
+			resolvedOptions->lexiconTotalKeySize |= GRN_OBJ_KEY_LARGE;
 		}
 	}
 
