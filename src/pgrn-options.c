@@ -13,8 +13,6 @@ static const char *PGRN_LEXICON_TYPE_HASH_TABLE = "hash_table";
 static const char *PGRN_LEXICON_TYPE_PATRICIA_TRIE = "patricia_trie";
 static const char *PGRN_LEXICON_TYPE_DOUBLE_ARRAY_TRIE = "double_array_trie";
 
-static const char *PGRN_LEXICON_TOTAL_KEY_SIZE_LARGE = "large";
-
 typedef struct PGrnOptions
 {
 	int32 vl_len_;
