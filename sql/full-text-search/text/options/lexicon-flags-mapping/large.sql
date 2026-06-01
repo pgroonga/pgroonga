@@ -5,7 +5,7 @@ CREATE TABLE memos (
 CREATE INDEX pgrn_index ON memos
   USING pgroonga (content)
   WITH (lexicon_flags_mapping = '{
-	  "content": ["LARGE"]
+	  "pgrn_index": ["LARGE"]
 	}');
 
 SELECT entry->>3 AS flags
