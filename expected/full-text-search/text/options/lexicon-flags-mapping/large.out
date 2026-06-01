@@ -4,7 +4,7 @@ CREATE TABLE memos (
 CREATE INDEX pgrn_index ON memos
   USING pgroonga (content)
   WITH (lexicon_flags_mapping = '{
-	  "pgrn_index": ["LARGE"]
+	  "content": ["LARGE"]
 	}');
 SELECT entry->>3 AS flags
   FROM json_array_elements(pgroonga_command('table_list')::json#>'{1}')

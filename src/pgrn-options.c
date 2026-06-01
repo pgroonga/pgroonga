@@ -1024,10 +1024,11 @@ PGrnResolveOptionValuesLexiconFlags(PGrnOptions *options,
 {
 	if (options->lexiconFlagsMappingOffset != 0 && i >= 0)
 	{
-		const char *lexiconName = RelationGetRelationName(index);
-		const char *rawLexiconFlagsMapping =
-			((const char *) options) + options->lexiconFlagsMappingOffset;
-		Jsonb *jsonb = PGrnJSONBParse(rawLexiconFlagsMapping);
+		TupleDesc desc = RelationGetDescr(index);
+		Name name = &(TupleDescAttr(desc, i)->attname);
+		const char *rawIndexFlagsMapping =
+			((const char *) options) + options->indexFlagsMappingOffset;
+		Jsonb *jsonb = PGrnJSONBParse(rawIndexFlagsMapping);
 		JsonbIterator *iter;
 		JsonbValue value;
 
@@ -1042,9 +1043,9 @@ PGrnResolveOptionValuesLexiconFlags(PGrnOptions *options,
 			/* WJB_KEY */
 			if (JsonbIteratorNext(&iter, &value, false) == WJB_END_OBJECT)
 				break;
-			isTarget = (value.val.string.len == strlen(lexiconName) &&
+			isTarget = (value.val.string.len == strlen(name->data) &&
 						memcmp(value.val.string.val,
-							   lexiconName,
+							   name->data,
 							   value.val.string.len) == 0);
 			/* WJB_BEGIN_ARRAY */
 			JsonbIteratorNext(&iter, &value, false);
@@ -1066,6 +1067,7 @@ PGrnResolveOptionValuesLexiconFlags(PGrnOptions *options,
 		}
 	}
 }
+
 void
 PGrnResolveOptionValues(Relation index,
 						int i,
