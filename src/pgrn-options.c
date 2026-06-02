@@ -1162,8 +1162,8 @@ PGrnResolveOptionValues(Relation index,
 		}
 	}
 
-	PGrnResolveOptionValuesLexiconFlags(options, index, i, resolvedOptions);
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
+	PGrnResolveOptionValuesLexiconFlags(options, index, i, resolvedOptions);
 }
 
 grn_expr_flags
