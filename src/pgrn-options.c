@@ -1027,7 +1027,7 @@ PGrnResolveOptionValuesLexiconFlags(PGrnOptions *options,
 		TupleDesc desc = RelationGetDescr(index);
 		Name name = &(TupleDescAttr(desc, i)->attname);
 		const char *rawIndexFlagsMapping =
-			((const char *) options) + options->indexFlagsMappingOffset;
+			((const char *) options) + options->lexiconFlagsMappingOffset;
 		Jsonb *jsonb = PGrnJSONBParse(rawIndexFlagsMapping);
 		JsonbIterator *iter;
 		JsonbValue value;
