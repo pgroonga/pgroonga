@@ -948,6 +948,9 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	if (!resolvedOptions.tokenizer)
 		return;
 
+	grn_table_flags lexiconFlags = resolvedOptions.lexiconType;
+	lexiconFlags |= resolvedOptions.lexiconFlags;
+
 	PGrnWALRegisterPlugins(data->index, resolvedOptions.plugins);
 
 	snprintf(lexiconName,
@@ -959,7 +962,7 @@ PGrnJSONBCreateFullTextSearchIndexColumn(PGrnCreateData *data,
 	type = grn_ctx_at(ctx, GRN_DB_SHORT_TEXT);
 	lexicon = PGrnCreateTable(data->index,
 							  lexiconName,
-							  resolvedOptions.lexiconType,
+							  lexiconFlags,
 							  type,
 							  resolvedOptions.tokenizer,
 							  resolvedOptions.normalizers,
