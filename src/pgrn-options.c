@@ -405,7 +405,7 @@ PGrnOptionValidateLexiconFlagsMapping(const char *rawLexiconFlagsMapping)
 						tag,
 						(int) (rawFlag.length),
 						rawFlag.value,
-						ctx->errbuf);
+						rawLexiconFlagsMapping);
 		}
 	}
 }
