@@ -62,7 +62,8 @@ jobs:
           choco install -y ${{ matrix.visual-studio-package }}
       - name: Prepare environments
         run: |
-          Write-Output "VC_PREFIX=C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC" | `
+          $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          Write-Output "VC_PREFIX=${InstallDir}\VC" | `
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           Write-Output "CCACHE_DIR=${{ github.workspace }}\ccache" | `
