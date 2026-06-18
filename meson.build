@@ -186,6 +186,7 @@ pgroonga_sources = files(
   'src/pgrn-match-positions-byte.c',
   'src/pgrn-match-positions-character.c',
   'src/pgrn-normalize.c',
+  'src/pgrn-normalizer-table-variants.c',
   'src/pgrn-options.c',
   'src/pgrn-pg.c',
   'src/pgrn-query-escape.c',

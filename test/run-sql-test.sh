@@ -28,17 +28,17 @@ while [ $# -gt 0 ]; do
         touch ${expected_path}
       fi
       mkdir -p ${BUILD_DIR}/results/$(dirname ${test_name})
-      test_names="${test_names[@]} ${test_name}"
+      test_names="${test_names} ${test_name}"
       ;;
     *)
       if [ -d "${arg}" ]; then
         for test_path in $(find ${arg} -name "*.sql"); do
           test_name=$(echo "${test_path}" | sed -E -e 's,^sql/|\.sql,,g')
           mkdir -p ${BUILD_DIR}/results/$(dirname ${test_name})
-          test_names="${test_names[@]} ${test_name}"
+          test_names="${test_names} ${test_name}"
         done
       else
-        test_names="${test_names[@]} ${arg}"
+        test_names="${test_names} ${arg}"
       fi
       ;;
   esac

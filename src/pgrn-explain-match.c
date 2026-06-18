@@ -95,6 +95,8 @@ pgroonga_explain_match(PG_FUNCTION_ARGS)
 {
 	char *fullIndexName = PG_GETARG_CSTRING(0);
 	text *query = PG_GETARG_TEXT_PP(1);
+	const char *queryRaw = VARDATA_ANY(query);
+	size_t querySize = VARSIZE_ANY_EXHDR(query);
 	const char *indexName;
 	size_t indexNameSize;
 	const char *attributeName;
@@ -164,6 +166,8 @@ pgroonga_explain_match(PG_FUNCTION_ARGS)
 		grn_token *token;
 		grn_obj *data;
 		grn_id lexiconID;
+		uint64_t sourceOffset;
+		uint32_t sourceLength;
 
 		if (id == GRN_ID_NIL)
 			continue;
@@ -172,18 +176,28 @@ pgroonga_explain_match(PG_FUNCTION_ARGS)
 		data = grn_token_get_data(ctx, token);
 		lexiconID = grn_table_get(
 			ctx, lexicon, GRN_TEXT_VALUE(data), GRN_TEXT_LEN(data));
+		sourceOffset = grn_token_get_source_offset(ctx, token);
+		sourceLength = grn_token_get_source_length(ctx, token);
 
-		grn_output_map_open(ctx, &json, type, "token", 6);
+		grn_output_map_open(ctx, &json, type, "token", 7);
 		PGrnExplainMatchOutputText(
 			type, "value", GRN_TEXT_VALUE(data), GRN_TEXT_LEN(data));
+		grn_output_cstr(ctx, &json, type, "source");
+		if (sourceOffset <= querySize && sourceLength <= querySize - sourceOffset)
+		{
+			grn_output_str(
+				ctx, &json, type, queryRaw + sourceOffset, sourceLength);
+		}
+		else
+		{
+			grn_output_null(ctx, &json, type);
+		}
 		grn_output_cstr(ctx, &json, type, "position");
 		grn_output_uint32(ctx, &json, type, grn_token_get_position(ctx, token));
 		grn_output_cstr(ctx, &json, type, "source_offset");
-		grn_output_uint64(
-			ctx, &json, type, grn_token_get_source_offset(ctx, token));
+		grn_output_uint64(ctx, &json, type, sourceOffset);
 		grn_output_cstr(ctx, &json, type, "source_length");
-		grn_output_uint32(
-			ctx, &json, type, grn_token_get_source_length(ctx, token));
+		grn_output_uint32(ctx, &json, type, sourceLength);
 		grn_output_cstr(ctx, &json, type, "source_first_character_length");
 		grn_output_uint32(ctx,
 						  &json,

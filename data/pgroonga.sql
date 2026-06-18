@@ -366,6 +366,15 @@ CREATE FUNCTION pgroonga_explain_match(indexName cstring, query text)
 	STRICT
 	PARALLEL SAFE;
 
+CREATE FUNCTION pgroonga_normalizer_table_variants(indexName cstring,
+						   normalized text)
+	RETURNS text[]
+	AS 'MODULE_PATHNAME', 'pgroonga_normalizer_table_variants'
+	LANGUAGE C
+	STABLE
+	STRICT
+	PARALLEL SAFE;
+
 CREATE FUNCTION pgroonga_vacuum()
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_vacuum'
