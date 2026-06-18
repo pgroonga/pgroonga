@@ -358,6 +358,14 @@ CREATE FUNCTION pgroonga_tokenize(target text, VARIADIC options text[])
 	STRICT
 	PARALLEL SAFE;
 
+CREATE FUNCTION pgroonga_explain_match(indexName cstring, query text)
+	RETURNS jsonb
+	AS 'MODULE_PATHNAME', 'pgroonga_explain_match'
+	LANGUAGE C
+	STABLE
+	STRICT
+	PARALLEL SAFE;
+
 CREATE FUNCTION pgroonga_vacuum()
 	RETURNS bool
 	AS 'MODULE_PATHNAME', 'pgroonga_vacuum'

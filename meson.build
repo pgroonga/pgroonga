@@ -170,6 +170,7 @@ pgroonga_sources = files(
   'src/pgrn-ctid.c',
   'src/pgrn-custom-scan.c',
   'src/pgrn-escape.c',
+  'src/pgrn-explain-match.c',
   'src/pgrn-flush.c',
   'src/pgrn-condition.c',
   'src/pgrn-global.c',

@@ -11,6 +11,7 @@
 #include "pgrn-create.h"
 #include "pgrn-ctid.h"
 #include "pgrn-custom-scan.h"
+#include "pgrn-explain-match.h"
 #include "pgrn-file.h"
 #include "pgrn-global.h"
 #include "pgrn-groonga-tuple-is-alive.h"
@@ -448,6 +449,9 @@ PGrnBeforeShmemExit(int code, Datum arg)
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][normalize]", tag);
 			PGrnFinalizeNormalize();
 
+			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][explain-match]", tag);
+			PGrnFinalizeExplainMatch();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][tokenize]", tag);
 			PGrnFinalizeTokenize();
 
@@ -588,6 +592,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeTokenize();
 
 	PGrnInitializeNormalize();
+
+	PGrnInitializeExplainMatch();
 
 	PGrnInitializeLanguageModelVectorize();
 

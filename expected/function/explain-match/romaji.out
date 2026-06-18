@@ -1,0 +1,112 @@
+CREATE TABLE memos (
+  id integer,
+  title text,
+  content text
+);
+INSERT INTO memos VALUES
+  (1,
+   'PostgreSQLはリレーショナル・データベース管理システムです。',
+   'すごいでしょう');
+INSERT INTO memos VALUES
+  (2,
+   'Groongaは日本語対応の高速な全文検索エンジンです。',
+   'スゴイデショウ');
+INSERT INTO memos VALUES
+  (3,
+   'PGroongaはインデックスとしてGroongaを使うためのPostgreSQLの拡張機能です。',
+   'ハバナイスデー');
+INSERT INTO memos VALUES
+  (4,
+   'groongaコマンドがあります。',
+   '今日はコンバンワこんにちわ');
+CREATE INDEX pgroonga_title_search_index ON memos USING pgroonga (title)
+  WITH (
+    normalizers = 'NormalizerNFKC150(
+                     "unify_to_romaji", true,
+                     "unify_hyphen_and_prolonged_sound_mark", true
+                   )',
+    tokenizer='TokenNgram(
+                 "unify_alphabet", false,
+                 "unify_symbol", false,
+                 "unify_digit", false,
+                 "report_source_location", true
+               )'
+  );
+CREATE INDEX pgroonga_content_search_index ON memos USING pgroonga (content)
+  WITH (
+    normalizers = 'NormalizerNFKC150(
+                     "unify_to_romaji", true,
+                     "unify_hyphen_and_prolonged_sound_mark", true
+                   )',
+    tokenizer='TokenNgram(
+                 "unify_alphabet", false,
+                 "unify_symbol", false,
+                 "unify_digit", false,
+                 "report_source_location", true
+               )'
+  );
+SET enable_seqscan = off;
+SET enable_indexscan = on;
+SET enable_bitmapscan = off;
+\pset format unaligned
+SELECT id, content
+  FROM memos
+ WHERE content &@ 'すごい'
+ ORDER BY id;
+id|content
+1|すごいでしょう
+2|スゴイデショウ
+(2 rows)
+SELECT token->>'value' AS value,
+       token->>'position' AS position,
+       token->>'in_lexicon' AS in_lexicon
+  FROM jsonb_array_elements(
+    pgroonga_explain_match('pgroonga_content_search_index', 'すごい')->'tokens'
+  ) AS token;
+value|position|in_lexicon
+su|0|true
+ug|1|true
+go|2|true
+oi|3|true
+i|4|false
+(5 rows)
+SELECT jsonb_array_elements_text(
+  pgroonga_explain_match('pgroonga_content_search_index', 'すごい')->'matched_terms'
+);
+jsonb_array_elements_text
+su
+ug
+go
+oi
+(4 rows)
+SELECT id, content
+  FROM memos
+ WHERE title &@~ 'デス'
+ ORDER BY id;
+id|content
+1|すごいでしょう
+2|スゴイデショウ
+3|ハバナイスデー
+(3 rows)
+SELECT token->>'value' AS value,
+       token->>'position' AS position,
+       token->>'in_lexicon' AS in_lexicon
+  FROM jsonb_array_elements(
+    pgroonga_explain_match('pgroonga_title_search_index', 'デス')->'tokens'
+  ) AS token;
+value|position|in_lexicon
+de|0|true
+es|1|true
+su|2|true
+u|3|false
+(4 rows)
+SELECT jsonb_array_elements_text(
+  pgroonga_explain_match('pgroonga_title_search_index', 'デス')->'matched_terms'
+);
+jsonb_array_elements_text
+de
+es
+su
+(3 rows)
+\pset format aligned
+DROP TABLE memos;
