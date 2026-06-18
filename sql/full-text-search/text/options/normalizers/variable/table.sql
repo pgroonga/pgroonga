@@ -25,14 +25,13 @@ CREATE INDEX pgrn_index ON memos
                            "target", "target")');
 
 SELECT jsonb_pretty(
-  pgroonga_command('select',
+  pgroonga_command('table_tokenize',
                    ARRAY[
                      'table', 'Lexicon' || 'pgrn_index'::regclass::oid || '_0',
-                     'limit', '-1',
-                     'sort_keys', '_key',
-                     'output_columns', '_key',
+                     'string', 'グルンガ',
+                     'mode', 'GET',
                      'command_version', '3'
-                   ])::jsonb->'body'->'records'
+                   ])::jsonb->'body'
 );
 
 DROP TABLE normalizations;

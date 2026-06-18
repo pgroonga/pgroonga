@@ -7,33 +7,35 @@ CREATE INDEX pgrn_index ON memos
   WITH (normalizers = 'NormalizerNFKC130("unify_kana", true),
                        NormalizerNFKC130("unify_middle_dot", true)');
 SELECT jsonb_pretty(
-  pgroonga_command('select',
+  pgroonga_command('table_tokenize',
                    ARRAY[
                      'table', 'Lexicon' || 'pgrn_index'::regclass::oid || '_0',
-                     'limit', '-1',
-                     'sort_keys', '_key',
-                     'output_columns', '_key',
+                     'string', 'グル∙ンガ',
+                     'mode', 'GET',
                      'command_version', '3'
-                   ])::jsonb->'body'->'records'
+                   ])::jsonb->'body'
 );
-  jsonb_pretty  
-----------------
- [             +
-     [         +
-         "·"   +
-     ],        +
-     [         +
-         "が"  +
-     ],        +
-     [         +
-         "ぐる"+
-     ],        +
-     [         +
-         "る"  +
-     ],        +
-     [         +
-         "んが"+
-     ]         +
+             jsonb_pretty             
+--------------------------------------
+ [                                   +
+     {                               +
+         "value": "ぐる",            +
+         "position": 0,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "·",               +
+         "position": 2,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "んが",            +
+         "position": 3,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     }                               +
  ]
 (1 row)
 

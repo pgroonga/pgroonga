@@ -17,30 +17,35 @@ CREATE INDEX pgrn_index ON memos
           "content": "NormalizerNFKC130(\"unify_kana\", true), NormalizerTable(\"normalized\", \"${table:public.pgrn_normalizations_index}.normalized\", \"target\", \"target\")"
        }');
 SELECT jsonb_pretty(
-  pgroonga_command('select',
+  pgroonga_command('table_tokenize',
                    ARRAY[
                      'table', 'Lexicon' || 'pgrn_index'::regclass::oid || '_0',
-                     'limit', '-1',
-                     'sort_keys', '_key',
-                     'output_columns', '_key',
+                     'string', 'グルンガ',
+                     'mode', 'GET',
                      'command_version', '3'
-                   ])::jsonb->'body'->'records'
+                   ])::jsonb->'body'
 );
-  jsonb_pretty  
-----------------
- [             +
-     [         +
-         "か"  +
-     ],        +
-     [         +
-         "くる"+
-     ],        +
-     [         +
-         "るん"+
-     ],        +
-     [         +
-         "んか"+
-     ]         +
+             jsonb_pretty             
+--------------------------------------
+ [                                   +
+     {                               +
+         "value": "くる",            +
+         "position": 0,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "るん",            +
+         "position": 1,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "んか",            +
+         "position": 2,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     }                               +
  ]
 (1 row)
 

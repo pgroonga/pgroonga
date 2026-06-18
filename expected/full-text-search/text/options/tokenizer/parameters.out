@@ -7,66 +7,101 @@ CREATE INDEX pgrn_index ON memos
   WITH (tokenizer = 'TokenNgram("n", 3)',
         normalizer = '');
 SELECT jsonb_pretty(
-  pgroonga_command('select',
+  pgroonga_command('table_tokenize',
                    ARRAY[
                      'table', 'Lexicon' || 'pgrn_index'::regclass::oid || '_0',
-                     'limit', '-1',
-                     'sort_keys', '_key',
-                     'output_columns', '_key',
+                     'string', 'PGroonga is fast',
+                     'mode', 'GET',
                      'command_version', '3'
-                   ])::jsonb->'body'->'records'
+                   ])::jsonb->'body'
 );
- jsonb_pretty  
----------------
- [            +
-     [        +
-         " fa"+
-     ],       +
-     [        +
-         " is"+
-     ],       +
-     [        +
-         "Gro"+
-     ],       +
-     [        +
-         "PGr"+
-     ],       +
-     [        +
-         "a i"+
-     ],       +
-     [        +
-         "ast"+
-     ],       +
-     [        +
-         "fas"+
-     ],       +
-     [        +
-         "ga "+
-     ],       +
-     [        +
-         "is "+
-     ],       +
-     [        +
-         "nga"+
-     ],       +
-     [        +
-         "ong"+
-     ],       +
-     [        +
-         "oon"+
-     ],       +
-     [        +
-         "roo"+
-     ],       +
-     [        +
-         "s f"+
-     ],       +
-     [        +
-         "st" +
-     ],       +
-     [        +
-         "t"  +
-     ]        +
+             jsonb_pretty             
+--------------------------------------
+ [                                   +
+     {                               +
+         "value": "PGr",             +
+         "position": 0,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "Gro",             +
+         "position": 1,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "roo",             +
+         "position": 2,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "oon",             +
+         "position": 3,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "ong",             +
+         "position": 4,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "nga",             +
+         "position": 5,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "ga ",             +
+         "position": 6,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "a i",             +
+         "position": 7,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": " is",             +
+         "position": 8,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "is ",             +
+         "position": 9,              +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "s f",             +
+         "position": 10,             +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": " fa",             +
+         "position": 11,             +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "fas",             +
+         "position": 12,             +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     },                              +
+     {                               +
+         "value": "ast",             +
+         "position": 13,             +
+         "force_prefix": false,      +
+         "force_prefix_search": false+
+     }                               +
  ]
 (1 row)
 
