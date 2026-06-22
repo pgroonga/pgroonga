@@ -79,6 +79,7 @@
 #include <groonga.h>
 
 #include <math.h>
+#include <port/atomics.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -103,6 +104,7 @@ bool PGrnEnableParallelBuildCopy = false;
 typedef struct PGrnProcessSharedData
 {
 	TimestampTz lastVacuumTimestamp;
+	pg_atomic_uint32 nScanningProcesses;
 } PGrnProcessSharedData;
 
 typedef struct PGrnProcessLocalData
@@ -727,6 +729,7 @@ _PG_init(void)
 			if (!found)
 			{
 				processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
+				pg_atomic_init_u32(&(processSharedData->nScanningProcesses), 0);
 			}
 			LWLockRelease(AddinShmemInitLock);
 		}
@@ -825,6 +828,12 @@ PGrnEnsureLatestDB(void)
 
 	if (processLocalData.lastDBUnmapTimestamp >
 		processSharedData->lastVacuumTimestamp)
+	{
+		PGRN_TRACE_LOG_EXIT();
+		return false;
+	}
+
+	if (pg_atomic_read_u32(&(processSharedData->nScanningProcesses)) != 0)
 	{
 		PGRN_TRACE_LOG_EXIT();
 		return false;
@@ -5463,6 +5472,11 @@ pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 	 * PGrnEnsureLatestDB() comment for details. */
 	/* PGrnEnsureLatestDB(); */
 
+	if (processSharedData)
+	{
+		pg_atomic_fetch_add_u32(&(processSharedData->nScanningProcesses), 1);
+	}
+
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
@@ -7774,6 +7788,11 @@ pgroonga_endscan(IndexScanDesc scan)
 
 	PGrnScanOpaqueFin(so);
 	MemoryContextDelete(memoryContext);
+
+	if (processSharedData)
+	{
+		pg_atomic_fetch_sub_u32(&(processSharedData->nScanningProcesses), 1);
+	}
 
 	PGRN_TRACE_LOG_EXIT();
 }
