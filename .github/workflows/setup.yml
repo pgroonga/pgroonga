@@ -19,10 +19,10 @@ jobs:
           - "images:ubuntu/22.04"
           - "images:ubuntu/24.04"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: "groonga"
           repository: "groonga/groonga"
