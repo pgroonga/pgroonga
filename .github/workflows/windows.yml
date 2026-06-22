@@ -52,7 +52,7 @@ jobs:
       - name: Use JST
         run: |
           Set-TimeZone -Id "Tokyo Standard Time"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Install Visual Studio
@@ -268,7 +268,7 @@ jobs:
         if: failure()
         run: |
           Get-Content ${Env:PGROONGA_TEST_DATA}\pgroonga.log
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           repository: pgroonga/benchmark
           path: pgroonga-benchmark
