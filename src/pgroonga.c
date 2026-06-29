@@ -79,7 +79,6 @@
 #include <groonga.h>
 
 #include <math.h>
-#include <port/atomics.h>
 #include <stdlib.h>
 #include <string.h>
 
