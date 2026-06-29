@@ -100,7 +100,6 @@ static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
 static bool PGrnCrashSaferInitialized = false;
 bool PGrnEnableParallelBuildCopy = false;
-static bool PGrnIsScanning = false;
 
 typedef struct PGrnProcessSharedData
 {
@@ -730,7 +729,6 @@ _PG_init(void)
 			{
 				processSharedData->lastVacuumTimestamp = GetCurrentTimestamp();
 			}
-			PGrnIsScanning = false;
 			LWLockRelease(AddinShmemInitLock);
 		}
 		processLocalData.lastDBUnmapTimestamp = GetCurrentTimestamp();
@@ -833,7 +831,7 @@ PGrnEnsureLatestDB(void)
 		return false;
 	}
 
-	if (PGrnIsScanning)
+	if (PGrnNScanOpaques != 0)
 	{
 		PGRN_TRACE_LOG_EXIT();
 		return false;
@@ -5472,8 +5470,6 @@ pgroonga_beginscan(Relation index, int nKeys, int nOrderBys)
 	 * PGrnEnsureLatestDB() comment for details. */
 	/* PGrnEnsureLatestDB(); */
 
-	PGrnIsScanning = true;
-
 	scan = RelationGetIndexScan(index, nKeys, nOrderBys);
 
 	so = (PGrnScanOpaque) malloc(sizeof(PGrnScanOpaqueData));
@@ -7785,8 +7781,6 @@ pgroonga_endscan(IndexScanDesc scan)
 
 	PGrnScanOpaqueFin(so);
 	MemoryContextDelete(memoryContext);
-
-	PGrnIsScanning = false;
 
 	PGRN_TRACE_LOG_EXIT();
 }
