@@ -830,12 +830,6 @@ PGrnEnsureLatestDB(void)
 		return false;
 	}
 
-	if (PGrnNScanOpaques != 0)
-	{
-		PGRN_TRACE_LOG_EXIT();
-		return false;
-	}
-
 	GRN_LOG(
 		ctx, GRN_LOG_DEBUG, "pgroonga: unmap DB because VACUUM was executed");
 	PGrnUnmapDB();
@@ -5190,7 +5184,10 @@ pgroonga_insert(Relation index,
 						tag)));
 	}
 
-	PGrnEnsureLatestDB();
+	if (PGrnNScanOpaques == 0)
+	{
+		PGrnEnsureLatestDB();
+	}
 
 	PGrnWALApply(index);
 
