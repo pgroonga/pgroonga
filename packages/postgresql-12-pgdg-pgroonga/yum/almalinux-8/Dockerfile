@@ -15,6 +15,7 @@ EOF
 RUN \
   quiet=$([ "${DEBUG}" = "yes" ] || echo "--quiet") && \
   dnf install -y ${quiet} \
+    https://packages.apache.org/artifactory/arrow/almalinux/8/apache-arrow-release-latest.rpm \
     https://packages.groonga.org/almalinux/8/groonga-release-latest.noarch.rpm \
     epel-release && \
   dnf module -y ${quiet} disable postgresql && \
