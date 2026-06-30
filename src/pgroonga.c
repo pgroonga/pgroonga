@@ -5184,7 +5184,35 @@ pgroonga_insert(Relation index,
 						tag)));
 	}
 
-	PGrnEnsureLatestDB();
+	/*
+	 * pgroonga_insert() may be called between pgroonga_beginscan() and
+	 * pgroonga_endscan() while executing an UPDATE statement with a WHERE
+	 * clause.
+	 * If an UPDATE statement with a WHERE clause and VACUUM are executed
+	 * concurrently, EnsureLatestDB() may be called in this scope, as shown
+	 * below:
+	 *
+	 * pgroonga: [trace][pgroonga_beginscan][enter]
+	 * pgroonga: [trace][pgroonga_beginscan][exit]
+	 * pgroonga: [trace][pgroonga_rescan][enter]
+	 * pgroonga: [trace][pgroonga_rescan][exit]
+	 * pgroonga: [trace][pgroonga_insert][enter]
+	 * pgroonga: [trace][PGrnEnsureLatestDB][enter]
+	 * pgroonga: [trace][PGrnUnmapDB][enter]
+	 * pgroonga: [trace][PGrnUnmapDB][exit]
+	 * pgroonga: [trace][PGrnEnsureLatestDB][exit]
+	 * pgroonga: [trace][pgroonga_insert][exit]
+	 * pgroonga: [trace][pgroonga_endscan][enter]
+	 * pgroonga: [trace][pgroonga_endscan][exit]
+	 *
+	 * EnsureLatestDB() should not be called in this scope.
+	 * See the comment for PGrnEnsureLatestDB() for detail.
+	 * Therefore, prevent EnsureLatestDB() from being called while between
+	 * pgroonga_beginscan() and pgroonga_endscan. */
+	if (PGrnNScanOpaques == 0)
+	{
+		PGrnEnsureLatestDB();
+	}
 
 	PGrnWALApply(index);
 
