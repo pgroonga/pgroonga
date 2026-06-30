@@ -22,7 +22,7 @@ RUN \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=powertools -y ${quiet} \
     ccache \
-    groonga-devel-14.0.6-1.el8.x86_64
+    groonga-devel-14.0.6-1.el8.x86_64 \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
