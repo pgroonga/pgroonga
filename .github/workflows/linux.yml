@@ -23,31 +23,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Only the PGroonga package for PostgreSQL 12 is needed in the maintenance/3.2.2 branch.
+        # Support for the other PostgreSQL versions is disabled.
+        # Re-enable them if support is needed in the future.
         label:
           - PostgreSQL 12
-          - PostgreSQL 13
-          - PostgreSQL 14
-          - PostgreSQL 15
-          - PostgreSQL 16
-          - PostgreSQL 16 with Groonga main
-          - PostgreSQL 17
+          #- PostgreSQL 13
+          #- PostgreSQL 14
+          #- PostgreSQL 15
+          #- PostgreSQL 16
+          #- PostgreSQL 16 with Groonga main
+          #- PostgreSQL 17
         include:
           - label: PostgreSQL 12
             postgresql-version: "12"
-          - label: PostgreSQL 13
-            postgresql-version: "13"
-          - label: PostgreSQL 14
-            postgresql-version: "14"
-          - label: PostgreSQL 15
-            postgresql-version: "15"
-          - label: PostgreSQL 16
-            postgresql-version: "16"
-          - label: PostgreSQL 16 with Groonga main
-            groonga-main: "yes"
-            postgresql-version: "16"
-          - label: PostgreSQL 17
-            postgresql-unreleased: "yes"
-            postgresql-version: "17"
+          #- label: PostgreSQL 13
+          #  postgresql-version: "13"
+          #- label: PostgreSQL 14
+          #  postgresql-version: "14"
+          #- label: PostgreSQL 15
+          #  postgresql-version: "15"
+          #- label: PostgreSQL 16
+          #  postgresql-version: "16"
+          #- label: PostgreSQL 16 with Groonga main
+          #  groonga-main: "yes"
+          #  postgresql-version: "16"
+          #- label: PostgreSQL 17
+          #  postgresql-unreleased: "yes"
+          #  postgresql-version: "17"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
       POSTGRESQL_UNRELEASED: ${{ matrix.postgresql-unreleased }}
