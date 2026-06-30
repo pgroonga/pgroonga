@@ -183,8 +183,8 @@ ${DNF} remove -y ${pgroonga_package}
 #     exit
 #     ;;
 # esac
-
-${DNF} install -y ${pgroonga_package}
+pgroonga_package_suffix=3.2.2-1.el8.x86_64
+${DNF} install -y ${pgroonga_package}-${pgroonga_package_suffix}
 createdb upgrade
 psql upgrade -c 'CREATE EXTENSION pgroonga'
 ${DNF} install -y ${packages_dir}/*.rpm
