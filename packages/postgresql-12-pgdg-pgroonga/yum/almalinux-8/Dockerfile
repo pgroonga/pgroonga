@@ -22,6 +22,8 @@ RUN \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=powertools -y ${quiet} \
     ccache \
+    arrow-devel-16.1.0-1.el8.x86_64 \
+    arrow16-libs-16.1.0-1.el8.x86_64 \
     groonga-devel \
     llvm-toolset \
     llvm-devel \
