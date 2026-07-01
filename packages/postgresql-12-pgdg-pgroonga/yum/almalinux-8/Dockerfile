@@ -22,6 +22,10 @@ RUN \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=powertools -y ${quiet} \
     ccache \
+    # Normally, both arrow-devel and arrow-libs are installed automatically as dependencies packages of groonga-devel.
+    # When installed this way, the latest version are used.
+    # However, we need to pin them to version 16.1.0 in this maintenance branch.
+    # Because we used 16.1.0 when PGroonga was 3.2.2 built.
     arrow-devel-16.1.0-1.el8.x86_64 \
     arrow16-libs-16.1.0-1.el8.x86_64 \
     groonga-devel \
