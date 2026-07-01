@@ -23,7 +23,7 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
   # This function only use YUM packages.
   # Only the PGroonga package for PostgreSQL 12 on AlmaLinux 8 is needed in the maintenance/3.2.2 branch.
   def maintenance_groonga_version
-    "v14.0.6"
+    "14.0.6"
   end
 
   def latest_groonga_version
