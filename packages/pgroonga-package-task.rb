@@ -129,6 +129,7 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
     rpm_postgresql_package_name =
       "postgresql#{@postgresql_version}#{postgresql_package_name_suffix}"
     @rpm_package = "#{rpm_postgresql_package_name}-pgroonga"
+    @rpm_release = rpm_release
   end
 
   def define
@@ -153,6 +154,10 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
       cp(source_yum_spec_in_path,
          yum_spec_in_path)
     end
+  end
+
+  def rpm_release
+    2
   end
 
   def update_spec

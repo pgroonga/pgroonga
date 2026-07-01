@@ -22,7 +22,7 @@
 
 Name:		@PACKAGE@
 Version:	@VERSION@
-Release:	1%{?dist}
+Release:	@RELEASE@%{?dist}
 Summary:	Fast full-text search plugin for PostgreSQL based on Groonga
 
 Group:		Applications/Text
