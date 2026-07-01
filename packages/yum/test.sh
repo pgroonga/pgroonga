@@ -187,8 +187,8 @@ ${DNF} remove -y ${pgroonga_package}
 # In the maintenance branch for 3.2.2, both 3.2.2-1 and 3.2.2-2 exist.
 # We should verify that upgrading from 3.2.2-1 to 3.2.2-2 works correctly.
 # Therefore, pin PGroonga version before running upgrade test.
-pgroonga_package_suffix=3.2.2-1.el8.x86_64
-${DNF} install -y ${pgroonga_package}-${pgroonga_package_suffix}
+pgroonga_old_release=${pgroonga_package}-3.2.2-1.el8.x86_64
+${DNF} install -y ${pgroonga_old_release}
 createdb upgrade
 psql upgrade -c 'CREATE EXTENSION pgroonga'
 ${DNF} install -y ${packages_dir}/*.rpm
