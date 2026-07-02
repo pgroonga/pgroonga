@@ -26,6 +26,9 @@ RUN \
     llvm-toolset \
     llvm-devel \
     msgpack-devel \
+    # If we do not pin the version of PostgreSQL, PostgreSQL uses the latest available version(12.22).
+    # However, this branch uses PGroonga version 3.2.2, which was built with PostgreSQL 12.21.
+    # Therefore, we pin PostgreSQL to 12.21 to ensure compatibility.
     postgresql12-devel-12.21-1PGDG.rhel8.x86_64 \
     xxhash-devel && \
   dnf clean -y ${quiet} all
