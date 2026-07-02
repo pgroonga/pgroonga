@@ -18,6 +18,14 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
   end
 
   private
+  # We use a fixed Groonga version for maintenance in the maintenance/3.2.2 branch.
+  # This is because Groonga was at version 14.0.6 when 3.2.2 was built.
+  # This function only use YUM packages.
+  # Only the PGroonga package for PostgreSQL 12 on AlmaLinux 8 is needed in the maintenance/3.2.2 branch.
+  def maintenance_groonga_version
+    "14.0.6"
+  end
+
   def latest_groonga_version
     @latest_groonga_version ||= Helper.detect_latest_groonga_version
   end
@@ -87,7 +95,7 @@ class GenericPGroongaPackageTask < PackagesGroongaOrgPackageTask
     when "PG_PACKAGE_VERSION"
       @postgresql_package_version
     when "GROONGA_VERSION"
-      latest_groonga_version
+      maintenance_groonga_version
     else
       super
     end
