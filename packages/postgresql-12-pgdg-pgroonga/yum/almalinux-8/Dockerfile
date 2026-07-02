@@ -22,6 +22,9 @@ RUN \
   dnf groupinstall -y ${quiet} "Development Tools" && \
   dnf install --enablerepo=powertools -y ${quiet} \
     ccache \
+    # If we do not pin the version of groonga-devel, groonga-devel uses the latest available version(16.0.5).
+    # However, this branch uses PGroonga version 3.2.2, which was built with Groonga 14.0.6.
+    # Therefore, we pin groonga-devel to 14.0.6 to ensure compatibility.
     groonga-devel-14.0.6-1.el8.x86_64 \
     llvm-toolset \
     llvm-devel \
