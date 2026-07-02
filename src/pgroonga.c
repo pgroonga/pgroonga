@@ -717,8 +717,11 @@ _PG_init(void)
 
 		PGrnGroongaInitialized = true;
 
-		GRN_LOG(
-			ctx, GRN_LOG_NOTICE, "pgroonga: initialize: <%s>", PGRN_VERSION);
+		GRN_LOG(ctx,
+				GRN_LOG_NOTICE,
+				"pgroonga: initialize: <%s-%s>",
+				PGRN_VERSION,
+				PGRN_VERSION_RELEASE);
 
 		GRN_TEXT_INIT(&PGrnInspectBuffer, 0);
 
