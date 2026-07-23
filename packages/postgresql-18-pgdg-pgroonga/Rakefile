@@ -7,8 +7,6 @@ class PostgreSQL18PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
 
   def apt_targets_default
     [
-      "debian-bookworm",
-      "debian-bookworm-arm64",
       "debian-trixie",
       "debian-trixie-arm64",
       "ubuntu-jammy",
