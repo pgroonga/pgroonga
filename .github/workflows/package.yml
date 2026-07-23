@@ -54,8 +54,6 @@ jobs:
       fail-fast: false
       matrix:
         package-id:
-          - postgresql-18-pgdg-pgroonga-debian-bookworm
-          - postgresql-18-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-18-pgdg-pgroonga-debian-trixie
           - postgresql-18-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-18-pgdg-pgroonga-ubuntu-jammy
@@ -68,8 +66,6 @@ jobs:
           - postgresql-18-pgdg-pgroonga-almalinux-8
           - postgresql-18-pgdg-pgroonga-almalinux-9
           - postgresql-18-pgdg-pgroonga-almalinux-10
-          - postgresql-17-pgdg-pgroonga-debian-bookworm
-          - postgresql-17-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-17-pgdg-pgroonga-debian-trixie
           - postgresql-17-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-17-pgdg-pgroonga-ubuntu-jammy
@@ -83,8 +79,6 @@ jobs:
           - postgresql-17-pgdg-pgroonga-almalinux-10
           - postgresql-17-pgroonga-debian-trixie
           - postgresql-17-pgroonga-debian-trixie-arm64
-          - postgresql-16-pgdg-pgroonga-debian-bookworm
-          - postgresql-16-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-16-pgdg-pgroonga-debian-trixie
           - postgresql-16-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-16-pgdg-pgroonga-ubuntu-jammy
@@ -97,8 +91,6 @@ jobs:
           - postgresql-16-pgdg-pgroonga-almalinux-9
           - postgresql-16-pgdg-pgroonga-almalinux-10
           - postgresql-16-pgroonga-ubuntu-noble
-          - postgresql-15-pgdg-pgroonga-debian-bookworm
-          - postgresql-15-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-15-pgdg-pgroonga-debian-trixie
           - postgresql-15-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-15-pgdg-pgroonga-ubuntu-jammy
@@ -110,10 +102,6 @@ jobs:
           - postgresql-15-pgdg-pgroonga-almalinux-8
           - postgresql-15-pgdg-pgroonga-almalinux-9
           - postgresql-15-pgdg-pgroonga-almalinux-10
-          - postgresql-15-pgroonga-debian-bookworm
-          - postgresql-15-pgroonga-debian-bookworm-arm64
-          - postgresql-14-pgdg-pgroonga-debian-bookworm
-          - postgresql-14-pgdg-pgroonga-debian-bookworm-arm64
           - postgresql-14-pgdg-pgroonga-debian-trixie
           - postgresql-14-pgdg-pgroonga-debian-trixie-arm64
           - postgresql-14-pgdg-pgroonga-ubuntu-jammy
