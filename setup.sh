@@ -32,18 +32,8 @@ esac
 
 case "${distribution}-${code_name}" in
   debian-*|ubuntu-*)
-    ${SUDO} apt install -y -V gpg
-    wget -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-      ${SUDO} gpg \
-           --no-default-keyring \
-           --keyring /usr/share/keyrings/pgdg.gpg \
-           --import -
-    (echo "Types: deb"; \
-     echo "URIs: http://apt.postgresql.org/pub/repos/apt"; \
-     echo "Suites: $(lsb_release --codename --short)-pgdg"; \
-     echo "Components: main"; \
-     echo "Signed-By: /usr/share/keyrings/pgdg.gpg") | \
-      ${SUDO} tee /etc/apt/sources.list.d/pgdg.sources
+    ${SUDO} apt install -y -V gpg postgresql-common
+    ${SUDO} /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
     ${SUDO} apt update
     latest_postgresql_version=$(cd "${source_dir}/packages" && \
                                   echo postgresql-*-pgdg-pgroonga | \
