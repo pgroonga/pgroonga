@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - "images:debian/12"
+          - "images:debian/13"
           - "images:ubuntu/22.04"
           - "images:ubuntu/24.04"
     steps:
