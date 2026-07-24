@@ -60,6 +60,31 @@ jobs:
           matrix.visual-studio-package
         run: |
           choco install -y ${{ matrix.visual-studio-package }}
+      # This is a workaround for the following error:
+      #
+      #   Run-time dependency groonga found: NO  (tried cmake)
+      #   ERR:
+      #   The --no-warn-unused-cli option is deprecated.  Use -Wno-unused-cli instead.
+      #   CMake Error: This should not have happened. If you see this message, you are probably using a broken CMakeLists.txt file or a problematic release of CMake
+      #   CMake Error at C:/Program Files/CMake/share/cmake-4.4/Modules/Internal/CheckSourceCompiles.cmake:138 (try_compile):
+      #     Failed to configure test project build system.
+      #   Call Stack (most recent call first):
+      #     C:/Program Files/CMake/share/cmake-4.4/Modules/CheckCSourceCompiles.cmake:103 (cmake_check_source_compiles)
+      #     C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake:160 (check_c_source_compiles)
+      #     C:/Program Files/CMake/share/cmake-4.4/Modules/FindThreads.cmake:226 (_threads_check_libc)
+      #     C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)
+      #     C:/Program Files/CMake/share/cmake-4.4/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)
+      #     D:/a/pgroonga/pgroonga-4.0.7-postgresql-14-x64/lib/cmake/Groonga/GroongaConfig.cmake:49 (find_dependency)
+      #     CMakeLists.txt:20 (find_package)
+      #
+      # We can remove this when the Meson v1.11.3 is released.
+      # This error occurs due to a Meson issue.
+      # See: https://gitlab.kitware.com/cmake/cmake/-/work_items/27971
+      # This problem only occurs with CMake 4.4.0. So, We use CMake 4.3.4 temporary.
+      - name: Prepare old CMake
+        run: |
+          choco install -y cmake --version=4.3.4 --force
+          cmake --version
       - name: Prepare environments
         run: |
           $InstallDir = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
