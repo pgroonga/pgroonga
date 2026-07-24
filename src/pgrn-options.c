@@ -29,6 +29,7 @@ typedef struct PGrnOptions
 	int normalizersOffset;
 	int normalizersMappingOffset;
 	int indexFlagsMappingOffset;
+	int lexiconFlagsMappingOffset;
 	int modelOffset;
 	int nGPULayers;
 	int passagePrefixOffset;
@@ -333,6 +334,83 @@ PGrnOptionValidateLexiconType(const char *name)
 }
 
 static void
+PGrnOptionValidateLexiconFlagsMapping(const char *rawLexiconFlagsMapping)
+{
+	const char *tag = "[option][lexicon-flags-mapping][validate]";
+	Jsonb *jsonb;
+	JsonbIterator *iter;
+	JsonbIteratorToken token;
+	JsonbValue value;
+
+	if (PGrnIsNoneValue(rawLexiconFlagsMapping))
+		return;
+
+	jsonb = PGrnJSONBParse(rawLexiconFlagsMapping);
+	iter = JsonbIteratorInit(&(jsonb->root));
+
+	token = JsonbIteratorNext(&iter, &value, false);
+	if (token != WJB_BEGIN_OBJECT)
+	{
+		PGrnCheckRC(GRN_INVALID_ARGUMENT,
+					"%s must be object: %s: <%s>",
+					tag,
+					PGrnJSONBIteratorTokenToString(token),
+					rawLexiconFlagsMapping);
+	}
+
+	while (true)
+	{
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token == WJB_END_OBJECT)
+			break;
+		if (token != WJB_KEY)
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s misses key: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawLexiconFlagsMapping);
+		}
+		token = JsonbIteratorNext(&iter, &value, false);
+		if (token != WJB_BEGIN_ARRAY)
+		{
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s value must be array: %s: <%s>",
+						tag,
+						PGrnJSONBIteratorTokenToString(token),
+						rawLexiconFlagsMapping);
+		}
+		while (true)
+		{
+			grn_raw_string rawFlag;
+			token = JsonbIteratorNext(&iter, &value, false);
+			if (token == WJB_END_ARRAY)
+				break;
+			if (value.type != jbvString)
+			{
+				PGrnCheckRC(GRN_INVALID_ARGUMENT,
+							"%s flags must be string: %s: <%s>",
+							tag,
+							PGrnJSONBValueTypeToString(value.type),
+							rawLexiconFlagsMapping);
+			}
+			rawFlag.value = value.val.string.val;
+			rawFlag.length = value.val.string.len;
+			if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "LARGE"))
+			{
+				continue;
+			}
+			PGrnCheckRC(GRN_INVALID_ARGUMENT,
+						"%s flags have invalid flag: <%.*s>: %s",
+						tag,
+						(int) (rawFlag.length),
+						rawFlag.value,
+						rawLexiconFlagsMapping);
+		}
+	}
+}
+
+static void
 PGrnOptionValidateIndexFlagsMapping(const char *rawIndexFlagsMapping)
 {
 	const char *tag = "[option][index-flags-mapping][validate]";
@@ -545,6 +623,13 @@ PGrnInitializeOptions(void)
 						 "for each target",
 						 NULL,
 						 PGrnOptionValidateIndexFlagsMapping,
+						 lock_mode);
+	add_string_reloption(PGrnReloptionKind,
+						 "lexicon_flags_mapping",
+						 "Mapping to specify lexicon flags to be used "
+						 "for each target",
+						 NULL,
+						 PGrnOptionValidateLexiconFlagsMapping,
 						 lock_mode);
 	add_string_reloption(PGrnReloptionKind,
 						 "model",
@@ -931,6 +1016,58 @@ PGrnResolveOptionValuesIndexFlags(PGrnOptions *options,
 	}
 }
 
+static void
+PGrnResolveOptionValuesLexiconFlags(PGrnOptions *options,
+									Relation index,
+									int i,
+									PGrnResolvedOptions *resolvedOptions)
+{
+	if (options->lexiconFlagsMappingOffset != 0 && i >= 0)
+	{
+		TupleDesc desc = RelationGetDescr(index);
+		Name name = &(TupleDescAttr(desc, i)->attname);
+		const char *rawLexiconFlagsMapping =
+			((const char *) options) + options->lexiconFlagsMappingOffset;
+		Jsonb *jsonb = PGrnJSONBParse(rawLexiconFlagsMapping);
+		JsonbIterator *iter;
+		JsonbValue value;
+
+		iter = JsonbIteratorInit(&(jsonb->root));
+		/* This JSON is validated. */
+		/* WJB_BEGIN_OBJECT */
+		JsonbIteratorNext(&iter, &value, false);
+		while (true)
+		{
+			bool isTarget;
+
+			/* WJB_KEY */
+			if (JsonbIteratorNext(&iter, &value, false) == WJB_END_OBJECT)
+				break;
+			isTarget = (value.val.string.len == strlen(name->data) &&
+						memcmp(value.val.string.val,
+							   name->data,
+							   value.val.string.len) == 0);
+			/* WJB_BEGIN_ARRAY */
+			JsonbIteratorNext(&iter, &value, false);
+			while (JsonbIteratorNext(&iter, &value, false) != WJB_END_ARRAY)
+			{
+				grn_raw_string rawFlag;
+
+				if (!isTarget)
+					continue;
+
+				/* WJB_VALUE/jbvString */
+				rawFlag.value = value.val.string.val;
+				rawFlag.length = value.val.string.len;
+				if (GRN_RAW_STRING_EQUAL_CSTRING(rawFlag, "LARGE"))
+					resolvedOptions->lexiconFlags |= GRN_OBJ_KEY_LARGE;
+			}
+			if (isTarget)
+				return;
+		}
+	}
+}
+
 void
 PGrnResolveOptionValues(Relation index,
 						int i,
@@ -1026,6 +1163,7 @@ PGrnResolveOptionValues(Relation index,
 	}
 
 	PGrnResolveOptionValuesIndexFlags(options, index, i, resolvedOptions);
+	PGrnResolveOptionValuesLexiconFlags(options, index, i, resolvedOptions);
 }
 
 grn_expr_flags
@@ -1086,6 +1224,9 @@ pgroonga_options(Datum reloptions, bool validate)
 		{"index_flags_mapping",
 		 RELOPT_TYPE_STRING,
 		 offsetof(PGrnOptions, indexFlagsMappingOffset)},
+		{"lexicon_flags_mapping",
+		 RELOPT_TYPE_STRING,
+		 offsetof(PGrnOptions, lexiconFlagsMappingOffset)},
 		{"model", RELOPT_TYPE_STRING, offsetof(PGrnOptions, modelOffset)},
 		{"n_gpu_layers", RELOPT_TYPE_INT, offsetof(PGrnOptions, nGPULayers)},
 		{"passage_prefix",
