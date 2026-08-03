@@ -3,6 +3,8 @@ on:
   push:
     branches-ignore:
       - "copilot/**"
+    tags:
+      - "*"
   pull_request:
   schedule:
     - cron: |
