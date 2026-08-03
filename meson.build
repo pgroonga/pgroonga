@@ -2,7 +2,7 @@ project(
   'pgroonga',
   'c',
   license: 'PostgreSQL',
-  version: '4.0.7')
+  version: '4.0.8')
 
 required_groonga_version = '14.1.0'
 
@@ -464,6 +464,8 @@ pgroonga_update_sqls = files(
   'data/pgroonga--4.0.6--4.0.5.sql',
   'data/pgroonga--4.0.6--4.0.7.sql',
   'data/pgroonga--4.0.7--4.0.6.sql',
+  'data/pgroonga--4.0.7--4.0.8.sql',
+  'data/pgroonga--4.0.8--4.0.7.sql',
   # pgroonga: UPDATE SQLS MARKER
 )
 install_data(pgroonga_update_sqls,
@@ -556,6 +558,8 @@ pgroonga_database_update_sqls = files(
   'data/pgroonga_database--4.0.6--4.0.5.sql',
   'data/pgroonga_database--4.0.6--4.0.7.sql',
   'data/pgroonga_database--4.0.7--4.0.6.sql',
+  'data/pgroonga_database--4.0.7--4.0.8.sql',
+  'data/pgroonga_database--4.0.8--4.0.7.sql',
   # pgroonga_database: UPDATE SQLS MARKER
 )
 install_data(pgroonga_database_update_sqls,
