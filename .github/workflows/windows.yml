@@ -26,18 +26,18 @@ jobs:
       matrix:
         include:
           - postgresql-version-major: "14"
-            postgresql-version: "14.23-1"
+            postgresql-version: "14.24-1"
           - postgresql-version-major: "15"
-            postgresql-version: "15.18-1"
+            postgresql-version: "15.19-1"
           - postgresql-version-major: "16"
-            postgresql-version: "16.14-1"
+            postgresql-version: "16.15-1"
           - postgresql-version-major: "17"
-            postgresql-version: "17.10-1"
+            postgresql-version: "17.11-1"
           - postgresql-version-major: "18"
-            postgresql-version: "18.4-1"
+            postgresql-version: "18.6-1"
           - groonga-main: "yes"
             postgresql-version-major: "18"
-            postgresql-version: "18.4-1"
+            postgresql-version: "18.6-1"
     env:
       PGROONGA_BENCHMARK_GEMFILE: ${{ github.workspace }}\pgroonga-benchmark\Gemfile
       PGROONGA_TEST_DATA: "test-data"
