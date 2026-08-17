@@ -24,6 +24,7 @@
 #include "pgrn-match-positions-character.h"
 #include "pgrn-normalize.h"
 #include "pgrn-options.h"
+#include "pgrn-physical-table-names.h"
 #include "pgrn-pg.h"
 #include "pgrn-portable.h"
 #include "pgrn-query-expand.h"
@@ -445,6 +446,12 @@ PGrnBeforeShmemExit(int code, Datum arg)
 					tag);
 			PGrnFinalizeLanguageModelVectorize();
 
+			GRN_LOG(ctx,
+					GRN_LOG_DEBUG,
+					"%s[finalize][physical-table-names]",
+					tag);
+			PGrnFinalizePhysicalTableNames();
+
 			GRN_LOG(ctx, GRN_LOG_DEBUG, "%s[finalize][normalize]", tag);
 			PGrnFinalizeNormalize();
 
@@ -590,6 +597,8 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeNormalize();
 
 	PGrnInitializeLanguageModelVectorize();
+
+	PGrnInitializePhysicalTableNames();
 
 	PGrnInitializeAutoClose();
 }
