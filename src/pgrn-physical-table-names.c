@@ -17,7 +17,7 @@ PGrnFinalizePhysicalTableNames(void)
 }
 
 /**
- * pgroonga_physical_table_name(indexName text, argument_prefix text) : array
+ * pgroonga_physical_table_names(logical_table_name text, argument_prefix text) : text[]
  *
  */
 Datum
