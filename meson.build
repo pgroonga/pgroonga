@@ -187,6 +187,7 @@ pgroonga_sources = files(
   'src/pgrn-normalize.c',
   'src/pgrn-options.c',
   'src/pgrn-pg.c',
+  'src/pgrn-physical-table-names.c',
   'src/pgrn-query-escape.c',
   'src/pgrn-query-expand.c',
   'src/pgrn-query-extract-keywords.c',
