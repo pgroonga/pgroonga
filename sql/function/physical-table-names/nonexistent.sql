@@ -1,0 +1,9 @@
+CREATE TABLE blogs (
+  title text
+);
+CREATE INDEX pgroonga_title_index ON blogs USING pgroonga (title);
+
+SELECT pgroonga_physical_table_names('nonexistent',
+                                     'shard') AS physical_tables;
+
+DROP TABLE blogs;
