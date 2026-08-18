@@ -23,5 +23,5 @@ PGrnFinalizePhysicalTableNames(void)
 Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
-  PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
+	PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
 }
