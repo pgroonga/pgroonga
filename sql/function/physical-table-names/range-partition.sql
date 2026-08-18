@@ -28,3 +28,5 @@ SELECT regexp_replace(
   'Sources[0-9]+',
   'Sources<OID>',
   'g') AS physical_tables;
+
+DROP TABLE blogs;
