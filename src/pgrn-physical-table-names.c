@@ -1,6 +1,7 @@
 #include "pgroonga.h"
 
 #include "pgrn-groonga.h"
+#include "pgrn-pg.h"
 #include "pgrn-physical-table-names.h"
 
 #include <utils/builtins.h>
@@ -28,17 +29,8 @@ PGrnRelationIsPartitionedIndex(Relation relation)
 static Oid
 PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 {
-	Datum logical_index_oid_datum = DirectFunctionCall1(
-		regclassin, CStringGetDatum(text_to_cstring(logical_index_name_text)));
-	if (!OidIsValid(logical_index_oid_datum))
-	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s nonexistent index name: <%s>",
-					tag,
-					text_to_cstring(logical_index_name_text));
-	}
-
-	Oid logical_index_oid = DatumGetObjectId(logical_index_oid_datum);
+	Oid logical_index_oid =
+		PGrnPGIndexNameToID(text_to_cstring(logical_index_name_text));
 	Relation logical_index = RelationIdGetRelation(logical_index_oid);
 	if (!PGrnRelationIsPartitionedIndex(logical_index))
 	{
