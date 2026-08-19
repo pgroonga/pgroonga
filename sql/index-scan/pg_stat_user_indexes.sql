@@ -27,6 +27,8 @@ SELECT id, content
   FROM memos
  WHERE content &@~ 'Groonga';
 
+SELECT pg_stat_force_next_flush();
+
 SELECT idx_scan
   FROM pg_stat_user_indexes
  WHERE indexrelname = 'pgrn_content_index';
