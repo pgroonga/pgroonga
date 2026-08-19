@@ -26,7 +26,7 @@ SELECT regexp_replace(
   'g') AS physical_tables;
  physical_tables 
 -----------------
- }'Sources<OID>', 'Sources<OID>', 'Sources<OID>'}
+ {'Sources<OID>', 'Sources<OID>', 'Sources<OID>'}
 (1 row)
 
 DROP TABLE blogs;
