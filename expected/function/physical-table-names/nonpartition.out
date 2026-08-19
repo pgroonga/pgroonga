@@ -4,5 +4,6 @@ CREATE TABLE blogs (
 CREATE INDEX pgroonga_title_index ON blogs USING pgroonga (title);
 SELECT pgroonga_physical_table_names('pgroonga_title_index',
                                      'shard') AS physical_tables;
-ERROR:  pgroonga: [pyhsical-table-names] the specified index is not partitioned: <pgroonga_title_index>
+ERROR:  pgroonga: [physical-table-names] the specified index is not partitioned: <pgroonga_title_index>
+
 DROP TABLE blogs;
