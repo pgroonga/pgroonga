@@ -52,7 +52,7 @@ PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
-	const char *tag = "[pyhsical-table-names]";
+	const char *tag = "[physical-table-names]";
 	text *logical_index_name_text = PG_GETARG_TEXT_PP(0);
 
 	PGrnGetLogicalIndexOid(tag, logical_index_name_text);
