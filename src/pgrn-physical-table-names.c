@@ -46,7 +46,7 @@ PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 }
 
 /**
- * pgroonga_physical_table_names(logical_table_name text, argument_prefix text)
+ * pgroonga_physical_table_names(logical_index_name text, argument_prefix text)
  * : text[]
  */
 Datum
