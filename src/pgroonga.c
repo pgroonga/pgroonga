@@ -7366,8 +7366,6 @@ PGrnEnsureCursorOpened(IndexScanDesc scan, ScanDirection dir, bool needSort)
 		PGrnOpenTableCursor(scan, dir);
 	}
 	pgstat_count_index_scan(scan->indexRelation);
-	if (scan->instrument)
-		scan->instrument->nsearches++;
 }
 
 static grn_id
