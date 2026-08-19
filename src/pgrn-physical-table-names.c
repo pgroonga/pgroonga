@@ -23,7 +23,7 @@ PGrnFinalizePhysicalTableNames(void)
 static bool
 PGrnRelationIsPartitionedIndex(Relation relation)
 {
-	return PGRN_RELKIND_HAS_PARTITIONS(RelationGetForm(relation)->relkind);
+	return RelationGetForm(relation)->relkind == RELKIND_PARTITIONED_INDEX;
 }
 
 static Oid
