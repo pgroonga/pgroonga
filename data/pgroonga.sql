@@ -466,7 +466,7 @@ CREATE FUNCTION pgroonga_language_model_vectorize(model_name cstring, target tex
 	STRICT
 	PARALLEL SAFE;
 
-CREATE FUNCTION pgroonga_physical_table_names(logical_table_name text, argument_prefix text)
+CREATE FUNCTION pgroonga_physical_table_names(logical_index_name text, argument_prefix text)
 	RETURNS text[]
 	AS 'MODULE_PATHNAME', 'pgroonga_physical_table_names'
 	LANGUAGE C
