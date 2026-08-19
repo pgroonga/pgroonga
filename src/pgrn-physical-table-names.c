@@ -36,7 +36,7 @@ PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 	{
 		RelationClose(logical_index);
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s the specified index is not partitioned index: <%s>",
+					"%s the specified index is not partitioned: <%s>",
 					tag,
 					text_to_cstring(logical_index_name_text));
 	}
