@@ -27,7 +27,15 @@ SELECT id, content
   FROM memos
  WHERE content &@~ 'Groonga';
 
-SELECT pg_stat_force_next_flush();
+DO LANGUAGE plpgsql $$
+BEGIN
+        IF current_setting('server_version_num')::int >= 150000 THEN
+                PERFORM pg_stat_force_next_flush();
+        ELSE
+                PERFORM pg_sleep(1);
+        END IF;
+END;
+$$;
 
 SELECT idx_scan
   FROM pg_stat_user_indexes
