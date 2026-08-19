@@ -7,6 +7,7 @@
 #include <catalog/pg_inherits.h>
 #include <storage/lmgr.h>
 #include <utils/builtins.h>
+#include <utils/lsyscache.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_physical_table_names);
 
