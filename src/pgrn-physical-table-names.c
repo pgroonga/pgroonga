@@ -4,9 +4,9 @@
 #include "pgrn-pg.h"
 #include "pgrn-physical-table-names.h"
 
-#include <utils/builtins.h>
-#include <storage/lmgr.h>
 #include <catalog/pg_inherits.h>
+#include <storage/lmgr.h>
+#include <utils/builtins.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_physical_table_names);
 
