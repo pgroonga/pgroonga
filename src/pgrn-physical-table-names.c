@@ -31,7 +31,7 @@ PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 {
 	Oid logical_index_oid =
 		PGrnPGIndexNameToID(text_to_cstring(logical_index_name_text));
-	Relation logical_index = RelationIdGetRelation(logical_index_oid);
+	Relation logical_index = PGrnPGResolveIndexID(logical_index_oid);
 	if (!PGrnRelationIsPartitionedIndex(logical_index))
 	{
 		RelationClose(logical_index);
