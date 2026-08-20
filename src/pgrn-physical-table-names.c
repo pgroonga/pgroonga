@@ -30,22 +30,22 @@ PGrnRelationIsPartitionedIndex(Relation relation)
 }
 
 static Oid
-PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
+PGrnGetLogicalIndexOid(const char *tag, text *logicalIndexNameText)
 {
-	Oid logical_index_oid =
-		PGrnPGIndexNameToID(text_to_cstring(logical_index_name_text));
-	Relation logical_index = PGrnPGResolveIndexID(logical_index_oid);
-	if (!PGrnRelationIsPartitionedIndex(logical_index))
+	Oid logicalIndexOid =
+		PGrnPGIndexNameToID(text_to_cstring(logicalIndexNameText));
+	Relation logicalIndex = PGrnPGResolveIndexID(logicalIndexOid);
+	if (!PGrnRelationIsPartitionedIndex(logicalIndex))
 	{
-		RelationClose(logical_index);
+		RelationClose(logicalIndex);
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s the specified index is not partitioned: <%s>",
 					tag,
-					text_to_cstring(logical_index_name_text));
+					text_to_cstring(logicalIndexNameText));
 	}
-	RelationClose(logical_index);
+	RelationClose(logicalIndex);
 
-	return logical_index_oid;
+	return logicalIndexOid;
 }
 
 static void
@@ -66,12 +66,11 @@ Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
-	text *logical_index_name_text = PG_GETARG_TEXT_PP(0);
+	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
 
-	Oid logical_index_oid =
-		PGrnGetLogicalIndexOid(tag, logical_index_name_text);
+	Oid logicalIndexOid = PGrnGetLogicalIndexOid(tag, logicalIndexNameText);
 
-	LockRelationOid(logical_index_oid, AccessShareLock);
+	LockRelationOid(logicalIndexOid, AccessShareLock);
 	/**
 	 * find_inheritance_children() here acquires an AccessShareLock and holds it
 	 * until the end of the transaction. Therefore, the following operations on
@@ -85,52 +84,51 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	 * - ALTER INDEX
 	 * - ALTER TABLE
 	 */
-	List *physical_index_oids =
-		find_inheritance_children(logical_index_oid, AccessShareLock);
-	if (!physical_index_oids)
+	List *physicalIndexOids =
+		find_inheritance_children(logicalIndexOid, AccessShareLock);
+	if (!physicalIndexOids)
 	{
-		UnlockRelationOid(logical_index_oid, AccessShareLock);
+		UnlockRelationOid(logicalIndexOid, AccessShareLock);
 		GRN_LOG(ctx,
 				GRN_LOG_WARNING,
 				"%s <%s> has not children",
 				tag,
-				text_to_cstring(logical_index_name_text));
+				text_to_cstring(logicalIndexNameText));
 		PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
 	}
 	ListCell *cell;
 
-	Oid physical_index_oid;
-	List *physical_table_names = NIL;
-	char table_name_buffer[GRN_TABLE_MAX_KEY_SIZE];
-	foreach (cell, physical_index_oids)
+	Oid physicalIndexOid;
+	List *physicalTableNames = NIL;
+	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	foreach (cell, physicalIndexOids)
 	{
-		physical_index_oid = lfirst_oid(cell);
-		if (logical_index_oid == physical_index_oid)
+		physicalIndexOid = lfirst_oid(cell);
+		if (logicalIndexOid == physicalIndexOid)
 		{
 			/**
 			 * find_inheritance_children() returns contain parent index oid.
-			 * Therefore, the first element of physical_index_oids skip.
+			 * Therefore, the first element of physicalIndexOids skip.
 			 */
 			continue;
 		}
-		PGrnGetSourcesTableNameFromOid(physical_index_oid, table_name_buffer);
-		physical_table_names =
-			lappend(physical_table_names,
-					(void *) (cstring_to_text(table_name_buffer)));
+		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
+		physicalTableNames = lappend(
+			physicalTableNames, (void *) (cstring_to_text(tableNameBuffer)));
 	}
-	UnlockRelationOid(logical_index_oid, AccessShareLock);
+	UnlockRelationOid(logicalIndexOid, AccessShareLock);
 
-	unsigned int n_elements = list_length(physical_table_names);
-	Datum *physical_table_names_datum = palloc(n_elements * sizeof(Datum));
+	unsigned int nElements = list_length(physicalTableNames);
+	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
 	unsigned int i = 0;
-	foreach (cell, physical_table_names)
+	foreach (cell, physicalTableNames)
 	{
-		physical_table_names_datum[i++] = (Datum) lfirst(cell);
+		physicalTableNamesDatum[i++] = (Datum) lfirst(cell);
 	}
 
-	int dims[1] = {n_elements};
+	int dims[1] = {nElements};
 	int lbs[1] = {1};
-	PG_RETURN_ARRAYTYPE_P(construct_md_array(physical_table_names_datum,
+	PG_RETURN_ARRAYTYPE_P(construct_md_array(physicalTableNamesDatum,
 											 NULL,
 											 1,
 											 dims,
