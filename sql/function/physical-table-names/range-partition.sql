@@ -22,11 +22,12 @@ VALUES
 
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
 
-SELECT regexp_replace(
-  pgroonga_physical_table_names('pgroonga_content_index',
-                                'shard')::text,
-  'Sources[0-9]+',
-  'Sources<OID>',
-  'g') AS physical_tables;
+SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY(
+  SELECT 'Sources' || pg_class.oid::text
+    FROM pg_class
+   WHERE pg_class.oid IN('blogs_2023_content_idx'::regclass,
+                         'blogs_2024_content_idx'::regclass,
+                         'blogs_2025_content_idx'::regclass)
+ORDER BY pg_class.oid);
 
 DROP TABLE blogs;
