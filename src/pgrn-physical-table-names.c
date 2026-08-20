@@ -72,6 +72,19 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 		PGrnGetLogicalIndexOid(tag, logical_index_name_text);
 
 	LockRelationOid(logical_index_oid, AccessShareLock);
+	/**
+	 * find_inheritance_children() here acquires an AccessShareLock and holds it
+	 * until the end of the transaction. Therefore, the following operations on
+	 * the child tables are blocked during this transaction.
+	 * - DROP TABLE
+	 * - TRUNCATE
+	 * - REINDEX
+	 * - CLUSTER
+	 * - VACUUM FULL
+	 * - REFRESH MATERIALIZED VIEW(not CONCURRENTLY)
+	 * - ALTER INDEX
+	 * - ALTER TABLE
+	 */
 	List *physical_index_oids =
 		find_inheritance_children(logical_index_oid, AccessShareLock);
 	if (!physical_index_oids)
