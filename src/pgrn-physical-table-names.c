@@ -48,16 +48,6 @@ PGrnGetLogicalIndexOid(const char *tag, text *logicalIndexNameText)
 	return logicalIndexOid;
 }
 
-static void
-PGrnGetSourcesTableNameFromOid(Oid oid, char tableName[GRN_TABLE_MAX_KEY_SIZE])
-{
-	Oid fileNodeID = PGrnPGIndexIDToFileNodeID(oid);
-	snprintf(tableName,
-			 GRN_TABLE_MAX_KEY_SIZE,
-			 PGrnSourcesTableNameFormat,
-			 fileNodeID);
-}
-
 /**
  * pgroonga_physical_table_names(logical_index_name text, argument_prefix text)
  * : text[]
