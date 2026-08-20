@@ -104,14 +104,6 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	foreach (cell, physicalIndexOids)
 	{
 		physicalIndexOid = lfirst_oid(cell);
-		if (logicalIndexOid == physicalIndexOid)
-		{
-			/**
-			 * find_inheritance_children() returns contain parent index oid.
-			 * Therefore, the first element of physicalIndexOids skip.
-			 */
-			continue;
-		}
 		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
 		physicalTableNames = lappend(
 			physicalTableNames, (void *) (cstring_to_text(tableNameBuffer)));
