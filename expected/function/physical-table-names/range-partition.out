@@ -24,9 +24,9 @@ SELECT regexp_replace(
   'Sources[0-9]+',
   'Sources<OID>',
   'g') AS physical_tables;
- physical_tables 
------------------
- {'Sources<OID>', 'Sources<OID>', 'Sources<OID>'}
+             physical_tables              
+------------------------------------------
+ {Sources<OID>,Sources<OID>,Sources<OID>}
 (1 row)
 
 DROP TABLE blogs;
