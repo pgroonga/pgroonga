@@ -37,12 +37,16 @@ SELECT id, content
   3 | PGroonga is a PostgreSQL extension that uses Groonga.
 (2 rows)
 
+-- idx_scan may not be updated immediately, so we use pg_stat_force_next_flush()
+-- to force an immediate update.
+-- However, this function was introduced in PostgreSQL 15, so we use pg_sleep()
+-- instead for PostgreSQL 14.
 DO LANGUAGE plpgsql $$
 BEGIN
         IF current_setting('server_version_num')::int >= 150000 THEN
                 PERFORM pg_stat_force_next_flush();
         ELSE
-                PERFORM pg_sleep(1);
+                PERFORM pg_sleep(2);
         END IF;
 END;
 $$;
