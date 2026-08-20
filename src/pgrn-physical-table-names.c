@@ -89,24 +89,17 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	ListCell *cell;
 
 	Oid physicalIndexOid;
-	List *physicalTableNames = NIL;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
+	unsigned int nElements = list_length(physicalIndexOids);
+	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
+	unsigned int i = 0;
 	foreach (cell, physicalIndexOids)
 	{
 		physicalIndexOid = lfirst_oid(cell);
 		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
-		physicalTableNames = lappend(
-			physicalTableNames, (void *) (cstring_to_text(tableNameBuffer)));
+		physicalTableNamesDatum[i++] = (Datum) (cstring_to_text(tableNameBuffer));
 	}
 	UnlockRelationOid(logicalIndexOid, AccessShareLock);
-
-	unsigned int nElements = list_length(physicalTableNames);
-	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
-	unsigned int i = 0;
-	foreach (cell, physicalTableNames)
-	{
-		physicalTableNamesDatum[i++] = (Datum) lfirst(cell);
-	}
 
 	int dims[1] = {nElements};
 	int lbs[1] = {1};
