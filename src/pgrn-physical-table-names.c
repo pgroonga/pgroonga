@@ -48,6 +48,16 @@ PGrnGetLogicalIndexOid(const char *tag, text *logical_index_name_text)
 	return logical_index_oid;
 }
 
+static void
+PGrnGetSourcesTableNameFromOid(Oid oid, char tableName[GRN_TABLE_MAX_KEY_SIZE])
+{
+	Oid fileNodeID = PGrnPGIndexIDToFileNodeID(oid);
+	snprintf(tableName,
+			 GRN_TABLE_MAX_KEY_SIZE,
+			 PGrnSourcesTableNameFormat,
+			 fileNodeID);
+}
+
 /**
  * pgroonga_physical_table_names(logical_index_name text, argument_prefix text)
  * : text[]
@@ -75,9 +85,9 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 		PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
 	}
 	ListCell *cell;
+
 	Oid physical_index_oid;
 	List *physical_table_names = NIL;
-	char *physical_index_name;
 	char table_name_buffer[GRN_TABLE_MAX_KEY_SIZE];
 	foreach (cell, physical_index_oids)
 	{
@@ -90,8 +100,7 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 			 */
 			continue;
 		}
-		physical_index_name = get_rel_name(physical_index_oid);
-		PGrnFormatSourcesTableName(physical_index_name, table_name_buffer);
+		PGrnGetSourcesTableNameFromOid(physical_index_oid, table_name_buffer);
 		physical_table_names =
 			lappend(physical_table_names,
 					(void *) (cstring_to_text(table_name_buffer)));
