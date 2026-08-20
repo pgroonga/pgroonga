@@ -64,6 +64,16 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	LockRelationOid(logical_index_oid, AccessShareLock);
 	List *physical_index_oids =
 		find_inheritance_children(logical_index_oid, AccessShareLock);
+	if (!physical_index_oids)
+	{
+		UnlockRelationOid(logical_index_oid, AccessShareLock);
+		GRN_LOG(ctx,
+				GRN_LOG_WARNING,
+				"%s <%s> has not children",
+				tag,
+				text_to_cstring(logical_index_name_text));
+		PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
+	}
 	ListCell *cell;
 	Oid physical_index_oid;
 	List *physical_table_names = NIL;
