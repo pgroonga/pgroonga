@@ -98,7 +98,7 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 		physicalIndexOid = lfirst_oid(cell);
 		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
 		physicalTableNamesDatum[i++] =
-			(Datum) (cstring_to_text(tableNameBuffer));
+			PointerGetDatum(cstring_to_text(tableNameBuffer));
 	}
 	UnlockRelationOid(logicalIndexOid, AccessShareLock);
 
