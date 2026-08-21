@@ -22,7 +22,6 @@ VALUES
 
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
 
--- The second argument length is 4096 byte.
-SELECT pgroonga_physical_table_names('pgroonga_content_index', repeat('a', 4096));
+SELECT pgroonga_physical_table_names('pgroonga_content_index', repeat('a', 4078));
 
 DROP TABLE blogs;

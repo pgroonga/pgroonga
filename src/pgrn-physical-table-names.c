@@ -46,14 +46,27 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
 	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
 
-	if (VARSIZE_ANY_EXHDR(argumentNameText) >= GRN_TABLE_MAX_KEY_SIZE)
+	/**
+	 * The maximum length of an argument name is (the length of
+	 * argumentPrefixText
+	 * + strlen("[the number of physical table].table")).
+	 *
+	 * The number of physical tables is represented by an int, whose maximum
+	 * number of digits is 10.
+	 * Therefore, the maximum length of
+	 * "[the number of physical tables].table" is the length of
+	 * "[1234567890].table".
+	 */
+	if ((VARSIZE_ANY_EXHDR(argumentPrefixText) +
+		 strlen("[1234567890].table")) >= GRN_TABLE_MAX_KEY_SIZE)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s argument_prefix is too long: maximum length is <%d>, "
 					"current length is <%zu>",
 					tag,
 					GRN_TABLE_MAX_KEY_SIZE - 1,
-					VARSIZE_ANY_EXHDR(argumentNameText));
+					(VARSIZE_ANY_EXHDR(argumentPrefixText) +
+					 strlen("[1234567890].table")));
 	}
 	Oid logicalIndexOid = PGrnGetLogicalIndexOid(tag, logicalIndexNameText);
 
