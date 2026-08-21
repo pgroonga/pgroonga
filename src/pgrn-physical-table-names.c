@@ -43,7 +43,7 @@ Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
-	const size_t MAX_ARGUMENT_SUFFIX_SIZE_SIZE = strlen("[1234567890].table");
+	const size_t MAX_ARGUMENT_SUFFIX_SIZE = strlen("[1234567890].table");
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
 	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
 
