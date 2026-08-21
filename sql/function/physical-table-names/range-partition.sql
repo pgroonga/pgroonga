@@ -23,7 +23,7 @@ VALUES
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
 
 SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY(
-  SELECT 'Sources' || pg_class.oid::text
+  SELECT 'Sources' || pg_class.relfilenode::text
     FROM pg_class
    WHERE pg_class.oid IN('blogs_2023_content_idx'::regclass,
                          'blogs_2024_content_idx'::regclass,
