@@ -44,7 +44,7 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
-	text *argumentNameText = PG_GETARG_TEXT_PP(1);
+	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
 
 	if (VARSIZE_ANY_EXHDR(argumentNameText) >= GRN_TABLE_MAX_KEY_SIZE)
 	{
@@ -91,14 +91,14 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	int nElements = list_length(physicalIndexOids) *
 					2; // 2 is physical table name and argument prefix.
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
-	int i = 0, nPrefixArguments = 0;
+	int i = 0, nArgumentNames = 0;
 	foreach (cell, physicalIndexOids)
 	{
 		snprintf(argumentName,
 				 GRN_TABLE_MAX_KEY_SIZE,
 				 "%s[%d].table",
-				 text_to_cstring(argumentNameText),
-				 nPrefixArguments++);
+				 text_to_cstring(argumentPrefixText),
+				 nArgumentNames++);
 		physicalTableNamesDatum[i++] =
 			PointerGetDatum(cstring_to_text(argumentName));
 
