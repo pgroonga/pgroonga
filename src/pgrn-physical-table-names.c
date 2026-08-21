@@ -43,13 +43,13 @@ Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
+	const size_t MAX_ARGUMENT_SUFFIX_SIZE_SIZE = strlen("[1234567890].table");
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
 	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
 
 	/**
 	 * The maximum length of an argument name is (the length of
-	 * argumentPrefixText
-	 * + strlen("[the number of physical table].table")).
+	 * argumentPrefixText + MAX_ARGUMENT_SUFFIX_SIZE).
 	 *
 	 * The number of physical tables is represented by an int, whose maximum
 	 * number of digits is 10.
@@ -57,16 +57,16 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	 * "[the number of physical tables].table" is the length of
 	 * "[1234567890].table".
 	 */
-	if ((VARSIZE_ANY_EXHDR(argumentPrefixText) +
-		 strlen("[1234567890].table")) >= GRN_TABLE_MAX_KEY_SIZE)
+	if ((VARSIZE_ANY_EXHDR(argumentPrefixText) + MAX_ARGUMENT_SUFFIX_SIZE) >=
+		GRN_TABLE_MAX_KEY_SIZE)
 	{
-		PGrnCheckRC(GRN_INVALID_ARGUMENT,
-					"%s argument_prefix is too long: maximum length is <%d>, "
-					"current length is <%zu>",
-					tag,
-					GRN_TABLE_MAX_KEY_SIZE - 1,
-					(VARSIZE_ANY_EXHDR(argumentPrefixText) +
-					 strlen("[1234567890].table")));
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT,
+			"%s argument_prefix is too long: maximum length is <%d>, "
+			"current length is <%zu>",
+			tag,
+			GRN_TABLE_MAX_KEY_SIZE - 1,
+			(VARSIZE_ANY_EXHDR(argumentPrefixText) + MAX_ARGUMENT_SUFFIX_SIZE));
 	}
 	Oid logicalIndexOid = PGrnGetLogicalIndexOid(tag, logicalIndexNameText);
 
