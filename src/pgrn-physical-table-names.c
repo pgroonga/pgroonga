@@ -81,7 +81,7 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 		UnlockRelationOid(logicalIndexOid, AccessShareLock);
 		GRN_LOG(ctx,
 				GRN_LOG_WARNING,
-				"%s <%s> has not children",
+				"%s <%s> has no children",
 				tag,
 				text_to_cstring(logicalIndexNameText));
 		PG_RETURN_ARRAYTYPE_P(construct_empty_array(TEXTOID));
