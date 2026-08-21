@@ -167,7 +167,8 @@ PGrnLookupLexicon(Relation index, unsigned int nthAttribute, int errorLevel);
 grn_obj *PGrnLookupIndexColumn(Relation index,
 							   unsigned int nthAttribute,
 							   int errorLevel);
-
+void PGrnGetSourcesTableNameFromOid(Oid oid,
+									char tableName[GRN_TABLE_MAX_KEY_SIZE]);
 void PGrnFormatSourcesTableName(const char *indexName,
 								char output[GRN_TABLE_MAX_KEY_SIZE]);
 

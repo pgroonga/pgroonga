@@ -143,15 +143,22 @@ PGrnLookupIndexColumn(Relation index, unsigned int nthAttribute, int errorLevel)
 }
 
 void
+PGrnGetSourcesTableNameFromOid(Oid oid, char tableName[GRN_TABLE_MAX_KEY_SIZE])
+{
+	Oid fileNodeID = PGrnPGIndexIDToFileNodeID(oid);
+	snprintf(tableName,
+			 GRN_TABLE_MAX_KEY_SIZE,
+			 PGrnSourcesTableNameFormat,
+			 fileNodeID);
+}
+
+void
 PGrnFormatSourcesTableName(const char *indexName,
 						   char output[GRN_TABLE_MAX_KEY_SIZE])
 {
 	Oid indexID;
-	Oid fileNodeID;
 	indexID = PGrnPGIndexNameToID(indexName);
-	fileNodeID = PGrnPGIndexIDToFileNodeID(indexID);
-	snprintf(
-		output, GRN_TABLE_MAX_KEY_SIZE, PGrnSourcesTableNameFormat, fileNodeID);
+	PGrnGetSourcesTableNameFromOid(indexID, output);
 }
 
 grn_obj *
