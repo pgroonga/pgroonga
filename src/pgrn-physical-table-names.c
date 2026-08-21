@@ -49,7 +49,7 @@ PGrnGetLogicalIndexOid(const char *tag, text *logicalIndexNameText)
 }
 
 /**
- * pgroonga_physical_table_names(logical_index_name text, argument_prefix text)
+ * pgroonga_physical_table_names(logical_index_name text, argument_name text)
  * : text[]
  */
 Datum
@@ -57,16 +57,16 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
-	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
+	text *argumentNameText = PG_GETARG_TEXT_PP(1);
 
-	if (VARSIZE_ANY_EXHDR(argumentPrefixText) >= GRN_TABLE_MAX_KEY_SIZE)
+	if (VARSIZE_ANY_EXHDR(argumentNameText) >= GRN_TABLE_MAX_KEY_SIZE)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s argument_prefix is too long: maximum length is <%d>, "
 					"current length is <%zu>",
 					tag,
 					GRN_TABLE_MAX_KEY_SIZE - 1,
-					VARSIZE_ANY_EXHDR(argumentPrefixText));
+					VARSIZE_ANY_EXHDR(argumentNameText));
 	}
 	Oid logicalIndexOid = PGrnGetLogicalIndexOid(tag, logicalIndexNameText);
 
@@ -100,20 +100,20 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 
 	Oid physicalIndexOid;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-	char argumentPrefix[GRN_TABLE_MAX_KEY_SIZE];
+	char argumentName[GRN_TABLE_MAX_KEY_SIZE];
 	int nElements = list_length(physicalIndexOids) *
 					2; // 2 is physical table name and argument prefix.
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
 	int i = 0, nPrefixArguments = 0;
 	foreach (cell, physicalIndexOids)
 	{
-		snprintf(argumentPrefix,
+		snprintf(argumentName,
 				 GRN_TABLE_MAX_KEY_SIZE,
 				 "%s[%d].table",
-				 text_to_cstring(argumentPrefixText),
+				 text_to_cstring(argumentNameText),
 				 nPrefixArguments++);
 		physicalTableNamesDatum[i++] =
-			PointerGetDatum(cstring_to_text(argumentPrefix));
+			PointerGetDatum(cstring_to_text(argumentName));
 
 		physicalIndexOid = lfirst_oid(cell);
 		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
