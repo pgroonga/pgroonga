@@ -3,14 +3,12 @@ CREATE TABLE blogs (
   content text,
   registered_at date
 ) PARTITION BY RANGE (registered_at);
-
 CREATE TABLE blogs_2023 PARTITION OF blogs
 FOR VALUES FROM ('2023-01-01') TO ('2023-12-31');
 CREATE TABLE blogs_2024 PARTITION OF blogs
 FOR VALUES FROM ('2024-01-01') TO ('2024-12-31');
 CREATE TABLE blogs_2025 PARTITION OF blogs
 FOR VALUES FROM ('2025-01-01') TO ('2025-12-31');
-
 INSERT INTO blogs (title, content, registered_at)
 VALUES
 ('Hello 2023!!!', 'A happy new year', '2023-01-01 11:32:00'),
@@ -19,16 +17,8 @@ VALUES
 ('Hello Mroonga', 'Mroonga is a storage engine for MySQL', '2024-09-11 12:45:00'),
 ('Hello 2025!!!', 'Wishing you a happy New Year', '2025-01-01 08:39:00'),
 ('Hello PGroonga', 'PGroonga is a PostgreSQL extension to use Groonga as the index', '2025-12-25 16:47:00');
-
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
-
-SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY[
-    'shard[0].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2023_content_idx'::regclass),
-    'shard[1].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2024_content_idx'::regclass),
-    'shard[2].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2025_content_idx'::regclass)
-];
-
+-- The second argument length is 4096 byte.
+SELECT pgroonga_physical_table_names('pgroonga_content_index', repeat('a', 4096));
+ERROR:  pgroonga: [physical-table-names] argument_prefix is too long: maximum length is <4095>, current length is <4096>
 DROP TABLE blogs;

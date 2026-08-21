@@ -22,13 +22,7 @@ VALUES
 
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
 
-SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY[
-    'shard[0].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2023_content_idx'::regclass),
-    'shard[1].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2024_content_idx'::regclass),
-    'shard[2].table',
-    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2025_content_idx'::regclass)
-];
+-- The second argument length is 4096 byte.
+SELECT pgroonga_physical_table_names('pgroonga_content_index', repeat('a', 4096));
 
 DROP TABLE blogs;
