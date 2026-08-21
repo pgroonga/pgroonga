@@ -90,9 +90,9 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 
 	Oid physicalIndexOid;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-	unsigned int nElements = list_length(physicalIndexOids);
+	int nElements = list_length(physicalIndexOids);
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
-	unsigned int i = 0;
+	int i = 0;
 	foreach (cell, physicalIndexOids)
 	{
 		physicalIndexOid = lfirst_oid(cell);
