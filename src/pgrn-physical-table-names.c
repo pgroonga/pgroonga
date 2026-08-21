@@ -2,7 +2,6 @@
 
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
-#include "pgrn-physical-table-names.h"
 
 #include <catalog/pg_inherits.h>
 #include <storage/lmgr.h>
@@ -10,18 +9,6 @@
 #include <utils/lsyscache.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_physical_table_names);
-
-void
-PGrnInitializePhysicalTableNames(void)
-{
-	;
-}
-
-void
-PGrnFinalizePhysicalTableNames(void)
-{
-	;
-}
 
 static bool
 PGrnRelationIsPartitionedIndex(Relation relation)
