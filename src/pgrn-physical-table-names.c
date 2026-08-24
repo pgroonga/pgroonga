@@ -2,7 +2,6 @@
 
 #include "pgrn-groonga.h"
 #include "pgrn-pg.h"
-#include "pgrn-physical-table-names.h"
 
 #include <catalog/pg_inherits.h>
 #include <storage/lmgr.h>
@@ -10,18 +9,6 @@
 #include <utils/lsyscache.h>
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(pgroonga_physical_table_names);
-
-void
-PGrnInitializePhysicalTableNames(void)
-{
-	;
-}
-
-void
-PGrnFinalizePhysicalTableNames(void)
-{
-	;
-}
 
 static bool
 PGrnRelationIsPartitionedIndex(Relation relation)
@@ -56,8 +43,35 @@ Datum
 pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 {
 	const char *tag = "[physical-table-names]";
+	const size_t MAX_ARGUMENT_SUFFIX_SIZE = strlen("[1234567890].table");
 	text *logicalIndexNameText = PG_GETARG_TEXT_PP(0);
+	text *argumentPrefixText = PG_GETARG_TEXT_PP(1);
 
+	/**
+	 * The maximum length of an argument name is (the length of
+	 * argumentPrefixText
+	 * + strlen("[the number of physical table].table")).
+	 *
+	 * The number of physical tables is represented by an int, whose maximum
+	 * number of digits is 10.
+	 * Therefore, the maximum length of
+	 * "[the number of physical tables].table" is the length of
+	 * "[1234567890].table".
+	 */
+	if ((VARSIZE_ANY_EXHDR(argumentPrefixText) + MAX_ARGUMENT_SUFFIX_SIZE) >=
+		GRN_TABLE_MAX_KEY_SIZE)
+	{
+		PGrnCheckRC(
+			GRN_INVALID_ARGUMENT,
+			"%s argument_prefix is too long: maximum length is <%d>, "
+			"current length is <%zu> + <%zu> (reserved space for the "
+			"maximum-length suffix \"[1234567890].table\") = <%zu>",
+			tag,
+			GRN_TABLE_MAX_KEY_SIZE - 1,
+			VARSIZE_ANY_EXHDR(argumentPrefixText),
+			MAX_ARGUMENT_SUFFIX_SIZE,
+			(VARSIZE_ANY_EXHDR(argumentPrefixText) + MAX_ARGUMENT_SUFFIX_SIZE));
+	}
 	Oid logicalIndexOid = PGrnGetLogicalIndexOid(tag, logicalIndexNameText);
 
 	LockRelationOid(logicalIndexOid, AccessShareLock);
@@ -90,11 +104,23 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 
 	Oid physicalIndexOid;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
-	int nElements = list_length(physicalIndexOids);
+	char argumentName[GRN_TABLE_MAX_KEY_SIZE];
+	// We double the size here because we need to store both the physical table
+	// name and the argument name.
+	int nElements = list_length(physicalIndexOids) * 2;
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
-	int i = 0;
+	char *argumentPrefix = text_to_cstring(argumentPrefixText);
+	int i = 0, nArgumentNames = 0;
 	foreach (cell, physicalIndexOids)
 	{
+		snprintf(argumentName,
+				 GRN_TABLE_MAX_KEY_SIZE,
+				 "%s[%d].table",
+				 argumentPrefix,
+				 nArgumentNames++);
+		physicalTableNamesDatum[i++] =
+			PointerGetDatum(cstring_to_text(argumentName));
+
 		physicalIndexOid = lfirst_oid(cell);
 		PGrnGetSourcesTableNameFromOid(physicalIndexOid, tableNameBuffer);
 		physicalTableNamesDatum[i++] =

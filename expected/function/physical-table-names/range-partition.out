@@ -18,13 +18,14 @@ VALUES
 ('Hello 2025!!!', 'Wishing you a happy New Year', '2025-01-01 08:39:00'),
 ('Hello PGroonga', 'PGroonga is a PostgreSQL extension to use Groonga as the index', '2025-12-25 16:47:00');
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
-SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY(
-  SELECT 'Sources' || pg_class.relfilenode::text
-    FROM pg_class
-   WHERE pg_class.oid IN('blogs_2023_content_idx'::regclass,
-                         'blogs_2024_content_idx'::regclass,
-                         'blogs_2025_content_idx'::regclass)
-ORDER BY pg_class.oid);
+SELECT pgroonga_physical_table_names('pgroonga_content_index', 'shard') = ARRAY[
+    'shard[0].table',
+    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2023_content_idx'::regclass),
+    'shard[1].table',
+    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2024_content_idx'::regclass),
+    'shard[2].table',
+    'Sources' || (SELECT relfilenode::text FROM pg_class WHERE oid = 'blogs_2025_content_idx'::regclass)
+];
  ?column? 
 ----------
  t
