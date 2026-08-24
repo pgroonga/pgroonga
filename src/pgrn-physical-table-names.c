@@ -62,9 +62,12 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	{
 		PGrnCheckRC(GRN_INVALID_ARGUMENT,
 					"%s argument_prefix is too long: maximum length is <%d>, "
-					"current length is <%zu>",
+					"current length is <%zu> + <%zu> (reserved space for the "
+					"maximum-length suffix \"[1234567890].table\") = <%zu>",
 					tag,
 					GRN_TABLE_MAX_KEY_SIZE - 1,
+					VARSIZE_ANY_EXHDR(argumentPrefixText),
+					strlen("[1234567890].table"),
 					(VARSIZE_ANY_EXHDR(argumentPrefixText) +
 					 strlen("[1234567890].table")));
 	}

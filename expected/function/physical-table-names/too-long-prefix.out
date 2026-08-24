@@ -19,5 +19,5 @@ VALUES
 ('Hello PGroonga', 'PGroonga is a PostgreSQL extension to use Groonga as the index', '2025-12-25 16:47:00');
 CREATE INDEX pgroonga_content_index ON blogs USING pgroonga (content);
 SELECT pgroonga_physical_table_names('pgroonga_content_index', repeat('a', 4078));
-ERROR:  pgroonga: [physical-table-names] argument_prefix is too long: maximum length is <4095>, current length is <4096>
+ERROR:  pgroonga: [physical-table-names] argument_prefix is too long: maximum length is <4095>, current length is <4078> + <18> (reserved space for the maximum-length suffix "[1234567890].table") = <4096>
 DROP TABLE blogs;
