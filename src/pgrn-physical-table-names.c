@@ -105,8 +105,9 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	Oid physicalIndexOid;
 	char tableNameBuffer[GRN_TABLE_MAX_KEY_SIZE];
 	char argumentName[GRN_TABLE_MAX_KEY_SIZE];
-	int nElements = list_length(physicalIndexOids) *
-					2; // 2 is physical table name and argument prefix.
+	// We double the size here because we need to store both the physical table
+	// name and the argument name.
+	int nElements = list_length(physicalIndexOids) * 2;
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
 	char *argumentPrefix = text_to_cstring(argumentPrefixText);
 	int i = 0, nArgumentNames = 0;
