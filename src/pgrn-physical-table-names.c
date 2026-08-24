@@ -108,13 +108,14 @@ pgroonga_physical_table_names(PG_FUNCTION_ARGS)
 	int nElements = list_length(physicalIndexOids) *
 					2; // 2 is physical table name and argument prefix.
 	Datum *physicalTableNamesDatum = palloc(nElements * sizeof(Datum));
+	char *argumentPrefix = text_to_cstring(argumentPrefixText);
 	int i = 0, nArgumentNames = 0;
 	foreach (cell, physicalIndexOids)
 	{
 		snprintf(argumentName,
 				 GRN_TABLE_MAX_KEY_SIZE,
 				 "%s[%d].table",
-				 text_to_cstring(argumentPrefixText),
+				 argumentPrefix,
 				 nArgumentNames++);
 		physicalTableNamesDatum[i++] =
 			PointerGetDatum(cstring_to_text(argumentName));
