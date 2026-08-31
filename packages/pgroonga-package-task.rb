@@ -165,7 +165,7 @@ class VersionedPGroongaPackageTask < GenericPGroongaPackageTask
   end
 
   def rpm_release
-    2
+    3
   end
 
   def update_spec

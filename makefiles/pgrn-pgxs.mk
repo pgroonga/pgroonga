@@ -6,7 +6,7 @@ PGRN_VERSION =						\
 	$(shell grep default_version pgroonga.control |	\
 		sed -e "s/^.*'\([0-9.]*\)'$$/\1/")
 
-PGRN_VERSION_RELEASE = 2
+PGRN_VERSION_RELEASE = 3
 PG_CPPFLAGS += $(shell pkg-config --cflags $(PACKAGES))
 SHLIB_LINK += $(shell pkg-config --libs $(PACKAGES)) -lm
 
