@@ -85,3 +85,55 @@ jobs:
             release-artifacts/*/*
         env:
           GH_TOKEN: ${{ github.token }}
+  launchpad:
+    name: Launchpad
+    if: |
+      github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    needs: github
+    environment: release
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep in sync with packages/*/Rakefile:ubuntu_targets_default
+        include:
+          - package: postgresql-14-pgroonga
+            code-name: jammy
+          - package: postgresql-16-pgroonga
+            code-name: noble
+          - package: postgresql-18-pgroonga
+            code-name: resolute
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download source archive
+        run: |
+          wget \
+            https://github.com/pgroonga/pgroonga/releases/download/${GITHUB_REF_NAME}/pgroonga-${GITHUB_REF_NAME}.tar.gz
+      - name: Prepare
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            debhelper \
+            devscripts
+      - uses: actions/checkout@v7
+        with:
+          path: groonga
+          repository: groonga/groonga
+      - uses: actions/checkout@v7
+        with:
+          path: apache-arrow
+          repository: apache/arrow
+      - name: Publish
+        env:
+          APACHE_ARROW_REPOSITORY: ${{ github.workspace }}/apache-arrow
+          GH_TOKEN: ${{ github.token }}
+          GROONGA_REPOSITORY: ${{ github.workspace }}/groonga
+          LAUNCHPAD_DEPLOY_KEY: ${{ secrets.LAUNCHPAD_DEPLOY_KEY }}
+          LAUNCHPAD_UPLOADER_PGP_KEY: "0x32862FBCD63D72C152EFF3A9BD481CAA9168EA87"
+        run: |
+          echo "${LAUNCHPAD_DEPLOY_KEY}" | gpg --import
+          echo "trusted-key ${LAUNCHPAD_UPLOADER_PGP_KEY}" > ~/.gnupg/gpg.conf
+          rake -C packages/${{ matrix.package }} \
+            ubuntu:upload:${{ matrix.code-name }}
