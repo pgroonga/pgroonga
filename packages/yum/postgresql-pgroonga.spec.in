@@ -78,6 +78,9 @@ EOF
 %{pg_libdir}/*.so
 
 %changelog
+* Wed Sep 23 2026 Abe Tomoaki <abe@clear-code.com> - 4.0.9-1
+- New upstream release.
+
 * Mon Aug 03 2026 Horimoto Yasuhiro <horimoto@clear-code.com> - 4.0.8-1
 - New upstream release.
 
