@@ -3,6 +3,13 @@ require_relative "helpers/sandbox"
 class VacuumTestCase < Test::Unit::TestCase
   include Helpers::Sandbox
 
+  def groonga_table_names
+    table_list = run_sql("SELECT pgroonga_command('table_list');")
+    JSON.parse(table_list[0][/(\[.+\])/, 1])[1][1..-1].collect do |table|
+      table[1]
+    end
+  end
+
   test "unmap after VACUUM" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
@@ -44,6 +51,57 @@ class VacuumTestCase < Test::Unit::TestCase
     run_sql("SELECT pgroonga_command('database_unmap');")
     FileUtils.rm(table_path)
     run_sql("VACUUM memos;")
+  end
+
+  test "keep objects of CREATE INDEX in progress" do
+    run_sql("CREATE TABLE copy_memos (content text);")
+    run_sql("CREATE INDEX copy_content ON copy_memos USING pgroonga (content);")
+    run_sql("CREATE TABLE memos (content text);")
+
+    sources_table_name = nil
+    run_sql do |input, output, error|
+      input.puts("BEGIN;")
+      input.puts("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      input.puts("SELECT pgroonga_table_name('memos_content');")
+      output.each_line do |line|
+        sources_table_name = $1 if /^ *(Sources\d+)$/ =~ line
+        break if line.strip.empty?
+      end
+
+      # Test whether `sources_table_name` remains by running VACUUM during a commit.
+      # Related issue:
+      # https://github.com/pgroonga/pgroonga/issues/1013
+      run_sql("VACUUM copy_memos;")
+
+      assert_include(groonga_table_names, sources_table_name)
+
+      input.puts("COMMIT;")
+      input.close
+    end
+  end
+
+  test "remove objects of rollbacked CREATE INDEX" do
+    run_sql("CREATE TABLE copy_memos (content text);")
+    run_sql("CREATE INDEX copy_content ON copy_memos USING pgroonga (content);")
+    run_sql("CREATE TABLE memos (content text);")
+
+    sources_table_name = nil
+    run_sql do |input, output, error|
+      input.puts("BEGIN;")
+      input.puts("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      input.puts("SELECT pgroonga_table_name('memos_content');")
+      output.each_line do |line|
+        sources_table_name = $1 if /^ *(Sources\d+)$/ =~ line
+        break if line.strip.empty?
+      end
+
+      input.puts("ROLLBACK;")
+      input.close
+    end
+
+    # The objects of rollbacked CREATE INDEX remain until VACUUM removes them.
+    run_sql("VACUUM copy_memos;")
+    assert_not_include(groonga_table_names, sources_table_name)
   end
 
   test "sequential search + NormalizerTable" do

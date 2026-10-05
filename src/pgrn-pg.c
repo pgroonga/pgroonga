@@ -23,6 +23,7 @@
 #else
 #	include <utils/relfilenodemap.h>
 #endif
+#include <utils/snapmgr.h>
 #include <utils/syscache.h>
 
 #include <string.h>
@@ -174,8 +175,8 @@ PGrnPGResolveFileNodeID(Oid fileNodeID, Oid *relationID, LOCKMODE lockMode)
 	return relation;
 }
 
-bool
-PGrnPGIsValidFileNodeID(Oid fileNodeID)
+static bool
+PGrnPGIsCommittedFileNodeID(Oid fileNodeID)
 {
 	Relation relation;
 	Oid relationID = InvalidOid;
@@ -191,6 +192,45 @@ PGrnPGIsValidFileNodeID(Oid fileNodeID)
 	}
 
 	return valid;
+}
+
+static bool
+PGrnPGIsCommittedOrUncommittedFileNodeID(Oid fileNodeID)
+{
+	Relation pgClass;
+	SysScanDesc scan;
+	ScanKeyData key[1];
+	SnapshotData snapshot;
+	bool found;
+
+	pgClass = table_open(RelationRelationId, AccessShareLock);
+	ScanKeyInit(&key[0],
+				Anum_pg_class_relfilenode,
+				BTEqualStrategyNumber,
+				F_OIDEQ,
+				ObjectIdGetDatum(fileNodeID));
+	/* Include uncommitted changes in `InitDirtySnapshot` */
+	InitDirtySnapshot(snapshot);
+	scan = systable_beginscan(pgClass, InvalidOid, false, &snapshot, 1, key);
+	found = HeapTupleIsValid(systable_getnext(scan));
+	systable_endscan(scan);
+	table_close(pgClass, AccessShareLock);
+
+	return found;
+}
+
+bool
+PGrnPGIsValidFileNodeID(Oid fileNodeID)
+{
+	/*
+	 * PGrnPGIsCommittedOrUncommittedFileNodeID() can check both committed and
+	 * uncommitted changes, but it is slower than PGrnPGIsCommittedFileNodeID().
+	 * So, first check whether the target fileNodeID is committed by
+	 * PGrnPGIsCommittedFileNodeID(). Only if it isn't committed, call
+	 * PGrnPGIsCommittedOrUncommittedFileNodeID().
+	 */
+	return PGrnPGIsCommittedFileNodeID(fileNodeID) ||
+		   PGrnPGIsCommittedOrUncommittedFileNodeID(fileNodeID);
 }
 
 int
