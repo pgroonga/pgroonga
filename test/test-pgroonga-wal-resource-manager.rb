@@ -717,6 +717,7 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
         # pgroonga_benchmark may be finished
       end
     end
+    pgroonga_benchmark.join
 
     sleep(1)
 
