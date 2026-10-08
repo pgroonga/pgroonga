@@ -9,13 +9,37 @@
 
 #include <storage/lmgr.h>
 
+static grn_obj *
+resolve_sources_table(grn_ctx *ctx, grn_obj *table)
+{
+	/*
+	 * Follows the source table of a temporary table so that
+	 * pgroonga_tuple_is_alive() can be used in "post_filter" of Groonga.
+	 *
+	 * `post_filter` is applied to a result set.
+	 * A result set is a temporary table that uses its source table as the key
+	 * type, so its domain is the source table.
+	 */
+	while (table && grn_obj_is_temporary(ctx, table) &&
+		   table->header.domain != GRN_ID_NIL)
+	{
+		table = grn_ctx_at(ctx, table->header.domain);
+	}
+	return table;
+}
+
 static Oid
 sources_table_to_file_node_id(grn_ctx *ctx, grn_obj *table)
 {
 	char name[GRN_TABLE_MAX_KEY_SIZE];
 	int name_size;
 
+	table = resolve_sources_table(ctx, table);
+	if (!table)
+		return InvalidOid;
 	name_size = grn_obj_name(ctx, table, name, GRN_TABLE_MAX_KEY_SIZE);
+	if (name_size <= PGrnSourcesTableNamePrefixLength)
+		return InvalidOid;
 	name[name_size] = '\0';
 	return strtol(name + PGrnSourcesTableNamePrefixLength, NULL, 10);
 }
