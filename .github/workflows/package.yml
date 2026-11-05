@@ -257,7 +257,11 @@ jobs:
             mkdir -p release/${os}/
             # packages/packages-postgresql-17-pgdg-pgroonga-debian-bookworm/debian/pool/bookworm/ ->
             # release/debian-bookworm/debian/pool/bookworm/
-            rsync -a ${packages_path}/ release/${os}/
+            #
+            # The amd64 and arm64 jobs both build the source package, and
+            # the files differ between the two builds. Keep the first copy
+            # (amd64) so that the .dsc and the tarballs it lists stay together.
+            rsync -a --ignore-existing ${packages_path}/ release/${os}/
           done
           for release_os_path in release/*; do
             # release/debian-bookworm ->
