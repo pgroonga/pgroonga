@@ -199,6 +199,10 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y -V incus
+          # Disable Ubuntu-specific AppArmor restriction on user namespaces.
+          # Without this, systemd services such as systemd-resolved in newer containers (e.g. Ubuntu 26.04) can't start.
+          # ref: https://github.com/lxc/incus/issues/3251
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
       - name: Allow egress network traffic flows for Incus
         run: |
           sudo iptables -I DOCKER-USER -i incusbr0 -j ACCEPT
