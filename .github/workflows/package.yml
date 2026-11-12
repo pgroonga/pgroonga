@@ -180,6 +180,9 @@ jobs:
           GROONGA_REPOSITORY: ../../../groonga
         run: |
           set -x
+          # "rake version:update" uses RELEASE_TIME in debian/changelog.
+          # All jobs must use the same time to build the same source package.
+          export RELEASE_TIME=$(git log -1 --format=%cI)
           cd packages/${PACKAGE}
           rake version:update
           rake \
@@ -259,13 +262,27 @@ jobs:
                    grep -E -o '(almalinux|debian|ubuntu)-[^-]+')
 
             mkdir -p release/${os}/
+            # The amd64 and arm64 jobs both build the source package. It
+            # must be the same.
+            #
+            # This lists files that exist in both but have different
+            # content.
+            different_paths=$(rsync \
+                                --recursive \
+                                --links \
+                                --checksum \
+                                --existing \
+                                --dry-run \
+                                --out-format='%n' \
+                                ${packages_path}/ release/${os}/)
+            if [ -n "${different_paths}" ]; then
+              echo "${different_paths}"
+              echo "::error::${packages_path} has different files"
+              exit 1
+            fi
             # packages/packages-postgresql-17-pgdg-pgroonga-debian-bookworm/debian/pool/bookworm/ ->
             # release/debian-bookworm/debian/pool/bookworm/
-            #
-            # The amd64 and arm64 jobs both build the source package, and
-            # the files differ between the two builds. Keep the first copy
-            # (amd64) so that the .dsc and the tarballs it lists stay together.
-            rsync -a --ignore-existing ${packages_path}/ release/${os}/
+            rsync -a ${packages_path}/ release/${os}/
           done
           for release_os_path in release/*; do
             # release/debian-bookworm ->
