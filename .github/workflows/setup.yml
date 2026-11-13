@@ -32,21 +32,12 @@ jobs:
           submodules: recursive
       - name: Install Incus
         run: |
-          # We can use the official Ubuntu APT repository when
-          # ubuntu-latest is Ubuntu 24.04.
-          sudo curl -fsSL https://pkgs.zabbly.com/key.asc -o /etc/apt/keyrings/zabbly.asc
-          cat <<SOURCES | sudo tee /etc/apt/sources.list.d/zabbly-incus-stable.sources
-          Enabled: yes
-          Types: deb
-          URIs: https://pkgs.zabbly.com/incus/stable
-          Suites: $(. /etc/os-release && echo ${VERSION_CODENAME})
-          Components: main
-          Architectures: $(dpkg --print-architecture)
-          Signed-By: /etc/apt/keyrings/zabbly.asc
-          SOURCES
-
           sudo apt update
           sudo apt install -y -V incus
+          # Disable Ubuntu-specific AppArmor restriction on user namespaces.
+          # Without this, systemd services such as systemd-resolved in newer containers (e.g. Ubuntu 26.04) can't start.
+          # ref: https://github.com/lxc/incus/issues/3251
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
       - name: Allow egress network traffic flows for Incus
         # https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker
         run: |
