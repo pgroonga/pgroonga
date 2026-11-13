@@ -645,15 +645,14 @@ SELECT pgroonga_command(
                      error.read_command_output,
                    ])
       run_sql("DELETE FROM memos;")
-      before = run_sql_standby("SELECT latest_end_lsn FROM pg_stat_wal_receiver;")
-      # Use index scan to delete the deleted record from Groonga
+      # Use index scan to delete the deleted record from Groonga.
+      # COMMIT waits for applying the deletion on standby because
+      # pg_current_xact_id() assigns a transaction ID.
       run_sql("SET enable_bitmapscan = no;",
-              "SELECT * FROM memos WHERE content &@ 'pgroonga';")
-      5.times do
-        after = run_sql_standby("SELECT latest_end_lsn FROM pg_stat_wal_receiver;")
-        break unless after == before
-        sleep(1)
-      end
+              "BEGIN;",
+              "SELECT * FROM memos WHERE content &@ 'pgroonga';",
+              "SELECT pg_current_xact_id();",
+              "COMMIT;")
 
       input.puts("#{select};")
       input.flush
