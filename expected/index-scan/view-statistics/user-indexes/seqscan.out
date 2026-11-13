@@ -1,3 +1,9 @@
+-- pg_stat_force_next_flush() is available since PostgreSQL 15. We
+-- can't wait for updating idx_scan reliably without it.
+SELECT current_setting('server_version_num')::int < 150000 AS omit \gset
+\if :omit
+  \quit
+\endif
 CREATE TABLE memos (
   id integer,
   content text
@@ -39,17 +45,12 @@ SELECT id, content
 
 -- idx_scan may not be updated immediately, so we use pg_stat_force_next_flush()
 -- to force an immediate update.
--- However, this function was introduced in PostgreSQL 15, so we use pg_sleep()
--- instead for PostgreSQL 14.
-DO LANGUAGE plpgsql $$
-BEGIN
-        IF current_setting('server_version_num')::int >= 150000 THEN
-                PERFORM pg_stat_force_next_flush();
-        ELSE
-                PERFORM pg_sleep(2);
-        END IF;
-END;
-$$;
+SELECT pg_stat_force_next_flush();
+ pg_stat_force_next_flush 
+--------------------------
+ 
+(1 row)
+
 SELECT idx_scan
   FROM pg_stat_user_indexes
  WHERE indexrelname = 'pgrn_content_index';
