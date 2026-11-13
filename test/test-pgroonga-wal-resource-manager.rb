@@ -714,18 +714,23 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
     end
     pgroonga_benchmark.join
 
-    sleep(1)
+    # Wait for applying all WAL on standby
+    primary_lsn, = run_sql("SELECT pg_current_wal_lsn();")
+    primary_lsn = primary_lsn[/^ (\h+\/\h+)$/, 1]
+    applied = false
+    60.times do
+      output, = run_sql_standby(<<-SELECT)
+SELECT pg_last_wal_replay_lsn() >= '#{primary_lsn}'::pg_lsn;
+      SELECT
+      applied = output.include?("\n t\n")
+      break if applied
+      sleep(1)
+    end
+    assert_true(applied,
+                "standby doesn't apply WAL until #{primary_lsn} in 60 seconds")
 
     select = "SELECT id FROM pages WHERE content &@~ 'that';"
-    select_result_standby = run_sql_standby(select)
-    previous_select_result_standby = nil
-    # wait for all WALs are applied on standby
-    while select_result_standby != previous_select_result_standby
-      previous_select_result_standby = select_result_standby
-      sleep(1)
-      select_result_standby = run_sql_standby(select)
-    end
-    assert_equal(run_sql(select), select_result_standby)
+    assert_equal(run_sql(select), run_sql_standby(select))
   end
 
   test "pgroonga.max_bulk_insert_wal_record_size" do
