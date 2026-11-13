@@ -1,0 +1,5 @@
+-- pg_stat_force_next_flush() is available since PostgreSQL 15. We
+-- can't wait for updating idx_scan reliably without it.
+SELECT current_setting('server_version_num')::int < 150000 AS omit \gset
+\if :omit
+  \quit
