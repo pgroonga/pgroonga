@@ -36,6 +36,18 @@ module Helpers
       all_output
     end
 
+    # psql outputs an empty line after each result.
+    def read_psql_output(timeout: 5)
+      all_output = +""
+      until all_output.end_with?("\n\n")
+        break unless IO.select([self], nil, nil, timeout)
+        output = read_command_output
+        break if output.empty? # EOF
+        all_output << output
+      end
+      all_output
+    end
+
     def read_command_output
       return "" unless IO.select([self], nil, nil, 0)
       begin

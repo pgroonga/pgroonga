@@ -589,8 +589,7 @@ SELECT pgroonga_command(
       RESULT
       assert_equal([result, ""],
                    [
-                     output.read_command_output_all +
-                     output.read_command_output_all(initial_timeout: 5),
+                     output.read_psql_output,
                      error.read_command_output,
                    ])
       run_sql("INSERT INTO memos VALUES ('PGroonga is very good!');")
@@ -607,8 +606,7 @@ SELECT pgroonga_command(
       RESULT
       assert_equal([result, ""],
                    [
-                     output.read_command_output_all +
-                     output.read_command_output_all(initial_timeout: 5),
+                     output.read_psql_output,
                      error.read_command_output,
                    ])
     end
@@ -640,8 +638,7 @@ SELECT pgroonga_command(
       RESULT
       assert_equal([result, ""],
                    [
-                     output.read_command_output_all +
-                     output.read_command_output_all(initial_timeout: 5),
+                     output.read_psql_output,
                      error.read_command_output,
                    ])
       run_sql("DELETE FROM memos;")
@@ -666,8 +663,7 @@ SELECT pgroonga_command(
       RESULT
       assert_equal([result, ""],
                    [
-                     output.read_command_output_all +
-                     output.read_command_output_all(initial_timeout: 5),
+                     output.read_psql_output,
                      error.read_command_output,
                    ])
     end
