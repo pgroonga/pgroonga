@@ -714,18 +714,38 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
     end
     pgroonga_benchmark.join
 
-    sleep(1)
+    # Wait for applying all WAL on standby. Standby may replay all WAL
+    # from the beginning after the last restart. It may take a long time
+    # on slow environments. So we wait while replaying is progressing.
+    primary_lsn, = run_sql("SELECT pg_current_wal_lsn();")
+    primary_lsn = primary_lsn[/^ (\h+\/\h+)$/, 1]
+    applied = false
+    output = nil
+    previous_output = nil
+    interval = 5
+    loop do
+      output, = run_sql_standby(<<-SELECT)
+SELECT pg_last_wal_receive_lsn(),
+       pg_last_wal_replay_lsn(),
+       pg_last_wal_replay_lsn() >= '#{primary_lsn}'::pg_lsn AS applied;
+      SELECT
+      applied = output.include?("| t\n")
+      break if applied
+      break if output == previous_output
+      previous_output = output
+      sleep(interval)
+    end
+    assert_true(applied,
+                "standby doesn't apply WAL until #{primary_lsn}: " +
+                "no progress in #{interval} seconds:\n" +
+                output +
+                "PostgreSQL log:\n" +
+                @postgresql_standby.read_log +
+                "PGroonga log:\n" +
+                @postgresql_standby.read_pgroonga_log)
 
     select = "SELECT id FROM pages WHERE content &@~ 'that';"
-    select_result_standby = run_sql_standby(select)
-    previous_select_result_standby = nil
-    # wait for all WALs are applied on standby
-    while select_result_standby != previous_select_result_standby
-      previous_select_result_standby = select_result_standby
-      sleep(1)
-      select_result_standby = run_sql_standby(select)
-    end
-    assert_equal(run_sql(select), select_result_standby)
+    assert_equal(run_sql(select), run_sql_standby(select))
   end
 
   test "pgroonga.max_bulk_insert_wal_record_size" do
