@@ -714,12 +714,16 @@ SELECT pid FROM pg_stat_activity WHERE backend_type = 'startup';
     end
     pgroonga_benchmark.join
 
-    # Wait for applying all WAL on standby
+    # Wait for applying all WAL on standby. Standby may replay all WAL
+    # from the beginning after the last restart. It may take a long time
+    # on slow environments. So we wait while replaying is progressing.
     primary_lsn, = run_sql("SELECT pg_current_wal_lsn();")
     primary_lsn = primary_lsn[/^ (\h+\/\h+)$/, 1]
     applied = false
     output = nil
-    60.times do
+    previous_output = nil
+    interval = 5
+    loop do
       output, = run_sql_standby(<<-SELECT)
 SELECT pg_last_wal_receive_lsn(),
        pg_last_wal_replay_lsn(),
@@ -727,11 +731,13 @@ SELECT pg_last_wal_receive_lsn(),
       SELECT
       applied = output.include?("| t\n")
       break if applied
-      sleep(1)
+      break if output == previous_output
+      previous_output = output
+      sleep(interval)
     end
     assert_true(applied,
-                "standby doesn't apply WAL until #{primary_lsn} " +
-                "in 60 seconds:\n" +
+                "standby doesn't apply WAL until #{primary_lsn}: " +
+                "no progress in #{interval} seconds:\n" +
                 output +
                 "PostgreSQL log:\n" +
                 @postgresql_standby.read_log +
