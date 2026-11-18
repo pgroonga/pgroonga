@@ -614,6 +614,12 @@ PGrnInitializeVariables(void)
 	EmitWarningsOnPlaceholders("pgroonga");
 }
 
+bool
+PGrnVariablesIsCrashSafeEnabled(void)
+{
+	return PGrnEnableCrashSafe;
+}
+
 void
 PGrnVariablesApplyInitialValues(void)
 {

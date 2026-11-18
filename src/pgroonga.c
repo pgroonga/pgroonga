@@ -611,14 +611,16 @@ PGrnEnsureDatabase(void)
 	join_path_components(path, databasePath, PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	/* pgroonga_crash_safer isn't used on standby with
-	 * pgroonga_wal_resource_manager. It isn't running on promoted
-	 * standby either. We can use PGroonga without pgroonga_crash_safer
-	 * in these cases. */
+	/* We can use PGroonga without pgroonga_crash_safer when
+	 * pgroonga_wal_resource_manager is enabled. For example,
+	 * pgroonga_crash_safer isn't used on standby. We must not touch
+	 * pgroonga_crash_safer's statuses when crash safe is disabled
+	 * because pgroonga_crash_safer may not be loaded. */
 	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY &&
 		(!PGrnWALResourceManagerGetEnabled() ||
-		 pgrn_crash_safer_statuses_get_main_pid(
-			 pgrn_crash_safer_statuses_get()) != InvalidPid))
+		 (PGrnVariablesIsCrashSafeEnabled() &&
+		  pgrn_crash_safer_statuses_get_main_pid(
+			  pgrn_crash_safer_statuses_get()) != InvalidPid)))
 	{
 		HTAB *statuses;
 		pid_t crashSaferPID;
