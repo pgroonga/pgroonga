@@ -22,6 +22,23 @@ pgroonga_crash_safer.log_level = debug
     CONFIG
   end
 
+  def wal_paths
+    Dir.glob(File.join(@test_db_dir, "pgrn*.wal"))
+  end
+
+  def ensure_wal_flushed
+    max_n_tries = flush_naptime * 60
+    n_tries = 0
+    until wal_paths.empty? do
+      sleep(0.1)
+      n_tries += 1
+      if n_tries >= max_n_tries
+        files = Dir.glob(File.join(@test_db_dir, "pgrn*"))
+        raise "pgrn*.wal aren't flushed: #{files.join(", ")}"
+      end
+    end
+  end
+
   test "reset positions on primary" do
     run_sql("CREATE TABLE memos (title text, content text);")
     run_sql("CREATE INDEX memos_title ON memos USING pgroonga (title);")
@@ -78,16 +95,7 @@ pgroonga_crash_safer.log_level = debug
   test "recover from WAL" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
-    max_n_tries = flush_naptime * 60
-    n_tries = 0
-    until Dir.glob(File.join(@test_db_dir, "pgrn*.wal")).empty? do
-      sleep(0.1)
-      n_tries += 1
-      if n_tries >= max_n_tries
-        files = Dir.glob(File.join(@test_db_dir, "pgrn*"))
-        raise "pgrn*.wal aren't flushed: #{files.join(", ")}"
-      end
-    end
+    ensure_wal_flushed
     Dir.glob(File.join(@test_db_dir, "pgrn*")) do |path|
       FileUtils.cp(path, "#{path}.bak")
     end
@@ -288,6 +296,35 @@ log_autovacuum_min_duration = 0
                        error.message)
         end
       end
+    end
+  end
+
+  sub_test_case("WAL resource manager") do
+    setup def check_postgresql_version
+      if @postgresql.version < 15
+        omit("custom WAL resource manager is available since PostgreSQL 15")
+      end
+    end
+
+    def shared_preload_libraries
+      ["pgroonga_wal_resource_manager"] + super
+    end
+
+    def additional_configurations
+      super + <<-CONFIG
+pgroonga.enable_wal_resource_manager = yes
+      CONFIG
+    end
+
+    # The test database is created after pgroonga_crash_safer is
+    # started. pgroonga_crash_safer must start a flush process for it.
+    test "flush database created after start" do
+      run_sql("CREATE TABLE memos (content text);")
+      run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+      run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+      assert_not_equal([], wal_paths)
+      ensure_wal_flushed
+      assert_equal([], wal_paths)
     end
   end
 
