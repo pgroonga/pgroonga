@@ -194,7 +194,8 @@ INSERT INTO memos
                    insert_connection_release_log_line,
                    crash_safer_flushing_log_line,
                  ],
-                 target_finish_log_lines)
+                 target_finish_log_lines,
+                 @postgresql.read_pgroonga_log)
   end
 
   sub_test_case("random crash") do
