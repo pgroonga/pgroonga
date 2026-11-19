@@ -151,8 +151,17 @@ else
   module_install_dir = get_option('libdir')
 endif
 
+pgrn_link_args = []
+if host_machine.system() == 'darwin'
+  # We must resolve symbols by postgres not libSystem. For example,
+  # libSystem also provides hash_search() but we need hash_search()
+  # provided by postgres. PGXS also uses this.
+  pgrn_link_args += ['-Wl,-bundle_loader,' + pg_bindir / 'postgres']
+endif
+
 pgrn_module_args = {
   'c_args': pgrn_c_args,
+  'link_args': pgrn_link_args,
   'dependencies': pgrn_dependencies,
   'include_directories': [include_directories('src')],
   'name_prefix': '',
