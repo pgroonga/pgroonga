@@ -266,9 +266,10 @@ jobs:
             --username=${Env:PGROONGA_TEST_USER}
           Add-Content `
             -Path ${Env:PGROONGA_TEST_DATA}\postgresql.conf `
-            -Value "enable_partitionwise_join = on","max_prepared_transactions = 1","random_page_cost = 0" `
+            -Value "enable_partitionwise_join = on","log_autovacuum_min_duration = 0","max_prepared_transactions = 1","random_page_cost = 0" `
             -Encoding utf8
           pg_ctl start `
+            --log=${Env:PGROONGA_TEST_DATA}\postgresql.log `
             --pgdata=${Env:PGROONGA_TEST_DATA}
       - name: Prepare test files
         run: |
@@ -291,6 +292,10 @@ jobs:
         if: failure()
         run: |
           Get-Content ..\pgroonga.build\regression.diffs
+      - name: Show postgresql.log
+        if: failure()
+        run: |
+          Get-Content ${Env:PGROONGA_TEST_DATA}\postgresql.log
       - name: Show pgroonga.log
         if: failure()
         run: |
