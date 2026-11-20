@@ -44,11 +44,10 @@ jobs:
             postgresql-version: "17"
           - label: PostgreSQL 18
             postgresql-version: "18"
-          - label: PostgreSQL 18 with Groonga main
-            groonga-main: "yes"
-            postgresql-version: "18"
           - label: PostgreSQL 19
-            postgresql-unreleased: "yes"
+            postgresql-version: "19"
+          - label: PostgreSQL 19 with Groonga main
+            groonga-main: "yes"
             postgresql-version: "19"
     env:
       GROONGA_MAIN: ${{ matrix.groonga-main }}
