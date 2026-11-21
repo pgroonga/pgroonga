@@ -594,6 +594,73 @@ PGrnInitializeDatabase(void)
 	PGrnInitializeAutoClose();
 }
 
+static void
+PGrnEnsureDatabaseCrashSafer(void)
+{
+	HTAB *statuses;
+	pid_t crashSaferPID;
+	pid_t preparePID;
+	bool waitFlushing = true;
+
+	statuses = pgrn_crash_safer_statuses_get();
+	crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
+	if (crashSaferPID == InvalidPid)
+	{
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("pgroonga: "
+						"pgroonga_crash_safer process doesn't exist: "
+						"shared_preload_libraries may not include "
+						"pgroonga_crash_safer")));
+	}
+	pgrn_crash_safer_statuses_use(statuses, MyDatabaseId, MyDatabaseTableSpace);
+	PGrnCrashSaferInitialized = true;
+
+	preparePID = pgrn_crash_safer_statuses_get_prepare_pid(
+		statuses, MyDatabaseId, MyDatabaseTableSpace);
+	if (preparePID == MyProcPid)
+	{
+		waitFlushing = false;
+	}
+
+	while (waitFlushing)
+	{
+		int conditions;
+		long timeout = 1000;
+
+		/* We need to reject any connections while preparing. If
+		 * we accept a new connection and block the connection
+		 * here, REINDEX by pgroonga-crash-safer may be blocked by
+		 * the connection. */
+		if (pgrn_crash_safer_statuses_is_preparing(
+				statuses, MyDatabaseId, MyDatabaseTableSpace))
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_CANNOT_CONNECT_NOW),
+					 errmsg("pgroonga: "
+							"pgroonga_crash_safer is preparing")));
+		}
+
+		if (pgrn_crash_safer_statuses_is_flushing(
+				statuses, MyDatabaseId, MyDatabaseTableSpace))
+		{
+			break;
+		}
+
+		kill(crashSaferPID, SIGUSR1);
+
+		conditions = WaitLatch(MyLatch,
+							   WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
+							   timeout,
+							   PG_WAIT_EXTENSION);
+		if (conditions & WL_LATCH_SET)
+		{
+			ResetLatch(MyLatch);
+		}
+		CHECK_FOR_INTERRUPTS();
+	}
+}
+
 void
 PGrnEnsureDatabase(void)
 {
@@ -622,70 +689,7 @@ PGrnEnsureDatabase(void)
 		  pgrn_crash_safer_statuses_get_main_pid(
 			  pgrn_crash_safer_statuses_get()) != InvalidPid)))
 	{
-		HTAB *statuses;
-		pid_t crashSaferPID;
-		pid_t preparePID;
-		bool waitFlushing = true;
-
-		statuses = pgrn_crash_safer_statuses_get();
-		crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
-		if (crashSaferPID == InvalidPid)
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("pgroonga: "
-							"pgroonga_crash_safer process doesn't exist: "
-							"shared_preload_libraries may not include "
-							"pgroonga_crash_safer")));
-		}
-		pgrn_crash_safer_statuses_use(
-			statuses, MyDatabaseId, MyDatabaseTableSpace);
-		PGrnCrashSaferInitialized = true;
-
-		preparePID = pgrn_crash_safer_statuses_get_prepare_pid(
-			statuses, MyDatabaseId, MyDatabaseTableSpace);
-		if (preparePID == MyProcPid)
-		{
-			waitFlushing = false;
-		}
-
-		while (waitFlushing)
-		{
-			int conditions;
-			long timeout = 1000;
-
-			/* We need to reject any connections while preparing. If
-			 * we accept a new connection and block the connection
-			 * here, REINDEX by pgroonga-crash-safer may be blocked by
-			 * the connection. */
-			if (pgrn_crash_safer_statuses_is_preparing(
-					statuses, MyDatabaseId, MyDatabaseTableSpace))
-			{
-				ereport(ERROR,
-						(errcode(ERRCODE_CANNOT_CONNECT_NOW),
-						 errmsg("pgroonga: "
-								"pgroonga_crash_safer is preparing")));
-			}
-
-			if (pgrn_crash_safer_statuses_is_flushing(
-					statuses, MyDatabaseId, MyDatabaseTableSpace))
-			{
-				break;
-			}
-
-			kill(crashSaferPID, SIGUSR1);
-
-			conditions =
-				WaitLatch(MyLatch,
-						  WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
-						  timeout,
-						  PG_WAIT_EXTENSION);
-			if (conditions & WL_LATCH_SET)
-			{
-				ResetLatch(MyLatch);
-			}
-			CHECK_FOR_INTERRUPTS();
-		}
+		PGrnEnsureDatabaseCrashSafer();
 	}
 
 	if (pgrn_file_exist(path))
