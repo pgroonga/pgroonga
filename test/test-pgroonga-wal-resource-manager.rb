@@ -55,6 +55,33 @@ synchronous_standby_names = ''
     assert_equal([], Dir.glob(File.join(@test_db_dir, "pgrn*.wal")))
   end
 
+  # rm_cleanup isn't called when standby is stopped. We must finalize
+  # Groonga on exit.
+  test "finalize on stop" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    stop_postgres_standby
+    pgroonga_log = @postgresql_standby.read_pgroonga_log
+    pattern = /pgroonga: wal-resource-manager: (startup|cleanup|exit)/
+    assert_equal([["startup"], ["exit"]],
+                 pgroonga_log.scan(pattern),
+                 pgroonga_log)
+  end
+
+  test "finalize on promotion" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    run_sql_standby("SELECT pg_promote();")
+    stop_postgres_standby
+    pgroonga_log = @postgresql_standby.read_pgroonga_log
+    pattern = /pgroonga: wal-resource-manager: (startup|cleanup|exit)/
+    assert_equal([["startup"], ["cleanup"]],
+                 pgroonga_log.scan(pattern),
+                 pgroonga_log)
+  end
+
   test "text" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
