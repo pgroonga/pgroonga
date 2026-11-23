@@ -614,17 +614,11 @@ PGrnInitializeVariables(void)
 	EmitWarningsOnPlaceholders("pgroonga");
 }
 
-bool
-PGrnVariablesIsCrashSafeEnabled(void)
-{
-	return PGrnEnableCrashSafe;
-}
-
 void
 PGrnVariablesApplyInitialValues(void)
 {
 	grn_ctx_set_force_match_escalation(ctx, PGrnForceMatchEscalation);
-	if (PGrnEnableCrashSafe || PGrnEnableWALResourceManager)
+	if (PGrnEnableCrashSafe)
 	{
 		grn_ctx_set_wal_role(ctx, GRN_WAL_ROLE_SECONDARY);
 	}

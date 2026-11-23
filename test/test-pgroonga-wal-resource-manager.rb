@@ -46,6 +46,15 @@ synchronous_standby_names = ''
     start_postgres
   end
 
+  # Nobody flushes and removes Groonga's WAL without
+  # pgroonga_crash_safer. So we must not write Groonga's WAL.
+  test "no Groonga WAL" do
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    assert_equal([], Dir.glob(File.join(@test_db_dir, "pgrn*.wal")))
+  end
+
   test "text" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
