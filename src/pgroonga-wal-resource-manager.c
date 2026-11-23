@@ -16,6 +16,7 @@ static grn_obj PGrnInspectBuffer;
 #	include "pgrn-wal-custom.h"
 #endif
 
+#include <storage/ipc.h>
 #include <utils/guc.h>
 
 PG_MODULE_MAGIC;
@@ -24,6 +25,7 @@ static grn_ctx PGrnWRMContext;
 static char *PGrnWRMLogPath;
 static int PGrnWRMLogLevel = GRN_LOG_DEFAULT_LEVEL;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGrnWRMLogLevelEntries);
+static bool PGrnWRMInitialized = false;
 static Oid PGrnWRMCurrentDatabaseID = InvalidOid;
 static Oid PGrnWRMCurrentDatabaseTableSpaceID = InvalidOid;
 
@@ -977,6 +979,32 @@ pgrnwrm_identify(uint8 info)
 }
 
 static void
+pgrnwrm_finalize(const char *reason)
+{
+	grn_obj *db;
+
+	if (!PGrnWRMInitialized)
+		return;
+	PGrnWRMInitialized = false;
+
+	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": %s", reason);
+	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
+	db = grn_ctx_db(ctx);
+	if (db)
+		grn_obj_close(ctx, db);
+	grn_ctx_fin(ctx);
+	grn_fin();
+}
+
+/* rm_cleanup is called only when recovery is finished. It's not called
+ * when standby is stopped. */
+static void
+pgrnwrm_on_exit(int code, Datum arg)
+{
+	pgrnwrm_finalize("exit");
+}
+
+static void
 pgrnwrm_startup(void)
 {
 	if (!StandbyMode)
@@ -1004,6 +1032,7 @@ pgrnwrm_startup(void)
 		grn_rc rc = grn_ctx_init(ctx, 0);
 		if (rc != GRN_SUCCESS)
 		{
+			grn_fin();
 			ereport(
 				ERROR,
 				(errcode(PGrnGrnRCToPGErrorCode(rc)),
@@ -1016,23 +1045,15 @@ pgrnwrm_startup(void)
 	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": startup: <%s>", PGRN_VERSION);
 
 	GRN_TEXT_INIT(&PGrnInspectBuffer, 0);
+
+	PGrnWRMInitialized = true;
+	before_shmem_exit(pgrnwrm_on_exit, 0);
 }
 
 static void
 pgrnwrm_cleanup(void)
 {
-	grn_obj *db;
-
-	if (!StandbyMode)
-		return;
-
-	GRN_LOG(ctx, GRN_LOG_NOTICE, PGRN_TAG ": cleanup");
-	GRN_OBJ_FIN(ctx, &PGrnInspectBuffer);
-	db = grn_ctx_db(ctx);
-	if (db)
-		grn_obj_close(ctx, db);
-	grn_ctx_fin(ctx);
-	grn_fin();
+	pgrnwrm_finalize("cleanup");
 }
 
 static RmgrData data = {
