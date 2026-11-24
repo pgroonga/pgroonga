@@ -209,8 +209,7 @@ PGrnWALRecordCreateTableWrite(PGrnWALRecordCreateTable *record)
 		record->normalizers, normalizersNameBuffer, &normalizersNameSize);
 	PGrnWALRecordWriteGrnObj(
 		record->tokenFilters, tokenFiltersNameBuffer, &tokenFiltersNameSize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_CREATE_TABLE | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_CREATE_TABLE);
 }
 
 static inline void
@@ -290,8 +289,7 @@ PGrnWALRecordCreateColumnWrite(PGrnWALRecordCreateColumn *record)
 	XLogRegisterData((char *) (record->name), record->nameSize);
 	XLogRegisterData((char *) &(record->flags), sizeof(grn_column_flags));
 	PGrnWALRecordWriteGrnObj(record->type, typeNameBuffer, &typeNameSize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_CREATE_COLUMN | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_CREATE_COLUMN);
 }
 
 static inline void
@@ -394,8 +392,7 @@ PGrnWALRecordSetSourcesWrite(PGrnWALRecordSetSources *record,
 			XLogRegisterData((char *) name, nameSize);
 		}
 	}
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_SET_SOURCES | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_SET_SOURCES);
 }
 
 static inline void
@@ -474,8 +471,7 @@ PGrnWALRecordRenameTableWrite(PGrnWALRecordRenameTable *record)
 	XLogRegisterData((char *) record->name, record->nameSize);
 	XLogRegisterData((char *) &(record->newNameSize), sizeof(uint32));
 	XLogRegisterData((char *) record->newName, record->newNameSize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_RENAME_TABLE | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_RENAME_TABLE);
 }
 
 static inline void
@@ -693,8 +689,7 @@ PGrnWALRecordInsertWriteFinish(grn_obj *buffer)
 {
 	XLogBeginInsert();
 	XLogRegisterData((char *) GRN_TEXT_VALUE(buffer), GRN_TEXT_LEN(buffer));
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_INSERT | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_INSERT);
 }
 
 typedef union PGrnWALRecordInsertColumnValueBuffer {
@@ -989,8 +984,7 @@ PGrnWALRecordDeleteWrite(PGrnWALRecordDelete *record)
 	XLogRegisterData((char *) record->tableName, record->tableNameSize);
 	XLogRegisterData((char *) &(record->keySize), sizeof(uint32));
 	XLogRegisterData((char *) record->key, record->keySize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_DELETE | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_DELETE);
 }
 
 static inline void
@@ -1047,8 +1041,7 @@ PGrnWALRecordRemoveObjectWrite(PGrnWALRecordRemoveObject *record)
 					 offsetof(PGrnWALRecordRemoveObject, name));
 	XLogRegisterData((char *) &(record->nameSize), sizeof(uint32));
 	XLogRegisterData((char *) record->name, record->nameSize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_REMOVE_OBJECT | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_REMOVE_OBJECT);
 }
 
 static inline void
@@ -1105,8 +1098,7 @@ PGrnWALRecordRegisterPluginWrite(PGrnWALRecordRegisterPlugin *record)
 					 offsetof(PGrnWALRecordRegisterPlugin, name));
 	XLogRegisterData((char *) &(record->nameSize), sizeof(uint32));
 	XLogRegisterData((char *) record->name, record->nameSize);
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_REGISTER_PLUGIN | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_REGISTER_PLUGIN);
 }
 
 static inline void
@@ -1223,8 +1215,7 @@ PGrnWALRecordBulkInsertWriteFinish(grn_obj *buffer)
 {
 	XLogBeginInsert();
 	XLogRegisterData((char *) GRN_TEXT_VALUE(buffer), GRN_TEXT_LEN(buffer));
-	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID,
-			   PGRN_WAL_RECORD_BULK_INSERT | XLR_SPECIAL_REL_UPDATE);
+	XLogInsert(PGRN_WAL_RESOURCE_MANAGER_ID, PGRN_WAL_RECORD_BULK_INSERT);
 }
 
 static inline void

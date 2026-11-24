@@ -98,11 +98,7 @@ synchronous_standby_names = ''
 restore_command = 'cp "#{wal_dir}/%f" "%p"'
     CONFIG
     start_postgres_standby
-    600.times do
-      in_recovery = run_sql_standby("SELECT pg_is_in_recovery();")[0]
-      break if in_recovery.lines[3].strip == "f"
-      sleep(0.1)
-    end
+    @postgresql_standby.wait_recovery
 
     select = "SELECT * FROM memos WHERE content &@ 'PGroonga';"
     assert_equal([<<-OUTPUT, ""], run_sql_standby(select))
@@ -111,6 +107,38 @@ restore_command = 'cp "#{wal_dir}/%f" "%p"'
 -------------------
  PGroonga is good!
 (1 row)
+
+    OUTPUT
+  end
+
+  test "pg_rewind" do
+    @postgresql.append_configuration(<<-CONFIG)
+wal_log_hints = on
+    CONFIG
+    revert_synchronous_replication
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    @postgresql_standby.wait_replay(@postgresql.current_wal_lsn)
+
+    run_sql_standby("SELECT pg_promote();")
+    run_sql("INSERT INTO memos VALUES ('Mroonga is good!');")
+    run_sql_standby("INSERT INTO memos VALUES ('Groonga is good!');")
+    run_sql_standby("CHECKPOINT;")
+
+    stop_postgres
+    @postgresql.rewind(@postgresql_standby)
+    start_postgres
+    @postgresql.wait_replay(@postgresql_standby.current_wal_lsn)
+
+    select = "SELECT * FROM memos WHERE content &@ 'good';"
+    assert_equal([<<-OUTPUT, ""], run_sql(select))
+#{select}
+      content      
+-------------------
+ PGroonga is good!
+ Groonga is good!
+(2 rows)
 
     OUTPUT
   end
