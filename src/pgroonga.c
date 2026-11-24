@@ -603,8 +603,7 @@ PGrnEnsureDatabaseCrashSafer(void)
 	bool waitFlushing = true;
 
 	statuses = pgrn_crash_safer_statuses_get();
-	crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
-	if (crashSaferPID == InvalidPid)
+	if (!pgrn_crash_safer_statuses_has_main(statuses))
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
@@ -647,7 +646,12 @@ PGrnEnsureDatabaseCrashSafer(void)
 			break;
 		}
 
-		kill(crashSaferPID, SIGUSR1);
+		/* The main process of pgroonga_crash_safer may not be started
+		 * yet. PostgreSQL starts it and starts accepting connections
+		 * at the same time. */
+		crashSaferPID = pgrn_crash_safer_statuses_get_main_pid(statuses);
+		if (crashSaferPID != InvalidPid)
+			kill(crashSaferPID, SIGUSR1);
 
 		conditions = WaitLatch(MyLatch,
 							   WL_LATCH_SET | WL_TIMEOUT | WL_EXIT_ON_PM_DEATH,
@@ -684,8 +688,7 @@ PGrnEnsureDatabase(void)
 	 * pgroonga_crash_safer isn't used on standby. */
 	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY &&
 		(!PGrnWALResourceManagerGetEnabled() ||
-		 pgrn_crash_safer_statuses_get_main_pid(
-			 pgrn_crash_safer_statuses_get()) != InvalidPid))
+		 pgrn_crash_safer_statuses_has_main(pgrn_crash_safer_statuses_get())))
 	{
 		PGrnEnsureDatabaseCrashSafer();
 	}
