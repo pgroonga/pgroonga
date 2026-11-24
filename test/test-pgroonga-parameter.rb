@@ -11,6 +11,12 @@ class PGroongaParameterTestCase < Test::Unit::TestCase
     log.scan(/\|d\| (.*) \d+$/)
   end
 
+  # Groonga on Windows reports "[io][close] <...>" as debug logs. We
+  # remove them because they aren't reported on other platforms.
+  def remove_io_close_logs(logs)
+    logs.reject {|message,| message.start_with?("[io][close] <")}
+  end
+
   sub_test_case "pgroonga.log_level = debug" do
     def additional_configurations
       <<-CONFIG
@@ -27,12 +33,14 @@ pgroonga.log_type = file
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
+        debug_logs = scan_pgroonga_debug_log(pgroonga_log)
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     scan_pgroonga_debug_log(pgroonga_log).first,
+                     remove_io_close_logs(debug_logs).first,
                      pgroonga_log)
         postgresql_log = @postgresql.read_log
+        debug_logs = scan_postgresql_debug_log(postgresql_log)
         assert_equal([],
-                     scan_postgresql_debug_log(postgresql_log),
+                     remove_io_close_logs(debug_logs),
                      postgresql_log)
       end
 
@@ -46,8 +54,9 @@ pgroonga.log_type = file
         end
 
         postgresql_log = @postgresql.read_log
+        debug_logs = scan_postgresql_debug_log(postgresql_log)
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     scan_postgresql_debug_log(postgresql_log).first,
+                     remove_io_close_logs(debug_logs).first,
                      postgresql_log)
       end
     end
@@ -61,12 +70,14 @@ pgroonga.log_type = postgresql
 
       test "log output" do
         pgroonga_log = @postgresql.read_pgroonga_log
+        debug_logs = scan_pgroonga_debug_log(pgroonga_log)
         assert_equal([],
-                     scan_pgroonga_debug_log(pgroonga_log),
+                     remove_io_close_logs(debug_logs),
                      pgroonga_log)
         postgresql_log = @postgresql.read_log
+        debug_logs = scan_postgresql_debug_log(postgresql_log)
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     scan_postgresql_debug_log(postgresql_log).first,
+                     remove_io_close_logs(debug_logs).first,
                      postgresql_log)
       end
 
@@ -79,8 +90,9 @@ pgroonga.log_type = postgresql
           input.close
         end
         pgroonga_log = @postgresql.read_pgroonga_log
+        debug_logs = scan_pgroonga_debug_log(pgroonga_log)
         assert_equal(["DDL:2147483654:set_normalizers NormalizerAuto"],
-                     scan_pgroonga_debug_log(pgroonga_log).first,
+                     remove_io_close_logs(debug_logs).first,
                      pgroonga_log)
       end
     end
