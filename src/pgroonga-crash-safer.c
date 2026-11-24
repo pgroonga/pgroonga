@@ -56,6 +56,8 @@ static volatile sig_atomic_t PGroongaCrashSaferGotSIGHUP = false;
 static volatile sig_atomic_t PGroongaCrashSaferGotSIGUSR1 = false;
 static int PGroongaCrashSaferFlushNaptime = 60;
 static char *PGroongaCrashSaferLogPath;
+static shmem_startup_hook_type PGroongaCrashSaferPreviousShmemStartupHook =
+	NULL;
 static int PGroongaCrashSaferLogLevel = GRN_LOG_DEFAULT_LEVEL;
 static int PGroongaCrashSaferMaxRecoveryThreads = 0;
 PGRN_DEFINE_LOG_LEVEL_ENTRIES(PGroongaCrashSaferLogLevelEntries);
@@ -806,6 +808,15 @@ pgroonga_crash_safer_main(Datum arg)
 	proc_exit(0);
 }
 
+static void
+pgroonga_crash_safer_shmem_startup(void)
+{
+	if (PGroongaCrashSaferPreviousShmemStartupHook)
+		PGroongaCrashSaferPreviousShmemStartupHook();
+
+	pgrn_crash_safer_statuses_register_main(pgrn_crash_safer_statuses_get());
+}
+
 void
 _PG_init(void)
 {
@@ -895,4 +906,11 @@ _PG_init(void)
 	worker.bgw_notify_pid = 0;
 
 	RegisterBackgroundWorker(&worker);
+
+	/* The main process isn't started in single-user mode. */
+	if (IsPostmasterEnvironment)
+	{
+		PGroongaCrashSaferPreviousShmemStartupHook = shmem_startup_hook;
+		shmem_startup_hook = pgroonga_crash_safer_shmem_startup;
+	}
 }

@@ -74,6 +74,27 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 	return entry;
 }
 
+/* pgroonga_crash_safer calls this when shared memory is initialized.
+ * The entry for the main process exists but its PID is InvalidPid
+ * until the main process is started. */
+static inline void
+pgrn_crash_safer_statuses_register_main(HTAB *statuses)
+{
+	pgrn_crash_safer_statuses_search(
+		statuses, InvalidOid, InvalidOid, HASH_ENTER, NULL);
+}
+
+/* This returns true when the main process is started or will be
+ * started. */
+static inline bool
+pgrn_crash_safer_statuses_has_main(HTAB *statuses)
+{
+	bool found;
+	pgrn_crash_safer_statuses_search(
+		statuses, InvalidOid, InvalidOid, HASH_FIND, &found);
+	return found;
+}
+
 static inline void
 pgrn_crash_safer_statuses_set_main_pid(HTAB *statuses, pid_t pid)
 {
