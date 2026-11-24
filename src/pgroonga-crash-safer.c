@@ -798,7 +798,7 @@ pgroonga_crash_safer_main(Datum arg)
 			{
 				if (entry->pid != InvalidPid)
 					continue;
-				if (pg_atomic_read_u32(&(entry->nUsingProcesses)) != 1)
+				if (pg_atomic_read_u32(&(entry->nUsingProcesses)) == 0)
 					continue;
 				pgroonga_crash_safer_main_flush_one(entry);
 			}
