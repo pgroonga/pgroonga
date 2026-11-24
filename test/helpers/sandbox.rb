@@ -278,6 +278,26 @@ module Helpers
       File.write(postgresql_conf, conf)
     end
 
+    def rewind(source)
+      # pg_rewind overwrites configuration files by source's ones.
+      conf = File.read(postgresql_conf)
+      run_command("pg_rewind",
+                  "--target-pgdata", @dir,
+                  "--source-server",
+                  "host=#{source.host} " +
+                  "port=#{source.port} " +
+                  "user=#{source.user} " +
+                  "dbname=postgres")
+      File.write(postgresql_conf, conf)
+      File.open(File.join(@dir, "postgresql.auto.conf"), "w") do |auto_conf|
+        auto_conf.puts("primary_conninfo = '" +
+                       "host=#{source.host} " +
+                       "port=#{source.port} " +
+                       "user=#{@replication_user}'")
+      end
+      FileUtils.touch(File.join(@dir, "standby.signal"))
+    end
+
     def start
       begin
         run_command("pg_ctl", "start",
@@ -329,6 +349,30 @@ module Helpers
       else
         @pid = nil
         @running = false
+      end
+    end
+
+    def current_wal_lsn
+      psql("postgres", "SELECT pg_current_wal_lsn();")[0].lines[3].strip
+    end
+
+    def wait_replay(lsn, timeout: 60)
+      wait_until("SELECT pg_last_wal_replay_lsn() >= '#{lsn}';",
+                 timeout: timeout)
+    end
+
+    def wait_recovery(timeout: 60)
+      wait_until("SELECT NOT pg_is_in_recovery();", timeout: timeout)
+    end
+
+    def wait_until(sql, timeout: 60)
+      limit = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+      loop do
+        return if psql("postgres", sql)[0].lines[3].strip == "t"
+        if Process.clock_gettime(Process::CLOCK_MONOTONIC) > limit
+          raise "timeout: #{timeout}s: #{sql}"
+        end
+        sleep(0.1)
       end
     end
 
