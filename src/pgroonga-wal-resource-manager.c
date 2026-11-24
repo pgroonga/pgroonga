@@ -877,7 +877,7 @@ pgrnwrm_redo(XLogReaderState *record)
 {
 	uint8 info;
 
-	if (!StandbyMode)
+	if (!ArchiveRecoveryRequested)
 		return;
 
 	info = XLogRecGetInfo(record) & XLR_RMGR_INFO_MASK;
@@ -929,7 +929,7 @@ pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 {
 	uint8 info;
 
-	if (StandbyMode)
+	if (ArchiveRecoveryRequested)
 		GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [desc]");
 
 	appendStringInfo(buffer, "rmid: %d", XLogRecGetRmid(record));
@@ -973,7 +973,7 @@ pgrnwrm_desc(StringInfo buffer, XLogReaderState *record)
 static const char *
 pgrnwrm_identify(uint8 info)
 {
-	if (StandbyMode)
+	if (ArchiveRecoveryRequested)
 		GRN_LOG(ctx, GRN_LOG_DEBUG, PGRN_TAG ": [identify] <%u>", info);
 	return pgrnwrm_info_to_string(info);
 }
@@ -1007,7 +1007,7 @@ pgrnwrm_on_exit(int code, Datum arg)
 static void
 pgrnwrm_startup(void)
 {
-	if (!StandbyMode)
+	if (!ArchiveRecoveryRequested)
 		return;
 
 	grn_thread_set_get_limit_func(pgrnwrm_get_thread_limit, NULL);

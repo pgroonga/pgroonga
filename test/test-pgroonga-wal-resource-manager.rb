@@ -82,6 +82,39 @@ synchronous_standby_names = ''
                  pgroonga_log)
   end
 
+  # recovery.signal doesn't enable standby mode.
+  test "archive recovery" do
+    revert_synchronous_replication
+    stop_postgres_standby
+    run_sql("CREATE TABLE memos (content text);")
+    run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+    run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+    stop_postgres
+
+    FileUtils.rm(File.join(@postgresql_standby.dir, "standby.signal"))
+    FileUtils.touch(File.join(@postgresql_standby.dir, "recovery.signal"))
+    wal_dir = File.join(@postgresql.dir, "pg_wal")
+    @postgresql_standby.append_configuration(<<-CONFIG)
+restore_command = 'cp "#{wal_dir}/%f" "%p"'
+    CONFIG
+    start_postgres_standby
+    600.times do
+      in_recovery = run_sql_standby("SELECT pg_is_in_recovery();")[0]
+      break if in_recovery.lines[3].strip == "f"
+      sleep(0.1)
+    end
+
+    select = "SELECT * FROM memos WHERE content &@ 'PGroonga';"
+    assert_equal([<<-OUTPUT, ""], run_sql_standby(select))
+#{select}
+      content      
+-------------------
+ PGroonga is good!
+(1 row)
+
+    OUTPUT
+  end
+
   test "text" do
     run_sql("CREATE TABLE memos (content text);")
     run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
