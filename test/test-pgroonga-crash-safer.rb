@@ -206,6 +206,34 @@ INSERT INTO memos
                  @postgresql.read_pgroonga_log)
   end
 
+  test "multiple connections to database without flush process" do
+    omit("SIGSTOP isn't available on Windows") if windows?
+
+    psql("postgres", "CREATE DATABASE test_new TEMPLATE #{@test_db_name};")
+    main_pid_sql = <<-SQL
+SELECT pid FROM pg_stat_activity
+ WHERE backend_type = 'pgroonga: crash-safer: main';
+    SQL
+    main_pid = Integer(select_value("postgres", main_pid_sql), 10)
+    # Multiple connections use the database before the main process
+    # processes a request to start a flush process.
+    Process.kill(:STOP, main_pid)
+    begin
+      threads = 2.times.collect do
+        Thread.new do
+          select_value("test_new",
+                       "SET statement_timeout = '10s';",
+                       "SELECT pgroonga_command('status')::jsonb->0->0;",
+                       may_wait_crash_safer_preparing: true)
+        end
+      end
+      sleep(1)
+    ensure
+      Process.kill(:CONT, main_pid)
+    end
+    assert_equal(["0", "0"], threads.collect(&:value))
+  end
+
   sub_test_case("random crash") do
     include Helpers::Fixture
 

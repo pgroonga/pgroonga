@@ -353,7 +353,7 @@ module Helpers
     end
 
     def current_wal_lsn
-      psql("postgres", "SELECT pg_current_wal_lsn();")[0].lines[3].strip
+      select_value("postgres", "SELECT pg_current_wal_lsn();")
     end
 
     def wait_replay(lsn, timeout: 60)
@@ -368,7 +368,7 @@ module Helpers
     def wait_until(sql, timeout: 60)
       limit = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
       loop do
-        return if psql("postgres", sql)[0].lines[3].strip == "t"
+        return if select_value("postgres", sql) == "t"
         if Process.clock_gettime(Process::CLOCK_MONOTONIC) > limit
           raise "timeout: #{timeout}s: #{sql}"
         end
@@ -391,6 +391,16 @@ module Helpers
         end
       end
       psql_internal(db, *sqls, &block)
+    end
+
+    # This returns the value of the last SQL. The last SQL must return
+    # only one value.
+    def select_value(db, *sqls, **options)
+      output, = psql(db, *sqls, **options)
+      # value
+      # (1 row)
+      # (empty line)
+      output.lines[-3].strip
     end
 
     def groonga(*command_line)
@@ -476,6 +486,10 @@ module Helpers
 
     def run_sql(*sqls, **options, &block)
       psql(@test_db_name, *sqls, **options, &block)
+    end
+
+    def select_value(db, *sqls, **options)
+      @postgresql.select_value(db, *sqls, **options)
     end
 
     def psql_standby(db, *sqls, **options, &block)
@@ -644,9 +658,9 @@ pgroonga.enable_wal = yes
     def setup_test_db
       @test_db_name = "test"
       create_db(@postgresql, @test_db_name)
-      result, = run_sql("SELECT oid FROM pg_catalog.pg_database " +
-                        "WHERE datname = current_database()")
-      oid = result.lines[3].strip
+      oid = select_value(@test_db_name,
+                         "SELECT oid FROM pg_catalog.pg_database " +
+                         "WHERE datname = current_database()")
       @test_db_dir = File.join(@postgresql.dir, "base", oid)
     end
 
