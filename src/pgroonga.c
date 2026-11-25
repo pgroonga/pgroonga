@@ -646,6 +646,18 @@ PGrnEnsureDatabaseCrashSafer(void)
 			break;
 		}
 
+		if (pgrn_crash_safer_statuses_is_flush_start_failed(
+				statuses, MyDatabaseId, MyDatabaseTableSpace))
+		{
+			ereport(ERROR,
+					(errcode(ERRCODE_CONFIGURATION_LIMIT_EXCEEDED),
+					 errmsg("pgroonga: "
+							"pgroonga_crash_safer failed to start "
+							"a flush process"),
+					 errhint("You may need to increase "
+							 "max_worker_processes.")));
+		}
+
 		/* The main process of pgroonga_crash_safer may not be started
 		 * yet. PostgreSQL starts it and starts accepting connections
 		 * at the same time. */
