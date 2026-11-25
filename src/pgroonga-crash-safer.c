@@ -814,6 +814,7 @@ pgroonga_crash_safer_shmem_startup(void)
 	if (PGroongaCrashSaferPreviousShmemStartupHook)
 		PGroongaCrashSaferPreviousShmemStartupHook();
 
+	pgrn_crash_safer_statuses_register_version();
 	pgrn_crash_safer_statuses_register_main(pgrn_crash_safer_statuses_get());
 }
 
