@@ -234,6 +234,34 @@ SELECT pid FROM pg_stat_activity
     assert_equal(["0", "0"], threads.collect(&:value))
   end
 
+  sub_test_case("max_worker_processes") do
+    def additional_configurations
+      super + <<-CONFIG
+max_worker_processes = 4
+      CONFIG
+    end
+
+    test "too small" do
+      error = nil
+      8.times do |i|
+        db = "test#{i}"
+        psql("postgres", "CREATE DATABASE #{db} TEMPLATE #{@test_db_name};")
+        begin
+          psql(db,
+               "SET statement_timeout = '10s';",
+               "SELECT pgroonga_command('status');",
+               may_wait_crash_safer_preparing: true)
+        rescue Helpers::CommandRunError => error
+          break
+        end
+      end
+      assert_equal(<<-ERROR, error&.error)
+ERROR:  pgroonga: pgroonga_crash_safer failed to start a flush process
+HINT:  You may need to increase max_worker_processes.
+      ERROR
+    end
+  end
+
   sub_test_case("random crash") do
     include Helpers::Fixture
 

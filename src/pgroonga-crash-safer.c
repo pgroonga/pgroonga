@@ -692,7 +692,16 @@ pgroonga_crash_safer_main_flush_one(pgrn_crash_safer_statuses_entry *entry)
 	worker.bgw_main_arg = DatumGetUInt64(entry->key);
 	worker.bgw_notify_pid = MyProcPid;
 	if (!RegisterDynamicBackgroundWorker(&worker, &handle))
+	{
+		entry->flushStartFailed = true;
+		ereport(WARNING,
+				(errcode(ERRCODE_CONFIGURATION_LIMIT_EXCEEDED),
+				 errmsg(PGRN_TAG ": failed to start a flush process: %u/%u",
+						databaseOid,
+						tableSpaceOid),
+				 errhint("You may need to increase max_worker_processes.")));
 		return;
+	}
 	WaitForBackgroundWorkerStartup(handle, &(entry->pid));
 }
 

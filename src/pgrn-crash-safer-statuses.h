@@ -28,7 +28,7 @@
  * History:
  *
  *   * 0: No version information.
- *   * 1: Added version information.
+ *   * 1: Added version information and flushStartFailed.
  */
 #define PGRN_CRASH_SAFER_STATUSES_VERSION 1
 
@@ -39,7 +39,42 @@ typedef struct pgrn_crash_safer_statuses_entry
 	pid_t preparePID;
 	sig_atomic_t flushing;
 	pg_atomic_uint32 nUsingProcesses;
+	/* Since version 1: true when the main process couldn't start a
+	 * flush process. */
+	sig_atomic_t flushStartFailed;
 } pgrn_crash_safer_statuses_entry;
+
+static inline int *
+pgrn_crash_safer_statuses_get_version_address(void)
+{
+	bool found;
+	int *version = ShmemInitStruct(
+		"pgrn-crash-safer-statuses-version", sizeof(int), &found);
+	/* pgroonga_crash_safer that doesn't have version information
+	 * doesn't create this. */
+	if (!found)
+		*version = 0;
+	return version;
+}
+
+/* pgroonga_crash_safer calls this when shared memory is
+ * initialized. */
+static inline void
+pgrn_crash_safer_statuses_register_version(void)
+{
+	*pgrn_crash_safer_statuses_get_version_address() =
+		PGRN_CRASH_SAFER_STATUSES_VERSION;
+}
+
+/* This returns the layout version of statuses. statuses are created
+ * by pgroonga_crash_safer. So this may be older than
+ * PGRN_CRASH_SAFER_STATUSES_VERSION when pgroonga_crash_safer is
+ * older than the caller. */
+static inline int
+pgrn_crash_safer_statuses_get_version(void)
+{
+	return *pgrn_crash_safer_statuses_get_version_address();
+}
 
 static inline uint32
 pgrn_crash_safer_statuses_hash(const void *key, Size keysize)
@@ -87,44 +122,14 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 	{
 		entry->pid = InvalidPid;
 		entry->preparePID = InvalidPid;
+		if (pgrn_crash_safer_statuses_get_version() >= 1)
+			entry->flushStartFailed = false;
 	}
 	if (found)
 	{
 		*found = found_local;
 	}
 	return entry;
-}
-
-static inline int *
-pgrn_crash_safer_statuses_get_version_address(void)
-{
-	bool found;
-	int *version = ShmemInitStruct(
-		"pgrn-crash-safer-statuses-version", sizeof(int), &found);
-	/* pgroonga_crash_safer that doesn't have version information
-	 * doesn't create this. */
-	if (!found)
-		*version = 0;
-	return version;
-}
-
-/* pgroonga_crash_safer calls this when shared memory is
- * initialized. */
-static inline void
-pgrn_crash_safer_statuses_register_version(void)
-{
-	*pgrn_crash_safer_statuses_get_version_address() =
-		PGRN_CRASH_SAFER_STATUSES_VERSION;
-}
-
-/* This returns the layout version of statuses. statuses are created
- * by pgroonga_crash_safer. So this may be older than
- * PGRN_CRASH_SAFER_STATUSES_VERSION when pgroonga_crash_safer is
- * older than the caller. */
-static inline int
-pgrn_crash_safer_statuses_get_version(void)
-{
-	return *pgrn_crash_safer_statuses_get_version_address();
 }
 
 /* pgroonga_crash_safer calls this when shared memory is initialized.
@@ -213,7 +218,25 @@ pgrn_crash_safer_statuses_use(HTAB *statuses,
 	pgrn_crash_safer_statuses_entry *entry;
 	entry = pgrn_crash_safer_statuses_search(
 		statuses, databaseOid, tableSpaceOid, HASH_ENTER, NULL);
+	/* Clear the result of the previous try. The main process tries to
+	 * start a flush process again for this process. */
+	if (pgrn_crash_safer_statuses_get_version() >= 1)
+		entry->flushStartFailed = false;
 	pg_atomic_fetch_add_u32(&(entry->nUsingProcesses), 1);
+}
+
+static inline bool
+pgrn_crash_safer_statuses_is_flush_start_failed(HTAB *statuses,
+												Oid databaseOid,
+												Oid tableSpaceOid)
+{
+	bool found;
+	pgrn_crash_safer_statuses_entry *entry;
+	if (pgrn_crash_safer_statuses_get_version() < 1)
+		return false;
+	entry = pgrn_crash_safer_statuses_search(
+		statuses, databaseOid, tableSpaceOid, HASH_FIND, &found);
+	return found && entry->flushStartFailed;
 }
 
 static inline void
