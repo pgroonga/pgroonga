@@ -11,6 +11,27 @@
 
 #include <signal.h>
 
+/* The version of pgrn_crash_safer_statuses_entry layout.
+ *
+ * PostgreSQL isn't restarted on upgrading PGroonga in compatible
+ * case. So new pgroonga.so may be used with old pgroonga_crash_safer
+ * that created statuses with old layout. We must keep the following
+ * rules to keep compatibility:
+ *
+ *   * Don't change existing members.
+ *   * Add a new member only to the last.
+ *   * Increment this when a new member is added.
+ *   * Don't touch a new member when
+ *     pgrn_crash_safer_statuses_get_version() is older than the
+ *     version that added the new member.
+ *
+ * History:
+ *
+ *   * 0: No version information.
+ *   * 1: Added version information.
+ */
+#define PGRN_CRASH_SAFER_STATUSES_VERSION 1
+
 typedef struct pgrn_crash_safer_statuses_entry
 {
 	uint64 key;
@@ -72,6 +93,38 @@ pgrn_crash_safer_statuses_search(HTAB *statuses,
 		*found = found_local;
 	}
 	return entry;
+}
+
+static inline int *
+pgrn_crash_safer_statuses_get_version_address(void)
+{
+	bool found;
+	int *version = ShmemInitStruct(
+		"pgrn-crash-safer-statuses-version", sizeof(int), &found);
+	/* pgroonga_crash_safer that doesn't have version information
+	 * doesn't create this. */
+	if (!found)
+		*version = 0;
+	return version;
+}
+
+/* pgroonga_crash_safer calls this when shared memory is
+ * initialized. */
+static inline void
+pgrn_crash_safer_statuses_register_version(void)
+{
+	*pgrn_crash_safer_statuses_get_version_address() =
+		PGRN_CRASH_SAFER_STATUSES_VERSION;
+}
+
+/* This returns the layout version of statuses. statuses are created
+ * by pgroonga_crash_safer. So this may be older than
+ * PGRN_CRASH_SAFER_STATUSES_VERSION when pgroonga_crash_safer is
+ * older than the caller. */
+static inline int
+pgrn_crash_safer_statuses_get_version(void)
+{
+	return *pgrn_crash_safer_statuses_get_version_address();
 }
 
 /* pgroonga_crash_safer calls this when shared memory is initialized.
