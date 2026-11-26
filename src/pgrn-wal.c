@@ -3080,6 +3080,8 @@ pgroonga_wal_apply_index(PG_FUNCTION_ARGS)
 	Oid indexOid;
 	Relation index;
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -3141,6 +3143,8 @@ pgroonga_wal_apply_all(PG_FUNCTION_ARGS)
 	Relation indexes;
 	TableScanDesc scan;
 	HeapTuple indexTuple;
+
+	PGrnEnsureCrashSaferOnWrite();
 
 	if (!PGrnIsWritable())
 	{
@@ -3557,6 +3561,8 @@ pgroonga_wal_set_applied_position_index(PG_FUNCTION_ARGS)
 	Oid indexOid;
 	Relation index;
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -3623,6 +3629,8 @@ pgroonga_wal_set_applied_position_index_last(PG_FUNCTION_ARGS)
 	Datum indexOidDatum;
 	Oid indexOid;
 	Relation index;
+
+	PGrnEnsureCrashSaferOnWrite();
 
 	if (!PGrnIsWritable())
 	{
@@ -3697,6 +3705,8 @@ pgroonga_wal_set_applied_position_all(PG_FUNCTION_ARGS)
 	TableScanDesc scan;
 	HeapTuple indexTuple;
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	if (!PGrnIsWritable())
 	{
 		ereport(ERROR,
@@ -3760,6 +3770,8 @@ pgroonga_wal_set_applied_position_all_last(PG_FUNCTION_ARGS)
 	Relation indexes;
 	TableScanDesc scan;
 	HeapTuple indexTuple;
+
+	PGrnEnsureCrashSaferOnWrite();
 
 	if (!PGrnIsWritable())
 	{

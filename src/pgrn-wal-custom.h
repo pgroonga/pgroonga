@@ -2,6 +2,7 @@
 
 #include <postgres.h>
 
+#include <access/xlog.h>
 #include <access/xlog_internal.h>
 #include <access/xloginsert.h>
 #include <c.h>
@@ -13,6 +14,16 @@
 
 /* Registered at https://wiki.postgresql.org/wiki/CustomWALResourceManagers */
 #define PGRN_WAL_RESOURCE_MANAGER_ID 138
+
+/* pgroonga_wal_resource_manager applies changes in the startup
+ * process during recovery. The startup process opens Groonga's database
+ * with GRN_WAL_ROLE_PRIMARY. So pgroonga_crash_safer must not use
+ * GRN_WAL_ROLE_PRIMARY while this is true. */
+static inline bool
+PGrnWALResourceManagerIsRecovering(void)
+{
+	return RmgrIdExists(PGRN_WAL_RESOURCE_MANAGER_ID) && RecoveryInProgress();
+}
 
 #define PGRN_WAL_RECORD_CREATE_TABLE 0x10
 #define PGRN_WAL_RECORD_CREATE_COLUMN 0x20

@@ -37,6 +37,9 @@
 #include "pgrn-value.h"
 #include "pgrn-variables.h"
 #include "pgrn-wal.h"
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+#	include "pgrn-wal-custom.h"
+#endif
 #include "pgrn-writable.h"
 
 #include <access/amapi.h>
@@ -98,6 +101,10 @@ static bool PGrnInitialized = false;
 static bool PGrnBaseInitialized = false;
 bool PGrnGroongaInitialized = false;
 static bool PGrnCrashSaferInitialized = false;
+/* true when we didn't use pgroonga_crash_safer because
+ * pgroonga_wal_resource_manager was recovering. We must use
+ * pgroonga_crash_safer before we write something after promotion. */
+static bool PGrnCrashSaferPending = false;
 bool PGrnEnableParallelBuildCopy = false;
 
 typedef struct PGrnProcessSharedData
@@ -612,8 +619,15 @@ PGrnEnsureDatabaseCrashSafer(void)
 						"shared_preload_libraries may not include "
 						"pgroonga_crash_safer")));
 	}
-	pgrn_crash_safer_statuses_use(statuses, MyDatabaseId, MyDatabaseTableSpace);
-	PGrnCrashSaferInitialized = true;
+	/* This may be called again after promotion when the previous call
+	 * is canceled while waiting for a flush process. We must not count
+	 * this process twice. */
+	if (!PGrnCrashSaferInitialized)
+	{
+		pgrn_crash_safer_statuses_use(
+			statuses, MyDatabaseId, MyDatabaseTableSpace);
+		PGrnCrashSaferInitialized = true;
+	}
 
 	preparePID = pgrn_crash_safer_statuses_get_prepare_pid(
 		statuses, MyDatabaseId, MyDatabaseTableSpace);
@@ -649,7 +663,13 @@ PGrnEnsureDatabaseCrashSafer(void)
 		if (pgrn_crash_safer_statuses_is_flush_start_failed(
 				statuses, MyDatabaseId, MyDatabaseTableSpace))
 		{
-			ereport(ERROR,
+			/* This may be called after promotion by
+			 * PGrnEnsureCrashSaferOnWrite(). We can't try again in the
+			 * same connection because only
+			 * pgrn_crash_safer_statuses_use() clears this failure and we
+			 * don't call it twice in the same connection. So we close
+			 * the connection by FATAL in the case. */
+			ereport(PGrnCrashSaferPending ? FATAL : ERROR,
 					(errcode(ERRCODE_CONFIGURATION_LIMIT_EXCEEDED),
 					 errmsg("pgroonga: "
 							"pgroonga_crash_safer failed to start "
@@ -677,6 +697,51 @@ PGrnEnsureDatabaseCrashSafer(void)
 	}
 }
 
+/* GRN_WAL_ROLE_SECONDARY is used only when crash safe is enabled. We
+ * can use PGroonga without pgroonga_crash_safer when
+ * pgroonga_wal_resource_manager is enabled.
+ *
+ * pgroonga_crash_safer doesn't start flush processes while
+ * pgroonga_wal_resource_manager is recovering. So we must not wait for
+ * a flush process during recovery. We use pgroonga_crash_safer later by
+ * PGrnEnsureCrashSaferOnWrite() in the case. */
+static void
+PGrnEnsureCrashSaferIfNeeded(void)
+{
+	if (grn_ctx_get_wal_role(ctx) != GRN_WAL_ROLE_SECONDARY)
+		return;
+
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	if (PGrnWALResourceManagerIsRecovering())
+	{
+		PGrnCrashSaferPending = true;
+		return;
+	}
+#endif
+
+	if (!PGrnWALResourceManagerGetEnabled() ||
+		pgrn_crash_safer_statuses_has_main(pgrn_crash_safer_statuses_get()))
+	{
+		PGrnEnsureDatabaseCrashSafer();
+	}
+	PGrnCrashSaferPending = false;
+}
+
+/* A connection that is established during recovery is kept after
+ * promotion. Groonga's WAL must be empty when a flush process opens
+ * Groonga's database with GRN_WAL_ROLE_PRIMARY. So we must wait for a
+ * flush process before we write something after promotion. We can't
+ * write anything during recovery.
+ *
+ * This must be called before any write to Groonga's database. */
+void
+PGrnEnsureCrashSaferOnWrite(void)
+{
+	if (!PGrnCrashSaferPending)
+		return;
+	PGrnEnsureCrashSaferIfNeeded();
+}
+
 void
 PGrnEnsureDatabase(void)
 {
@@ -694,16 +759,7 @@ PGrnEnsureDatabase(void)
 	join_path_components(path, databasePath, PGrnDatabaseBasename);
 	pfree(databasePath);
 
-	/* GRN_WAL_ROLE_SECONDARY is used only when crash safe is
-	 * enabled. We can use PGroonga without pgroonga_crash_safer when
-	 * pgroonga_wal_resource_manager is enabled. For example,
-	 * pgroonga_crash_safer isn't used on standby. */
-	if (grn_ctx_get_wal_role(ctx) == GRN_WAL_ROLE_SECONDARY &&
-		(!PGrnWALResourceManagerGetEnabled() ||
-		 pgrn_crash_safer_statuses_has_main(pgrn_crash_safer_statuses_get())))
-	{
-		PGrnEnsureDatabaseCrashSafer();
-	}
+	PGrnEnsureCrashSaferIfNeeded();
 
 	if (pgrn_file_exist(path))
 	{
@@ -2162,6 +2218,9 @@ pgroonga_command(PG_FUNCTION_ARGS)
 {
 	text *groongaCommand = PG_GETARG_TEXT_PP(0);
 	text *result;
+
+	/* Groonga command may write something. */
+	PGrnEnsureCrashSaferOnWrite();
 
 	GRN_BULK_REWIND(&(buffers->head));
 	GRN_BULK_REWIND(&(buffers->body));
@@ -5209,6 +5268,8 @@ pgroonga_insert(Relation index,
 						tag)));
 	}
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	/*
 	 * pgroonga_insert() may be called between pgroonga_beginscan() and
 	 * pgroonga_endscan() while executing an UPDATE statement with a WHERE
@@ -7483,7 +7544,9 @@ pgroonga_gettuple_internal(IndexScanDesc scan, ScanDirection direction)
 	PGrnEnsureCursorOpened(scan, direction, true);
 
 	if (scan->kill_prior_tuple && so->currentID != GRN_ID_NIL &&
-		PGrnIsWritable()
+		PGrnIsWritable() &&
+		/* We can't wait for a flush process here. */
+		!PGrnCrashSaferPending
 	/* StandbyMode isn't exported on Windows in PostgreSQL < 15. */
 #if !defined(_WIN32) || PG_VERSION_NUM >= 150000
 		&& !StandbyMode
@@ -8385,6 +8448,8 @@ pgroonga_build(Relation heap, Relation index, IndexInfo *indexInfo)
 					"%s unique index isn't supported",
 					tag);
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	PGrnEnsureLatestDB();
 
 	PGrnAutoCloseUseIndex(index);
@@ -8543,6 +8608,8 @@ pgroonga_buildempty(Relation index)
 						tag)));
 	}
 
+	PGrnEnsureCrashSaferOnWrite();
+
 	PGrnEnsureLatestDB();
 
 	PGrnAutoCloseUseIndex(index);
@@ -8638,6 +8705,8 @@ pgroonga_bulkdelete(IndexVacuumInfo *info,
 						"while pgroonga.writable is false",
 						tag)));
 	}
+
+	PGrnEnsureCrashSaferOnWrite();
 
 	PGrnEnsureLatestDB();
 
@@ -8919,6 +8988,8 @@ pgroonga_vacuumcleanup(IndexVacuumInfo *info, IndexBulkDeleteResult *stats)
 		PGRN_TRACE_LOG_EXIT();
 		return stats;
 	}
+
+	PGrnEnsureCrashSaferOnWrite();
 
 	if (!stats)
 	{

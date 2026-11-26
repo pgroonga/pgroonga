@@ -11,6 +11,7 @@ Datum
 pgroonga_vacuum(PG_FUNCTION_ARGS)
 {
 	PGRN_TRACE_LOG_ENTER();
+	PGrnEnsureCrashSaferOnWrite();
 	PGrnRemoveUnusedTables();
 	PGRN_TRACE_LOG_EXIT();
 	PG_RETURN_BOOL(true);
