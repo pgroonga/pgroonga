@@ -31,8 +31,8 @@ jobs:
           - PostgreSQL 16
           - PostgreSQL 17
           - PostgreSQL 18
-          - PostgreSQL 18 with Groonga main
           - PostgreSQL 19
+          - PostgreSQL 19 with Groonga main
         include:
           - label: PostgreSQL 14
             postgresql-version: "14"
