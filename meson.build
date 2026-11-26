@@ -62,6 +62,10 @@ if get_option('buildtype').startswith('debug')
 endif
 if host_machine.system() == 'windows'
   pgrn_c_args += ['/EHsc']
+  # PostgreSQL 19 headers require C11 mode on MSVC because they use C11
+  # features such as _Noreturn and <stdalign.h> (alignas) unconditionally.
+  # PostgreSQL's own PGXS also uses "/std:c11" for MSVC builds.
+  pgrn_c_args += ['/std:c11']
 endif
 
 # Note: Meson's split() is NOT shell-compatible.
