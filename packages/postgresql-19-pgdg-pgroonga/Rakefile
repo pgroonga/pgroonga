@@ -1,0 +1,34 @@
+require_relative "../pgroonga-package-task"
+
+class PostgreSQL19PGDGPGroongaPackageTask < VersionedPGroongaPackageTask
+  def initialize
+    super("19", "-pgdg")
+  end
+
+  def apt_targets_default
+    [
+      "debian-trixie",
+      "debian-trixie-arm64",
+      "ubuntu-jammy",
+      "ubuntu-jammy-arm64",
+      "ubuntu-noble",
+      "ubuntu-noble-arm64",
+      "ubuntu-resolute",
+      "ubuntu-resolute-arm64",
+    ]
+  end
+
+  def enable_ubuntu?
+    false
+  end
+
+  def yum_targets_default
+    [
+      "almalinux-9",
+      "almalinux-10",
+    ]
+  end
+end
+
+task = PostgreSQL19PGDGPGroongaPackageTask.new
+task.define
