@@ -755,6 +755,26 @@ pgroonga_crash_safer_main_flush_all(void)
 	pgstat_report_activity(STATE_IDLE, NULL);
 }
 
+/* pgroonga_wal_resource_manager opens Groonga's database with
+ * GRN_WAL_ROLE_PRIMARY in the startup process during recovery. So we
+ * must not start flush processes that also use GRN_WAL_ROLE_PRIMARY
+ * during recovery. We start them after promotion. Backends notify us
+ * by SIGUSR1 when they need a flush process.
+ *
+ * We need flush processes during recovery when
+ * pgroonga_wal_resource_manager isn't used. For example,
+ * pgroonga_standby_maintainer applies PGroonga's WAL during
+ * recovery. */
+static bool
+pgroonga_crash_safer_main_is_recovering(void)
+{
+#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
+	return PGrnWALResourceManagerIsRecovering();
+#else
+	return false;
+#endif
+}
+
 static void
 pgroonga_crash_safer_main_on_exit(int code, Datum arg)
 {
@@ -777,7 +797,8 @@ pgroonga_crash_safer_main(Datum arg)
 	pgrn_crash_safer_statuses_set_main_pid(statuses, MyProcPid);
 	before_shmem_exit(pgroonga_crash_safer_main_on_exit, 0);
 
-	pgroonga_crash_safer_main_flush_all();
+	if (!pgroonga_crash_safer_main_is_recovering())
+		pgroonga_crash_safer_main_flush_all();
 
 	while (!PGroongaCrashSaferGotSIGTERM)
 	{
@@ -802,6 +823,8 @@ pgroonga_crash_safer_main(Datum arg)
 			HASH_SEQ_STATUS status;
 			pgrn_crash_safer_statuses_entry *entry;
 			PGroongaCrashSaferGotSIGUSR1 = false;
+			if (pgroonga_crash_safer_main_is_recovering())
+				continue;
 			hash_seq_init(&status, statuses);
 			while ((entry = hash_seq_search(&status)))
 			{
@@ -894,12 +917,6 @@ _PG_init(void)
 
 	if (!process_shared_preload_libraries_in_progress)
 		return;
-
-#ifdef PGRN_SUPPORT_WAL_RESOURCE_MANAGER
-	/* Use pgroonga-wal-resource-manager for crash safe on standby. */
-	if (StandbyMode && RmgrIdExists(PGRN_WAL_RESOURCE_MANAGER_ID))
-		return;
-#endif
 
 	snprintf(worker.bgw_name, BGW_MAXLEN, PGRN_TAG ": main");
 	snprintf(worker.bgw_type, BGW_MAXLEN, "%s", worker.bgw_name);

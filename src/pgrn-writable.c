@@ -59,6 +59,7 @@ pgroonga_set_writable(PG_FUNCTION_ARGS)
 	const bool newWritable = PG_GETARG_BOOL(0);
 	const bool currentWritable = PGrnIsWritable();
 
+	PGrnEnsureCrashSaferOnWrite();
 	PGrnSetWritable(newWritable);
 
 	PG_RETURN_BOOL(currentWritable);

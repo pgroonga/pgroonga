@@ -121,6 +121,7 @@ extern grn_obj PGrnInspectBuffer;
 extern bool PGrnGroongaInitialized;
 extern bool PGrnEnableParallelBuildCopy;
 void PGrnEnsureDatabase(void);
+void PGrnEnsureCrashSaferOnWrite(void);
 void PGrnRemoveUnusedTables(void);
 bool PGrnIndexIsPGroonga(Relation index);
 Datum PGrnConvertToDatum(grn_obj *value, Oid typeID);

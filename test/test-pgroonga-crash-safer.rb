@@ -382,6 +382,97 @@ pgroonga.enable_wal_resource_manager = yes
       ensure_wal_flushed
       assert_equal([], wal_paths)
     end
+
+    sub_test_case("standby") do
+      setup :setup_standby_db
+      teardown :teardown_standby_db
+
+      # pgroonga.enable_wal and pgroonga_wal_resource_manager can't be
+      # used together on standby. Both of them apply the same changes.
+      def additional_standby_configurations
+        <<-CONFIG
+pgroonga.enable_wal = no
+        CONFIG
+      end
+
+      # Flush processes don't appear in pg_stat_activity.
+      def flush_processes_standby
+        postmaster_pid_path = File.join(@postgresql_standby.dir,
+                                        "postmaster.pid")
+        postmaster_pid = File.readlines(postmaster_pid_path, chomp: true)[0]
+        ps = IO.popen(["ps", "-e", "-o", "ppid=,args="], &:read)
+        ps.lines(chomp: true).grep(
+          /\A\s*#{postmaster_pid}\s.*pgroonga: crash-safer: flush:/)
+      end
+
+      def setup_memos
+        run_sql("CREATE TABLE memos (content text);")
+        run_sql("CREATE INDEX memos_content ON memos USING pgroonga (content);")
+        run_sql("INSERT INTO memos VALUES ('PGroonga is good!');")
+        @postgresql_standby.wait_replay(@postgresql.current_wal_lsn)
+      end
+
+      def count_standby
+        @postgresql_standby.select_value(
+          @test_db_name,
+          "SET enable_seqscan = no;",
+          "SELECT count(*) FROM memos WHERE content &@~ 'good';")
+      end
+
+      # The backend may be still running after psql is finished.
+      def n_released_standby(pid)
+        finalized_log_pattern = /\|#{pid}: pgroonga: \[exit\]\[finalize\]$/
+        release_log_pattern =
+          /\|#{pid}: pgroonga: \[exit\]\[finalize\]\[crash-safer\]\[release\]$/
+        pgroonga_log = nil
+        600.times do
+          pgroonga_log = @postgresql_standby.read_pgroonga_log
+          break if pgroonga_log.match?(finalized_log_pattern)
+          sleep(0.1)
+        end
+        pgroonga_log.scan(release_log_pattern).size
+      end
+
+      # pgroonga_wal_resource_manager opens Groonga's database with
+      # GRN_WAL_ROLE_PRIMARY in the startup process on
+      # standby. pgroonga_crash_safer must not start flush processes
+      # until the standby is promoted.
+      test "flush after promotion" do
+        setup_memos
+        assert_equal(["1", []],
+                     [count_standby, flush_processes_standby])
+        run_sql_standby("SELECT pg_promote();")
+        run_sql_standby("INSERT INTO memos VALUES ('Groonga is good!');",
+                        may_wait_crash_safer_preparing: true)
+        assert_equal(1, flush_processes_standby.size)
+      end
+
+      # A connection that is established during recovery is kept after
+      # promotion. It must use pgroonga_crash_safer before it writes
+      # something.
+      test "connection over promotion" do
+        setup_memos
+        pid = nil
+        run_sql_standby do |input, output, error|
+          input.puts("\\pset tuples_only on")
+          output.gets # \pset tuples_only on
+          input.puts("SELECT pg_backend_pid();")
+          output.gets # SELECT pg_backend_pid();
+          pid = Integer(output.gets.strip, 10)
+          # Open Groonga's database during recovery.
+          input.puts("SELECT pgroonga_command('status');")
+          input.puts("SELECT pg_promote();")
+          output.gets("SELECT pg_promote();\n t\n")
+          # Avoid the "pgroonga_crash_safer is preparing" error.
+          run_sql_standby("SELECT pgroonga_command('status');",
+                          may_wait_crash_safer_preparing: true)
+          input.puts("INSERT INTO memos VALUES ('Groonga is good!');")
+          input.close
+          output.read
+        end
+        assert_equal(1, n_released_standby(pid))
+      end
+    end
   end
 
   test "max_recovery_threads: default" do
